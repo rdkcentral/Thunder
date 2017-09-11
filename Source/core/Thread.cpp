@@ -1,3 +1,4 @@
+#include <limits.h>
 #include "Thread.h"
 #include "Proxy.h"
 #include "Trace.h"
