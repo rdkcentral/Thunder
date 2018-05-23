@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include/@NAMESPACE@
+
+Name: WPEFramework
+Description: A C++ framework needed to run WPE plugins.
+Version: 1.0
+Cflags: -I${includedir} @WCHAR_SUPPORT_DEFINITION@ @CRITICAL_SECTION_LOCK_LOG@
+Libs: -L${libdir}

@@ -1,0 +1,541 @@
+#ifndef __STREAMTEXT_
+#define __STREAMTEXT_
+
+#include "Module.h"
+#include "Portability.h"
+
+namespace WPEFramework {
+namespace Core {
+    class TerminatorNull {
+    private:
+        TerminatorNull(TerminatorNull&);
+        TerminatorNull& operator=(const TerminatorNull&);
+
+    public:
+        inline TerminatorNull()
+        {
+        }
+        inline ~TerminatorNull()
+        {
+        }
+
+    public:
+        // 0x80 -> Termination complete. Text Terminated
+        // 0x40 -> Termination sequence in Progress.
+        // 0x03 -> Number of characters to delete
+        inline uint8_t IsTerminated(const TCHAR character) const
+        {
+            return (character == '\0' ? 0x80 | 0x00 : 0x00);
+        }
+        inline uint8_t SizeOf() const
+        {
+            return (1);
+        }
+        inline const TCHAR* Marker() const
+        {
+            return (_T("\0"));
+        }
+    };
+
+    class TerminatorCarriageReturn {
+    private:
+        TerminatorCarriageReturn(TerminatorCarriageReturn&);
+        TerminatorCarriageReturn& operator=(const TerminatorCarriageReturn&);
+
+    public:
+        inline TerminatorCarriageReturn()
+        {
+        }
+        inline ~TerminatorCarriageReturn()
+        {
+        }
+
+    public:
+        // 0x80 -> Termination complete. Text Terminated
+        // 0x40 -> Termination sequence in Progress.
+        // 0x03 -> Number of characters to delete
+        inline uint8_t IsTerminated(const TCHAR character) const
+        {
+            return (character == '\n' ? 0x80 | 0x00 : 0x00);
+        }
+        inline uint8_t SizeOf() const
+        {
+            return (1);
+        }
+        inline const TCHAR* Marker() const
+        {
+            return (_T("\n"));
+        }
+    };
+
+    class TerminatorCarriageReturnLineFeed {
+    private:
+        TerminatorCarriageReturnLineFeed(TerminatorCarriageReturnLineFeed&);
+        TerminatorCarriageReturnLineFeed& operator=(const TerminatorCarriageReturnLineFeed&);
+
+    public:
+        inline TerminatorCarriageReturnLineFeed()
+            : _triggered(0)
+        {
+        }
+        inline ~TerminatorCarriageReturnLineFeed()
+        {
+        }
+
+    public:
+        // 0x80 -> Termination complete. Text Terminated
+        // 0x40 -> Termination sequence in Progress.
+        // 0x03 -> Number of characters to delete
+        inline uint8_t IsTerminated(const TCHAR character) const
+        {
+            // After the /n we are expecting a /r. If the character after
+            // the /n is not a /r we still assume a clossure and thus a -1.
+            if ((_triggered & 0x03) == 0x00) {
+                _triggered = ((character == '\n' ? 0x01 : 0x00) | (character == '\r' ? 0x02 : 0x00));
+
+                return ((_triggered & 0x03) != 0 ? 0x40 | 0x00 : 0x00);
+            }
+
+            _triggered |= ((character == '\n' ? 0x04 : 0x00) | (character == '\r' ? 0x08 : 0x00));
+
+            if ((_triggered == 0x09) || (_triggered == 0x06)) {
+                _triggered = 0;
+                return (0x80 | 0x00 | 0x01);
+            }
+            if ((_triggered == 0x10) || (_triggered == 0x20)) {
+                _triggered = 0;
+                return (0x00);
+            }
+
+            _triggered = (_triggered & 0x03);
+            return (0x00 | 0x40 | 0x00);
+        }
+        inline uint8_t SizeOf() const
+        {
+            return (2);
+        }
+        inline const TCHAR* Marker() const
+        {
+            return (_T("\n\r"));
+        }
+
+    private:
+        mutable uint8_t _triggered;
+    };
+
+    template <typename SOURCE, typename TEXTTERMINATOR>
+    class StreamTextType {
+    private:
+        template <typename PARENTCLASS, typename ACTUALSOURCE>
+        class HandlerType : public ACTUALSOURCE {
+        private:
+            HandlerType();
+            HandlerType(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
+            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(const HandlerType<PARENTCLASS, ACTUALSOURCE>&);
+
+        public:
+            HandlerType(PARENTCLASS& parent)
+                : ACTUALSOURCE()
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1)
+                : ACTUALSOURCE(arg1)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2)
+                : ACTUALSOURCE(arg1, arg2)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3)
+                : ACTUALSOURCE(arg1, arg2, arg3)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9, Arg10 arg10)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
+                , _parent(parent)
+            {
+            }
+            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10, typename Arg11>
+            HandlerType(PARENTCLASS& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9, Arg10 arg10, Arg11 arg11)
+                : ACTUALSOURCE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
+                , _parent(parent)
+            {
+            }
+
+            ~HandlerType()
+            {
+            }
+
+        public:
+            // Methods to extract and insert data into the socket buffers
+            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+            {
+                return (_parent.SendData(dataFrame, maxSendSize));
+            }
+
+            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+            {
+                return (_parent.ReceiveData(dataFrame, receivedSize));
+            }
+
+            // Signal a state change, Opened, Closed or Accepted
+            virtual void StateChange()
+            {
+                _parent.StateChange();
+            }
+            virtual bool IsIdle() const
+            {
+                return (_parent.IsIdle());
+            }
+
+        private:
+            PARENTCLASS& _parent;
+        };
+
+        typedef StreamTextType<SOURCE, TEXTTERMINATOR> BaseClass;
+
+        StreamTextType(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
+        StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
+
+    public:
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+        StreamTextType()
+            : _channel(*this)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1>
+        StreamTextType(Arg1 arg1)
+            : _channel(*this, arg1)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2>
+        StreamTextType(Arg1 arg1, Arg2 arg2)
+            : _channel(*this, arg1, arg2)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3)
+            : _channel(*this, arg1, arg2, arg3)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
+            : _channel(*this, arg1, arg2, arg3, arg4)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9, Arg10 arg10)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7, typename Arg8, typename Arg9, typename Arg10, typename Arg11>
+        StreamTextType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7, Arg8 arg8, Arg9 arg9, Arg10 arg10, Arg11 arg11)
+            : _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11)
+            , _adminLock()
+            , _sendQueue()
+            , _offset(0)
+            , _receiver()
+            , _terminator()
+        {
+        }
+
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
+        virtual ~StreamTextType()
+        {
+            _channel.Close(Core::infinite);
+        }
+
+    public:
+        virtual void Received(string& text) = 0;
+        virtual void Send(const string& text) = 0;
+        virtual void StateChange() = 0;
+
+        void Submit(const string& element)
+        {
+            _adminLock.Lock();
+
+            if (_channel.IsOpen() == true) {
+                _sendQueue.push_back(element);
+            }
+
+            _adminLock.Unlock();
+
+            _channel.Trigger();
+        }
+        inline uint32_t Open(const uint32_t waitTime)
+        {
+            return (_channel.Open(waitTime));
+        }
+        inline uint32_t Close(const uint32_t waitTime)
+        {
+            return (_channel.Close(waitTime));
+        }
+        inline bool IsOpen() const
+        {
+            return (_channel.IsOpen());
+        }
+        inline bool IsClosed() const
+        {
+            return (_channel.IsClosed());
+        }
+        inline bool IsSuspended() const
+        {
+            return (_channel.IsSuspended());
+        }
+        inline string LocalId() const
+        {
+            return (_channel.LocalId());
+        }
+        inline void Ping()
+        {
+            return (_channel.Ping());
+        }
+
+    private:
+        virtual bool IsIdle() const
+        {
+            return (_sendQueue.size() == 0);
+        }
+        uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+        {
+            uint16_t result = 0;
+
+            _adminLock.Lock();
+
+            if (_offset == static_cast<uint32_t>(~0)) {
+                // Seems we have to report a ready state..
+                Send(_sendQueue.front());
+
+                // We are done with this entry it has been sent!!! discard it.
+                _sendQueue.pop_front();
+                _offset = 0;
+            }
+
+            if (_sendQueue.size() > 0) {
+                const string& sendObject = _sendQueue.front();
+
+                // Do we still need to send data from the text..
+                if (_offset < (sendObject.size() * sizeof(TCHAR))) {
+                    result = (((sendObject.size() * sizeof(TCHAR)) - _offset) > maxSendSize ? maxSendSize : ((sendObject.size() * sizeof(TCHAR)) - _offset));
+
+                    _offset += SendCharacters(dataFrame, &(sendObject.c_str()[(_offset / sizeof(TCHAR))]), (_offset % sizeof(TCHAR)), result);
+                }
+
+                // See if we can write the closing marker
+                if ((maxSendSize != result) && (_offset >= (sendObject.size() * sizeof(TCHAR))) && (_offset < ((sendObject.size() + (_terminator.SizeOf())) * sizeof(TCHAR)))) {
+                    uint8_t markerSize = (static_cast<uint8_t>(_terminator.SizeOf()) * sizeof(TCHAR));
+                    uint8_t markerOffset = ((sendObject.size() * sizeof(TCHAR)) - _offset);
+                    uint16_t size = ((markerSize - markerOffset) > (maxSendSize - result) ? (maxSendSize - result) : (markerSize - markerOffset));
+
+                    _offset += SendCharacters(&(dataFrame[result]), &(_terminator.Marker()[(markerOffset / sizeof(TCHAR))]), (markerOffset % sizeof(TCHAR)), size);
+                    result += size;
+
+                    if ((size + markerOffset) == markerSize) {
+                        // Report as completed on the next run
+                        _offset = static_cast<uint32_t>(~0);
+                    }
+                }
+
+                // If we went through this entry we must have processed something....
+                ASSERT(result != 0);
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        inline void Convert(const uint8_t* dataFrame, wchar_t& entry) const
+        {
+            entry = ntohs((dataFrame[0] << 8) | dataFrame[1]);
+        }
+        inline void Convert(const uint8_t* dataFrame, char& entry) const
+        {
+            entry = (dataFrame[0]);
+        }
+        uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+        {
+            for (uint16_t index = 0; index < receivedSize; index += sizeof(TCHAR)) {
+                TCHAR character;
+                Convert(&dataFrame[index], character);
+
+                // 0x80 -> Termination complete. Text Terminated
+                // 0x40 -> Termination sequence in Progress.
+                // 0x03 -> Number of characters to delete
+                uint8_t terminated = _terminator.IsTerminated(character);
+
+                if ((terminated & 0x80) == 0) {
+                    _receiver.push_back(character);
+                }
+                else {
+                    uint8_t dropCharacters = terminated & 0x03;
+
+                    while (dropCharacters != 0) {
+#ifdef __WIN32__
+                        _receiver.pop_back();
+#endif
+#ifdef __POSIX__
+                        _receiver.erase(_receiver.end() - 1);
+#endif
+                        dropCharacters--;
+                    }
+
+                    // report the new string...
+                    Received(_receiver);
+
+                    _receiver.clear();
+                }
+            }
+            return (receivedSize);
+        }
+        inline uint16_t SendCharacters(uint8_t* dataFrame, const TCHAR stream[], const uint8_t delta, const uint16_t total)
+        {
+            // TODO: Align in case we are not a multibyte character string..
+            // For now we assume that this never happens, only multibyte support for now.
+            ASSERT(delta == 0);
+
+            // Copying from an aligned position..
+            ::memcpy(dataFrame, stream, total);
+
+            return (total);
+        }
+
+    private:
+        HandlerType<BaseClass, SOURCE> _channel;
+        Core::CriticalSection _adminLock;
+        std::list<string> _sendQueue;
+        uint32_t _offset;
+        string _receiver;
+        TEXTTERMINATOR _terminator;
+    };
+}
+} // namespace Core
+
+#endif // __STREAMTEXT_

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="ProxyStubs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{08108e2f-1ffd-48e0-89d9-23f5409dc0eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{4ee0c8e4-3ba3-4683-8c6f-23463d09d9d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interface Files">
+      <UniqueIdentifier>{379b5f39-b7a5-466c-bd91-4f42b78a78bb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IBrowser.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ICommand.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IDictionary.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IMemory.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="INetflix.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISwitchBoard.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebServer.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IResourceCenter.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IComposition.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IKeyHandler.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IOpenCDMi.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IProvisioning.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITimeSync.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IVoiceHandler.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IWebDriver.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IElement.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

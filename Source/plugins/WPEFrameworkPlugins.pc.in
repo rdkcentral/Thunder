@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${prefix}/lib
+includedir=${prefix}/include/@NAMESPACE@
+
+Name: @MODULE_NAME@
+Description: Basic library to realize the glue between a proprietary plugin and the framework host.
+Version: 1.0
+Cflags: -I${includedir} @WCHAR_SUPPORT_DEFINITION@ @CRITICAL_SECTION_LOCK_DEFINITION@
+Libs: -L${libdir} -l@PLUGINS_ARTIFACT@ -l@WEBSOCKET_ARTIFACT@ -l@COM_ARTIFACT@ -l@TRACING_ARTIFACT@ -l@CRYPTALGO_ARTIFACT@ -l@CORE_ARTIFACT@

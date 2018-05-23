@@ -1,0 +1,169 @@
+{
+  "port": 9999,
+  "interface": "LAN",
+  "idletime": 60,
+  "ipv6": false,
+  "persistentpath": "D:/Projects/integraal/framework/persitent",
+  "datapath": "D:/Projects/integraal/framework/",
+  "systempath": "D:/Projects/integraal/framework/artifacts/Debug",
+  "proxystubpath": "D:/Projects/integraal/framework/artifacts/Debug/proxystubs",
+  "communicator": "127.0.0.1:7812",
+  "redirect": "Service/Controller/UI",
+  "plugins": [
+    {
+      "callsign": "Controller",
+      "configuration": {
+        "switch": {
+          "callsigns": [
+            "WebKitBrowser",
+            "YouTube",
+            "Netflix"
+          ],
+          "default": "WebKitBrowser"
+        }
+      }
+    },
+    {
+      "callsign": "WebServer",
+      "locator": "libwebserver.so",
+      "classname": "WebServer",
+      "autostart": false,
+      "configuration": {
+        "outofprocess": true
+      }
+    },
+    {
+      "callsign": "DeviceInfo",
+      "locator": "libdeviceinfo.so",
+      "classname": "DeviceInfo",
+      "autostart": true,
+      "configuration": {
+        "location": "external",
+        "identifier": "internal",
+        "time": "external"
+      }
+    },
+    {
+      "callsign": "TimeSync",
+      "locator": "libtimesync.so",
+      "classname": "TimeSync",
+      "autostart": true,
+      "configuration": {
+        "interval": 30,
+        "retries": 20,
+        "periodicity": 24,
+        "sources": [
+          "ntp://0.pool.ntp.org",
+          "ntp://1.pool.ntp.org",
+          "ntp://2.pool.ntp.org",
+          "ntp://3.pool.ntp.org"
+        ]
+      }
+    },
+    {
+      "callsign": "LocationSync",
+      "locator": "liblocationsync.so",
+      "classname": "LocationSync",
+      "autostart": true,
+      "configuration": {
+        "interval": 30,
+        "retries": 20,
+        "source": "jsonip.metrological.com:80"
+      }
+    },
+    {
+      "callsign": "BackOffice",
+      "locator": "libbackoffice.so",
+      "classname": "BackOffice",
+      "autostart": false,
+      "configuration": {
+        "server": "ws.metrological.com",
+        "port": 80,
+        "components": "",
+        "profiler": {
+          "testdata": "Hello world",
+          "moretest": 45
+        }
+      }
+    },
+    {
+      "callsign": "VoiceControl",
+      "locator": "libvoicecontrol.so",
+      "classname": "VoiceControl",
+      "autostart": false,
+      "configuration": {
+      }
+    },
+    {
+      "callsign": "DIALServer",
+      "locator": "libdialserver.so",
+      "classname": "DIALServer",
+      "autostart": false,
+      "configuration": {
+        "browser": "WebKitBrowser",
+        "name": "Metro DIAL server",
+        "model": "MetroRefBoard",
+        "manufacturer": "BroadCOM",
+        "description": "Dial server running on Metro's reference hardware.",
+        "apps": [
+          {
+            "name": "YouTube",
+            "allowstop": true,
+            "callsign": "WebKitBrowser",
+            "url": "https://www.youtube.com/tv",
+            "additionaldata": ""
+          },
+          {
+            "name": "Netflix",
+            "allowstop": false,
+            "callsign": "Netflix",
+            "url": "https://www.netflix.com",
+            "additionaldata": ""
+          }
+        ]
+      }
+    },
+    {
+      "callsign": "Tracing",
+      "locator": "libtracecontrol.so",
+      "classname": "TraceControl",
+      "autostart": true
+    },
+    {
+      "autostart": true,
+      "callsign": "WebKitBrowser",
+      "classname": "OutOfProcessTest",
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://webkit.org/tv",
+        "sleep": "720",
+        "compositor": "noaa",
+        "inspector": "0.0.0.0:9998",
+        "cookiestorage": "/root"
+      },
+      "locator": "liboutofprocesstest.so"
+    },
+    {
+      "autostart": false,
+      "callsign": "Netflix",
+      "classname": "OutOfProcessTest",
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "720"
+      },
+      "locator": "liboutofprocesstest.so"
+    },
+    {
+      "callsign": "YouTube",
+      "locator": "liboutofprocesstest.so",
+      "classname": "OutOfProcessTest",
+      "autostart": false,
+      "configuration": {
+        "outofprocess": false,
+        "url": "http://youtube.com/tv",
+        "sleep": "720"
+      }
+    }
+  ]
+}

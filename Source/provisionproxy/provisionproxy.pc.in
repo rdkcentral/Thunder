@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: provisionproxy 
+Description: Link the binairy encryption library and the communications channel to the encrypted provisioning store together.
+Version: 1.0
+Cflags: -u OpenSSLModule
+Libs: -L${libdir} -lprovisionproxy -lWPEFrameworkCore -lprovision -lcrypto
