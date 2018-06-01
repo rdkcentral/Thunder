@@ -15,96 +15,109 @@
 // ---- Helper functions ----
 namespace WPEFramework {
 namespace Core {
-namespace ASN1 {
-
-    // ===================================================================
-    // NOT THREAD SAFE !!!!! on RELEASE!!!!!
-    // ===================================================================
-    class Buffer {
+    class HeapStorage {
     private:
-        constexpr uint8_t AdminSize;
+        HeapStorage();
 
     public:
-        Buffer() : _buffer(nullptr) {
-        }
-        Buffer(const uint16_t length)
-            : _buffer(length == 0 ? nullptr : new uint8_t[length + AdminSize])
+        HeapStorage(const uint16_t length)
+            : _length(length)
+            , _buffer(new uint8_t[length])
         {
-            if (_buffer != nullptr) {
-                _buffer[0] = 1;
-                _buffer[1] = (length & 0xFF);
-                _buffer[2] = ((length >> 8) && 0xFF);
-                _buffer[3] = (length & 0xFF);
-                _buffer[4] = ((length >> 8) && 0xFF);
-            }
         }
-        Buffer(const Buffer& copy)
-            : _buffer(copy._buffer)
+        HeapStorage(const HeapStorage& copy)
+            : _length(copy._length)
+            , _buffer(new uint8_t[copy._length])
         {
-            AddRef();
         }
-        ~Buffer()
+        ~HeapStorage()
         {
-            Release();
         }
 
-        Buffer& operator=(const Buffer& RHS) {
-            if (&RHS != this) {
-                Release();
-                _buffer = RHS._buffer;
-                AddRef();
+        HeapStorage& operator=(const HeapStorage& RHS)
+        {
+            if (RHS.Size() >= _length) {
+                // We can increase....
+                delete[] _buffer;
+                _buffer = new uint8_t[RHS.Size()];
+                _length = RHS._length;
             }
+            ::memcpy(_buffer, RHS._buffer, RHS.Size());
             return (*this);
         }
 
     public:
-        inline void Size(const uint16_t length) {
-            ASSERT ( (_buffer != nullptr) && (length < ((_buffer[3] << 8) | _buffer[4])) );
-
-            if (_buffer != nullptr) {
-                _buffer[1] = (length & 0xFF);
-                _buffer[2] = ((length >> 8) && 0xFF);
-            }
-        }
-        inline uint16_t Size() const
+        inline uint32_t Size() const
         {
-            return (_buffer != nullptr ? (_buffer[2] << 8) | _buffer[1] : 0);
+            return (_length);
         }
         inline uint8_t& operator[](const uint32_t index)
         {
-            ASSERT((_buffer != nullptr) && (index < Size()));
-            return (_buffer[index + AdminSize]);
+            ASSERT((_buffer != nullptr) && (index < _length));
+            return (_buffer[index]);
         }
         inline const uint8_t& operator[](const uint32_t index) const
         {
-            ASSERT((_buffer != nullptr) && (index < Size()));
+            ASSERT((_buffer != nullptr) && (index < _length));
 
-            return (_buffer[index + AdminSize]);
+            return (_buffer[index]);
         }
 
     private:
-        void AddRef() {
-            if (_buffer != nullptr) {
-                _buffer[0] = _buffer[0] + 1;
-            }
-        }
-        void Release () {
-            if (_buffer != nullptr) {
-                if (_buffer[0] == 1) {
-                    delete _buffer;
-                }
-                else {
-                    _buffer[0] = _buffer[0] - 1;
-                }
-            }
-        }
- 
-    private:
+        uint32_t _length;
         uint8_t* _buffer;
     };
 
-    class OID {
+    template <const unsigned int STACKSIZE>
+    class StackStorage {
+    private:
+        StackStorage();
+
     public:
+        StackStorage(const uint16_t length)
+        {
+            ASSERT(length <= STACKSIZE);
+        }
+        StackStorage(const HeapStorage& copy)
+        {
+            ASSERT(copy.Size() <= STACKSIZE);
+        }
+        ~StackStorage()
+        {
+        }
+
+        StackStorage& operator=(const StackStorage& RHS)
+        {
+            ASSERT(RHS.Size() <= STACKSIZE);
+
+            return (*this);
+        }
+
+    public:
+        inline uint32_t Size() const
+        {
+            return (STACKSIZE);
+        }
+        inline uint8_t& operator[](const uint32_t index)
+        {
+            ASSERT(index < STACKSIZE);
+            return (_buffer[index]);
+        }
+        inline const uint8_t& operator[](const uint32_t index) const
+        {
+            ASSERT(index < STACKSIZE);
+
+            return (_buffer[index]);
+        }
+
+    private:
+        uint8_t _buffer[STACKSIZE];
+    };
+
+    template <typename STORAGE>
+    class OIDType {
+    public:
+        template <typename COPYSTORAGE>
         class IteratorType {
         public:
             IteratorType()
@@ -113,13 +126,13 @@ namespace ASN1 {
                 , _buffer(0)
             {
             }
-            IteratorType(const uint8_t copy[], const uint16_t length)
+            IteratorType(const COPYSTORAGE& copy, const uint16_t length)
                 : _length(length)
                 , _index(0xFFFF)
                 , _buffer(copy)
             {
             }
-            IteratorType(const IteratorType& copy)
+            IteratorType(const IteratorType<COPYSTORAGE>& copy)
                 : _length(copy._length)
                 , _index(copy._index)
                 , _buffer(copy._buffer)
@@ -129,7 +142,7 @@ namespace ASN1 {
             {
             }
 
-            IteratorType& operator=(const IteratorType& RHS)
+            IteratorType<COPYSTORAGE>& operator=(const IteratorType<COPYSTORAGE>& RHS)
             {
                 _length = RHS._length;
                 _index = RHS._index;
@@ -196,53 +209,55 @@ namespace ASN1 {
         private:
             uint16_t _length;
             uint16_t _index;
-            uint8_t* _buffer;
+            COPYSTORAGE _buffer;
         };
 
     public:
-        OID(const uint8_t identifier[], const uint16_t length)
-            : _length(length > sizeof(_buffer) ? sizeof(_buffer) : length)
+        OIDType(const uint8_t identifier[], const uint16_t length)
+            : _buffer(length)
         {
-            ::memcpy (_buffer, identifer, _length);
+            CopyBuffer(identifier, length);
         }
-        OID(const string& OID)
-            : _length(0)
+        OIDType(const string& OID, const uint16_t bufferLength = 256)
+            : _buffer(bufferLength)
+            , _length(0)
         {
-            uint16_t firstSet = ~0;
+            uint16_t firstSet = 0;
             uint16_t index = 0;
             uint32_t value = 0;
             uint16_t digits = 0;
             uint8_t base = 10;
 
-            // Decode the string
-            while (index < OID.length()) {
+            ASSERT(_buffer.length > 0);
+
+            // Encode the string
+            while ((index < OID.length()) && (_length != 0xFFFF)) {
                 if (OID[index] == '.') {
-                    if (firstSet == static_cast<uint16_t>(~0)) {
-                        if (firstSet >= 7) {
-                            break;
-                        }
+                    if (_length == 0) {
+                        _length = 1;
                         firstSet = value;
                     }
-                    else if (_length == 0) {
-                        if (value >= 40) {
-                            break;
-                        }
-                      
+                    else if (_length == 1) {
+                        _length = ((value < 40) && (firstSet < 7) ? 1 : 0xFFFF);
                         _buffer[0] = (firstSet * 40) + value;
-                        _length++;
-                    }
-                    else if (_length >= (sizeof(_buffer) - (value <= 127 ? 1 : 2))) {
-                        break;
-                    }
-                    else if (value <= 127) {
-                        _buffer[_length] = value;
-                        _length++;
                     }
                     else {
-                        _buffer[_length] = 0x80 | ((value >> 7) & 0xFF);
-                        _length++;
-                        _buffer[_length] = (value & 0x7F);
-                        _length++;
+                        _length = ((value <= 127 ? (_length < (_buffer.length - 1)) : (_length < (_buffer.length - 2))) ? _length : 0xFFFF);
+
+                        if (_length != 0xFFFF) {
+                            if (value <= 127) {
+                                _buffer[_length] = value;
+                                _length++;
+                            }
+                            else {
+                                _buffer[_length] = 0x80 | ((value >> 7) & 0xFF);
+                                _length++;
+                                _buffer[_length] = (value & 0x7F);
+                                _length++;
+
+                                _length = (value <= 0x7FFF ? _length : 0xFFFF);
+                            }
+                        }
                     }
                     // Store it we have a digit
                     value = 0;
@@ -265,19 +280,18 @@ namespace ASN1 {
                 index++;
             }
         }
-        OID(const OID& copy)
+        OIDType(const OIDType<STORAGE>& copy)
+            : _buffer(copy._buffer)
         {
-            ::memcpy (_buffer, RHS.Buffer, RHS._length);
-            _length = RHS._length;
+            CopyBuffer(&(copy._buffer[0]), copy._length);
         }
-        ~OID()
+        ~OIDType()
         {
         }
 
-        OID& operator=(const OID& RHS)
+        OIDType<STORAGE>& operator=(const OIDType<STORAGE>& RHS)
         {
-            ::memcpy (_buffer, RHS.Buffer, RHS._length);
-            _length = RHS._length;
+            _buffer = RHS.Buffer;
 
             return (*this);
         }
@@ -298,7 +312,7 @@ namespace ASN1 {
         inline string Text() const
         {
             string result;
-            IteratorType index(_buffer, _length);
+            IteratorType<STORAGE> index(_buffer, _length);
 
             while (index.Next() == true) {
                 string textValue;
@@ -318,22 +332,32 @@ namespace ASN1 {
             }
             return (result);
         }
-        inline bool operator==(const OID<STORAGE>& RHS) const
+        inline bool operator==(const OIDType<STORAGE>& RHS) const
         {
             return (RHS._length == _length ? (memcmp(&(_buffer[0]), &(RHS._buffer[0]), _length) == 0) : false);
         }
-        inline bool operator!=(const OID<STORAGE>& RHS) const
+        inline bool operator!=(const OIDType<STORAGE>& RHS) const
         {
             return (!operator==(RHS));
         }
 
     private:
-        uint8_t _buffer[255];
+        inline void CopyBuffer(const uint8_t identifier[], const uint16_t length)
+        {
+            ASSERT(_buffer.Length() >= length);
+            memcpy(_buffer, &(identifier[0]), length);
+            _length = length;
+        }
+
+    private:
+        STORAGE _buffer;
         uint16_t _length;
     };
 
-    class Sequence {
+    typedef OIDType<StackStorage<256> > StackOID;
 
+    template <typename STORAGE>
+    class ASN1SequenceType {
     public:
         /**
          * name ASN1 Error codes
@@ -384,33 +408,33 @@ namespace ASN1 {
         };
 
     public:
-        Sequence()
+        ASN1SequenceType()
             : _buffer(0)
             , _index(0)
             , _length(0)
         {
         }
-        Sequence(const Buffer& buffer, const uint16_t index = 0, const uint16_t length = ~0)
-            : _buffer(buffer)
-            , _index(index)
-            , _length(length == ~0 ? buffer.Length() : length)
+        ASN1SequenceType(const uint8_t buffer[], const uint16_t length)
+            : _buffer(length)
+            , _index(0)
+            , _length(0)
         {
+            CopyBuffer(&(buffer[0]), length);
         }
-        Sequence(const Sequence& copy)
+        ASN1SequenceType(const ASN1SequenceType<STORAGE>& copy)
             : _buffer(copy._buffer)
             , _index(copy._index)
             , _length(copy._length)
         {
+            CopyBuffer(&(copy._buffer[0]), copy.Length());
         }
-        ~Sequence()
+        ~ASN1SequenceType()
         {
         }
 
-        Sequence& operator=(const Sequence& RHS) {
-
-            _buffer = RHS_buffer;
-            _index = RHS._index;
-            _length = RHS._length;
+        ASN1SequenceType<STORAGE>& operator=(const ASN1SequenceType<STORAGE>& RHS)
+        {
+            _buffer = RHS._buffer;
 
             return (*this);
         }
@@ -448,13 +472,6 @@ namespace ASN1 {
 
             return (static_cast<enumType>(_buffer[_index]));
         }
-        inline const uint8_t* Data() const
-        {
-            ASSERT(IsValid() == true);
-
-            return (&(_buffer[_index+1]));
-        }
- 
         //-----------------------------------------------------
         // BOOLEAN to BOOL VALUE (8Bits)
         //-----------------------------------------------------
@@ -485,7 +502,7 @@ namespace ASN1 {
         //-----------------------------------------------------
         // INTEGER to SCALAR VALUE (16Bits)
         //-----------------------------------------------------
-        inline enumError Value(int16_t& value) const
+        inline enumError Value(signed short& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -494,7 +511,7 @@ namespace ASN1 {
             }
             return (Length() <= 2 ? ASN1_OK : ASN1_BUF_TOO_SMALL);
         }
-        inline enumError Value(uint16_t& value) const
+        inline enumError Value(unsigned short& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -506,7 +523,7 @@ namespace ASN1 {
         //-----------------------------------------------------
         // INTEGER to SCALAR VALUE (32Bits)
         //-----------------------------------------------------
-        inline enumError Value(uint32_t& value) const
+        inline enumError Value(unsigned int& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -521,7 +538,7 @@ namespace ASN1 {
             }
             return (Length() <= 4 ? ASN1_OK : ASN1_BUF_TOO_SMALL);
         }
-        inline enumError Value(int32_t& value) const
+        inline enumError Value(signed int& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -539,7 +556,7 @@ namespace ASN1 {
         //-----------------------------------------------------
         // INTEGER to SCALAR VALUE (64Bits)
         //-----------------------------------------------------
-        inline enumError Value(uint64_t& value) const
+        inline enumError Value(unsigned long long& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -566,7 +583,7 @@ namespace ASN1 {
             }
             return (Length() <= 8 ? ASN1_OK : ASN1_BUF_TOO_SMALL);
         }
-        inline enumError Value(int64_t& value) const
+        inline enumError Value(signed long long& value) const
         {
             ASSERT(Tag() == ASN1_INTEGER);
             value = _buffer[_index + 1];
@@ -596,10 +613,11 @@ namespace ASN1 {
         //-----------------------------------------------------
         // OID to OID class
         //-----------------------------------------------------
-        inline enumError Value(OID<MYSTORAGE>& value) const
+        template <typename MYSTORAGE>
+        inline enumError Value(OIDType<MYSTORAGE>& value) const
         {
             ASSERT(Tag() == ASN1_OID);
-            value = OID(&_buffer[_index + 1], Length());
+            value = OIDType<MYSTORAGE>(&_buffer[_index + 1], Length());
 
             return (ASN1_OK);
         }
@@ -616,21 +634,28 @@ namespace ASN1 {
         //-----------------------------------------------------
         // SEQUENCE to ASN1Sequence class
         //-----------------------------------------------------
-        inline enumError Value(Sequence& value) const
+        template <typename MYSTORAGE>
+        inline enumError Value(ASN1SequenceType<MYSTORAGE>& value) const
         {
             ASSERT(Tag() == ASN1_SEQUENCE);
-            value = Sequence(_buffer, index, length());
+            value = ASN1SequenceType<MYSTORAGE>(&(_buffer[_index + 1]), Length());
 
             return (ASN1_OK);
         }
 
     private:
-        Buffer _buffer;
+        inline void CopyBuffer(const uint8_t identifier[], const uint16_t length)
+        {
+            ASSERT(_buffer.Length() >= length);
+            memcpy(_buffer, &(identifier[0]), length);
+            _length = length;
+        }
+
+    private:
+        STORAGE _buffer;
         uint32_t _index;
         uint32_t _length;
     };
-
-}
 }
 }
 

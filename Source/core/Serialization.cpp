@@ -184,7 +184,7 @@ namespace Core {
         }
     }
 
-    uint16_t FromString(const string& newValue, uint8_t object[], uint16_t& length, const TCHAR* ignoreList)
+    uint16_t FromString(const string& newValue, uint8_t object[], uint16_t& length)
     {
         uint8_t state = 0;
         uint16_t index = 0;
@@ -193,25 +193,22 @@ namespace Core {
 
         while ((index < newValue.size()) && (filler < length)) {
             uint8_t converted;
-            TCHAR current = newValue[index++];
+            uint8_t current = newValue[index];
 
             if ((current >= 'A') && (current <= 'Z')) {
-                converted = (current - 'A');
+                converted = (newValue[index] - 'A');
             }
             else if ((current >= 'a') && (current <= 'z')) {
-                converted = (current - 'a' + 26);
+                converted = (newValue[index] - 'a' + 26);
             }
             else if ((current >= '0') && (current <= '9')) {
-                converted = (current - '0' + 52);
+                converted = (newValue[index] - '0' + 52);
             }
             else if (current == '+') {
                 converted = 62;
             }
             else if (current == '/') {
                 converted = 63;
-            }
-            else if ((ignoreList != nullptr) && (::strchr(ignoreList, current) != nullptr)) {
-                continue;
             }
             else {
                 break;
@@ -235,6 +232,7 @@ namespace Core {
                 object[filler++] = ((converted & 0x3F) | lastStuff);
                 state = 0;
             }
+            index++;
         }
         length = filler;
 
