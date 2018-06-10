@@ -711,6 +711,47 @@ namespace ProxyStubs {
 
             output.Number<IComposition::IClient*>(parameters.Implementation<IComposition>()->Client(reader.Text()));
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(
+                    channel, implementation, true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a proxy for PluginHost::IShell"), implementation);
+            } else {
+                writer.Number(parameters.Implementation<IComposition>()->Configure(proxy));
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void SetResolution(const ScreenResolution) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+
+            parameters.Implementation<IComposition>()->SetResolution(reader.Number<IComposition::ScreenResolution>());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual const ScreenResolution GetResolution() = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->GetResolution());
+        },
         nullptr
     };
     // IComposition interface stub definitions
@@ -1731,6 +1772,9 @@ namespace ProxyStubs {
         // virtual void Unregister(IComposition::INotification* notification) = 0;
         // virtual IClient* Client(const uint8_t index) = 0;
         // virtual IClient* Client(const string& name) = 0;
+        // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+        // virtual void SetResolution(const ScreenResolution) = 0;
+        // virtual const ScreenResolution GetResolution() = 0;
         virtual void Register(IComposition::INotification* notification)
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -1767,6 +1811,31 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             return (CreateProxy<IClient>(reader.Number<IClient*>()));
+        }
+
+        virtual uint32_t Configure(PluginHost::IShell* service)
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(service);
+            Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
+        }
+
+        virtual void SetResolution(const ScreenResolution format)
+        {
+            IPCMessage newMessage(BaseClass::Message(5));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IComposition::ScreenResolution>(format);
+            Invoke(newMessage);
+        }
+
+        virtual const ScreenResolution GetResolution()
+        {
+            IPCMessage newMessage(BaseClass::Message(6));
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return (reader.Number<IComposition::ScreenResolution>());
         }
     };
 
