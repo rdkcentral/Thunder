@@ -726,7 +726,7 @@ namespace ProxyStubs {
             ASSERT((proxy != nullptr) && "Failed to create proxy");
 
             if (proxy == nullptr) {
-                TRACE_L1(_T("Could not create a proxy for PluginHost::IShell"), implementation);
+                TRACE_L1(_T("Could not create a proxy for PluginHost::IShell: %p"), implementation);
             } else {
                 writer.Number(parameters.Implementation<IComposition>()->Configure(proxy));
                 if (proxy->Release() != Core::ERROR_NONE) {
