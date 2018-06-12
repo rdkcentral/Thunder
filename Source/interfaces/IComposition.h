@@ -9,6 +9,18 @@ namespace Exchange {
     struct IComposition : virtual public Core::IUnknown {
         enum { ID = 0x00000046 };
 
+        enum ScreenResolution {
+            ScreenResolution_Unknown = 0,
+            ScreenResolution_480i = 1,
+            ScreenResolution_480p = 2,
+            ScreenResolution_720p = 3,
+            ScreenResolution_720p50Hz = 4,
+            ScreenResolution_1080p24Hz = 5,
+            ScreenResolution_1080i50Hz = 6,
+            ScreenResolution_1080p50Hz = 7,
+            ScreenResolution_1080p60Hz = 8
+        };
+
         struct IClient : virtual public Core::IUnknown {
             enum { ID = 0x00000047 };
 
@@ -46,6 +58,13 @@ namespace Exchange {
         // As the previous method is just to iterate over all clients, it is
         // expected that the next method is used to actually aquire a IClient.
         virtual IClient* Client(const string& name) = 0;
+
+        virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+
+        // Set and get output resolution
+        virtual void SetResolution(const ScreenResolution) = 0;
+        virtual const ScreenResolution GetResolution() = 0;
+
     };
 }
 }
