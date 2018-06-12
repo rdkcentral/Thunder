@@ -192,7 +192,7 @@ public:
         const char* errorMessage) = 0;
 
     //Event fired on key status update
-    virtual void OnKeyStatusUpdate(const char* keyMessage) = 0;
+    virtual void OnKeyStatusUpdate(const char* keyMessage, const uint8_t* buffer, const uint8_t length) = 0;
 };
  
 // IMediaKeySession defines the MediaKeySession interface.
