@@ -20,6 +20,7 @@ namespace Exchange {
 
         virtual const TCHAR* Name() const = 0;
         virtual bool Pairing() = 0;
+        virtual bool Unpair(uint8_t bindingId) = 0;
         virtual uint32_t Callback(IKeyHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
         virtual string MetaData() const = 0;
