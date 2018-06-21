@@ -316,11 +316,11 @@ namespace ProxyStubs {
     // IWebDriver interface stub definitions
 
     //
-    // IPluginBluetooth interface stub definitions (interface/IPluginBluetooth.h)
+    // IBluetooth interface stub definitions (interface/IBluetooth.h)
     //
      ProxyStub::MethodHandler BluetoothStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            // virtual uint32 Configure(PluginHost::IShell* service) = 0;
+            // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
             RPC::Data::Frame::Writer writer(message->Response().Writer());
@@ -332,9 +332,9 @@ namespace ProxyStubs {
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not create a stub for Bluetooth: %p"), implementation);
-                writer.Number<uint32>(Core::ERROR_RPC_CALL_FAILED);
+                writer.Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
             } else {
-                writer.Number(parameters.Implementation<IPluginBluetooth>()->Configure(proxy));
+                writer.Number(parameters.Implementation<IBluetooth>()->Configure(proxy));
                 if (proxy->Release() != Core::ERROR_NONE) {
                     TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
                 }
@@ -343,42 +343,42 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // StartScan()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Boolean(message->Parameters().Implementation<IPluginBluetooth>()->StartScan());
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->StartScan());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // StopScan()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Boolean(message->Parameters().Implementation<IPluginBluetooth>()->StopScan());
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->StopScan());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // ShowDeviceList()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Text(message->Parameters().Implementation<IPluginBluetooth>()->ShowDeviceList());
+            response.Text(message->Parameters().Implementation<IBluetooth>()->ShowDeviceList());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Pair()
             RPC::Data::Frame::Writer response(message->Response().Writer());
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            response.Boolean(message->Parameters().Implementation<IPluginBluetooth>()->Pair(parameters.Text()));
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Pair(parameters.Text()));
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Connect()
             RPC::Data::Frame::Writer response(message->Response().Writer());
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            response.Boolean(message->Parameters().Implementation<IPluginBluetooth>()->Connect(parameters.Text()));
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Connect(parameters.Text()));
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Disconnect()
             RPC::Data::Frame::Writer response(message->Response().Writer());
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            response.Boolean(message->Parameters().Implementation<IPluginBluetooth>()->Disconnect(parameters.Text()));
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Disconnect(parameters.Text()));
         },
         nullptr
     };
-    // IPluginBluetooth interface stub definitions
+    // IBluetooth interface stub definitions
 
     //
-    // IPluginCDM interface stub definitions (interface/IPluginCDM.h)
+    // IOCDM interface stub definitions (interface/IOCDM.h)
     //
     ProxyStub::MethodHandler OpenCDMiStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -1253,7 +1253,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IGuide::INotification, GuideNotificationStubMethods, ProxyStub::UnknownStub> GuideNotificationStub;
     typedef ProxyStub::StubType<IWebDriver, WebDriverStubMethods, ProxyStub::UnknownStub> WebDriverStub;
     typedef ProxyStub::StubType<IContentDecryption, OpenCDMiStubMethods, ProxyStub::UnknownStub> OpenCDMiStub;
-    typedef ProxyStub::StubType<IPluginBluetooth, BluetoothStubMethods, ProxyStub::UnknownStub> BluetoothStub;
+    typedef ProxyStub::StubType<IBluetooth, BluetoothStubMethods, ProxyStub::UnknownStub> BluetoothStub;
     typedef ProxyStub::StubType<INetflix, NetflixStubMethods, ProxyStub::UnknownStub> NetflixStub;
     typedef ProxyStub::StubType<INetflix::INotification, NetflixNotificationStubMethods, ProxyStub::UnknownStub> NetflixNotificationStub;
     typedef ProxyStub::StubType<IResourceCenter, ResourceCenterStubMethods, ProxyStub::UnknownStub> ResourceCenterStub;
@@ -1590,7 +1590,7 @@ namespace ProxyStubs {
         }
     };
 
-    class BluetoothProxy : public ProxyStub::UnknownProxyType<IPluginBluetooth> {
+    class BluetoothProxy : public ProxyStub::UnknownProxyType<IBluetooth> {
     public:
         BluetoothProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
@@ -1601,13 +1601,13 @@ namespace ProxyStubs {
         {
         }
     public:
-        virtual uint32 Configure(PluginHost::IShell* service)
+        virtual uint32_t Configure(PluginHost::IShell* service)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<PluginHost::IShell*>(service);
             Invoke(newMessage);
-            return (newMessage->Response().Reader().Number<uint32>());
+            return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
         virtual bool StartScan()
@@ -2436,7 +2436,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IGuide::INotification, GuideNotificationProxy, GuideNotificationStub>();
             RPC::Administrator::Instance().Announce<IWebDriver, WebDriverProxy, WebDriverStub>();
             RPC::Administrator::Instance().Announce<IContentDecryption, OpenCDMiProxy, OpenCDMiStub>();
-            RPC::Administrator::Instance().Announce<IPluginBluetooth, BluetoothProxy, BluetoothStub>();
+            RPC::Administrator::Instance().Announce<IBluetooth, BluetoothProxy, BluetoothStub>();
             RPC::Administrator::Instance().Announce<INetflix, NetflixProxy, NetflixStub>();
             RPC::Administrator::Instance().Announce<INetflix::INotification, NetflixNotificationProxy, NetflixNotificationStub>();
             RPC::Administrator::Instance().Announce<IResourceCenter, ResourceCenterProxy, ResourceCenterStub>();
