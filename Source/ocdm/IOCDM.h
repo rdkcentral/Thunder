@@ -48,6 +48,14 @@ namespace OCDM {
             virtual void OnKeyStatusUpdate(const ISession::KeyStatus status) = 0;
         };
 
+        struct IKeyCallback : virtual public WPEFramework::Core::IUnknown {
+            IKeyCallback() {}
+
+            enum { ID = 0x00000013 };
+
+            virtual void StateChange(const uint8_t keyLength, const uint8_t keyId[], const KeyStatus status) = 0;
+        };
+
         enum { ID = 0x00000011 };
 
         virtual ~ISession(void) {}
@@ -71,6 +79,11 @@ namespace OCDM {
 
         //We are completely done with the session, it can be closed.
         virtual void Close() = 0;
+
+        //Make sure we can get KeyId changes and values..
+        virtual void Register (IKeyCallback* callback) = 0;
+        virtual void Unregister (IKeyCallback* callback) = 0;
+
     };
 
     struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
