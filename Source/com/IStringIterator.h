@@ -45,11 +45,20 @@ namespace RPC {
             , _index(0) {
             typename std::map<KEY,VALUE>::const_iterator index (container.begin());
             while (index != container.end()) {
-                _container.insert(index->first);
+                _container.push_back(index->first);
                 index++;
             }
             _iterator = _container.begin();
         }
+        StringIterator(IStringIterator* index) 
+            : _container()
+            , _index(0) {
+            while (index->Next() == true) {
+                _container.push_back(index->Current());
+            }
+            _iterator = _container.begin();
+        }
+ 
         ~StringIterator() {
         }
 
