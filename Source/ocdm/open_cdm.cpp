@@ -141,6 +141,7 @@ public:
             _remote->Release();
         }
         _singleton = nullptr;
+        TRACE_L1("Destructed the AccessorOCDM %p", this);
     }
 
 private:
@@ -277,9 +278,13 @@ private:
                 , _adminLock()
                 , _signal(false, true)
                 , _interested(0)
-                , _sessionKeys() {
+                , _sessionKeys()
+                , _busy(false) {
             }
             virtual ~DataExchange () {
+                if (_busy == true) {
+                    TRACE_L1("Destructed a DataExchange while still in progress. %p", this);
+                }
             }
 
         public:
@@ -357,6 +362,8 @@ private:
                 // different processes, start using the administartion space to share a lock.
                 _systemLock.Lock();
 
+                _busy = true;
+
                 if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
 
                     SetIV(ivDataLength, ivData);
@@ -377,6 +384,8 @@ private:
                     }
                 }
 
+                _busy = false;
+
                 _systemLock.Unlock();
 
                 return (ret);
@@ -391,6 +400,7 @@ private:
             mutable Core::Event _signal;
             mutable volatile uint32_t _interested;
             std::list<KeyId> _sessionKeys;
+            bool _busy;
         };
  
     public:
@@ -412,17 +422,16 @@ private:
                 _decryptSession = Core::Service<DataExchange>::Create<DataExchange>(_session->BufferId());
                 _session->Register (_decryptSession);
             }
-            TRACE_L1("Constructing the Session Client side: %p, (%p)", this, session);
         }
         virtual ~OpenCdmSession() {
-            TRACE_L1("Destructing the Session Client side: %p, (%p)", this, _session);
-           if (_session != nullptr) {
-                _session->Unregister (_decryptSession);
-                _session->Release();
-            }
             if (_decryptSession != nullptr) {
                 _decryptSession->Release();
             }
+            if (_session != nullptr) {
+                _session->Unregister (_decryptSession);
+                _session->Release();
+            }
+           TRACE_L1("Destructed the Session Client side: %p", this);
         }
 
     public:
@@ -476,6 +485,13 @@ private:
 
             // return ( WaitForUsableKey() ? _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) : TIMED_OUT);
             return ( _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) );
+        }
+        inline void Revoke (OCDM::ISession::ICallback* callback) {
+
+            ASSERT (_session != nullptr);
+            ASSERT (callback != nullptr);
+
+            return (_session->Revoke(callback));
         }
 
     protected:
@@ -590,7 +606,10 @@ private:
             }
         }
         virtual ~Session() {
-            OpenCdmSession::Session(nullptr);
+            if (OpenCdmSession::IsValid() == true) {
+                Revoke(&_sink);
+                OpenCdmSession::Session(nullptr);
+            }
         }
 
     public:
@@ -712,14 +731,12 @@ private:
     };
 
 OpenCdm::OpenCdm() : _implementation (AccessorOCDM::Instance()), _session(nullptr), _keySystem() {
-    TRACE_L1 ("Created an OpenCdm instance: %p", this);
 }
 
 OpenCdm::OpenCdm(const OpenCdm& copy) : _implementation (AccessorOCDM::Instance()), _session(copy._session), _keySystem(copy._keySystem) {
     
-    TRACE_L1 ("Created a copy of OpenCdm instance: %p", this);
-
     if (_session != nullptr) {
+        TRACE_L1 ("Created a copy of OpenCdm instance: %p", this);
         _session->AddRef();
     }
 }
@@ -740,7 +757,7 @@ OpenCdm::OpenCdm(const std::string& sessionId) : _implementation (AccessorOCDM::
         }
     }
     else {
-        TRACE_L1 ("Created an OpenCdm instance: %p from session %s, failed", this, sessionId.c_str());
+        TRACE_L1 ("Failed to create an OpenCdm instance: %p for session %s", this, sessionId.c_str());
     }
 }
 
@@ -760,14 +777,14 @@ OpenCdm::OpenCdm (const uint8_t keyId[], const uint8_t length)  : _implementatio
         }
     }
     else {
-        TRACE_L1 ("Created an OpenCdm instance: %p from keyId failed", this);
+        TRACE_L1 ("Failed to create an OpenCdm instance: %p for keyId failed", this);
     }
 }
 
 OpenCdm::~OpenCdm() {
-    TRACE_L1 ("Destructed an OpenCdm instance: %p", this);
     if (_session != nullptr) {
         _session->Release();
+        TRACE_L1 ("Destructed an OpenCdm instance: %p", this);
     }
     if (_implementation != nullptr) {
         _implementation->Release();
@@ -835,7 +852,7 @@ std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* a
 
         _session = newSession;
 
-        TRACE_L1("Created session started for keySystem %s, %p", _keySystem.c_str(), newSession);
+        TRACE_L1("Created an OpenCdm instance: %p for keySystem %s, %p", this, _keySystem.c_str(), newSession);
     }
     else {
         TRACE_L1("Creating session failed, there is no key system. %d", __LINE__);

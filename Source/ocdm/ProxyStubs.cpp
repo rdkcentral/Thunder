@@ -325,6 +325,25 @@ namespace WPEFramework {
                 message->Parameters().Implementation<OCDM::ISession>()->Unregister(proxy);
             }
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // 
+            // virtual void Revoke (OCDM::ISession::ICallback* callback) = 0;
+            //
+            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+
+            // Need to find the proxy that goes with the given implementation..
+            OCDM::ISession::ICallback* stub = reader.Number<OCDM::ISession::ICallback*>();
+
+            // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
+            OCDM::ISession::ICallback* proxy = RPC::Administrator::Instance().FindProxy<OCDM::ISession::ICallback>(stub);
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Coud not find stub for OCDM::ISession::ICallback: %p"), stub);
+            } else {
+                message->Parameters().Implementation<OCDM::ISession>()->Revoke(proxy);
+            }
+        },
  
         nullptr
     };
@@ -631,7 +650,17 @@ namespace WPEFramework {
 
             Invoke(newMessage);
         }
- 
+        //
+        // Revoke the Session Callback for change notifications
+        //
+        virtual void Revoke (OCDM::ISession::ICallback* callback) {
+
+            IPCMessage newMessage(BaseClass::Message(8));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number(callback);
+
+            Invoke(newMessage);
+        }
     };
  
     // -------------------------------------------------------------------------------------------

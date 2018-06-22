@@ -84,6 +84,8 @@ namespace OCDM {
         virtual void Register (IKeyCallback* callback) = 0;
         virtual void Unregister (IKeyCallback* callback) = 0;
 
+        //During instantiation a callback is set, here we can decouple.
+        virtual void Revoke (OCDM::ISession::ICallback* callback) = 0;
     };
 
     struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {

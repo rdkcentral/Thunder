@@ -4,6 +4,7 @@ add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
         ITracing.cpp
+        IStringIterator.cpp
         IUnknown.cpp
         Module.cpp
         )

@@ -2,6 +2,9 @@ set(TARGET Protocols)
 
 find_package(ZLIB REQUIRED)
 
+# Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
+# new source file again. This is in case CMAKE forgets :-)
+
 set(SOURCES_COM
         com/Administrator.h
         com/com.h
@@ -13,6 +16,7 @@ set(SOURCES_COM
         com/Administrator.cpp
         com/Communicator.cpp
         com/ITracing.cpp
+        com/IStringIterator.cpp
         com/IUnknown.cpp
         com/IStringIterator.h
         )
@@ -75,6 +79,7 @@ add_library(${TARGET} SHARED
         WebSocketLink.cpp
         Administrator.cpp
         Communicator.cpp
+        IStringIterator.cpp
         )
 
 target_link_libraries(${TARGET}
