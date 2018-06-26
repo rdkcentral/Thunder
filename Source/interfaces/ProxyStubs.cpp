@@ -375,8 +375,17 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Disconnect()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Disconnect(parameters.Text()));
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Disconnect());
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // IsScanning()
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->IsScanning());
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // Connected()
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Text(message->Parameters().Implementation<IBluetooth>()->Connected());
         },
         nullptr
     };
@@ -1673,15 +1682,31 @@ namespace ProxyStubs {
             return reader.Boolean();
         }
 
-        virtual bool Disconnect(string deviceId)
+        virtual bool Disconnect()
         {
             IPCMessage newMessage(BaseClass::Message(7));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(deviceId);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             return reader.Boolean();
+        }
+
+        virtual bool IsScanning()
+        {
+            IPCMessage newMessage(BaseClass::Message(8));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Boolean();
+        }
+
+        virtual string Connected()
+        {
+            IPCMessage newMessage(BaseClass::Message(9));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Text();
         }
     };
 
