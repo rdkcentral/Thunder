@@ -303,6 +303,10 @@ namespace WPEFramework {
             }
 
             message->Parameters().Implementation<OCDM::ISession>()->Register(proxy);
+
+            if (proxy != nullptr) {
+                proxy->Release();
+            }
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
