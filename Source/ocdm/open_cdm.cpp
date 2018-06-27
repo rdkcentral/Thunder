@@ -273,18 +273,66 @@ private:
             };
 
         public:
-            DataExchange (const string& bufferName)
+            DataExchange (const string& bufferName, OCDM::ISession* session)
                 : OCDM::DataExchange (bufferName)
                 , _adminLock()
                 , _signal(false, true)
                 , _interested(0)
                 , _sessionKeys()
+                , _session(session)
                 , _busy(false) {
+
+                TRACE_L1("Constructing buffer client side: %p - %s", this, bufferName.c_str());
+                if (_session != nullptr) {
+                    _session->Register (this);
+                    _session->AddRef();
+                }
+            }
+
+            static DataExchange* Instance(const string& bufferName, OCDM::ISession* session) {
+                DataExchange* result = nullptr;
+
+                _systemLock.Lock();
+                
+                std::list<DataExchange*>::iterator index (_activeBuffers.begin());
+
+                while ((index != _activeBuffers.end()) && ((*index)->Name() != bufferName)) { index++; }
+
+                if(index != _activeBuffers.end()) {
+                    result = *index;
+                    result->AddRef();
+                }
+                else {
+                    result = Core::Service<DataExchange>::Create<DataExchange>(bufferName, session);
+                    _activeBuffers.push_front(result); 
+                }
+
+                _systemLock.Unlock();
+
+                return (result);
             }
             virtual ~DataExchange () {
                 if (_busy == true) {
                     TRACE_L1("Destructed a DataExchange while still in progress. %p", this);
                 }
+                TRACE_L1("Destructing buffer client side: %p - %s", this, OCDM::DataExchange::Name().c_str());
+
+                _systemLock.Lock();
+
+                if (_session != nullptr) {
+                    _session->Unregister (this);
+                    _session->Release();
+                }
+                std::list<DataExchange*>::iterator index (std::find(_activeBuffers.begin(), _activeBuffers.end(), this));
+
+                if(index != _activeBuffers.end()) {
+                    _activeBuffers.erase(index);
+                }
+                else {
+                    TRACE_L1("Destructing a buffer object that was not registered. %d", __LINE__);
+                }
+
+                _systemLock.Unlock();
             }
 
         public:
@@ -400,7 +448,9 @@ private:
             mutable Core::Event _signal;
             mutable volatile uint32_t _interested;
             std::list<KeyId> _sessionKeys;
+            OCDM::ISession* _session;
             bool _busy;
+            static std::list<DataExchange*> _activeBuffers;
         };
  
     public:
@@ -419,8 +469,7 @@ private:
 
             if (_session != nullptr) {
                 _session->AddRef();
-                _decryptSession = Core::Service<DataExchange>::Create<DataExchange>(_session->BufferId());
-                _session->Register (_decryptSession);
+                _decryptSession = DataExchange::Instance(_session->BufferId(), _session);
             }
         }
         virtual ~OpenCdmSession() {
@@ -428,7 +477,6 @@ private:
                 _decryptSession->Release();
             }
             if (_session != nullptr) {
-                _session->Unregister (_decryptSession);
                 _session->Release();
             }
            TRACE_L1("Destructed the Session Client side: %p", this);
@@ -456,7 +504,6 @@ private:
             return (_session != nullptr ? _session->Status() : OCDM::ISession::StatusPending);
         }
         inline void Close() {
-
             ASSERT (_session != nullptr);
 
             _session->Close();
@@ -769,8 +816,10 @@ OpenCdm::OpenCdm (const uint8_t keyId[], const uint8_t length)  : _implementatio
 
         if (entry != nullptr) {
             _session = new OpenCdmSession(entry);
-            TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
+            // TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
+	    printf("Just after the release.\n");
             entry->Release();
+	    printf("Just after the release.\n");
         }
         else {
             TRACE_L1 ("Failed to create an OpenCdm instance, for keyId [%d]", __LINE__);
