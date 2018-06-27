@@ -266,6 +266,18 @@ private:
                 ::OCDM::ISession::KeyStatus Status () const {
                     return (_status);
                 }
+                string ToString() const {
+                    static TCHAR HexArray[] = "0123456789ABCDEF";
+                    string result(1, HexArray[(_kid[0] >> 4) & 0xF]);
+                           result += HexArray[_kid[0] & 0xF];
+
+                    for (uint8_t index = 1; index < sizeof(_kid); index++) {
+                        result += ':';
+                        result += HexArray[(_kid[index] >> 4) & 0xF];
+                        result += HexArray[_kid[index] & 0xF];
+                    }
+                    return (result);
+                }
 
             private:
                 uint8_t _kid[16];
@@ -280,18 +292,21 @@ private:
                 , _interested(0)
                 , _sessionKeys()
                 , _busy(false) {
+
+                TRACE_L1("Constructing buffer client side: %p - %s", this, bufferName.c_str());
             }
             virtual ~DataExchange () {
                 if (_busy == true) {
                     TRACE_L1("Destructed a DataExchange while still in progress. %p", this);
                 }
+                TRACE_L1("Destructing buffer client side: %p - %s", this, OCDM::DataExchange::Name().c_str());
             }
 
         public:
             virtual void StateChange(const uint8_t keyLength, const uint8_t keyId[], const OCDM::ISession::KeyStatus status) override {
                 std::list<KeyId>::iterator index (_sessionKeys.begin());
                 KeyId paramKey (keyId, keyLength, status);
-                while ((index != _sessionKeys.end()) && (*index == paramKey)) { index++; }
+                while ((index != _sessionKeys.end()) && (*index != paramKey)) { index++; }
 
                 _adminLock.Lock();
 
@@ -324,7 +339,8 @@ private:
                     _adminLock.Lock();
 
                     std::list<KeyId>::const_iterator index (_sessionKeys.begin());
-                    while ((index != _sessionKeys.end()) && (*index == paramKey)) { index++; }
+
+                    while ((index != _sessionKeys.end()) && (*index != paramKey)) { index++; }
 
                     if (index != _sessionKeys.end()) {
                         result = (index->Status() == OCDM::ISession::Usable);
@@ -335,7 +351,12 @@ private:
 
                         _adminLock.Unlock();
 
-                        TRACE_L1("Waiting for the key to become Usable. %d", __LINE__);
+                        if (index != _sessionKeys.end()) {
+                            TRACE_L1("Waiting for KeyId: %s, current: %d", paramKey.ToString().c_str(), index->Status());
+                        }
+                        else {
+                            TRACE_L1("Waiting for KeyId: %s, current: <Not Found>", paramKey.ToString().c_str());
+                        }
 
                         uint64_t now (Core::Time::Now().Ticks());
 
@@ -425,10 +446,12 @@ private:
         }
         virtual ~OpenCdmSession() {
             if (_decryptSession != nullptr) {
+                if (_session != nullptr) {
+                    _session->Unregister (_decryptSession);
+                }
                 _decryptSession->Release();
             }
             if (_session != nullptr) {
-                _session->Unregister (_decryptSession);
                 _session->Release();
             }
            TRACE_L1("Destructed the Session Client side: %p", this);
@@ -456,7 +479,6 @@ private:
             return (_session != nullptr ? _session->Status() : OCDM::ISession::StatusPending);
         }
         inline void Close() {
-
             ASSERT (_session != nullptr);
 
             _session->Close();
@@ -483,8 +505,12 @@ private:
         uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength) {
             ASSERT (_decryptSession != nullptr);
 
-            // return ( WaitForUsableKey() ? _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) : TIMED_OUT);
             return ( _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) );
+        }
+        uint32_t Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], const uint32_t waitTime) {
+            ASSERT (_decryptSession != nullptr);
+
+            return ( _decryptSession->WaitForUsableKey(keyIdLength, keyId, waitTime) ? _decryptSession->Decrypt(encrypted, encryptedLength, IV, IVLength) : Core::ERROR_TIMEDOUT);
         }
         inline void Revoke (OCDM::ISession::ICallback* callback) {
 
@@ -769,7 +795,7 @@ OpenCdm::OpenCdm (const uint8_t keyId[], const uint8_t length)  : _implementatio
 
         if (entry != nullptr) {
             _session = new OpenCdmSession(entry);
-            TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
+            // TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
             entry->Release();
         }
         else {
@@ -937,6 +963,12 @@ uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, co
     ASSERT (_session != nullptr);
 
     return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength));
+}
+
+uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], const uint32_t waitTime) {
+    ASSERT (_session != nullptr);
+
+    return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength, keyIdLength, keyId, waitTime));
 }
 
 } // namespace media

@@ -208,13 +208,11 @@ namespace WPEFramework {
             //    const enum KeyStatus) = 0; //__in_z_opt
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            OCDM::ISession::KeyStatus status = parameters.Number<OCDM::ISession::KeyStatus>();
             const uint8_t* buffer;
             uint8_t length = parameters.LockBuffer<uint8_t>(buffer);
-            OCDM::ISession::KeyStatus status = parameters.Number<OCDM::ISession::KeyStatus>();
-
-            message->Parameters().Implementation<OCDM::ISession::IKeyCallback>()->StateChange(length, buffer, status);
-
             parameters.UnlockBuffer(length);
+            message->Parameters().Implementation<OCDM::ISession::IKeyCallback>()->StateChange(length, buffer, status);
         },
         nullptr
     };
@@ -305,6 +303,10 @@ namespace WPEFramework {
             }
 
             message->Parameters().Implementation<OCDM::ISession>()->Register(proxy);
+
+            if (proxy != nullptr) {
+                proxy->Release();
+            }
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -540,8 +542,8 @@ namespace WPEFramework {
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Buffer(keyLength, keyId);
             writer.Number(status);
+            writer.Buffer(keyLength, keyId);
             Invoke(newMessage);
         }
     };
