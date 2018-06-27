@@ -284,7 +284,6 @@ private:
 
                 TRACE_L1("Constructing buffer client side: %p - %s", this, bufferName.c_str());
                 if (_session != nullptr) {
-                    _session->Register (this);
                     _session->AddRef();
                 }
             }
@@ -304,6 +303,7 @@ private:
                 }
                 else {
                     result = Core::Service<DataExchange>::Create<DataExchange>(bufferName, session);
+                    session->Register (result);
                     _activeBuffers.push_front(result); 
                 }
 
@@ -780,6 +780,8 @@ private:
         OCDM::ISession::KeyStatus _key;
         std::string _sessionId;
     };
+
+/* statici */ std::list<OpenCdmSession::DataExchange*> OpenCdmSession::DataExchange::_activeBuffers;
 
 OpenCdm::OpenCdm() : _implementation (AccessorOCDM::Instance()), _session(nullptr), _keySystem() {
 }
