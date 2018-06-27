@@ -530,8 +530,12 @@ private:
         uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength) {
             ASSERT (_decryptSession != nullptr);
 
-            // return ( WaitForUsableKey() ? _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) : TIMED_OUT);
             return ( _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) );
+        }
+        uint32_t Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], const uint32_t waitTime) {
+            ASSERT (_decryptSession != nullptr);
+
+            return ( _decryptSession->WaitForUsableKey(keyIdLength, keyId, waitTime) ? _decryptSession->Decrypt(encrypted, encryptedLength, IV, IVLength) : Core::ERROR_TIMEDOUT);
         }
         inline void Revoke (OCDM::ISession::ICallback* callback) {
 
@@ -986,6 +990,12 @@ uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, co
     ASSERT (_session != nullptr);
 
     return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength));
+}
+
+uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], const uint32_t waitTime) {
+    ASSERT (_session != nullptr);
+
+    return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength, keyIdLength, keyId, waitTime));
 }
 
 } // namespace media
