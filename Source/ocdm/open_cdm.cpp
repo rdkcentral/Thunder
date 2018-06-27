@@ -372,7 +372,7 @@ private:
                     _adminLock.Lock();
 
                     std::list<KeyId>::const_iterator index (_sessionKeys.begin());
-                    while ((index != _sessionKeys.end()) && (*index == paramKey)) { index++; }
+                    while ((index != _sessionKeys.end()) && (*index != paramKey)) { index++; }
 
                     if (index != _sessionKeys.end()) {
                         result = (index->Status() == OCDM::ISession::Usable);
