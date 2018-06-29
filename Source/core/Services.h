@@ -283,7 +283,7 @@ namespace Core {
         ~Sink()
         {
             if (_referenceCount != 0) {
-                TRACE_L1("Oops this is scary, destructing a sink that still is being refered by something. %d", __LINE__);
+                TRACE_L1("Oops this is scary, destructing a (%s) sink that still is being refered by something", typeid(ACTUALSINK).name());
             }
         }
 

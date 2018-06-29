@@ -118,6 +118,7 @@ public:
   KeyStatus Status() const;
 
   uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
+  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, const uint8_t, const uint8_t[], const uint32_t waitTime = 6000);
 
   inline const std::string& KeySystem() const {
     return (_keySystem);
