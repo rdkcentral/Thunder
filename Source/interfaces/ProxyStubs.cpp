@@ -341,9 +341,9 @@ namespace ProxyStubs {
             }
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
-            // StartScan()
+            // Scan()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Boolean(message->Parameters().Implementation<IBluetooth>()->StartScan());
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Scan());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // StopScan()
@@ -351,9 +351,14 @@ namespace ProxyStubs {
             response.Boolean(message->Parameters().Implementation<IBluetooth>()->StopScan());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
-            // ShowDeviceList()
+            // DiscoveredDevices()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Text(message->Parameters().Implementation<IBluetooth>()->ShowDeviceList());
+            response.Text(message->Parameters().Implementation<IBluetooth>()->DiscoveredDevices());
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // PairedDevices()
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Text(message->Parameters().Implementation<IBluetooth>()->PairedDevices());
         },
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Pair()
@@ -370,8 +375,17 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             // Disconnect()
             RPC::Data::Frame::Writer response(message->Response().Writer());
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Disconnect(parameters.Text()));
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->Disconnect());
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // IsScanning()
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Boolean(message->Parameters().Implementation<IBluetooth>()->IsScanning());
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // Connected()
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Text(message->Parameters().Implementation<IBluetooth>()->Connected());
         },
         nullptr
     };
@@ -1610,7 +1624,7 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual bool StartScan()
+        virtual bool Scan()
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
@@ -1628,7 +1642,7 @@ namespace ProxyStubs {
             return reader.Boolean();
         }
 
-        virtual string ShowDeviceList()
+        virtual string DiscoveredDevices()
         {
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
@@ -1637,18 +1651,16 @@ namespace ProxyStubs {
             return reader.Text();
         }
 
-        virtual bool Pair(string deviceId)
+        virtual string PairedDevices()
         {
             IPCMessage newMessage(BaseClass::Message(4));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(deviceId);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            return reader.Boolean();
+            return reader.Text();
         }
 
-        virtual bool Connect(string deviceId)
+        virtual bool Pair(string deviceId)
         {
             IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -1659,7 +1671,7 @@ namespace ProxyStubs {
             return reader.Boolean();
         }
 
-        virtual bool Disconnect(string deviceId)
+        virtual bool Connect(string deviceId)
         {
             IPCMessage newMessage(BaseClass::Message(6));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -1668,6 +1680,33 @@ namespace ProxyStubs {
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             return reader.Boolean();
+        }
+
+        virtual bool Disconnect()
+        {
+            IPCMessage newMessage(BaseClass::Message(7));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Boolean();
+        }
+
+        virtual bool IsScanning()
+        {
+            IPCMessage newMessage(BaseClass::Message(8));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Boolean();
+        }
+
+        virtual string Connected()
+        {
+            IPCMessage newMessage(BaseClass::Message(9));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Text();
         }
     };
 

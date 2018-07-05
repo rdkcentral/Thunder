@@ -2,6 +2,7 @@
 #define _BLUETOOTH_H
 
 #include "Module.h"
+#include <string>
 
 namespace WPEFramework {
 
@@ -14,12 +15,15 @@ namespace Exchange {
 
         virtual ~IBluetooth() {}
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-        virtual bool StartScan() = 0;
+        virtual bool Scan() = 0;
         virtual bool StopScan() = 0;
-        virtual string ShowDeviceList() = 0;
+        virtual string DiscoveredDevices() = 0;
+        virtual string PairedDevices() = 0;
         virtual bool Pair(string) = 0;
         virtual bool Connect(string) = 0;
-        virtual bool Disconnect(string) = 0;
+        virtual bool Disconnect() = 0;
+        virtual bool IsScanning() = 0;
+        virtual string Connected() = 0;
     };
 
 } }
