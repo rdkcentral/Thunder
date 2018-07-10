@@ -11,7 +11,7 @@ namespace Exchange {
     // This interface gives direct access to a Blutooth server instance, running as a plugin in the framework.
     struct IBluetooth : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000068 };
+        enum { ID = 0x00000070 };
 
         virtual ~IBluetooth() {}
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
