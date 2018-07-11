@@ -4,10 +4,16 @@
 #include "Module.h"
 #include "Portability.h"
 
+#ifndef  __WIN32__
+  #include <syslog.h>
+#endif
+
 #ifdef __WIN32__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
+#define ASSERT_LOGGER(message, ...) fprintf(stderr, message, __VA_ARGS__);
 #else
 #define TRACE_PROCESS_ID ::getpid()
+#define ASSERT_LOGGER(message, ...) ::syslog(LOG_CRIT, message, __VA_ARGS__);
 #endif
 
 #ifndef _TRACE_LEVEL
@@ -71,7 +77,7 @@
 
 #define ASSERT(x) {												\
     if (!(x)) {													\
-        fprintf(stderr, "===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n", TRACE_PROCESS_ID, __FILE__, __LINE__);	\
+        ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n", TRACE_PROCESS_ID, __FILE__, __LINE__)	\
         DumpCallStack();											\
         assert(x);												\
     }														\
@@ -79,7 +85,7 @@
 
 #define ASSERT_VERBOSE(x, y, ...) {														\
     if (!(x)) {																	\
-        fprintf(stderr, "===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n         " #y "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, __VA_ARGS__);	\
+        ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n         " #y "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, __VA_ARGS__)	\
         DumpCallStack();															\
         assert(x);																\
     }																		\
