@@ -1242,16 +1242,11 @@ namespace ProxyStubs {
     };
     ProxyStub::MethodHandler PlayGigaStubMethods[] = {
        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //virtual void Start(const string& game, const string& token);
+            //virtual void Launch(const string& game, const string& token);
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             const string game(parameters.Text());
             const string token(parameters.Text());
-            message->Parameters().Implementation<IPlayGiga>()->Start(game, token);
-        },
-        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //virtual void Stop();
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            message->Parameters().Implementation<IPlayGiga>()->Stop();
+            message->Parameters().Implementation<IPlayGiga>()->Launch(game, token);
         },
 
         nullptr
@@ -2451,7 +2446,7 @@ namespace ProxyStubs {
         }
 
     public:
-        virtual void Start(const string& game, const string& token)
+        virtual void Launch(const string& game, const string& token)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2459,13 +2454,6 @@ namespace ProxyStubs {
             writer.Text(token);
             Invoke(newMessage);
         }
-
-        virtual void Stop()
-        {
-            IPCMessage newMessage(BaseClass::Message(1));
-            Invoke(newMessage);
-        }
-
     };
 
     class PowerProxy : public ProxyStub::UnknownProxyType<IPower> {
