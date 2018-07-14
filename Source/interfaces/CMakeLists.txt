@@ -5,6 +5,7 @@ add_library(${TARGET} SHARED
         )
 
 set(PUBLIC_HEADERS
+        IAVNClient.h
         IBluetooth.h
         IBrowser.h
         ICapture.h
