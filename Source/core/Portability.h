@@ -336,6 +336,9 @@ inline void SleepS(unsigned int a_Time)
 
 #if defined(_DEBUG) || !defined(NDEBUG)
 #define __DEBUG__
+#ifdef PRODUCTION
+#error "Productiona and Debug is not a good match. Select Production or Debug, not both !!"
+#endif
 #endif
 
 #ifdef __LINUX__
