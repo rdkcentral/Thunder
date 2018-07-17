@@ -47,9 +47,8 @@ namespace WPEFramework {
 
             const uint8_t* keyData;
             uint8_t keyDataLength = parameters.LockBuffer<uint8_t>(keyData);
-            uint32_t waitTime = parameters.Number<uint32_t>();
 
-            response.Number<OCDM::ISession*> (message->Parameters().Implementation<OCDM::IAccessorOCDM>()->Session(keyData, keyDataLength, waitTime));
+            response.Number<OCDM::ISession*> (message->Parameters().Implementation<OCDM::IAccessorOCDM>()->Session(keyData, keyDataLength));
 
             parameters.UnlockBuffer(keyDataLength);
         },
@@ -375,7 +374,7 @@ namespace WPEFramework {
     };
 
     typedef ProxyStub::StubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods, ProxyStub::UnknownStub> AccessorOCDMStub;
-    typedef ProxyStub::StubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMiNotificationStubMethods, ProxyStub::UnknownStub> AccessorOCDMNotificationStub;
+    typedef ProxyStub::StubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMNotificationStubMethods, ProxyStub::UnknownStub> AccessorOCDMNotificationStub;
     typedef ProxyStub::StubType<OCDM::ISession::ICallback, CallbackStubMethods, ProxyStub::UnknownStub> CallbackStub;
     typedef ProxyStub::StubType<OCDM::ISession, SessionStubMethods, ProxyStub::UnknownStub> SessionStub;
 
@@ -424,13 +423,11 @@ namespace WPEFramework {
         }
         virtual OCDM::ISession* Session (
             const uint8_t keyId[],
-            const uint8_t keyIdLength,
-            const uint32_t waitTime) {
+            const uint8_t keyIdLength) {
 
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Buffer(keyIdLength, keyId);
-            writer.Number(waitTime);
  
             Invoke(newMessage);
 

@@ -84,7 +84,7 @@ namespace OCDM {
 
             enum { ID = 0x00000011 };
 
-            virtual INotification () {}
+            virtual ~INotification () {}
 
             virtual void Create(const string& sessionId) = 0;
             virtual void Destroy(const string& sessionId) = 0;
@@ -126,7 +126,13 @@ namespace OCDM {
             const std::string sessionId) = 0;
 
         virtual ISession* Session(
-            const uint8_t keyId[], const uint8_t length, const uint32_t waitTime) = 0;
+            const uint8_t keyId[], const uint8_t length) = 0;
+
+        virtual bool WaitForKey (
+            const uint8_t keyLength, 
+            const uint8_t keyId[], 
+            const uint32_t waitTime, 
+            const OCDM::ISession::KeyStatus status) const;
     };
 }
 
