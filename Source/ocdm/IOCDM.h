@@ -127,12 +127,6 @@ namespace OCDM {
 
         virtual ISession* Session(
             const uint8_t keyId[], const uint8_t length) = 0;
-
-        virtual bool WaitForKey (
-            const uint8_t keyLength, 
-            const uint8_t keyId[], 
-            const uint32_t waitTime, 
-            const OCDM::ISession::KeyStatus status) const;
     };
 }
 

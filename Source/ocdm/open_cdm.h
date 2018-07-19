@@ -48,14 +48,9 @@
 #include <stdint.h>
 #include <list>
 
-namespace OCDM {
-
-struct IAccessorOCDM;
-
-}
-
 namespace media {
 
+class AccessorOCDM;
 class OpenCdmSession;
 
 class OpenCdm {
@@ -126,7 +121,7 @@ public:
 
 
 private:
-  OCDM::IAccessorOCDM* _implementation;
+  AccessorOCDM* _implementation;
   OpenCdmSession* _session;
   std::string _keySystem;
 };

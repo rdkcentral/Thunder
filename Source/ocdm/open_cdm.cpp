@@ -209,7 +209,7 @@ private:
     }
 
 public:
-    static OCDM::IAccessorOCDM* Instance () {
+    static AccessorOCDM* Instance () {
 
         _systemLock.Lock();
 
@@ -218,6 +218,9 @@ public:
 
             if (result->_remote != nullptr) {
                 _singleton = result;
+            }
+            else {
+                delete result;
             }
         } 
         else {
@@ -235,7 +238,7 @@ public:
         _singleton = nullptr;
         TRACE_L1("Destructed the AccessorOCDM %p", this);
     }
-    virtual bool WaitForKey (const uint8_t keyLength, const uint8_t keyId[], const uint32_t waitTime, const OCDM::ISession::KeyStatus status) const {
+    bool WaitForKey (const uint8_t keyLength, const uint8_t keyId[], const uint32_t waitTime, const OCDM::ISession::KeyStatus status) const {
         bool result = false;
         KeyId paramKey (keyId, keyLength);
         uint64_t timeOut (Core::Time::Now().Add(waitTime).Ticks());
