@@ -295,8 +295,8 @@ public:
 
         return (result);
     }
- 
-private:
+
+public:
     virtual void AddRef() const override {
         Core::InterlockedIncrement(_refCount);
     }
@@ -515,7 +515,7 @@ private:
     public:
         OpenCdmSession()
             : _session(nullptr)
-            , _decryptSession(nullptr)
+            , _decryptSession(string())
             , _refCount(1) {
             TRACE_L1("Constructing the Session Client side: %p, (nil)", this);
         }
@@ -583,7 +583,6 @@ private:
             _session->Update(pbResponse, cbResponse);
         }
         uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength) {
-            ASSERT (_decryptSession != nullptr);
 
             return ( _decryptSession.Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) );
         }
@@ -862,26 +861,6 @@ OpenCdm::OpenCdm(const std::string& sessionId) : _implementation (AccessorOCDM::
     }
 }
 
-OpenCdm::OpenCdm (const uint8_t keyId[], const uint8_t length)  : _implementation (AccessorOCDM::Instance()), _session(nullptr), _keySystem() {
-
-    if (_implementation != nullptr) {
-
-        OCDM::ISession* entry = _implementation->Session(keyId, length);
-
-        if (entry != nullptr) {
-            _session = new OpenCdmSession(entry);
-            // TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
-            entry->Release();
-        }
-        else {
-            TRACE_L1 ("Session not yet available, maybe we need to wait for it [%d]", __LINE__);
-        }
-    }
-    else {
-        TRACE_L1 ("Failed to create an OpenCdm instance: %p for keyId failed", this);
-    }
-}
-
 OpenCdm::~OpenCdm() {
     if (_session != nullptr) {
         _session->Release();
@@ -897,6 +876,16 @@ OpenCdm::~OpenCdm() {
 // ---------------------------------------------------------------------------------------------
 // Before instantiating the ROOT DRM OBJECT, Check if it is capable of decrypting the requested
 // asset.
+bool OpenCdm::GetSession (const uint8_t keyId[], const uint8_t length, const uint32_t waitTime) {
+
+    if ( (_session == nullptr) && (_implementation != nullptr) &&
+            (_implementation->WaitForKey (length, keyId, waitTime, OCDM::ISession::Usable) == true) ) {
+        _session = new OpenCdmSession(_implementation->Session(keyId, length));
+    }
+
+    return (_session != nullptr);
+}
+
 bool OpenCdm::IsTypeSupported(const std::string& keySystem, const std::string& mimeType) const {
     TRACE_L1("Checking for key system %s", keySystem.c_str());
     return ( (_implementation != nullptr) && 
@@ -1052,3 +1041,30 @@ uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, co
 }
 
 } // namespace media
+
+extern "C" {
+
+    void *acquire_session(const uint8_t *keyId, const uint8_t keyLength, const uint32_t waitTime) {
+        media::OpenCdm *session = new media::OpenCdm();
+        if (session->GetSession(keyId, keyLength, waitTime) == false) {
+            delete session;
+            session = nullptr;
+        }
+        return (session);
+    }
+    void release_session(void *session) {
+        media::OpenCdm *sessionHandler = reinterpret_cast<media::OpenCdm *>(session);
+
+        ASSERT (sessionHandler != nullptr);
+
+        delete sessionHandler;
+    }
+
+    uint32_t decrypt(void *session, uint8_t *data, const uint32_t length, const uint8_t *iv, const uint16_t ivLength) {
+        media::OpenCdm *sessionHandler = reinterpret_cast<media::OpenCdm *>(session);
+
+        ASSERT (sessionHandler != nullptr);
+
+        sessionHandler->Decrypt(data, length, iv, ivLength);
+    }
+}
