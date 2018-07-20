@@ -242,20 +242,8 @@ void Server::ServiceMap::Destroy() {
 }
 
 // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-/* virtual */ void* Server::Service::Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator) {
-    return (_administrator.Instantiate(waitTime, className, interfaceId, version, pid, locator, ClassName(), Callsign()));
-}
-
-/* virtual */ void Server::Service::Register(RPC::IRemoteProcess::INotification* sink) {
-    _administrator.Register(sink);
-}
-
-/* virtual */ void Server::Service::Unregister(RPC::IRemoteProcess::INotification* sink) {
-    _administrator.Unregister(sink);
-}
-
-/* virtual */ RPC::IRemoteProcess* Server::Service::RemoteProcess(const uint32_t pid) {
-    return (_administrator.RemoteProcess(pid));
+/* virtual */ PluginHost::IShell::IProcess* Server::Service::Process() {
+    return (&_administrator);
 }
 
 // Methods to stop/start/update the service.

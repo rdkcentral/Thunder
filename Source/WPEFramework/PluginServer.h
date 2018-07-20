@@ -791,10 +791,7 @@ namespace WPEFramework {
             virtual void Unregister(IPlugin::INotification* sink) override;
 
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator) override;
-            virtual void Register(RPC::IRemoteProcess::INotification* sink) override;
-            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) override;
-            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) override;
+            virtual IProcess* Process() override;
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
@@ -940,7 +937,7 @@ namespace WPEFramework {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
-        class EXTERNAL ServiceMap {
+        class EXTERNAL ServiceMap : public PluginHost::IShell::IProcess {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service> >, Core::ProxyType<Service>, const string&> Iterator;
 
@@ -958,10 +955,16 @@ namespace WPEFramework {
 			public:
 				CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
 					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<64, 3> >::Create(stackSize))
+					, _connector(RPC::Communicator::Connector())
+					, _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
+					, _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
+					, _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
+					, _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
+					, _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 #ifdef __WIN32__
-					, _options(Core::Directory::Normalize(systemPath) + EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS) )
+					, _application(_systemPath + EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
 #else
-					, _options( EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS) )
+					, _application(EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
 #endif
 				{
 					if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
@@ -970,26 +973,10 @@ namespace WPEFramework {
 					else {
 						// We need to pass the communication channel NodeId via an environment variable, for process,
 						// not being started by the rpcprocess...
-						Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), Communicator::Connector());
+						Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), _connector);
 
-						// Prepare the startup Options.
-						if (persistentPath.empty() == false) {
-							_options[_T("p")] = Core::Directory::Normalize(persistentPath);
-						}
-						if (systemPath.empty() == false) {
-							_options[_T("s")] = Core::Directory::Normalize(systemPath);
-						}
-						if (dataPath.empty() == false) {
-							_options[_T("d")] = Core::Directory::Normalize(dataPath);
-						}
-						if (appPath.empty() == false) {
-							_options[_T("a")] = Core::Directory::Normalize(appPath);
-						}
 						if (proxyStubPath.empty() == false) {
-							string searchPath = Core::Directory::Normalize(proxyStubPath);
-							_options[_T("m")] = searchPath;
-
-							RPC::Communicator::LoadProxyStubs(searchPath);
+							RPC::Communicator::LoadProxyStubs(_proxyStubPath);
 						}
 					}
 				}
@@ -997,34 +984,32 @@ namespace WPEFramework {
 				}
 
 			public:
-				Communicator::RemoteProcess* Create(const string& className, const uint32_t interfaceId, const uint32_t version, const string& locator, uint32_t& pid, const string& dataExtension, const string& persistentExtension)
+				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension)
 				{
 					ASSERT(className.empty() == false);
 					ASSERT(locator.empty() == false);
 
-					Core::Process::Options options(_options);
-
-					if (version != static_cast<uint32_t>(~0)) {
-						options[_T("v")] = Core::NumberType<uint32_t>(version).Text();
-					}
-
-					options[_T("i")] = Core::NumberType<uint32_t>(interfaceId).Text();
-					options[_T("r")] = RPC::Communicator::Connector();
-					options[_T("c")] = className;
-					options[_T("l")] = locator;
+					string persistentPath(_persistentPath);
+					string dataPath(_dataPath);
 
 					if (dataExtension.empty() == false) {
-						options[_T("d")] += dataExtension + '/';
-					}
+                                            dataPath += dataExtension + '/';
+                                        }
 					if (persistentExtension.empty() == false) {
-						options[_T("p")] += persistentExtension + '/';
-					}
+                                            persistentPath += persistentExtension + '/';
+                                        }
 
-					return (RPC::Communicator::Create(pid, options));
+					return (RPC::Communicator::Create(pid, instance, RPC::Config (_connector, _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
 				}
 
 			private:
-				Core::Process::Options _options;
+				const string _connector;
+				const string _persistentPath;
+				const string _systemPath;
+				const string _dataPath;
+				const string _appPath;
+				const string _proxyStubPath;
+				const string _application;
 			};
             class Override : public Core::JSON::Container {
             private:
@@ -1366,16 +1351,17 @@ namespace WPEFramework {
                 }
                 return (result);
             }
-            inline void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator, const string& dataExtension, const string& persistentExtension)
+
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) override
             {
                 void* result = nullptr;
 
-                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(className, interfaceId, version, locator, pid, dataExtension, persistentExtension));
+                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign));
 
                 if (process != nullptr) {
                     if (process->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime) != Core::ERROR_TIMEDOUT) {
                         if (process->State() == RPC::IRemoteProcess::ACTIVE) {
-                            result = process->QueryInterface(interfaceId);
+                            result = process->QueryInterface(object.Interface());
                         }
                     }
                     if (result == nullptr) {
@@ -1387,15 +1373,15 @@ namespace WPEFramework {
                 }
                 return (result);
             }
-            inline void Register(RPC::IRemoteProcess::INotification* sink)
+            virtual void Register(RPC::IRemoteProcess::INotification* sink) override
             {
                 _processAdministrator.Register(sink);
             }
-            inline void Unregister(RPC::IRemoteProcess::INotification* sink)
+            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) override
             {
                 _processAdministrator.Unregister(sink);
             }
-            inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid)
+            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) override
             {
                 return (_processAdministrator.Process(pid));
             }

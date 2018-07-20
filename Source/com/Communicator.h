@@ -10,6 +10,151 @@
 namespace WPEFramework {
 namespace RPC {
 
+    class EXTERNAL Object {
+    public:
+        Object () 
+            : _locator()
+            , _className()
+            , _interface(~0)
+            , _version(~0)
+            , _user()
+            , _group() {
+        }
+        Object (const Object& copy) 
+            : _locator(copy._locator)
+            , _className(copy._className)
+            , _interface(copy._interface)
+            , _version(copy._version)
+            , _user(copy._user)
+            , _group(copy._group) {
+        }
+        Object (const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group) 
+            : _locator(locator)
+            , _className(className)
+            , _interface(interface)
+            , _version(version)
+            , _user(user)
+            , _group(group) {
+        }
+        ~Object() {
+        }
+
+        Object& operator= (const Object& RHS) {
+            _locator = RHS._locator;
+            _className = RHS._className;
+            _interface = RHS._interface;
+            _version = RHS._version;
+            _user = RHS._user;
+            _group = RHS._group;
+
+            return (*this);
+        }
+
+    public:
+        inline const string& Locator() const {
+            return (_locator);
+        }
+        inline const string& ClassName() const {
+            return (_className);
+        }
+        inline uint32_t Interface() const {
+            return (_interface);
+        }
+        inline uint32_t Version() const {
+            return (_version);
+        }
+        inline const string& User() const {
+            return (_user);
+        }
+        inline const string& Group() const {
+            return (_group);
+        }
+
+    private:
+        string _locator;
+        string _className;
+        uint32_t _interface;
+        uint32_t _version;
+        string _user;
+        string _group;
+ 
+    };
+
+    class EXTERNAL Config {
+    private:
+        Config& operator=(const Config&);
+
+    public:
+        Config()
+            : _connector()
+            , _hostApplication()
+            , _persistent()
+            , _system()
+            , _data()
+            , _application()
+            , _proxyStub() {
+        }
+        Config(
+            const string& connector, 
+            const string& hostApplication, 
+            const string& persistentPath,
+            const string& systemPath,
+            const string& dataPath,
+            const string& applicationPath,
+            const string& proxyStubPath) 
+            : _connector(connector)
+            , _hostApplication(hostApplication)
+            , _persistent(persistentPath)
+            , _system(systemPath)
+            , _data(dataPath)
+            , _application(applicationPath)
+            , _proxyStub(proxyStubPath) {
+        }
+        Config(const Config& copy)
+            : _connector(copy._connector)
+            , _hostApplication(copy._hostApplication)
+            , _persistent(copy._persistent)
+            , _system(copy._system)
+            , _data(copy._data)
+            , _application(copy._application)
+            , _proxyStub(copy._proxyStub) {
+        }
+        ~Config() {
+        }
+
+    public: 
+        inline const string& Connector() const {
+            return (_connector);
+        }
+        inline const string& HostApplication() const {
+            return (_hostApplication);
+        }
+        inline const string& PersistentPath() const {
+            return (_persistent);
+        }
+        inline const string& SystemPath() const {
+            return (_system);
+        }
+        inline const string& DataPath() const {
+            return (_data);
+        }
+        inline const string& ApplicationPath() const {
+            return (_application);
+        }
+        inline const string& ProxyStubPath() const {
+            return (_proxyStub);
+        }
+
+    private:
+        string _connector;	
+        string _hostApplication;
+        string _persistent;
+        string _system;
+        string _data;
+        string _application;
+        string _proxyStub;
+    };
+
     struct EXTERNAL IRemoteProcess : virtual public Core::IUnknown {
         enum { ID = 0x00000001 };
 
@@ -93,9 +238,40 @@ namespace RPC {
 
 				return (result);
             }
-			inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Core::Process::Options& options)
-			{
-				return (Core::Service<RemoteProcess>::Create<RemoteProcess>(&parent, &pid, &options));
+	inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
+	{
+		Core::Process::Options options(config.HostApplication());
+ 
+		options[_T("l")] = instance.Locator();
+		options[_T("c")] = instance.ClassName();
+		options[_T("r")] = config.Connector();
+		options[_T("i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+		if (instance.Version() != static_cast<uint32_t>(~0)) {
+			options[_T("v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+		}
+		if (instance.User().empty() == false) {
+			options[_T("u")] = instance.User();
+                }
+                if (instance.Group().empty() == false) {
+			options[_T("g")] = instance.Group();
+                }
+		if (config.PersistentPath().empty() == false) {
+		    options[_T("p")] = config.PersistentPath();
+		}
+	        if (config.SystemPath().empty() == false) {
+		    options[_T("s")] = config.SystemPath();
+		}
+	        if (config.DataPath().empty() == false) {
+		    options[_T("d")] = config.DataPath();
+		}
+	        if (config.ApplicationPath().empty() == false) {
+		    options[_T("a")] = config.ApplicationPath();
+		}
+	        if (config.ProxyStubPath().empty() == false) {
+		    options[_T("m")] = config.ProxyStubPath();
+		}
+
+		return (Core::Service<RemoteProcess>::Create<RemoteProcess>(&parent, &pid, &options));
 			}
 			~RemoteProcess()
             {
@@ -340,11 +516,11 @@ namespace RPC {
             {
                 return (static_cast<uint32_t>(_processes.size()));
             }
-            inline Communicator::RemoteProcess* Create(const Core::Process::Options& options, uint32_t& pid)
+            inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config)
             {
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = RemoteProcess::Create(*this, pid, options);
+                Communicator::RemoteProcess* result = RemoteProcess::Create(*this, pid, instance, config);
 
                 ASSERT(result != nullptr);
 
@@ -695,8 +871,8 @@ namespace RPC {
         {
             return (_processMap.Process(id));
         }
-		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Core::Process::Options& options) {
-			return (_processMap.Create(options, pid));
+		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config) {
+			return (_processMap.Create(pid, instance, config));
 		}
 
         // Use this method with care. It goes beyond the refence counting taking place in the object.

@@ -9,7 +9,6 @@
 
 namespace WPEFramework {
 namespace Plugin {
-
     class EXTERNAL Config : public Core::JSON::Container {
     public:
         Config()
@@ -126,6 +125,8 @@ public:
 }
 
 namespace PluginHost {
+
+
     class EXTERNAL Config {
     private:
     Config();
@@ -175,7 +176,6 @@ namespace PluginHost {
     }
 
     public:
-
         inline const string& Version() const
         {
             return (_version);
