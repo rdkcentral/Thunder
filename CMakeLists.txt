@@ -55,7 +55,12 @@ find_package(Git QUIET) # if we don't find git or FindGit.cmake is not on the sy
 if(GIT_FOUND) # GIT revision
     include(GetGitRevisionDescription)
     get_git_short_revision(GIT_SHA1)
-    message(STATUS "GIT revision ${GIT_SHA1}")
+    if(GIT_SHA1 STREQUAL "GITDIR-")
+       message(STATUS "Not building WPEFramework from git")
+       set(GIT_SHA1 "no_git")
+    else()
+       message(STATUS "GIT revision ${GIT_SHA1}")
+    endif()
     set(VERSION_REVISION ${GIT_SHA1})
 endif()
 
