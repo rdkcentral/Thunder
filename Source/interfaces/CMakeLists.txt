@@ -26,6 +26,7 @@ set(PUBLIC_HEADERS
         IStreaming.h
         ISwitchBoard.h
         ITimeSync.h
+        ITVControl.h
         ITVPlatform.h
         IVoiceHandler.h
         IWebDriver.h
