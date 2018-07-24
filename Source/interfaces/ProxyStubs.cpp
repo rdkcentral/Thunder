@@ -1201,8 +1201,19 @@ namespace ProxyStubs {
              //
              // virtual void Callback(IStream::ICallback* callback) = 0;
              //
+             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+             IStream::ICallback* implementation = parameters.Number<IStream::ICallback*>();
+             IStream::ICallback* proxy = nullptr;
+
+             if (implementation != nullptr) {
+                 proxy = RPC::Administrator::Instance().CreateProxy<IStream::ICallback>(channel,
+                     implementation,
+                     true, false);
+
+                 ASSERT((proxy != nullptr) && "Failed to create proxy");
+             }
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             //response.Number(message->Parameters().Implementation<IStream>()->Callback());
+             message->Parameters().Implementation<IStream>()->Callback(proxy);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -1219,6 +1230,26 @@ namespace ProxyStubs {
              string configuration(parameters.Text());
              RPC::Data::Frame::Writer response(message->Response().Writer());
              response.Number<uint32_t>(message->Parameters().Implementation<IStream>()->Load(configuration));
+         },
+         nullptr
+    };
+
+    ProxyStub::MethodHandler StreamCallbackStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void DRM(uint32_t state) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            uint32_t state(parameters.Number<uint32_t>());
+            message->Parameters().Implementation<IStream::ICallback>()->DRM(state);
+         },
+         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void StateChange(IStream::Stat state) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            IStream::Stat state(parameters.Number<IStream::Stat>());
+            message->Parameters().Implementation<IStream::ICallback>()->StateChange(state);
          },
          nullptr
     };
@@ -1282,8 +1313,19 @@ namespace ProxyStubs {
              //
              // virtual void Callback(IStream::IControl ICallback* callback) = 0;
              //
+             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+             IStream::IControl::ICallback* implementation = parameters.Number<IStream::IControl::ICallback*>();
+             IStream::IControl::ICallback* proxy = nullptr;
+
+             if (implementation != nullptr) {
+                 proxy = RPC::Administrator::Instance().CreateProxy<IStream::IControl::ICallback>(channel,
+                     implementation,
+                     true, false);
+
+                 ASSERT((proxy != nullptr) && "Failed to create proxy");
+             }
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             //response.Number(message->Parameters().Implementation<IStream::IControl>()->Callback()); FIXME: Implement porperly after discussion
+             message->Parameters().Implementation<IStream::IControl>()->Callback(proxy);
          },
          nullptr
     };
@@ -1323,6 +1365,18 @@ namespace ProxyStubs {
              //
              RPC::Data::Frame::Writer response(message->Response().Writer());
              response.Number<uint32_t>(message->Parameters().Implementation<IStream::IControl::IGeometry>()->Height());
+         },
+         nullptr
+    };
+
+    ProxyStub::MethodHandler StreamControlCallbackStubMethods[] = {
+         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void TimeUpdate(uint64_t position) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            uint64_t position(parameters.Number<uint64_t>());
+            message->Parameters().Implementation<IStream::IControl::ICallback>()->TimeUpdate(position);
          },
          nullptr
     };
@@ -1481,9 +1535,9 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IStreaming, TunerStubMethods, ProxyStub::UnknownStub> TunerStub;
     typedef ProxyStub::StubType<IStreaming::INotification, TunerNotificationStubMethods, ProxyStub::UnknownStub> TunerNotificationStub;
     typedef ProxyStub::StubType<IStream, StreamStubMethods, ProxyStub::UnknownStub> StreamStub;
-    //typedef ProxyStub::StubType<IStream::ICallback, StreamCallbackMethods, ProxyStub::UnknownStub> StreamCallbackStub;FIXME: Implement porperly after discussion
+    typedef ProxyStub::StubType<IStream::ICallback, StreamCallbackStubMethods, ProxyStub::UnknownStub> StreamCallbackStub;
     typedef ProxyStub::StubType<IStream::IControl, StreamControlStubMethods, ProxyStub::UnknownStub> StreamControlStub;
-    //typedef ProxyStub::StubType<IStream::IControl::ICallback, StreamControlCallbackStubMethods, ProxyStub::UnknownStub> StreamControlCallbackStub;FIXME: Implement porperly after discussion;
+    typedef ProxyStub::StubType<IStream::IControl::ICallback, StreamControlCallbackStubMethods, ProxyStub::UnknownStub> StreamControlCallbackStub;
     typedef ProxyStub::StubType<IStream::IControl::IGeometry, StreamControlGeometryStubMethods, ProxyStub::UnknownStub> StreamControlGeometryStub;
     typedef ProxyStub::StubType<IRPCLink, RPCLinkStubMethods, ProxyStub::UnknownStub> RPCLinkStub;
     typedef ProxyStub::StubType<IRPCLink::INotification, RPCLinkNotificationStubMethods, ProxyStub::UnknownStub> RPCLinkNotificationStub;
@@ -2605,7 +2659,7 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            //writer.Number<IStream::ICallback*>(callback); FIXME: Implement porperly after discussion
+            writer.Number(callback);
             Invoke(newMessage);
         }
         virtual IStream::Stat State() const
@@ -2625,6 +2679,33 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
+   };
+
+   class StreamCallbackProxy : public ProxyStub::UnknownProxyType<IStream::ICallback> {
+   public:
+        StreamCallbackProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~StreamCallbackProxy()
+        {
+        }
+   public:
+        virtual void DRM(uint32_t state)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<uint32_t>(state);
+            Invoke(newMessage);
+        }
+        virtual void StateChange(IStream::Stat state)
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IStream::Stat>(state);
+            Invoke(newMessage);
+        }
    };
 
    class StreamControlProxy : public ProxyStub::UnknownProxyType<IStream::IControl> {
@@ -2693,7 +2774,7 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(7));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            //writer.Number<IStream::IControl::ICallback*>(callback); FIXME: Implement porperly after discussion
+            writer.Number(callback);
             Invoke(newMessage);
         }
    };
@@ -2743,6 +2824,26 @@ namespace ProxyStubs {
             Invoke(newMessage);
 
             return (newMessage->Response().Reader().Number<uint32_t>());
+        }
+   };
+
+   class StreamControlCallbackProxy : public ProxyStub::UnknownProxyType<IStream::IControl::ICallback> {
+   public:
+        StreamControlCallbackProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~StreamControlCallbackProxy()
+        {
+        }
+   public:
+        virtual void TimeUpdate(uint64_t position)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<uint64_t>(position);
+            Invoke(newMessage);
         }
    };
 
@@ -2924,9 +3025,9 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IStreaming, TunerProxy, TunerStub>();
             RPC::Administrator::Instance().Announce<IStreaming::INotification, TunerNotificationProxy, TunerNotificationStub>();
             RPC::Administrator::Instance().Announce<IStream, StreamProxy, StreamStub>();
-            //RPC::Administrator::Instance().Announce<IStream::ICallback, StreamCallbackProxy, StreamCallbackStub>();
+            RPC::Administrator::Instance().Announce<IStream::ICallback, StreamCallbackProxy, StreamCallbackStub>();
             RPC::Administrator::Instance().Announce<IStream::IControl, StreamControlProxy, StreamControlStub>();
-            //RPC::Administrator::Instance().Announce<IStream::IControl::ICallback, StreamControlCallbackProxy, StreamControlCallbackStub>();
+            RPC::Administrator::Instance().Announce<IStream::IControl::ICallback, StreamControlCallbackProxy, StreamControlCallbackStub>();
             RPC::Administrator::Instance().Announce<IStream::IControl::IGeometry, StreamControlGeometryProxy, StreamControlGeometryStub>();
             RPC::Administrator::Instance().Announce<IRPCLink, RPCLinkProxy, RPCLinkStub>();
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();

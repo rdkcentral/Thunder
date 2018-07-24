@@ -3,14 +3,16 @@
 
 #include "Module.h"
 
+#define LINEARBROADCASTPLAYER_PROCESS_NODE_ID "/tmp/LinearBroadcastPlayerProcess0"
+
 namespace WPEFramework {
 namespace Exchange {
 
     struct IStream : virtual public Core::IUnknown {
-        enum { ID = 0x0000006D };
+        enum { ID = 0x00000015 };
 
         enum Stat {
-            TBD
+            TBD = 0
         };
 
         enum StreamType {
@@ -23,10 +25,12 @@ namespace Exchange {
         };
 
         struct IControl : virtual public Core::IUnknown {
-            enum { ID = 0x0000006E };
+            enum { ID = 0x00000017 };
 
             struct IGeometry : virtual public Core::IUnknown {
-                enum { ID = 0x0000006F };
+                enum { ID = 0x00000018 };
+
+                virtual ~IGeometry() {}
 
                 virtual uint32_t X() const = 0;;
                 virtual uint32_t Y() const = 0;
@@ -35,34 +39,43 @@ namespace Exchange {
                 virtual uint32_t Height() const = 0;
             };
 
-            struct ICallback {
-               virtual void DRM(uint32_t) = 0;
-               virtual void StateChange(Stat) = 0;
+            struct ICallback : virtual public Core::IUnknown {
+                enum { ID = 0x00000019 };
+
+                virtual ~ICallback() {}
+
+                virtual void TimeUpdate(uint64_t position) = 0;
             };
 
             virtual ~IControl() {};
 
-            virtual void Speed(const uint32_t) = 0;
+            virtual void Speed(const uint32_t request) = 0;
             virtual uint32_t Speed() const = 0;
-            virtual void Position(const uint64_t) = 0;
+            virtual void Position(const uint64_t absoluteTime) = 0;
             virtual uint64_t Position() const = 0;
-            virtual void TimeRange(uint64_t&, uint64_t&) const = 0;
+            virtual void TimeRange(uint64_t& begin, uint64_t& end) const = 0;
             virtual IGeometry* Geometry() const = 0;
-            //virtual void Geometry(const IGeometry&) = 0; TODO: discuss and identify mechanism to handle class reference
-            //virtual void Callback(IControl::ICallback*) = 0; TODO: discuss and identify mechanism to handle callback
+            //virtual void Geometry(const IGeometry& settings) = 0;
+            virtual void Callback(IControl::ICallback* callback) = 0;
         };
 
-        struct ICallback {
-            virtual void TimeUpdate(uint64_t) = 0;
+        struct ICallback : virtual public Core::IUnknown  {
+            enum { ID = 0x00000016 };
+
+            virtual ~ICallback() {}
+
+            virtual void DRM(uint32_t state) = 0;
+            virtual void StateChange(Stat state) = 0;
         };
-        virtual ~IStream() {};
+
+        virtual ~IStream() {}
 
         virtual StreamType Type() const = 0;
         virtual DRMType DRM() const = 0;
         virtual IControl* Control() = 0;
-        //virtual void Callback(IStream::ICallback*) = 0; TODO: discuss and identify mechanism to handle callback
+        virtual void Callback(IStream::ICallback* callback) = 0;
         virtual Stat State() const = 0;
-        virtual uint32_t Load(std::string) = 0;
+        virtual uint32_t Load(std::string configuration) = 0;
     };   
 }
 }
