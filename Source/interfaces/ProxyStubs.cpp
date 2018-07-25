@@ -1247,7 +1247,8 @@ namespace ProxyStubs {
              // virtual uint64_t Position() const = 0;
              //
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             response.Number<uint64_t>(message->Parameters().Implementation<IStream::IControl>()->Position());
+             uint64_t absoluteTime = message->Parameters().Implementation<IStream::IControl>()->Position();
+             response.Number<uint64_t>(absoluteTime);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -1270,7 +1271,7 @@ namespace ProxyStubs {
              // virtual void Geometry(IGeometry& settings) = 0;
              //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            //IStream::IControl::IGeometry& settings(parameters.Number<IStream::IControl::IGeometry&>()); FIXME: Implement porperly after discussion
+            //IStream::IControl::IGeometry settings(parameters.Number<IStream::IControl::IGeometry>()); //FIXME: Implement porperly after discussion
             //message->Parameters().Implementation<IStream::IControl>()->Geometry(settings);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -2684,8 +2685,8 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
-
-            return (newMessage->Response().Reader().Number<uint64_t>());
+            uint64_t absoluteTime = newMessage->Response().Reader().Number<uint64_t>();
+            return (absoluteTime);
         }
         virtual void TimeRange(uint64_t& begin, uint64_t& end) const
         {
@@ -2708,7 +2709,7 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(6));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            //writer.Number<IStream::IControl::IGeometry&>(settings); FIXME: Implement porperly after discussion
+            //writer.Number<IStream::IControl::IGeometry>(settings); //FIXME: Implement porperly after discussion
             Invoke(newMessage);
         }
 
