@@ -44,11 +44,15 @@ namespace WPEFramework {
             public:
                 ProcessSet()
                     : Core::JSON::Container()
+                    , User()
+                    , Group()
                     , Priority(0)
                     , OOMAdjust(0)
                     , Policy()
                     , StackSize(0)
                 {
+                    Add(_T("user"), &User);
+                    Add(_T("group"), &Group);
                     Add(_T("priority"), &Priority);
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
@@ -56,11 +60,15 @@ namespace WPEFramework {
                 }
                 ProcessSet(const ProcessSet& copy)
                     : Core::JSON::Container()
+                    , User(copy.User)
+                    , Group(copy.Group)
                     , Priority(copy.Priority)
                     , OOMAdjust(copy.OOMAdjust)
                     , Policy(copy.Policy)
                     , StackSize(copy.StackSize)
                 {
+                    Add(_T("user"), &User);
+                    Add(_T("group"), &Group);
                     Add(_T("priority"), &Priority);
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
@@ -72,6 +80,8 @@ namespace WPEFramework {
 
                 ProcessSet& operator=(const ProcessSet& RHS)
                 {
+                    User = RHS.User;
+                    Group = RHS.Group;
                     Priority = RHS.Priority;
                     Policy = RHS.Policy;
                     OOMAdjust = RHS.OOMAdjust;
@@ -80,6 +90,8 @@ namespace WPEFramework {
                     return (*this);
                 }
 
+                Core::JSON::String User;
+                Core::JSON::String Group;
                 Core::JSON::DecSInt8 Priority;
                 Core::JSON::DecSInt8 OOMAdjust;
                 Core::JSON::EnumType<Core::ProcessInfo::scheduler> Policy;

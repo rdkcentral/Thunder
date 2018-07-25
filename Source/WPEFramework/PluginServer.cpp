@@ -521,6 +521,14 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
         if (configuration.Process.Policy.IsSet()) {
             myself.Policy(configuration.Process.Policy.Value());
         }
+
+        if (configuration.Process.User.IsSet()) {
+            Core::ProcessInfo::User(configuration.Process.User.Value());
+        }
+
+        if (configuration.Process.Group.IsSet()) {
+            myself.Group(configuration.Process.Group.Value());
+        }
     }
 
 	// See if the persitent path for our-selves exist, if not we will create it :-)

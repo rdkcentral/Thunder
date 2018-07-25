@@ -81,6 +81,8 @@ namespace Process {
             , DataPath(nullptr)
             , AppPath(nullptr)
             , ProxyStubPath(nullptr)
+            , User(nullptr)
+            , Group(nullptr)
         {
             Parse();
         }
@@ -292,9 +294,18 @@ int main(int argc, char** argv)
         Core::NodeId remoteNode(options.RemoteChannel);
 
         if (remoteNode.IsValid()) {
+            void* base = nullptr;
+
             TRACE_L1("Spawning a new plugin %s.", options.ClassName);
 
-            void* base = nullptr;
+            // Firts make sure we apply the correct rights to our selves..
+            if (options.User != nullptr) {
+                Core::ProcessInfo::User(string(options.User));
+            }
+
+            if (options.Group != nullptr) {
+                Core::ProcessInfo().Group(string(options.Group));
+            }
 
             // Seems like we have enough information, open up the Process communcication Channel.
             _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode));

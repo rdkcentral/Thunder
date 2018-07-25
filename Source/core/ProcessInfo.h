@@ -202,6 +202,13 @@ namespace Core {
         uint64_t Shared() const;
         string Name() const;
         string Executable() const;
+        uint32_t Group(const string& groupName);
+        string Group() const;
+
+        // Setting, or getting, the user can onl be done for the 
+        // current process, hence why they are static. 
+        static uint32_t User(const string& userName);
+        static string User();
 
     private:
         uint32_t _pid;
