@@ -29,6 +29,9 @@ private:
     struct netlink_extended : public sockaddr_nl {
         uint32_t nl_destination;
     };
+    struct domain_extended : public sockaddr_un {
+        uint16_t un_access;
+    };
     #endif
 public:
     enum enumType {
@@ -44,7 +47,7 @@ public:
         struct sockaddr_in      IPV4Socket;
         struct sockaddr_in6     IPV6Socket;
         #ifndef __WIN32__
-        struct sockaddr_un      DomainSocket;
+        struct domain_extended DomainSocket;
         struct netlink_extended NetlinkSocket;
         #endif
     };
@@ -66,7 +69,7 @@ public:
     NodeId(const struct sockaddr_in6& rInfo);
     NodeId(const struct in6_addr& rInfo);
     #ifndef __WIN32__
-    NodeId(const struct sockaddr_un& rInfo);
+    NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
     NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
     #endif
     NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED);
@@ -80,7 +83,7 @@ public:
 public:
     inline uint32_t Extension() const {
 #ifndef __WIN32__
-		return ( Type() == TYPE_NETLINK ? m_structInfo.NetlinkSocket.nl_destination : 0 );
+		return ( Type() == TYPE_DOMAIN ?  m_structInfo.DomainSocket.un_access : (Type() == TYPE_NETLINK ? m_structInfo.NetlinkSocket.nl_destination : 0 ));
 #else
 		return (0);
 #endif

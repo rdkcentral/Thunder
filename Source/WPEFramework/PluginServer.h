@@ -154,7 +154,7 @@ namespace WPEFramework {
 #ifdef __WIN32__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
-                , Communicator(_T("/tmp/communicator"))
+                , Communicator(_T("/tmp/communicator|0777"))
 #endif
                 , Redirect(_T("http://127.0.0.1/Service/Controller/UI"))
                 , Signature(_T("TestSecretKey"))
@@ -967,7 +967,6 @@ namespace WPEFramework {
 			public:
 				CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
 					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<64, 3> >::Create(stackSize))
-					, _connector(RPC::Communicator::Connector())
 					, _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
 					, _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
 					, _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
@@ -985,7 +984,7 @@ namespace WPEFramework {
 					else {
 						// We need to pass the communication channel NodeId via an environment variable, for process,
 						// not being started by the rpcprocess...
-						Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), _connector);
+						Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
 
 						if (proxyStubPath.empty() == false) {
 							RPC::Communicator::LoadProxyStubs(_proxyStubPath);
@@ -1011,11 +1010,10 @@ namespace WPEFramework {
                                             persistentPath += persistentExtension + '/';
                                         }
 
-					return (RPC::Communicator::Create(pid, instance, RPC::Config (_connector, _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
+					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
 				}
 
 			private:
-				const string _connector;
 				const string _persistentPath;
 				const string _systemPath;
 				const string _dataPath;
