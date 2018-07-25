@@ -114,9 +114,6 @@ namespace PluginHost {
             Core::JSON::String Group;
             Core::JSON::Boolean OutOfProcess;
 
-            inline RPC::Object Definition(const string& className, const uint32_t interface, const uint32_t version = ~0) {
-                return (RPC::Object (Locator, className, interface,version, User.Value(), Group.Value()));
-            }
         };
 
         void* IShell::Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
@@ -156,7 +153,16 @@ namespace PluginHost {
                 ASSERT(handler != nullptr);
 
                 if (handler != nullptr) {
-                    RPC::Object definition (rootObject.Definition(className, interface, version));
+                    string locator (rootObject.Locator.Value());
+		    if (locator.empty() == true) {
+                        locator = Locator();
+                    }
+                    RPC::Object definition (locator, 
+					className, 
+					interface, 
+					version, 
+					rootObject.User.Value(), 
+					rootObject.Group.Value());
 
                     result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
                 }
