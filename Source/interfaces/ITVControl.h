@@ -9,26 +9,29 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IStream : virtual public Core::IUnknown {
-        enum { ID = 0x00000015 };
+        enum { ID = 0x00000016 };
 
         enum Stat {
-            TBD = 0
+            NoneState = 10,
+            TestStatus //FIXME: update with proper values
         };
 
         enum StreamType {
-            None
+            NoneStream = 20,
+            TestStream //FIXME: update with proper values
         };
 
         enum DRMType {
-            PlayReady,
-            Widevine
+            PlayReady = 3, //FIXME: update with proper values
+            Widevine,
+            TestDrm
         };
 
         struct IControl : virtual public Core::IUnknown {
-            enum { ID = 0x00000017 };
+            enum { ID = 0x00000018 };
 
             struct IGeometry : virtual public Core::IUnknown {
-                enum { ID = 0x00000018 };
+                enum { ID = 0x00000019 };
 
                 virtual ~IGeometry() {}
 
@@ -40,7 +43,7 @@ namespace Exchange {
             };
 
             struct ICallback : virtual public Core::IUnknown {
-                enum { ID = 0x00000019 };
+                enum { ID = 0x0000001A };
 
                 virtual ~ICallback() {}
 
@@ -60,7 +63,7 @@ namespace Exchange {
         };
 
         struct ICallback : virtual public Core::IUnknown  {
-            enum { ID = 0x00000016 };
+            enum { ID = 0x00000017 };
 
             virtual ~ICallback() {}
 
@@ -76,7 +79,14 @@ namespace Exchange {
         virtual void Callback(IStream::ICallback* callback) = 0;
         virtual Stat State() const = 0;
         virtual uint32_t Load(std::string configuration) = 0;
-    };   
+    };
+
+    struct IPlayer : virtual public Core::IUnknown {
+        enum { ID = 0x00000015 };
+
+        virtual ~IPlayer() {}
+        virtual IStream* CreateStream(IStream::StreamType streamType) = 0;
+    };
 }
 }
 #endif //_ITVCONTROL_H

@@ -1381,6 +1381,21 @@ namespace ProxyStubs {
          nullptr
     };
 
+    ProxyStub::MethodHandler PlayerStubMethods[] = {
+         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual IStream* CreateStream(IStream::StreamType streamType) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            IStream::StreamType streamType(parameters.Number<IStream::StreamType>());
+
+            response.Number<IStream*>(message->Parameters().Implementation<IPlayer>()->CreateStream(streamType));
+         },
+         nullptr
+    };
+
     //
     // IRPCLink interface stub definitions (interface/IRPCLink.h)
     //
@@ -1539,6 +1554,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IStream::IControl, StreamControlStubMethods, ProxyStub::UnknownStub> StreamControlStub;
     typedef ProxyStub::StubType<IStream::IControl::ICallback, StreamControlCallbackStubMethods, ProxyStub::UnknownStub> StreamControlCallbackStub;
     typedef ProxyStub::StubType<IStream::IControl::IGeometry, StreamControlGeometryStubMethods, ProxyStub::UnknownStub> StreamControlGeometryStub;
+    typedef ProxyStub::StubType<IPlayer, PlayerStubMethods, ProxyStub::UnknownStub> PlayerStub;
     typedef ProxyStub::StubType<IRPCLink, RPCLinkStubMethods, ProxyStub::UnknownStub> RPCLinkStub;
     typedef ProxyStub::StubType<IRPCLink::INotification, RPCLinkNotificationStubMethods, ProxyStub::UnknownStub> RPCLinkNotificationStub;
     typedef ProxyStub::StubType<IPlayGiga, PlayGigaStubMethods, ProxyStub::UnknownStub> PlayGigaStub;
@@ -2653,7 +2669,9 @@ namespace ProxyStubs {
             IPCMessage newMessage(BaseClass::Message(2));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::IControl*>());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (CreateProxy<IStream::IControl>(reader.Number<IStream::IControl*>()));
         }
         virtual void Callback(IStream::ICallback* callback)
         {
@@ -2760,7 +2778,9 @@ namespace ProxyStubs {
             IPCMessage newMessage(BaseClass::Message(5));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::IControl::IGeometry*>());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (const_cast<StreamControlProxy&>(*this).CreateProxy<IStream::IControl::IGeometry>(reader.Number<IStream::IControl::IGeometry*>()));
         }
         virtual void Geometry(const IStream::IControl::IGeometry& settings)
         {
@@ -2844,6 +2864,29 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<uint64_t>(position);
             Invoke(newMessage);
+        }
+   };
+
+   class PlayerProxy : public ProxyStub::UnknownProxyType<IPlayer> {
+   public:
+        PlayerProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+        virtual ~PlayerProxy()
+        {
+        }
+   public:
+        virtual IStream* CreateStream(IStream::StreamType streamType)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IStream::StreamType>(streamType);
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (CreateProxy<IStream>(reader.Number<IStream*>()));
         }
    };
 
@@ -3029,6 +3072,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IStream::IControl, StreamControlProxy, StreamControlStub>();
             RPC::Administrator::Instance().Announce<IStream::IControl::ICallback, StreamControlCallbackProxy, StreamControlCallbackStub>();
             RPC::Administrator::Instance().Announce<IStream::IControl::IGeometry, StreamControlGeometryProxy, StreamControlGeometryStub>();
+            RPC::Administrator::Instance().Announce<IPlayer, PlayerProxy, PlayerStub>();
             RPC::Administrator::Instance().Announce<IRPCLink, RPCLinkProxy, RPCLinkStub>();
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();
             RPC::Administrator::Instance().Announce<IPlayGiga, PlayGigaProxy, PlayGigaStub>();
