@@ -1283,7 +1283,8 @@ namespace ProxyStubs {
              // virtual uint64_t Position() const = 0;
              //
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             response.Number<uint64_t>(message->Parameters().Implementation<IStream::IControl>()->Position());
+             uint64_t absoluteTime = message->Parameters().Implementation<IStream::IControl>()->Position();
+             response.Number<uint64_t>(absoluteTime);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -1303,11 +1304,21 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
-             // virtual void Geometry(IGeometry& settings) = 0;
+             // virtual void Geometry(const IGeometry* settings) = 0;
              //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            //IStream::IControl::IGeometry& settings(parameters.Number<IStream::IControl::IGeometry&>()); FIXME: Implement porperly after discussion
-            //message->Parameters().Implementation<IStream::IControl>()->Geometry(settings);
+             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+             IStream::IControl::IGeometry* implementation = parameters.Number<IStream::IControl::IGeometry*>();
+             IStream::IControl::IGeometry* proxy = nullptr;
+
+             if (implementation != nullptr) {
+                 proxy = RPC::Administrator::Instance().CreateProxy<IStream::IControl::IGeometry>(channel,
+                     implementation,
+                     true, false);
+
+                 ASSERT((proxy != nullptr) && "Failed to create proxy");
+             }
+             RPC::Data::Frame::Writer response(message->Response().Writer());
+             message->Parameters().Implementation<IStream::IControl>()->Geometry(proxy);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -2762,8 +2773,8 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
-
-            return (newMessage->Response().Reader().Number<uint64_t>());
+            uint64_t absoluteTime = newMessage->Response().Reader().Number<uint64_t>();
+            return (absoluteTime);
         }
         virtual void TimeRange(uint64_t& begin, uint64_t& end) const
         {
@@ -2782,11 +2793,11 @@ namespace ProxyStubs {
 
             return (const_cast<StreamControlProxy&>(*this).CreateProxy<IStream::IControl::IGeometry>(reader.Number<IStream::IControl::IGeometry*>()));
         }
-        virtual void Geometry(const IStream::IControl::IGeometry& settings)
+        virtual void Geometry(const IStream::IControl::IGeometry* settings)
         {
             IPCMessage newMessage(BaseClass::Message(6));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            //writer.Number<IStream::IControl::IGeometry&>(settings); FIXME: Implement porperly after discussion
+            writer.Number(settings);
             Invoke(newMessage);
         }
 

@@ -58,7 +58,7 @@ namespace Exchange {
             virtual uint64_t Position() const = 0;
             virtual void TimeRange(uint64_t& begin, uint64_t& end) const = 0;
             virtual IGeometry* Geometry() const = 0;
-            //virtual void Geometry(const IGeometry& settings) = 0;
+            virtual void Geometry(const IGeometry* settings) = 0;
             virtual void Callback(IControl::ICallback* callback) = 0;
         };
 
