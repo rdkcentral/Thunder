@@ -1268,11 +1268,21 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
-             // virtual void Geometry(IGeometry& settings) = 0;
+             // virtual void Geometry(const IGeometry* settings) = 0;
              //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            //IStream::IControl::IGeometry settings(parameters.Number<IStream::IControl::IGeometry>()); //FIXME: Implement porperly after discussion
-            //message->Parameters().Implementation<IStream::IControl>()->Geometry(settings);
+             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+             IStream::IControl::IGeometry* implementation = parameters.Number<IStream::IControl::IGeometry*>();
+             IStream::IControl::IGeometry* proxy = nullptr;
+
+             if (implementation != nullptr) {
+                 proxy = RPC::Administrator::Instance().CreateProxy<IStream::IControl::IGeometry>(channel,
+                     implementation,
+                     true, false);
+
+                 ASSERT((proxy != nullptr) && "Failed to create proxy");
+             }
+             RPC::Data::Frame::Writer response(message->Response().Writer());
+             message->Parameters().Implementation<IStream::IControl>()->Geometry(proxy);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -2705,11 +2715,11 @@ namespace ProxyStubs {
 
             return (const_cast<StreamControlProxy&>(*this).CreateProxy<IStream::IControl::IGeometry>(reader.Number<IStream::IControl::IGeometry*>()));
         }
-        virtual void Geometry(const IStream::IControl::IGeometry& settings)
+        virtual void Geometry(const IStream::IControl::IGeometry* settings)
         {
             IPCMessage newMessage(BaseClass::Message(6));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            //writer.Number<IStream::IControl::IGeometry>(settings); //FIXME: Implement porperly after discussion
+            writer.Number(settings);
             Invoke(newMessage);
         }
 
