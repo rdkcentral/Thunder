@@ -138,7 +138,6 @@ void Server::ServiceMap::Destroy() {
 
         index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        Core::ServiceAdministrator::Instance().FlushLibraries();
 
     } while (index != _services.begin());
 
@@ -155,6 +154,8 @@ void Server::ServiceMap::Destroy() {
 
         service.Release();
     }
+
+    Core::ServiceAdministrator::Instance().FlushLibraries();
 
     _adminLock.Unlock();
 
@@ -506,30 +507,6 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
               securityHandler)
     , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
     , _controller() {
-    if (configuration.Process.IsSet () == true) {
-
-        Core::ProcessInfo myself;
-
-        if (configuration.Process.OOMAdjust.IsSet() == true) {
-            myself.Priority(configuration.Process.OOMAdjust.Value());
-        }
-
-        if (configuration.Process.Priority.IsSet()) {
-            myself.Priority(configuration.Process.Priority.Value());
-        }
-
-        if (configuration.Process.Policy.IsSet()) {
-            myself.Policy(configuration.Process.Policy.Value());
-        }
-
-        if (configuration.Process.User.IsSet()) {
-            Core::ProcessInfo::User(configuration.Process.User.Value());
-        }
-
-        if (configuration.Process.Group.IsSet()) {
-            myself.Group(configuration.Process.Group.Value());
-        }
-    }
 
 	// See if the persitent path for our-selves exist, if not we will create it :-)
 	Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
