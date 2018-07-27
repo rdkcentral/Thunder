@@ -1247,17 +1247,18 @@ namespace ProxyStubs {
              // virtual uint64_t Position() const = 0;
              //
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             uint64_t absoluteTime = message->Parameters().Implementation<IStream::IControl>()->Position();
-             response.Number<uint64_t>(absoluteTime);
+             response.Number<uint64_t>(message->Parameters().Implementation<IStream::IControl>()->Position());
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
              // virtual void TimeRange(uint64_t& begin, uint64_t& end) const = 0;
              //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            uint64_t begin(parameters.Number<uint64_t>());
-            uint64_t end(parameters.Number<uint64_t>());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            uint64_t begin = 0; /* If it would be in->out, you need to read them from the package and fill */
+            uint64_t end = 0;   /* them in here, but these are just out values. */
             message->Parameters().Implementation<IStream::IControl>()->TimeRange(begin, end);
+            response.Number<uint64_t>(begin);
+            response.Number<uint64_t>(end);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -2695,16 +2696,15 @@ namespace ProxyStubs {
         {
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
-            uint64_t absoluteTime = newMessage->Response().Reader().Number<uint64_t>();
-            return (absoluteTime);
+            return (newMessage->Response().Reader().Number<uint64_t>());
         }
         virtual void TimeRange(uint64_t& begin, uint64_t& end) const
         {
             IPCMessage newMessage(BaseClass::Message(4));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint64_t>(begin);
-            writer.Number<uint64_t>(end);
             Invoke(newMessage);
+            RPC::Data::Frame::Reader response(newMessage->Response().Reader());
+            begin = response.Number<uint64_t>();
+            end = response.Number<uint64_t>();
         }
         virtual IStream::IControl::IGeometry* Geometry() const
         {
