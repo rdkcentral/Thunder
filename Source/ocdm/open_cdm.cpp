@@ -170,8 +170,8 @@ private:
         Sink& operator= (const Sink&) = delete;
 
     public:
-        Sink(AccessorOCDM& parent) 
-            : _parent(parent) {
+        Sink(AccessorOCDM* parent)
+            : _parent(*parent) {
         }
         virtual ~Sink() {
         }
@@ -187,6 +187,9 @@ private:
             _parent.KeyUpdate(sessionId, keyId, length, status);
         }
 
+        BEGIN_INTERFACE_MAP(Sink)
+            INTERFACE_ENTRY(OCDM::IAccessorOCDM::INotification)
+        END_INTERFACE_MAP
     private:
         AccessorOCDM& _parent;
     };
@@ -201,10 +204,12 @@ private:
         , _adminLock()
         , _signal(false, true)
         , _interested(0)
-        , _sessionKeys() {
+        , _sessionKeys()
+        , _sink(this) {
 
         if (_client.IsOperational() == true) { 
             _remote = _client.Create<OCDM::IAccessorOCDM>(_T(""));
+            Register(&_sink);
         }
     }
 
@@ -233,6 +238,7 @@ public:
     }
     ~AccessorOCDM() {
         if (_remote != nullptr) {
+            Unregister(&_sink);
             _remote->Release();
         }
         _singleton = nullptr;
@@ -437,6 +443,7 @@ private:
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
     std::map<string, std::list<KeyId> > _sessionKeys;
+    WPEFramework::Core::Sink<Sink> _sink;
     static AccessorOCDM* _singleton;
 };
 
