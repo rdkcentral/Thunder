@@ -218,11 +218,12 @@ namespace WPEFramework {
             const uint8_t* keyData;
             std::string sessionId = parameters.Text();
             uint8_t keyDataLength = parameters.LockBuffer<uint8_t>(keyData);
+            parameters.UnlockBuffer(keyDataLength);
             OCDM::ISession::KeyStatus status = parameters.Number<OCDM::ISession::KeyStatus>();
 
             message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->KeyChange(sessionId, keyData, keyDataLength, status);
 
-            parameters.UnlockBuffer(keyDataLength);
+
         },
         nullptr
     };
