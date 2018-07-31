@@ -19,6 +19,7 @@ set(PUBLIC_HEADERS
         IKeyHandler.h
         IMemory.h
         INetflix.h
+        IPlayGiga.h
         IPower.h
         IProvisioning.h
         IResourceCenter.h

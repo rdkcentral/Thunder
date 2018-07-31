@@ -12,6 +12,7 @@
 #include "IGuide.h"
 #include "IWebDriver.h"
 #include "IWebServer.h"
+#include "IPlayGiga.h"
 #include "IPower.h"
 
 MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)
@@ -1239,6 +1240,17 @@ namespace ProxyStubs {
 
         nullptr
     };
+    ProxyStub::MethodHandler PlayGigaStubMethods[] = {
+       [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //virtual void Launch(const string& game, const string& token);
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            const string game(parameters.Text());
+            const string token(parameters.Text());
+            message->Parameters().Implementation<IPlayGiga>()->Launch(game, token);
+        },
+
+        nullptr
+    };
     ProxyStub::MethodHandler PowerStubMethods[] = {
        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             //virtual PCStatus SetState(const State state, uint32_t timeout);
@@ -1282,6 +1294,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IStreaming::INotification, TunerNotificationStubMethods, ProxyStub::UnknownStub> TunerNotificationStub;
     typedef ProxyStub::StubType<IRPCLink, RPCLinkStubMethods, ProxyStub::UnknownStub> RPCLinkStub;
     typedef ProxyStub::StubType<IRPCLink::INotification, RPCLinkNotificationStubMethods, ProxyStub::UnknownStub> RPCLinkNotificationStub;
+    typedef ProxyStub::StubType<IPlayGiga, PlayGigaStubMethods, ProxyStub::UnknownStub> PlayGigaStub;
     typedef ProxyStub::StubType<IPower, PowerStubMethods, ProxyStub::UnknownStub> PowerStub;
 
     // -------------------------------------------------------------------------------------------
@@ -2421,6 +2434,28 @@ namespace ProxyStubs {
         }
     };
 
+    class PlayGigaProxy : public ProxyStub::UnknownProxyType<IPlayGiga> {
+    public:
+        PlayGigaProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~PlayGigaProxy()
+        {
+        }
+
+    public:
+        virtual void Launch(const string& game, const string& token)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(game);
+            writer.Text(token);
+            Invoke(newMessage);
+        }
+    };
+
     class PowerProxy : public ProxyStub::UnknownProxyType<IPower> {
     public:
         PowerProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -2490,6 +2525,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IStreaming::INotification, TunerNotificationProxy, TunerNotificationStub>();
             RPC::Administrator::Instance().Announce<IRPCLink, RPCLinkProxy, RPCLinkStub>();
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();
+            RPC::Administrator::Instance().Announce<IPlayGiga, PlayGigaProxy, PlayGigaStub>();
             RPC::Administrator::Instance().Announce<IPower, PowerProxy, PowerStub>();
         }
 
