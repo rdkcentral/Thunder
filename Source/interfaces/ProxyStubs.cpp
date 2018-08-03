@@ -4,8 +4,9 @@
 #include "IComposition.h"
 #include "IDictionary.h"
 #include "IGuide.h"
-#include "INetflix.h"
 #include "IContentDecryption.h"
+#include "INetflix.h"
+#include "IPlayGiga.h"
 #include "IProvisioning.h"
 #include "IPower.h"
 #include "IRPCLink.h"
@@ -14,8 +15,6 @@
 #include "ITVControl.h"
 #include "IWebDriver.h"
 #include "IWebServer.h"
-#include "IPlayGiga.h"
-#include "IPower.h"
 
 MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)
 
