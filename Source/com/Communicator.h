@@ -242,6 +242,10 @@ namespace RPC {
 	{
 		Core::Process::Options options(config.HostApplication());
  
+                ASSERT(instance.Locator().empty() == false);
+                ASSERT(instance.ClassName().empty() == false);
+                ASSERT(config.Connector().empty() == false);
+
 		options[_T("l")] = instance.Locator();
 		options[_T("c")] = instance.ClassName();
 		options[_T("r")] = config.Connector();

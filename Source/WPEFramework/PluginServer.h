@@ -997,9 +997,6 @@ namespace WPEFramework {
 			public:
 				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension)
 				{
-					ASSERT(className.empty() == false);
-					ASSERT(locator.empty() == false);
-
 					string persistentPath(_persistentPath);
 					string dataPath(_dataPath);
 
