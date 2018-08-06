@@ -33,16 +33,14 @@ namespace Core {
 #ifdef __DEBUG__
             _refCountedHandle->_name = fileName;
 #endif
-            TRACE_L1("Loaded library: %s", fileName);
         }
         else {
 #ifdef __LINUX__
-#ifdef __DEBUG__
-            TRACE_L1("Error: %s", dlerror());
-#endif
             _error = dlerror();
+#ifdef __DEBUG__
+            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
 #endif
-            TRACE_L1("Failed to load library: %s", fileName);
+#endif
         }
     }
     Library::Library(const Library& copy)
