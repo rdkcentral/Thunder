@@ -320,6 +320,34 @@ namespace PluginHost {
             }
         }
 
+        if (serviceConfig.Process.IsSet () == true) {
+
+            Core::ProcessInfo myself;
+
+            if (serviceConfig.Process.OOMAdjust.IsSet() == true) {
+                myself.Priority(serviceConfig.Process.OOMAdjust.Value());
+            }
+
+            if (serviceConfig.Process.Priority.IsSet()) {
+                myself.Priority(serviceConfig.Process.Priority.Value());
+            }
+
+            if (serviceConfig.Process.Policy.IsSet()) {
+                myself.Policy(serviceConfig.Process.Policy.Value());
+            }
+
+            if (serviceConfig.Process.User.IsSet()) {
+                Core::ProcessInfo::User(serviceConfig.Process.User.Value());
+            }
+
+            if (serviceConfig.Process.Group.IsSet()) {
+                myself.Group(serviceConfig.Process.Group.Value());
+            }
+
+            if (serviceConfig.Process.StackSize.IsSet() == true) {
+                Core::Thread::DefaultStackSize(serviceConfig.Process.StackSize.Value());
+            }
+        }
 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
@@ -355,9 +383,6 @@ namespace PluginHost {
             Core::NodeId::ClearIPV6Enabled();
         }
 
-        if ((serviceConfig.Process.IsSet() == true) && (serviceConfig.Process.StackSize.IsSet() == true)) {
-            Core::Thread::DefaultStackSize(serviceConfig.Process.StackSize.Value());
-        }
 
         // TIme to start loading the config of the plugins.
         string pluginPath(serviceConfig.Configs.Value());

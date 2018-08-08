@@ -7,6 +7,8 @@
 #else
 #include <unistd.h>
 #include <limits.h>
+#include <pwd.h>
+#include <grp.h>
 #endif
 
 #ifdef  __APPLE__
@@ -369,6 +371,52 @@ namespace Core {
 #else
         return (ExecutableName(_pid));
 #endif
+    }
+    uint32_t ProcessInfo::Group(const string& groupName) {
+        uint32_t result = ERROR_BAD_REQUEST;
+        if(groupName.empty() == false) {
+            result = ERROR_UNKNOWN_KEY;
+#ifndef __WIN32__
+            struct group * grp = getgrnam(groupName.c_str());
+            if(grp != nullptr) {
+                result = (::setpgid(_pid, grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
+            }
+#endif
+        }
+        return (result);
+    }
+    string ProcessInfo::Group() const {
+        string result;
+#ifndef __WIN32__
+        struct group* grp = getgrgid(::getpgid(_pid));
+        if(grp != nullptr) {
+            result = grp->gr_name;
+        }
+#endif
+        return (result);
+    }
+    /* static */ uint32_t ProcessInfo::User(const string& userName) {
+        uint32_t result = ERROR_BAD_REQUEST;
+        if(userName.empty() == false) {
+            result = ERROR_UNKNOWN_KEY;
+#ifndef __WIN32__
+            struct passwd *pwd = getpwnam(userName.c_str()); 
+            if(pwd != nullptr) {
+                result = (::setuid(pwd->pw_uid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
+            }
+#endif
+        }
+        return (result);
+    }
+    /* static */ string ProcessInfo::User() {
+        string result;
+#ifndef __WIN32__
+        struct passwd* pwd = getpwuid(::getuid());
+        if(pwd != nullptr) {
+            result = pwd->pw_name;
+        }
+#endif
+        return (result);
     }
 }
 }

@@ -10,7 +10,6 @@
 #include <cstdio>
 #include <ctime>
 
-
 #ifdef __APPLE__
 #include <sys/sysctl.h>
 #import <mach/host_info.h>
@@ -511,8 +510,7 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
 #endif
 
  
-
-    namespace System {
+   namespace System {
 
         extern "C" {
 

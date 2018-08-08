@@ -93,10 +93,11 @@ NodeId::NodeId(const struct in6_addr& value) :
     ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
 }
 #ifndef __WIN32__
-NodeId::NodeId(const struct sockaddr_un& rInfo) :
+NodeId::NodeId(const struct sockaddr_un& rInfo, const uint16_t access) :
     m_hostName(rInfo.sun_path) {
 
     *this = rInfo;
+    m_structInfo.DomainSocket.un_access = access;
 
     ASSERT(m_structInfo.DomainSocket.sun_family == AF_UNIX);
 }
@@ -138,10 +139,20 @@ NodeId::NodeId(
     #ifndef __WIN32__
     if (strchr(strHostName, '/') != nullptr) {
         // Seems like we have a path, so a domain socket is required....
-        m_hostName = strHostName;
+        const TCHAR* indicator;
+
+        // There might be a ':0' at the end to identify the domain socket access properties. Extract these
+        if ((indicator = strrchr(strHostName, '|')) != nullptr) {
+            Core::NumberType<uint16_t> number (&(indicator[1]), strlen(&(indicator[1])));
+            m_structInfo.DomainSocket.un_access = number.Value();
+            m_hostName = string (strHostName, ((indicator - strHostName) / sizeof(TCHAR)));
+        }
+        else {
+            m_hostName = strHostName;
+        }
 
         m_structInfo.DomainSocket.sun_family = AF_UNIX;
-        strncpy (m_structInfo.DomainSocket.sun_path, strHostName, sizeof (m_structInfo.DomainSocket.sun_path));
+        strncpy (m_structInfo.DomainSocket.sun_path, m_hostName.c_str(), sizeof (m_structInfo.DomainSocket.sun_path));
         m_structInfo.DomainSocket.sun_path[sizeof(m_structInfo.DomainSocket.sun_path)-1] = '\0';
     } else
     #endif

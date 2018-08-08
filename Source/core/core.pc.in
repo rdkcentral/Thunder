@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/@INSTALL_COMMON_PREFIX@
+
+Name: @ARTIFACT_CORE@
+Description: Abstraction layer basis for all brige functionality
+Version: 1.0
+Cflags: @WCHAR_SUPPORT_DEFINITION@ @CRITICAL_SECTION_LOCK_DEFINITION@ @PRODUCTION@
+Libs: -L${libdir} -l@ARTIFACT_CORE@

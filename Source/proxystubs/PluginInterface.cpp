@@ -142,6 +142,14 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual string ClassName() const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<IShell>()->ClassName());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual string Callsign() const = 0;
             //
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -262,84 +270,6 @@ namespace ProxyStubs {
             } else {
                 parameters.Implementation<IShell>()->Unregister(proxy);
             }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // Careful, out of order.
-            //
-            // virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId,
-            //                           const uint32_t version, uint32_t& pid, const string& locator) = 0;
-            //
-            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-            uint32_t pid = 0;
-            uint32_t waitTime(reader.Number<uint32_t>());
-            string className(reader.Text());
-            uint32_t interfaceId(reader.Number<uint32_t>());
-            uint32_t version(reader.Number<uint32_t>());
-            string locator(reader.Text());
-
-            writer.Number<void*>(message->Parameters().Implementation<IShell>()->Instantiate(waitTime, className, interfaceId, version, pid, locator));
-            writer.Number<uint32_t>(pid);
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // Careful, out of order.
-            //
-            // virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            RPC::IRemoteProcess::INotification* proxy = RPC::Administrator::Instance().CreateProxy<RPC::IRemoteProcess::INotification>(
-                channel, reader.Number<RPC::IRemoteProcess::INotification*>(), true, false);
-
-            ASSERT((proxy != nullptr) && "Failed to create proxy");
-
-            if (proxy == nullptr) {
-                TRACE_L1(_T("Could not create a stub for RPC::IRemoteProcess::INotification: %d"),
-                    RPC::IRemoteProcess::INotification::ID);
-            } else {
-                parameters.Implementation<IShell>()->Register(proxy);
-                if (proxy->Release() != Core::ERROR_NONE) {
-                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
-                }
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // Careful, out of order.
-            //
-            // virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            // Need to find the proxy that goes with the given implementation..
-            RPC::IRemoteProcess::INotification* stub = reader.Number<RPC::IRemoteProcess::INotification*>();
-
-            // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            RPC::IRemoteProcess::INotification* proxy = RPC::Administrator::Instance().FindProxy<RPC::IRemoteProcess::INotification>(
-                stub);
-
-            if (proxy == nullptr) {
-                TRACE_L1(_T("Coud not find stub for RPC::IRemoteProcess::INotification: %p"), stub);
-            } else {
-                parameters.Implementation<IShell>()->Unregister(proxy);
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // Careful, out of order.
-            //
-            // virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
-            //
-            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number<Core::IUnknown*>(
-                message->Parameters().Implementation<IShell>()->RemoteProcess(reader.Number<uint32_t>()));
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -706,6 +636,7 @@ namespace ProxyStubs {
         // virtual string Accessor() const = 0;
         // virtual string WebPrefix() const = 0;
         // virtual string Locator() const = 0;
+        // virtual string ClassName() const = 0;
         // virtual string Callsign() const = 0;
         // virtual string PersistentPath() const = 0;
         // virtual string VolatilePath() const = 0;
@@ -716,11 +647,6 @@ namespace ProxyStubs {
         // virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
         // virtual void Register(IPlugin::INotification* sink) = 0;
         // virtual void Unregister(IPlugin::INotification* sink) = 0;
-        // virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId,
-        //                           const uint32_t version, uint32_t& pid, const string& locator) = 0;
-        // virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-        // virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-        // virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
         // virtual uint32_t Activate(const reason) = 0;
         // virtual uint32_t Deactivate(const reason) = 0;
         // virtual state State() const = 0;
@@ -802,7 +728,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string Callsign() const override
+        virtual string ClassName() const override
         {
             IPCMessage newMessage(BaseClass::Message(8));
 
@@ -812,7 +738,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string PersistentPath() const override
+        virtual string Callsign() const override
         {
             IPCMessage newMessage(BaseClass::Message(9));
 
@@ -822,7 +748,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string VolatilePath() const override
+        virtual string PersistentPath() const override
         {
             IPCMessage newMessage(BaseClass::Message(10));
 
@@ -832,7 +758,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string DataPath() const override
+        virtual string VolatilePath() const override
         {
             IPCMessage newMessage(BaseClass::Message(11));
 
@@ -842,7 +768,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string HashKey() const override
+        virtual string DataPath() const override
         {
             IPCMessage newMessage(BaseClass::Message(12));
 
@@ -852,9 +778,19 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual bool AutoStart() const override
+        virtual string HashKey() const override
         {
             IPCMessage newMessage(BaseClass::Message(13));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Text());
+        }
+        virtual bool AutoStart() const override
+        {
+            IPCMessage newMessage(BaseClass::Message(14));
 
             Invoke(newMessage);
 
@@ -864,7 +800,7 @@ namespace ProxyStubs {
         }
         virtual void Notify(const string& message) override
         {
-            IPCMessage newMessage(BaseClass::Message(14));
+            IPCMessage newMessage(BaseClass::Message(15));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Text(message);
@@ -873,7 +809,7 @@ namespace ProxyStubs {
         }
         virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override
         {
-            IPCMessage newMessage(BaseClass::Message(15));
+            IPCMessage newMessage(BaseClass::Message(16));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Number(id);
@@ -887,7 +823,7 @@ namespace ProxyStubs {
         }
         virtual void Register(IPlugin::INotification* sink) override
         {
-            IPCMessage newMessage(BaseClass::Message(16));
+            IPCMessage newMessage(BaseClass::Message(17));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<IPlugin::INotification*>(sink);
 
@@ -895,64 +831,15 @@ namespace ProxyStubs {
         }
         virtual void Unregister(IPlugin::INotification* sink) override
         {
-            IPCMessage newMessage(BaseClass::Message(17));
+            IPCMessage newMessage(BaseClass::Message(18));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<IPlugin::INotification*>(sink);
 
             Invoke(newMessage);
         }
-        virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId,
-            const uint32_t version, uint32_t& pid, const string& locator) override
-        {
-            IPCMessage newMessage(BaseClass::Message(18));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-
-            writer.Number<uint32_t>(waitTime);
-            writer.Text(className);
-            writer.Number<uint32_t>(interfaceId);
-            writer.Number<uint32_t>(version);
-            writer.Text(locator);
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            Core::IUnknown* result = reader.Number<Core::IUnknown*>();
-            pid = reader.Number<uint32_t>();
-
-            return (CreateProxy(result, interfaceId));
-        }
-        virtual void Register(RPC::IRemoteProcess::INotification* sink) override
-        {
-            IPCMessage newMessage(BaseClass::Message(19));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<RPC::IRemoteProcess::INotification*>(sink);
-
-            Invoke(newMessage);
-        }
-        virtual void Unregister(RPC::IRemoteProcess::INotification* sink) override
-        {
-            IPCMessage newMessage(BaseClass::Message(20));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<RPC::IRemoteProcess::INotification*>(sink);
-
-            Invoke(newMessage);
-        }
-        virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) override
-        {
-            IPCMessage newMessage(BaseClass::Message(21));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-
-            writer.Number<uint32_t>(pid);
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (CreateProxy<RPC::IRemoteProcess>(reader.Number<Core::IUnknown*>()));
-        }
         virtual uint32_t Activate(const IShell::reason theReason) override
         {
-            IPCMessage newMessage(BaseClass::Message(22));
+            IPCMessage newMessage(BaseClass::Message(19));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Number<IShell::reason>(theReason);
@@ -962,7 +849,7 @@ namespace ProxyStubs {
         }
         virtual uint32_t Deactivate(const IShell::reason theReason) override
         {
-            IPCMessage newMessage(BaseClass::Message(23));
+            IPCMessage newMessage(BaseClass::Message(20));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Number<IShell::reason>(theReason);
@@ -972,21 +859,21 @@ namespace ProxyStubs {
         }
         virtual IShell::state State() const override
         {
-            IPCMessage newMessage(BaseClass::Message(24));
+            IPCMessage newMessage(BaseClass::Message(21));
             Invoke(newMessage);
 
             return (newMessage->Response().Reader().Number<IShell::state>());
         }
         virtual IShell::reason Reason() const override
         {
-            IPCMessage newMessage(BaseClass::Message(25));
+            IPCMessage newMessage(BaseClass::Message(22));
             Invoke(newMessage);
 
             return (newMessage->Response().Reader().Number<IShell::reason>());
         }
         virtual string Model() const override
         {
-            IPCMessage newMessage(BaseClass::Message(26));
+            IPCMessage newMessage(BaseClass::Message(23));
 
             Invoke(newMessage);
 
@@ -996,7 +883,7 @@ namespace ProxyStubs {
         }
         virtual ISubSystem* SubSystems() override
         {
-            IPCMessage newMessage(BaseClass::Message(27));
+            IPCMessage newMessage(BaseClass::Message(24));
 
             Invoke(newMessage);
 
@@ -1004,7 +891,9 @@ namespace ProxyStubs {
 
             return (CreateProxy<ISubSystem>(reader.Number<ISubSystem*>()));
         }
- 
+        virtual IProcess* Process() {
+            return (nullptr);
+        }
     };
 
     class StateControlProxy : public ProxyStub::UnknownProxyType<IStateControl> {

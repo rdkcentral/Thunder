@@ -138,7 +138,6 @@ void Server::ServiceMap::Destroy() {
 
         index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
 
-        Core::ServiceAdministrator::Instance().FlushLibraries();
 
     } while (index != _services.begin());
 
@@ -155,6 +154,8 @@ void Server::ServiceMap::Destroy() {
 
         service.Release();
     }
+
+    Core::ServiceAdministrator::Instance().FlushLibraries();
 
     _adminLock.Unlock();
 
@@ -242,20 +243,8 @@ void Server::ServiceMap::Destroy() {
 }
 
 // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-/* virtual */ void* Server::Service::Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator) {
-    return (_administrator.Instantiate(waitTime, className, interfaceId, version, pid, locator, ClassName(), Callsign()));
-}
-
-/* virtual */ void Server::Service::Register(RPC::IRemoteProcess::INotification* sink) {
-    _administrator.Register(sink);
-}
-
-/* virtual */ void Server::Service::Unregister(RPC::IRemoteProcess::INotification* sink) {
-    _administrator.Unregister(sink);
-}
-
-/* virtual */ RPC::IRemoteProcess* Server::Service::RemoteProcess(const uint32_t pid) {
-    return (_administrator.RemoteProcess(pid));
+/* virtual */ PluginHost::IShell::IProcess* Server::Service::Process() {
+    return (&_administrator);
 }
 
 // Methods to stop/start/update the service.
@@ -518,22 +507,6 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
               securityHandler)
     , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
     , _controller() {
-    if (configuration.Process.IsSet () == true) {
-
-        Core::ProcessInfo myself;
-
-        if (configuration.Process.OOMAdjust.IsSet() == true) {
-            myself.Priority(configuration.Process.OOMAdjust.Value());
-        }
-
-        if (configuration.Process.Priority.IsSet()) {
-            myself.Priority(configuration.Process.Priority.Value());
-        }
-
-        if (configuration.Process.Policy.IsSet()) {
-            myself.Policy(configuration.Process.Policy.Value());
-        }
-    }
 
 	// See if the persitent path for our-selves exist, if not we will create it :-)
 	Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));

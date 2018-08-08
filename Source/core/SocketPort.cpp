@@ -1054,7 +1054,7 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
     }
 #endif
 
-    if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
+    if ((l_Result = ::socket(localNode.Type(), SocketMode(), (localNode.Type() == NodeId::TYPE_NETLINK ? localNode.Extension() : 0))) == INVALID_SOCKET) {
 	TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
     } else if (SetNonBlocking (l_Result) == false) {
 #ifdef __WIN32__
@@ -1118,10 +1118,20 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
         if ( (SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) ||
              (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0)) ) {
             if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
-                BufferAlignment(l_Result);
-                return (l_Result);
+
+                if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Extension() <= 0777)) {
+                    if (::chmod(localNode.HostName().c_str(), localNode.Extension()) == 0) {
+                        BufferAlignment(l_Result);
+                        return (l_Result);
+                    } else {
+                        TRACE_L1("Error on port socket CHMOD. Error %d", __ERRORRESULT__);
+                    }
+                }
+                else {
+                    BufferAlignment(l_Result);
+                    return (l_Result);
+                }
             } else {
-                printf ("LINE: Error binding: %d\n", __ERRORRESULT__);
                 TRACE_L1("Error on port socket BIND. Error %d", __ERRORRESULT__);
             }
         } else {

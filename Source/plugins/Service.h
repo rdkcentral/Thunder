@@ -285,10 +285,6 @@ namespace PluginHost {
         bool IsWebServerRequest(const string& segment) const;
         void Notification(const string& message);
 
-        inline string ClassName() const
-        {
-            return (_config.Configuration().ClassName.Value());
-        }
         virtual string Version () const
         {
             return (_config.Information().Version());
@@ -304,6 +300,10 @@ namespace PluginHost {
         virtual string Locator() const
         {
             return (_config.Configuration().Locator.Value());
+        }
+        virtual string ClassName() const
+        {
+            return (_config.Configuration().ClassName.Value());
         }
         virtual string Callsign() const
         {
@@ -417,10 +417,7 @@ namespace PluginHost {
         virtual void Unregister(IPlugin::INotification* sink) = 0;
 
         // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-        virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator) = 0;
-		virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-		virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-		virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
+        virtual IProcess* Process() = 0;
 
         // Methods to Activate and Deactivate the aggregated Plugin to this shell.
         // These are Blocking calls!!!!!
