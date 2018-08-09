@@ -18,7 +18,9 @@ namespace Exchange {
             ScreenResolution_1080p24Hz = 5,
             ScreenResolution_1080i50Hz = 6,
             ScreenResolution_1080p50Hz = 7,
-            ScreenResolution_1080p60Hz = 8
+            ScreenResolution_1080p60Hz = 8,
+            ScreenResolution_2160p50Hz = 9,
+            ScreenResolution_2160p60Hz = 10
         };
 
         struct IClient : virtual public Core::IUnknown {
