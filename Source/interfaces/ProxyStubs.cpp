@@ -815,21 +815,21 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void SetResolution(const ScreenResolution) = 0;
+            // virtual void Resolution(const ScreenResolution) = 0;
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-            parameters.Implementation<IComposition>()->SetResolution(reader.Number<IComposition::ScreenResolution>());
+            parameters.Implementation<IComposition>()->Resolution(reader.Number<IComposition::ScreenResolution>());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual const ScreenResolution GetResolution() = 0;
+            // virtual ScreenResolution Resolution() const = 0;
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
-            writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->GetResolution());
+            writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->Resolution());
         },
         nullptr
     };
@@ -2245,8 +2245,8 @@ namespace ProxyStubs {
         // virtual IClient* Client(const uint8_t index) = 0;
         // virtual IClient* Client(const string& name) = 0;
         // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-        // virtual void SetResolution(const ScreenResolution) = 0;
-        // virtual const ScreenResolution GetResolution() = 0;
+        // virtual void Resolution(const ScreenResolution) = 0;
+        // virtual ScreenResolution Resolution() const = 0;
         virtual void Register(IComposition::INotification* notification)
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -2294,7 +2294,7 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void SetResolution(const ScreenResolution format)
+        virtual void Resolution(const ScreenResolution format)
         {
             IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2302,7 +2302,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual const ScreenResolution GetResolution()
+        virtual ScreenResolution Resolution() const
         {
             IPCMessage newMessage(BaseClass::Message(6));
             Invoke(newMessage);

@@ -62,8 +62,8 @@ namespace Exchange {
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         // Set and get output resolution
-        virtual void SetResolution(const ScreenResolution) = 0;
-        virtual const ScreenResolution GetResolution() = 0;
+        virtual void Resolution(const ScreenResolution) = 0;
+        virtual ScreenResolution Resolution() const = 0;
 
     };
 }
