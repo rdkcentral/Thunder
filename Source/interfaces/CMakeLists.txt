@@ -77,4 +77,15 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}/interfaces      # headers
 )
 
+# package config
+configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc"
+        @ONLY)
+
+install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig"
+)
+
 HandleStandardLib()
