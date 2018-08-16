@@ -1072,6 +1072,6 @@ extern "C" {
 
         ASSERT (sessionHandler != nullptr);
 
-        sessionHandler->Decrypt(data, length, iv, ivLength);
+        return (sessionHandler->Decrypt(data, length, iv, ivLength));
     }
 }

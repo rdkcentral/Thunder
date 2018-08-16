@@ -2,6 +2,7 @@ set(TARGET Interfaces)
 
 add_library(${TARGET} SHARED
         ProxyStubs.cpp
+        Enumerations.cpp
         )
 
 set(PUBLIC_HEADERS
