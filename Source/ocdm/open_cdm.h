@@ -43,19 +43,17 @@
 // So due to performance and security exploits it was decided to offer a second implementation of the OpenCDMi
 // specification that did notrequire to change the WPEWebKit
 
-#include <string>
 #include <string.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+
+#include <string>
 #include <list>
-
-namespace OCDM {
-
-struct IAccessorOCDM;
-
-}
 
 namespace media {
 
+class AccessorOCDM;
 class OpenCdmSession;
 
 class OpenCdm {
@@ -82,10 +80,11 @@ public:
   OpenCdm();
   OpenCdm(const OpenCdm& copy);
   explicit OpenCdm(const std::string& sessionId);
-  OpenCdm(const uint8_t keyId[], const uint8_t length);
   ~OpenCdm();
 
 public:
+  bool GetSession(const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
+
   // ---------------------------------------------------------------------------------------------
   // INSTANTIATION OPERATIONS:
   // ---------------------------------------------------------------------------------------------
@@ -126,11 +125,19 @@ public:
 
 
 private:
-  OCDM::IAccessorOCDM* _implementation;
+  AccessorOCDM* _implementation;
   OpenCdmSession* _session;
   std::string _keySystem;
 };
 
 } // namespace media
+
+#else
+
+void* acquire_session(const uint8_t* keyId, const uint8_t keyLength, const uint32_t waitTime);
+void release_session(void* session);
+uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
+
+#endif
 
 #endif // __OCDM_WRAPPER_H_

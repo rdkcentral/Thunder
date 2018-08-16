@@ -25,7 +25,7 @@ namespace OCDM {
         // events originated from the session.
         struct ICallback : virtual public WPEFramework::Core::IUnknown
         {
-            enum { ID = 0x00000012 };
+            enum { ID = 0x00000013 };
 
             virtual ~ICallback() {}
 
@@ -48,15 +48,7 @@ namespace OCDM {
             virtual void OnKeyStatusUpdate(const ISession::KeyStatus status) = 0;
         };
 
-        struct IKeyCallback : virtual public WPEFramework::Core::IUnknown {
-            IKeyCallback() {}
-
-            enum { ID = 0x00000013 };
-
-            virtual void StateChange(const uint8_t keyLength, const uint8_t keyId[], const KeyStatus status) = 0;
-        };
-
-        enum { ID = 0x00000011 };
+        enum { ID = 0x00000012 };
 
         virtual ~ISession(void) {}
 
@@ -80,10 +72,6 @@ namespace OCDM {
         //We are completely done with the session, it can be closed.
         virtual void Close() = 0;
 
-        //Make sure we can get KeyId changes and values..
-        virtual void Register (IKeyCallback* callback) = 0;
-        virtual void Unregister (IKeyCallback* callback) = 0;
-
         //During instantiation a callback is set, here we can decouple.
         virtual void Revoke (OCDM::ISession::ICallback* callback) = 0;
     };
@@ -91,6 +79,17 @@ namespace OCDM {
     struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
         enum { ID = 0x00000010 };
+
+        struct INotification : virtual public WPEFramework::Core::IUnknown {
+
+            enum { ID = 0x00000011 };
+
+            virtual ~INotification () {}
+
+            virtual void Create(const string& sessionId) = 0;
+            virtual void Destroy(const string& sessionId) = 0;
+            virtual void KeyChange(const string& sessionId, const uint8_t keyId[], const uint8_t length, const OCDM::ISession::KeyStatus status) = 0;
+        };
 
         virtual ~IAccessorOCDM() {}
 
@@ -116,6 +115,12 @@ namespace OCDM {
             const string keySystem,
             const uint8_t* serverCertificate,
             const uint16_t serverCertificateLength) = 0;
+
+        virtual void Register (
+            INotification* sink) = 0;
+ 
+        virtual void Unregister (
+            INotification* sink) = 0;
  
         virtual ISession* Session(
             const std::string sessionId) = 0;
