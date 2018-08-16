@@ -1,3 +1,4 @@
+#include "IAVNClient.h"
 #include "IBluetooth.h"
 #include "IBrowser.h"
 #include "IComposition.h"
@@ -5,6 +6,8 @@
 #include "IGuide.h"
 #include "INetflix.h"
 #include "IContentDecryption.h"
+#include "INetflix.h"
+#include "IPlayGiga.h"
 #include "IProvisioning.h"
 #include "IPower.h"
 #include "IRPCLink.h"
@@ -813,21 +816,21 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void SetResolution(const ScreenResolution) = 0;
+            // virtual void Resolution(const ScreenResolution) = 0;
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-            parameters.Implementation<IComposition>()->SetResolution(reader.Number<IComposition::ScreenResolution>());
+            parameters.Implementation<IComposition>()->Resolution(reader.Number<IComposition::ScreenResolution>());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual const ScreenResolution GetResolution() = 0;
+            // virtual ScreenResolution Resolution() const = 0;
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
-            writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->GetResolution());
+            writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->Resolution());
         },
         nullptr
     };
@@ -997,6 +1000,39 @@ namespace ProxyStubs {
         nullptr
     };
     // IWebServer interface stub definitions
+
+    ProxyStub::MethodHandler AVNClientStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(channel, implementation, true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a stub for IAVNClient: %p"), implementation);
+                writer.Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            }
+            else {
+                writer.Number(parameters.Implementation<IAVNClient>()->Configure(proxy));
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //virtual void Launch(const string& appURL);
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            const string appURL(parameters.Text());
+            message->Parameters().Implementation<IAVNClient>()->Launch(appURL);
+        },
+
+        nullptr
+    };
 
     ProxyStub::MethodHandler TunerStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -1472,6 +1508,17 @@ namespace ProxyStubs {
 
         nullptr
     };
+    ProxyStub::MethodHandler PlayGigaStubMethods[] = {
+       [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //virtual void Launch(const string& game, const string& token);
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            const string game(parameters.Text());
+            const string token(parameters.Text());
+            message->Parameters().Implementation<IPlayGiga>()->Launch(game, token);
+        },
+
+        nullptr
+    };
     ProxyStub::MethodHandler PowerStubMethods[] = {
        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
             //virtual PCStatus SetState(const State state, uint32_t timeout);
@@ -1511,6 +1558,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IComposition, CompositionStubMethods, ProxyStub::UnknownStub> CompositionStub;
     typedef ProxyStub::StubType<IComposition::IClient, CompositionClientStubMethods, ProxyStub::UnknownStub> CompositionClientStub;
     typedef ProxyStub::StubType<IComposition::INotification, CompositionNotificationStubMethods, ProxyStub::UnknownStub> CompositionNotificationStub;
+    typedef ProxyStub::StubType<IAVNClient, AVNClientStubMethods, ProxyStub::UnknownStub> AVNClientStub;
     typedef ProxyStub::StubType<IStreaming, TunerStubMethods, ProxyStub::UnknownStub> TunerStub;
     typedef ProxyStub::StubType<IStreaming::INotification, TunerNotificationStubMethods, ProxyStub::UnknownStub> TunerNotificationStub;
     typedef ProxyStub::StubType<IStream, StreamStubMethods, ProxyStub::UnknownStub> StreamStub;
@@ -1521,6 +1569,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IPlayer, PlayerStubMethods, ProxyStub::UnknownStub> PlayerStub;
     typedef ProxyStub::StubType<IRPCLink, RPCLinkStubMethods, ProxyStub::UnknownStub> RPCLinkStub;
     typedef ProxyStub::StubType<IRPCLink::INotification, RPCLinkNotificationStubMethods, ProxyStub::UnknownStub> RPCLinkNotificationStub;
+    typedef ProxyStub::StubType<IPlayGiga, PlayGigaStubMethods, ProxyStub::UnknownStub> PlayGigaStub;
     typedef ProxyStub::StubType<IPower, PowerStubMethods, ProxyStub::UnknownStub> PowerStub;
 
     // -------------------------------------------------------------------------------------------
@@ -2197,8 +2246,8 @@ namespace ProxyStubs {
         // virtual IClient* Client(const uint8_t index) = 0;
         // virtual IClient* Client(const string& name) = 0;
         // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-        // virtual void SetResolution(const ScreenResolution) = 0;
-        // virtual const ScreenResolution GetResolution() = 0;
+        // virtual void Resolution(const ScreenResolution) = 0;
+        // virtual ScreenResolution Resolution() const = 0;
         virtual void Register(IComposition::INotification* notification)
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -2246,7 +2295,7 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void SetResolution(const ScreenResolution format)
+        virtual void Resolution(const ScreenResolution format)
         {
             IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2254,7 +2303,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual const ScreenResolution GetResolution()
+        virtual ScreenResolution Resolution() const
         {
             IPCMessage newMessage(BaseClass::Message(6));
             Invoke(newMessage);
@@ -2414,6 +2463,35 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             string accessorURL = reader.Text();
             return accessorURL;
+        }
+    };
+
+    class AVNClientProxy : public ProxyStub::UnknownProxyType<IAVNClient> {
+    public:
+        AVNClientProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~AVNClientProxy()
+        {
+        }
+
+    public:
+        virtual uint32_t Configure(PluginHost::IShell* service)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(service);
+            Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
+        }
+        virtual void Launch(const string& appURL)
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(appURL);
+            Invoke(newMessage);
         }
     };
 
@@ -2910,6 +2988,28 @@ namespace ProxyStubs {
         }
     };
 
+    class PlayGigaProxy : public ProxyStub::UnknownProxyType<IPlayGiga> {
+    public:
+        PlayGigaProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~PlayGigaProxy()
+        {
+        }
+
+    public:
+        virtual void Launch(const string& game, const string& token)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(game);
+            writer.Text(token);
+            Invoke(newMessage);
+        }
+    };
+
     class PowerProxy : public ProxyStub::UnknownProxyType<IPower> {
     public:
         PowerProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -2975,6 +3075,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IComposition, CompositionProxy, CompositionStub>();
             RPC::Administrator::Instance().Announce<IComposition::IClient, CompositionClientProxy, CompositionClientStub>();
             RPC::Administrator::Instance().Announce<IComposition::INotification, CompositionNotificationProxy, CompositionNotificationStub>();
+            RPC::Administrator::Instance().Announce<IAVNClient, AVNClientProxy, AVNClientStub>();
             RPC::Administrator::Instance().Announce<IStreaming, TunerProxy, TunerStub>();
             RPC::Administrator::Instance().Announce<IStreaming::INotification, TunerNotificationProxy, TunerNotificationStub>();
             RPC::Administrator::Instance().Announce<IStream, StreamProxy, StreamStub>();
@@ -2985,6 +3086,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IPlayer, PlayerProxy, PlayerStub>();
             RPC::Administrator::Instance().Announce<IRPCLink, RPCLinkProxy, RPCLinkStub>();
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();
+            RPC::Administrator::Instance().Announce<IPlayGiga, PlayGigaProxy, PlayGigaStub>();
             RPC::Administrator::Instance().Announce<IPower, PowerProxy, PowerStub>();
         }
 

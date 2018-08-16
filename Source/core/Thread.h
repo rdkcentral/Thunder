@@ -454,6 +454,8 @@ namespace Core {
 
                 if (_queue.Extract(_executing, Core::infinite) == true) {
 
+                    _active = true;
+
                     // Seems like we have work...
                     _executing.Dispatch();
 

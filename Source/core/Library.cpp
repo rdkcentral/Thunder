@@ -8,6 +8,7 @@
 
 namespace WPEFramework {
 namespace Core {
+
     Library::Library()
         : _refCountedHandle(nullptr)
         , _error()
@@ -32,23 +33,14 @@ namespace Core {
 #ifdef __DEBUG__
             _refCountedHandle->_name = fileName;
 #endif
-            TRACE_L1("Loaded library: %s", fileName);
         }
         else {
 #ifdef __LINUX__
-#ifdef __DEBUG__
-            TRACE_L1("Error: %s", dlerror());
-#else
             _error = dlerror();
-
-            //TODO: @Pierre file exists
-            std::ifstream hasFile(fileName);
-            if (hasFile) {
-                printf("Error: %s\n", _error.c_str());
-            }
+#ifdef __DEBUG__
+            TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
 #endif
 #endif
-            TRACE_L1("Failed to load library: %s", fileName);
         }
     }
     Library::Library(const Library& copy)

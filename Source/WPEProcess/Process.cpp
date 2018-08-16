@@ -70,7 +70,7 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -81,6 +81,8 @@ namespace Process {
             , DataPath(nullptr)
             , AppPath(nullptr)
             , ProxyStubPath(nullptr)
+            , User(nullptr)
+            , Group(nullptr)
         {
             Parse();
         }
@@ -99,6 +101,8 @@ namespace Process {
         const TCHAR* DataPath;
         const TCHAR* AppPath;
         const TCHAR* ProxyStubPath;
+        const TCHAR* User;
+        const TCHAR* Group;
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -128,6 +132,11 @@ namespace Process {
             case 'm':
                 ProxyStubPath = argument;
                 break;
+            case 'u':
+                User = argument;
+                break;
+            case 'g':
+                Group = argument;
                 break;
             case 'i':
                 InterfaceId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
@@ -260,6 +269,8 @@ int main(int argc, char** argv)
         printf("         -r <communication channel>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-v <version>]\n");
+        printf("        [-u <user>]\n");
+        printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
@@ -283,9 +294,18 @@ int main(int argc, char** argv)
         Core::NodeId remoteNode(options.RemoteChannel);
 
         if (remoteNode.IsValid()) {
+            void* base = nullptr;
+
             TRACE_L1("Spawning a new plugin %s.", options.ClassName);
 
-            void* base = nullptr;
+            // Firts make sure we apply the correct rights to our selves..
+            if (options.User != nullptr) {
+                Core::ProcessInfo::User(string(options.User));
+            }
+
+            if (options.Group != nullptr) {
+                Core::ProcessInfo().Group(string(options.Group));
+            }
 
             // Seems like we have enough information, open up the Process communcication Channel.
             _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode));

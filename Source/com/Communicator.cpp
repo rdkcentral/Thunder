@@ -106,6 +106,8 @@ namespace RPC {
     {
         void* result(nullptr);
 
+        ASSERT(className.empty() == false);
+
         if (BaseClass::IsOpen() == true) {
             Core::ProxyType<RPC::ObjectMessage> message(ObjectMessageFactory.Element());
 

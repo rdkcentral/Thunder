@@ -8,11 +8,23 @@
 namespace WPEFramework {
 namespace PluginHost {
 
+
     struct EXTERNAL IShell
         : virtual public Core::IUnknown {
 
         enum {
             ID = 0x00000029
+        };
+
+        // This interface is only returned if the IShell is aceessed in the WPEFramework process. The interface can 
+        // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
+        // If this interface is requested outside of the WPEFramework process, it will return a nullptr.
+        struct EXTERNAL IProcess {
+            virtual ~IProcess() {}
+            virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
+            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
+            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) = 0;
         };
 
         virtual ~IShell()
@@ -97,7 +109,6 @@ namespace PluginHost {
             state _state;
             reason _reason;
         };
-
         //! @{
         //! =========================== ACCESSOR TO THE SHELL AROUND THE PLUGIN ===============================
         //! This interface allows access to the shell that scontrolls the lifetimeof the Plugin. It's access
@@ -131,6 +142,9 @@ namespace PluginHost {
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
         virtual string Locator() const = 0;
 
+        //! ClassName: Name of the class to be instantiated for this IShell
+        virtual string ClassName() const = 0;
+
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
         virtual string Callsign() const = 0;
 
@@ -158,14 +172,6 @@ namespace PluginHost {
         // the web world that have build in functionality to parse JSON structs.
         virtual void Notify(const string& message) = 0;
 
-        // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-        virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-        virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-        virtual void*
-        Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version, uint32_t& pid, const string& locator)
-            = 0;
-        virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
-
         // Allow access to the Shells, configured for the different Plugins found in the configuration.
         // Calling the QueryInterfaceByCallsign with an empty callsign will query for interfaces located
         // on the controller.
@@ -180,19 +186,44 @@ namespace PluginHost {
         virtual uint32_t Deactivate(const reason) = 0;
         virtual reason Reason() const = 0;
 
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE*
-        Instantiate(const uint32_t waitTime, const string& className, const uint32_t version, uint32_t& pid, const string& locator)
-        {
-            void* baseInterface(Instantiate(waitTime, className, REQUESTEDINTERFACE::ID, version, pid, locator));
+        // Method to access, in the WPEFramework space, a COM factory to instantiate objects out-of-process.
+        // This method will return a nullptr if it is NOT in the WPEFramework process.
+        virtual IProcess* Process() = 0;
 
-            if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+        inline void Register(RPC::IRemoteProcess::INotification* sink) {
+            IProcess* handler(Process());
+
+            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Register(sink);
             }
+        }
+        inline void Unregister(RPC::IRemoteProcess::INotification* sink) {
+            IProcess* handler(Process());
 
-            return (nullptr);
+            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                handler->Unregister(sink);
+            }
+        }
+        inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) {
+            IProcess* handler(Process());
+
+            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            return (handler == nullptr ? nullptr : handler->RemoteProcess(pid));
         }
 
+        template <typename REQUESTEDINTERFACE>
+        REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
+        {
+            return (reinterpret_cast<REQUESTEDINTERFACE*>(Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version)));
+        }
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
         {
@@ -204,6 +235,24 @@ namespace PluginHost {
 
             return (nullptr);
         }
+        template <typename REQUESTEDINTERFACE>
+        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator) {
+            IProcess* handler(Process());
+
+            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            ASSERT(handler != nullptr);
+
+            if (handler != nullptr) {
+                RPC::Object definition (locator, className, REQUESTEDINTERFACE::ID, version, string(), string());
+
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign())));
+            }
+
+            return (nullptr);
+        }
+
+    private:
+        void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);
     };
 } // namespace PluginHost
 

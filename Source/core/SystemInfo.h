@@ -88,7 +88,7 @@ namespace Core {
             return m_freegpuram;
         }
 
-/*
+	/*
         * Pentium cycle counter
         */
 #if defined(__GNUC__) && defined(__i386__) && !defined(HAVE_TICK_COUNTER)
