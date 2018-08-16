@@ -4,6 +4,7 @@
 #include "IComposition.h"
 #include "IDictionary.h"
 #include "IGuide.h"
+#include "INetflix.h"
 #include "IContentDecryption.h"
 #include "INetflix.h"
 #include "IPlayGiga.h"
