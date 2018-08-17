@@ -80,6 +80,7 @@ public:
   OpenCdm();
   OpenCdm(const OpenCdm& copy);
   explicit OpenCdm(const std::string& sessionId);
+  OpenCdm(const uint8_t keyId[], const uint8_t length);
   ~OpenCdm();
 
 public:

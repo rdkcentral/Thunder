@@ -868,6 +868,26 @@ OpenCdm::OpenCdm(const std::string& sessionId) : _implementation (AccessorOCDM::
     }
 }
 
+OpenCdm::OpenCdm (const uint8_t keyId[], const uint8_t length)  : _implementation (AccessorOCDM::Instance()), _session(nullptr), _keySystem() {
+
+     if (_implementation != nullptr) {
+
+         OCDM::ISession* entry = _implementation->Session(keyId, length);
+
+         if (entry != nullptr) {
+             _session = new OpenCdmSession(entry);
+             // TRACE_L1 ("Created an OpenCdm instance: %p from keyId [%p]", this, entry);
+             entry->Release();
+         }
+         else {
+             TRACE_L1 ("Failed to create an OpenCdm instance, for keyId [%d]", __LINE__);
+         }
+     }
+     else {
+         TRACE_L1 ("Failed to create an OpenCdm instance: %p for keyId failed", this);
+     }
+}
+
 OpenCdm::~OpenCdm() {
     if (_session != nullptr) {
         _session->Release();
