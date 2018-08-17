@@ -1,9 +1,13 @@
-set(TARGET Interfaces)
 
-add_library(${TARGET} SHARED
+# ${TARGET} mentioned here is the name to be used by other CMake projects.
+add_library(Marshalling SHARED
         ProxyStubs.cpp
+        )
+
+add_library(Interfaces SHARED
         Enumerations.cpp
         )
+
 
 set(PUBLIC_HEADERS
         IAVNClient.h
@@ -37,55 +41,91 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-target_link_libraries(${TARGET}
+target_link_libraries(Marshalling
         PRIVATE
           ${NAMESPACE}::Core
           ${NAMESPACE}::Tracing
           ${NAMESPACE}::Cryptalgo
         )
 
+target_link_libraries(Interfaces
+        PRIVATE
+          ${NAMESPACE}::Core
+        )
+
+
 if (WPEFRAMEWORK_PROTOCOLS)
-    target_link_libraries(${TARGET}
+    target_link_libraries(Marshalling
             PRIVATE
               ${NAMESPACE}::Protocols
             )
 else()
-    target_link_libraries(${TARGET}
+    target_link_libraries(Marshalling
             PRIVATE
               ${NAMESPACE}::WebSocket
               ${NAMESPACE}::COM
             )
 endif ()
 
-set_target_properties(${TARGET} PROPERTIES
+set_target_properties(Marshalling PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${PLUGINS_INTERFACES_ARTIFACT}
+        OUTPUT_NAME WPEFrameworkMarshalling
         )
 
+set_target_properties(Interfaces PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        FRAMEWORK FALSE
+        VERSION ${VERSION}
+        SOVERSION ${VERSION_MAJOR}
+        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        OUTPUT_NAME WPEFrameworkInterfaces
+        )
+
+
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # shared lib
+        TARGETS Interfaces EXPORT InterfacesTargets  # for downstream dependencies
+        ARCHIVE DESTINATION lib/ COMPONENT libs      # static lib
+        LIBRARY DESTINATION lib/ COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin/wpeframework/proxystubs COMPONENT libs    # for mac
+        FRAMEWORK DESTINATION bin/ COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/interfaces COMPONENT devel   # headers for mac (note the different component -> different package)
         INCLUDES DESTINATION include/${NAMESPACE}/interfaces      # headers
 )
 
+install(
+        TARGETS Marshalling EXPORT MarshallingTargets  # for downstream dependencies
+        LIBRARY DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # shared lib
+)
+
 # package config
 configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/WPEFrameworkInterfaces.pc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/WPEFrameworkInterfaces.pc"
         @ONLY)
 
 install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_INTERFACES_ARTIFACT}.pc
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFrameworkInterfaces.pc
         DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig"
 )
 
-HandleStandardLib()
+include (CMakePackageConfigHelpers)
+
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/InterfacesConfigVersion.cmake
+        VERSION ${VERSION}
+        COMPATIBILITY SameMajorVersion
+        )
+
+add_library(${NAMESPACE}::Interfaces ALIAS Interfaces)
+
+install(EXPORT InterfacesTargets
+        FILE InterfacesConfig.cmake
+        NAMESPACE ${NAMESPACE}::
+        DESTINATION include/cmake)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/InterfacesConfigVersion.cmake
+        DESTINATION include/cmake )
