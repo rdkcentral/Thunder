@@ -148,6 +148,7 @@ NodeId::NodeId(
             m_hostName = string (strHostName, ((indicator - strHostName) / sizeof(TCHAR)));
         }
         else {
+            m_structInfo.DomainSocket.un_access = static_cast<uint16_t>(~0);
             m_hostName = strHostName;
         }
 
