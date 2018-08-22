@@ -257,6 +257,8 @@ namespace Core {
 	// ===========================================================================
 	// class DoorBell
 	// ===========================================================================
+        // MF2018, note: usage of this class is currently not supported when the system time can make large jumps. Do not use SharedBuffer class when
+        //         the Time subsystem is not yet available.
 	class EXTERNAL DoorBell {
 	private:
 		DoorBell() = delete;

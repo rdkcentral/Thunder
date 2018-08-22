@@ -11,8 +11,10 @@
 // Author        Reason                                             Date
 // ---------------------------------------------------------------------------
 // P. Wielders   Initial creation                                   2002/05/24
+// M. Fransen    Switched to monotonic clock where possible         2018/08/22
 //
 // ===========================================================================
+
 
 #include "Sync.h"
 #include "Trace.h"
@@ -152,6 +154,7 @@ namespace Core {
         clock_gettime(CLOCK_REALTIME, &structTime);
         structTime.tv_sec += nTimeSecs;
 
+        // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         int result = pthread_mutex_timedlock(&m_syncMutex, &structTime);
         if (result != 0) {
             void* addresses[_AllocatedStackEntries];
@@ -257,7 +260,7 @@ namespace Core {
         }
 
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_REALTIME)) {
+        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
@@ -295,7 +298,7 @@ namespace Core {
         }
 
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_REALTIME)) {
+        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
@@ -399,7 +402,7 @@ namespace Core {
                 struct timespec structTime;
 
 #ifdef __LINUX__
-                clock_gettime(CLOCK_REALTIME, &structTime);
+                clock_gettime(CLOCK_MONOTONIC, &structTime);
                 structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
                 structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 structTime.tv_nsec = structTime.tv_nsec % 1000000000;
@@ -765,7 +768,7 @@ namespace Core {
             ASSERT(false);
         }
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_REALTIME)) {
+        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
@@ -875,7 +878,7 @@ namespace Core {
             if (m_blCondition == false) {
                 struct timespec structTime;
 
-                clock_gettime(CLOCK_REALTIME, &structTime);
+                clock_gettime(CLOCK_MONOTONIC, &structTime);
                 structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
                 structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 structTime.tv_nsec = structTime.tv_nsec % 1000000000;
@@ -1113,6 +1116,8 @@ namespace Core {
                 structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
+                // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
+                //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
                 if (sem_timedwait(_doorBell, &structTime) == 0) {
                     // We have seen it, signal, cause there might be other  interested in this lock.
                     sem_post(_doorBell);
