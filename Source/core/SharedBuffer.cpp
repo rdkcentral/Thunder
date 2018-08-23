@@ -77,6 +77,9 @@ namespace Core {
                 	structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
                 	structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
+                        // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
+                        //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
+
                 	if (sem_timedwait(_semaphore, &structTime) == 0) {
                 	    result = Core::ERROR_NONE;
                 	}
