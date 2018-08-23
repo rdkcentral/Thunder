@@ -903,7 +903,11 @@ OpenCdm::~OpenCdm() {
         _implementation->Release();
     }
 }
- 
+
+/* static */ OpenCdm& OpenCdm::Instance() {
+    return Core::SingletonType<OpenCdm>::Instance();
+}
+
 // ---------------------------------------------------------------------------------------------
 // INSTANTIATION OPERATIONS:
 // ---------------------------------------------------------------------------------------------

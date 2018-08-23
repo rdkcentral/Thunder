@@ -99,6 +99,7 @@ public:
   explicit OpenCdm(const std::string& sessionId);
   OpenCdm(const uint8_t keyId[], const uint8_t length);
   ~OpenCdm();
+  static OpenCdm& Instance();
 
 public:
   bool GetSession(const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
