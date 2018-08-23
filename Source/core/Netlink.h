@@ -1,16 +1,16 @@
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
+#ifndef __WIN32__
+
 #include "Module.h"
 #include "Portability.h"
 #include "Sync.h"
 #include "SocketPort.h"
 #include "NodeId.h"
 
-#ifdef __LINUX__
 #include <linux/connector.h>
 #include <linux/rtnetlink.h>
-#endif
 
 namespace WPEFramework {
 
@@ -351,5 +351,7 @@ private:
 };
 
 } } // Namespace WPEFramework::Core
+
+#endif // __WIN32__
 
 #endif // NETLINK_MESSAGE_H_

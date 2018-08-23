@@ -51,12 +51,29 @@
 #include <string>
 #include <list>
 
+#ifdef _MSVC_LANG
+#undef EXTERNAL
+#ifdef __MODULE_CDMI__
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#pragma comment(lib, "ocdm.lib")
+#endif
+
+extern "C" {
+	EXTERNAL void* ocdm_proxystubs();
+}
+
+#else
+#define EXTERNAL
+#endif
+
 namespace media {
 
 class AccessorOCDM;
 class OpenCdmSession;
 
-class OpenCdm {
+class EXTERNAL OpenCdm {
 private:
   OpenCdm& operator= (const OpenCdm&) = delete;
 
@@ -140,5 +157,6 @@ void release_session(void* session);
 uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
 
 #endif
+
 
 #endif // __OCDM_WRAPPER_H_

@@ -53,16 +53,13 @@ namespace Core {
 
         public:
 #ifdef __WIN32__
-            Semaphore(const TCHAR name[]) {
-            }
+			Semaphore(const TCHAR name[]);
 #else
             Semaphore(sem_t* storage);
             //Semaphore(sem_t* storage, bool initialize) {
             //}
 #endif
             ~Semaphore();
-            //~Semaphore() {
-            //}
 
         public:
             uint32_t Lock(const uint32_t waitTime);
@@ -76,7 +73,6 @@ namespace Core {
             sem_t* _semaphore;
 #endif
         };
-
         struct Administration {
 
             uint32_t _bytesWritten;
@@ -87,9 +83,8 @@ namespace Core {
 #endif
         };
 
-
     public:
-	virtual ~SharedBuffer();
+		virtual ~SharedBuffer();
 
         // This is the consumer constructor. It should always take place, after, the producer
         // construct. The producer will create the Administration area, and the shared buffer,

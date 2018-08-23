@@ -349,15 +349,15 @@ inline void SleepS(unsigned int a_Time)
 
 #include "Config.h"
 
-typedef unsigned char uint8 DEPRECATED;
-typedef unsigned short uint16 DEPRECATED;
-typedef unsigned int uint32 DEPRECATED;
-typedef unsigned long long uint64 DEPRECATED;
+typedef DEPRECATED unsigned char uint8;
+typedef DEPRECATED unsigned short uint16;
+typedef DEPRECATED unsigned int uint32;
+typedef DEPRECATED unsigned long long uint64;
 
-typedef signed char sint8 DEPRECATED;
-typedef signed short sint16 DEPRECATED;
-typedef signed int sint32 DEPRECATED;
-typedef signed long long sint64 DEPRECATED;
+typedef DEPRECATED signed char sint8;
+typedef DEPRECATED signed short sint16;
+typedef DEPRECATED signed int sint32;
+typedef DEPRECATED signed long long sint64;
 
 #if __SIZEOF_POINTER__ == 4
 typedef uint32_t uintptr_t;

@@ -21,7 +21,7 @@ namespace RPC {
         virtual string Current() const = 0;
     };
 
-    class StringIterator : virtual IStringIterator {
+    class StringIterator : virtual public IStringIterator {
     private:
         StringIterator() = delete;
         StringIterator(const StringIterator&) = delete;

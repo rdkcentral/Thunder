@@ -1119,6 +1119,7 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
              (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0)) ) {
             if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
+#ifndef __WIN32__
                 if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Extension() <= 0777)) {
                     if (::chmod(localNode.HostName().c_str(), localNode.Extension()) == 0) {
                         BufferAlignment(l_Result);
@@ -1127,7 +1128,9 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
                         TRACE_L1("Error on port socket CHMOD. Error %d", __ERRORRESULT__);
                     }
                 }
-                else {
+                else
+#endif
+				{
                     BufferAlignment(l_Result);
                     return (l_Result);
                 }

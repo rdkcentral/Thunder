@@ -1,5 +1,6 @@
 #include "Module.h"
 #include "IOCDM.h"
+#include "open_cdm.h"
 
 namespace WPEFramework {
 
@@ -718,4 +719,15 @@ namespace WPEFramework {
 
     } OCDMProxyStubRegistration;
 
+
 } // namespace WPEFramework
+
+#ifdef _MSVC_LANG
+
+extern "C" {
+	void* ocdm_proxystubs() {
+		return (&WPEFramework::OCDMProxyStubRegistration);
+	}
+}
+
+#endif

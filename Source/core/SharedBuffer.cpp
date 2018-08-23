@@ -8,9 +8,9 @@ namespace WPEFramework {
 namespace Core {
 
 #ifdef __WIN32__
-		SharedBuffer::Semaphore::Semaphore(const TCHAR sourceName[]) {
-			_semaphore = ::CreateSemaphore(nullptr, 1, 1, sourceName);
-                }
+		SharedBuffer::Semaphore::Semaphore(const TCHAR sourceName[]) 
+			: _semaphore(::CreateSemaphore(nullptr, 1, 1, sourceName)) {
+        }
 #else
 		SharedBuffer::Semaphore::Semaphore(sem_t* storage)
 		    : _semaphore(storage)
@@ -32,7 +32,7 @@ namespace Core {
 #ifdef __WIN32__
 			if (_semaphore != nullptr)
 			{
-				BOOL result = ::ReleaseSemaphore(_semphore, 1, nullptr);
+				BOOL result = ::ReleaseSemaphore(_semaphore, 1, nullptr);
 
 				ASSERT(result != FALSE);
 			}
@@ -40,21 +40,30 @@ namespace Core {
 			VARIABLE_IS_NOT_USED int result = sem_post(_semaphore);
 
 			ASSERT((result == 0) || (errno == EOVERFLOW));
-			
-			return ERROR_NONE;
 #endif
+			return ERROR_NONE;
 		}
 
 		bool SharedBuffer::Semaphore::IsLocked() {
-		    int semValue = 0;
+#ifdef __WIN32__
+			bool locked = (::WaitForSingleObjectEx(_semaphore, 0, FALSE) != WAIT_OBJECT_0);
+
+			if (locked == false) {
+				::ReleaseSemaphore(_semaphore, 1, nullptr);
+			}
+
+			return (locked);
+#else
+			int semValue = 0;
 		    sem_getvalue(_semaphore, &semValue);
 		    return (semValue == 0);
+#endif
 		}
 
 		uint32_t SharedBuffer::Semaphore::Lock(const uint32_t waitTime) {
 			uint32_t result = Core::ERROR_GENERAL;
 #ifdef __WIN32__
-            		if (_sempahore != nullptr) {
+            		if (_semaphore != nullptr) {
             		    return (::WaitForSingleObjectEx(_semaphore, waitTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 			}
 #elif defined(__APPLE__)
@@ -98,8 +107,8 @@ namespace Core {
         , _administrationBuffer((string(name) + ".admin"), READABLE|WRITABLE|SHAREABLE )
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WIN32__
-        , _producer((string(name) + ".producer")
-        , _consumer((string(name) + ".consumer")
+        , _producer((string(name) + ".producer").c_str())
+        , _consumer((string(name) + ".consumer").c_str())
 #else
         , _producer(&(_administration->_producer))
         , _consumer(&(_administration->_consumer))
@@ -111,8 +120,8 @@ namespace Core {
         , _administrationBuffer((string(name) + ".admin"), READABLE|WRITABLE|SHAREABLE|CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)))
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WIN32__
-        , _producer((string(name) + ".producer")
-        , _consumer((string(name) + ".consumer")
+		, _producer((string(name) + ".producer").c_str())
+		, _consumer((string(name) + ".consumer").c_str())
 #else
         , _producer(&(_administration->_producer))
         , _consumer(&(_administration->_consumer))

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include "open_cdm.h"
 #include "Module.h"
+#include "open_cdm.h"
 #include "DataExchange.h"
 #include "IOCDM.h"
 
@@ -79,7 +79,7 @@ private:
         ~RPCClient() {
             if (_client.IsValid() == true) {
                 _client->Unregister(_service);
-                _client.Release();
+                _client->Close(Core::infinite);
             }
         }
 
@@ -208,7 +208,7 @@ private:
         , _sink(this) {
 
         if (_client.IsOperational() == true) { 
-            _remote = _client.Create<OCDM::IAccessorOCDM>(_T(""));
+            _remote = _client.Create<OCDM::IAccessorOCDM>(_T("implementation"));
             Register(&_sink);
         }
     }
@@ -219,7 +219,13 @@ public:
         _systemLock.Lock();
 
         if (_singleton == nullptr) {
-            AccessorOCDM* result = new AccessorOCDM ("/tmp/ocdm"); 
+			// See if we have an environment variable set.
+			string connector;
+			if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
+				connector = _T("/tmp/ocdm");
+			}
+
+            AccessorOCDM* result = new AccessorOCDM (connector.c_str());
 
             if (result->_remote != nullptr) {
                 _singleton = result;
@@ -490,7 +496,7 @@ private:
 
                 if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
 
-                    SetIV(ivDataLength, ivData);
+                    SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                     SetSubSampleData(0, nullptr);
                     Write(encryptedDataLength, encryptedData);
 
@@ -735,7 +741,7 @@ private:
             if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
                 challenge = _message;
                 if (urlLength > static_cast<int>(_URL.length())) {
-                    urlLength = _URL.length();
+                    urlLength = static_cast<uint16_t>(_URL.length());
                 }
                 memcpy(licenseURL, _URL.c_str(), urlLength);
                 TRACE_L1("Returning a KeyMessage, Length: [%d,%d]", urlLength, static_cast<uint32_t>(challenge.length()));
@@ -988,8 +994,6 @@ void OpenCdm::GetKeyMessage(std::string& response, uint8_t* data, uint16_t& data
 
     ASSERT ( (_session != nullptr) && (dynamic_cast<Session*> (_session) != nullptr) );
 
-    TRACE_L1("%s",  __PRETTY_FUNCTION__);
-
     // Oke a session has been selected. Operation should take place on this session.
     static_cast<Session*>(_session)->GetKeyMessage(response, data, dataLength);
 }
@@ -997,8 +1001,6 @@ void OpenCdm::GetKeyMessage(std::string& response, uint8_t* data, uint16_t& data
 OpenCdm::KeyStatus OpenCdm::Update(const uint8_t* data, const uint16_t dataLength, std::string& response) {
 
     ASSERT ( (_session != nullptr) && (dynamic_cast<Session*> (_session) != nullptr) );
-
-    TRACE_L1("%s",  __PRETTY_FUNCTION__);
 
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<Session*>(_session)->Update(data, dataLength, response));
@@ -1008,8 +1010,6 @@ int OpenCdm::Load(std::string& response) {
 
     ASSERT ( (_session != nullptr) && (dynamic_cast<Session*> (_session) != nullptr) );
 
-    TRACE_L1("%s",  __PRETTY_FUNCTION__);
-
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<Session*>(_session)->Load(response));
 }
@@ -1017,8 +1017,6 @@ int OpenCdm::Load(std::string& response) {
 int OpenCdm::Remove(std::string& response) {
 
     ASSERT ( (_session != nullptr) && (dynamic_cast<Session*> (_session) != nullptr) );
-
-    TRACE_L1("%s",  __PRETTY_FUNCTION__);
 
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<Session*>(_session)->Remove(response));
@@ -1037,8 +1035,6 @@ OpenCdm::KeyStatus OpenCdm::Status() const {
 int OpenCdm::Close() {
 
     ASSERT ( (_session != nullptr) && (dynamic_cast<Session*> (_session) != nullptr) );
-
-    TRACE_L1("%s",  __PRETTY_FUNCTION__);
 
     if (_session != nullptr) {
         _session->Close();
