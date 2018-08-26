@@ -18,6 +18,7 @@ namespace OCDM {
 
     private:
         struct Administration {
+            uint32_t Status;
             uint8_t IVLength;
             uint8_t IV[16];
             uint16_t SubLength;
@@ -38,6 +39,12 @@ namespace OCDM {
         }
 
     public:
+        inline void Status(uint32_t status) {
+            reinterpret_cast<Administration*>(AdministrationBuffer())->Status = status;
+        }
+        inline uint32_t Status() const {
+            return(reinterpret_cast<const Administration*>(AdministrationBuffer())->Status);
+        }
         void SetIV(const uint8_t ivDataLength, const uint8_t ivData[]) {
             Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());
             ASSERT(ivDataLength <= sizeof(Administration::IV));

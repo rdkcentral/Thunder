@@ -509,6 +509,9 @@ private:
                         // For nowe we just copy the clear data..
                         Read(encryptedDataLength, encryptedData);
 
+                        // Get the status of the last decrypt.
+                        ret = Status();
+
                         // And free the lock, for the next production Scenario..
                         Consumed();
                     }
