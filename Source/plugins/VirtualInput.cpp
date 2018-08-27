@@ -261,10 +261,7 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                 conversionTable = &(index->second);
             }
 
-            if (conversionTable == nullptr) {
-                _lock.Unlock();
-            }
-            else {
+            if (conversionTable != nullptr) {
                 uint32_t sendCode = 0;
                 uint16_t sendModifiers = 0;
 
@@ -288,7 +285,6 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                     sendModifiers = element->Modifiers;
                 }
 
-                _lock.Unlock();
 
                 if ( (result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY_PASSED) ) {
                     if (pressed == true) {
@@ -317,6 +313,8 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                     SendKey(COMPLETED, sendCode);
                 }
             }
+
+            _lock.Unlock();
 
             return (result);
         }
@@ -497,6 +495,9 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
             return (Core::ERROR_NONE);
         }
 
+        /* virtual */ void LinuxKeyboardInput::LookupChanges(const string&) {
+        }
+
         /* virtual */ void LinuxKeyboardInput::MapChanges(ChangeIterator& updated) {
 
             _lock.Lock();
@@ -581,7 +582,7 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
 #endif
 
         IPCKeyboardInput::IPCKeyboardInput(const Core::NodeId& sourceName)
-            : _service(sourceName)
+            : _service(*this, sourceName)
         {
             TRACE_L1("Constructing IPCKeyboardInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
         }
@@ -615,5 +616,19 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
         }
 
         /* virtual */ void IPCKeyboardInput::MapChanges(ChangeIterator&) {}
+
+        /* virtual */ void IPCKeyboardInput::LookupChanges(const string& linkName) {
+
+            uint16_t index = 0;
+            Core::ProxyType<KeyboardLink> current(_service[index++]);
+
+            while (current.IsValid() == true) {
+                if (current->Name() == linkName) {
+                    current->Reload();
+                }
+                current = _service[index++];
+            }
+
+        }
     }
 } // Namespace PluginHost

@@ -1286,11 +1286,7 @@ namespace Core {
         }
 
     public:
-        inline bool InvokeAllowed() const
-        {
-            return (__InvokeAllowed<ACTUALSOURCE, EXTENSION>());
-        }
-        inline EXTENSION& Extension()
+       inline EXTENSION& Extension()
         {
             return (_extension);
         }
@@ -1324,24 +1320,6 @@ namespace Core {
         }
 
     private:
-        HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
-
-        typedef hasInvokeAllowed<EXTENSION, bool (EXTENSION::*)() const> TraitInvokeAllowed;
-
-        template <typename A, typename B>
-        inline typename Core::TypeTraits::enable_if<IPCChannelType<A, B>::TraitInvokeAllowed::value, bool>::type
-        __InvokeAllowed() const
-        {
-            return (_extension.InvokeAllowed());
-        }
-
-        template <typename A, typename B>
-        inline typename Core::TypeTraits::enable_if<!IPCChannelType<A, B>::TraitInvokeAllowed::value, bool>::type
-        __InvokeAllowed() const
-        {
-            return (true);
-        }
-
         HAS_MEMBER(StateChange, hasStateChange);
 
         typedef hasStateChange<EXTENSION, void (EXTENSION::*)()> TraitStateChange;
