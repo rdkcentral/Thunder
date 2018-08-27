@@ -68,5 +68,11 @@
     <ClInclude Include="IElement.h">
       <Filter>Interface Files</Filter>
     </ClInclude>
+    <ClInclude Include="IButler.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ITVControl.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

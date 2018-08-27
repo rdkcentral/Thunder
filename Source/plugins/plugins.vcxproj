@@ -14,7 +14,7 @@
     <ProjectGuid>{80615F28-4E8C-4022-84C2-C80D185FFC35}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Plugins</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -42,10 +42,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -62,7 +64,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <BuildLog>
-      <Path>$(OutDir)$(MSBuildProjectName).log</Path>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -83,7 +85,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <BuildLog>
-      <Path>$(OutDir)$(MSBuildProjectName).log</Path>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -94,15 +96,18 @@
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Shell.cpp" />
     <ClCompile Include="StateControl.cpp" />
+    <ClCompile Include="SubSystem.cpp" />
     <ClCompile Include="VirtualInput.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Configuration.h" />
+    <ClInclude Include="IRPCIterator.h" />
     <ClInclude Include="IShell.h" />
     <ClInclude Include="IStateControl.h" />
     <ClInclude Include="IPlugin.h" />
+    <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="ISystemInfo.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="MetaData.h" />

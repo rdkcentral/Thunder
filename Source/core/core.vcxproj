@@ -11,10 +11,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{01AA58A5-20F6-4325-BC6C-BCE30BCBDE45}</ProjectGuid>
+    <ProjectGuid>{52613581-6E99-4ECB-826D-8AD0BA812258}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Core</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -43,17 +43,19 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>__MODULE_CORE__;WIN32;_MBCS;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__MODULE_CORE__;WIN32;_MBCS;_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;_DEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -61,7 +63,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <BuildLog>
-      <Path>$(outdir)$(MSBuildProjectName).log</Path>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -71,7 +73,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>__MODULE_CORE__;WIN32;_MBCS;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__MODULE_CORE__;WIN32;_MBCS;_WINSOCK_DEPRECATED_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;NDEBUG;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -81,7 +83,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <BuildLog>
-      <Path>$(outdir)$(MSBuildProjectName).log</Path>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -131,6 +133,7 @@
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Services.h" />
+    <ClInclude Include="SharedBuffer.h" />
     <ClInclude Include="Singleton.h" />
     <ClInclude Include="SocketPort.h" />
     <ClInclude Include="SocketServer.h" />
@@ -176,6 +179,7 @@
     <ClCompile Include="Serialization.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Services.cpp" />
+    <ClCompile Include="SharedBuffer.cpp" />
     <ClCompile Include="Singleton.cpp" />
     <ClCompile Include="SocketPort.cpp" />
     <ClCompile Include="Sync.cpp" />

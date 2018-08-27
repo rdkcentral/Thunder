@@ -25,6 +25,9 @@
     <ClCompile Include="StateControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="SubSystem.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Channel.h">
@@ -68,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="plugins.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IRPCIterator.h">
+      <Filter>Interface Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ISubSystem.h">
+      <Filter>Interface Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

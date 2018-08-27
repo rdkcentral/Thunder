@@ -10,10 +10,10 @@
     <ClCompile Include="Random.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AESImplementation.c">
+    <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Module.cpp">
+    <ClCompile Include="AESImplementation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
