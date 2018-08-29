@@ -74,6 +74,13 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WPEFramework", "Source\WPEF
 		{1B0024B2-80DA-42C7-B40B-B0A4F546DCB9} = {1B0024B2-80DA-42C7-B40B-B0A4F546DCB9}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Interfaces", "Source\interfaces\Interfaces.vcxproj", "{12AA5348-4E8C-2F49-84C2-C89D727FFC35}"
+	ProjectSection(ProjectDependencies) = postProject
+		{52613581-6E99-4ECB-826D-8AD0BA812258} = {52613581-6E99-4ECB-826D-8AD0BA812258}
+		{1234F390-D87E-4E94-BD5D-22D4AC832F67} = {1234F390-D87E-4E94-BD5D-22D4AC832F67}
+		{ECB4F390-087E-4E94-BD5D-82D4AC832067} = {ECB4F390-087E-4E94-BD5D-82D4AC832067}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -124,6 +131,10 @@ Global
 		{A5D9570F-9F0B-47CE-AB41-96271FF09676}.Debug|x86.Build.0 = Debug|Win32
 		{A5D9570F-9F0B-47CE-AB41-96271FF09676}.Release|x86.ActiveCfg = Release|Win32
 		{A5D9570F-9F0B-47CE-AB41-96271FF09676}.Release|x86.Build.0 = Release|Win32
+		{12AA5348-4E8C-2F49-84C2-C89D727FFC35}.Debug|x86.ActiveCfg = Debug|Win32
+		{12AA5348-4E8C-2F49-84C2-C89D727FFC35}.Debug|x86.Build.0 = Debug|Win32
+		{12AA5348-4E8C-2F49-84C2-C89D727FFC35}.Release|x86.ActiveCfg = Release|Win32
+		{12AA5348-4E8C-2F49-84C2-C89D727FFC35}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
