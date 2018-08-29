@@ -4,16 +4,16 @@
     <ClCompile Include="Controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SystemInfo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Probe.cpp">
+    <ClCompile Include="PluginHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PluginServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PluginHost.cpp">
+    <ClCompile Include="Probe.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -27,33 +27,33 @@
     <ClInclude Include="Module.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SystemInfo.h">
+    <ClInclude Include="PluginServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Probe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PluginServer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PluginHost.h">
+    <ClInclude Include="SystemInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Configurations">
-      <UniqueIdentifier>{6c6c479c-5d6f-4eb6-b455-f09878cf0c0d}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{39845d2b-b7d7-4765-ae96-d0526aeeb545}</UniqueIdentifier>
+      <UniqueIdentifier>{b9cee3d7-6403-4f6e-8539-61c6e223ac46}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{55eb6f66-1c63-44ee-b3c2-eaeeec6115a1}</UniqueIdentifier>
+      <UniqueIdentifier>{1d85d564-3b27-46e9-9869-c902fdf1ac16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Configs">
+      <UniqueIdentifier>{12726c09-a2af-4d9f-949f-2301b97e9588}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="ExampleConfigWindows.json">
-      <Filter>Configurations</Filter>
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="ExampleConfigTest.json">
+      <Filter>Configs</Filter>
     </None>
   </ItemGroup>
 </Project>

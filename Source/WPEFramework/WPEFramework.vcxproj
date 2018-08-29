@@ -13,8 +13,9 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{A5D9570F-9F0B-47CE-AB41-96271FF09676}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>wpeframework</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <RootNamespace>PluginHost</RootNamespace>
+    <ProjectName>WPEFramework</ProjectName>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -45,12 +46,14 @@
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
     <CustomBuildAfterTargets>
     </CustomBuildAfterTargets>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)artifacts\$(Configuration)\</OutDir>
     <CustomBuildAfterTargets>
     </CustomBuildAfterTargets>
+    <IntDir>$(OutDir)$(TargetName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -58,7 +61,7 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WEBBRIDGE_VERSION=WINDOWS;__DYNAMIC_LINKAGE__;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_USRDLL;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;APPLICATION_NAME=WPEFramework;_DEBUG;_USRDLL;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../;$(SolutionDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -80,6 +83,9 @@
       <Message>
       </Message>
     </PostBuildEvent>
+    <BuildLog>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
+    </BuildLog>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -89,7 +95,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WEBBRIDGE_VERSION=WINDOWS;__DYNAMIC_LINKAGE__;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_CONSOLE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;APPLICATION_NAME=WPEFramework;NDEBUG;_CONSOLE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../;$(SolutionDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -113,6 +119,9 @@
       <Message>
       </Message>
     </PostBuildEvent>
+    <BuildLog>
+      <Path>$(IntDir)$(MSBuildProjectName).log</Path>
+    </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Controller.cpp" />
@@ -125,12 +134,12 @@
     <ClInclude Include="Controller.h" />
     <ClInclude Include="DownloadEngine.h" />
     <ClInclude Include="Module.h" />
-    <ClInclude Include="PluginHost.h" />
     <ClInclude Include="PluginServer.h" />
     <ClInclude Include="Probe.h" />
     <ClInclude Include="SystemInfo.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ExampleConfigTest.json" />
     <None Include="ExampleConfigWindows.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

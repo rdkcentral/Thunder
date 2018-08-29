@@ -1,12 +1,13 @@
 {
   "port": 9999,
-  "interface": "LAN",
+  "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Projects/integraal/framework/persitent",
-  "datapath": "D:/Projects/integraal/framework/",
-  "systempath": "D:/Projects/integraal/framework/artifacts/Debug",
-  "proxystubpath": "D:/Projects/integraal/framework/artifacts/Debug/proxystubs",
+  "persistentpath": "D:/Windows/WPEFrameworkPlugins/artifacts/Persistent",
+  "volatilepath": "D:/Windows/WPEFrameworkPlugins/artifacts/Volatile",
+  "datapath": "D:/Windows/WPEFrameworkPlugins/artifacts/Data",
+  "systempath": "D:/Windows/WPEFrameworkPlugins/artifacts/Debug",
+  "proxystubpath": "D:/Windows/WPEFramework/artifacts/Debugproxystubs",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "plugins": [
@@ -47,7 +48,7 @@
       "callsign": "TimeSync",
       "locator": "libtimesync.so",
       "classname": "TimeSync",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "interval": 30,
         "retries": 20,
@@ -64,7 +65,7 @@
       "callsign": "LocationSync",
       "locator": "liblocationsync.so",
       "classname": "LocationSync",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "interval": 30,
         "retries": 20,
@@ -130,7 +131,7 @@
       "autostart": true
     },
     {
-      "autostart": true,
+      "autostart": false,
       "callsign": "WebKitBrowser",
       "classname": "OutOfProcessTest",
       "configuration": {

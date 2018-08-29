@@ -38,9 +38,6 @@
     <ClInclude Include="Administrator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="rpc.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="ITracing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -48,6 +45,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ObjectMessageHandler.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IStringIterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="com.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
