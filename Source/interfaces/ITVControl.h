@@ -12,8 +12,12 @@ namespace Exchange {
         enum { ID = 0x00000016 };
 
         enum Stat {
-            NoneState = 10,
-            TestStatus //FIXME: update with proper values
+            None = 0,
+            Ready,
+            Playing,
+            Paused,
+            Stopped,
+            NotAvailable
         };
 
         enum StreamType {
