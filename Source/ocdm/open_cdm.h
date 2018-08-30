@@ -59,11 +59,6 @@
 #define EXTERNAL __declspec(dllimport)
 #pragma comment(lib, "ocdm.lib")
 #endif
-
-extern "C" {
-	EXTERNAL void* ocdm_proxystubs();
-}
-
 #else
 #define EXTERNAL
 #endif

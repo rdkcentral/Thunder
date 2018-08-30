@@ -320,7 +320,81 @@ namespace PluginHost {
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
 
     private:
-        typedef std::map<const string, KeyMap> TableMap;
+		class PostLookupTable : public Core::JSON::Container {
+		private:
+			PostLookupTable(const PostLookupTable&) = delete;
+			PostLookupTable& operator= (const PostLookupTable&) = delete;
+
+		public:
+			class Conversion : public Core::JSON::Container {
+			private:
+				Conversion& operator= (const Conversion&) = delete;
+
+			public:
+				class KeyCode : public Core::JSON::Container {
+				private:
+					KeyCode& operator= (const KeyCode&) = delete;
+
+				public:
+					KeyCode()
+						: Core::JSON::Container()
+						, Code()
+						, Mods() {
+						Add(_T("code"), &Code);
+						Add(_T("mods"), &Mods);
+					}
+					KeyCode(const KeyCode& copy)
+						: Core::JSON::Container()
+						, Code()
+						, Mods() {
+						Add(_T("code"), &Code);
+						Add(_T("mods"), &Mods);
+					}
+					virtual ~KeyCode() {
+					}
+				public:
+					Core::JSON::DecUInt16 Code;
+					Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier> > Mods;
+				};
+
+			public:
+				Conversion()
+					: Core::JSON::Container()
+					, In()
+					, Out() {
+					Add(_T("in"), &In);
+					Add(_T("out"), &Out);
+				}
+				Conversion(const Conversion& copy)
+					: Core::JSON::Container()
+					, In()
+					, Out() {
+					Add(_T("in"), &In);
+					Add(_T("out"), &Out);
+				}
+				virtual ~Conversion() {
+				}
+
+			public:
+				KeyCode In;
+				KeyCode Out;
+			};
+
+
+		public:
+			PostLookupTable()
+				: Core::JSON::Container()
+				, Conversions() {
+				Add(_T("conversion"), &Conversions);
+			}
+			~PostLookupTable() {
+			}
+
+		public:
+			Core::JSON::ArrayType<Conversion> Conversions;
+		};
+	
+		typedef std::map<const string, KeyMap> TableMap;
         typedef std::vector<Notifier*> NotifierList;
         typedef std::map<uint32_t, NotifierList> NotifierMap;
         typedef std::map<const string, PostLookupEntries > PostLookupMap;
@@ -538,7 +612,7 @@ namespace PluginHost {
                 Core::ProxyType<Core::IIPC> result;
 
                 if (_enabled == true) {
-                    if (_postLookup != nullptr) {
+                    if (_postLookup == nullptr) {
                         result = element;
                     }
                     else {
