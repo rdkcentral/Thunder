@@ -366,6 +366,29 @@ public:
         }
 
     private:
+        inline ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
+        {
+            return (__InvokeAllowed<EXTENSION,INTERNALFACTORY>(client, command));
+        }
+
+        HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
+
+        typedef hasInvokeAllowed<EXTENSION, ProxyType<IIPC> (EXTENSION::*)(const ProxyType<IIPC>&) const> TraitInvokeAllowed;
+
+        template <typename A, const bool B>
+        inline typename Core::TypeTraits::enable_if<IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC> >::type
+        __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
+        {
+            return (client.Extension().InvokeAllowed(command));
+        }
+
+        template <typename A, const bool B>
+        inline typename Core::TypeTraits::enable_if<!IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC> >::type
+        __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
+        {
+            return (command);
+        }
+
         void InternalCleanup()
         {
             typename ClientMap::iterator cleaner(_clients.begin());
@@ -460,14 +483,17 @@ public:
 
             if (index != _clients.end()) {
                 ProxyType<Client> thisClient(index->second);
+                ProxyType<IIPC> realCommand;
                 index++;
                 uint32_t status = CallRecursive(index, command, waitTime);
                 if (status != Core::ERROR_NONE) {
                     result = status;
                 }
-                if (thisClient->InvokeAllowed() == true) {
+                realCommand = InvokeAllowed(*thisClient, command);
+
+                if (realCommand.IsValid() == true) {
                     TRACE_L1("Invoked %d client.", 1);
-                    status = thisClient->Invoke(command, waitTime);
+                    status = thisClient->Invoke(realCommand, waitTime);
                     if (status != Core::ERROR_NONE) {
                         result = status;
                     }

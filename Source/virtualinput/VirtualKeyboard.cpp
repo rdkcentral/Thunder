@@ -1,6 +1,5 @@
-#include "VirtualKeyboard.h"
-
 #include "../core/core.h"
+#include "VirtualKeyboard.h"
 
 namespace WPEFramework {
 	namespace VirtualKeyboard {

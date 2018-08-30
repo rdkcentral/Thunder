@@ -31,7 +31,7 @@ void printUsage()
 
 int main(int argc, const char *argv[])
 {
-    if (argc != 2)
+    if (argc != 3)
     {
         printUsage();
         return 1;
@@ -41,8 +41,8 @@ int main(int argc, const char *argv[])
 
     void* handle = 0;
 
-    const char *listenerName = argv[0];
-    const char *Connector = argv[1];
+    const char *listenerName = argv[1];
+    const char *Connector = argv[2];
 
     handle = Construct(listenerName, Connector, KeyEvent);
 
