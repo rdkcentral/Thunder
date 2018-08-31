@@ -522,7 +522,6 @@ namespace PluginHost {
                 , _postLookup(nullptr)
                 , _replacement(Core::ProxyType<KeyMessage>::Create())
             {
-                ASSERT(parent != nullptr);
             }
             virtual ~KeyboardLink()
             {
