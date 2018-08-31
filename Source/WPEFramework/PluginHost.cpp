@@ -125,24 +125,23 @@ namespace PluginHost {
             PluginHost::Server* destructor = _dispatcher;
             _dispatcher = nullptr;
             delete destructor;
-        }
 
 #ifndef __WIN32__
-        if (_background) {
-            syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-        }
-        else
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+            }
+            else
 #endif
-        {
-            fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
-        }
+            {
+                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+            }
 
-        // Now clear all singeltons we created.
-        Core::Singleton::Dispose();
 #ifndef __WIN32__
-        //Close the log
-        closelog();
+            closelog();
 #endif
+            // Now clear all singeltons we created.
+            Core::Singleton::Dispose();
+        }
 
         TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
     }
@@ -594,9 +593,7 @@ namespace PluginHost {
 
             } while (keyPress != 'Q');
         }
-
         CloseDown();
-
         return 0;
 
     } // End main.
