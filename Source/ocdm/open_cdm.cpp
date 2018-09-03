@@ -329,8 +329,7 @@ public:
             else {
                 _adminLock.Unlock();
             }
-
-        } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
+        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
 
         return (result);
     }
