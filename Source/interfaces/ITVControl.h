@@ -11,7 +11,7 @@ namespace Exchange {
     struct IStream : virtual public Core::IUnknown {
         enum { ID = 0x00000016 };
 
-        enum Stat {
+        enum State {
             None = 0,
             Ready,
             Playing,
@@ -21,8 +21,8 @@ namespace Exchange {
         };
 
         enum StreamType {
-            NoneStream = 20,
-            TestStream //FIXME: update with proper values
+            Unknown = 0,
+            DVB //FIXME: update with proper values
         };
 
         enum DRMType {
