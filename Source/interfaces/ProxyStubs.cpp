@@ -1245,10 +1245,10 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void StateChange(IStream::State state) = 0;
+            // virtual void StateChange(IStream::state state) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            IStream::State state(parameters.Number<IStream::State>());
+            IStream::state state(parameters.Number<IStream::state>());
             message->Parameters().Implementation<IStream::ICallback>()->StateChange(state);
          },
          nullptr
@@ -1396,12 +1396,12 @@ namespace ProxyStubs {
     ProxyStub::MethodHandler PlayerStubMethods[] = {
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual IStream* CreateStream(IStream::StreamType streamType) = 0;
+            // virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            IStream::StreamType streamType(parameters.Number<IStream::StreamType>());
+            IStream::streamtype streamType(parameters.Number<IStream::streamtype>());
 
             response.Number<IStream*>(message->Parameters().Implementation<IPlayer>()->CreateStream(streamType));
          },
@@ -2662,19 +2662,19 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream::StreamType Type() const
+        virtual IStream::streamtype Type() const
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::StreamType>());
+            return (newMessage->Response().Reader().Number<IStream::streamtype>());
         }
-        virtual IStream::DRMType DRM() const
+        virtual IStream::drmtype DRM() const
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::DRMType>());
+            return (newMessage->Response().Reader().Number<IStream::drmtype>());
         }
         virtual IStream::IControl* Control()
         {
@@ -2692,12 +2692,12 @@ namespace ProxyStubs {
             writer.Number(callback);
             Invoke(newMessage);
         }
-        virtual IStream::State State() const
+        virtual IStream::state State() const
         {
             IPCMessage newMessage(BaseClass::Message(4));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::State>());
+            return (newMessage->Response().Reader().Number<IStream::state>());
         }
         virtual uint32_t Load(std::string configuration)
         {
@@ -2729,11 +2729,11 @@ namespace ProxyStubs {
             writer.Number<uint32_t>(state);
             Invoke(newMessage);
         }
-        virtual void StateChange(IStream::State state)
+        virtual void StateChange(IStream::state state)
         {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::State>(state);
+            writer.Number<IStream::state>(state);
             Invoke(newMessage);
         }
    };
@@ -2888,11 +2888,11 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream* CreateStream(IStream::StreamType streamType)
+        virtual IStream* CreateStream(IStream::streamtype streamType)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::StreamType>(streamType);
+            writer.Number<IStream::streamtype>(streamType);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());

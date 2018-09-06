@@ -11,7 +11,7 @@ namespace Exchange {
     struct IStream : virtual public Core::IUnknown {
         enum { ID = 0x00000016 };
 
-        enum State {
+        enum state {
             None = 0,
             Ready,
             Playing,
@@ -20,12 +20,12 @@ namespace Exchange {
             NotAvailable
         };
 
-        enum StreamType {
+        enum streamtype {
             Unknown = 0,
             DVB //FIXME: update with proper values
         };
 
-        enum DRMType {
+        enum drmtype {
             PlayReady = 3, //FIXME: update with proper values
             Widevine,
             TestDrm
@@ -72,16 +72,16 @@ namespace Exchange {
             virtual ~ICallback() {}
 
             virtual void DRM(uint32_t state) = 0;
-            virtual void StateChange(State state) = 0;
+            virtual void StateChange(state newState) = 0;
         };
 
         virtual ~IStream() {}
 
-        virtual StreamType Type() const = 0;
-        virtual DRMType DRM() const = 0;
+        virtual streamtype Type() const = 0;
+        virtual drmtype DRM() const = 0;
         virtual IControl* Control() = 0;
         virtual void Callback(IStream::ICallback* callback) = 0;
-        virtual State State() const = 0;
+        virtual state State() const = 0;
         virtual uint32_t Load(std::string configuration) = 0;
     };
 
@@ -89,7 +89,7 @@ namespace Exchange {
         enum { ID = 0x00000015 };
 
         virtual ~IPlayer() {}
-        virtual IStream* CreateStream(IStream::StreamType streamType) = 0;
+        virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
     };
 }
 }
