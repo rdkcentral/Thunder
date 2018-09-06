@@ -1245,10 +1245,10 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void StateChange(IStream::Stat state) = 0;
+            // virtual void StateChange(IStream::State state) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            IStream::Stat state(parameters.Number<IStream::Stat>());
+            IStream::State state(parameters.Number<IStream::State>());
             message->Parameters().Implementation<IStream::ICallback>()->StateChange(state);
          },
          nullptr
@@ -2692,12 +2692,12 @@ namespace ProxyStubs {
             writer.Number(callback);
             Invoke(newMessage);
         }
-        virtual IStream::Stat State() const
+        virtual IStream::State State() const
         {
             IPCMessage newMessage(BaseClass::Message(4));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::Stat>());
+            return (newMessage->Response().Reader().Number<IStream::State>());
         }
         virtual uint32_t Load(std::string configuration)
         {
@@ -2729,11 +2729,11 @@ namespace ProxyStubs {
             writer.Number<uint32_t>(state);
             Invoke(newMessage);
         }
-        virtual void StateChange(IStream::Stat state)
+        virtual void StateChange(IStream::State state)
         {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::Stat>(state);
+            writer.Number<IStream::State>(state);
             Invoke(newMessage);
         }
    };

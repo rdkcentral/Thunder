@@ -72,7 +72,7 @@ namespace Exchange {
             virtual ~ICallback() {}
 
             virtual void DRM(uint32_t state) = 0;
-            virtual void StateChange(Stat state) = 0;
+            virtual void StateChange(State state) = 0;
         };
 
         virtual ~IStream() {}
@@ -81,7 +81,7 @@ namespace Exchange {
         virtual DRMType DRM() const = 0;
         virtual IControl* Control() = 0;
         virtual void Callback(IStream::ICallback* callback) = 0;
-        virtual Stat State() const = 0;
+        virtual State State() const = 0;
         virtual uint32_t Load(std::string configuration) = 0;
     };
 
