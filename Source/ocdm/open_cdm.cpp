@@ -62,19 +62,17 @@ private:
             : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(nodeId))
             , _service(Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize())) {
 
-            _client->CreateFactory<RPC::InvokeMessage>(2);
-
-			// I would not expect that the next line is needed, left it in for reference for testing.
-			// If it is neede, it needs to move to the RPC::CommunicatorClient..
-			// _client->Register(_service);
-
             if (_client->Open(RPC::CommunicationTimeOut, _T("ocdmimplementation"), OCDM::IAccessorOCDM::ID, ~0) != Core::ERROR_NONE) {
                 _client.Release();
-            }
+            } else {
+                _client->CreateFactory<RPC::InvokeMessage>(2);
+                _client->Register(_service);
+	    }
         }
         ~RPCClient() {
             if (_client.IsValid() == true) {
-                // _client->Unregister(_service);
+                _client->DestroyFactory<RPC::InvokeMessage>();
+                _client->Unregister(_service);
                 _client->Close(Core::infinite);
             }
         }
