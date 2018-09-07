@@ -636,9 +636,11 @@ namespace RPC {
 					ASSERT (index != _processes.end());
 
 					if (implementation == nullptr) {
-					
-						// See if we have something we can return right away, if it has been requested..
-						implementation = Instance(info.ClassName(), info.InterfaceId(), info.VersionId());
+
+						if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
+							// See if we have something we can return right away, if it has been requested..
+							implementation = Instance(info.ClassName(), info.InterfaceId(), info.VersionId());
+						}
 					}
 					else {
 						index->second->Announce(channel, info, implementation);
@@ -846,8 +848,8 @@ namespace RPC {
 				, _proxyStubPath(proxyStubPath)
                 , _processes(processes)
                 , _interfaceAnnounceHandler(Core::ProxyType<InterfaceAnnounceHandler>::Create(this))
-				, _interfaceObjectHandler(Core::ProxyType<InterfaceObjectHandler>::Create(&_processes))
 				, _interfaceMessageHandler(handler)
+				, _interfaceObjectHandler(Core::ProxyType<InterfaceObjectHandler>::Create(&_processes))
             {
                 BaseClass::Register(_interfaceAnnounceHandler);
 				BaseClass::Register(_interfaceObjectHandler);
@@ -1010,6 +1012,10 @@ namespace RPC {
 			return (result);
 		}
 
+		// Open a communication channel with this process, no need for an initial exchange
+        uint32_t Open(const uint32_t waitTime);
+
+
 		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
         uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
 
@@ -1045,6 +1051,12 @@ namespace RPC {
 
 			return (result);
 		}
+		inline bool WaitForCompletion(const uint32_t waitTime)
+		{
+			// Lock event until Dispatch() sets it.
+			return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
+		}
+
 
     private:
 		void* Create(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version = static_cast<uint32_t>(~0));

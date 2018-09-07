@@ -146,6 +146,15 @@ namespace RPC {
         return (result);
     }
 
+	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
+	{
+        	ASSERT(BaseClass::IsOpen() == false);
+
+		_announceMessage->Parameters().Set(~0, nullptr);
+
+        	return (BaseClass::Open(waitTime));
+	}
+
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 	{
         ASSERT(BaseClass::IsOpen() == false);
