@@ -340,9 +340,7 @@ int main(int argc, char** argv)
 				uint32_t result;
 
 				// We have something to report back, do so...
-				if ((result = _server->Open(options.InterfaceId, base, (RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut))) == Core::ERROR_NONE) {
-				    // Wait for trace categories to be set up.
-				    _server->WaitForCompletion();
+				if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
 
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();

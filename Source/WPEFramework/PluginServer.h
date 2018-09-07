@@ -966,7 +966,7 @@ namespace WPEFramework {
 
 			public:
 				CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
-					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<64, 3> >::Create(stackSize))
+					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<64, 3> >::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 					, _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
 					, _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
 					, _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
@@ -985,10 +985,6 @@ namespace WPEFramework {
 						// We need to pass the communication channel NodeId via an environment variable, for process,
 						// not being started by the rpcprocess...
 						Core::SystemInfo::SetEnvironment(string(CommunicatorConnector), RPC::Communicator::Connector());
-
-						if (proxyStubPath.empty() == false) {
-							RPC::Communicator::LoadProxyStubs(_proxyStubPath);
-						}
 					}
 				}
 				virtual ~CommunicatorServer() {

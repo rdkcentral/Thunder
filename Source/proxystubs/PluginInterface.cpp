@@ -335,7 +335,15 @@ namespace ProxyStubs {
 
             response.Number<ISubSystem*>(message->Parameters().Implementation<IShell>()->SubSystems());
         },
-        nullptr
+		[](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+			//
+			// virtual string VolatilePath() const = 0;
+			//
+			RPC::Data::Frame::Writer response(message->Response().Writer());
+
+			response.Text(message->Parameters().Implementation<IShell>()->ProxyStubPath());
+		},
+		nullptr
     };
     // IShell stub definitions
 
@@ -891,10 +899,20 @@ namespace ProxyStubs {
 
             return (CreateProxy<ISubSystem>(reader.Number<ISubSystem*>()));
         }
-        virtual IProcess* Process() {
+        virtual IProcess* Process() override {
             return (nullptr);
         }
-    };
+		virtual string ProxyStubPath() const override
+		{
+			IPCMessage newMessage(BaseClass::Message(25));
+
+			Invoke(newMessage);
+
+			RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+			return (reader.Text());
+		}
+	};
 
     class StateControlProxy : public ProxyStub::UnknownProxyType<IStateControl> {
     public:

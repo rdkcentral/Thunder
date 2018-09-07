@@ -16,9 +16,7 @@ namespace Core {
 #ifdef __WIN32__
             HMODULE _handle;
 #endif
-#ifdef __DEBUG__
             string _name;
-#endif
 
         } RefCountedHandle;
 
@@ -41,6 +39,11 @@ namespace Core {
         {
             return (_error);
         }
+		inline const string& Name() const {
+			static const string emptyString;
+
+			return (_refCountedHandle != nullptr ? _refCountedHandle->_name : emptyString);
+		}
         void* LoadFunction(const TCHAR functionName[]);
 
     private:
