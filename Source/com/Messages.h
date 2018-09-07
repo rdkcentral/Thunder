@@ -11,8 +11,8 @@ namespace RPC {
 
         class Frame : public Core::FrameType<IPC_BLOCK_SIZE> {
         private:
-            Frame(Frame&);
-            Frame& operator=(const Frame&);
+            Frame(Frame&) = delete;
+            Frame& operator=(const Frame&) = delete;
 
         public:
             Frame()
@@ -47,8 +47,8 @@ namespace RPC {
 
         class Input {
         private:
-            Input(const Input&);
-            Input& operator=(const Input&);
+            Input(const Input&) = delete;
+            Input& operator=(const Input&) = delete;
 
         public:
             Input()
@@ -122,8 +122,8 @@ namespace RPC {
 
         class Output {
         private:
-            Output(const Output&);
-            Output& operator=(const Output&);
+            Output(const Output&) = delete;
+            Output& operator=(const Output&) = delete;
 
         public:
             Output()
@@ -166,8 +166,8 @@ namespace RPC {
 
         class Init {
         private:
-            Init(const Init&);
-            Init& operator=(const Init&);
+            Init(const Init&) = delete;
+            Init& operator=(const Init&) = delete;
 
         public:
             Init()
@@ -187,13 +187,24 @@ namespace RPC {
             }
 
         public:
-            void Set(const uint32_t exchangeId, const uint32_t interfaceId, void* implementation)
+            void Set(const uint32_t interfaceId, void* implementation)
             {
-                _implementation = implementation;
+				_exchangeId = Core::ProcessInfo().Id();
+				_implementation = implementation;
                 _interfaceId = interfaceId;
-                _exchangeId = exchangeId;
+				_versionId = 0;
+				_className[0] = '\0';
             }
-            void* Implementation()
+			void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+			{
+				_exchangeId = Core::ProcessInfo().Id();
+				_implementation = nullptr;
+				_interfaceId = interfaceId;
+				_versionId = versionId;
+				const std::string cclassName (Core::ToString(className));
+				::strncpy(_className, cclassName.c_str(), sizeof(_className));
+			}
+			void* Implementation()
             {
                 return (_implementation);
             }
@@ -205,17 +216,27 @@ namespace RPC {
             {
                 return (_exchangeId);
             }
+			uint32_t VersionId() const
+			{
+				return (_versionId);
+			}
+			const string ClassName() const
+			{
+				return (Core::ToString(std::string(_className)));
+			}
 
         private:
             void* _implementation;
             uint32_t _interfaceId;
             uint32_t _exchangeId;
+			uint32_t _versionId;
+			char _className[64];
         };
 
         class ObjectInterface {
         private:
-            ObjectInterface(const ObjectInterface&);
-            ObjectInterface& operator=(const ObjectInterface&);
+            ObjectInterface(const ObjectInterface&) = delete;
+            ObjectInterface& operator=(const ObjectInterface&) = delete;
 
         public:
             ObjectInterface()
@@ -285,9 +306,72 @@ namespace RPC {
         private:
             Frame _data;
         };
-    }
 
-    typedef Core::IPCMessageType<1, Data::Init, Core::IPC::ScalarType<string> > AnnounceMessage;
+		class Setup {
+		private:
+			Setup(const Setup&) = delete;
+			Setup& operator=(const Setup&) = delete;
+
+		public:
+			Setup()
+				: _data()
+			{
+			}
+			~Setup()
+			{
+			}
+
+		public:
+			inline void Clear()
+			{
+				_data.Clear();
+			}
+			void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
+			{
+				_data.SetNumber<void*>(0, implementation);
+				uint16_t length = _data.SetText(4, proxyStubPath);
+				_data.SetText(4 + length, traceCategories);
+			}
+			string ProxyStubPath() const
+			{
+				string value;
+
+				_data.GetText(4, value);
+
+				return(value);
+			}
+			string TraceCategories() const
+			{
+				string value;
+
+				_data.GetText(4 + _data.GetText(4, value), value);
+
+				return(value);
+			}
+			void* Implementation() const {
+				void* result = nullptr;
+				_data.GetNumber<void*>(0, result);
+				return (result);
+			}
+			uint32_t Length() const
+			{
+				return (_data.Size());
+			}
+			uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
+			{
+				return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
+			}
+			uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
+			{
+				return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
+			}
+
+		private:
+			Frame _data;
+		};
+	}
+
+    typedef Core::IPCMessageType<1, Data::Init, Data::Setup > AnnounceMessage;
     typedef Core::IPCMessageType<2, Data::Input, Data::Output> InvokeMessage;
     typedef Core::IPCMessageType<3, Data::ObjectInterface, Core::IPC::ScalarType<void*> > ObjectMessage;
 }

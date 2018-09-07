@@ -62,22 +62,16 @@ private:
             : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(nodeId))
             , _service(Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize())) {
 
-            _client->CreateFactory<RPC::InvokeMessage>(2);
-            if (_client->Open(RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
-
-                // TODO, Seems the announce is still progressing, make sure the open blocks, till it completes.
-                SleepMs(100);
-
-                // I would not expect that the next line is needed, left it in for reference for testing.
-                // If it is neede, it needs to move to the RPC::CommunicatorClient..
-                _client->Register(_service);
-            }
-            else {
+            if (_client->Open(RPC::CommunicationTimeOut, _T("ocdmimplementation"), OCDM::IAccessorOCDM::ID, ~0) != Core::ERROR_NONE) {
                 _client.Release();
-            }
+            } else {
+                _client->CreateFactory<RPC::InvokeMessage>(2);
+                _client->Register(_service);
+	    }
         }
         ~RPCClient() {
             if (_client.IsValid() == true) {
+                _client->DestroyFactory<RPC::InvokeMessage>();
                 _client->Unregister(_service);
                 _client->Close(Core::infinite);
             }
@@ -87,18 +81,10 @@ private:
         inline bool IsOperational() const {
             return (_client.IsValid());
         }
-
-        template <typename INTERFACE>
-        INTERFACE* Create(const string& objectName, const uint32_t version = static_cast<uint32_t>(~0)) {
-            INTERFACE* result = nullptr;
-
-            if (_client.IsValid() == true) {
-                // Oke we could open the channel, lets get the interface
-                result = _client->Create<INTERFACE>(objectName, version);
-            }
-
-            return (result);
-        }
+		template <typename INTERFACE>
+		INTERFACE* WaitForCompletion(const uint32_t waitTime) {
+			return (_client->WaitForCompletion<INTERFACE>(waitTime));
+		}
 
     private:
         Core::ProxyType<RPC::CommunicatorClient> _client;
@@ -235,7 +221,7 @@ private:
         , _sink(this) {
 
         if (_client.IsOperational() == true) { 
-            _remote = _client.Create<OCDM::IAccessorOCDM>(_T("implementation"));
+            _remote = _client.WaitForCompletion<OCDM::IAccessorOCDM>(6000);
             Register(&_sink);
         }
     }
@@ -534,6 +520,9 @@ private:
 
                         // For nowe we just copy the clear data..
                         Read(encryptedDataLength, encryptedData);
+
+                        // Get the status of the last decrypt.
+                        ret = Status();
 
                         // Get the status of the last decrypt.
                         ret = Status();

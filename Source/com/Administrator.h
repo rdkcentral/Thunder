@@ -210,7 +210,7 @@ namespace RPC {
         InvokeServerType<THREADPOOLCOUNT, MESSAGESLOTS>& operator=(const InvokeServerType<THREADPOOLCOUNT, MESSAGESLOTS>&) = delete;
 
     public:
-        InvokeServerType(const uint32_t stackSize)
+        InvokeServerType(const uint32_t stackSize = Core::Thread::DefaultStackSize())
             : _threadPoolEngine(stackSize, _T("IPCInterfaceMessageHandler"))
         {
         }

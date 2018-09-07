@@ -4,6 +4,31 @@ namespace WPEFramework {
 namespace RPC {
     static Core::ProxyPoolType<RPC::ObjectMessage> ObjectMessageFactory(2);
 
+	static void LoadProxyStubs(const string & pathName)
+	{
+		static std::list<Core::Library> processProxyStubs;
+
+		Core::Directory index(pathName.c_str(), _T("*.so"));
+
+		while (index.Next() == true)
+		{
+			// Check if this ProxySTub file is already loaded in this process space..
+			std::list<Core::Library>::const_iterator loop(processProxyStubs.begin());
+			while ((loop != processProxyStubs.end()) && (loop->Name() != index.Current())) {
+				loop++;
+			}
+
+			if (loop == processProxyStubs.end()) {
+				Core::Library library(index.Current().c_str());
+
+				if (library.IsLoaded() == true)
+				{
+					processProxyStubs.push_back(library);
+				}
+			}
+		}
+	}
+
     void* Communicator::RemoteProcess::Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)
     {
         void* result(nullptr);
@@ -25,41 +50,26 @@ namespace RPC {
         return (result);
     }
 
-    void Communicator::RemoteProcess::Announce(Core::ProxyType<Core::IPCChannel>& channel,
-                                               const uint32_t exchangeId VARIABLE_IS_NOT_USED,
-                                               const uint32_t interfaceId, void* implementation)
+    void Communicator::RemoteProcess::Announce(Core::ProxyType<Core::IPCChannel>& channel, const Data::Init& info, void*& implementation)
     {
-
-        TRACE_L1("Remote Process %d, has announced itself.", Id());
-        _channel = channel;
-        _returnedInterface = Administrator::Instance().CreateProxy(interfaceId, channel, implementation, false, true);
+		ASSERT(implementation != nullptr);
+		// Seems we received an interface from the otherside. Prepare the actual stub around it.
+		TRACE_L1("Remote Process %d, has announced itself.", Id());
+		_channel = channel;
+		_returnedInterface = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
     }
 
-    Communicator::Communicator(const Core::NodeId & node, const Core::ProxyType<Core::IIPCServer> & handler)
-        : _processMap()
-          , _ipcServer(node, _processMap, handler)
-          , _proxyStubs()
+    Communicator::Communicator(const Core::NodeId & node, const Core::ProxyType<Core::IIPCServer> & handler, const string& proxyStubPath)
+        : _processMap(*this)
+        , _ipcServer(node, _processMap, handler, proxyStubPath)
     {
-
+		if (proxyStubPath.empty() == false) {
+			RPC::LoadProxyStubs(proxyStubPath);
+		}
         // These are the elements we are expecting to receive over the IPC channels.
         _ipcServer.CreateFactory<AnnounceMessage>(1);
-        _ipcServer.CreateFactory<InvokeMessage>(3);
-    }
-
-    void Communicator::LoadProxyStubs(const string & pathName)
-    {
-
-        Core::Directory index(pathName.c_str(), _T("*.so"));
-
-        while (index.Next() == true)
-        {
-            Core::Library library(index.Current().c_str());
-
-            if (library.IsLoaded() == true)
-            {
-                _proxyStubs.push_back(library);
-            }
-        }
+		_ipcServer.CreateFactory<ObjectMessage>(1);
+		_ipcServer.CreateFactory<InvokeMessage>(3);
     }
 
     /* virtual */ Communicator::~Communicator()
@@ -74,10 +84,10 @@ namespace RPC {
         _ipcServer.Close(Core::infinite);
 
         _ipcServer.DestroyFactory<InvokeMessage>();
-        _ipcServer.DestroyFactory<AnnounceMessage>();
+		_ipcServer.DestroyFactory<ObjectMessage>();
+		_ipcServer.DestroyFactory<AnnounceMessage>();
 
         TRACE_L1("Clearing Communicator. Active Processes %d", _processMap.Size());
-        _proxyStubs.clear();
     }
 
     void Communicator::RemoteProcess::Terminate()
@@ -136,20 +146,29 @@ namespace RPC {
         return (result);
     }
 
-    uint32_t CommunicatorClient::Open(const uint32_t waitTime)
-    {
+	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
+	{
+        	ASSERT(BaseClass::IsOpen() == false);
+
+		_announceMessage->Parameters().Set(~0, nullptr);
+
+        	return (BaseClass::Open(waitTime));
+	}
+
+	uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
+	{
         ASSERT(BaseClass::IsOpen() == false);
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), 0, nullptr);
+		_announceMessage->Parameters().Set(className, interfaceId, version);
 
         return (BaseClass::Open(waitTime));
     }
 
-    uint32_t CommunicatorClient::Open(const uint32_t interfaceId, void * implementation, const uint32_t waitTime)
+    uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void * implementation)
     {
         ASSERT(BaseClass::IsOpen() == false);
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, implementation);
+        _announceMessage->Parameters().Set(interfaceId, implementation);
 
         return (BaseClass::Open(waitTime));
     }
@@ -165,7 +184,6 @@ namespace RPC {
 
         if (BaseClass::Source().IsOpen())
         {
-
             TRACE_L1("Invoking the Announce message to the server. %d", __LINE__);
 
             uint32_t result = Invoke<RPC::AnnounceMessage>(_announceMessage, this);
@@ -184,23 +202,18 @@ namespace RPC {
 
         ASSERT(dynamic_cast<RPC::AnnounceMessage *>(&element) != nullptr);
 
-        if (announceMessage)
-        {
-            // Is result of an announce message, contains default trace categories in JSON format.
-            string jsonDefaultCategories = announceMessage->Response().Value();
-            Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+        // Is result of an announce message, contains default trace categories in JSON format.
+        string jsonDefaultCategories(announceMessage->Response().TraceCategories());
+        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
 
-            // Set event so WaitForCompletion() can continue.
-            _announceEvent.SetEvent();
+		string proxyStubPath(announceMessage->Response().ProxyStubPath());
+		if (proxyStubPath.empty() == false) {
+			// Also load the ProxyStubs before we do anything else
+			RPC::LoadProxyStubs(proxyStubPath);
+		}
 
-            return;
-        }
+        // Set event so WaitForCompletion() can continue.
+        _announceEvent.SetEvent();
     }
-
-   void CommunicatorClient::WaitForCompletion()
-   {
-       // Lock event until Dispatch() sets it.
-       _announceEvent.Lock();
-   }
 }
 }

@@ -232,6 +232,11 @@ namespace PluginHost {
                 return (_dataPath);
             }
 
+			inline const string& ProxyStubPath() const
+			{
+				return (_baseConfig.ProxyStubPath());
+			}
+
             inline void Update(const Plugin::Config& config)
             {
                 const string& callSign(config.Callsign.Value());
@@ -240,9 +245,9 @@ namespace PluginHost {
                 _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
                 _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
                 _dataPath = _baseConfig.DataPath() + config.ClassName.Value() + '/';
-		_volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
+				_volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
 
-		// Volatile means that the path could not have been created, create it for now.
+				// Volatile means that the path could not have been created, create it for now.
                 Core::Directory(_volatilePath.c_str()).CreatePath();
 
                 if (_baseConfig.Accessor().PortNumber() == 80) {
@@ -260,7 +265,7 @@ namespace PluginHost {
             string _webPrefix;
             string _persistentPath;
             string _volatilePath;
-            string _dataPath;
+			string _dataPath;
             string _accessor;
         };
 
@@ -333,7 +338,11 @@ namespace PluginHost {
         {
             return (_config.DataPath());
         }
-        virtual string HashKey() const
+		virtual string ProxyStubPath() const
+		{
+			return (_config.ProxyStubPath());
+		}
+		virtual string HashKey() const
         {
             return (_config.Information().HashKey());
         }

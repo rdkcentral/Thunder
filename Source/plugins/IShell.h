@@ -157,7 +157,10 @@ namespace PluginHost {
         //! DataPath: <config:datapath>/<plugin:classname>/
         virtual string DataPath() const = 0;
 
-        //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
+		//! VolatilePath: <config:volatilepath>/<plugin:callsign>/
+		virtual string ProxyStubPath() const = 0;
+
+		//! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
 
         virtual string HashKey() const = 0;

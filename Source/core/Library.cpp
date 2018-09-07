@@ -30,16 +30,12 @@ namespace Core {
             _refCountedHandle = new RefCountedHandle;
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
-#ifdef __DEBUG__
             _refCountedHandle->_name = fileName;
-#endif
         }
         else {
 #ifdef __LINUX__
             _error = dlerror();
-#ifdef __DEBUG__
             TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
-#endif
 #endif
         }
     }
@@ -125,9 +121,7 @@ namespace Core {
 #ifdef __WIN32__
                 ::FreeLibrary(_refCountedHandle->_handle);
 #endif
-#ifdef __DEBUG__
 				TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
-#endif
             }
             else {
                 Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
