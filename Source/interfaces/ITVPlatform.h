@@ -72,9 +72,9 @@ public:
 
     virtual TvmRc Init() = 0;
     virtual TvmRc Deinit() = 0;
-    virtual TvmRc Tune(uint32_t) = 0;
+    virtual TvmRc Tune(uint32_t frequency, uint16_t modulation) = 0;
     virtual TvmRc Scan(std::vector<uint32_t>, ITunerHandler&) = 0;
-    virtual TvmRc Tune(TSInfo&, ITunerHandler&) = 0;
+    virtual TvmRc Tune(uint32_t frequency, uint16_t programNumber, uint16_t modulation, TVPlatform::ITVPlatform::ITunerHandler&) = 0;
     virtual TvmRc StopScanning() = 0;
     virtual TvmRc GetChannelMap(ChannelMap&) = 0;
     virtual TvmRc GetTSInfo(TSInfoList&) = 0;
