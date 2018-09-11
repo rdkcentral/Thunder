@@ -50,15 +50,6 @@ namespace RPC {
         return (result);
     }
 
-    void Communicator::RemoteProcess::Announce(Core::ProxyType<Core::IPCChannel>& channel, const Data::Init& info, void*& implementation)
-    {
-		ASSERT(implementation != nullptr);
-		// Seems we received an interface from the otherside. Prepare the actual stub around it.
-		TRACE_L1("Remote Process %d, has announced itself.", Id());
-		_channel = channel;
-		_returnedInterface = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
-    }
-
     Communicator::Communicator(const Core::NodeId & node, const Core::ProxyType<Core::IIPCServer> & handler, const string& proxyStubPath)
         : _processMap(*this)
         , _ipcServer(node, _processMap, handler, proxyStubPath)

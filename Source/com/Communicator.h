@@ -212,7 +212,6 @@ namespace RPC {
 				, _process(pid)
 				, _state(IRemoteProcess::ACTIVE)
 				, _channel(channel)
-				, _returnedInterface(nullptr)
 			{
 			}
 			RemoteProcess(RemoteProcessMap* parent, uint32_t* pid, const Core::Process::Options* options)
@@ -220,7 +219,6 @@ namespace RPC {
                 , _process(false)
                 , _state(IRemoteProcess::CONSTRUCTED)
                 , _channel()
-                , _returnedInterface(nullptr)
             {
                 // Start the external process launch..
                 _process.Launch(*options, pid);
@@ -291,19 +289,14 @@ namespace RPC {
             {
                 return (_state);
             }
-            virtual void* QueryInterface(const uint32_t id)
-            {
-                if (id == IRemoteProcess::ID) {
-                    AddRef();
-                    return (static_cast<IRemoteProcess*>(this));
-                }
-                else if (_returnedInterface != nullptr) {
-                    void* result = _returnedInterface;
-                    _returnedInterface = nullptr;
-                    return (result);
-                }
-                return (nullptr);
-            }
+            // virtual void* QueryInterface(const uint32_t id)
+            // {
+            //     if (id == IRemoteProcess::ID) {
+            //         AddRef();
+            //         return (static_cast<IRemoteProcess*>(this));
+            //     }
+            //     return (nullptr);
+            // }
             virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
 
             uint32_t WaitState(const uint32_t state, const uint32_t time) const
@@ -319,6 +312,17 @@ namespace RPC {
                 return (_process.ExitCode());
             }
             void Terminate();
+            void* Announce(Core::ProxyType<Core::IPCChannel>& channel)
+            {
+		        // Seems we received an interface from the otherside. Prepare the actual stub around it.
+		        TRACE_L1("Remote Process %d, has announced itself.", Id());
+        
+                ASSERT (_channel.IsValid() == false);
+
+                _channel = channel;
+                State(IRemoteProcess::ACTIVE);
+            }
+
             void Announce(Core::ProxyType<Core::IPCChannel>& channel, const Data::Init& info, void*& implementation);
 
         protected:
@@ -359,7 +363,6 @@ namespace RPC {
             Core::Process _process;
             Core::StateTrigger<IRemoteProcess::enumState> _state;
             Core::ProxyType<Core::IPCChannel> _channel;
-            void* _returnedInterface;
         };
 
     private:
@@ -523,7 +526,9 @@ namespace RPC {
 			inline void* Instance(const string& className, const uint32_t interfaceId, const uint32_t versionId) {
 				return (_parent.Instance(className, interfaceId, versionId));
 			}
-
+			inline void Instance(const uint32_t processId, const void* remote, const uint32_t interfaceId) {
+				return (_parent.Instance(processId, remote, interfaceId));
+			}
             inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config)
             {
                 _adminLock.Lock();
@@ -632,6 +637,9 @@ namespace RPC {
 
 						index = newElement.first;
 					}
+                    else {
+						index->second->Announce(channel);
+                    }
 
 					ASSERT (index != _processes.end());
 
@@ -643,9 +651,10 @@ namespace RPC {
 						}
 					}
 					else {
-						index->second->Announce(channel, info, implementation);
-                        index->second->State(IRemoteProcess::ACTIVE);
-
+                        void* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
+                        Instance(index->first, result, info.InterfaceId());
+                        Core::IUnknown* releaser (reinterpret_cast<Core::IUnknown*>(result));
+                        releaser->Release();
                     } 
 
 					result = Core::ERROR_NONE;
@@ -972,6 +981,8 @@ namespace RPC {
 		virtual void* Instance (const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */) {
 			return (nullptr);
 		}
+        virtual void Instance(const uint32_t /* processId */,  const void* /* remote */, const uint32_t /* interfaceId */) {
+        }
 
     private:
         RemoteProcessMap _processMap;
