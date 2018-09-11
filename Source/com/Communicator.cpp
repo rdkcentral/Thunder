@@ -33,7 +33,7 @@ namespace RPC {
     {
         void* result(nullptr);
 
-        if ((_process.IsActive() == true) && (_channel.IsValid() == true)) {
+        if (_channel.IsValid() == true) {
             Core::ProxyType<RPC::ObjectMessage> message(ObjectMessageFactory.Element());
 
             message->Parameters().Set(className, versionId, interfaceId);
@@ -83,11 +83,10 @@ namespace RPC {
 
     void Communicator::RemoteProcess::Terminate()
     {
-
         ASSERT(_parent != nullptr);
 
         if (_parent != nullptr) {
-            _parent->Destroy(_process.Id());
+            _parent->Destroy(Id());
         }
     }
 
@@ -95,12 +94,29 @@ namespace RPC {
         : Core::IPCChannelClientType<Core::Void, false, true>(node, CommunicationBufferSize)
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
+		, _handler()
     {
     }
 
+	CommunicatorClient::CommunicatorClient(const Core::NodeId& remoteNode, const Core::ProxyType<Core::IIPCServer>& handler)
+		: Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
+		, _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
+		, _announceEvent(false, true)
+		, _handler(handler)
+	{
+		CreateFactory<RPC::InvokeMessage>(2);
+		Register(_handler);
+	}
+
     CommunicatorClient::~CommunicatorClient()
     {
-        BaseClass::Close(Core::infinite);
+		BaseClass::Close(Core::infinite);
+
+		if (_handler.IsValid() == true) {
+			Unregister(_handler);
+			_handler.Release();
+			DestroyFactory<RPC::InvokeMessage>();
+		}
     }
 
     void* CommunicatorClient::Create(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)

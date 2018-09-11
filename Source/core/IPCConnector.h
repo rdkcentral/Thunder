@@ -889,18 +889,12 @@ namespace Core {
             {
                 _lock.Lock();
 
-                if (_outbound.IsValid() == true) {
+				TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
-                    TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
-
-                    if (_callback != nullptr) {
-
-                        _callback->Dispatch(*_outbound);
-                        _callback = nullptr;
-                    }
-                    else {
-                        _outbound.Release();
-                    }
+				_callback = nullptr;
+			
+				if (_outbound.IsValid() == true) {
+                    _outbound.Release();
                 }
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();

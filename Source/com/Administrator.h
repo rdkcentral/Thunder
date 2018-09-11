@@ -48,8 +48,8 @@ namespace RPC {
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
 
-            virtual void* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed) = 0;
-        };
+            virtual Core::IUnknown* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed) = 0;
+		};
 
         template <typename PROXY>
         class ProxyType : public IMetadata {
@@ -66,11 +66,11 @@ namespace RPC {
             }
 
         private:
-            virtual void* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            virtual Core::IUnknown* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             {
                 return (new PROXY(channel, implementation, otherSideInformed));
             }
-        };
+		};
 
     public:
         virtual ~Administrator();
@@ -92,9 +92,16 @@ namespace RPC {
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* implementation, const bool record, const bool otherSideInformed)
         {
-            return (reinterpret_cast<ACTUALINTERFACE*>(CreateProxy(ACTUALINTERFACE::ID, channel, implementation, record, otherSideInformed)));
+			ACTUALINTERFACE* response = nullptr;
+			Core::IUnknown* result = CreateProxy(ACTUALINTERFACE::ID, channel, implementation, record, otherSideInformed);
+
+			if (result != nullptr) {
+				response = result->QueryInterface<ACTUALINTERFACE>();
+				result->Release();
+			}
+            return (response);
         }
-        void* CreateProxy(const uint32_t interfaceNumber, Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool record, const bool otherSideInformed)
+		Core::IUnknown* CreateProxy(const uint32_t interfaceNumber, Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool record, const bool otherSideInformed)
         {
             if (implementation == nullptr) {
                 return (nullptr);
@@ -104,12 +111,12 @@ namespace RPC {
 
                 if (index != _proxy.end()) {
 
-                    void* newProxy = index->second->CreateProxy(channel, implementation, otherSideInformed);
+					Core::IUnknown* newProxy = index->second->CreateProxy(channel, implementation, otherSideInformed);
 
                     ASSERT (newProxy != nullptr);
 
                     if (record == true) {
-                        _proxyMap.insert(std::pair<void*, void*>(implementation, newProxy));
+                        _proxyMap.insert(std::pair<void*, Core::IUnknown*>(implementation, newProxy));
                     }
 
                     return (newProxy);
@@ -120,14 +127,12 @@ namespace RPC {
 
             return (nullptr);
         }
-        template <typename ACTUALINTERFACE>
+		template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* FindProxy(void* implementation)
         {
-            std::map<void*, void*>::iterator index(_proxyMap.find(implementation));
+            std::map<void*, Core::IUnknown*>::iterator index(_proxyMap.find(implementation));
 
-            void* proxy = (index != _proxyMap.end() ? index->second : nullptr);
-
-            return (reinterpret_cast<ACTUALINTERFACE*>(proxy));
+            return (index != _proxyMap.end() ? index->second->QueryInterface< ACTUALINTERFACE>() : nullptr);
         }
         void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
         {
@@ -146,7 +151,7 @@ namespace RPC {
         }
         void DeleteProxy(void* implementation)
         {
-            std::map<void*, void*>::iterator index(_proxyMap.find(implementation));
+            std::map<void*, Core::IUnknown*>::iterator index(_proxyMap.find(implementation));
 
             if (index != _proxyMap.end()) {
                 _proxyMap.erase(index);
@@ -158,7 +163,7 @@ namespace RPC {
         std::map<uint32_t, ProxyStub::UnknownStub*> _stubs;
         std::map<uint32_t, IMetadata*> _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
-        std::map<void*, void*> _proxyMap;
+        std::map<void*, Core::IUnknown*> _proxyMap;
     };
 
     template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>

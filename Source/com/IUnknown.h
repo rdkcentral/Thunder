@@ -66,8 +66,9 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
+
     template <typename INTERFACE>
-    class UnknownProxyType : public INTERFACE {
+    class UnknownProxyType : public INTERFACE  {
     protected:
         typedef UnknownProxyType<INTERFACE> BaseClass;
         typedef Core::ProxyType<RPC::InvokeMessage> IPCMessage;
@@ -113,9 +114,8 @@ namespace ProxyStub {
 
             return (result);
         }
-        virtual void AddRef() const
+		virtual void AddRef() const
         {
-
             if ((Core::InterlockedIncrement(_refCount) == 2) && (_otherSideInformed == false)) {
 
                 // Seems we really would like to "preserve" this interface, so report it in use
@@ -170,18 +170,25 @@ namespace ProxyStub {
         {
             void* result = nullptr;
 
-            // We have reached "0", signal the other side..
-            Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
-            RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
+			if (interfaceNumber == INTERFACE::ID) {
+				// Just AddRef and return..
+				AddRef();
+				result = static_cast<INTERFACE*>(this);
+			}
+			else {
+				// We have reached "0", signal the other side..
+				Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+				RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, INTERFACE::ID, 2);
-            parameters.Number<uint32_t>(interfaceNumber);
-            if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
-                RPC::Data::Frame::Reader response(message->Response().Reader());
+				message->Parameters().Set(_implementation, INTERFACE::ID, 2);
+				parameters.Number<uint32_t>(interfaceNumber);
+				if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
+					RPC::Data::Frame::Reader response(message->Response().Reader());
 
-                // From what is returned, we need to create a proxy
-                result = CreateProxy(response.Number<Core::IUnknown*>(), interfaceNumber);
-            }
+					// From what is returned, we need to create a proxy
+					result = CreateProxy(response.Number<Core::IUnknown*>(), interfaceNumber);
+				}
+			}
 
             return (result);
         }
