@@ -49,47 +49,6 @@ private:
     AccessorOCDM& operator= (const AccessorOCDM&) = delete;
 
 private:
-    class RPCClient {
-    private:
-        RPCClient() = delete;
-        RPCClient(const RPCClient&) = delete;
-        RPCClient& operator=(const RPCClient&) = delete;
-
-        typedef WPEFramework::RPC::InvokeServerType<4, 1> RPCService;
-
-    public:
-        RPCClient(const Core::NodeId& nodeId)
-            : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(nodeId))
-            , _service(Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize())) {
-
-            if (_client->Open(RPC::CommunicationTimeOut, _T("ocdmimplementation"), OCDM::IAccessorOCDM::ID, ~0) != Core::ERROR_NONE) {
-                _client.Release();
-            } else {
-                _client->CreateFactory<RPC::InvokeMessage>(2);
-                _client->Register(_service);
-	    }
-        }
-        ~RPCClient() {
-            if (_client.IsValid() == true) {
-                _client->DestroyFactory<RPC::InvokeMessage>();
-                _client->Unregister(_service);
-                _client->Close(Core::infinite);
-            }
-        }
-
-    public:
-        inline bool IsOperational() const {
-            return (_client.IsValid());
-        }
-		template <typename INTERFACE>
-		INTERFACE* WaitForCompletion(const uint32_t waitTime) {
-			return (_client->WaitForCompletion<INTERFACE>(waitTime));
-		}
-
-    private:
-        Core::ProxyType<RPC::CommunicatorClient> _client;
-        Core::ProxyType<RPCService> _service;
-    };
     class KeyId {
     private:
         KeyId() = delete;
@@ -212,16 +171,15 @@ private:
 private:
     AccessorOCDM (const TCHAR domainName[]) 
         : _refCount(1)
-        , _client(Core::NodeId(domainName))
-        , _remote(nullptr)
+        , _client(Core::NodeId(domainName), Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize()))
+        , _remote(_client.WaitForCompletion<OCDM::IAccessorOCDM>(6000))
         , _adminLock()
         , _signal(false, true)
         , _interested(0)
         , _sessionKeys()
         , _sink(this) {
 
-        if (_client.IsOperational() == true) { 
-            _remote = _client.WaitForCompletion<OCDM::IAccessorOCDM>(6000);
+        if (_remote != nullptr) {
             Register(&_sink);
         }
     }
@@ -232,11 +190,12 @@ public:
         _systemLock.Lock();
 
         if (_singleton == nullptr) {
-			// See if we have an environment variable set.
-			string connector;
-			if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
-				connector = _T("/tmp/ocdm");
-			}
+
+            // See if we have an environment variable set.
+            string connector;
+            if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
+                connector = _T("/tmp/ocdm");
+            }
 
             AccessorOCDM* result = new AccessorOCDM (connector.c_str());
 
@@ -455,7 +414,7 @@ public:
 
 private:
     mutable uint32_t _refCount;
-    RPCClient _client;
+    RPC::CommunicatorClient _client;
     OCDM::IAccessorOCDM* _remote;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;
