@@ -184,7 +184,8 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         // Init GPU resources.
         // We can call it always. If we are not the first it does not do anything (harmful).
         // Moreover, it takes care of all underlying necessary API init's
-        bcm_host_init();
+     
+        //bcm_host_init();
 #endif
         UpdateCpuStats();
     }
