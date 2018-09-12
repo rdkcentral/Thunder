@@ -34,7 +34,7 @@ namespace ProxyStub {
 			uint32_t interfaceId(parameters.Number<uint32_t>());
 			uint32_t version(parameters.Number<uint32_t>());
 
-			response.Number<void*>(message->Parameters().Implementation<RPC::IRemoteProcess>()->Instantiate(waitTime, className, interfaceId, version));
+			response.Number<void*>(message->Parameters().Implementation<RPC::IRemoteProcess>()->Aquire(waitTime, className, interfaceId, version));
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
@@ -167,7 +167,7 @@ namespace ProxyStub {
 
 			return (newMessage->Response().Reader().Number<RPC::IRemoteProcess::enumState>());
 		}
-		virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
+		virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 		{
 			IPCMessage newMessage(BaseClass::Message(2));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());

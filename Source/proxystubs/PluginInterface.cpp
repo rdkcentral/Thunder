@@ -250,7 +250,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // Careful, out of order.
             //
@@ -263,7 +263,7 @@ namespace ProxyStubs {
             IPlugin::INotification* stub = reader.Number<IPlugin::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IPlugin::INotification* proxy = RPC::Administrator::Instance().FindProxy<IPlugin::INotification>(stub);
+            IPlugin::INotification* proxy = RPC::Administrator::Instance().FindProxy<IPlugin::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Coud not find stub for Plugin::IPluginNotification: %p"), stub);
@@ -417,8 +417,7 @@ namespace ProxyStubs {
             IStateControl::INotification* stub = reader.Number<IStateControl::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IStateControl::INotification* proxy = RPC::Administrator::Instance().FindProxy<IStateControl::INotification>(
-                stub);
+            IStateControl::INotification* proxy = RPC::Administrator::Instance().FindProxy<IStateControl::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find stub for IStateControl::INotification: %p"), stub);
@@ -484,7 +483,7 @@ namespace ProxyStubs {
             ISubSystem::INotification* stub = reader.Number<ISubSystem::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            ISubSystem::INotification* proxy = RPC::Administrator::Instance().FindProxy<ISubSystem::INotification>(stub);
+            ISubSystem::INotification* proxy = RPC::Administrator::Instance().FindProxy<ISubSystem::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find stub for IStateControl::INotification: %p"), stub);

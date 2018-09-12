@@ -186,14 +186,25 @@ namespace RPC {
             {
             }
 
-        public:
-            void Set(const uint32_t interfaceId, void* implementation)
+		public:
+			bool IsOffer() const {
+				return (_className[0] == '\0') && (_className[1] == '\0') && (_className[2] == 0x55);
+			}
+			bool IsRevoke() const {
+				return (_className[0] == '\0') && (_className[1] == '\0') && (_className[2] == 0xAA);
+			}
+			bool IsAquire() const {
+				return (IsRevoke() == false) && (IsOffer() == false);
+			}
+            void Set(const uint32_t interfaceId, void* implementation, const bool offer = true)
             {
 				_exchangeId = Core::ProcessInfo().Id();
 				_implementation = implementation;
                 _interfaceId = interfaceId;
 				_versionId = 0;
 				_className[0] = '\0';
+				_className[1] = '\0';
+				_className[2] = static_cast<char>(offer ? 0x55 : 0xAA);
             }
 			void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
 			{
@@ -201,8 +212,9 @@ namespace RPC {
 				_implementation = nullptr;
 				_interfaceId = interfaceId;
 				_versionId = versionId;
-				const std::string cclassName (Core::ToString(className));
-				::strncpy(_className, cclassName.c_str(), sizeof(_className));
+				_className[1] = static_cast<char>(~0);
+				const std::string converted (Core::ToString(className));
+				::strncpy(_className, converted.c_str(), sizeof(_className));
 			}
 			void* Implementation()
             {
@@ -231,80 +243,6 @@ namespace RPC {
             uint32_t _exchangeId;
 			uint32_t _versionId;
 			char _className[64];
-        };
-
-        class ObjectInterface {
-        private:
-            ObjectInterface(const ObjectInterface&) = delete;
-            ObjectInterface& operator=(const ObjectInterface&) = delete;
-
-        public:
-            ObjectInterface()
-                : _data()
-            {
-            }
-            ~ObjectInterface()
-            {
-            }
-
-        public:
-            inline void Clear()
-            {
-                _data.Clear();
-            }
-            void Set(const string& className, const uint32_t versionId, const uint32_t interfaceId)
-            {
-                _data.SetNumber<uint32_t>(0, versionId);
-                _data.SetNumber<uint32_t>(4, interfaceId);
-                _data.SetText(8, className);
-            }
-            string ClassName() const
-            {
-                string className;
-
-                _data.GetText(8, className);
-
-                return (className);
-            }
-            uint32_t InterfaceId() const
-            {
-                uint32_t interfaceId;
-
-                _data.GetNumber<uint32_t>(4, interfaceId);
-
-                return (interfaceId);
-            }
-            uint32_t VersionId() const
-            {
-                uint32_t versionId;
-
-                _data.GetNumber<uint32_t>(0, versionId);
-
-                return (versionId);
-            }
-            uint32_t Length() const
-            {
-                return (_data.Size());
-            }
-            inline Frame::Writer Writer()
-            {
-                return (Frame::Writer(_data, (sizeof(void*) + sizeof(uint32_t) + sizeof(uint8_t))));
-            }
-            inline const Frame::Reader Reader() const
-            {
-                return (Frame::Reader(_data, (sizeof(void*) + sizeof(uint32_t) + sizeof(uint8_t))));
-            }
-            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
-            {
-                return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
-            }
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
-            {
-                return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
-            }
-
-        private:
-            Frame _data;
         };
 
 		class Setup {
@@ -373,7 +311,6 @@ namespace RPC {
 
     typedef Core::IPCMessageType<1, Data::Init, Data::Setup > AnnounceMessage;
     typedef Core::IPCMessageType<2, Data::Input, Data::Output> InvokeMessage;
-    typedef Core::IPCMessageType<3, Data::ObjectInterface, Core::IPC::ScalarType<void*> > ObjectMessage;
 }
 }
 

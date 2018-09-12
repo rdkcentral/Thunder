@@ -88,10 +88,10 @@ namespace ProxyStub {
         virtual ~UnknownProxyType()
         {
             // We might need to kill the Proxy registration..
-            RPC::Administrator::Instance().DeleteProxy(_implementation);
+            RPC::Administrator::Instance().DeleteProxy(_channel.operator->(), _implementation);
         }
 
-    public:
+ public:
         inline IPCMessage Message(const uint8_t methodId) const
         {
             IPCMessage message(RPC::Administrator::Instance().Message());
@@ -134,7 +134,6 @@ namespace ProxyStub {
 
         virtual uint32_t Release() const
         {
-
             uint32_t result(Core::ERROR_NONE);
 
             if (Core::InterlockedDecrement(_refCount) == 0) {

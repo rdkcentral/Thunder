@@ -171,17 +171,16 @@ private:
 private:
     AccessorOCDM (const TCHAR domainName[]) 
         : _refCount(1)
-        , _client(Core::NodeId(domainName), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()))
-        , _remote(_client.WaitForCompletion<OCDM::IAccessorOCDM>(6000))
+		, _client(Core::NodeId(domainName), Core::ProxyType< WPEFramework::RPC::InvokeServerType<4, 1> >::Create())
+		, _remote(nullptr)
         , _adminLock()
         , _signal(false, true)
         , _interested(0)
         , _sessionKeys()
         , _sink(this) {
 
-        if (_remote != nullptr) {
-            Register(&_sink);
-        }
+        _remote = _client.Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"), ~0, 6000);
+        Register(&_sink);
     }
 
 public:
@@ -190,12 +189,11 @@ public:
         _systemLock.Lock();
 
         if (_singleton == nullptr) {
-
-            // See if we have an environment variable set.
-            string connector;
-            if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
-                connector = _T("/tmp/ocdm");
-            }
+			// See if we have an environment variable set.
+			string connector;
+			if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
+				connector = _T("/tmp/ocdm");
+			}
 
             AccessorOCDM* result = new AccessorOCDM (connector.c_str());
 
@@ -274,7 +272,8 @@ public:
             else {
                 _adminLock.Unlock();
             }
-        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
+
+        } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
 
         return (result);
     }
@@ -479,9 +478,6 @@ private:
 
                         // For nowe we just copy the clear data..
                         Read(encryptedDataLength, encryptedData);
-
-                        // Get the status of the last decrypt.
-                        ret = Status();
 
                         // Get the status of the last decrypt.
                         ret = Status();

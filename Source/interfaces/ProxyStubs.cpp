@@ -11,7 +11,6 @@
 #include "IProvisioning.h"
 #include "IPower.h"
 #include "IRPCLink.h"
-#include "IResourceCenter.h"
 #include "IStreaming.h"
 #include "ITVControl.h"
 #include "IWebDriver.h"
@@ -77,7 +76,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual void Unregister(IBrowser::INotification* sink) = 0;
             //
@@ -88,7 +87,7 @@ namespace ProxyStubs {
             IBrowser::INotification* stub = reader.Number<IBrowser::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IBrowser::INotification* proxy = RPC::Administrator::Instance().FindProxy<IBrowser::INotification>(stub);
+            IBrowser::INotification* proxy = RPC::Administrator::Instance().FindProxy<IBrowser::INotification>(channel.operator->(), stub);
 
 
             if (proxy == nullptr) {
@@ -203,12 +202,12 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
             IGuide::INotification* stub = reader.Number<IGuide::INotification*>();
-            IGuide::INotification* proxy = RPC::Administrator::Instance().FindProxy<IGuide::INotification>(stub);
+            IGuide::INotification* proxy = RPC::Administrator::Instance().FindProxy<IGuide::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find stub for IGuide::Notification: %p"), stub);
@@ -485,7 +484,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual void Unregister(INetflix::INotification* netflix) = 0;
             //
@@ -496,7 +495,7 @@ namespace ProxyStubs {
             INetflix::INotification* stub = reader.Number<INetflix::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            INetflix::INotification* proxy = RPC::Administrator::Instance().FindProxy<INetflix::INotification>(stub);
+            INetflix::INotification* proxy = RPC::Administrator::Instance().FindProxy<INetflix::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find stub for IBrowserNotification: %p"), stub);
@@ -549,118 +548,6 @@ namespace ProxyStubs {
     // INetflix::INotification interface stub definitions
 
     //
-    // IResourceCenter interface stub definitions (interface/IResourceCenter.h)
-    //
-    ProxyStub::MethodHandler ResourceCenterStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
-            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(
-                channel, implementation, true, false);
-
-            ASSERT((proxy != nullptr) && "Failed to create proxy");
-
-            if (proxy == nullptr) {
-                TRACE_L1(_T("Could not create a stub for IResourceCenter::INotification: %p"), implementation);
-            } else {
-                writer.Number(parameters.Implementation<IResourceCenter>()->Configure(proxy));
-                if (proxy->Release() != Core::ERROR_NONE) {
-                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
-                }
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Register(IResourceCenter::INotification* provisioning) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            IResourceCenter::INotification* implementation = reader.Number<IResourceCenter::INotification*>();
-            IResourceCenter::INotification* proxy = RPC::Administrator::Instance().CreateProxy<IResourceCenter::INotification>(
-                channel, implementation, true, false);
-
-            ASSERT((proxy != nullptr) && "Failed to create proxy");
-
-            if (proxy == nullptr) {
-                TRACE_L1(_T("Could not create a stub for IResourceCenter::INotification: %p"), implementation);
-            } else {
-                parameters.Implementation<IResourceCenter>()->Register(proxy);
-                if (proxy->Release() != Core::ERROR_NONE) {
-                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
-                }
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Unregister(IResourceCenter::INotification* provisioning) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            // Need to find the proxy that goes with the given implementation..
-            IResourceCenter::INotification* stub = reader.Number<IResourceCenter::INotification*>();
-
-            // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IResourceCenter::INotification* proxy = RPC::Administrator::Instance().FindProxy<IResourceCenter::INotification>(
-                stub);
-
-            if (proxy == nullptr) {
-                TRACE_L1(_T("Could not find stub for IResourceCenter::INotification: %p"), stub);
-            } else {
-                parameters.Implementation<IResourceCenter>()->Unregister(proxy);
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint8_t Identifier(const uint8_t maxLength, uint8_t buffer[]) const = 0;
-            //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Number<Exchange::IResourceCenter::hardware_state>(
-                message->Parameters().Implementation<IResourceCenter>()->HardwareState());
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual hardware_state HardwareState() const = 0;
-            //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            uint8_t length = parameters.Number<uint8_t>();
-            uint8_t buffer[256];
-
-            length = message->Parameters().Implementation<IResourceCenter>()->Identifier(length, buffer);
-            response.Buffer(length, buffer);
-        },
-        nullptr
-    };
-    // IResourceCenter interface stub definitions
-
-    //
-    // IResourceCenter::INotification interface stub definitions (interface/IResourceCenter.h)
-    //
-    ProxyStub::MethodHandler ResourceCenterNotificationStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void StateChange(Exchange::IResourceCenter::hardware_state state) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            // virtual void StateChange (Exchange::IResourceCenter::hardware_state state) = 0;
-            message->Parameters().Implementation<IResourceCenter::INotification>()->StateChange(
-                reader.Number<Exchange::IResourceCenter::hardware_state>());
-        },
-        nullptr
-    };
-    // IResourceCenter::INotification interface stub definitions
-
-    //
     // IProvisioning interface stub definitions (interface/IProvisioning.h)
     //
     ProxyStub::MethodHandler ProvisioningStubMethods[] = {
@@ -686,7 +573,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual void Unregister(IProvisioning::INotification* provisioning) = 0;
             //
@@ -697,7 +584,7 @@ namespace ProxyStubs {
             IProvisioning::INotification* stub = reader.Number<IProvisioning::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IProvisioning::INotification* proxy = RPC::Administrator::Instance().FindProxy<IProvisioning::INotification>(stub);
+            IProvisioning::INotification* proxy = RPC::Administrator::Instance().FindProxy<IProvisioning::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find a stub for IProvisioningNotification: %p"), stub);
@@ -752,7 +639,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual void Unregister(IComposition::INotification* notification) = 0;
             //
@@ -763,7 +650,7 @@ namespace ProxyStubs {
             IComposition::INotification* stub = reader.Number<IComposition::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IComposition::INotification* proxy = RPC::Administrator::Instance().FindProxy<IComposition::INotification>(stub);
+            IComposition::INotification* proxy = RPC::Administrator::Instance().FindProxy<IComposition::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find a stub for ICompositionNotification: %p"), stub);
@@ -831,39 +718,7 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->Resolution());
-        },        
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Geometry(const string& callsign, const IComposition::Rectangle& rectangle) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            const std::string name(reader.Text());
-
-            IComposition::Rectangle rectangle;
-            rectangle.x = reader.Number<uint32_t>();
-            rectangle.y = reader.Number<uint32_t>();
-            rectangle.width = reader.Number<uint32_t>();
-            rectangle.height = reader.Number<uint32_t>();
-
-            parameters.Implementation<IComposition>()->Geometry(name, rectangle);                                       },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual IComposition::Rectangle Geometry(const string& callsign) const;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-            const std::string name(reader.Text());
-
-            IComposition::Rectangle rectangle = parameters.Implementation<IComposition>()->Geometry(name);               
-            writer.Number<uint32_t>(rectangle.x);
-            writer.Number<uint32_t>(rectangle.y);
-            writer.Number<uint32_t>(rectangle.width);
-            writer.Number<uint32_t>(rectangle.height);
-        },    
+        },
         nullptr
     };
     // IComposition interface stub definitions
@@ -900,19 +755,26 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void ChangedGeometry(const IComposition::Rectangle& rectangle) = 0;
+            // virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height) = 0;
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-            IComposition::Rectangle rectangle;
+            uint32_t X(reader.Number<uint32_t>());
+            uint32_t Y(reader.Number<uint32_t>());
+            uint32_t width(reader.Number<uint32_t>());
+            uint32_t height(reader.Number<uint32_t>());
 
-            rectangle.x = reader.Number<uint32_t>();
-            rectangle.y = reader.Number<uint32_t>();
-            rectangle.width = reader.Number<uint32_t>();
-            rectangle.height = reader.Number<uint32_t>();
+            parameters.Implementation<IComposition::IClient>()->Geometry(X, Y, width, height);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void Visible(const bool visible) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
 
-            parameters.Implementation<IComposition::IClient>()->ChangedGeometry(rectangle);
+            parameters.Implementation<IComposition::IClient>()->Visible(reader.Boolean());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -1101,12 +963,12 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
             IStreaming::INotification* stub = reader.Number<IStreaming::INotification*>();
-            IStreaming::INotification* proxy = RPC::Administrator::Instance().FindProxy<IStreaming::INotification>(stub);
+            IStreaming::INotification* proxy = RPC::Administrator::Instance().FindProxy<IStreaming::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find stub for IStreaming::INotification: %p"), stub);
@@ -1270,10 +1132,10 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void StateChange(IStream::state state) = 0;
+            // virtual void StateChange(IStream::Stat state) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            IStream::state state(parameters.Number<IStream::state>());
+            IStream::Stat state(parameters.Number<IStream::Stat>());
             message->Parameters().Implementation<IStream::ICallback>()->StateChange(state);
          },
          nullptr
@@ -1421,12 +1283,12 @@ namespace ProxyStubs {
     ProxyStub::MethodHandler PlayerStubMethods[] = {
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
+            // virtual IStream* CreateStream(IStream::StreamType streamType) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            IStream::streamtype streamType(parameters.Number<IStream::streamtype>());
+            IStream::StreamType streamType(parameters.Number<IStream::StreamType>());
 
             response.Number<IStream*>(message->Parameters().Implementation<IPlayer>()->CreateStream(streamType));
          },
@@ -1460,7 +1322,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual void Unregister(INotification* notification) = 0;
             //
@@ -1471,7 +1333,7 @@ namespace ProxyStubs {
             IRPCLink::INotification* stub = reader.Number<IRPCLink::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            IRPCLink::INotification* proxy = RPC::Administrator::Instance().FindProxy<IRPCLink::INotification>(stub);
+            IRPCLink::INotification* proxy = RPC::Administrator::Instance().FindProxy<IRPCLink::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Could not find a stub for IRPCLink::INotification: %p"), stub);
@@ -1575,8 +1437,6 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IBluetooth, BluetoothStubMethods, ProxyStub::UnknownStub> BluetoothStub;
     typedef ProxyStub::StubType<INetflix, NetflixStubMethods, ProxyStub::UnknownStub> NetflixStub;
     typedef ProxyStub::StubType<INetflix::INotification, NetflixNotificationStubMethods, ProxyStub::UnknownStub> NetflixNotificationStub;
-    typedef ProxyStub::StubType<IResourceCenter, ResourceCenterStubMethods, ProxyStub::UnknownStub> ResourceCenterStub;
-    typedef ProxyStub::StubType<IResourceCenter::INotification, ResourceCenterNotificationStubMethods, ProxyStub::UnknownStub> ResourceCenterNotificationStub;
     typedef ProxyStub::StubType<IProvisioning, ProvisioningStubMethods, ProxyStub::UnknownStub> ProvisioningStub;
     typedef ProxyStub::StubType<IProvisioning::INotification, ProvisioningNotificationStubMethods, ProxyStub::UnknownStub> ProvisioningNotificationStub;
     typedef ProxyStub::StubType<IWebServer, WebServerStubMethods, ProxyStub::UnknownStub> WebServerStub;
@@ -2108,95 +1968,7 @@ namespace ProxyStubs {
         }
     };
 
-    class ResourceCenterProxy : public ProxyStub::UnknownProxyType<IResourceCenter> {
-    public:
-        ResourceCenterProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
-            const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
-        {
-        }
-
-        virtual ~ResourceCenterProxy()
-        {
-        }
-
-    public:
-        // Stub order:
-        // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-        // virtual void Register(IResourceCenter::INotification* provisioning) = 0;
-        // virtual void Unregister(IResourceCenter::INotification* provisioning) = 0;
-        // virtual uint8_t Identifier(const uint8_t maxLength, uint8_t buffer[]) const = 0;
-        // virtual hardware_state HardwareState() const = 0;
-        virtual uint32_t Configure(PluginHost::IShell* service)
-        {
-            IPCMessage newMessage(BaseClass::Message(0));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<PluginHost::IShell*>(service);
-            Invoke(newMessage);
-            return (newMessage->Response().Reader().Number<uint32_t>());
-        }
-
-        virtual void Register(IResourceCenter::INotification* notification)
-        {
-            IPCMessage newMessage(BaseClass::Message(1));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IResourceCenter::INotification*>(notification);
-            Invoke(newMessage);
-        }
-
-        virtual void Unregister(IResourceCenter::INotification* notification)
-        {
-            IPCMessage newMessage(BaseClass::Message(2));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IResourceCenter::INotification*>(notification);
-            Invoke(newMessage);
-        }
-
-        virtual Exchange::IResourceCenter::hardware_state HardwareState() const
-        {
-            IPCMessage newMessage(BaseClass::Message(3));
-            Invoke(newMessage);
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            return reader.Number<Exchange::IResourceCenter::hardware_state>();
-        }
-
-        virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const
-        {
-            IPCMessage newMessage(BaseClass::Message(4));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint8_t>(length);
-            Invoke(newMessage);
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            uint8_t result(reader.Buffer<uint8_t>(length, buffer));
-
-            return (result > length ? length : result);
-        }
-    };
-
-    class ResourceCenterNotificationProxy : public ProxyStub::UnknownProxyType<IResourceCenter::INotification> {
-    public:
-        ResourceCenterNotificationProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
-            const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
-        {
-        }
-
-        virtual ~ResourceCenterNotificationProxy()
-        {
-        }
-
-    public:
-        // Stub order:
-        // virtual void StateChange(Exchange::IResourceCenter::hardware_state state) = 0;
-        virtual void StateChange(Exchange::IResourceCenter::hardware_state state)
-        {
-            IPCMessage newMessage(BaseClass::Message(0));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<Exchange::IResourceCenter::hardware_state>(state);
-            Invoke(newMessage);
-        }
-    };
-
+ 
     class ProvisioningProxy : public ProxyStub::UnknownProxyType<IProvisioning> {
     public:
         ProvisioningProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -2266,6 +2038,13 @@ namespace ProxyStubs {
 
     public:
         // Stub order:
+        // virtual void Register(IComposition::INotification* notification) = 0;
+        // virtual void Unregister(IComposition::INotification* notification) = 0;
+        // virtual IClient* Client(const uint8_t index) = 0;
+        // virtual IClient* Client(const string& name) = 0;
+        // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+        // virtual void Resolution(const ScreenResolution) = 0;
+        // virtual ScreenResolution Resolution() const = 0;
         virtual void Register(IComposition::INotification* notification)
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -2293,11 +2072,11 @@ namespace ProxyStubs {
             return (CreateProxy<IClient>(reader.Number<IClient*>()));
         }
 
-        virtual IClient* Client(const string& callsign)
+        virtual IClient* Client(const string& name)
         {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(callsign);
+            writer.Text(name);
             Invoke(newMessage);
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
@@ -2328,31 +2107,6 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             return (reader.Number<IComposition::ScreenResolution>());
         }
-
-        virtual void Geometry(const string& callsign, const IComposition::Rectangle& rectangle) {
-           IPCMessage newMessage(BaseClass::Message(7));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(callsign);
-            writer.Number<uint32_t>(rectangle.x);
-            writer.Number<uint32_t>(rectangle.y);
-            writer.Number<uint32_t>(rectangle.width);
-            writer.Number<uint32_t>(rectangle.height);
-            Invoke(newMessage);
-        }
-
-        virtual IComposition::Rectangle Geometry(const string& callsign) const {
-            IPCMessage newMessage(BaseClass::Message(8));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(callsign);
-            Invoke(newMessage);
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            IComposition::Rectangle rectangle;
-            rectangle.x = reader.Number<uint32_t>();
-            rectangle.y = reader.Number<uint32_t>();
-            rectangle.width = reader.Number<uint32_t>();
-            rectangle.height = reader.Number<uint32_t>();
-            return rectangle;
-        }       
     };
 
     class CompositionClientProxy : public ProxyStub::UnknownProxyType<IComposition::IClient> {
@@ -2368,6 +2122,14 @@ namespace ProxyStubs {
         }
 
     public:
+        // Stub order:
+        // virtual string Name() const = 0;
+        // virtual void Kill() = 0;
+        // virtual void Opacity(const uint32_t value) = 0;
+        // virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height) = 0;
+        // virtual void Visible(const bool visible) = 0;
+        // virtual void SetTop() = 0;
+        // virtual void SetInput() = 0;
         virtual string Name() const
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -2390,25 +2152,34 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual void ChangedGeometry(const IComposition::Rectangle& rectangle) {
+        virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height)
+        {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint32_t>(rectangle.x);
-            writer.Number<uint32_t>(rectangle.y);
-            writer.Number<uint32_t>(rectangle.width);
-            writer.Number<uint32_t>(rectangle.height);
+            writer.Number<uint32_t>(X);
+            writer.Number<uint32_t>(Y);
+            writer.Number<uint32_t>(width);
+            writer.Number<uint32_t>(height);
+            Invoke(newMessage);
+        }
+
+        virtual void Visible(const bool value)
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Boolean(value);
             Invoke(newMessage);
         }
 
         virtual void SetTop()
         {
-            IPCMessage newMessage(BaseClass::Message(4));
+            IPCMessage newMessage(BaseClass::Message(5));
             Invoke(newMessage);
         }
 
         virtual void SetInput()
         {
-            IPCMessage newMessage(BaseClass::Message(5));
+            IPCMessage newMessage(BaseClass::Message(6));
             Invoke(newMessage);
         }
     };
@@ -2688,19 +2459,19 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream::streamtype Type() const
+        virtual IStream::StreamType Type() const
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::streamtype>());
+            return (newMessage->Response().Reader().Number<IStream::StreamType>());
         }
-        virtual IStream::drmtype DRM() const
+        virtual IStream::DRMType DRM() const
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::drmtype>());
+            return (newMessage->Response().Reader().Number<IStream::DRMType>());
         }
         virtual IStream::IControl* Control()
         {
@@ -2718,12 +2489,12 @@ namespace ProxyStubs {
             writer.Number(callback);
             Invoke(newMessage);
         }
-        virtual IStream::state State() const
+        virtual IStream::Stat State() const
         {
             IPCMessage newMessage(BaseClass::Message(4));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::state>());
+            return (newMessage->Response().Reader().Number<IStream::Stat>());
         }
         virtual uint32_t Load(std::string configuration)
         {
@@ -2755,11 +2526,11 @@ namespace ProxyStubs {
             writer.Number<uint32_t>(state);
             Invoke(newMessage);
         }
-        virtual void StateChange(IStream::state state)
+        virtual void StateChange(IStream::Stat state)
         {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::state>(state);
+            writer.Number<IStream::Stat>(state);
             Invoke(newMessage);
         }
    };
@@ -2914,11 +2685,11 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream* CreateStream(IStream::streamtype streamType)
+        virtual IStream* CreateStream(IStream::StreamType streamType)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::streamtype>(streamType);
+            writer.Number<IStream::StreamType>(streamType);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
@@ -3093,8 +2864,6 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IBluetooth, BluetoothProxy, BluetoothStub>();
             RPC::Administrator::Instance().Announce<INetflix, NetflixProxy, NetflixStub>();
             RPC::Administrator::Instance().Announce<INetflix::INotification, NetflixNotificationProxy, NetflixNotificationStub>();
-            RPC::Administrator::Instance().Announce<IResourceCenter, ResourceCenterProxy, ResourceCenterStub>();
-            RPC::Administrator::Instance().Announce<IResourceCenter::INotification, ResourceCenterNotificationProxy, ResourceCenterNotificationStub>();
             RPC::Administrator::Instance().Announce<IProvisioning, ProvisioningProxy, ProvisioningStub>();
             RPC::Administrator::Instance().Announce<IProvisioning::INotification, ProvisioningNotificationProxy, ProvisioningNotificationStub>();
             RPC::Administrator::Instance().Announce<IWebServer, WebServerProxy, WebServerStub>();

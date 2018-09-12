@@ -45,6 +45,10 @@ namespace RPC {
         Administrator(const Administrator&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
+        typedef std::pair<Core::IUnknown*, const uint32_t> ProxyEntry;
+        typedef std::map<void*, ProxyEntry> ProxyMap;
+        typedef std::map<const Core::IPCChannel*, ProxyMap> ChannelMap;
+
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
 
@@ -103,41 +107,81 @@ namespace RPC {
         }
 		Core::IUnknown* CreateProxy(const uint32_t interfaceNumber, Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool record, const bool otherSideInformed)
         {
-            if (implementation == nullptr) {
-                return (nullptr);
-            }
-            else {
+            Core::IUnknown* newProxy = nullptr;
+
+            if (implementation != nullptr) {
+ 
+                _adminLock.Lock ();
+
                 std::map<uint32_t, IMetadata*>::iterator index(_proxy.find(interfaceNumber));
 
                 if (index != _proxy.end()) {
 
-					Core::IUnknown* newProxy = index->second->CreateProxy(channel, implementation, otherSideInformed);
+					newProxy = index->second->CreateProxy(channel, implementation, otherSideInformed);
 
                     ASSERT (newProxy != nullptr);
 
                     if (record == true) {
-                        _proxyMap.insert(std::pair<void*, Core::IUnknown*>(implementation, newProxy));
+                        _channelProxyMap[channel.operator->()].insert(std::pair<void*, ProxyEntry>(implementation, ProxyEntry(newProxy, interfaceNumber)));
                     }
-
-                    return (newProxy);
+                }
+                else {
+                    TRACE_L1("Failed to find a Proxy for %d.", interfaceNumber);
                 }
 
-                TRACE_L1("Failed to find a Proxy for %d.", interfaceNumber);
+                _adminLock.Lock ();
             }
 
-            return (nullptr);
+            return (newProxy);
         }
 		template <typename ACTUALINTERFACE>
-        ACTUALINTERFACE* FindProxy(void* implementation)
+        ACTUALINTERFACE* FindProxy(const Core::IPCChannel* channel, void* implementation)
         {
-            std::map<void*, Core::IUnknown*>::iterator index(_proxyMap.find(implementation));
+            ACTUALINTERFACE* result = nullptr;
 
-            return (index != _proxyMap.end() ? index->second->QueryInterface< ACTUALINTERFACE>() : nullptr);
+            _adminLock.Lock();
+
+            ChannelMap::iterator index(_channelProxyMap.find(channel));
+
+            if (index != _channelProxyMap.end()) {
+                ProxyMap::iterator entry(index->second.find(implementation));
+                if (entry != index->second.end()) {
+                    result = entry->second.first->QueryInterface<ACTUALINTERFACE>();
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
         }
-        void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
-        {
+		Core::IUnknown* FindProxy(const Core::IPCChannel* channel, void* implementation)
+		{
+			Core::IUnknown* result = nullptr;
 
+			_adminLock.Lock();
+
+			ChannelMap::iterator index(_channelProxyMap.find(channel));
+
+			if (index != _channelProxyMap.end()) {
+				ProxyMap::iterator entry(index->second.find(implementation));
+				if (entry != index->second.end()) {
+					result = entry->second.first;
+					if (result != nullptr) {
+						result->AddRef();
+					}
+				}
+			}
+
+			_adminLock.Unlock();
+
+			return (result);
+		}
+		void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
+        {
             uint32_t interfaceId(message->Parameters().InterfaceId());
+
+            _adminLock.Lock();
+
             std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
 
             if (index != _stubs.end()) {
@@ -148,22 +192,50 @@ namespace RPC {
                 // Oops this is an unknown interface, Do not think this could happen.
                 TRACE_L1("Unknown interface. %d", interfaceId);
             }
-        }
-        void DeleteProxy(void* implementation)
-        {
-            std::map<void*, Core::IUnknown*>::iterator index(_proxyMap.find(implementation));
 
-            if (index != _proxyMap.end()) {
-                _proxyMap.erase(index);
+            _adminLock.Unlock();
+        }
+        void DeleteProxy(const Core::IPCChannel* channel, void* implementation)
+        {
+            _adminLock.Lock();
+
+            ChannelMap::iterator index(_channelProxyMap.find(channel));
+
+            if (index != _channelProxyMap.end()) {
+                ProxyMap::iterator entry(index->second.find(implementation));
+                if (entry != index->second.end()) {
+                    index->second.erase(entry);
+                }
             }
+            
+            _adminLock.Unlock();
+        }
+        void DeleteChannel(const Core::IPCChannel* channel, std::list< std::pair<const uint32_t, const Core::IUnknown* > >& pendingProxies)
+        {
+            _adminLock.Lock();
+
+            ChannelMap::iterator index(_channelProxyMap.find(channel));
+
+            if (index != _channelProxyMap.end()) {
+                ProxyMap::iterator loop (index->second.begin());
+                while (loop != index->second.end()) {
+					std::pair<const uint32_t, const Core::IUnknown*> entry (loop->second.second, loop->second.first);				
+                    pendingProxies.push_back(entry);
+                    loop++;
+                }
+                _channelProxyMap.erase(index);
+            }
+
+            _adminLock.Unlock();
         }
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
+        Core::CriticalSection _adminLock;
         std::map<uint32_t, ProxyStub::UnknownStub*> _stubs;
         std::map<uint32_t, IMetadata*> _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
-        std::map<void*, Core::IUnknown*> _proxyMap;
+        ChannelMap _channelProxyMap;
     };
 
     template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>
@@ -200,7 +272,6 @@ namespace RPC {
         public:
             inline void Dispatch()
             {
-
                 Administrator::Instance().Invoke(_channel, _message);
                 Core::ProxyType<Core::IIPC> response(Core::proxy_cast<Core::IIPC>(_message));
                 _channel->ReportResponse(response);

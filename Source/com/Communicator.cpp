@@ -2,7 +2,7 @@
 
 namespace WPEFramework {
 namespace RPC {
-    static Core::ProxyPoolType<RPC::ObjectMessage> ObjectMessageFactory(2);
+    static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
 
 	static void LoadProxyStubs(const string & pathName)
 	{
@@ -29,21 +29,24 @@ namespace RPC {
 		}
 	}
 
-    void* Communicator::RemoteProcess::Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)
+    void* Communicator::RemoteProcess::Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)
     {
         void* result(nullptr);
 
         if (_channel.IsValid() == true) {
-            Core::ProxyType<RPC::ObjectMessage> message(ObjectMessageFactory.Element());
+            Core::ProxyType<RPC::AnnounceMessage> message(AnnounceMessageFactory.Element());
 
-            message->Parameters().Set(className, versionId, interfaceId);
+            message->Parameters().Set(className, interfaceId, versionId);
 
             uint32_t feedback = _channel->Invoke(message, waitTime);
-
+			
             if (feedback == Core::ERROR_NONE)
             {
-                result = Administrator::Instance().CreateProxy(interfaceId, _channel, message->Response().Value(),
-                                                               false, true);
+				void* implementation = message->Response().Implementation();
+
+				if (implementation != nullptr) {
+					result = Administrator::Instance().CreateProxy(interfaceId, _channel, implementation, false, true);
+				}
             }
         }
 
@@ -59,7 +62,6 @@ namespace RPC {
 		}
         // These are the elements we are expecting to receive over the IPC channels.
         _ipcServer.CreateFactory<AnnounceMessage>(1);
-		_ipcServer.CreateFactory<ObjectMessage>(1);
 		_ipcServer.CreateFactory<InvokeMessage>(3);
     }
 
@@ -75,7 +77,6 @@ namespace RPC {
         _ipcServer.Close(Core::infinite);
 
         _ipcServer.DestroyFactory<InvokeMessage>();
-		_ipcServer.DestroyFactory<ObjectMessage>();
 		_ipcServer.DestroyFactory<AnnounceMessage>();
 
         TRACE_L1("Clearing Communicator. Active Processes %d", _processMap.Size());
@@ -117,40 +118,6 @@ namespace RPC {
 			_handler.Release();
 			DestroyFactory<RPC::InvokeMessage>();
 		}
-    }
-
-    void* CommunicatorClient::Create(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)
-    {
-        void* result(nullptr);
-
-        ASSERT(className.empty() == false);
-
-        if (BaseClass::IsOpen() == true) {
-            Core::ProxyType<RPC::ObjectMessage> message(ObjectMessageFactory.Element());
-
-            message->Parameters().Set(className, versionId, interfaceId);
-
-            Core::ProxyType<Core::IIPC> baseMessage(Core::proxy_cast<Core::IIPC>(message));
-
-            BaseClass::Invoke(baseMessage, waitTime);
-
-            void* implementation(message->Response().Value());
-
-            if (implementation != nullptr) {
-                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
-
-                ASSERT (baseChannel.IsValid() == true);
-
-                result = Administrator::Instance().CreateProxy(interfaceId, baseChannel, message->Response().Value(), false, true);
-
-                // The other side can not do anything with this
-                if (result == nullptr) {
-                    // TODO: Cleanup the otherside if this fails...
-                }
-            }
-        }
-
-        return (result);
     }
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
@@ -211,7 +178,10 @@ namespace RPC {
 
         // Is result of an announce message, contains default trace categories in JSON format.
         string jsonDefaultCategories(announceMessage->Response().TraceCategories());
-        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+
+		if (jsonDefaultCategories.empty() == false) {
+			Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+		}
 
 		string proxyStubPath(announceMessage->Response().ProxyStubPath());
 		if (proxyStubPath.empty() == false) {

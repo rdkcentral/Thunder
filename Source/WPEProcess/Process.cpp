@@ -2,7 +2,6 @@
 //
 
 #include "Module.h"
-#include "../com/ObjectMessageHandler.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
@@ -209,7 +208,6 @@ using namespace WPEFramework;
 static std::list<Core::Library> _proxyStubs;
 static Core::ProxyType<Process::InvokeServer> _invokeServer;
 static Core::ProxyType<RPC::CommunicatorClient> _server;
-static Core::ProxyType<RPC::ObjectMessageHandler> _handler;
 
 //
 // It as allowed to call exit from anywhere in the process by any code loaded. This is like using
@@ -228,10 +226,6 @@ void CloseDown()
         _server->Close(2 * RPC::CommunicationTimeOut);
 
         _server->Unregister(Core::proxy_cast<Core::IIPCServer>(_invokeServer));
-
-        if (_handler.IsValid() == true) {
-            _server->Unregister(Core::proxy_cast<Core::IIPCServer>(_handler));
-        }
 
         _proxyStubs.clear();
     }
@@ -308,19 +302,9 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode));
-            _server->CreateFactory<RPC::InvokeMessage>(8);
-
-            // Make sure we understand inbound requests and that we have a factory to create those elements.
-            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create();
-            _server->Register(Core::proxy_cast<Core::IIPCServer>(_invokeServer));
-
-            _handler = Core::ProxyType<RPC::ObjectMessageHandler>::Create();
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Process::InvokeServer>::Create()));
 
             // Register an interface to handle incoming requests for interfaces.
-            _server->Register(Core::proxy_cast<Core::IIPCServer>(_handler));
-            _server->CreateFactory<RPC::ObjectMessage>(2);
-
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
                 TRACE_L1("Loading ProxyStubs from %s", (options.ProxyStubPath != nullptr ? options.ProxyStubPath : _T("<< No Proxy Stubs Loaded >>")));
 
