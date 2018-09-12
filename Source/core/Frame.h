@@ -460,105 +460,106 @@ namespace Core {
 
             value = (_data[offset] != 0);
 
-            return (1);
-        }
+			return (1);
+		}
 
-        template <typename TYPENAME>
-        inline uint16_t SetNumber(const uint16_t offset, const TYPENAME number)
-        {
-            return (SetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
-        }
+		template <typename TYPENAME>
+		inline uint16_t SetNumber(const uint16_t offset, const TYPENAME number)
+		{
+			return (SetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
+		}
 
-        template <typename TYPENAME>
-        inline uint16_t GetNumber(const uint16_t offset, TYPENAME& number) const
-        {
-            return (GetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
-        }
+		template <typename TYPENAME>
+		inline uint16_t GetNumber(const uint16_t offset, TYPENAME& number) const
+		{
+			return (GetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
+		}
 
-    private:
-        template <typename TYPENAME>
-        uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<true>&)
-        {
-            if ((offset + 1) >= _size) {
-                Size(offset + 1);
-            }
+	private:
+		template <typename TYPENAME>
+		uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<true>&)
+		{
+			if ((offset + 1) >= _size) {
+				Size(offset + 1);
+			}
 
-            _data[offset] = static_cast<uint8_t>(number);
+			_data[offset] = static_cast<uint8_t>(number);
 
-            return (1);
-        }
+			return (1);
+		}
 
-        template <typename TYPENAME>
-        uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<false>&)
-        {
-            if ((offset + sizeof(TYPENAME)) >= _size) {
-                Size(offset + sizeof(TYPENAME));
-            }
+		template <typename TYPENAME>
+		uint16_t SetNumber(const uint16_t offset, const TYPENAME number, const TemplateIntToType<false>&)
+		{
+			if ((offset + sizeof(TYPENAME)) >= _size) {
+				Size(offset + sizeof(TYPENAME));
+			}
 
 #ifdef LITTLE_ENDIAN_PLATFORM
-            {
-                const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
+			{
+				const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+				uint8_t* destination = &(_data[offset + sizeof(TYPENAME) - 1]);
 
-                *destination-- = *source++;
-                *destination-- = *source++;
+				*destination-- = *source++;
+				*destination-- = *source++;
 
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination-- = *source++;
-                    *destination-- = *source++;
+				if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+					*destination-- = *source++;
+					*destination-- = *source++;
 
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                        *destination-- = *source++;
-                    }
-                }
-            }
+					if (sizeof(TYPENAME) == 8) {
+						*destination-- = *source++;
+						*destination-- = *source++;
+						*destination-- = *source++;
+						*destination-- = *source++;
+					}
+				}
+			}
 #else
-            {
-                const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
-                uint8_t* destination = &(_data[offset]);
+			{
+				const uint8_t* source = reinterpret_cast<const uint8_t*>(&number);
+				uint8_t* destination = &(_data[offset]);
 
-                *destination++ = *source++;
-                *destination++ = *source++;
+				*destination++ = *source++;
+				*destination++ = *source++;
 
-                if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
-                    *destination++ = *source++;
-                    *destination++ = *source++;
+				if ((sizeof(TYPENAME) == 4) || (sizeof(TYPENAME) == 8)) {
+					*destination++ = *source++;
+					*destination++ = *source++;
 
-                    if (sizeof(TYPENAME) == 8) {
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                        *destination++ = *source++;
-                    }
-                }
-            }
+					if (sizeof(TYPENAME) == 8) {
+						*destination++ = *source++;
+						*destination++ = *source++;
+						*destination++ = *source++;
+						*destination++ = *source++;
+					}
+				}
+			}
 #endif
 
-            return (sizeof(TYPENAME));
-        }
- 
-        template <typename TYPENAME>
-        uint16_t GetNumber(const uint16_t offset, TYPENAME& number, const TemplateIntToType<true>&) const
-        {
-            // Only on package level allowed to pass the boundaries!!!
-            ASSERT((offset + sizeof(TYPENAME)) <= _size);
+			return (sizeof(TYPENAME));
+		}
 
-            number = static_cast<TYPENAME>(_data[offset]);
+		template <typename TYPENAME>
+		uint16_t GetNumber(const uint16_t offset, TYPENAME& number, const TemplateIntToType<true>&) const
+		{
+			// Only on package level allowed to pass the boundaries!!!
+			ASSERT((offset + sizeof(TYPENAME)) <= _size);
 
-            return (1);
-        }
- 
-        template <typename TYPENAME>
-        inline uint16_t GetNumber(const uint16_t offset, TYPENAME& value, const TemplateIntToType<false>&) const
-        {
-            // Only on package level allowed to pass the boundaries!!!
-            ASSERT((offset + sizeof(TYPENAME)) <= _size);
+			number = static_cast<TYPENAME>(_data[offset]);
 
-            TYPENAME result;
+			return (1);
+		}
 
+		template <typename TYPENAME>
+		inline uint16_t GetNumber(const uint16_t offset, TYPENAME& value, const TemplateIntToType<false>&) const
+		{
+			TYPENAME result;
+
+			if ((offset + sizeof(TYPENAME)) > _size) {
+				::memset(&result, 0, sizeof(result));
+			}
+			else
 #ifdef LITTLE_ENDIAN_PLATFORM
             {
                 const uint8_t* source = &(_data[offset]);

@@ -29,7 +29,7 @@ namespace Exchange {
         static uint32_t WidthFromResolution(const ScreenResolution resolution);
         static uint32_t HeightFromResolution(const ScreenResolution resolution);
 
-       struct Rectangle {
+        struct Rectangle {
             uint32_t x;
             uint32_t y;
             uint32_t width;
