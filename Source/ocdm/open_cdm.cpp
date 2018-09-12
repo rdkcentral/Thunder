@@ -171,7 +171,7 @@ private:
 private:
     AccessorOCDM (const TCHAR domainName[]) 
         : _refCount(1)
-        , _client(Core::NodeId(domainName), Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize()))
+        , _client(Core::NodeId(domainName), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()))
         , _remote(_client.WaitForCompletion<OCDM::IAccessorOCDM>(6000))
         , _adminLock()
         , _signal(false, true)
