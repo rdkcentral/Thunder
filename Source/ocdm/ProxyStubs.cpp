@@ -371,6 +371,16 @@ namespace WPEFramework {
                 message->Parameters().Implementation<OCDM::ISession>()->Revoke(proxy);
             }
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // 
+            // virtual std::string BufferId() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+ 
+            response.Text(message->Parameters().Implementation<OCDM::ISession>()->SessionId());
+        },
  
         nullptr
     };
@@ -696,6 +706,20 @@ namespace WPEFramework {
 
             Invoke(newMessage);
         }
+        //
+        // Revoke the Session Callback for change notifications
+        //
+        virtual std::string SessionId () const {
+
+            IPCMessage newMessage(BaseClass::Message(7));
+ 
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Text());
+        }
+ 
     };
  
     // -------------------------------------------------------------------------------------------
