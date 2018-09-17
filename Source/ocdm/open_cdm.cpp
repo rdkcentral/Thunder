@@ -1095,7 +1095,7 @@ void OpenCdm::GetKeyMessage(std::string& response, uint8_t* data, uint16_t& data
 
 KeyStatus OpenCdm::Update(const uint8_t* data, const uint16_t dataLength, std::string& response) {
 
-    ASSERT ( (_session != nullptr) && (_session.IsExtended() == true) );
+    ASSERT ( (_session != nullptr) && (_session->IsExtended() == true) );
 
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<ExtendedOpenCDMSession*>(_session)->Update(data, dataLength, response));
@@ -1103,7 +1103,7 @@ KeyStatus OpenCdm::Update(const uint8_t* data, const uint16_t dataLength, std::s
 
 int OpenCdm::Load(std::string& response) {
 
-    ASSERT ( (_session != nullptr) && (_session.IsExtended() == true) );
+    ASSERT ( (_session != nullptr) && (_session->IsExtended() == true) );
 
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<ExtendedOpenCDMSession*>(_session)->Load(response));
@@ -1111,7 +1111,7 @@ int OpenCdm::Load(std::string& response) {
 
 int OpenCdm::Remove(std::string& response) {
 
-    ASSERT ( (_session != nullptr) && (_session.IsExtended() == true) );
+    ASSERT ( (_session != nullptr) && (_session->IsExtended() == true) );
 
     // Oke a session has been selected. Operation should take place on this session.
     return (static_cast<ExtendedOpenCDMSession*>(_session)->Remove(response));
@@ -1129,7 +1129,7 @@ KeyStatus OpenCdm::Status() const {
 
 int OpenCdm::Close() {
 
-    ASSERT ( (_session != nullptr) && (_session.IsExtended() == true) );
+    ASSERT ( (_session != nullptr) && (_session->IsExtended() == true) );
 
     if (_session != nullptr) {
         _session->Close();
