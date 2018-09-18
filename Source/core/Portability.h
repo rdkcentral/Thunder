@@ -633,6 +633,8 @@ namespace Core {
     const uint32_t ERROR_PENDING_CONDITIONS = 31;
     const uint32_t ERROR_SURFACE_UNAVAILABLE = 32;
     const uint32_t ERROR_PLAYER_UNAVAILABLE = 33;
+    const uint32_t ERROR_FIRST_RESOURCE_NOT_FOUND = 34;
+    const uint32_t ERROR_SECOND_RESOURCE_NOT_FOUND = 35;
 }
 }
 

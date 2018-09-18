@@ -719,6 +719,66 @@ namespace ProxyStubs {
 
             writer.Number<IComposition::ScreenResolution>(parameters.Implementation<IComposition>()->Resolution());
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual uint32_t Geometry(const string& callsign, const IComposition::Rectangle& rectangle) = 0;
+                //
+                RPC::Data::Input& parameters(message->Parameters());
+                RPC::Data::Frame::Reader reader(parameters.Reader());
+                const std::string name(reader.Text());
+                IComposition::Rectangle rectangle;
+                rectangle.x = reader.Number<uint32_t>();
+                rectangle.y = reader.Number<uint32_t>();
+                rectangle.width = reader.Number<uint32_t>();
+                rectangle.height = reader.Number<uint32_t>();
+                RPC::Data::Frame::Writer writer(message->Response().Writer());
+                writer.Number<uint32_t>(parameters.Implementation<IComposition>()->Geometry(name, rectangle));              
+                                       
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual IComposition::Rectangle Geometry(const string& callsign) const;
+                //
+                RPC::Data::Input& parameters(message->Parameters());
+                RPC::Data::Frame::Reader reader(parameters.Reader());
+                const std::string name(reader.Text());
+                IComposition::Rectangle rectangle = parameters.Implementation<IComposition>()->Geometry(name);               
+                RPC::Data::Frame::Writer writer(message->Response().Writer());
+                writer.Number<uint32_t>(rectangle.x);
+                writer.Number<uint32_t>(rectangle.y);
+                writer.Number<uint32_t>(rectangle.width);
+                writer.Number<uint32_t>(rectangle.height);
+        },       
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual uint32_t ToTop(const string& callsign) = 0;
+                //
+                RPC::Data::Input& parameters(message->Parameters());
+                RPC::Data::Frame::Reader reader(parameters.Reader());
+                const std::string callsign(reader.Text());
+                uint32_t result = parameters.Implementation<IComposition>()->ToTop(callsign);               
+                RPC::Data::Frame::Writer writer(message->Response().Writer());
+                writer.Number<uint32_t>(result);
+        },    
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual uint32_t PutBelow(const string& callsignRelativeTo, const string& callsignToReorder);
+                //
+                RPC::Data::Input& parameters(message->Parameters());
+                RPC::Data::Frame::Reader reader(parameters.Reader());
+                const std::string callsignRelativeTo(reader.Text());
+                const std::string callsignToReorder(reader.Text());
+                uint32_t result = parameters.Implementation<IComposition>()->PutBelow(callsignRelativeTo, callsignToReorder);               
+                RPC::Data::Frame::Writer writer(message->Response().Writer());
+                writer.Number<uint32_t>(result);
+        },       
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual RPC::IStringIterator* ClientsInZorder() const
+                //
+                RPC::Data::Frame::Writer response(message->Response().Writer());
+                response.Number(message->Parameters().Implementation<IComposition>()->ClientsInZorder());
+        },       
         nullptr
     };
     // IComposition interface stub definitions
@@ -752,45 +812,29 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
             parameters.Implementation<IComposition::IClient>()->Opacity(reader.Number<uint32_t>());
+
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height) = 0;
+            // virtual void ChangedGeometry(const Rectangle& rectangle);;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            IComposition::Rectangle rectangle = IComposition::Rectangle();
+            rectangle.x = reader.Number<uint32_t>();
+            rectangle.y = reader.Number<uint32_t>();
+            rectangle.width = reader.Number<uint32_t>();
+            rectangle.height = reader.Number<uint32_t>();
+            parameters.Implementation<IComposition::IClient>()->ChangedGeometry(rectangle);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void ChangedZOrder(const uint8_t zorder);
             //
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-            uint32_t X(reader.Number<uint32_t>());
-            uint32_t Y(reader.Number<uint32_t>());
-            uint32_t width(reader.Number<uint32_t>());
-            uint32_t height(reader.Number<uint32_t>());
-
-            parameters.Implementation<IComposition::IClient>()->Geometry(X, Y, width, height);
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Visible(const bool visible) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            parameters.Implementation<IComposition::IClient>()->Visible(reader.Boolean());
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void SetTop() = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-
-            parameters.Implementation<IComposition::IClient>()->SetTop();
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void SetInput() = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-
-            parameters.Implementation<IComposition::IClient>()->SetInput();
+            parameters.Implementation<IComposition::IClient>()->ChangedZOrder(reader.Number<uint8_t>());
         },
         nullptr
     };
@@ -1132,10 +1176,10 @@ namespace ProxyStubs {
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void StateChange(IStream::Stat state) = 0;
+            // virtual void StateChange(IStream::state state) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            IStream::Stat state(parameters.Number<IStream::Stat>());
+            IStream::state state(parameters.Number<IStream::state>());
             message->Parameters().Implementation<IStream::ICallback>()->StateChange(state);
          },
          nullptr
@@ -1288,7 +1332,7 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            IStream::StreamType streamType(parameters.Number<IStream::StreamType>());
+            IStream::streamtype streamType(parameters.Number<IStream::streamtype>());
 
             response.Number<IStream*>(message->Parameters().Implementation<IPlayer>()->CreateStream(streamType));
          },
@@ -2037,15 +2081,7 @@ namespace ProxyStubs {
         }
 
     public:
-        // Stub order:
-        // virtual void Register(IComposition::INotification* notification) = 0;
-        // virtual void Unregister(IComposition::INotification* notification) = 0;
-        // virtual IClient* Client(const uint8_t index) = 0;
-        // virtual IClient* Client(const string& name) = 0;
-        // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-        // virtual void Resolution(const ScreenResolution) = 0;
-        // virtual ScreenResolution Resolution() const = 0;
-        virtual void Register(IComposition::INotification* notification)
+        void Register(IComposition::INotification* notification) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2053,7 +2089,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual void Unregister(IComposition::INotification* notification)
+        void Unregister(IComposition::INotification* notification) override
         {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2061,7 +2097,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual IClient* Client(const uint8_t index)
+        virtual IClient* Client(const uint8_t index) override
         {
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2072,7 +2108,7 @@ namespace ProxyStubs {
             return (CreateProxy<IClient>(reader.Number<IClient*>()));
         }
 
-        virtual IClient* Client(const string& name)
+        IClient* Client(const string& name) override
         {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2083,7 +2119,7 @@ namespace ProxyStubs {
             return (CreateProxy<IClient>(reader.Number<IClient*>()));
         }
 
-        virtual uint32_t Configure(PluginHost::IShell* service)
+        uint32_t Configure(PluginHost::IShell* service) override
         {
             IPCMessage newMessage(BaseClass::Message(4));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2092,7 +2128,7 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void Resolution(const ScreenResolution format)
+        void Resolution(const ScreenResolution format) override
         {
             IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2100,13 +2136,67 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual ScreenResolution Resolution() const
+        ScreenResolution Resolution() const override
         {
             IPCMessage newMessage(BaseClass::Message(6));
             Invoke(newMessage);
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             return (reader.Number<IComposition::ScreenResolution>());
         }
+
+        uint32_t Geometry(const string& callsign, const IComposition::Rectangle& rectangle) override {
+           IPCMessage newMessage(BaseClass::Message(7));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(callsign);
+            writer.Number<uint32_t>(rectangle.x);
+            writer.Number<uint32_t>(rectangle.y);
+            writer.Number<uint32_t>(rectangle.width);
+            writer.Number<uint32_t>(rectangle.height);
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return (reader.Number<uint32_t>());
+        }
+
+
+        virtual IComposition::Rectangle Geometry(const string& callsign) const override {
+            IPCMessage newMessage(BaseClass::Message(8));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(callsign);
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            IComposition::Rectangle rectangle;
+            rectangle.x = reader.Number<uint32_t>();
+            rectangle.y = reader.Number<uint32_t>();
+            rectangle.width = reader.Number<uint32_t>();
+            rectangle.height = reader.Number<uint32_t>();
+            return rectangle;
+        }       
+
+        uint32_t ToTop(const string& callsign) override {
+            IPCMessage newMessage(BaseClass::Message(9));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(callsign);
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Number<uint32_t>();
+        }
+
+        uint32_t PutBelow(const string& callsignRelativeTo, const string& callsignToReorder) override {
+            IPCMessage newMessage(BaseClass::Message(10));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(callsignRelativeTo);
+            writer.Text(callsignToReorder);
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Number<uint32_t>();
+        }
+
+        RPC::IStringIterator* ClientsInZorder() const override {
+            IPCMessage newMessage(BaseClass::Message(11));
+            Invoke(newMessage);
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return (const_cast<CompositionProxy&>(*this).CreateProxy<RPC::IStringIterator>(reader.Number<RPC::IStringIterator*>()));        }  
+  
     };
 
     class CompositionClientProxy : public ProxyStub::UnknownProxyType<IComposition::IClient> {
@@ -2117,20 +2207,10 @@ namespace ProxyStubs {
         {
         }
 
-        virtual ~CompositionClientProxy()
-        {
-        }
-
+        ~CompositionClientProxy() override = default;
+       
     public:
-        // Stub order:
-        // virtual string Name() const = 0;
-        // virtual void Kill() = 0;
-        // virtual void Opacity(const uint32_t value) = 0;
-        // virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height) = 0;
-        // virtual void Visible(const bool visible) = 0;
-        // virtual void SetTop() = 0;
-        // virtual void SetInput() = 0;
-        virtual string Name() const
+        string Name() const override
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
@@ -2138,13 +2218,13 @@ namespace ProxyStubs {
             return (reader.Text());
         }
 
-        virtual void Kill()
+        void Kill() override
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
         }
 
-        virtual void Opacity(const uint32_t value)
+        void Opacity(const uint32_t value) override
         {
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -2152,34 +2232,22 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual void Geometry(const uint32_t X, const uint32_t Y, const uint32_t width, const uint32_t height)
+        void ChangedGeometry(const IComposition::Rectangle& rectangle) override
         {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint32_t>(X);
-            writer.Number<uint32_t>(Y);
-            writer.Number<uint32_t>(width);
-            writer.Number<uint32_t>(height);
+            writer.Number<uint32_t>(rectangle.x);
+            writer.Number<uint32_t>(rectangle.y);
+            writer.Number<uint32_t>(rectangle.width);
+            writer.Number<uint32_t>(rectangle.height);
             Invoke(newMessage);
         }
 
-        virtual void Visible(const bool value)
+        void ChangedZOrder(const uint8_t zorder) override
         {
             IPCMessage newMessage(BaseClass::Message(4));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Boolean(value);
-            Invoke(newMessage);
-        }
-
-        virtual void SetTop()
-        {
-            IPCMessage newMessage(BaseClass::Message(5));
-            Invoke(newMessage);
-        }
-
-        virtual void SetInput()
-        {
-            IPCMessage newMessage(BaseClass::Message(6));
+            writer.Number<uint8_t>(zorder);
             Invoke(newMessage);
         }
     };
@@ -2459,19 +2527,19 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream::StreamType Type() const
+        virtual IStream::streamtype Type() const
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::StreamType>());
+            return (newMessage->Response().Reader().Number<IStream::streamtype>());
         }
-        virtual IStream::DRMType DRM() const
+        virtual IStream::drmtype DRM() const
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::DRMType>());
+            return (newMessage->Response().Reader().Number<IStream::drmtype>());
         }
         virtual IStream::IControl* Control()
         {
@@ -2489,12 +2557,12 @@ namespace ProxyStubs {
             writer.Number(callback);
             Invoke(newMessage);
         }
-        virtual IStream::Stat State() const
+        virtual IStream::state State() const
         {
             IPCMessage newMessage(BaseClass::Message(4));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<IStream::Stat>());
+            return (newMessage->Response().Reader().Number<IStream::state>());
         }
         virtual uint32_t Load(std::string configuration)
         {
@@ -2526,11 +2594,11 @@ namespace ProxyStubs {
             writer.Number<uint32_t>(state);
             Invoke(newMessage);
         }
-        virtual void StateChange(IStream::Stat state)
+        virtual void StateChange(IStream::state state)
         {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::Stat>(state);
+            writer.Number<IStream::state>(state);
             Invoke(newMessage);
         }
    };
@@ -2685,11 +2753,11 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual IStream* CreateStream(IStream::StreamType streamType)
+        virtual IStream* CreateStream(IStream::streamtype streamType)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStream::StreamType>(streamType);
+            writer.Number<IStream::streamtype>(streamType);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());

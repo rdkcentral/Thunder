@@ -41,9 +41,6 @@
     <ClInclude Include="IWebServer.h">
       <Filter>Interface Files</Filter>
     </ClInclude>
-    <ClInclude Include="IResourceCenter.h">
-      <Filter>Interface Files</Filter>
-    </ClInclude>
     <ClInclude Include="IComposition.h">
       <Filter>Interface Files</Filter>
     </ClInclude>

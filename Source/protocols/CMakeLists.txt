@@ -12,7 +12,6 @@ set(SOURCES_COM
         com/ITracing.h
         com/IUnknown.h
         com/Messages.h
-        com/ObjectMessageHandler.h
         com/Administrator.cpp
         com/Communicator.cpp
         com/ITracing.cpp
@@ -47,7 +46,6 @@ set(COM_INCLUDES
         ITracing.h
         IUnknown.h
         Messages.h
-        ObjectMessageHandler.h
         IStringIterator.h
         )
 

@@ -102,7 +102,6 @@
     <ClInclude Include="Messages.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Communicator.h" />
-    <ClInclude Include="ObjectMessageHandler.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

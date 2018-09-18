@@ -18,7 +18,6 @@ set(PUBLIC_HEADERS
         IUnknown.h
         Messages.h
         Module.h
-        ObjectMessageHandler.h
         Module.h
         )
 

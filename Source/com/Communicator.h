@@ -1009,6 +1009,7 @@ namespace RPC {
 		}
         virtual void Offer(const uint32_t /* processId */,  Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
+        // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed 
 		virtual void Revoke(const uint32_t /* processId */,  const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
         }
 
