@@ -69,6 +69,9 @@ namespace OCDM {
         //Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
         virtual std::string BufferId() const = 0;
 
+        //Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
+        virtual std::string SessionId() const = 0;
+
         //We are completely done with the session, it can be closed.
         virtual void Close() = 0;
 
