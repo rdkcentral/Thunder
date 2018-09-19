@@ -528,12 +528,11 @@ private:
             : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(nodeId))
             , _service(Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize())) {
 
+            _client->CreateFactory<RPC::InvokeMessage>(2);
+            _client->Register(_service);
             if (_client->Open(RPC::CommunicationTimeOut, _T("ocdmimplementation"), OCDM::IAccessorOCDM::ID, ~0) != Core::ERROR_NONE) {
                 _client.Release();
-            } else {
-                _client->CreateFactory<RPC::InvokeMessage>(2);
-                _client->Register(_service);
-	    }
+            }
         }
         ~RPCClient() {
             if (_client.IsValid() == true) {
