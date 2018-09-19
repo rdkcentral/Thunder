@@ -19,6 +19,7 @@ namespace OCDM {
     private:
         struct Administration {
             uint32_t Status;
+            uint8_t KeyId[17];
             uint8_t IVLength;
             uint8_t IV[16];
             uint16_t SubLength;
@@ -77,6 +78,20 @@ namespace OCDM {
         const uint8_t IVKeyLength() const {
             const Administration* admin = reinterpret_cast<const Administration*>(AdministrationBuffer());
             return(admin->IVLength);
+        }
+        void KeyId(const uint8_t length, const uint8_t buffer[]) {
+            Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());
+            ASSERT (length <= 16);
+            admin->KeyId[0] = (length <= 16 ? length : 16);
+            if (length != 0) {
+                ::memcpy (&(admin->KeyId[1]), buffer, admin->KeyId[0]);
+            }
+        }
+        const uint8_t* KeyId(uint8_t& length) const {
+            const Administration* admin = reinterpret_cast<const Administration*>(AdministrationBuffer());
+            length = admin->KeyId[0];
+            ASSERT (length <= 16);
+            return(length > 0 ? &admin->KeyId[1] : nullptr);
         }
     };
 
