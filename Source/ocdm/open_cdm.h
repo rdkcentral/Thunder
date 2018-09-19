@@ -46,10 +46,35 @@
 #include <string.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
 
-#include <string>
-#include <list>
+/**
+ * Represents an OCDM system
+ */
+struct OpenCDMAccessor;
+
+/**
+ * Represents a OpenCDM session, use this one to decrypt.
+ */
+struct OpenCDMSession;
+
+typedef enum {
+    Temporary = 0,
+    PersistentUsageRecord,
+    PersistentLicense
+} LicenseType ;
+
+/**
+ * Key status.
+ */
+typedef enum {
+    Usable = 0,
+    Expired,
+    Released,
+    OutputRestricted,
+    OutputDownscaled,
+    StatusPending,
+    InternalError
+} KeyStatus;
 
 #ifdef _MSVC_LANG
 #undef EXTERNAL
@@ -63,35 +88,10 @@
 #define EXTERNAL
 #endif
 
-enum LicenseType {
-    Temporary = 0,
-    PersistentUsageRecord,
-    PersistentLicense
-};
+#ifdef __cplusplus
 
-/**
- * Key status.
- */
-enum KeyStatus {
-    Usable = 0,
-    Expired,
-    Released,
-    OutputRestricted,
-    OutputDownscaled,
-    StatusPending,
-    InternalError
-};
-
-/**
- * Represents an OCDM system
- */
-struct OpenCDMAccessor;
-
-/**
- * Represents a OpenCDM session, use this one to decrypt.
- */
-struct OpenCDMSession;
-
+#include <string>
+#include <list>
 
 namespace media {
 
@@ -172,13 +172,13 @@ extern "C" {
 /**
  * OpenCDM error code. Zero always means success.
  */
-enum OpenCDMError {
+typedef enum {
     ERROR_NONE                    = 0,
     ERROR_INVALID_ACCESSOR        = 0x80000001,
     ERROR_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
     ERROR_INVALID_SESSION         = 0x80000003,
     ERROR_INVALID_DECRYPT_BUFFER  = 0x80000004
-};
+} OpenCDMError;
 
 /**
  * Registered callbacks with OCDM sessions.
@@ -278,7 +278,7 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
  */
 OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
                                     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
-                                    const uint8_t CDMData[], const uint16_t CDMDataLength,
+                                    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks * callbacks,
                                     struct OpenCDMSession** session);
 
 /**
@@ -357,20 +357,6 @@ const char * opencdm_session_buffer_id(const struct OpenCDMSession * session);
  * \return zero on success, non-zero on error.
  */
 OpenCDMError opencdm_session_close(struct OpenCDMSession * session);
-
-/**
- * \brief Registers callbacks with \ref OpenCDMSession instance.
- *
- * Registers callback functions called when a challenge is generated, or a key status changes.
- * If no callbacks were registered but there are key update messages queued, these will be
- * fired to newly registered callbacks. Only one set of callbacks can be registered at one
- * time.
- * \param session \ref OpenCDMSession instance.
- * \param callbacks Callbacks to register, NULL to unregister earlier registered callbacks.
- * \param userData Pointer passed to callbacks when called.
- * \return zero on success, non-zero on error.
- */
-OpenCDMError opencdm_session_callback(struct OpenCDMSession * session, OpenCDMSessionCallbacks * callbacks, void * userData);
 
 /**
  * \brief Performs decryption.
