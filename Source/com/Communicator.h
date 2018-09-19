@@ -527,7 +527,7 @@ namespace RPC {
 					_observers.pop_front();
 				}
             }
-
+    
         public:
 			inline void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t version) {
 				return (_parent.Aquire(className, interfaceId, version));
@@ -1141,7 +1141,7 @@ namespace RPC {
 			return (result);
 		}
 		template <typename INTERFACE>
-		inline uint32_t Revoke(const INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+		inline uint32_t Revoke(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
 		{
 			uint32_t result(Core::ERROR_NONE);
 
