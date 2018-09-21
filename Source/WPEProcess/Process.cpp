@@ -323,7 +323,7 @@ int main(int argc, char** argv)
 				uint32_t result;
 
 				// We have something to report back, do so...
-				if ((result = _server->Open((/*RPC::CommunicationTimeOut  != */ Core::infinite /* ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut*/), options.InterfaceId, base)) == Core::ERROR_NONE) {
+				if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
 
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
