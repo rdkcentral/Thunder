@@ -977,6 +977,7 @@ namespace WPEFramework {
 #else
 					, _application(EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
 #endif
+                    , _offeredInterface(nullptr)
 				{
 					if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
 						TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
@@ -1006,13 +1007,42 @@ namespace WPEFramework {
 					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
 				}
 
+                void* Aquire(const uint32_t interfaceId) {
+                    void* result = nullptr;
+
+                    if( _offeredInterface != nullptr ) {
+                        result = _offeredInterface->QueryInterface(interfaceId);
+                        _offeredInterface->Release();
+                        _offeredInterface = nullptr;
+                    }
+
+                    return result;
+                }
+
+            private:
+                void Offer(const uint32_t /* processId */,  Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+                    ASSERT( _offeredInterface == nullptr ); // we expect an offer only once here
+
+                    _offeredInterface = remote;
+                    _offeredInterface->AddRef();
+                }
+                // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed 
+                void Revoke(const uint32_t /* processId */,  const Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+                    ASSERT( remote != nullptr );
+                    if( _offeredInterface == remote )  { // we really expect _offeredInterface to be empty here but we don't have to test explicitely for that
+                        _offeredInterface->Release();
+                    }
+                }
+
+
 			private:
-				const string _persistentPath;
-				const string _systemPath;
-				const string _dataPath;
-				const string _appPath;
-				const string _proxyStubPath;
-				const string _application;
+				const string    _persistentPath;
+				const string    _systemPath;
+				const string    _dataPath;
+				const string    _appPath;
+				const string    _proxyStubPath;
+				const string    _application;
+                Core::IUnknown* _offeredInterface;
 			};
             class Override : public Core::JSON::Container {
             private:
@@ -1364,7 +1394,11 @@ namespace WPEFramework {
                 if (process != nullptr) {
                     if (process->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime) != Core::ERROR_TIMEDOUT) {
                         if (process->State() == RPC::IRemoteProcess::ACTIVE) {
-                            result = process->QueryInterface(object.Interface());
+                            SleepMs(2000); // HTodo remove after Pieres fix
+                            result = _processAdministrator.Aquire(object.Interface());
+                            if (result == nullptr) {
+                                TRACE_L1("HTodo Oops, offer not yet received. %d", __LINE__);
+                            }
                         }
                     }
                     if (result == nullptr) {

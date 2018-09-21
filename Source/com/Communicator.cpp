@@ -162,6 +162,8 @@ namespace RPC {
 
             uint32_t result = Invoke<RPC::AnnounceMessage>(_announceMessage, this);
 
+            TRACE_L1("HTodo Announce message handled. %d", __LINE__);
+
             if (result != Core::ERROR_NONE)
             {
                 TRACE_L1("Error during invoke of AnnounceMessage: %d", result);

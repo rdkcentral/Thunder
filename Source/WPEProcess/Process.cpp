@@ -225,8 +225,6 @@ void CloseDown()
         // We are done, close the channel and unregister all shit we added...
         _server->Close(2 * RPC::CommunicationTimeOut);
 
-        _server->Unregister(Core::proxy_cast<Core::IIPCServer>(_invokeServer));
-
         _proxyStubs.clear();
     }
 
@@ -302,7 +300,8 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Process::InvokeServer>::Create()));
+            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create();
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
@@ -324,7 +323,7 @@ int main(int argc, char** argv)
 				uint32_t result;
 
 				// We have something to report back, do so...
-				if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
+				if ((result = _server->Open((/*RPC::CommunicationTimeOut  != */ Core::infinite /* ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut*/), options.InterfaceId, base)) == Core::ERROR_NONE) {
 
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
