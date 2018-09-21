@@ -129,7 +129,7 @@ namespace RPC {
                     TRACE_L1("Failed to find a Proxy for %d.", interfaceNumber);
                 }
 
-                _adminLock.Lock ();
+                _adminLock.Unlock ();
             }
 
             return (newProxy);

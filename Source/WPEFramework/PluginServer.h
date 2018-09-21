@@ -977,7 +977,8 @@ namespace WPEFramework {
 #else
 					, _application(EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
 #endif
-                    , _offeredInterface(nullptr)
+                    , _offeredInterfaces()
+                    , _adminLock()
 				{
 					if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
 						TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
@@ -1007,43 +1008,75 @@ namespace WPEFramework {
 					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
 				}
 
-                void* Aquire(const uint32_t interfaceId) {
+                void* Aquire(const uint32_t interfaceId, const uint32_t processId) {
+
                     void* result = nullptr;
 
-                    if( _offeredInterface != nullptr ) {
-                        result = _offeredInterface->QueryInterface(interfaceId);
-                        _offeredInterface->Release();
-                        _offeredInterface = nullptr;
-                    }
+                    _adminLock.Lock();
+
+                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
+
+                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
+
+                    if( index != _offeredInterfaces.end() )  {  
+                        result = index->second->QueryInterface(interfaceId);
+                        index->second->Release();
+                        _offeredInterfaces.erase(index);
+                    }           
+
+                    _adminLock.Unlock();
 
                     return result;
                 }
 
             private:
-                void Offer(const uint32_t /* processId */,  Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
-                    ASSERT( _offeredInterface == nullptr ); // we expect an offer only once here
+                void Offer(const uint32_t processId,  Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
 
-                    _offeredInterface = remote;
-                    _offeredInterface->AddRef();
+                    _adminLock.Lock();
+
+                    ASSERT( _offeredInterfaces.find(processId) == _offeredInterfaces.end() ); // we don't expect an interface to still be available for this process
+
+                    _offeredInterfaces[processId] = remote;
+                    _offeredInterfaces[processId]->AddRef();
+
+                    _adminLock.Unlock();
+
                 }
+
                 // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed 
-                void Revoke(const uint32_t /* processId */,  const Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+                void Revoke(const uint32_t processId,  const Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+
+                    // basicaly we don't expect anything needed to be done here as the offered interfaces should have been retrieved before they are revoked but in case that does not happen we don't want to leak
+
                     ASSERT( remote != nullptr );
-                    if( _offeredInterface == remote )  { // we really expect _offeredInterface to be empty here but we don't have to test explicitely for that
-                        _offeredInterface->Release();
+
+                    _adminLock.Lock();
+
+                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
+
+                    if( index != _offeredInterfaces.end() && index->second == remote )  { 
+                        index->second->Release();
+                        _offeredInterfaces.erase(index);
                     }
+
+                    _adminLock.Unlock();
                 }
 
 
-			private:
-				const string    _persistentPath;
-				const string    _systemPath;
-				const string    _dataPath;
-				const string    _appPath;
-				const string    _proxyStubPath;
-				const string    _application;
-                Core::IUnknown* _offeredInterface;
+            private:
+                using OfferedInterfaceOnPID = std::map<uint32_t, Core::IUnknown*>;
+                using OfferedInterfaceOnPIDIterator = OfferedInterfaceOnPID::iterator;
+
+				const string                    _persistentPath;
+				const string                    _systemPath;
+				const string                    _dataPath;
+				const string                    _appPath;
+				const string                    _proxyStubPath;
+				const string                    _application;
+                OfferedInterfaceOnPID           _offeredInterfaces;
+                mutable Core::CriticalSection   _adminLock;
 			};
+
             class Override : public Core::JSON::Container {
             private:
                 Override(const Override&) = delete;
@@ -1394,10 +1427,9 @@ namespace WPEFramework {
                 if (process != nullptr) {
                     if (process->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime) != Core::ERROR_TIMEDOUT) {
                         if (process->State() == RPC::IRemoteProcess::ACTIVE) {
-                            SleepMs(2000); // HTodo remove after Pieres fix
-                            result = _processAdministrator.Aquire(object.Interface());
+                            result = _processAdministrator.Aquire(object.Interface(), pid);
                             if (result == nullptr) {
-                                TRACE_L1("HTodo Oops, offer not yet received. %d", __LINE__);
+                                TRACE_L1("RPC out-of-process server offer not received in time. %d", __LINE__);
                             }
                         }
                     }

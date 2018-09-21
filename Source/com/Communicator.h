@@ -257,8 +257,12 @@ namespace RPC {
                 ASSERT (_channel.IsValid() == false);
 
                 _channel = channel;
-                State(IRemoteProcess::ACTIVE);
 	        }
+
+            inline void Activate() {
+                State(IRemoteProcess::ACTIVE);
+            }
+
 			virtual void Terminate();
 
         protected:
@@ -734,6 +738,8 @@ namespace RPC {
 							result->Release();
 						}
 					}
+
+                    index->second->Activate();
 
 					result = Core::ERROR_NONE;
 
