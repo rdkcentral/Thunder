@@ -125,7 +125,7 @@ namespace PluginHost {
 
                 string locator (rootObject.Locator.Value());
 
-                if (locator.empty() == false) {
+                if (locator.empty() == true) {
                     result = Core::ServiceAdministrator::Instance().Instantiate(Core::Library(), className.c_str(), version, interface);
                 }
                 else {
