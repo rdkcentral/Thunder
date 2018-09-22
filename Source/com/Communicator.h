@@ -254,8 +254,6 @@ namespace RPC {
 		        // Seems we received an interface from the otherside. Prepare the actual stub around it.
 		        TRACE_L1("Remote Process %d, has announced itself.", Id());
         
-                ASSERT (_channel.IsValid() == false);
-
                 _channel = channel;
 	        }
 
