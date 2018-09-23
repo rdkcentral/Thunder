@@ -53,7 +53,7 @@ namespace RPC {
         return (result);
     }
 
-    Communicator::Communicator(const Core::NodeId & node, const Core::ProxyType<Core::IIPCServer> & handler, const string& proxyStubPath)
+    Communicator::Communicator(const Core::NodeId & node, Core::ProxyType<IHandler> handler, const string& proxyStubPath)
         : _processMap(*this)
         , _ipcServer(node, _processMap, handler, proxyStubPath)
     {
@@ -91,33 +91,25 @@ namespace RPC {
         }
     }
 
-    CommunicatorClient::CommunicatorClient(const Core::NodeId& node)
-        : Core::IPCChannelClientType<Core::Void, false, true>(node, CommunicationBufferSize)
-        , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
-        , _announceEvent(false, true)
-		, _handler()
-    {
-    }
-
-	CommunicatorClient::CommunicatorClient(const Core::NodeId& remoteNode, const Core::ProxyType<Core::IIPCServer>& handler)
+	CommunicatorClient::CommunicatorClient(const Core::NodeId& remoteNode, Core::ProxyType<IHandler> handler)
 		: Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
 		, _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
 		, _announceEvent(false, true)
 		, _handler(handler)
 	{
 		CreateFactory<RPC::InvokeMessage>(2);
-		Register(_handler);
+		Register(_handler->InvokeHandler());
+
+                // For now clients do not support announce messages from the server...
+		// Register(_handler->AnnounceHandler());
 	}
 
     CommunicatorClient::~CommunicatorClient()
     {
 		BaseClass::Close(Core::infinite);
 
-		if (_handler.IsValid() == true) {
-			Unregister(_handler);
-			_handler.Release();
-			DestroyFactory<RPC::InvokeMessage>();
-		}
+		Unregister(_handler->InvokeHandler());
+		DestroyFactory<RPC::InvokeMessage>();
     }
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)

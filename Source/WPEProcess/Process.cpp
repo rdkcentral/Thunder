@@ -7,21 +7,81 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
 namespace Process {
-    class InvokeServer : public Core::IPCServerType<RPC::InvokeMessage> {
+    class InvokeServer : public RPC::IHandler {
     private:
+        InvokeServer(const InvokeServer&) = delete;
+        InvokeServer& operator=(const InvokeServer&) = delete;
+
         struct Info {
-            Core::ProxyType<RPC::InvokeMessage> message;
+            Core::ProxyType<Core::IIPC> message;
             Core::ProxyType<Core::IPCChannel> channel;
         };
         typedef Core::QueueType<Info> MessageQueue;
 
-        InvokeServer(const InvokeServer&) = delete;
-        InvokeServer& operator=(const InvokeServer&) = delete;
+        class InvokeHandlerImplementation : public Core::IPCServerType<RPC::InvokeMessage> {
+        private:
+            InvokeHandlerImplementation() = delete;
+            InvokeHandlerImplementation(const InvokeHandlerImplementation&) = delete;
+            InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
+
+        public:
+            InvokeHandlerImplementation (MessageQueue* queue) : _handleQueue(*queue) {
+            }
+            virtual ~InvokeHandlerImplementation() {
+            }
+
+        public:
+            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::InvokeMessage>& data)
+            {
+                // Oke, see if we can reference count the IPCChannel
+                Info newElement;
+                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
+                newElement.message = data;
+
+                ASSERT(newElement.channel.IsValid() == true);
+
+                _handleQueue.Insert(newElement, Core::infinite);
+            }
+
+        private:
+            MessageQueue& _handleQueue;
+        };
+        class AnnounceHandlerImplementation : public Core::IPCServerType<RPC::AnnounceMessage> {
+        private:
+            AnnounceHandlerImplementation() = delete;
+            AnnounceHandlerImplementation(const AnnounceHandlerImplementation&) = delete;
+            AnnounceHandlerImplementation& operator=(const AnnounceHandlerImplementation&) = delete;
+
+        public:
+            AnnounceHandlerImplementation(MessageQueue* queue) : _handleQueue(*queue) {
+            }
+            virtual ~AnnounceHandlerImplementation() {
+            }
+
+        public:
+            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::AnnounceMessage>& data)
+            {
+                // Oke, see if we can reference count the IPCChannel
+                Info newElement;
+                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
+                newElement.message = data;
+
+                ASSERT(newElement.channel.IsValid() == true);
+
+                _handleQueue.Insert(newElement, Core::infinite);
+            }
+
+        private:
+            MessageQueue& _handleQueue;
+        };
 
     public:
         InvokeServer()
             : _handleQueue(64)
             , _handler(RPC::Administrator::Instance())
+            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue))
+            , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(&_handleQueue))
+            , _announcements(nullptr)
         {
         }
 
@@ -29,41 +89,55 @@ namespace Process {
         {
         }
 
-        /* virtual */ void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::InvokeMessage>& data)
-        {
-            // Oke, see if we can reference count the IPCChannel
-            Info newElement;
-            newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
-            newElement.message = data;
-
-            ASSERT(newElement.channel.IsValid() == true);
-
-            _handleQueue.Insert(newElement, Core::infinite);
+        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override {
+            return (_invokeHandler);
         }
+        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override {
+            return (_announceHandler);
+        }
+        virtual void AnnounceHandler(Core::IPCServerType<RPC::AnnounceMessage>* handler) override {
 
+            // Concurrency aspect is out of scope as the implementation of this interface is currently limited
+            // to the RPC::COmmunicator and RPC::CommunicatorClient. Both of these implementations will first
+            // set this callback before any communication is happeing (Open happens after this)
+            // Also the announce handler will not be removed until the line is closed and the server (or client)
+            // is destructed!!!
+            ASSERT ((handler == nullptr) ^ (_announcements == nullptr));
+
+            _announcements = handler;
+        }
         void ProcessProcedures()
         {
             Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
             Info newRequest;
 
             while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
-                // RPC::Data::Input& parameters (newRequest.message->Parameters());
-                // uint8_t methodId (parameters.MethodId());
-                // uint32_t interfaceId(parameters.InterfaceId());
 
-                _handler.Invoke(newRequest.channel, newRequest.message);
+               if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
+                    Core::ProxyType<RPC::InvokeMessage> message (Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
 
-                Core::ProxyType<Core::IIPC> response(Core::proxy_cast<Core::IIPC>(newRequest.message));
-                newRequest.channel->ReportResponse(response);
+                    _handler.Invoke(newRequest.channel, message);
+                    newRequest.channel->ReportResponse(newRequest.message);
+                }
+                else {
+                    ASSERT (newRequest.message->Label() == RPC::AnnounceMessage::Id());
+                    ASSERT (_parent != nullptr);
+
+                    Core::ProxyType<RPC::AnnounceMessage> message (Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
+
+                     _announcements->Procedure(*(newRequest.channel), message);
+                }
 
                 // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
                 admin.FlushLibraries();
             }
         }
-
     private:
         MessageQueue _handleQueue;
         RPC::Administrator& _handler;
+        Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> > _invokeHandler;
+        Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> > _announceHandler;
+        Core::IPCServerType<RPC::AnnounceMessage>* _announcements;
     };
 
     class ConsoleOptions : public Core::Options {
@@ -324,7 +398,6 @@ int main(int argc, char** argv)
 
 				// We have something to report back, do so...
 				if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
-
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
 

@@ -863,7 +863,7 @@ namespace RPC {
                 }
 
             public:
-                virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data)
+                virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data) override
                 {
 					void* result = data->Parameters().Implementation();
 
@@ -886,15 +886,16 @@ namespace RPC {
 			#ifdef __WIN32__ 
 			#pragma warning( disable : 4355 )
 			#endif
-			ProcessChannelServer(const Core::NodeId& remoteNode, RemoteProcessMap& processes, const Core::ProxyType<Core::IIPCServer>& handler, const string& proxyStubPath)
+			ProcessChannelServer(const Core::NodeId& remoteNode, RemoteProcessMap& processes, Core::ProxyType<IHandler>& handler, const string& proxyStubPath)
                 : BaseClass(remoteNode, CommunicationBufferSize)
-				, _proxyStubPath(proxyStubPath)
+                , _proxyStubPath(proxyStubPath)
                 , _processes(processes)
-                , _interfaceAnnounceHandler(Core::ProxyType<InterfaceAnnounceHandler>::Create(this))
-				, _interfaceMessageHandler(handler)
+                , _interfaceAnnounceHandler(this)
+                , _handler(handler)
             {
-                BaseClass::Register(_interfaceAnnounceHandler);
-				BaseClass::Register(handler);
+                _handler->AnnounceHandler(&_interfaceAnnounceHandler);
+                BaseClass::Register(_handler->InvokeHandler());
+                BaseClass::Register(_handler->AnnounceHandler());
             }
 			#ifdef __WIN32__ 
 			#pragma warning( default : 4355 )
@@ -902,8 +903,10 @@ namespace RPC {
 
 			~ProcessChannelServer()
             {
-                BaseClass::Unregister(_interfaceAnnounceHandler);
-				BaseClass::Unregister(_interfaceMessageHandler);
+                BaseClass::Unregister(_handler->InvokeHandler());
+                BaseClass::Unregister(_handler->AnnounceHandler());
+                _handler->AnnounceHandler(nullptr);
+
             }
 
 		public:
@@ -934,10 +937,10 @@ namespace RPC {
             }
 
         private:
-			const string _proxyStubPath;
+            const string _proxyStubPath;
             RemoteProcessMap& _processes;
-            Core::ProxyType<Core::IIPCServer> _interfaceAnnounceHandler; // IPCInterfaceAnnounce
-            Core::ProxyType<Core::IIPCServer> _interfaceMessageHandler; //IPCInterfaceMessage
+            InterfaceAnnounceHandler _interfaceAnnounceHandler; 
+            Core::ProxyType<IHandler> _handler;
         };
 
     private:
@@ -946,7 +949,7 @@ namespace RPC {
         Communicator& operator=(const Communicator&) = delete;
 
     public:
-        Communicator(const Core::NodeId& node, const Core::ProxyType<Core::IIPCServer>& handler, const string& proxyStubPath);
+        Communicator(const Core::NodeId& node, Core::ProxyType<IHandler> handler, const string& proxyStubPath);
         virtual ~Communicator();
 
     public:
@@ -1032,8 +1035,7 @@ namespace RPC {
         typedef Core::IPCChannelClientType<Core::Void, false, true> BaseClass;
 
     public:
-        CommunicatorClient(const Core::NodeId& remoteNode);
-		CommunicatorClient(const Core::NodeId& remoteNode, const Core::ProxyType<Core::IIPCServer>& handler);
+		CommunicatorClient(const Core::NodeId& remoteNode, Core::ProxyType<IHandler> handler);
 		~CommunicatorClient();
 
     public:
@@ -1214,7 +1216,7 @@ namespace RPC {
 	private:
 		Core::ProxyType<RPC::AnnounceMessage> _announceMessage;
 		Core::Event _announceEvent;
-		Core::ProxyType<Core::IIPCServer> _handler;
+		Core::ProxyType<IHandler> _handler;
 	};
 }
 }
