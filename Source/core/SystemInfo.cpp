@@ -22,6 +22,32 @@
 
 #if defined(PLATFORM_RPI)
 #include <bcm_host.h>
+
+
+namespace {
+
+    class BCMHostInit {
+        public:    
+
+        BCMHostInit(const BCMHostInit&) = delete;
+        BCMHostInit& operator=(const BCMHostInit&) = delete;
+
+        BCMHostInit() {
+            bcm_host_init();
+        }
+
+        ~BCMHostInit() {
+            bcm_host_deinit();
+        }
+
+        static void DoBCMHostInit() {
+            static BCMHostInit bcmhostinit;
+        }
+
+    };
+
+}
+
 #endif
 
 namespace WPEFramework {
@@ -135,6 +161,8 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
     static std::string vcgencmd_request(const char request[])
     {
         // Most VC API calls are guarded but we want to be sure anyway
+        BCMHostInit::DoBCMHostInit();
+
         static Core::CriticalSection mutualExclusion;
         mutualExclusion.Lock();
 
@@ -184,7 +212,6 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         // Init GPU resources.
         // We can call it always. If we are not the first it does not do anything (harmful).
         // Moreover, it takes care of all underlying necessary API init's
-        //bcm_host_init();
 #endif
         UpdateCpuStats();
     }
