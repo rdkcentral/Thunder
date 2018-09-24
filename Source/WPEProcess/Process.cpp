@@ -121,7 +121,6 @@ namespace Process {
                 }
                 else {
                     ASSERT (newRequest.message->Label() == RPC::AnnounceMessage::Id());
-                    ASSERT (_parent != nullptr);
 
                     Core::ProxyType<RPC::AnnounceMessage> message (Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
 

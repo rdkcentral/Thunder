@@ -257,13 +257,13 @@ namespace RPC {
                 , _parent(nullptr)
             {
             }
-            Info(Core::ProxyType<Core::IIPC> message, Core::ProxyType<InvokeMessage> channel)
+            Info(Core::ProxyType<Core::IPCChannel> channel, Core::ProxyType<InvokeMessage> message)
                 : _message(message)
                 , _channel(channel)
                 , _parent(nullptr)
             {
             }
-            Info(Core::ProxyType<Core::IIPC> message, Core::ProxyType<AnnounceMessage> channel, InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& parent)
+            Info(Core::ProxyType<Core::IPCChannel> channel, Core::ProxyType<AnnounceMessage> message, InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& parent)
                 : _message(message)
                 , _channel(channel)
                 , _parent(&parent)
@@ -332,7 +332,7 @@ namespace RPC {
                 ASSERT(refChannel.IsValid());
 
                 if (refChannel.IsValid() == true) {
-                    _parent.Submit(Info(data, refChannel));
+                    _parent.Submit(Info(refChannel, data));
                 }
             }
 
@@ -360,7 +360,7 @@ namespace RPC {
                 ASSERT(refChannel.IsValid());
 
                 if (refChannel.IsValid() == true) {
-                    _parent.Submit(Info(data, refChannel, _parent));
+                    _parent.Submit(Info(refChannel, data, _parent));
                 }
             }
 
@@ -404,7 +404,6 @@ namespace RPC {
     private:
         inline void Submit(const Info& data)
         {
-            ASSERT(channel.IsValid());
 
             if (_threadPoolEngine.Pending() >= ((MESSAGESLOTS * 80) / 100)) {
                 TRACE_L1("_threadPoolEngine.Pending() == %d", _threadPoolEngine.Pending());
