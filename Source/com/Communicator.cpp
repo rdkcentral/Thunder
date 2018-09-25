@@ -114,11 +114,17 @@ namespace RPC {
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
 	{
-        	ASSERT(BaseClass::IsOpen() == false);
+        ASSERT(BaseClass::IsOpen() == false);
 
 		_announceMessage->Parameters().Set(~0, nullptr);
 
-        	return (BaseClass::Open(waitTime));
+		uint32_t result = BaseClass::Open(waitTime);
+
+		if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
+			result = Core::ERROR_OPENING_FAILED;
+		}
+
+		return (result);
 	}
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
@@ -127,8 +133,14 @@ namespace RPC {
 
 		_announceMessage->Parameters().Set(className, interfaceId, version);
 
-        return (BaseClass::Open(waitTime));
-    }
+		uint32_t result = BaseClass::Open(waitTime);
+
+		if ( (result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE) ) {
+			result = Core::ERROR_OPENING_FAILED;
+		}
+
+		return (result);
+	}
 
     uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void * implementation)
     {
@@ -136,8 +148,14 @@ namespace RPC {
 
         _announceMessage->Parameters().Set(interfaceId, implementation);
 
-        return (BaseClass::Open(waitTime));
-    }
+		uint32_t result = BaseClass::Open(waitTime);
+
+		if ((result == Core::ERROR_NONE) && (_announceEvent.Lock(waitTime) != Core::ERROR_NONE)) {
+			result = Core::ERROR_OPENING_FAILED;
+		}
+
+		return (result);
+	}
 
     uint32_t CommunicatorClient::Close(const uint32_t waitTime)
     {
@@ -154,7 +172,7 @@ namespace RPC {
 
             uint32_t result = Invoke<RPC::AnnounceMessage>(_announceMessage, this);
 
-            TRACE_L1("HTodo Announce message handled. %d", __LINE__);
+            TRACE_L1("Todo Announce message handled. %d", __LINE__);
 
             if (result != Core::ERROR_NONE)
             {

@@ -504,7 +504,7 @@ private:
 };
 
 
-class OpenCDMAccessor : public OCDM::IAccessorOCDM {
+struct OpenCDMAccessor : public OCDM::IAccessorOCDM {
 private:
     OpenCDMAccessor () = delete;
     OpenCDMAccessor (const OpenCDMAccessor&) = delete;
@@ -643,7 +643,7 @@ private:
         , _sink(this) {
 
         if (_client->Open(RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
-            _remote = _client->Aquire<OCDM::IAccessorOCDM>(RPC::CommunicationTimeOut, _T("OpenCDMImplementation"), OCDM::IAccessorOCDM::ID, ~0);
+            _remote = _client->Aquire<OCDM::IAccessorOCDM>(RPC::CommunicationTimeOut, _T("OpenCDMImplementation"), ~0);
             Register(&_sink);
         }
         else {  
