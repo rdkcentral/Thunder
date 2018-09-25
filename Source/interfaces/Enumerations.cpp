@@ -27,6 +27,7 @@ namespace {
 
 namespace WPEFramework {
 
+
     ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
 
     { Exchange::IComposition::ScreenResolution_Unknown,   _TXT("Unknown")   },
@@ -43,13 +44,18 @@ namespace WPEFramework {
 
     ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
-    uint32_t Exchange::IComposition::WidthFromResolution(const ScreenResolution resolution)  {
+namespace Exchange {
+
+    uint32_t IComposition::WidthFromResolution(const IComposition::ScreenResolution resolution)  {
         return (static_cast<uint32_t>(resolution) < ((sizeof(resolutionWidthHeightTable)/sizeof(ScreenResolutionWidthHeight)) ? resolutionWidthHeightTable[static_cast<uint32_t>(resolution)].width : 0));
     }
 
-    uint32_t Exchange::IComposition::HeightFromResolution(const ScreenResolution resolution) {
+    uint32_t IComposition::HeightFromResolution(const IComposition::ScreenResolution resolution) {
         return (static_cast<uint32_t>(resolution) < ((sizeof(resolutionWidthHeightTable)/sizeof(ScreenResolutionWidthHeight)) ? resolutionWidthHeightTable[static_cast<uint32_t>(resolution)].height : 0));
     }      
+
+}
+
 }
 
 

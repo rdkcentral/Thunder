@@ -642,8 +642,11 @@ private:
         , _sessionKeys()
         , _sink(this) {
 
-        if (_client->Open(RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
-            _remote = _client->Aquire<OCDM::IAccessorOCDM>(RPC::CommunicationTimeOut, _T("OpenCDMImplementation"), OCDM::IAccessorOCDM::ID, ~0);
+        _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
+
+        ASSERT(_remote != nullptr);
+
+        if (_remote != nullptr) {
             Register(&_sink);
         }
         else {  

@@ -720,7 +720,8 @@ namespace RPC {
 						}
 					}
 					else if (info.IsOffer() == true) {
-						Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
+                        //huppel
+						 Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
 						if (result != nullptr) {
 
 							_parent.Offer(index->first, result, info.InterfaceId());
@@ -1054,41 +1055,12 @@ namespace RPC {
 
 			return (result);
 		}
-		template <typename INTERFACE>
-		static inline INTERFACE* Aquire(const Core::NodeId& remoteNode, const string& className, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut) {
-			INTERFACE* result = nullptr;
-			Core::ProxyType<RPC::CommunicatorClient> client(Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode));
-
-			if ((client.IsValid() == true) && (client->Open(waitTime, className, INTERFACE::ID, version) == Core::ERROR_NONE))
-			{
-				// Oke we could open the channel, lets get the interface
-				result = client->WaitForCompletion<INTERFACE>(waitTime);
-			}
-
-			return (result);
-		}
-
-		template <typename INTERFACE>
-		static inline Core::ProxyType<RPC::CommunicatorClient> Open(const Core::NodeId& remoteNode, INTERFACE* implementation, const Core::ProxyType<Core::IIPCServer>& handler, const uint32_t waitTime = CommunicationTimeOut) {
-			INTERFACE* result = nullptr;
-			Core::ProxyType<RPC::CommunicatorClient> client(Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, handler));
-
-			if ((client.IsValid() == true) && (client->Open(waitTime, INTERFACE::ID, implementation) == Core::ERROR_NONE))
-			{
-				// Oke we could open the channel, lets get the interface
-				if (client->WaitForCompletion(waitTime) == false) {
-					client.Release();
-				}
-			}
-
-			return (client);
-		}
 
 		// Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient) 
 		uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation);
 
 		template <typename INTERFACE>
-		INTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t versionId)
+		INTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t versionId)
 		{
 			INTERFACE* result(nullptr);
 
@@ -1096,9 +1068,9 @@ namespace RPC {
 
 			if (BaseClass::IsOpen() == true) {
 
-				_announceMessage->Parameters().Set(className, interfaceId, versionId);
+				_announceMessage->Parameters().Set(className, INTERFACE::ID, versionId);
 
-				BaseClass::Invoke(_announceMessage, this);
+				BaseClass::Invoke(_announceMessage, waitTime);
 
 				// Lock event until Dispatch() sets it.
 				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
@@ -1107,8 +1079,6 @@ namespace RPC {
 					ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
 
 					void* implementation(_announceMessage->Response().Implementation());
-
-					ASSERT(implementation != nullptr);
 
 					if (implementation != nullptr) {
 						Core::ProxyType<Core::IPCChannel> baseChannel(*this);
@@ -1131,7 +1101,7 @@ namespace RPC {
 
 				_announceMessage->Parameters().Set(INTERFACE::ID, offer);
 
-				BaseClass::Invoke(_announceMessage, this);
+				BaseClass::Invoke(_announceMessage, waitTime);
 
 				// Lock event until Dispatch() sets it.
 				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
@@ -1155,7 +1125,7 @@ namespace RPC {
 
 				_announceMessage->Parameters().Set(INTERFACE::ID, offer, false);
 
-				BaseClass::Invoke(_announceMessage, this);
+				BaseClass::Invoke(_announceMessage, waitTime);
 
 				// Lock event until Dispatch() sets it.
 				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
@@ -1176,7 +1146,6 @@ namespace RPC {
 	private:
 		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
         uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
-
 
 		// If the Open, with a request was made, this method waits for the requested interface.
 		template <typename INTERFACE>

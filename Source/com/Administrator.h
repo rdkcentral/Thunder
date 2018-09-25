@@ -96,14 +96,9 @@ namespace RPC {
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* CreateProxy(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* implementation, const bool record, const bool otherSideInformed)
         {
-			ACTUALINTERFACE* response = nullptr;
-			Core::IUnknown* result = CreateProxy(ACTUALINTERFACE::ID, channel, implementation, record, otherSideInformed);
-
-			if (result != nullptr) {
-				response = result->QueryInterface<ACTUALINTERFACE>();
-				result->Release();
-			}
-            return (response);
+            ACTUALINTERFACE* response = dynamic_cast<ACTUALINTERFACE*>(CreateProxy(ACTUALINTERFACE::ID, channel, implementation, record, otherSideInformed));
+            ASSERT(response != nullptr);
+            return (response);  
         }
 		Core::IUnknown* CreateProxy(const uint32_t interfaceNumber, Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool record, const bool otherSideInformed)
         {

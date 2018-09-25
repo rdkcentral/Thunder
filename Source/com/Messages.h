@@ -191,7 +191,7 @@ namespace RPC {
 				return (_className[0] == '\0') && (_className[1] == '\0') && (_className[2] == 0x55);
 			}
 			bool IsRevoke() const {
-				return (_className[0] == '\0') && (_className[1] == '\0') && (_className[2] == 0xAA);
+				return (_className[0] == '\0') && (_className[1] == '\0') && (static_cast<const uint8_t>(_className[2]) == 0xAA);
 			}
 			bool IsAquire() const {
 				return (IsRevoke() == false) && (IsOffer() == false);
