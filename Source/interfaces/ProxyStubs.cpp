@@ -2195,7 +2195,9 @@ namespace ProxyStubs {
             IPCMessage newMessage(BaseClass::Message(11));
             Invoke(newMessage);
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            return (const_cast<CompositionProxy&>(*this).CreateProxy<RPC::IStringIterator>(reader.Number<RPC::IStringIterator*>()));        }  
+            return (const_cast<CompositionProxy&>(*this).CreateProxy<RPC::IStringIterator>(reader.Number<RPC::IStringIterator*>()));     
+               
+        }  
   
     };
 

@@ -170,6 +170,14 @@ namespace RPC {
             Init& operator=(const Init&) = delete;
 
         public:
+             enum type {
+                 AQUIRE  = 0,
+                 OFFER   = 1,
+                 REVOKE  = 2,
+                 REQUEST = 3
+             };
+
+        public:
             Init()
                 : _implementation(nullptr)
                 , _interfaceId(~0)
@@ -188,23 +196,26 @@ namespace RPC {
 
 		public:
 			bool IsOffer() const {
-				return (_className[0] == '\0') && (_className[1] == '\0') && (_className[2] == 0x55);
+				return (_className[0] == '\0') && (_className[1] == OFFER);
 			}
 			bool IsRevoke() const {
-				return (_className[0] == '\0') && (_className[1] == '\0') && (static_cast<const uint8_t>(_className[2]) == 0xAA);
+				return (_className[0] == '\0') && (_className[1] == REVOKE);
 			}
+            bool IsRequested() const {
+                return (_className[0] == '\0') && (_className[1] == REQUEST);
+            }
 			bool IsAquire() const {
-				return (IsRevoke() == false) && (IsOffer() == false);
+				return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
 			}
-            void Set(const uint32_t interfaceId, void* implementation, const bool offer = true)
+             void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
             {
+                ASSERT(whatKind != AQUIRE);
 				_exchangeId = Core::ProcessInfo().Id();
 				_implementation = implementation;
                 _interfaceId = interfaceId;
 				_versionId = 0;
 				_className[0] = '\0';
-				_className[1] = '\0';
-				_className[2] = static_cast<char>(offer ? 0x55 : 0xAA);
+                _className[1] = whatKind;
             }
 			void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
 			{
@@ -212,7 +223,7 @@ namespace RPC {
 				_implementation = nullptr;
 				_interfaceId = interfaceId;
 				_versionId = versionId;
-				_className[1] = static_cast<char>(~0);
+				 _className[1] = AQUIRE;
 				const std::string converted (Core::ToString(className));
 				::strncpy(_className, converted.c_str(), sizeof(_className));
 			}

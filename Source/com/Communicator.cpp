@@ -116,7 +116,7 @@ namespace RPC {
 	{
         ASSERT(BaseClass::IsOpen() == false);
 
-		_announceMessage->Parameters().Set(~0, nullptr);
+        //do not set announce parameters, we do not know what side will offer the interface
 
 		uint32_t result = BaseClass::Open(waitTime);
 
@@ -146,7 +146,7 @@ namespace RPC {
     {
         ASSERT(BaseClass::IsOpen() == false);
 
-        _announceMessage->Parameters().Set(interfaceId, implementation);
+        _announceMessage->Parameters().Set(interfaceId, implementation, Data::Init::REQUEST);
 
 		uint32_t result = BaseClass::Open(waitTime);
 

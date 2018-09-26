@@ -719,9 +719,10 @@ namespace RPC {
 							implementation = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 						}
 					}
-					else if (info.IsOffer() == true) {
-                        //huppel
-						 Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, false, true);
+                    else if ((info.IsOffer() == true) || (info.IsRequested())) {
+                        
+                        Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, true, info.IsRequested());
+						
 						if (result != nullptr) {
 
 							_parent.Offer(index->first, result, info.InterfaceId());
@@ -1099,7 +1100,7 @@ namespace RPC {
 
 			if (BaseClass::IsOpen() == true) {
 
-				_announceMessage->Parameters().Set(INTERFACE::ID, offer);
+				_announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::OFFER);
 
 				BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1123,7 +1124,7 @@ namespace RPC {
 
 			if (BaseClass::IsOpen() == true) {
 
-				_announceMessage->Parameters().Set(INTERFACE::ID, offer, false);
+				_announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::REVOKE);
 
 				BaseClass::Invoke(_announceMessage, waitTime);
 
