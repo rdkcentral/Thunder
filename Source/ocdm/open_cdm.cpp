@@ -198,9 +198,14 @@ public:
 
         _session->Update(pbResponse, cbResponse);
     }
-    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength) {
-
-        return ( _decryptSession != nullptr ? _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength) : OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER);
+    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength) {
+        uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
+        if (_decryptSession != nullptr) {
+            result = OpenCDMError::ERROR_NONE;
+            _decryptSession->KeyId(keyIdLength, keyId);
+            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength);
+        }
+        return (result);
     }
     inline void Revoke (OCDM::ISession::ICallback* callback) {
 
@@ -308,7 +313,8 @@ public:
         const uint16_t cbInitData, 
         const uint8_t* pbCustomData, 
         const uint16_t cbCustomData, 
-        const LicenseType licenseType) 
+        const LicenseType licenseType,
+        OpenCDMSessionCallbacks * callbacks)
         : OpenCDMSession()
         , _sink(this)
         , _state(SESSION_INIT)
@@ -318,8 +324,8 @@ public:
         , _errorCode(0)
         , _sysError(0)
         , _key(OCDM::ISession::StatusPending)
-        , _callback(nullptr)
-        , _userData(nullptr) {
+        , _callback(callbacks)
+        , _userData(this) {
 
         std::string bufferId;
         OCDM::ISession* realSession = nullptr;
@@ -511,7 +517,6 @@ private:
     OpenCDMAccessor& operator= (const OpenCDMAccessor&) = delete;
 
 private:
-
     class KeyId {
     private:
         KeyId() = delete;
@@ -1032,7 +1037,7 @@ std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* a
 
         ASSERT (_session == nullptr);
 
-        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession (_implementation, _keySystem, dataType, addData, addDataLength, nullptr, 0, static_cast<::LicenseType>(license));
+        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession (_implementation, _keySystem, dataType, addData, addDataLength, nullptr, 0, static_cast<::LicenseType>(license), nullptr);
 
         result = newSession->SessionId();
 
@@ -1111,7 +1116,7 @@ int OpenCdm::Close() {
 uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength) {
     ASSERT (_session != nullptr);
 
-    return (_session != nullptr ? _session->Decrypt(encrypted, encryptedLength, IV, IVLength) : 1);
+    return (_session != nullptr ? _session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0) : 1);
 }
 
 uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], const uint32_t waitTime) {
@@ -1120,7 +1125,7 @@ uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, co
         if (_session == nullptr) {
             _session = new OpenCDMSession(_implementation->Session(keyId, keyIdLength));
         }
-        return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength));
+        return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength, keyId, keyIdLength));
     }
 
     return (1);
@@ -1226,12 +1231,12 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
  */
 OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
                                     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
-                                    const uint8_t CDMData[], const uint16_t CDMDataLength,
+                                    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks * callbacks,
                                     struct OpenCDMSession** session) {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength,CDMData,CDMDataLength, licenseType);
+        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength,CDMData,CDMDataLength, licenseType, callbacks);
 
         result = (*session != nullptr ? OpenCDMError::ERROR_NONE : OpenCDMError::ERROR_INVALID_SESSION);
     }
@@ -1397,29 +1402,6 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session) {
 }
 
 /**
- * \brief Registers callbacks with \ref OpenCDMSession instance.
- *
- * Registers callback functions called when a challenge is generated, or a key status changes.
- * If no callbacks were registered but there are key update messages queued, these will be
- * fired to newly registered callbacks. Only one set of callbacks can be registered at one
- * time.
- * \param session \ref OpenCDMSession instance.
- * \param callbacks Callbacks to register, NULL to unregister earlier registered callbacks.
- * \param userData Pointer passed to callbacks when called.
- * \return zero on success, non-zero on error.
- */
-OpenCDMError opencdm_session_callback(struct OpenCDMSession* session, OpenCDMSessionCallbacks * callbacks, void * userData) {
-    OpenCDMError result (ERROR_INVALID_SESSION);
-
-    if ( (session != nullptr) && (session->IsExtended() == true)) {
-        reinterpret_cast<ExtendedOpenCDMSession*>(session)->Callback(callbacks, userData);
-        result = OpenCDMError::ERROR_NONE;
-    }
-
-    return (result);
-}
-
-/**
  * \brief Performs decryption.
  *
  * This method accepts encrypted data and will typically decrypt it out-of-process (for security reasons). The actual data copying is performed
@@ -1437,7 +1419,7 @@ OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session, uint8_t enc
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
-        result  = static_cast<OpenCDMError>(session->Decrypt(encrypted, encryptedLength, IV, IVLength));
+        result  = static_cast<OpenCDMError>(session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0));
     }
 
     return (result);
