@@ -117,15 +117,16 @@ namespace Process {
                     Core::ProxyType<RPC::InvokeMessage> message (Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
 
                     _handler.Invoke(newRequest.channel, message);
-                    newRequest.channel->ReportResponse(newRequest.message);
                 }
                 else {
                     ASSERT (newRequest.message->Label() == RPC::AnnounceMessage::Id());
+					ASSERT(_announcements != nullptr);
 
                     Core::ProxyType<RPC::AnnounceMessage> message (Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
 
                      _announcements->Procedure(*(newRequest.channel), message);
                 }
+                newRequest.channel->ReportResponse(newRequest.message);
 
                 // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
                 admin.FlushLibraries();

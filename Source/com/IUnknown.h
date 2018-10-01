@@ -41,8 +41,19 @@ namespace ProxyStub {
         }
         virtual Core::IUnknown* Convert(void* incomingData) const
         {
-            return (reinterpret_cast<INTERFACE*>(incomingData));
-        }
+			
+				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(incomingData);
+			
+				
+				INTERFACE * result = dynamic_cast<INTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+		
+					result = reinterpret_cast<INTERFACE*>(incomingData);
+			}
+			
+			return (result);
+		}
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
         {
             uint16_t baseNumber(BASECLASS::Length());
@@ -163,8 +174,18 @@ namespace ProxyStub {
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* QueryInterface()
         {
-            return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
-        }
+			void* baseptr = QueryInterface(ACTUAL_INTERFACE::ID);
+			
+			Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				
+				ACTUAL_INTERFACE * result = dynamic_cast<ACTUAL_INTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+					result = reinterpret_cast<ACTUAL_INTERFACE*>(baseptr);
+			}
+			
+			return (result);
+		}
         virtual void* QueryInterface(const uint32_t interfaceNumber)
         {
             void* result = nullptr;
@@ -194,11 +215,21 @@ namespace ProxyStub {
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* CreateProxy(void* implementation)
         {
-            return (reinterpret_cast<ACTUAL_INTERFACE*>(CreateProxy(implementation, ACTUAL_INTERFACE::ID)));
-        }
+			void* baseptr = CreateProxy(implementation, ACTUAL_INTERFACE::ID);
+			
+			Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				
+			ACTUAL_INTERFACE * result = dynamic_cast<ACTUAL_INTERFACE*>(iuptr);
+			
+			if (result == nullptr) {
+				result = reinterpret_cast<ACTUAL_INTERFACE*>(baseptr);
+			}
+			return (result);
+		}
         inline void* CreateProxy(void* implementation, const uint32_t id)
         {
-            return (RPC::Administrator::Instance().CreateProxy(id, _channel, implementation, false, true));
+			Core::IUnknown* result = RPC::Administrator::Instance().CreateProxy(id, _channel, implementation, false, true);
+			return (void*)result;
         }
 
     private:

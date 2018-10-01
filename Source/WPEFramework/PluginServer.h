@@ -993,7 +993,7 @@ namespace WPEFramework {
 				}
 
 			public:
-				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension)
+				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
 				{
 					string persistentPath(_persistentPath);
 					string dataPath(_dataPath);
@@ -1005,7 +1005,7 @@ namespace WPEFramework {
                                             persistentPath += persistentExtension + '/';
                                         }
 
-					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
+					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
 				}
 
                 void* Aquire(const uint32_t interfaceId, const uint32_t processId) {
@@ -1422,23 +1422,18 @@ namespace WPEFramework {
             {
                 void* result = nullptr;
 
-                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign));
+                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign, waitTime));
 
                 if (process != nullptr) {
-                    if (process->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime) != Core::ERROR_TIMEDOUT) {
-                        if (process->State() == RPC::IRemoteProcess::ACTIVE) {
                             result = _processAdministrator.Aquire(object.Interface(), pid);
-                            if (result == nullptr) {
-                                TRACE_L1("RPC out-of-process server offer not received in time. %d", __LINE__);
-                            }
-                        }
-                    }
+
+					ASSERT(result != nullptr);
+					
                     if (result == nullptr) {
-                        TRACE_L1("RPC out-of-process server activated, but failed. Terminating process. %d", __LINE__);
-                        pid = 0;
+                        TRACE_L1("RPC out-of-process server offer started but returned incorrect I/F. %d", object.Interface());
                         process->Terminate();
+						process->Release();
                     }
-                    process->Release();
                 }
                 return (result);
             }

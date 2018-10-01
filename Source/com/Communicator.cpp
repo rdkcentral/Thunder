@@ -96,9 +96,13 @@ namespace RPC {
 		, _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
 		, _announceEvent(false, true)
 		, _handler(handler)
+		, _announcements(*this)
 	{
+		CreateFactory<RPC::AnnounceMessage>(1);
 		CreateFactory<RPC::InvokeMessage>(2);
 		Register(_handler->InvokeHandler());
+		Register(_handler->AnnounceHandler());
+		_handler->AnnounceHandler(&_announcements);
 
                 // For now clients do not support announce messages from the server...
 		// Register(_handler->AnnounceHandler());
@@ -108,8 +112,11 @@ namespace RPC {
     {
 		BaseClass::Close(Core::infinite);
 
+		Unregister(_handler->AnnounceHandler());
 		Unregister(_handler->InvokeHandler());
+		_handler->AnnounceHandler(nullptr);
 		DestroyFactory<RPC::InvokeMessage>();
+		DestroyFactory<RPC::AnnounceMessage>();
     }
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)

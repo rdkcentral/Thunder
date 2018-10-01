@@ -225,16 +225,36 @@ namespace PluginHost {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
         {
-            return (reinterpret_cast<REQUESTEDINTERFACE*>(Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version)));
-        }
+				void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
+			
+				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				
+				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+				
+					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+					
+				}
+			
+				return (result);
+		}
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
         {
             void* baseInterface(QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-            }
+					Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+					
+					REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+				
+					if (result == nullptr) {
+						result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
+				}
+				
+				return (result);
+			}
 
             return (nullptr);
         }
@@ -248,8 +268,18 @@ namespace PluginHost {
             if (handler != nullptr) {
                 RPC::Object definition (locator, className, REQUESTEDINTERFACE::ID, version, string(), string());
 
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign())));
-            }
+				void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+
+				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+
+				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+				
+				if (result == nullptr) {
+						result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+				}
+
+				return (result);
+			}
 
             return (nullptr);
         }

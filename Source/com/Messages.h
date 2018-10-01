@@ -169,13 +169,13 @@ namespace RPC {
             Init(const Init&) = delete;
             Init& operator=(const Init&) = delete;
 
-        public:
-             enum type {
-                 AQUIRE  = 0,
-                 OFFER   = 1,
-                 REVOKE  = 2,
-                 REQUEST = 3
-             };
+		public:
+			enum type {
+				AQUIRE  = 0,
+				OFFER   = 1,
+				REVOKE  = 2,
+				REQUEST = 3
+			};
 
         public:
             Init()
@@ -201,21 +201,22 @@ namespace RPC {
 			bool IsRevoke() const {
 				return (_className[0] == '\0') && (_className[1] == REVOKE);
 			}
-            bool IsRequested() const {
-                return (_className[0] == '\0') && (_className[1] == REQUEST);
-            }
+			bool IsRequested() const {
+				return (_className[0] == '\0') && (_className[1] == REQUEST);
+			}
 			bool IsAquire() const {
 				return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
 			}
-             void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
             {
-                ASSERT(whatKind != AQUIRE);
+				ASSERT(whatKind != AQUIRE);
+
 				_exchangeId = Core::ProcessInfo().Id();
 				_implementation = implementation;
                 _interfaceId = interfaceId;
 				_versionId = 0;
 				_className[0] = '\0';
-                _className[1] = whatKind;
+				_className[1] = whatKind;
             }
 			void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
 			{
@@ -223,7 +224,7 @@ namespace RPC {
 				_implementation = nullptr;
 				_interfaceId = interfaceId;
 				_versionId = versionId;
-				 _className[1] = AQUIRE;
+				_className[1] = AQUIRE;
 				const std::string converted (Core::ToString(className));
 				::strncpy(_className, converted.c_str(), sizeof(_className));
 			}
@@ -301,6 +302,9 @@ namespace RPC {
 				void* result = nullptr;
 				_data.GetNumber<void*>(0, result);
 				return (result);
+			}
+			void Implementation(void* implementation) {
+				_data.SetNumber<void*>(0, implementation);
 			}
 			uint32_t Length() const
 			{

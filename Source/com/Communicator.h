@@ -182,10 +182,20 @@ namespace RPC {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
         {
-            void* baseInterface(Instantiate(waitTime, className, REQUESTEDINTERFACE::ID, version));
+            void* baseInterface(Aquire(waitTime, className, REQUESTEDINTERFACE::ID, version));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+
+			    Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+				
+				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+		
+					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);   
+            }
+
+                return result;
             }
 
             return (nullptr);
@@ -586,7 +596,7 @@ namespace RPC {
             {
                 return (static_cast<uint32_t>(_processes.size()));
             }
-            inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config)
+            inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime)
             {
                 _adminLock.Lock();
 
@@ -601,9 +611,20 @@ namespace RPC {
  
                     // We expect an announce interface message now...
                     _processes.insert(std::pair<uint32_t, RemoteProcess* >(result->Id(), result));
-                }
 
+					_adminLock.Unlock();
+
+					// Now lets wait for the announce message to be exchanged
+					result->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime);
+
+					if (result->State() != RPC::IRemoteProcess::ACTIVE) {
+						result->Terminate();
+						result = nullptr;
+					}
+                }
+				else {
                 _adminLock.Unlock();
+				}
 
                 return (result);
             }
@@ -720,9 +741,7 @@ namespace RPC {
 						}
 					}
                     else if ((info.IsOffer() == true) || (info.IsRequested())) {
-                        
                         Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, true, info.IsRequested());
-						
 						if (result != nullptr) {
 
 							_parent.Offer(index->first, result, info.InterfaceId());
@@ -736,6 +755,7 @@ namespace RPC {
 						if (result != nullptr) {
 							_parent.Revoke(index->first, result, info.InterfaceId());
 							result->Release();
+
 						}
 					}
 
@@ -1001,8 +1021,8 @@ namespace RPC {
         {
             return (_processMap.Process(id));
         }
-		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config) {
-			return (_processMap.Create(pid, instance, config));
+		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime) {
+			return (_processMap.Create(pid, instance, config, waitTime));
 		}
 
         // Use this method with care. It goes beyond the refence counting taking place in the object.
@@ -1035,6 +1055,42 @@ namespace RPC {
         CommunicatorClient& operator=(const CommunicatorClient&) = delete;
 
         typedef Core::IPCChannelClientType<Core::Void, false, true> BaseClass;
+
+		class AnnounceHandler : public Core::IPCServerType<AnnounceMessage> {
+		private:
+			AnnounceHandler() = delete;
+			AnnounceHandler(const AnnounceHandler&) = delete;
+			AnnounceHandler& operator= (const AnnounceHandler&) = delete;
+
+		public:
+			AnnounceHandler(CommunicatorClient& parent) : _parent(parent) {
+			}
+			virtual ~AnnounceHandler() {
+			}
+
+		public:
+			void Procedure(IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data) override {
+				// Oke, see if we can reference count the IPCChannel
+				Core::ProxyType<Core::IPCChannel> refChannel(dynamic_cast<Core::IReferenceCounted*>(&channel), &channel);
+
+				ASSERT(refChannel.IsValid());
+
+				if (refChannel.IsValid() == true) {
+					const string className(data->Parameters().ClassName());
+					const uint32_t interfaceId(data->Parameters().InterfaceId());
+					const uint32_t versionId(data->Parameters().VersionId());
+					void* implementation = _parent.Aquire(className, interfaceId, versionId);
+					data->Response().Implementation(implementation);
+				}
+
+				Core::ProxyType<Core::IIPC> baseData(Core::proxy_cast<Core::IIPC>(data));
+
+				channel.ReportResponse(baseData);
+			}
+
+		private:
+			CommunicatorClient& _parent;
+		};
 
     public:
 		CommunicatorClient(const Core::NodeId& remoteNode, Core::ProxyType<IHandler> handler);
@@ -1144,6 +1200,12 @@ namespace RPC {
 
 		uint32_t Close(const uint32_t waitTime);
 
+		virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId) {
+			Core::Library emptyLibrary;
+			// Allright, respond with the interface.
+			return (Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId));
+		}
+
 	private:
 		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
         uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
@@ -1187,6 +1249,7 @@ namespace RPC {
 		Core::ProxyType<RPC::AnnounceMessage> _announceMessage;
 		Core::Event _announceEvent;
 		Core::ProxyType<IHandler> _handler;
+		AnnounceHandler _announcements;
 	};
 }
 }

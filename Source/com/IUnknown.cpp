@@ -16,7 +16,9 @@ namespace ProxyStub {
 
     /* virtual */ Core::IUnknown* UnknownStub::Convert(void* incomingData) const
     {
-        return (reinterpret_cast<Core::IUnknown*>(incomingData));
+		Core::IUnknown* result = reinterpret_cast<Core::IUnknown*>(incomingData);
+
+        return (result);
     }
 
     /* virtual */ void UnknownStub::Handle(const uint16_t index,

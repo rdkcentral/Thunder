@@ -282,7 +282,8 @@ namespace ProxyStub {
     // Registration
     // -------------------------------------------------------------------------------------------
 
-    static class RPCInstantiation {
+namespace{
+    class RPCInstantiation {
     public:
         RPCInstantiation()
         {
@@ -296,7 +297,7 @@ namespace ProxyStub {
         }
 
     } RPCRegistration;
-
+}
     // Creat a Handler for the Trace Controller:
     class TraceIterator : public Trace::ITraceIterator {
     private:

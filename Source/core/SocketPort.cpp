@@ -3,6 +3,7 @@
 #include "Sync.h"
 #include "Singleton.h"
 #include "Timer.h"
+#include "ProcessInfo.h"
 
 #ifdef __POSIX__
 #include <arpa/inet.h>
@@ -47,7 +48,12 @@ namespace WPEFramework {
 namespace Core {
 static uint32_t SLEEPSLOT_TIME = 100;
 
+
 #ifdef __DEBUG__
+#define WATCHDOG_ENABLED 
+#endif
+
+#ifdef WATCHDOG_ENABLED
 static const char WATCHDOG_THREAD_NAME[] = "SocketWatchDog";
 #endif
 
@@ -143,7 +149,7 @@ bool SetNonBlocking (SOCKET socket) {
     return (false);
 }
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
 class SocketTimeOutHandler
 {
 public:
@@ -164,7 +170,7 @@ public:
 
    uint32_t Expired()
    {
-      fprintf(stderr, "===> SocketPort monitor thread is in deadlock!\nStack:\n");
+      fprintf(stderr, "===> SocketPort monitor thread is in deadlock on process id %u !\nStack:\n", ProcessInfo().Id());
       #if defined(__LINUX__) && !defined(__APPLE__)
       void* addresses[_AllocatedStackEntries];
       int addressCount = ::GetCallStack(_socketMonitorThread, addresses, _AllocatedStackEntries);
@@ -249,7 +255,7 @@ public:
         m_SignalFD(-1)
 #endif
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
         , _watchDog(WatchDogStackSize, WATCHDOG_THREAD_NAME)
 #endif
     {
@@ -583,7 +589,7 @@ private:
 
                 uint16_t flagsSet = m_FDArray[fd_index].revents;
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
                 // This time is in milli seconds. Arm for 2S.
                 _watchDog.Arm(2000, SocketTimeOutHandler(Thread::ThreadId()));
 #endif
@@ -617,7 +623,7 @@ private:
                     index++;
                 }
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
                 _watchDog.Reset();
 #endif
  
@@ -722,7 +728,7 @@ private:
 
             uint16_t result = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
                 // This time is in milli seconds. Arm for 2S.
                 _watchDog.Arm(2000, SocketTimeOutHandler(Thread::ThreadId()));
 #endif
@@ -755,7 +761,7 @@ private:
                 index++;
             }
 
-#ifdef __DEBUG__
+#ifdef WATCHDOG_ENABLED
                 _watchDog.Reset();
 #endif
         }
@@ -792,7 +798,8 @@ private:
 #endif
 #ifdef __DEBUG__
     uint32_t		m_States[8];
-
+#endif
+#ifdef WATCHDOG_ENABLED
     WatchDogType<SocketTimeOutHandler> _watchDog;
 #endif
 #ifdef __APPLE__
