@@ -7,7 +7,6 @@
 #include "IStringIterator.h"
 #include "Administrator.h"
 #include "Communicator.h"
-#include "ObjectMessageHandler.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "com.lib")

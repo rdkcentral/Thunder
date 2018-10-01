@@ -580,7 +580,17 @@ namespace Core {
             void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+
+				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+
+				if (result == nullptr) {
+
+					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
+
+				}
+
+				return (result);
             }
 
             return (nullptr);
@@ -591,8 +601,15 @@ namespace Core {
       {
           const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
-          if (baseInterface != NULL) {
-              return (reinterpret_cast< const REQUESTEDINTERFACE*>(baseInterface));
+		  if (baseInterface != nullptr) {
+			  const Core::IUnknown* iuptr = reinterpret_cast<const Core::IUnknown*>(baseInterface);
+				  
+			  const REQUESTEDINTERFACE* result = dynamic_cast<const REQUESTEDINTERFACE*>(iuptr);
+			  
+			  if (result == nullptr) {
+					  result = reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface);
+			  }
+			  return (result);
           }
 
           return (nullptr);
@@ -633,6 +650,8 @@ namespace Core {
     const uint32_t ERROR_PENDING_CONDITIONS = 31;
     const uint32_t ERROR_SURFACE_UNAVAILABLE = 32;
     const uint32_t ERROR_PLAYER_UNAVAILABLE = 33;
+    const uint32_t ERROR_FIRST_RESOURCE_NOT_FOUND = 34;
+    const uint32_t ERROR_SECOND_RESOURCE_NOT_FOUND = 35;
 }
 }
 

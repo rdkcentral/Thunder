@@ -41,8 +41,19 @@ namespace ProxyStub {
         }
         virtual Core::IUnknown* Convert(void* incomingData) const
         {
-            return (reinterpret_cast<INTERFACE*>(incomingData));
-        }
+			
+				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(incomingData);
+			
+				
+				INTERFACE * result = dynamic_cast<INTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+		
+					result = reinterpret_cast<INTERFACE*>(incomingData);
+			}
+			
+			return (result);
+		}
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
         {
             uint16_t baseNumber(BASECLASS::Length());
@@ -66,8 +77,9 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
+
     template <typename INTERFACE>
-    class UnknownProxyType : public INTERFACE {
+    class UnknownProxyType : public INTERFACE  {
     protected:
         typedef UnknownProxyType<INTERFACE> BaseClass;
         typedef Core::ProxyType<RPC::InvokeMessage> IPCMessage;
@@ -87,10 +99,10 @@ namespace ProxyStub {
         virtual ~UnknownProxyType()
         {
             // We might need to kill the Proxy registration..
-            RPC::Administrator::Instance().DeleteProxy(_implementation);
+            RPC::Administrator::Instance().DeleteProxy(_channel.operator->(), _implementation);
         }
 
-    public:
+ public:
         inline IPCMessage Message(const uint8_t methodId) const
         {
             IPCMessage message(RPC::Administrator::Instance().Message());
@@ -113,9 +125,8 @@ namespace ProxyStub {
 
             return (result);
         }
-        virtual void AddRef() const
+		virtual void AddRef() const
         {
-
             if ((Core::InterlockedIncrement(_refCount) == 2) && (_otherSideInformed == false)) {
 
                 // Seems we really would like to "preserve" this interface, so report it in use
@@ -134,7 +145,6 @@ namespace ProxyStub {
 
         virtual uint32_t Release() const
         {
-
             uint32_t result(Core::ERROR_NONE);
 
             if (Core::InterlockedDecrement(_refCount) == 0) {
@@ -164,35 +174,62 @@ namespace ProxyStub {
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* QueryInterface()
         {
-            return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
-        }
+			void* baseptr = QueryInterface(ACTUAL_INTERFACE::ID);
+			
+			Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				
+				ACTUAL_INTERFACE * result = dynamic_cast<ACTUAL_INTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+					result = reinterpret_cast<ACTUAL_INTERFACE*>(baseptr);
+			}
+			
+			return (result);
+		}
         virtual void* QueryInterface(const uint32_t interfaceNumber)
         {
             void* result = nullptr;
 
-            // We have reached "0", signal the other side..
-            Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
-            RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
+			if (interfaceNumber == INTERFACE::ID) {
+				// Just AddRef and return..
+				AddRef();
+				result = static_cast<INTERFACE*>(this);
+			}
+			else {
+				// We have reached "0", signal the other side..
+				Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
+				RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, INTERFACE::ID, 2);
-            parameters.Number<uint32_t>(interfaceNumber);
-            if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
-                RPC::Data::Frame::Reader response(message->Response().Reader());
+				message->Parameters().Set(_implementation, INTERFACE::ID, 2);
+				parameters.Number<uint32_t>(interfaceNumber);
+				if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
+					RPC::Data::Frame::Reader response(message->Response().Reader());
 
-                // From what is returned, we need to create a proxy
-                result = CreateProxy(response.Number<Core::IUnknown*>(), interfaceNumber);
-            }
+					// From what is returned, we need to create a proxy
+					result = CreateProxy(response.Number<Core::IUnknown*>(), interfaceNumber);
+				}
+			}
 
             return (result);
         }
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* CreateProxy(void* implementation)
         {
-            return (reinterpret_cast<ACTUAL_INTERFACE*>(CreateProxy(implementation, ACTUAL_INTERFACE::ID)));
-        }
+			void* baseptr = CreateProxy(implementation, ACTUAL_INTERFACE::ID);
+			
+			Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				
+			ACTUAL_INTERFACE * result = dynamic_cast<ACTUAL_INTERFACE*>(iuptr);
+			
+			if (result == nullptr) {
+				result = reinterpret_cast<ACTUAL_INTERFACE*>(baseptr);
+			}
+			return (result);
+		}
         inline void* CreateProxy(void* implementation, const uint32_t id)
         {
-            return (RPC::Administrator::Instance().CreateProxy(id, _channel, implementation, false, true));
+			Core::IUnknown* result = RPC::Administrator::Instance().CreateProxy(id, _channel, implementation, false, true);
+			return (void*)result;
         }
 
     private:

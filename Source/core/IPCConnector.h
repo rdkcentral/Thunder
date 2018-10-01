@@ -41,9 +41,14 @@ namespace Core {
 
                 ASSERT(_current == nullptr);
 
-                _current = &element;
+				// TODO: Make sure it is thread safe. The _current needs to
+				// be written as the last parameter so in case the 
+				// serialize gets triggered due to another read/write cycle,
+				// Serialize will not start processing until the current (and
+				// thius all other parameters) are set correctly.
                 _length = element.Length();
                 _offset = 0;
+				_current = &element;
 
                 ASSERT(_length <= 0x1FFFFFFF);
 
@@ -95,7 +100,7 @@ namespace Core {
                         result += handled;
                         _offset += handled;
 
-			ASSERT_VERBOSE ((_offset - 8) <= _length, "%d <= %d", (_offset - 8), _length);
+						ASSERT_VERBOSE ((_offset - 8) <= _length, "%d <= %d", (_offset - 8), _length);
 
                         if ((_offset - 8) == _length) {
                             const IMessage* ready = _current;
@@ -889,18 +894,12 @@ namespace Core {
             {
                 _lock.Lock();
 
-                if (_outbound.IsValid() == true) {
+				TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
-                    TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
-
-                    if (_callback != nullptr) {
-
-                        _callback->Dispatch(*_outbound);
-                        _callback = nullptr;
-                    }
-                    else {
-                        _outbound.Release();
-                    }
+				_callback = nullptr;
+			
+				if (_outbound.IsValid() == true) {
+                    _outbound.Release();
                 }
                 if (_inbound.IsValid() == true) {
                     _inbound.Release();
@@ -1115,6 +1114,7 @@ namespace Core {
             }
             ~IPCLink()
             {
+		
             }
 
         public:
@@ -1136,6 +1136,9 @@ namespace Core {
                 if (handler.IsValid() == true) {
                     _parent.CallProcedure(handler, inbound);
                 }
+				else {
+					TRACE_L1("No handler defined to handle the incoming frames. [%d]", message->Label());
+				}
             }
 
             // Notification of a Response send.

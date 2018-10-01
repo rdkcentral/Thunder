@@ -160,7 +160,7 @@ namespace WPEFramework {
                 proxy->Release();
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // 
             // virtual void Unregister(OCDM::IAccessorOCDM::INotificationISession::IKeyCallback* callback) = 0;
@@ -171,7 +171,7 @@ namespace WPEFramework {
             OCDM::IAccessorOCDM::INotification* stub = reader.Number<OCDM::IAccessorOCDM::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            OCDM::IAccessorOCDM::INotification* proxy = RPC::Administrator::Instance().FindProxy<OCDM::IAccessorOCDM::INotification>(stub);
+            OCDM::IAccessorOCDM::INotification* proxy = RPC::Administrator::Instance().FindProxy<OCDM::IAccessorOCDM::INotification>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Coud not find stub for OCDM::IAccessorOCDM::INotification: %p"), stub);
@@ -363,7 +363,7 @@ namespace WPEFramework {
             OCDM::ISession::ICallback* stub = reader.Number<OCDM::ISession::ICallback*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            OCDM::ISession::ICallback* proxy = RPC::Administrator::Instance().FindProxy<OCDM::ISession::ICallback>(stub);
+            OCDM::ISession::ICallback* proxy = RPC::Administrator::Instance().FindProxy<OCDM::ISession::ICallback>(channel.operator->(), stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Coud not find stub for OCDM::ISession::ICallback: %p"), stub);

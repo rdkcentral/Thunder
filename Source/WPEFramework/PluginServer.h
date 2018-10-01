@@ -977,6 +977,8 @@ namespace WPEFramework {
 #else
 					, _application(EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
 #endif
+                    , _offeredInterfaces()
+                    , _adminLock()
 				{
 					if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
 						TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
@@ -991,7 +993,7 @@ namespace WPEFramework {
 				}
 
 			public:
-				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension)
+				Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
 				{
 					string persistentPath(_persistentPath);
 					string dataPath(_dataPath);
@@ -1003,17 +1005,78 @@ namespace WPEFramework {
                                             persistentPath += persistentExtension + '/';
                                         }
 
-					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath)));
+					return (RPC::Communicator::Create(pid, instance, RPC::Config (RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
 				}
 
-			private:
-				const string _persistentPath;
-				const string _systemPath;
-				const string _dataPath;
-				const string _appPath;
-				const string _proxyStubPath;
-				const string _application;
+                void* Aquire(const uint32_t interfaceId, const uint32_t processId) {
+
+                    void* result = nullptr;
+
+                    _adminLock.Lock();
+
+                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
+
+                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
+
+                    if( index != _offeredInterfaces.end() )  {  
+                        result = index->second->QueryInterface(interfaceId);
+                        index->second->Release();
+                        _offeredInterfaces.erase(index);
+                    }           
+
+                    _adminLock.Unlock();
+
+                    return result;
+                }
+
+            private:
+                void Offer(const uint32_t processId,  Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+
+                    _adminLock.Lock();
+
+                    ASSERT( _offeredInterfaces.find(processId) == _offeredInterfaces.end() ); // we don't expect an interface to still be available for this process
+
+                    _offeredInterfaces[processId] = remote;
+                    _offeredInterfaces[processId]->AddRef();
+
+                    _adminLock.Unlock();
+
+                }
+
+                // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed 
+                void Revoke(const uint32_t processId,  const Core::IUnknown* remote, const uint32_t /* interfaceId */) override {
+
+                    // basicaly we don't expect anything needed to be done here as the offered interfaces should have been retrieved before they are revoked but in case that does not happen we don't want to leak
+
+                    ASSERT( remote != nullptr );
+
+                    _adminLock.Lock();
+
+                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
+
+                    if( index != _offeredInterfaces.end() && index->second == remote )  { 
+                        index->second->Release();
+                        _offeredInterfaces.erase(index);
+                    }
+
+                    _adminLock.Unlock();
+                }
+
+
+            private:
+                using OfferedInterfaceOnPID = std::map<uint32_t, Core::IUnknown*>;
+                using OfferedInterfaceOnPIDIterator = OfferedInterfaceOnPID::iterator;
+
+				const string                    _persistentPath;
+				const string                    _systemPath;
+				const string                    _dataPath;
+				const string                    _appPath;
+				const string                    _proxyStubPath;
+				const string                    _application;
+                OfferedInterfaceOnPID           _offeredInterfaces;
+                mutable Core::CriticalSection   _adminLock;
 			};
+
             class Override : public Core::JSON::Container {
             private:
                 Override(const Override&) = delete;
@@ -1359,20 +1422,18 @@ namespace WPEFramework {
             {
                 void* result = nullptr;
 
-                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign));
+                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign, waitTime));
 
                 if (process != nullptr) {
-                    if (process->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime) != Core::ERROR_TIMEDOUT) {
-                        if (process->State() == RPC::IRemoteProcess::ACTIVE) {
-                            result = process->QueryInterface(object.Interface());
-                        }
-                    }
+                            result = _processAdministrator.Aquire(object.Interface(), pid);
+
+					ASSERT(result != nullptr);
+					
                     if (result == nullptr) {
-                        TRACE_L1("RPC out-of-process server activated, but failed. Terminating process. %d", __LINE__);
-                        pid = 0;
+                        TRACE_L1("RPC out-of-process server offer started but returned incorrect I/F. %d", object.Interface());
                         process->Terminate();
+						process->Release();
                     }
-                    process->Release();
                 }
                 return (result);
             }

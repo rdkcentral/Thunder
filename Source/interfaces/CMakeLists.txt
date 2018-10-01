@@ -28,7 +28,6 @@ set(PUBLIC_HEADERS
         IPlayGiga.h
         IPower.h
         IProvisioning.h
-        IResourceCenter.h
         IRPCLink.h
         IStreaming.h
         ISwitchBoard.h

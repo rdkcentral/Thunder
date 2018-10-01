@@ -1679,7 +1679,7 @@ namespace Core {
     // things like "about:" and "javascript:"
     void URL::CreatePathURL(TCHAR[] /* url */, int /* url_len*/) const
     {
-        ASSERT(TRUE);
+        ASSERT(false);
     }
 
     // FileURL is for file URLs. There are some special rules for interpreting
@@ -1712,7 +1712,7 @@ namespace Core {
     // MailtoURL is for mailto: urls. They are made up scheme,path,query
     void URL::CreateMailtoURL(TCHAR[] /* url */, int /* url_len*/) const
     {
-        ASSERT(TRUE);
+        ASSERT(false);
     }
 
     /* Returns a url-encoded version of source */

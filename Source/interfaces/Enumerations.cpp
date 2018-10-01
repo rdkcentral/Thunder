@@ -1,6 +1,32 @@
 #include "IComposition.h"
 
+namespace {
+
+        struct ScreenResolutionWidthHeight {
+            WPEFramework::Exchange::IComposition::ScreenResolution resolution;
+            uint32_t width;
+            uint32_t height;
+        };
+
+        ScreenResolutionWidthHeight resolutionWidthHeightTable[] = {
+
+            { WPEFramework::Exchange::IComposition::ScreenResolution_Unknown,        0,         0 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_480i,          640,      480 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_480p,          640,      480 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_720p,         1280,      720 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_720p50Hz,     1280,      720 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_1080p24Hz,    1920,     1080 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_1080i50Hz,    1920,     1080 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_1080p50Hz,    1920,     1080 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_1080p60Hz,    1920,     1080 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_2160p50Hz,    3840,     2160 },
+            { WPEFramework::Exchange::IComposition::ScreenResolution_2160p60Hz,    3840,     2160 },
+        };
+
+}
+
 namespace WPEFramework {
+
 
     ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
 
@@ -18,4 +44,18 @@ namespace WPEFramework {
 
     ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
+namespace Exchange {
+
+    uint32_t IComposition::WidthFromResolution(const IComposition::ScreenResolution resolution)  {
+        return (static_cast<uint32_t>(resolution) < ((sizeof(resolutionWidthHeightTable)/sizeof(ScreenResolutionWidthHeight)) ? resolutionWidthHeightTable[static_cast<uint32_t>(resolution)].width : 0));
+    }
+
+    uint32_t IComposition::HeightFromResolution(const IComposition::ScreenResolution resolution) {
+        return (static_cast<uint32_t>(resolution) < ((sizeof(resolutionWidthHeightTable)/sizeof(ScreenResolutionWidthHeight)) ? resolutionWidthHeightTable[static_cast<uint32_t>(resolution)].height : 0));
+    }      
+
 }
+
+}
+
+

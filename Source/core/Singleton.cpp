@@ -27,7 +27,7 @@ namespace Core {
         // Iterate over all singletons and delete...
         while (m_Singletons.empty() == false) {
             Singleton* element(*(m_Singletons.begin()));
-            TRACE_L1("Destructing %s", element->Name().c_str());
+            TRACE_L1("Destructing %s", element->ImplementationName().c_str());
             delete element;
         }
         //// Iterate over all singletons and delete...

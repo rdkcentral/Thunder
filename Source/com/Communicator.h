@@ -176,16 +176,26 @@ namespace RPC {
 
         virtual uint32_t Id() const = 0;
         virtual enumState State() const = 0;
-        virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
+        virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
 
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string& className, const uint32_t version)
+        REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
         {
-            void* baseInterface(Instantiate(waitTime, className, REQUESTEDINTERFACE::ID, version));
+            void* baseInterface(Aquire(waitTime, className, REQUESTEDINTERFACE::ID, version));
 
             if (baseInterface != nullptr) {
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
+
+			    Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+				
+				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+			
+				if (result == nullptr) {
+		
+					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);   
+            }
+
+                return result;
             }
 
             return (nullptr);
@@ -193,99 +203,40 @@ namespace RPC {
     };
 
     class EXTERNAL Communicator {
-
     private:
         class RemoteProcessMap;
 
-    public:
+	public:
         class EXTERNAL RemoteProcess : public IRemoteProcess {
         private:
-            friend class Core::Service<RemoteProcess>;
             friend class RemoteProcessMap;
 
             RemoteProcess() = delete;
             RemoteProcess(const RemoteProcess&) = delete;
             RemoteProcess& operator=(const RemoteProcess&) = delete;
 
-			RemoteProcess(RemoteProcessMap* parent, uint32_t pid, const Core::ProxyType<Core::IPCChannel>& channel)
+		protected:
+			RemoteProcess(RemoteProcessMap* parent, const Core::ProxyType<Core::IPCChannel>& channel)
 				: _parent(parent)
-				, _process(pid)
 				, _state(IRemoteProcess::ACTIVE)
 				, _channel(channel)
-				, _returnedInterface(nullptr)
 			{
 			}
-			RemoteProcess(RemoteProcessMap* parent, uint32_t* pid, const Core::Process::Options* options)
+			RemoteProcess(RemoteProcessMap* parent)
                 : _parent(parent)
-                , _process(false)
                 , _state(IRemoteProcess::CONSTRUCTED)
                 , _channel()
-                , _returnedInterface(nullptr)
             {
-                // Start the external process launch..
-                _process.Launch(*options, pid);
             }
 
         public:
-            inline static RemoteProcess* Create(RemoteProcessMap& parent, const uint32_t pid, Core::ProxyType<Core::IPCChannel>& channel)
-            {
-				RemoteProcess* result (Core::Service<RemoteProcess>::Create<RemoteProcess>(&parent, pid, channel));
-
-				ASSERT(result != nullptr);
-
-				// As the channel is there, Announde came in over it :-), we are active by default.
-				parent.Activated(result);
-
-				return (result);
-            }
-	inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
-	{
-		Core::Process::Options options(config.HostApplication());
- 
-                ASSERT(instance.Locator().empty() == false);
-                ASSERT(instance.ClassName().empty() == false);
-                ASSERT(config.Connector().empty() == false);
-
-		options[_T("l")] = instance.Locator();
-		options[_T("c")] = instance.ClassName();
-		options[_T("r")] = config.Connector();
-		options[_T("i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-		if (instance.Version() != static_cast<uint32_t>(~0)) {
-			options[_T("v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
-		}
-		if (instance.User().empty() == false) {
-			options[_T("u")] = instance.User();
-                }
-                if (instance.Group().empty() == false) {
-			options[_T("g")] = instance.Group();
-                }
-		if (config.PersistentPath().empty() == false) {
-		    options[_T("p")] = config.PersistentPath();
-		}
-	        if (config.SystemPath().empty() == false) {
-		    options[_T("s")] = config.SystemPath();
-		}
-	        if (config.DataPath().empty() == false) {
-		    options[_T("d")] = config.DataPath();
-		}
-	        if (config.ApplicationPath().empty() == false) {
-		    options[_T("a")] = config.ApplicationPath();
-		}
-	        if (config.ProxyStubPath().empty() == false) {
-		    options[_T("m")] = config.ProxyStubPath();
-		}
-
-		return (Core::Service<RemoteProcess>::Create<RemoteProcess>(&parent, &pid, &options));
-			}
 			~RemoteProcess()
             {
-                TRACE_L1("Destructor for Remote process for %d", _process.Id());
             }
 
         public:
-            virtual uint32_t Id() const
-            {
-                return (_process.Id());
+            inline const Core::IPCChannel* Channel () const {
+                return (_channel.operator->());
             }
             virtual enumState State() const
             {
@@ -297,29 +248,30 @@ namespace RPC {
                     AddRef();
                     return (static_cast<IRemoteProcess*>(this));
                 }
-                else if (_returnedInterface != nullptr) {
-                    void* result = _returnedInterface;
-                    _returnedInterface = nullptr;
-                    return (result);
-                }
+				else {
+					assert(false);
+				}
                 return (nullptr);
             }
-            virtual void* Instantiate(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
+            virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
 
             uint32_t WaitState(const uint32_t state, const uint32_t time) const
             {
                 return (_state.WaitState(state, time));
             }
-            inline bool IsActive() const
+            void Announce(Core::ProxyType<Core::IPCChannel>& channel)
             {
-                return (_process.IsActive());
+		        // Seems we received an interface from the otherside. Prepare the actual stub around it.
+		        TRACE_L1("Remote Process %d, has announced itself.", Id());
+        
+                _channel = channel;
+	        }
+
+            inline void Activate() {
+                State(IRemoteProcess::ACTIVE);
             }
-            inline uint32_t ExitCode() const
-            {
-                return (_process.ExitCode());
-            }
-            void Terminate();
-            void Announce(Core::ProxyType<Core::IPCChannel>& channel, const Data::Init& info, void*& implementation);
+
+			virtual void Terminate();
 
         protected:
             inline void State(const IRemoteProcess::enumState newState)
@@ -349,20 +301,141 @@ namespace RPC {
 
                 _state.Unlock();
             }
-            inline void Kill(const bool hardKill)
-            {
-                return (_process.Kill(hardKill));
-            }
 
         private:
             RemoteProcessMap* _parent;
-            Core::Process _process;
             Core::StateTrigger<IRemoteProcess::enumState> _state;
             Core::ProxyType<Core::IPCChannel> _channel;
-            void* _returnedInterface;
         };
 
-    private:
+	private:
+		class EXTERNAL MasterRemoteProcess : public RemoteProcess {
+		private:
+			friend class Core::Service<MasterRemoteProcess>;
+
+			MasterRemoteProcess() = delete;
+			MasterRemoteProcess(const MasterRemoteProcess&) = delete;
+			MasterRemoteProcess& operator=(const MasterRemoteProcess&) = delete;
+
+		protected:
+			MasterRemoteProcess(RemoteProcessMap* parent, uint32_t* pid, const Core::Process::Options* options)
+				: RemoteProcess(parent)
+				, _process(false)
+			{
+				// Start the external process launch..
+				_process.Launch(*options, pid);
+			}
+
+		public:
+			inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
+			{
+				Core::Process::Options options(config.HostApplication());
+
+				ASSERT(instance.Locator().empty() == false);
+				ASSERT(instance.ClassName().empty() == false);
+				ASSERT(config.Connector().empty() == false);
+
+				options[_T("l")] = instance.Locator();
+				options[_T("c")] = instance.ClassName();
+				options[_T("r")] = config.Connector();
+				options[_T("i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+				if (instance.Version() != static_cast<uint32_t>(~0)) {
+					options[_T("v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+				}
+				if (instance.User().empty() == false) {
+					options[_T("u")] = instance.User();
+				}
+				if (instance.Group().empty() == false) {
+					options[_T("g")] = instance.Group();
+				}
+				if (config.PersistentPath().empty() == false) {
+					options[_T("p")] = config.PersistentPath();
+				}
+				if (config.SystemPath().empty() == false) {
+					options[_T("s")] = config.SystemPath();
+				}
+				if (config.DataPath().empty() == false) {
+					options[_T("d")] = config.DataPath();
+				}
+				if (config.ApplicationPath().empty() == false) {
+					options[_T("a")] = config.ApplicationPath();
+				}
+				if (config.ProxyStubPath().empty() == false) {
+					options[_T("m")] = config.ProxyStubPath();
+				}
+
+				return (Core::Service<MasterRemoteProcess>::Create<MasterRemoteProcess>(&parent, &pid, &options));
+			}
+			~MasterRemoteProcess()
+			{
+				TRACE_L1("Destructor for MasterRemoteProcess process for %d", Id());
+			}
+
+		public:
+			virtual uint32_t Id() const
+			{
+				return (_process.Id());
+			}
+			inline bool IsActive() const
+			{
+				return (_process.IsActive());
+			}
+			inline uint32_t ExitCode() const
+			{
+				return (_process.ExitCode());
+			}
+			inline void Kill(const bool hardKill)
+			{
+				return (_process.Kill(hardKill));
+			}
+
+		private:
+			Core::Process _process;
+		};
+		class EXTERNAL SlaveRemoteProcess : public RemoteProcess {
+		private:
+			friend class Core::Service<SlaveRemoteProcess>;
+
+			SlaveRemoteProcess() = delete;
+			SlaveRemoteProcess(const SlaveRemoteProcess&) = delete;
+			SlaveRemoteProcess& operator=(const SlaveRemoteProcess&) = delete;
+
+			SlaveRemoteProcess(RemoteProcessMap* parent, const uint32_t pid, const Core::ProxyType<Core::IPCChannel>& channel)
+				: RemoteProcess(parent, channel)
+				, _pid(pid)
+			{
+			}
+
+		public:
+			inline static RemoteProcess* Create(RemoteProcessMap& parent, const uint32_t pid, Core::ProxyType<Core::IPCChannel>& channel)
+			{
+				RemoteProcess* result(Core::Service<SlaveRemoteProcess>::Create<SlaveRemoteProcess>(&parent, pid, channel));
+
+				ASSERT(result != nullptr);
+
+				// As the channel is there, Announde came in over it :-), we are active by default.
+				parent.Activated(result);
+
+				return (result);
+			}
+			~SlaveRemoteProcess()
+			{
+				TRACE_L1("Destructor for Remote process for %d", Id());
+			}
+
+		public:
+			virtual uint32_t Id() const
+			{
+				return (_pid);
+			}
+			virtual void Terminate() {
+			}
+
+		private:
+			uint32_t _pid;
+		};
+
+	private:
         class EXTERNAL RemoteProcessMap {
         private:
             class ClosingInfo {
@@ -377,7 +450,7 @@ namespace RPC {
                 };
 
             public:
-                ClosingInfo(RemoteProcess* process)
+                ClosingInfo(MasterRemoteProcess* process)
                     : _process(process)
                     , _state(INITIAL)
                 {
@@ -437,7 +510,7 @@ namespace RPC {
                 }
 
             private:
-                RemoteProcess* _process;
+				MasterRemoteProcess* _process;
                 enumState _state;
             };
 
@@ -466,8 +539,11 @@ namespace RPC {
 					_observers.pop_front();
 				}
             }
-
+    
         public:
+			inline void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t version) {
+				return (_parent.Aquire(className, interfaceId, version));
+			}
 			inline void Register(RPC::IRemoteProcess::INotification* sink)
 			{
 				ASSERT(sink != nullptr);
@@ -520,15 +596,11 @@ namespace RPC {
             {
                 return (static_cast<uint32_t>(_processes.size()));
             }
-			inline void* Instance(const string& className, const uint32_t interfaceId, const uint32_t versionId) {
-				return (_parent.Instance(className, interfaceId, versionId));
-			}
-
-            inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config)
+            inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime)
             {
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = RemoteProcess::Create(*this, pid, instance, config);
+                Communicator::RemoteProcess* result = MasterRemoteProcess::Create(*this, pid, instance, config);
 
                 ASSERT(result != nullptr);
 
@@ -539,9 +611,20 @@ namespace RPC {
  
                     // We expect an announce interface message now...
                     _processes.insert(std::pair<uint32_t, RemoteProcess* >(result->Id(), result));
-                }
 
+					_adminLock.Unlock();
+
+					// Now lets wait for the announce message to be exchanged
+					result->WaitState(RPC::IRemoteProcess::ACTIVE | RPC::IRemoteProcess::DEACTIVATED, waitTime);
+
+					if (result->State() != RPC::IRemoteProcess::ACTIVE) {
+						result->Terminate();
+						result = nullptr;
+					}
+                }
+				else {
                 _adminLock.Unlock();
+				}
 
                 return (result);
             }
@@ -555,16 +638,28 @@ namespace RPC {
 
                 if (index != _processes.end()) {
 
+                    std::list< std::pair< const uint32_t, const Core::IUnknown* > > deadProxies;
+                    RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
+                    std::list< std::pair< const uint32_t, const Core::IUnknown* > >::const_iterator loop (deadProxies.begin());
+                    while (loop != deadProxies.end()) {
+                        _parent.Revoke(pid, loop->second, loop->first);
+                        loop++;
+                    }
                     index->second->State(IRemoteProcess::DEACTIVATED);
 
-                    if (index->second->IsActive() == false) {
+					MasterRemoteProcess* base = dynamic_cast<MasterRemoteProcess*>(index->second);
+
+					if (base == nullptr) {
+						TRACE_L1("Connection lost to process: %d", pid);
+					}
+                    else if (base->IsActive() == false) {
                         TRACE_L1("CLEAN EXIT of process: %d", pid);
                     }
                     else {
                         Core::Time scheduleTime(Core::Time::Now().Add(3000)); // Check again in 3S...
 
                         TRACE_L1("Submitting process for closure: %d", pid);
-                        _destructor.Schedule(scheduleTime, ClosingInfo(index->second));
+                        _destructor.Schedule(scheduleTime, ClosingInfo(base));
                     }
 
                     index->second->Release();
@@ -622,7 +717,7 @@ namespace RPC {
 						// This is an announce message from a process that wasn't created by us. So typically this is 
 						// An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
 						// listens for clients requesting service.
-						Communicator::RemoteProcess* remoteProcess = RemoteProcess::Create(*this, info.ExchangeId(), channel);
+						Communicator::RemoteProcess* remoteProcess = SlaveRemoteProcess::Create(*this, info.ExchangeId(), channel);
 
 						ASSERT(remoteProcess != nullptr);
 
@@ -632,6 +727,9 @@ namespace RPC {
 
 						index = newElement.first;
 					}
+                    else {
+						index->second->Announce(channel);
+                    }
 
 					ASSERT (index != _processes.end());
 
@@ -639,14 +737,29 @@ namespace RPC {
 
 						if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
 							// See if we have something we can return right away, if it has been requested..
-							implementation = Instance(info.ClassName(), info.InterfaceId(), info.VersionId());
+							implementation = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 						}
 					}
-					else {
-						index->second->Announce(channel, info, implementation);
-                        index->second->State(IRemoteProcess::ACTIVE);
+                    else if ((info.IsOffer() == true) || (info.IsRequested())) {
+                        Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, true, info.IsRequested());
+						if (result != nullptr) {
 
+							_parent.Offer(index->first, result, info.InterfaceId());
+							result->Release();
+						}
                     } 
+					else {
+						ASSERT(info.IsRevoke() == true);
+
+						Core::IUnknown* result = Administrator::Instance().FindProxy(channel.operator->(), implementation);
+						if (result != nullptr) {
+							_parent.Revoke(index->first, result, info.InterfaceId());
+							result->Release();
+
+						}
+					}
+
+                    index->second->Activate();
 
 					result = Core::ERROR_NONE;
 
@@ -735,7 +848,7 @@ namespace RPC {
                     // Seems there is not much we can do, time to kill the process, we lost a connection with it.
                     TRACE_L1("Lost connection on process [%d]. Closing the process.\n", _pid);
                     _processMap->Destroy(_pid);
-                    _pid = 0;
+                    // _pid = 0;
                 }
             }
 
@@ -772,7 +885,7 @@ namespace RPC {
                 }
 
             public:
-                virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data)
+                virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data) override
                 {
 					void* result = data->Parameters().Implementation();
 
@@ -790,70 +903,21 @@ namespace RPC {
             private:
                 ProcessChannelServer& _parent;
             };
-			class EXTERNAL InterfaceObjectHandler : public Core::IPCServerType<ObjectMessage>
-			{
-			private:
-				InterfaceObjectHandler() = delete;
-				InterfaceObjectHandler(const InterfaceObjectHandler &) = delete;
-				InterfaceObjectHandler & operator=(const InterfaceObjectHandler &) = delete;
-
-			public:
-				InterfaceObjectHandler(RemoteProcessMap* handler)
-					: _handler(*handler)
-				{
-					ASSERT(handler != nullptr);
-				}
-				~InterfaceObjectHandler()
-				{
-				}
-
-			public:
-				virtual void Procedure(Core::IPCChannel & channel, Core::ProxyType<RPC::ObjectMessage> & data)
-				{
-					// Oke, see if we can reference count the IPCChannel
-					Core::ProxyType<Core::IPCChannel> refChannel(channel);
-
-					ASSERT(refChannel.IsValid());
-
-					if (refChannel.IsValid() == true)
-					{
-						void* implementation = _handler.Instance(data->Parameters().ClassName(), data->Parameters().InterfaceId(), data->Parameters().VersionId());
-
-						if (implementation != nullptr)
-						{
-							// Allright, respond with the interface.
-							data->Response().Value(implementation);
-						}
-						else
-						{
-							// Allright, respond with the interface.
-							data->Response().Value(nullptr);
-						}
-					}
-
-					Core::ProxyType<Core::IIPC> returnValue(data);
-					channel.ReportResponse(returnValue);
-				}
-
-			private:
-				RemoteProcessMap& _handler;
-			};
 
         public:
 			#ifdef __WIN32__ 
 			#pragma warning( disable : 4355 )
 			#endif
-			ProcessChannelServer(const Core::NodeId& remoteNode, RemoteProcessMap& processes, const Core::ProxyType<Core::IIPCServer>& handler, const string& proxyStubPath)
+			ProcessChannelServer(const Core::NodeId& remoteNode, RemoteProcessMap& processes, Core::ProxyType<IHandler>& handler, const string& proxyStubPath)
                 : BaseClass(remoteNode, CommunicationBufferSize)
-				, _proxyStubPath(proxyStubPath)
+                , _proxyStubPath(proxyStubPath)
                 , _processes(processes)
-                , _interfaceAnnounceHandler(Core::ProxyType<InterfaceAnnounceHandler>::Create(this))
-				, _interfaceMessageHandler(handler)
-				, _interfaceObjectHandler(Core::ProxyType<InterfaceObjectHandler>::Create(&_processes))
+                , _interfaceAnnounceHandler(this)
+                , _handler(handler)
             {
-                BaseClass::Register(_interfaceAnnounceHandler);
-				BaseClass::Register(_interfaceObjectHandler);
-				BaseClass::Register(handler);
+                _handler->AnnounceHandler(&_interfaceAnnounceHandler);
+                BaseClass::Register(_handler->InvokeHandler());
+                BaseClass::Register(_handler->AnnounceHandler());
             }
 			#ifdef __WIN32__ 
 			#pragma warning( default : 4355 )
@@ -861,9 +925,10 @@ namespace RPC {
 
 			~ProcessChannelServer()
             {
-                BaseClass::Unregister(_interfaceAnnounceHandler);
-				BaseClass::Unregister(_interfaceObjectHandler);
-				BaseClass::Unregister(_interfaceMessageHandler);
+                BaseClass::Unregister(_handler->InvokeHandler());
+                BaseClass::Unregister(_handler->AnnounceHandler());
+                _handler->AnnounceHandler(nullptr);
+
             }
 
 		public:
@@ -894,11 +959,10 @@ namespace RPC {
             }
 
         private:
-			const string _proxyStubPath;
+            const string _proxyStubPath;
             RemoteProcessMap& _processes;
-            Core::ProxyType<Core::IIPCServer> _interfaceAnnounceHandler; // IPCInterfaceAnnounce
-            Core::ProxyType<Core::IIPCServer> _interfaceMessageHandler; //IPCInterfaceMessage
-			Core::ProxyType<Core::IIPCServer> _interfaceObjectHandler;
+            InterfaceAnnounceHandler _interfaceAnnounceHandler; 
+            Core::ProxyType<IHandler> _handler;
         };
 
     private:
@@ -907,7 +971,7 @@ namespace RPC {
         Communicator& operator=(const Communicator&) = delete;
 
     public:
-        Communicator(const Core::NodeId& node, const Core::ProxyType<Core::IIPCServer>& handler, const string& proxyStubPath);
+        Communicator(const Core::NodeId& node, Core::ProxyType<IHandler> handler, const string& proxyStubPath);
         virtual ~Communicator();
 
     public:
@@ -957,8 +1021,8 @@ namespace RPC {
         {
             return (_processMap.Process(id));
         }
-		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config) {
-			return (_processMap.Create(pid, instance, config));
+		inline Communicator::RemoteProcess* Create(uint32_t& pid, const Object& instance, const Config& config, const uint32_t waitTime) {
+			return (_processMap.Create(pid, instance, config, waitTime));
 		}
 
         // Use this method with care. It goes beyond the refence counting taking place in the object.
@@ -969,9 +1033,14 @@ namespace RPC {
         }
 
 	private:
-		virtual void* Instance (const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */) {
+		virtual void* Aquire (const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */) {
 			return (nullptr);
 		}
+        virtual void Offer(const uint32_t /* processId */,  Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
+        }
+        // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed 
+		virtual void Revoke(const uint32_t /* processId */,  const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */) {
+        }
 
     private:
         RemoteProcessMap _processMap;
@@ -987,42 +1056,159 @@ namespace RPC {
 
         typedef Core::IPCChannelClientType<Core::Void, false, true> BaseClass;
 
-    public:
-        CommunicatorClient(const Core::NodeId& remoteNode);
-        ~CommunicatorClient();
+		class AnnounceHandler : public Core::IPCServerType<AnnounceMessage> {
+		private:
+			AnnounceHandler() = delete;
+			AnnounceHandler(const AnnounceHandler&) = delete;
+			AnnounceHandler& operator= (const AnnounceHandler&) = delete;
+
+		public:
+			AnnounceHandler(CommunicatorClient& parent) : _parent(parent) {
+			}
+			virtual ~AnnounceHandler() {
+			}
+
+		public:
+			void Procedure(IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data) override {
+				// Oke, see if we can reference count the IPCChannel
+				Core::ProxyType<Core::IPCChannel> refChannel(dynamic_cast<Core::IReferenceCounted*>(&channel), &channel);
+
+				ASSERT(refChannel.IsValid());
+
+				if (refChannel.IsValid() == true) {
+					const string className(data->Parameters().ClassName());
+					const uint32_t interfaceId(data->Parameters().InterfaceId());
+					const uint32_t versionId(data->Parameters().VersionId());
+					void* implementation = _parent.Aquire(className, interfaceId, versionId);
+					data->Response().Implementation(implementation);
+				}
+
+				Core::ProxyType<Core::IIPC> baseData(Core::proxy_cast<Core::IIPC>(data));
+
+				channel.ReportResponse(baseData);
+			}
+
+		private:
+			CommunicatorClient& _parent;
+		};
 
     public:
-		template <typename INTERFACE>
-		inline INTERFACE* Create(const string& className, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
-        {
-            return (static_cast<INTERFACE*>(Create(waitTime, className, INTERFACE::ID, version)));
-        }
+		CommunicatorClient(const Core::NodeId& remoteNode, Core::ProxyType<IHandler> handler);
+		~CommunicatorClient();
+
+    public:
+		// Open a communication channel with this process, no need for an initial exchange
+		uint32_t Open(const uint32_t waitTime);
 
 		template <typename INTERFACE>
-		static inline INTERFACE* Create(const Core::NodeId& remoteNode, const string& className, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut) {
+		inline INTERFACE* Open(const string& className, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut) {
 			INTERFACE* result = nullptr;
-			Core::ProxyType<RPC::CommunicatorClient> client(Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode));
 
-			if ((client.IsValid() == true) && (client->Open(waitTime, className, INTERFACE::ID, version) == Core::ERROR_NONE))
+			if (Open(waitTime, className, INTERFACE::ID, version) == Core::ERROR_NONE)
 			{
 				// Oke we could open the channel, lets get the interface
-				result = client->WaitForCompletion<INTERFACE>(waitTime);
+				result = WaitForCompletion<INTERFACE>(waitTime);
 			}
 
 			return (result);
 		}
 
-		// Open a communication channel with this process, no need for an initial exchange
-        uint32_t Open(const uint32_t waitTime);
-
-
-		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
-        uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
-
 		// Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient) 
 		uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation);
 
+		template <typename INTERFACE>
+		INTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t versionId)
+		{
+			INTERFACE* result(nullptr);
+
+			ASSERT(className.empty() == false);
+
+			if (BaseClass::IsOpen() == true) {
+
+				_announceMessage->Parameters().Set(className, INTERFACE::ID, versionId);
+
+				BaseClass::Invoke(_announceMessage, waitTime);
+
+				// Lock event until Dispatch() sets it.
+				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
+
+					ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
+					ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+
+					void* implementation(_announceMessage->Response().Implementation());
+
+					if (implementation != nullptr) {
+						Core::ProxyType<Core::IPCChannel> baseChannel(*this);
+
+						ASSERT(baseChannel.IsValid() == true);
+
+						result = Administrator::Instance().CreateProxy<INTERFACE>(baseChannel, static_cast<INTERFACE*>(implementation), false, true);
+					}
+				}
+			}
+
+			return (result);
+		}
+		template <typename INTERFACE>
+		inline uint32_t Offer(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+		{
+			uint32_t result(Core::ERROR_NONE);
+
+			if (BaseClass::IsOpen() == true) {
+
+				_announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::OFFER);
+
+				BaseClass::Invoke(_announceMessage, waitTime);
+
+				// Lock event until Dispatch() sets it.
+				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
+
+					ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
+					ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+				}
+				else {
+					result = Core::ERROR_BAD_REQUEST;
+				}
+			}
+
+			return (result);
+		}
+		template <typename INTERFACE>
+		inline uint32_t Revoke(INTERFACE* offer, const uint32_t version = static_cast<uint32_t>(~0), const uint32_t waitTime = CommunicationTimeOut)
+		{
+			uint32_t result(Core::ERROR_NONE);
+
+			if (BaseClass::IsOpen() == true) {
+
+				_announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::REVOKE);
+
+				BaseClass::Invoke(_announceMessage, waitTime);
+
+				// Lock event until Dispatch() sets it.
+				if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
+
+					ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
+					ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+				}
+				else {
+					result = Core::ERROR_BAD_REQUEST;
+				}
+			}
+
+			return (result);
+		}
+
 		uint32_t Close(const uint32_t waitTime);
+
+		virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId) {
+			Core::Library emptyLibrary;
+			// Allright, respond with the interface.
+			return (Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId));
+		}
+
+	private:
+		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
+        uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
 
 		// If the Open, with a request was made, this method waits for the requested interface.
 		template <typename INTERFACE>
@@ -1056,17 +1242,14 @@ namespace RPC {
 			// Lock event until Dispatch() sets it.
 			return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
 		}
-
-
-    private:
-		void* Create(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version = static_cast<uint32_t>(~0));
-
 		virtual void StateChange();
 		virtual void Dispatch(Core::IIPC& element);
 
 	private:
 		Core::ProxyType<RPC::AnnounceMessage> _announceMessage;
 		Core::Event _announceEvent;
+		Core::ProxyType<IHandler> _handler;
+		AnnounceHandler _announcements;
 	};
 }
 }

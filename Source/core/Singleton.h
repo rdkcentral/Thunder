@@ -52,7 +52,7 @@ namespace Core {
         {
             ListInstance().Dispose();
         }
-        virtual string Name() const = 0;
+        virtual string ImplementationName() const = 0;
 
     private:
         static SingletonList& ListInstance();
@@ -88,7 +88,7 @@ namespace Core {
         }
 
     public:
-        virtual string Name() const
+        virtual string ImplementationName() const
         {
             return (ClassNameOnly(typeid(SINGLETON).name()).Text());
         }

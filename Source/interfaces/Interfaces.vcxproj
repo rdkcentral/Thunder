@@ -107,7 +107,6 @@
     <ClInclude Include="INetflix.h" />
     <ClInclude Include="IOpenCDMi.h" />
     <ClInclude Include="IProvisioning.h" />
-    <ClInclude Include="IResourceCenter.h" />
     <ClInclude Include="ISwitchBoard.h" />
     <ClInclude Include="ITimeSync.h" />
     <ClInclude Include="ITVControl.h" />

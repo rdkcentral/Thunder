@@ -97,9 +97,6 @@ private:
                     // Get the status of the last decrypt.
                     ret = Status();
 
-                    // Get the status of the last decrypt.
-                    ret = Status();
-
                     // And free the lock, for the next production Scenario..
                     Consumed();
                 }
@@ -520,46 +517,6 @@ private:
     OpenCDMAccessor& operator= (const OpenCDMAccessor&) = delete;
 
 private:
-    class RPCClient {
-    private:
-        RPCClient() = delete;
-        RPCClient(const RPCClient&) = delete;
-        RPCClient& operator=(const RPCClient&) = delete;
-
-        typedef WPEFramework::RPC::InvokeServerType<4, 1> RPCService;
-
-    public:
-        RPCClient(const Core::NodeId& nodeId)
-            : _client(Core::ProxyType<RPC::CommunicatorClient>::Create(nodeId))
-            , _service(Core::ProxyType<RPCService>::Create(Core::Thread::DefaultStackSize())) {
-
-            _client->CreateFactory<RPC::InvokeMessage>(2);
-            _client->Register(_service);
-            if (_client->Open(RPC::CommunicationTimeOut, _T("ocdmimplementation"), OCDM::IAccessorOCDM::ID, ~0) != Core::ERROR_NONE) {
-                _client.Release();
-            }
-        }
-        ~RPCClient() {
-            if (_client.IsValid() == true) {
-                _client->DestroyFactory<RPC::InvokeMessage>();
-                _client->Unregister(_service);
-                _client->Close(Core::infinite);
-            }
-        }
-
-    public:
-        inline bool IsOperational() const {
-            return (_client.IsValid());
-        }
-		template <typename INTERFACE>
-		INTERFACE* WaitForCompletion(const uint32_t waitTime) {
-			return (_client->WaitForCompletion<INTERFACE>(waitTime));
-		}
-
-    private:
-        Core::ProxyType<RPC::CommunicatorClient> _client;
-        Core::ProxyType<RPCService> _service;
-    };
     class KeyId {
     private:
         KeyId() = delete;
@@ -682,7 +639,7 @@ private:
 private:
     OpenCDMAccessor (const TCHAR domainName[]) 
         : _refCount(1)
-        , _client(Core::NodeId(domainName))
+        , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize())))
         , _remote(nullptr)
         , _adminLock()
         , _signal(false, true)
@@ -690,9 +647,15 @@ private:
         , _sessionKeys()
         , _sink(this) {
 
-        if (_client.IsOperational() == true) { 
-            _remote = _client.WaitForCompletion<OCDM::IAccessorOCDM>(6000);
+        _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
+
+        ASSERT(_remote != nullptr);
+
+        if (_remote != nullptr) {
             Register(&_sink);
+        }
+        else {  
+            _client.Release();
         }
     }
 
@@ -730,6 +693,11 @@ public:
             Unregister(&_sink);
             _remote->Release();
         }
+
+        if( _client.IsValid() ) {
+            _client.Release();
+        }
+
         _singleton = nullptr;
         TRACE_L1("Destructed the OpenCDMAccessor %p", this);
     }
@@ -785,7 +753,7 @@ public:
             else {
                 _adminLock.Unlock();
             }
-        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
+        } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
 
         return (result);
     }
@@ -925,7 +893,7 @@ public:
 
 private:
     mutable uint32_t _refCount;
-    RPCClient _client;
+    Core::ProxyType<RPC::CommunicatorClient> _client;
     OCDM::IAccessorOCDM* _remote;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;

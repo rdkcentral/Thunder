@@ -123,16 +123,22 @@ namespace ProxyStub {
     // Registration
     // -------------------------------------------------------------------------------------------
 
-    static class RPCInstantiation {
+namespace
+{
+
+    class RPCInstantiation {
     public:
         RPCInstantiation()
         {
-		RPC::Administrator::Instance().Announce<RPC::IStringIterator, StringIteratorProxy, StringIteratorStub>();
-	}
+			RPC::Administrator::Instance().Announce<RPC::IStringIterator, StringIteratorProxy, StringIteratorStub>();
+		}
         ~RPCInstantiation()
         {
         }
 
     } RPCRegistration;
+
+}
+
 }
 }

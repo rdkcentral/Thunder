@@ -44,10 +44,7 @@
     <ClInclude Include="Communicator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ObjectMessageHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IStringIterator.h">
+     <ClInclude Include="IStringIterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="com.h">
