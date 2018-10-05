@@ -12,23 +12,22 @@ namespace Exchange {
         enum { ID = 0x00000016 };
 
         enum state {
-            None = 0,
-            Ready,
-            Playing,
+            NotAvailable = 0,
             Paused,
-            Stopped,
-            NotAvailable
+            Playing,
+            Error
         };
 
         enum streamtype {
-            Unknown = 0,
-            DVB //FIXME: update with proper values
+            Exhausted = 0,
+            DVB 
         };
 
         enum drmtype {
-            PlayReady = 3, //FIXME: update with proper values
-            Widevine,
-            TestDrm
+            Unknown = 0,
+            ClearKey,
+            PlayReady,
+            Widevine
         };
 
         struct IControl : virtual public Core::IUnknown {
