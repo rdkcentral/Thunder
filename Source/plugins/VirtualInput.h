@@ -402,16 +402,18 @@ namespace PluginHost {
                     postMap->second.clear();
                 }
                 else {
-                    auto newElement = _postLookupTable.insert(std::pair<const string, PostLookupEntries>());
+                    auto newElement = _postLookupTable.emplace(std::piecewise_construct,
+                                                                 std::make_tuple(linkName),
+                                                                 std::make_tuple());
                     postMap = newElement.first; 
                 }
                 while (index.Next() == true) {
                     if ( (index.Current().In.IsSet() == true) && (index.Current().Out.IsSet() == true) ) {
-                        uint32_t from = (index.Current().In.Code.Value() << 16);
-                        uint32_t to = (index.Current().Out.Code.Value() << 16);
+                        uint32_t from = index.Current().In.Code.Value();
+                        uint32_t to = index.Current().Out.Code.Value();
 
-                        from |= Modifiers(index.Current().In.Mods);
-                        to   |= Modifiers(index.Current().In.Mods);
+                        from |= (Modifiers(index.Current().In.Mods) << 16);
+                        to   |= (Modifiers(index.Current().In.Mods) << 16);
 
                         postMap->second.insert(std::pair<const uint32_t, const uint32_t>(from, to));
                     }
