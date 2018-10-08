@@ -1466,7 +1466,12 @@ namespace ProxyStubs {
             //virtual void PowerKey();
             message->Parameters().Implementation<IPower>()->PowerKey();
         },
-
+        [](Core::ProxyType<Core::IPCChannel>&, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //virtual void Configure(const string& settings);
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            const string settings(parameters.Text());
+            message->Parameters().Implementation<IPower>()->Configure(settings);
+        },
         nullptr
     };
 
@@ -2913,6 +2918,14 @@ namespace ProxyStubs {
         virtual void PowerKey()
         {
             IPCMessage newMessage(BaseClass::Message(2));
+            Invoke(newMessage);
+        }
+
+        virtual void Configure(const string& settings)
+        {
+            IPCMessage newMessage(BaseClass::Message(3));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(settings);
             Invoke(newMessage);
         }
  

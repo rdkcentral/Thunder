@@ -29,6 +29,7 @@ namespace Exchange {
         virtual PCState GetState() const = 0;
         virtual PCStatus SetState(const PCState, const uint32_t) = 0;
         virtual void PowerKey() = 0;
+        virtual void Configure(const string& settings) = 0;
     };
 }
 }
