@@ -1029,7 +1029,7 @@ int OpenCdm::SetServerCertificate(const uint8_t* data, const uint32_t dataLength
  
 // Now for every particular stream a session needs to be created. Create a session for all
 // encrypted streams that require decryption. (This allows for MultiKey decryption)
-std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* addData, const uint16_t addDataLength, const LicenseType license) {
+std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* addData, const uint16_t addDataLength, const uint8_t* cdmData, const uint16_t cdmDataLength, const LicenseType license) {
 
     std::string result;
 
@@ -1037,7 +1037,7 @@ std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* a
 
         ASSERT (_session == nullptr);
 
-        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession (_implementation, _keySystem, dataType, addData, addDataLength, nullptr, 0, static_cast<::LicenseType>(license), nullptr);
+        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession (_implementation, _keySystem, dataType, addData, addDataLength, cdmData, cdmDataLength, static_cast<::LicenseType>(license), nullptr);
 
         result = newSession->SessionId();
 

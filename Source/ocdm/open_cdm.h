@@ -137,7 +137,7 @@ public:
 
   // Now for every particular stream a session needs to be created. Create a session for all
   // encrypted streams that require decryption. (This allows for MultiKey decryption)
-  std::string CreateSession(const std::string&, const uint8_t* addData, const uint16_t addDataLength, const LicenseType license);
+  std::string CreateSession(const std::string&, const uint8_t* addData, const uint16_t addDataLength, const uint8_t* cdmData, const uint16_t cdmDataLength, const LicenseType license);
 
   // ---------------------------------------------------------------------------------------------
   // ROOT DRM -> SESSION OBJECT OPERATIONS:
