@@ -19,7 +19,7 @@ namespace Exchange {
         };
 
         enum streamtype {
-            Exhausted = 0,
+            Stubbed = 0,
             DVB 
         };
 
@@ -89,6 +89,7 @@ namespace Exchange {
 
         virtual ~IPlayer() {}
         virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
+        virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
 }
 }

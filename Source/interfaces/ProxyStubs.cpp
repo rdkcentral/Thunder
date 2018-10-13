@@ -1336,6 +1336,30 @@ namespace ProxyStubs {
 
             response.Number<IStream*>(message->Parameters().Implementation<IPlayer>()->CreateStream(streamType));
          },
+         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(channel, implementation,
+                true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a stub for WPEPlayer: %p"), implementation);
+                writer.Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            } else {
+                writer.Number(parameters.Implementation<IPlayer>()->Configure(proxy));
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
          nullptr
     };
 
@@ -2770,6 +2794,14 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             return (CreateProxy<IStream>(reader.Number<IStream*>()));
+        }
+        virtual uint32_t Configure(PluginHost::IShell* service)
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(service);
+            Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
         }
    };
 

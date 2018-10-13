@@ -1,4 +1,5 @@
 #include "IComposition.h"
+#include "ITVControl.h"
 
 namespace {
 
@@ -43,6 +44,15 @@ namespace WPEFramework {
     { Exchange::IComposition::ScreenResolution_2160p60Hz, _TXT("2160p60Hz") },
 
     ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
+
+    ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
+
+    { Exchange::IStream::Stubbed, _TXT("Stubbed")   },
+    { Exchange::IStream::DVB,     _TXT("DVB")       },
+
+
+    ENUM_CONVERSION_END(Exchange::IStream::streamtype)
+
 
 namespace Exchange {
 
