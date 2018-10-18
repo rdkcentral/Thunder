@@ -16,6 +16,7 @@
  */
 
 #include "open_cdm.h"
+#include "open_cdm_ext.h"
 #include "DataExchange.h"
 #include "IOCDM.h"
 #include "Module.h"
@@ -541,7 +542,7 @@ private:
     OpenCDMSessionCallbacks* _callback;
 };
 
-struct OpenCDMAccessor : public OCDM::IAccessorOCDM {
+class OpenCDMAccessor : public OCDM::IAccessorOCDM, public OCDM::IAccessorOCDMExt {
 private:
     OpenCDMAccessor() = delete;
     OpenCDMAccessor(const OpenCDMAccessor&) = delete;
@@ -686,6 +687,7 @@ private:
         : _refCount(1)
         , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize())))
         , _remote(nullptr)
+        , _remoteExt(nullptr)
         , _adminLock()
         , _signal(false, true)
         , _interested(0)
@@ -711,6 +713,8 @@ private:
                 _client.Release();
             }
         }
+
+        _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
     }
 
 public:
@@ -963,10 +967,15 @@ public:
         }
     }
 
+    virtual time_t GetDrmSystemTime() const {
+        return _remoteExt->GetDrmSystemTime();
+    }
+
 private:
     mutable uint32_t _refCount;
     mutable Core::ProxyType<RPC::CommunicatorClient> _client;
     mutable OCDM::IAccessorOCDM* _remote;
+    OCDM::IAccessorOCDMExt* _remoteExt;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
@@ -1310,6 +1319,16 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
 
     if (system != nullptr) {
         result = static_cast<OpenCDMError>(system->SetServerCertificate(keySystem, serverCertificate, serverCertificateLength));
+    }
+    return (result);
+}
+
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time) {
+    OpenCDMError result (ERROR_INVALID_ACCESSOR);
+
+    if (system != nullptr) {
+        *time = static_cast<OpenCDMError>(system->GetDrmSystemTime());
+        result = ERROR_NONE;
     }
     return (result);
 }
