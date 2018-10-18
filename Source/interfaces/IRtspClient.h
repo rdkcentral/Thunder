@@ -13,12 +13,12 @@ namespace Exchange {
 
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
-        virtual uint32_t Setup(const string& assetId, uint32_t position);
-        virtual uint32_t Play(int16_t scale, uint32_t position);
-        virtual uint32_t Teardown();
+        virtual uint32_t Setup(const string& assetId, uint32_t position) = 0;
+        virtual uint32_t Play(int16_t scale, uint32_t position) = 0;
+        virtual uint32_t Teardown() = 0;
 
-        virtual void RtspClientSet(const string& str) = 0;
-        virtual string RtspClientGet() const = 0;
+        virtual void Set(const string& name, const string& value) = 0;
+        virtual string Get(const string& name) const = 0;
     };
 }
 }

@@ -981,17 +981,21 @@ namespace ProxyStubs {
             message->Parameters().Implementation<IRtspClient>()->Teardown();
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
-            // virtual void RtspClientSet(const string& str) = 0;
+            // virtual void Set(const string& name, const string& value) = 0;
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            string str(parameters.Text());
+            string name(parameters.Text());
+            string value(parameters.Text());
 
-            message->Parameters().Implementation<IRtspClient>()->RtspClientSet(str);
+            message->Parameters().Implementation<IRtspClient>()->Set(name, value);
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
-            // virtual string RtspClientGet() const = 0;
-            string str = message->Parameters().Implementation<IRtspClient>()->RtspClientGet();
+            // virtual string Get(const string& name) const = 0;
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            string name(parameters.Text());
+
+            string value = message->Parameters().Implementation<IRtspClient>()->Get(name);
             RPC::Data::Frame::Writer output(message->Response().Writer());
-            output.Text(str);
+            output.Text(value);
         },
         nullptr
     };
@@ -2448,47 +2452,51 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void RtspClientSetup(const string& assetId, int32_t position)
+        virtual uint32_t Setup(const string& assetId, uint32_t position)
         { TR();
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(assetId);
             writer.Number(position);
             Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void RtspClientPlay(int16_t position, uint32_t scale)
+        virtual uint32_t Play(int16_t position, uint32_t scale)
         { TR();
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(position);
             writer.Number(scale);
             Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual void RtspClientTeardown()
+        virtual uint32_t Teardown()
         { TR();
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
 
-        virtual void RtspClientSet(const string& str)
+        virtual void Set(const string& name, const string& value)
         { TR();
             IPCMessage newMessage(BaseClass::Message(4));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(str);
+            writer.Text(name);
+            writer.Text(value);
             Invoke(newMessage);
         }
 
-        virtual string RtspClientGet() const
+        virtual string Get(const string& name) const
         { TR();
             IPCMessage newMessage(BaseClass::Message(5));
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            string str = reader.Text();
-            return str;
+            string value = reader.Text();
+            return value;
         }
     };
     class AVNClientProxy : public ProxyStub::UnknownProxyType<IAVNClient> {
