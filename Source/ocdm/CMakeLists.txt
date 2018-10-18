@@ -12,6 +12,7 @@ set(PUBLIC_HEADERS
         IOCDM.h
         open_cdm.h
         adapter/open_cdm_adapter.h
+        open_cdm_ext.h
         Module.h
         )
 
