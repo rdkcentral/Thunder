@@ -11,11 +11,13 @@
 #include "IProvisioning.h"
 #include "IPower.h"
 #include "IRPCLink.h"
+#include "IRtspClient.h"
 #include "IStreaming.h"
 #include "ITVControl.h"
 #include "IWebDriver.h"
 #include "IWebServer.h"
 
+#define TR() printf("%s:%d\n", __FUNCTION__, __LINE__);
 MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)
 
 namespace WPEFramework {
@@ -732,8 +734,8 @@ namespace ProxyStubs {
                 rectangle.width = reader.Number<uint32_t>();
                 rectangle.height = reader.Number<uint32_t>();
                 RPC::Data::Frame::Writer writer(message->Response().Writer());
-                writer.Number<uint32_t>(parameters.Implementation<IComposition>()->Geometry(name, rectangle));              
-                                       
+                writer.Number<uint32_t>(parameters.Implementation<IComposition>()->Geometry(name, rectangle));
+
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
                 //
@@ -742,13 +744,13 @@ namespace ProxyStubs {
                 RPC::Data::Input& parameters(message->Parameters());
                 RPC::Data::Frame::Reader reader(parameters.Reader());
                 const std::string name(reader.Text());
-                IComposition::Rectangle rectangle = parameters.Implementation<IComposition>()->Geometry(name);               
+                IComposition::Rectangle rectangle = parameters.Implementation<IComposition>()->Geometry(name);
                 RPC::Data::Frame::Writer writer(message->Response().Writer());
                 writer.Number<uint32_t>(rectangle.x);
                 writer.Number<uint32_t>(rectangle.y);
                 writer.Number<uint32_t>(rectangle.width);
                 writer.Number<uint32_t>(rectangle.height);
-        },       
+        },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
                 //
                 // virtual uint32_t ToTop(const string& callsign) = 0;
@@ -756,10 +758,10 @@ namespace ProxyStubs {
                 RPC::Data::Input& parameters(message->Parameters());
                 RPC::Data::Frame::Reader reader(parameters.Reader());
                 const std::string callsign(reader.Text());
-                uint32_t result = parameters.Implementation<IComposition>()->ToTop(callsign);               
+                uint32_t result = parameters.Implementation<IComposition>()->ToTop(callsign);
                 RPC::Data::Frame::Writer writer(message->Response().Writer());
                 writer.Number<uint32_t>(result);
-        },    
+        },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
                 //
                 // virtual uint32_t PutBelow(const string& callsignRelativeTo, const string& callsignToReorder);
@@ -768,17 +770,17 @@ namespace ProxyStubs {
                 RPC::Data::Frame::Reader reader(parameters.Reader());
                 const std::string callsignRelativeTo(reader.Text());
                 const std::string callsignToReorder(reader.Text());
-                uint32_t result = parameters.Implementation<IComposition>()->PutBelow(callsignRelativeTo, callsignToReorder);               
+                uint32_t result = parameters.Implementation<IComposition>()->PutBelow(callsignRelativeTo, callsignToReorder);
                 RPC::Data::Frame::Writer writer(message->Response().Writer());
                 writer.Number<uint32_t>(result);
-        },       
+        },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
                 //
                 // virtual RPC::IStringIterator* ClientsInZorder() const
                 //
                 RPC::Data::Frame::Writer response(message->Response().Writer());
                 response.Number(message->Parameters().Implementation<IComposition>()->ClientsInZorder());
-        },       
+        },
         nullptr
     };
     // IComposition interface stub definitions
@@ -932,6 +934,68 @@ namespace ProxyStubs {
     };
     // IWebServer interface stub definitions
 
+    //
+    // IRtspClient interface stub definitions (interface/IRtspClient.h)
+    //
+    ProxyStub::MethodHandler RtspClientStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(channel, implementation, true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a stub for IGuide: %p"), implementation);
+                writer.Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            }
+            else {
+                writer.Number(parameters.Implementation<IRtspClient>()->Configure(proxy));
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual uint32_t Setup(const string& assetId, uint32_t position)
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            string assetId(parameters.Text());
+            uint32_t position = parameters.Number<uint8_t>();
+
+            message->Parameters().Implementation<IRtspClient>()->Setup(assetId, position);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual uint32_t Play(int16_t scale, uint32_t position)
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            int32_t  scale    = parameters.Number<int32_t>();
+            uint32_t position = parameters.Number<uint32_t>();
+
+            message->Parameters().Implementation<IRtspClient>()->Play(scale, position);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual uint32_t Teardown()
+            message->Parameters().Implementation<IRtspClient>()->Teardown();
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual void RtspClientSet(const string& str) = 0;
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            string str(parameters.Text());
+
+            message->Parameters().Implementation<IRtspClient>()->RtspClientSet(str);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+            // virtual string RtspClientGet() const = 0;
+            string str = message->Parameters().Implementation<IRtspClient>()->RtspClientGet();
+            RPC::Data::Frame::Writer output(message->Response().Writer());
+            output.Text(str);
+        },
+        nullptr
+    };
+    // IRtspClient interface stub definitions
     ProxyStub::MethodHandler AVNClientStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
@@ -1528,6 +1592,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IRPCLink, RPCLinkStubMethods, ProxyStub::UnknownStub> RPCLinkStub;
     typedef ProxyStub::StubType<IRPCLink::INotification, RPCLinkNotificationStubMethods, ProxyStub::UnknownStub> RPCLinkNotificationStub;
     typedef ProxyStub::StubType<IPlayGiga, PlayGigaStubMethods, ProxyStub::UnknownStub> PlayGigaStub;
+    typedef ProxyStub::StubType<IRtspClient, RtspClientStubMethods, ProxyStub::UnknownStub> RtspClientStub;
     typedef ProxyStub::StubType<IPower, PowerStubMethods, ProxyStub::UnknownStub> PowerStub;
 
     // -------------------------------------------------------------------------------------------
@@ -2041,7 +2106,7 @@ namespace ProxyStubs {
         }
     };
 
- 
+
     class ProvisioningProxy : public ProxyStub::UnknownProxyType<IProvisioning> {
     public:
         ProvisioningProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -2199,7 +2264,7 @@ namespace ProxyStubs {
             rectangle.width = reader.Number<uint32_t>();
             rectangle.height = reader.Number<uint32_t>();
             return rectangle;
-        }       
+        }
 
         uint32_t ToTop(const string& callsign) override {
             IPCMessage newMessage(BaseClass::Message(9));
@@ -2224,10 +2289,10 @@ namespace ProxyStubs {
             IPCMessage newMessage(BaseClass::Message(11));
             Invoke(newMessage);
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            return (const_cast<CompositionProxy&>(*this).CreateProxy<RPC::IStringIterator>(reader.Number<RPC::IStringIterator*>()));     
-               
-        }  
-  
+            return (const_cast<CompositionProxy&>(*this).CreateProxy<RPC::IStringIterator>(reader.Number<RPC::IStringIterator*>()));
+
+        }
+
     };
 
     class CompositionClientProxy : public ProxyStub::UnknownProxyType<IComposition::IClient> {
@@ -2239,7 +2304,7 @@ namespace ProxyStubs {
         }
 
         ~CompositionClientProxy() override = default;
-       
+
     public:
         string Name() const override
         {
@@ -2362,6 +2427,70 @@ namespace ProxyStubs {
         }
     };
 
+    class RtspClientProxy : public ProxyStub::UnknownProxyType<IRtspClient> {
+    public:
+        RtspClientProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        { TR();
+        }
+
+        virtual ~RtspClientProxy()
+        { TR();
+        }
+
+    public:
+        virtual uint32_t Configure(PluginHost::IShell* service)
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(service);
+            Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
+        }
+
+        virtual void RtspClientSetup(const string& assetId, int32_t position)
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(1));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(assetId);
+            writer.Number(position);
+            Invoke(newMessage);
+        }
+
+        virtual void RtspClientPlay(int16_t position, uint32_t scale)
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(2));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number(position);
+            writer.Number(scale);
+            Invoke(newMessage);
+        }
+
+        virtual void RtspClientTeardown()
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(3));
+            Invoke(newMessage);
+        }
+
+
+        virtual void RtspClientSet(const string& str)
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(str);
+            Invoke(newMessage);
+        }
+
+        virtual string RtspClientGet() const
+        { TR();
+            IPCMessage newMessage(BaseClass::Message(5));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            string str = reader.Text();
+            return str;
+        }
+    };
     class AVNClientProxy : public ProxyStub::UnknownProxyType<IAVNClient> {
     public:
         AVNClientProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -2920,7 +3049,7 @@ namespace ProxyStubs {
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
- 
+
         virtual ~PowerProxy()
         {
         }
@@ -2960,7 +3089,7 @@ namespace ProxyStubs {
             writer.Text(settings);
             Invoke(newMessage);
         }
- 
+
     };
 
     // -------------------------------------------------------------------------------------------
@@ -2998,6 +3127,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();
             RPC::Administrator::Instance().Announce<IPlayGiga, PlayGigaProxy, PlayGigaStub>();
             RPC::Administrator::Instance().Announce<IPower, PowerProxy, PowerStub>();
+            RPC::Administrator::Instance().Announce<IRtspClient, RtspClientProxy, RtspClientStub>();
         }
 
         ~Instantiation()

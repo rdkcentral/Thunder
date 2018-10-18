@@ -35,6 +35,7 @@ set(PUBLIC_HEADERS
         ITVControl.h
         ITVPlatform.h
         IVoiceHandler.h
+        IRtspClient.h
         IWebDriver.h
         IWebServer.h
         Module.h
