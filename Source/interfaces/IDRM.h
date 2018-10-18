@@ -297,6 +297,16 @@ public:
         = 0;
 };
 
+// IMediaKeySession defines the MediaKeySessionExt interface.
+class IMediaKeysExt
+{
+public:
+    IMediaKeysExt(void) {}
+    virtual ~IMediaKeysExt(void) {}
+
+    virtual time_t GetDrmSystemTime() const = 0;
+};
+
 struct ISystemFactory {
     virtual IMediaKeys* Instance() = 0;
     virtual const char* KeySystem() const = 0;
