@@ -410,6 +410,15 @@ namespace Core {
         return (nullptr);                                 \
     }
 
+#define INTERFACE_RELAY(TYPE, RELAY)                              \
+    else if (interfaceNumber == TYPE::ID) {                       \
+        if (RELAY != nullptr) {                                   \
+           AddRef();                                              \
+           return (static_cast<void*>(static_cast<TYPE*>(this))); \
+        }                                                         \
+        return (nullptr);                                         \
+    }
+
 #define END_INTERFACE_MAP \
     return (nullptr);     \
     }
