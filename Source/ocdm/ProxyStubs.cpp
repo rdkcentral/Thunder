@@ -23,7 +23,6 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
 
         std::string keySystem = parameters.Text();
         std::string mimeType = parameters.Text();
-
         response.Number(message->Parameters().Implementation<OCDM::IAccessorOCDM>()->IsTypeSupported(keySystem, mimeType));
     },
     [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -177,7 +176,6 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         }
 
         message->Parameters().Implementation<OCDM::IAccessorOCDM>()->Unregister(param0_proxy);
-
         if (param0_proxy != nullptr) {
             RPC::Administrator::Instance().Release(proxy, message->Response());
         }
@@ -185,6 +183,63 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
 
     nullptr
 };
+
+    ProxyStub::MethodHandler AccesorOCDMExtStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual time_t GetDrmSystemTime() const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::IAccessorOCDMExt>()->GetDrmSystemTime());
+        },
+    };
+
+    //
+    // OCDM::IAccessorOCDM::INotification interface stub definitions (interface/ICDM.h)
+    //
+    ProxyStub::MethodHandler AccesorOCDMNotificationStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void Create (
+            //     const std::string& sessionId) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+
+            std::string sessionId = parameters.Text();
+
+            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Create(sessionId);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void Destroy (
+            //     const std::string& sessionId) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+
+            std::string sessionId = parameters.Text();
+
+            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Destroy(sessionId);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // static void KeyChange(
+            //     const string& sessionId, const uint8 keyId[], const uint8_t length) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+
+            const uint8_t* keyData;
+            std::string sessionId = parameters.Text();
+            uint8_t keyDataLength = parameters.LockBuffer<uint8_t>(keyData);
+            parameters.UnlockBuffer(keyDataLength);
+            OCDM::ISession::KeyStatus status = parameters.Number<OCDM::ISession::KeyStatus>();
+
+            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->KeyChange(sessionId, keyData, keyDataLength, status);
+
+
+        },
+        nullptr
+    };
 
 //
 // OCDM::IAccessorOCDM::INotification interface stub definitions (interface/ICDM.h)
@@ -391,9 +446,11 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
 };
 
 typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods> AccessorOCDMStub;
+typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDMExt, AccesorOCDMExtStubMethods, ProxyStub::UnknownStub> AccessorOCDMExtStub;
 typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMNotificationStubMethods> AccessorOCDMNotificationStub;
 typedef ProxyStub::UnknownStubType<OCDM::ISession::ICallback, CallbackStubMethods> CallbackStub;
 typedef ProxyStub::UnknownStubType<OCDM::ISession, SessionStubMethods> SessionStub;
+
 
 // -------------------------------------------------------------------------------------------
 // PROXY
@@ -550,6 +607,29 @@ public:
     }
 };
 
+    class AccessorOCDMExtProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDMExt> {
+    public:
+        AccessorOCDMExtProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+            const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+        virtual ~AccessorOCDMExtProxy()
+        {
+        }
+
+    public:
+        virtual time_t GetDrmSystemTime() const override {
+            IPCMessage newMessage(BaseClass::Message(0));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Number<time_t>());
+        }
+    };
+ 
 class AccessorOCDMNotificationProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDM::INotification> {
 public:
     AccessorOCDMNotificationProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -777,6 +857,7 @@ public:
         RPC::Administrator::Instance().Announce<OCDM::ISession::ICallback, CallbackProxy, CallbackStub>();
         RPC::Administrator::Instance().Announce<OCDM::ISession, SessionProxy, SessionStub>();
         RPC::Administrator::Instance().Announce<OCDM::IAccessorOCDM, AccessorOCDMProxy, AccessorOCDMStub>();
+        RPC::Administrator::Instance().Announce<OCDM::IAccessorOCDMExt, AccessorOCDMExtProxy, AccessorOCDMExtStub>();
         RPC::Administrator::Instance().Announce<OCDM::IAccessorOCDM::INotification, AccessorOCDMNotificationProxy, AccessorOCDMNotificationStub>();
     }
 

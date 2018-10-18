@@ -139,6 +139,12 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
         const uint8_t keyId[], const uint8_t length)
         = 0;
 };
+    struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
+
+        enum { ID = 0x00000071 };
+
+        virtual time_t GetDrmSystemTime() const = 0;
+    };
 }
 
 #endif // __OPENCDMI_
