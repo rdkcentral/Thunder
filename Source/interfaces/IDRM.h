@@ -184,6 +184,12 @@ typedef enum {
     PersistentLicense
 } LicenseType;
 
+typedef enum {
+    Invalid = 0,
+    LimitedDuration,
+    Standard
+} LicenseTypeExt;
+
 // IMediaKeySessionCallback defines the callback interface to receive
 // events originated from MediaKeySession.
 class IMediaKeySessionCallback {
@@ -315,6 +321,14 @@ public:
     virtual ~IMediaKeysExt(void) {}
 
     virtual time_t GetDrmSystemTime() const = 0;
+
+    virtual CDMi_RESULT CreateMediaKeySessionExt(uint32_t sessionId,
+            const char contentId[],
+            uint32_t contentIdLength,
+            LicenseTypeExt licenseType,
+            const uint8_t drmHeader[],
+            uint32_t drmHeaderLength,
+            IMediaKeySessionExt** session) = 0;
 };
 
 struct ISystemFactory {
