@@ -8,7 +8,25 @@
 extern "C" {
 #endif
 
+enum OcdmLicenseType {
+    // this is in the order of priority
+    // standard license has priority over limited duration license
+    // TODO: do we need prefix here?
+    OCDM_LICENSE_INVALID = 0,
+    OCDM_LICENSE_LIMITED_DURATION,
+    OCDM_LICENSE_STANDARD
+};
+
+
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
+
+OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
+                                            enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);
+
+// TODO: this one is called "opencdm_session_get_session_id" in Netflix source.
+uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmSession);
+
+
 
 #ifdef __cplusplus
 } // extern "C"

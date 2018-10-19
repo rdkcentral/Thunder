@@ -16,16 +16,16 @@
  */
 
 #include "open_cdm.h"
-#include "open_cdm_ext.h"
 #include "DataExchange.h"
 #include "IOCDM.h"
 #include "Module.h"
+#include "open_cdm_impl.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 using namespace WPEFramework;
 
-static Core::CriticalSection _systemLock;
+Core::CriticalSection _systemLock;
 static const char EmptyString[] = { '\0' };
 
 // TODO: figure out how to force linking of libocdm.so
@@ -1323,16 +1323,6 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
 
     if (system != nullptr) {
         result = static_cast<OpenCDMError>(system->SetServerCertificate(keySystem, serverCertificate, serverCertificateLength));
-    }
-    return (result);
-}
-
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time) {
-    OpenCDMError result (ERROR_INVALID_ACCESSOR);
-
-    if (system != nullptr) {
-        *time = static_cast<OpenCDMError>(system->GetDrmSystemTime());
-        result = ERROR_NONE;
     }
     return (result);
 }

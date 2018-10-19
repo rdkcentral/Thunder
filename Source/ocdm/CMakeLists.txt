@@ -4,6 +4,7 @@ option(CDMI_ADAPTER_IMPLEMENTATION "Defines which implementation is used." "None
 
 add_library(${TARGET} SHARED
         open_cdm.cpp
+        open_cdm_ext.cpp
         ProxyStubs.cpp
         )
 
