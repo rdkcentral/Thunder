@@ -1242,8 +1242,10 @@ namespace RPC {
 			// Lock event until Dispatch() sets it.
 			return (_announceEvent.Lock(waitTime) == Core::ERROR_NONE);
 		}
-		virtual void StateChange();
 		virtual void Dispatch(Core::IIPC& element);
+
+	protected:
+		virtual void StateChange();
 
 	private:
 		Core::ProxyType<RPC::AnnounceMessage> _announceMessage;
