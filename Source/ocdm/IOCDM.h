@@ -150,7 +150,22 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
         enum { ID = 0x00000071 };
 
+        enum LicenseTypeExt {
+            Invalid = 0,
+            LimitedDuration,
+            Standard
+        };
+
         virtual time_t GetDrmSystemTime() const = 0;
+
+        virtual OCDM_RESULT CreateSessionExt(
+            uint32_t sessionId,
+            const char contentId[],
+            uint32_t contentIdLength,
+            LicenseTypeExt licenseType,
+            const uint8_t drmHeader[],
+            uint32_t drmHeaderLength,
+            ISessionExt*& session) = 0;
     };
 }
 
