@@ -34,15 +34,17 @@ public:
         , _error()
         , _errorCode(0)
         , _sysError(0)
-        , _userData(this) {
+        , _userData(this)
+        , _realSession(nullptr)
+     {
 
         std::string bufferId;
-        OCDM::ISessionExt* realSession = nullptr;
+        //OCDM::ISessionExt* realSession = nullptr;
 
         // TODO: real conversion between license types
-        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::IAccessorOCDMExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, realSession);
+        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::IAccessorOCDMExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, _realSession);
 
-        if (realSession == nullptr) {
+        if (_realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
         }
         else {
@@ -60,6 +62,11 @@ public:
         */
     }
 
+    uint32_t SessionIdExt() const
+    {
+        return _realSession->SessionIdExt();
+    }
+
 private:
 
 private:
@@ -71,6 +78,7 @@ private:
     uint32_t _errorCode;
     OCDM::OCDM_RESULT _sysError;
     void* _userData;
+    OCDM::ISessionExt* _realSession;
 };
 
 
@@ -96,4 +104,11 @@ OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, stru
     }
 
     return (result);
+}
+
+uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    return sessionExt->SessionIdExt();
 }
