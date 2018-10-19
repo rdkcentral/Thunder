@@ -9,6 +9,7 @@ using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;
 
+// TODO: Introduce OpenCDMAccessorExt, no need to mis here
 class OpenCDMAccessor : public OCDM::IAccessorOCDM, public OCDM::IAccessorOCDMExt {
 private:
     OpenCDMAccessor () = delete;
@@ -393,6 +394,19 @@ public:
         }
     }
 
+    virtual OCDM::OCDM_RESULT CreateSessionExt(
+        uint32_t sessionId,
+        const char contentId[],
+        uint32_t contentIdLength,
+        LicenseTypeExt licenseType,
+        const uint8_t drmHeader[],
+        uint32_t drmHeaderLength,
+        OCDM::ISessionExt*& session)
+    {
+        return (_remoteExt->CreateSessionExt(sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength, session));
+    }
+
+
     virtual time_t GetDrmSystemTime() const {
         return _remoteExt->GetDrmSystemTime();
     }
@@ -408,4 +422,203 @@ private:
     std::map<string, std::list<KeyId> > _sessionKeys;
     WPEFramework::Core::Sink<Sink> _sink;
     static OpenCDMAccessor* _singleton;
+};
+
+struct OpenCDMSession {
+private:
+    OpenCDMSession(const OpenCDMSession&) = delete;
+    OpenCDMSession& operator= (OpenCDMSession&) = delete;
+
+private:
+    class DataExchange : public OCDM::DataExchange {
+    private:
+        DataExchange () = delete;
+        DataExchange (const DataExchange&) = delete;
+        DataExchange& operator= (DataExchange&) = delete;
+
+    public:
+        DataExchange (const string& bufferName)
+            : OCDM::DataExchange (bufferName)
+            , _busy(false) {
+
+            TRACE_L1("Constructing buffer client side: %p - %s", this, bufferName.c_str());
+        }
+        virtual ~DataExchange () {
+            if (_busy == true) {
+                TRACE_L1("Destructed a DataExchange while still in progress. %p", this);
+            }
+            TRACE_L1("Destructing buffer client side: %p - %s", this, OCDM::DataExchange::Name().c_str());
+        }
+
+    public:
+        uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, uint16_t keyIdLength) {
+            int ret = 0;
+
+            // This works, because we know that the Audio and the Video streams are fed from
+            // the same process, so they will use the same critial section and thus will
+            // not interfere with each-other. If Audio and video will be located into two
+            // different processes, start using the administartion space to share a lock.
+            _systemLock.Lock();
+
+            _busy = true;
+
+            if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+
+                SetIV(static_cast<uint8_t>(ivDataLength), ivData);
+                SetSubSampleData(0, nullptr);
+                KeyId(keyIdLength, keyId);
+                Write(encryptedDataLength, encryptedData);
+
+                // This will trigger the OpenCDMIServer to decrypt this memory...
+                Produced();
+
+                // Now we should wait till it is decrypted, that happens if the Producer, can run again.
+                if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+
+                    // For nowe we just copy the clear data..
+                    Read(encryptedDataLength, encryptedData);
+
+                    // Get the status of the last decrypt.
+                    ret = Status();
+
+                    // And free the lock, for the next production Scenario..
+                    Consumed();
+                }
+            }
+
+            _busy = false;
+
+            _systemLock.Unlock();
+
+            return (ret);
+        }
+
+    private:
+        bool _busy;
+    };
+
+public:
+    OpenCDMSession()
+        : _sessionId()
+        , _session(nullptr)
+        , _decryptSession(nullptr)
+        , _refCount(1) {
+        TRACE_L1("Constructing the Session Client side: %p, (nil)", this);
+    }
+    explicit OpenCDMSession(OCDM::ISession* session)
+        : _sessionId (session->SessionId())
+        , _session(session)
+        , _decryptSession(new DataExchange(_session->BufferId()))
+        , _refCount(1) {
+
+        ASSERT(session != nullptr);
+
+        if (_session != nullptr) {
+            _session->AddRef();
+        }
+    }
+    virtual ~OpenCDMSession() {
+        if (_session != nullptr) {
+            _session->Release();
+        }
+        if (_decryptSession != nullptr) {
+            delete _decryptSession;
+        }
+        TRACE_L1("Destructed the Session Client side: %p", this);
+    }
+
+public:
+    virtual bool IsExtended() const {
+        return (false);
+    }
+    void AddRef() {
+        Core::InterlockedIncrement(_refCount);
+    }
+    bool Release() {
+        if (Core::InterlockedDecrement(_refCount) == 0) {
+
+            delete this;
+
+            return (true);
+        }
+        return (false);
+    }
+    inline const string& SessionId() const {
+        return (_sessionId);
+    }
+    inline const string& BufferId() const {
+        static string EmptyString;
+
+        return (_decryptSession != nullptr ? _decryptSession->Name() : EmptyString);
+    }
+    inline bool IsValid() const {
+
+        return (_session != nullptr);
+    }
+    inline OCDM::ISession::KeyStatus Status () const {
+
+        return (_session != nullptr ? _session->Status() : OCDM::ISession::StatusPending);
+    }
+    inline void Close() {
+        ASSERT (_session != nullptr);
+
+        _session->Close();
+    }
+    inline int Remove() {
+
+        ASSERT (_session != nullptr);
+
+        return (_session->Remove() == 0);
+    }
+    inline int Load() {
+
+        ASSERT (_session != nullptr);
+
+        return (_session->Load() == 0);
+    }
+    inline void Update (const uint8_t* pbResponse, const uint16_t cbResponse) {
+
+        ASSERT (_session != nullptr);
+
+        _session->Update(pbResponse, cbResponse);
+    }
+    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength) {
+        uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
+        if (_decryptSession != nullptr) {
+            result = OpenCDMError::ERROR_NONE;
+            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength, keyId, keyIdLength);
+        }
+        return (result);
+    }
+    inline void Revoke (OCDM::ISession::ICallback* callback) {
+
+        ASSERT (_session != nullptr);
+        ASSERT (callback != nullptr);
+
+        return (_session->Revoke(callback));
+    }
+
+protected:
+    void Session(OCDM::ISession* session) {
+        ASSERT ((_session == nullptr) ^ (session == nullptr));
+
+        if ( (session == nullptr) && (_session != nullptr) ) {
+            _session->Release();
+        }
+        _session = session;
+
+        if (_session != nullptr) {
+            _decryptSession = new DataExchange(_session->BufferId());
+        }
+        else {
+            delete _decryptSession;
+            _decryptSession = nullptr;
+        }
+    }
+    std::string _sessionId;
+
+private:
+    OCDM::ISession* _session;
+    DataExchange* _decryptSession;
+    uint32_t _refCount;
 };
