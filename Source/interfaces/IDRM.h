@@ -282,6 +282,8 @@ public:
     virtual ~IMediaKeySessionExt(void) {}
 
     virtual uint32_t GetSessionIdExt(void) const = 0;
+
+    virtual uint16_t PlaylevelCompressedVideo() const = 0;
 };
 
 // IMediaKeys defines the MediaKeys interface.

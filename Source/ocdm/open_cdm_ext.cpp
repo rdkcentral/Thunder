@@ -69,6 +69,11 @@ public:
         return _realSession->SessionIdExt();
     }
 
+    uint16_t PlaylevelCompressedVideo() const
+    {
+        return _realSession->PlaylevelCompressedVideo();
+    }
+
 private:
     //WPEFramework::Core::Sink<Sink> _sink;
     WPEFramework::Core::StateTrigger<sessionState> _state;
@@ -123,4 +128,11 @@ OpenCDMError opencdm_destroy_session_netflix(OpenCDMSession * opencdmSession)
     }
 
     return (result);
+}
+
+uint16_t opencdm_session_get_playlevel_compressed_video(OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    return sessionExt->PlaylevelCompressedVideo();
 }

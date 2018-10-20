@@ -17,6 +17,13 @@ enum OcdmLicenseType {
     OCDM_LICENSE_STANDARD
 };
 
+enum OcdmSessionState {
+    LicenseAcquisitionState = 0,
+    InactiveDecryptionState,
+    ActiveDecryptionState,
+    InvalidState
+};
+
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
 
@@ -30,6 +37,10 @@ uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmS
 // TODO: rename to "destruct"?
 OpenCDMError opencdm_destroy_session_netflix(struct OpenCDMSession * opencdmSession);
 
+// play levels
+uint16_t opencdm_session_get_playlevel_compressed_video(struct OpenCDMSession * mOpenCDMSession);
+
+
 
 #ifdef __cplusplus
 } // extern "C"
@@ -37,21 +48,6 @@ OpenCDMError opencdm_destroy_session_netflix(struct OpenCDMSession * opencdmSess
 
 /*
 
-enum OcdmLicenseType {
-    // this is in the order of priority
-    // standard license has priority over limited duration license
-	// TODO: do we need prefix here?
-    OCDM_LICENSE_INVALID = 0,
-	OCDM_LICENSE_LIMITED_DURATION,
-	OCDM_LICENSE_STANDARD
-};
-
-enum OcdmSessionState {
-    LicenseAcquisitionState = 0,
-    InactiveDecryptionState,
-    ActiveDecryptionState,
-    InvalidState
-};
 
 #ifdef __cplusplus
 extern "C" {
