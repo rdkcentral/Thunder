@@ -490,6 +490,16 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->SessionIdExt());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            //
+            // virtual std::string BufferIdExt() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<OCDM::ISessionExt>()->BufferIdExt());
         }
     };
 
@@ -948,6 +958,17 @@ public:
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             return (reader.Number<uint32_t>());
+        }
+
+        virtual std::string BufferIdExt() const {
+
+            IPCMessage newMessage(BaseClass::Message(1));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Text());
         }
     };
  

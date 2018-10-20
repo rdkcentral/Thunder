@@ -39,18 +39,20 @@ public:
      {
 
         std::string bufferId;
-        //OCDM::ISessionExt* realSession = nullptr;
+        OCDM::ISessionExt* realSession = nullptr;
 
         // TODO: real conversion between license types
-        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::IAccessorOCDMExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, _realSession);
+        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::IAccessorOCDMExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, realSession);
 
-        if (_realSession == nullptr) {
+        if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
         }
         else {
             // TODO ?
-            //OpenCDMSession::Session(realSession);
+            OpenCDMSession::SessionExt(realSession);
         }
+
+        _realSession = realSession;
     }
 
     virtual ~ExtendedOpenCDMSessionExt() {
@@ -66,8 +68,6 @@ public:
     {
         return _realSession->SessionIdExt();
     }
-
-private:
 
 private:
     //WPEFramework::Core::Sink<Sink> _sink;

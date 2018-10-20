@@ -81,12 +81,16 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     virtual void Revoke(OCDM::ISession::ICallback* callback) = 0;
 };
 
-struct ISessionExt : virtual public WPEFramework::Core::IUnknown
-{
-    enum { ID = 0x00000072 };
+    // TODO: should derive from ISession?
+    struct ISessionExt : virtual public WPEFramework::Core::IUnknown
+    {
+        enum { ID = 0x00000072 };
 
-    virtual uint32_t SessionIdExt() const = 0;
-};
+        virtual uint32_t SessionIdExt() const = 0;
+
+        //Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
+        virtual std::string BufferIdExt() const = 0;
+    };
 
 struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
