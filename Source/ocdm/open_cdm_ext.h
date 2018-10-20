@@ -26,6 +26,9 @@ OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, stru
 // TODO: this one is called "opencdm_session_get_session_id" in Netflix source.
 uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmSession);
 
+// TODO: do we need a specific "opencdm_destroy_session" for Netflix?
+// TODO: rename to "destruct"?
+OpenCDMError opencdm_destroy_session_netflix(struct OpenCDMSession * opencdmSession);
 
 
 #ifdef __cplusplus

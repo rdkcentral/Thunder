@@ -112,3 +112,15 @@ uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmS
 
     return sessionExt->SessionIdExt();
 }
+
+OpenCDMError opencdm_destroy_session_netflix(OpenCDMSession * opencdmSession)
+{
+    OpenCDMError result (OpenCDMError::ERROR_INVALID_SESSION);
+
+    if (opencdmSession != nullptr) {
+        result = OpenCDMError::ERROR_NONE;
+        opencdmSession->Release();
+    }
+
+    return (result);
+}
