@@ -213,7 +213,7 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             const uint8_t* contentIdPtr = nullptr;
             uint32_t contentIdLength = parameters.LockBuffer<uint32_t>(contentIdPtr);
 
-            OCDM::IAccessorOCDMExt::LicenseTypeExt licenseType = parameters.Number<OCDM::IAccessorOCDMExt::LicenseTypeExt>();
+            OCDM::ISessionExt::LicenseTypeExt licenseType = parameters.Number<OCDM::ISessionExt::LicenseTypeExt>();
 
             const uint8_t* drmHeader = nullptr;
             uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
@@ -509,7 +509,175 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelCompressedVideo());
-        }
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint16_t PlaylevelUncompressedVideo() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelUncompressedVideo());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint16_t PlaylevelAnalogVideo() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelAnalogVideo());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint16_t PlaylevelCompressedAudio() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelCompressedAudio());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint16_t PlaylevelUncompressedAudio() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelUncompressedAudio());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual std::string GetContentIdExt() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<OCDM::ISessionExt>()->GetContentIdExt());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void SetContentIdExt(const std::string & contentId) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string contentId = parameters.Text();
+            message->Parameters().Implementation<OCDM::ISessionExt>()->SetContentIdExt(contentId);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual LicenseTypeExt GetLicenseTypeExt() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->GetLicenseTypeExt());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::ISessionExt::LicenseTypeExt licenseType = parameters.Number<OCDM::ISessionExt::LicenseTypeExt>();
+            message->Parameters().Implementation<OCDM::ISessionExt>()->SetLicenseTypeExt(licenseType);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual SessionStateExt GetSessionStateExt() const = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->GetSessionStateExt());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void SetSessionStateExt(SessionStateExt sessionState) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::ISessionExt::SessionStateExt sessionState = parameters.Number<OCDM::ISessionExt::SessionStateExt>();
+            message->Parameters().Implementation<OCDM::ISessionExt>()->SetSessionStateExt(sessionState);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT SetDrmHeader(const char drmHeader[], uint32_t drmHeaderLength) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            const uint8_t* drmHeader = nullptr;
+            uint32_t length = parameters.LockBuffer<uint32_t>(drmHeader);
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->SetDrmHeader(drmHeader, length);
+
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            const uint8_t* buffer = nullptr;
+            uint32_t challengeSize = parameters.LockBuffer<uint32_t>(buffer);
+            uint32_t isLDL = parameters.Number<uint32_t>();
+
+            uint32_t orgChallengeSize = challengeSize;
+            uint8_t* challenge = const_cast<uint8_t*>(buffer);
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
+
+            // TODO: do we need this if/else
+            // TODO: use return code ("result") instead?
+            if (orgChallengeSize == 0) {
+                // First run, just getting the buffer size.
+                response.Buffer(0, nullptr);
+            } else {
+                // Second run, interested in actual buffer.
+                response.Buffer(challengeSize, challenge);
+            }
+
+            response.Number(challengeSize);
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            const uint8_t* licenseData = nullptr;
+            uint32_t licenseDataSize = 0;
+            const uint8_t* secureStopIdBuffer = nullptr;
+            uint32_t secureStopIdSize = parameters.LockBuffer<uint32_t>(secureStopIdBuffer);
+            licenseDataSize = parameters.LockBuffer<uint32_t>(licenseData);
+
+            uint8_t* secureStopId = const_cast<uint8_t*>(secureStopIdBuffer);
+            ASSERT(secureStopIdSize == 16);
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->StoreLicenseData(licenseData, licenseDataSize, secureStopId);
+
+            response.Buffer(secureStopIdSize, secureStopId);
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT InitDecryptContextByKid() = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->InitDecryptContextByKid();
+
+            response.Number(result);
+        },
     };
 
 typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods> AccessorOCDMStub;
@@ -701,7 +869,7 @@ public:
             uint32_t sessionId,
             const char contentId[],
             uint32_t contentIdLength,
-            LicenseTypeExt licenseType,
+            OCDM::ISessionExt::LicenseTypeExt licenseType,
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             OCDM::ISessionExt*& session) override
@@ -989,6 +1157,169 @@ public:
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             return (reader.Number<uint16_t>());
+        }
+
+        virtual uint16_t PlaylevelUncompressedVideo() const override {
+
+            IPCMessage newMessage(BaseClass::Message(3));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Number<uint16_t>());
+        }
+
+        virtual uint16_t PlaylevelAnalogVideo() const override {
+
+            IPCMessage newMessage(BaseClass::Message(4));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Number<uint16_t>());
+        }
+
+        virtual uint16_t PlaylevelCompressedAudio() const override {
+
+            IPCMessage newMessage(BaseClass::Message(5));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Number<uint16_t>());
+        }
+
+        virtual uint16_t PlaylevelUncompressedAudio() const override {
+
+            IPCMessage newMessage(BaseClass::Message(6));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Number<uint16_t>());
+        }
+
+        virtual std::string GetContentIdExt() const override {
+
+            IPCMessage newMessage(BaseClass::Message(7));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Text());
+        }
+
+        virtual void SetContentIdExt(const std::string & contentId) override {
+
+            IPCMessage newMessage(BaseClass::Message(8));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(contentId);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+        }
+
+        virtual LicenseTypeExt GetLicenseTypeExt() const override {
+            IPCMessage newMessage(BaseClass::Message(9));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Number<LicenseTypeExt>();
+        }
+
+        virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) override {
+            IPCMessage newMessage(BaseClass::Message(10));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number(licenseType);
+
+            Invoke(newMessage);
+        }
+
+        virtual SessionStateExt GetSessionStateExt() const override {
+            IPCMessage newMessage(BaseClass::Message(11));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Number<SessionStateExt>();
+        }
+
+        virtual void SetSessionStateExt(SessionStateExt sessionState) override {
+            IPCMessage newMessage(BaseClass::Message(12));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number(sessionState);
+
+            Invoke(newMessage);
+        }
+
+        virtual OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) override {
+            IPCMessage newMessage(BaseClass::Message(13));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Buffer(drmHeaderLength, drmHeader);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+            return result;
+        }
+
+        virtual OCDM::OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) override {
+            IPCMessage newMessage(BaseClass::Message(14));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Buffer(challengeSize, challenge);
+            writer.Number(isLDL);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            reader.Buffer(challengeSize, challenge);
+            challengeSize = reader.Number<uint32_t>();
+
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+            return result;
+        }
+
+        virtual OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) override {
+            IPCMessage newMessage(BaseClass::Message(15));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            //writer.Buffer(licenseDataSize, licenseData);
+            const uint32_t secureStopIdSize = 16;
+            writer.Buffer(secureStopIdSize, secureStopId);
+            writer.Buffer(licenseDataSize, licenseData);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            reader.Buffer(16, secureStopId);
+
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+            return result;
+        }
+
+        virtual OCDM::OCDM_RESULT InitDecryptContextByKid() override {
+            IPCMessage newMessage(BaseClass::Message(16));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+
+            return result;
         }
     };
  

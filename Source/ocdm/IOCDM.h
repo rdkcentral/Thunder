@@ -86,12 +86,46 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     {
         enum { ID = 0x00000072 };
 
+        enum LicenseTypeExt {
+            Invalid = 0,
+            LimitedDuration,
+            Standard
+        };
+
+        enum SessionStateExt {
+            LicenseAcquisitionState = 0,
+            InactiveDecryptionState,
+            ActiveDecryptionState,
+            InvalidState
+        };
+
         virtual uint32_t SessionIdExt() const = 0;
 
         //Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
         virtual std::string BufferIdExt() const = 0;
 
         virtual uint16_t PlaylevelCompressedVideo() const = 0;
+        virtual uint16_t PlaylevelUncompressedVideo() const = 0;
+        virtual uint16_t PlaylevelAnalogVideo() const = 0;
+        virtual uint16_t PlaylevelCompressedAudio() const = 0;
+        virtual uint16_t PlaylevelUncompressedAudio() const = 0;
+
+        virtual std::string GetContentIdExt() const = 0;
+        virtual void SetContentIdExt(const std::string & contentId) = 0;
+
+        virtual LicenseTypeExt GetLicenseTypeExt() const = 0;
+        virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) = 0;
+
+        virtual SessionStateExt GetSessionStateExt() const = 0;
+        virtual void SetSessionStateExt(SessionStateExt sessionState) = 0;
+
+        virtual OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
+
+        virtual OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
+
+        virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
+
+        virtual OCDM_RESULT InitDecryptContextByKid() = 0;
     };
 
 struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
@@ -156,19 +190,13 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
         enum { ID = 0x00000071 };
 
-        enum LicenseTypeExt {
-            Invalid = 0,
-            LimitedDuration,
-            Standard
-        };
-
         virtual time_t GetDrmSystemTime() const = 0;
 
         virtual OCDM_RESULT CreateSessionExt(
             uint32_t sessionId,
             const char contentId[],
             uint32_t contentIdLength,
-            LicenseTypeExt licenseType,
+            ISessionExt::LicenseTypeExt licenseType,
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             ISessionExt*& session) = 0;

@@ -190,6 +190,13 @@ typedef enum {
     Standard
 } LicenseTypeExt;
 
+typedef enum {
+    LicenseAcquisitionState = 0,
+    InactiveDecryptionState,
+    ActiveDecryptionState,
+    InvalidState
+} SessionStateExt;
+
 // IMediaKeySessionCallback defines the callback interface to receive
 // events originated from MediaKeySession.
 class IMediaKeySessionCallback {
@@ -284,6 +291,27 @@ public:
     virtual uint32_t GetSessionIdExt(void) const = 0;
 
     virtual uint16_t PlaylevelCompressedVideo() const = 0;
+    virtual uint16_t PlaylevelUncompressedVideo() const = 0;
+    virtual uint16_t PlaylevelAnalogVideo() const = 0;
+    virtual uint16_t PlaylevelCompressedAudio() const = 0;
+    virtual uint16_t PlaylevelUncompressedAudio() const = 0;
+
+    virtual std::string GetContentIdExt() const = 0;
+    virtual void SetContentIdExt(const std::string & contentId) = 0;
+
+    virtual LicenseTypeExt GetLicenseTypeExt() const = 0;
+    virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) = 0;
+
+    virtual SessionStateExt GetSessionStateExt() const = 0;
+    virtual void SetSessionStateExt(SessionStateExt sessionState) = 0;
+
+    virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
+
+    virtual CDMi_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
+
+    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
+
+    virtual CDMi_RESULT InitDecryptContextByKid() = 0;
 };
 
 // IMediaKeys defines the MediaKeys interface.

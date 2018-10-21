@@ -42,7 +42,7 @@ public:
         OCDM::ISessionExt* realSession = nullptr;
 
         // TODO: real conversion between license types
-        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::IAccessorOCDMExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, realSession);
+        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::ISessionExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, realSession);
 
         if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
@@ -73,6 +73,77 @@ public:
     {
         return _realSession->PlaylevelCompressedVideo();
     }
+
+    uint16_t PlaylevelUncompressedVideo() const
+    {
+        return _realSession->PlaylevelUncompressedVideo();
+    }
+
+    uint16_t PlaylevelAnalogVideo() const
+    {
+        return _realSession->PlaylevelAnalogVideo();
+    }
+
+    uint16_t PlaylevelCompressedAudio() const
+    {
+        return _realSession->PlaylevelCompressedAudio();
+    }
+
+    uint16_t PlaylevelUncompressedAudio() const
+    {
+        return _realSession->PlaylevelUncompressedAudio();
+    }
+
+    std::string GetContentIdExt() const
+    {
+        return _realSession->GetContentIdExt();
+    }
+
+    void SetContentIdExt(const std::string & contentId)
+    {
+        _realSession->SetContentIdExt(contentId);
+    }
+
+    OCDM::ISessionExt::LicenseTypeExt GetLicenseTypeExt() const
+    {
+        return _realSession->GetLicenseTypeExt();
+    }
+
+    void SetLicenseTypeExt(OCDM::ISessionExt::LicenseTypeExt licenseType)
+    {
+        _realSession->SetLicenseTypeExt(licenseType);
+    }
+
+    OCDM::ISessionExt::SessionStateExt GetSessionStateExt() const
+    {
+        return _realSession->GetSessionStateExt();
+    }
+
+    void SetSessionStateExt(OCDM::ISessionExt::SessionStateExt sessionState)
+    {
+        _realSession->SetSessionStateExt(sessionState);
+    }
+
+    OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength)
+    {
+        return _realSession->SetDrmHeader(drmHeader, drmHeaderLength);
+    }
+
+    OCDM::OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL)
+    {
+        return _realSession->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
+    }
+
+    OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId)
+    {
+        return _realSession->StoreLicenseData(licenseData, licenseDataSize, secureStopId);
+    }
+
+    OCDM::OCDM_RESULT InitDecryptContextByKid()
+    {
+        return _realSession->InitDecryptContextByKid();
+    }
+
 
 private:
     //WPEFramework::Core::Sink<Sink> _sink;
@@ -135,4 +206,127 @@ uint16_t opencdm_session_get_playlevel_compressed_video(OpenCDMSession * mOpenCD
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
 
     return sessionExt->PlaylevelCompressedVideo();
+}
+
+uint16_t opencdm_session_get_playlevel_uncompressed_video(OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    return sessionExt->PlaylevelUncompressedVideo();
+}
+
+uint16_t opencdm_session_get_playlevel_analog_video(OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    return sessionExt->PlaylevelAnalogVideo();
+}
+
+uint16_t opencdm_session_get_playlevel_compressed_audio(OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    return sessionExt->PlaylevelCompressedAudio();
+}
+
+uint16_t opencdm_session_get_playlevel_uncompressed_audio(OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    return sessionExt->PlaylevelUncompressedAudio();
+}
+
+OpenCDMError opencdm_session_get_content_id(struct OpenCDMSession * opencdmSession, char * buffer, uint32_t * bufferSize)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    std::string contentIdStr = sessionExt->GetContentIdExt();
+
+
+    if (*bufferSize == 0) {
+        *bufferSize = contentIdStr.length() + 1;
+    } else {
+        *bufferSize = contentIdStr.length() + 1;
+        strcpy(buffer, contentIdStr.c_str());
+    }
+
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_session_set_content_id(struct OpenCDMSession * opencdmSession, const char contentId[], uint32_t contentIdLength)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    std::string contentIdStr(contentId, contentIdLength);
+    sessionExt->SetContentIdExt(contentIdStr);
+
+    return ERROR_NONE;
+}
+
+enum OcdmLicenseType opencdm_session_get_license_type(struct OpenCDMSession * opencdmSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    // TODO: real conversion
+    return (OcdmLicenseType)sessionExt->GetLicenseTypeExt();
+}
+
+OpenCDMError opencdm_session_set_license_type(struct OpenCDMSession * opencdmSession, enum OcdmLicenseType licenseType)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    // TODO: real conversion
+    sessionExt->SetLicenseTypeExt((OCDM::ISessionExt::LicenseTypeExt)licenseType);
+
+    return ERROR_NONE;
+}
+
+enum OcdmSessionState opencdm_session_get_session_state(struct OpenCDMSession * opencdmSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    // TODO: real conversion
+    return (OcdmSessionState)sessionExt->GetSessionStateExt();
+}
+
+OpenCDMError opencdm_session_set_session_state(struct OpenCDMSession * opencdmSession, enum OcdmSessionState sessionState)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    // TODO: real conversion
+    sessionExt->SetSessionStateExt((OCDM::ISessionExt::SessionStateExt)sessionState);
+
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderSize)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->SetDrmHeader(drmHeader, drmHeaderSize);
+}
+
+OpenCDMError opencdm_session_get_challenge_data_netflix(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->GetChallengeDataNetflix(challenge, *challengeSize, isLDL);
+}
+
+OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDMSession, const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->StoreLicenseData(licenseData, licenseDataSize, secureStopId);
+}
+
+OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->InitDecryptContextByKid();
 }

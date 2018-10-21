@@ -398,7 +398,7 @@ public:
         uint32_t sessionId,
         const char contentId[],
         uint32_t contentIdLength,
-        LicenseTypeExt licenseType,
+        OCDM::ISessionExt::LicenseTypeExt licenseType,
         const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
         OCDM::ISessionExt*& session)
