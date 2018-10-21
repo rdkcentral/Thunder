@@ -24,8 +24,29 @@ enum OcdmSessionState {
     InvalidState
 };
 
+//////////////////////////////////////
+// Session
+//////////////////////////////////////
+
+// TODO: Do we need this one?
+struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[]);
+
+// TODO: document we need at least 64 bytes in "versionStr"
+OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
+
+OpenCDMError opencdm_system_get_ldl_session_limit(struct OpenCDMAccessor* system, uint32_t * ldlLimit);
+
+OpenCDMError opencdm_system_enable_secure_stop(struct OpenCDMAccessor* system, uint32_t use);
+
+OpenCDMError opencdm_system_commit_secure_stop(struct OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength);
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
+
+//////////////////////////////////////
+// Session
+//////////////////////////////////////
+
+OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system);
 
 OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
                                             enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);

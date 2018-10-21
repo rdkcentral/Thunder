@@ -200,6 +200,18 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             ISessionExt*& session) = 0;
+
+        virtual std::string GetVersionExt() const = 0;
+
+        virtual uint32_t GetLdlSessionLimit() const = 0;
+
+        virtual OCDM_RESULT EnableSecureStop(bool enable) = 0;
+
+        virtual OCDM_RESULT CommitSecureStop(
+                const unsigned char sessionID[],
+                uint32_t sessionIDLength,
+                const unsigned char serverResponse[],
+                uint32_t serverResponseLength) = 0;
     };
 }
 

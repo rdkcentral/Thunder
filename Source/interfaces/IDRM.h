@@ -359,6 +359,19 @@ public:
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             IMediaKeySessionExt** session) = 0;
+
+    virtual std::string GetVersionExt() const = 0;
+
+    virtual uint32_t GetLdlSessionLimit() const = 0;
+
+    virtual CDMi_RESULT EnableSecureStop(bool enable) = 0;
+
+    virtual CDMi_RESULT CommitSecureStop(
+            const unsigned char sessionID[],
+            uint32_t sessionIDLength,
+            const unsigned char serverResponse[],
+            uint32_t serverResponseLength) = 0;
+
 };
 
 struct ISystemFactory {

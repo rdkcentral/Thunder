@@ -401,15 +401,35 @@ public:
         OCDM::ISessionExt::LicenseTypeExt licenseType,
         const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
-        OCDM::ISessionExt*& session)
+        OCDM::ISessionExt*& session) override
     {
         return (_remoteExt->CreateSessionExt(sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength, session));
     }
 
-
-    virtual time_t GetDrmSystemTime() const {
+    virtual time_t GetDrmSystemTime() const override {
         return _remoteExt->GetDrmSystemTime();
     }
+
+    virtual std::string GetVersionExt() const override {
+        return _remoteExt->GetVersionExt();
+    }
+
+    virtual uint32_t GetLdlSessionLimit() const {
+        return _remoteExt->GetLdlSessionLimit();
+    }
+
+    virtual OCDM::OCDM_RESULT EnableSecureStop(bool enable) override {
+        return _remoteExt->EnableSecureStop(enable);
+    }
+
+    virtual OCDM::OCDM_RESULT CommitSecureStop(
+            const unsigned char sessionID[],
+            uint32_t sessionIDLength,
+            const unsigned char serverResponse[],
+            uint32_t serverResponseLength) override {
+        return _remoteExt->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
+    }
+
 
 private:
     mutable uint32_t _refCount;

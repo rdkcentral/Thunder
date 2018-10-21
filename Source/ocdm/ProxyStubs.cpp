@@ -225,9 +225,60 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             OCDM::OCDM_RESULT result = accessor->CreateSessionExt(sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength, session);
 
             response.Number<OCDM::OCDM_RESULT>(result);
-
-
             response.Number<OCDM::ISessionExt*>(session);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual std::string GetVersionExt() const = 0;
+            //
+
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Text(accessor->GetVersionExt());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual uint32_t GetLdlSessionLimit() const = 0;
+            //
+
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->GetLdlSessionLimit());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT EnableSecureStop(bool enable) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            bool enable = parameters.Boolean();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->EnableSecureStop(enable));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT CommitSecureStop(
+            //                const unsigned char sessionID[],
+            //                uint32_t sessionIDLength,
+            //                const unsigned char serverResponse[],
+            //                uint32_t serverResponseLength) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            const uint8_t* sessionID = nullptr;
+            uint32_t sessionIDLength = parameters.LockBuffer<uint32_t>(sessionID);
+            const uint8_t* serverResponse = nullptr;
+            uint32_t serverResponseLength = parameters.LockBuffer<uint32_t>(serverResponse);
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength));
         },
     };
 
@@ -890,14 +941,69 @@ public:
 
             OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT>();
 
-
             OCDM::ISessionExt* otherSidePtr = reader.Number<OCDM::ISessionExt*>();
-
             session = CreateProxy<OCDM::ISessionExt>(otherSidePtr);
-
 
             return result;
         }
+
+        virtual std::string GetVersionExt() const override
+        {
+            IPCMessage newMessage(BaseClass::Message(2));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Text();
+        }
+
+        virtual uint32_t GetLdlSessionLimit() const override
+        {
+            IPCMessage newMessage(BaseClass::Message(3));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<uint32_t>();
+        }
+
+        virtual OCDM::OCDM_RESULT EnableSecureStop(bool enable) override
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Boolean(enable);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT CommitSecureStop(
+                const unsigned char sessionID[],
+                uint32_t sessionIDLength,
+                const unsigned char serverResponse[],
+                uint32_t serverResponseLength) override
+        {
+            IPCMessage newMessage(BaseClass::Message(5));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Buffer(sessionIDLength, sessionID);
+            writer.Buffer(serverResponseLength, serverResponse);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
     };
  
 class AccessorOCDMNotificationProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDM::INotification> {

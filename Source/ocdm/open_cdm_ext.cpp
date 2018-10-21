@@ -157,6 +157,41 @@ private:
     OCDM::ISessionExt* _realSession;
 };
 
+struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[])
+{
+    // TODO: get rid of this function?
+    return opencdm_create_system();
+}
+
+OpenCDMError opencdm_system_get_version(OpenCDMAccessor* system, char versionStr[])
+{
+    versionStr[0] = '\0';
+
+    std::string versionStdStr = system->GetVersionExt();
+
+    assert(versionStdStr.length() < 64);
+
+    strcpy(versionStr, versionStdStr.c_str());
+
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_system_get_ldl_session_limit(OpenCDMAccessor* system, uint32_t * ldlLimit)
+{
+    *ldlLimit = system->GetLdlSessionLimit();
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_system_enable_secure_stop(OpenCDMAccessor* system, uint32_t use)
+{
+    // TODO: conversion
+    return (OpenCDMError)system->EnableSecureStop(use != 0);
+}
+
+OpenCDMError opencdm_system_commit_secure_stop(OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength)
+{
+    return (OpenCDMError)system->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
+}
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time) {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
