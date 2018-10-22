@@ -129,6 +129,7 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         string keySystem = parameters.Text();
         const uint8_t* serverCertificate;
         uint16_t serverCertificateLength = parameters.LockBuffer<uint16_t>(serverCertificate);
+        parameters.UnlockBuffer(serverCertificateLength);
 
         response.Number(message->Parameters().Implementation<OCDM::IAccessorOCDM>()->SetServerCertificate(
             keySystem,
@@ -147,7 +148,6 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         if (param0_proxy != nullptr) {
             proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, OCDM::IAccessorOCDM::INotification::ID, false, OCDM::IAccessorOCDM::INotification::ID, true);
             param0_proxy = (proxy != nullptr ? proxy->QueryInterface<OCDM::IAccessorOCDM::INotification>() : nullptr);
-
             ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
         }
 
@@ -208,15 +208,18 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
+
+            const uint8_t* drmHeader = nullptr;
+            uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
+            parameters.UnlockBuffer(drmHeaderLength);
+
             uint32_t sessionId = parameters.Number<uint32_t>();
 
             const uint8_t* contentIdPtr = nullptr;
             uint32_t contentIdLength = parameters.LockBuffer<uint32_t>(contentIdPtr);
+            parameters.UnlockBuffer(contentIdLength);
 
             OCDM::ISessionExt::LicenseTypeExt licenseType = parameters.Number<OCDM::ISessionExt::LicenseTypeExt>();
-
-            const uint8_t* drmHeader = nullptr;
-            uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
 
             OCDM::ISessionExt* session = nullptr;
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
@@ -274,11 +277,40 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
 
             const uint8_t* sessionID = nullptr;
             uint32_t sessionIDLength = parameters.LockBuffer<uint32_t>(sessionID);
+            parameters.UnlockBuffer(sessionIDLength);
             const uint8_t* serverResponse = nullptr;
             uint32_t serverResponseLength = parameters.LockBuffer<uint32_t>(serverResponse);
+            parameters.UnlockBuffer(serverResponseLength);
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
             response.Number(accessor->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT CreateSystemNetflix(
+            //        const std::string& readDir,
+            //        const std::string& storeLocation) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string readDir = parameters.Text();
+            std::string storeLocation = parameters.Text();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->CreateSystemNetflix(readDir, storeLocation));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT InitSystemNetflix() = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->InitSystemNetflix());
         },
     };
 
@@ -351,7 +383,6 @@ ProxyStub::MethodHandler AccesorOCDMNotificationStubMethods[] = {
         RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
 
         std::string sessionId = parameters.Text();
-
         message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Destroy(sessionId);
     },
     [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -663,6 +694,7 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
 
             const uint8_t* drmHeader = nullptr;
             uint32_t length = parameters.LockBuffer<uint32_t>(drmHeader);
+            parameters.UnlockBuffer(length);
 
             OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->SetDrmHeader(drmHeader, length);
 
@@ -677,6 +709,7 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
 
             const uint8_t* buffer = nullptr;
             uint32_t challengeSize = parameters.LockBuffer<uint32_t>(buffer);
+            parameters.UnlockBuffer(challengeSize);
             uint32_t isLDL = parameters.Number<uint32_t>();
 
             uint32_t orgChallengeSize = challengeSize;
@@ -708,7 +741,9 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             uint32_t licenseDataSize = 0;
             const uint8_t* secureStopIdBuffer = nullptr;
             uint32_t secureStopIdSize = parameters.LockBuffer<uint32_t>(secureStopIdBuffer);
+            parameters.UnlockBuffer(secureStopIdSize);
             licenseDataSize = parameters.LockBuffer<uint32_t>(licenseData);
+            parameters.UnlockBuffer(licenseDataSize);
 
             uint8_t* secureStopId = const_cast<uint8_t*>(secureStopIdBuffer);
             ASSERT(secureStopIdSize == 16);
@@ -930,10 +965,11 @@ public:
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
+
+            writer.Buffer(drmHeaderLength, drmHeader);
             writer.Number(sessionId);
             writer.Buffer(contentIdLength, contentIdPtr);
             writer.Number(licenseType);
-            writer.Buffer(drmHeaderLength, drmHeader);
 
             Invoke(newMessage);
 
@@ -996,6 +1032,35 @@ public:
 
             writer.Buffer(sessionIDLength, sessionID);
             writer.Buffer(serverResponseLength, serverResponse);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT CreateSystemNetflix(
+                const std::string& readDir,
+                const std::string& storeLocation) override
+        {
+            IPCMessage newMessage(BaseClass::Message(6));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(readDir);
+            writer.Text(storeLocation);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT InitSystemNetflix() override
+        {
+            IPCMessage newMessage(BaseClass::Message(7));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             Invoke(newMessage);
 

@@ -15,11 +15,11 @@ private:
     DataExchange() = delete;
     DataExchange(const DataExchange&) = delete;
     DataExchange& operator=(const DataExchange&) = delete;
-
 private:
     struct Administration {
         uint32_t Status;
         uint8_t KeyId[17];
+        unsigned long long ByteOffset;
         uint8_t IVLength;
         uint8_t IV[16];
         uint16_t SubLength;
@@ -50,6 +50,12 @@ public:
     inline uint32_t Status() const
     {
         return (reinterpret_cast<const Administration*>(AdministrationBuffer())->Status);
+    }
+    inline void ByteOffset(uint32_t byteOffset) {
+        reinterpret_cast<Administration*>(AdministrationBuffer())->ByteOffset = byteOffset;
+    }
+    inline uint32_t ByteOffset() const {
+        return(reinterpret_cast<const Administration*>(AdministrationBuffer())->ByteOffset);
     }
     void SetIV(const uint8_t ivDataLength, const uint8_t ivData[])
     {

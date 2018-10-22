@@ -212,6 +212,13 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
                 uint32_t sessionIDLength,
                 const unsigned char serverResponse[],
                 uint32_t serverResponseLength) = 0;
+
+        // TODO: rename to something like "SetStoreDirs"
+        virtual OCDM_RESULT CreateSystemNetflix(
+                const std::string& readDir,
+                const std::string& storeLocation) = 0;
+
+        virtual OCDM_RESULT InitSystemNetflix() = 0;
     };
 }
 

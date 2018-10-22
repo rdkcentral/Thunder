@@ -430,6 +430,15 @@ public:
         return _remoteExt->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
 
+    virtual OCDM::OCDM_RESULT CreateSystemNetflix(
+            const std::string& readDir,
+            const std::string& storeLocation) override {
+        return _remoteExt->CreateSystemNetflix(readDir, storeLocation);
+    }
+
+    virtual OCDM::OCDM_RESULT InitSystemNetflix() override {
+        return _remoteExt->InitSystemNetflix();
+    }
 
 private:
     mutable uint32_t _refCount;
@@ -497,6 +506,45 @@ private:
 
                     // For nowe we just copy the clear data..
                     Read(encryptedDataLength, encryptedData);
+
+                    // Get the status of the last decrypt.
+                    ret = Status();
+
+                    // And free the lock, for the next production Scenario..
+                    Consumed();
+                }
+            }
+
+            _busy = false;
+
+            _systemLock.Unlock();
+
+            return (ret);
+        }
+
+        uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize)
+        {
+            int ret = 0;
+
+            _systemLock.Lock();
+
+            _busy = true;
+
+            if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+
+                SetIV(static_cast<uint8_t>(IVDataSize), IVData);
+                SetSubSampleData(0, nullptr);  // TODO: needed?
+                ByteOffset(byteOffset);
+                Write(dataBufferSize, dataBuffer);
+
+                // This will trigger the OpenCDMIServer to decrypt this memory...
+                Produced();
+
+                // Now we should wait till it is decrypted, that happens if the Producer, can run again.
+                if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+
+                    // For nowe we just copy the clear data..
+                    Read(dataBufferSize, dataBuffer);
 
                     // Get the status of the last decrypt.
                     ret = Status();
@@ -655,11 +703,27 @@ protected:
         }
     }
 
+public:
+    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize) {
+        uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
+        if (_decryptSession != nullptr) {
+            result = OpenCDMError::ERROR_NONE;
+            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize);
+        }
+        return (result);
+    }
+
+protected:
     std::string _sessionId;
+
 
 private:
     OCDM::ISession* _session;
     OCDM::ISessionExt* _sessionExt;
+
+protected:
     DataExchange* _decryptSession;
+
+private:
     uint32_t _refCount;
 };

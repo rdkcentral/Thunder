@@ -2,6 +2,11 @@
 
 #include "open_cdm_impl.h"
 
+#define ASSERT_NOT_EXECUTED() {                             \
+    fprintf(stderr, "Error: didn't expect to use %s (%s:%d)!!\n", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
+    abort(); \
+}
+
 // TODO: naming: Extended...Ext
 // TODO: shares code with ExtendedOpenCDMSession, maybe intro baseclass?
 struct ExtendedOpenCDMSessionExt : public OpenCDMSession {
@@ -144,6 +149,15 @@ public:
         return _realSession->InitDecryptContextByKid();
     }
 
+    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize) {
+        uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
+        if (_decryptSession != nullptr) {
+            result = OpenCDMError::ERROR_NONE;
+            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize);
+        }
+        return (result);
+    }
+
 
 private:
     //WPEFramework::Core::Sink<Sink> _sink;
@@ -159,8 +173,11 @@ private:
 
 struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[])
 {
-    // TODO: get rid of this function?
-    return opencdm_create_system();
+    OpenCDMAccessor* output = opencdm_create_system();
+
+    output->CreateSystemNetflix(readDir, storeLocation);
+
+    return output;
 }
 
 OpenCDMError opencdm_system_get_version(OpenCDMAccessor* system, char versionStr[])
@@ -365,3 +382,42 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
     // TODO: real conversion
     return (OpenCDMError)sessionExt->InitDecryptContextByKid();
 }
+
+OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system)
+{
+    return (OpenCDMError)system->InitSystemNetflix();
+}
+
+OpenCDMError opencdm_session_decrypt_netflix(OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize)
+{
+    OpenCDMError result (ERROR_INVALID_SESSION);
+
+    if (mOpenCDMSession != nullptr) {
+        result  = static_cast<OpenCDMError>(mOpenCDMSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize));
+    }
+
+    return (result);
+}
+
+OpenCDMError opencdm_system_teardown()
+{
+    ASSERT_NOT_EXECUTED();
+
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system)
+{
+    ASSERT_NOT_EXECUTED();
+
+    return ERROR_NONE;
+}
+
+OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength)
+{
+    ASSERT_NOT_EXECUTED();
+
+    return ERROR_NONE;
+}
+
+

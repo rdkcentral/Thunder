@@ -312,6 +312,8 @@ public:
     virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
 
     virtual CDMi_RESULT InitDecryptContextByKid() = 0;
+
+    virtual CDMi_RESULT DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char data[], uint32_t size) = 0;
 };
 
 // IMediaKeys defines the MediaKeys interface.
@@ -372,6 +374,12 @@ public:
             const unsigned char serverResponse[],
             uint32_t serverResponseLength) = 0;
 
+    // TODO: rename to something like "SetStoreDirs"
+    virtual CDMi_RESULT CreateSystemNetflix(
+            const std::string& readDir,
+            const std::string& storeLocation) = 0;
+
+    virtual CDMi_RESULT InitSystemNetflix() = 0;
 };
 
 struct ISystemFactory {

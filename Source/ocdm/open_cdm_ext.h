@@ -31,6 +31,8 @@ enum OcdmSessionState {
 // TODO: Do we need this one?
 struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[]);
 
+OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system);
+
 // TODO: document we need at least 64 bytes in "versionStr"
 OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
 
@@ -45,8 +47,6 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t 
 //////////////////////////////////////
 // Session
 //////////////////////////////////////
-
-OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system);
 
 OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
                                             enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);
@@ -86,6 +86,17 @@ OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDM
 
 OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession * mOpenCDMSession);
 
+// TODO: document that IVData can be NULL.
+OpenCDMError opencdm_session_decrypt_netflix(struct OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize);
+
+
+
+// TODO:
+OpenCDMError opencdm_system_teardown();
+OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
+// TODO: document that buffer needs to be at least 256 bytes big
+OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
+
 
 #ifdef __cplusplus
 } // extern "C"
@@ -115,10 +126,7 @@ OpenCDMError opencdm_system_commit_secure_stop(OpenCDMAccessor* system, const un
 
 OpenCDMError opencdm_system_enable_secure_stop(OpenCDMAccessor* system, uint32_t use);
 
-OpenCDMError opencdm_delete_secure_store(OpenCDMAccessor* system);
 
-// TODO: document that buffer needs to be at least 256 bytes big
-OpenCDMError opencdm_get_secure_store_hash(OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
 
 OpenCDMError opencdm_system_get_ldl_session_limit(OpenCDMAccessor* system, uint32_t * ldlLimit);
 
@@ -165,7 +173,6 @@ uint16_t opencdm_session_get_playlevel_analog_video(OpenCDMSession * mOpenCDMSes
 uint16_t opencdm_session_get_playlevel_compressed_audio(OpenCDMSession * mOpenCDMSession);
 uint16_t opencdm_session_get_playlevel_uncompressed_audio(OpenCDMSession * mOpenCDMSession);
 
-OpenCDMError opencdm_system_teardown();
 
 #ifdef __cplusplus
 } // extern "C"
