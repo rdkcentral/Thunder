@@ -324,8 +324,7 @@ public:
         , _errorCode(0)
         , _sysError(0)
         , _key(OCDM::ISession::StatusPending)
-        , _callback(callbacks)
-        , _userData(this) {
+        , _callback(callbacks) {
 
         std::string bufferId;
         OCDM::ISession* realSession = nullptr;
@@ -349,11 +348,6 @@ public:
 public:
     virtual bool IsExtended() const override {
         return (true);
-    }
-    inline void Callback (OpenCDMSessionCallbacks* callback, void * userData) {
-        ASSERT ((callback == nullptr) ^ (_callback == nullptr));
-        _callback = callback;
-        _userData = userData;
     }
     inline KeyStatus Status (const uint8_t /* keyId */[], uint8_t /* length */) const {
         return (::CDMState(_key));
@@ -456,7 +450,7 @@ private:
             _state = static_cast<sessionState>(_state | SESSION_MESSAGE | SESSION_UPDATE);
         }
         else {
-            _callback->process_challenge(_userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), _message.length());
+            _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), _message.length());
         }
     }
     // Event fired when MediaKeySession has found a usable key.
@@ -466,7 +460,7 @@ private:
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         }
         else {
-            _callback->key_update(_userData, nullptr, 0);
+            _callback->key_update(this, nullptr, 0);
         }
     }
     // Event fired when MediaKeySession encounters an error.
@@ -480,8 +474,8 @@ private:
             _state = static_cast<sessionState>(_state | SESSION_ERROR | SESSION_UPDATE);
         }
         else {
-            _callback->key_update(_userData, nullptr, 0);
-            _callback->message(_userData, errorMessage.c_str());
+            _callback->key_update(this, nullptr, 0);
+            _callback->message(this, errorMessage.c_str());
         }
     }
     // Event fired on key status update
@@ -492,7 +486,7 @@ private:
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         }
         else {
-            _callback->key_update(_userData, nullptr, 0);
+            _callback->key_update(this, nullptr, 0);
         }
     }
 
@@ -506,7 +500,6 @@ private:
     OCDM::OCDM_RESULT _sysError;
     OCDM::ISession::KeyStatus _key;
     OpenCDMSessionCallbacks* _callback;
-    void* _userData;
 };
 
 
