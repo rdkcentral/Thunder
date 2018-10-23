@@ -294,11 +294,12 @@ OpenCDMError opencdm_session_get_content_id(struct OpenCDMSession * opencdmSessi
 
     std::string contentIdStr = sessionExt->GetContentIdExt();
 
-
     if (*bufferSize == 0) {
-        *bufferSize = contentIdStr.length() + 1;
+        *bufferSize = contentIdStr.length();
     } else {
-        *bufferSize = contentIdStr.length() + 1;
+        assert(contentIdStr.length() <= *bufferSize);
+
+        *bufferSize = contentIdStr.length();
         strcpy(buffer, contentIdStr.c_str());
     }
 
