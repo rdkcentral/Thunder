@@ -44,6 +44,12 @@ OpenCDMError opencdm_system_commit_secure_stop(struct OpenCDMAccessor* system, c
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
 
+OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system);
+OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
+// TODO: document that buffer needs to be at least 256 bytes big
+OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
+
+
 //////////////////////////////////////
 // Session
 //////////////////////////////////////
@@ -89,13 +95,6 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
 // TODO: document that IVData can be NULL.
 OpenCDMError opencdm_session_decrypt_netflix(struct OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize);
 
-
-
-// TODO:
-OpenCDMError opencdm_system_teardown();
-OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
-// TODO: document that buffer needs to be at least 256 bytes big
-OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
 
 
 #ifdef __cplusplus

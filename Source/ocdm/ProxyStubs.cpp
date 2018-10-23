@@ -312,6 +312,49 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
             response.Number(accessor->InitSystemNetflix());
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT TeardownSystemNetflix() = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->TeardownSystemNetflix());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT DeleteSecureStore() = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->DeleteSecureStore());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT GetSecureStoreHash(
+            //          uint8_t secureStoreHash[],
+            //          uint32_t secureStoreHashLength) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+
+            const uint32_t secureStoreHashLength = 256;
+            uint8_t secureStoreHash[secureStoreHashLength];
+
+            OCDM::OCDM_RESULT result = accessor->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+
+            response.Buffer(secureStoreHashLength, secureStoreHash);
+
+            response.Number(result);
+        },
     };
 
     //
@@ -1069,6 +1112,47 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
+        virtual OCDM::OCDM_RESULT TeardownSystemNetflix() override
+        {
+            IPCMessage newMessage(BaseClass::Message(8));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT DeleteSecureStore() override
+        {
+            IPCMessage newMessage(BaseClass::Message(9));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT GetSecureStoreHash(
+                uint8_t secureStoreHash[],
+                uint32_t secureStoreHashLength)
+        {
+            assert(secureStoreHashLength >= 256);
+
+            IPCMessage newMessage(BaseClass::Message(10));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            reader.Buffer(256, secureStoreHash);
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
     };
  
 class AccessorOCDMNotificationProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDM::INotification> {

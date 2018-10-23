@@ -440,6 +440,20 @@ public:
         return _remoteExt->InitSystemNetflix();
     }
 
+    virtual OCDM::OCDM_RESULT TeardownSystemNetflix() override {
+        return _remoteExt->TeardownSystemNetflix();
+    }
+
+    virtual OCDM::OCDM_RESULT DeleteSecureStore() override {
+        return _remoteExt->DeleteSecureStore();
+    }
+
+    virtual OCDM::OCDM_RESULT GetSecureStoreHash(
+            uint8_t secureStoreHash[],
+            uint32_t secureStoreHashLength) override {
+        return _remoteExt->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+    }
+
 private:
     mutable uint32_t _refCount;
     Core::ProxyType<RPC::CommunicatorClient> _client;

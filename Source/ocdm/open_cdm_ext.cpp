@@ -214,7 +214,7 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t 
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        *time = static_cast<OpenCDMError>(system->GetDrmSystemTime());
+        *time = system->GetDrmSystemTime();
         result = ERROR_NONE;
     }
     return (result);
@@ -400,25 +400,37 @@ OpenCDMError opencdm_session_decrypt_netflix(OpenCDMSession * mOpenCDMSession, c
     return (result);
 }
 
-OpenCDMError opencdm_system_teardown()
-{
-    ASSERT_NOT_EXECUTED();
-
-    return ERROR_NONE;
-}
-
 OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system)
 {
-    ASSERT_NOT_EXECUTED();
+    OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
-    return ERROR_NONE;
+    if (system != nullptr) {
+        // TODO: real conversion
+        result = (OpenCDMError)system->DeleteSecureStore();
+    }
+    return (result);
 }
 
 OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength)
 {
-    ASSERT_NOT_EXECUTED();
+    OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
-    return ERROR_NONE;
+    if (system != nullptr) {
+        // TODO: real conversion
+        result = (OpenCDMError)system->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+    }
+    return (result);
+}
+
+OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system)
+{
+    OpenCDMError result (ERROR_INVALID_ACCESSOR);
+
+    if (system != nullptr) {
+        // TODO: real conversion
+        result = (OpenCDMError)system->TeardownSystemNetflix();
+    }
+    return (result);
 }
 
 

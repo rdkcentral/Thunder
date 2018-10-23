@@ -380,6 +380,14 @@ public:
             const std::string& storeLocation) = 0;
 
     virtual CDMi_RESULT InitSystemNetflix() = 0;
+
+    virtual CDMi_RESULT TeardownSystemNetflix() = 0;
+
+    virtual CDMi_RESULT DeleteSecureStore() = 0;
+
+    virtual CDMi_RESULT GetSecureStoreHash(
+            uint8_t secureStoreHash[],
+            uint32_t secureStoreHashLength) = 0;
 };
 
 struct ISystemFactory {
