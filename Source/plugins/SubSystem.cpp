@@ -34,6 +34,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::subsystem)
     { PluginHost::ISubSystem::subsystem::WEBSOURCE, _TXT("WebSource") },
     { PluginHost::ISubSystem::subsystem::NOT_WEBSOURCE, _TXT("!WebSource") },
 
+    { PluginHost::ISubSystem::subsystem::STREAMING, _TXT("Streaming") },
+    { PluginHost::ISubSystem::subsystem::NOT_STREAMING, _TXT("!Streaming") },
+
 ENUM_CONVERSION_END(PluginHost::ISubSystem::subsystem)
 
 } // namespace WPEFramework
