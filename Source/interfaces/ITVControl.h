@@ -36,13 +36,6 @@ namespace Exchange {
             struct IGeometry : virtual public Core::IUnknown {
                 enum { ID = 0x00000019 };
 
-                struct Rectangle {
-                     uint32_t X;
-                     uint32_t Y;
-                     uint32_t Width;
-                     uint32_t Height;
-                };
-
                 virtual ~IGeometry() {}
 
                 virtual uint32_t X() const = 0;;
@@ -93,18 +86,30 @@ namespace Exchange {
 
     struct IPlayer : virtual public Core::IUnknown {
         enum { ID = 0x00000015 };
-        struct ICallback {
-            virtual ~ICallback() {}
-
-            virtual void TimeUpdate(uint64_t position) = 0;
-            virtual void DRM(uint32_t state) = 0;
-            virtual void StateChange(Exchange::IStream::state newState) = 0;
-        };
 
         virtual ~IPlayer() {}
         virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
-}
-}
+} // namespace Exchange
+
+namespace Player {
+namespace Implementation {
+
+    struct Rectangle {
+        uint32_t X;
+        uint32_t Y;
+        uint32_t Width;
+        uint32_t Height;
+    };
+
+    struct ICallback {
+        virtual ~ICallback() {}
+
+        virtual void TimeUpdate(uint64_t position) = 0;
+        virtual void DRM(uint32_t state) = 0;
+        virtual void StateChange(Exchange::IStream::state newState) = 0;
+    };
+} } // // namespace Player::Implementation
+} // namespace WPEFramework
 #endif //_ITVCONTROL_H
