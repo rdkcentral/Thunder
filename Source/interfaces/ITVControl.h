@@ -3,7 +3,7 @@
 
 #include "Module.h"
 
-#define LINEARBROADCASTPLAYER_PROCESS_NODE_ID "/tmp/LinearBroadcastPlayerProcess0"
+#define WPEPLAYER_PROCESS_NODE_ID "/tmp/player"
 
 namespace WPEFramework {
 namespace Exchange {
@@ -55,8 +55,8 @@ namespace Exchange {
 
             virtual ~IControl() {};
 
-            virtual void Speed(const uint32_t request) = 0;
-            virtual uint32_t Speed() const = 0;
+            virtual void Speed(const int32_t request) = 0;
+            virtual int32_t Speed() const = 0;
             virtual void Position(const uint64_t absoluteTime) = 0;
             virtual uint64_t Position() const = 0;
             virtual void TimeRange(uint64_t& begin, uint64_t& end) const = 0;
@@ -91,6 +91,25 @@ namespace Exchange {
         virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
-}
-}
+} // namespace Exchange
+
+namespace Player {
+namespace Implementation {
+
+    struct Rectangle {
+        uint32_t X;
+        uint32_t Y;
+        uint32_t Width;
+        uint32_t Height;
+    };
+
+    struct ICallback {
+        virtual ~ICallback() {}
+
+        virtual void TimeUpdate(uint64_t position) = 0;
+        virtual void DRM(uint32_t state) = 0;
+        virtual void StateChange(Exchange::IStream::state newState) = 0;
+    };
+} } // // namespace Player::Implementation
+} // namespace WPEFramework
 #endif //_ITVCONTROL_H

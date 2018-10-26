@@ -1256,18 +1256,18 @@ namespace ProxyStubs {
     ProxyStub::MethodHandler StreamControlStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual void Speed(uint32_t request) = 0;
+            // virtual void Speed(int32_t request) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            const uint32_t request(parameters.Number<uint32_t>());
+            const int32_t request(parameters.Number<int32_t>());
             message->Parameters().Implementation<IStream::IControl>()->Speed(request);
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
-             // virtual uint32_t Speed() const = 0;
+             // virtual int32_t Speed() const = 0;
              //
              RPC::Data::Frame::Writer response(message->Response().Writer());
-             response.Number<uint32_t>(message->Parameters().Implementation<IStream::IControl>()->Speed());
+             response.Number<int32_t>(message->Parameters().Implementation<IStream::IControl>()->Speed());
          },
          [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
              //
@@ -2782,19 +2782,19 @@ namespace ProxyStubs {
         {
         }
    public:
-        virtual void Speed(uint32_t request)
+        virtual void Speed(int32_t request)
         {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint32_t>(request);
+            writer.Number<int32_t>(request);
             Invoke(newMessage);
         }
-        virtual uint32_t Speed() const
+        virtual int32_t Speed() const
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
 
-            return (newMessage->Response().Reader().Number<uint32_t>());
+            return (newMessage->Response().Reader().Number<int32_t>());
         }
         virtual void Position(uint64_t absoluteTime)
         {
