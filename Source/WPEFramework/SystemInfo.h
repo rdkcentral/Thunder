@@ -430,6 +430,16 @@ namespace PluginHost {
                 SYSLOG(PluginHost::Shutdown, (_T("EVENT: WebSource")));
                 break;
             }
+            case STREAMING: {
+                /* No information to set yet */
+                SYSLOG(PluginHost::Startup, (_T("EVENT: Streaming")));
+                break;
+            }
+            case NOT_STREAMING: {
+                /* No information to set yet */
+                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Streaming")));
+                break;
+            }
             default: {
                 ASSERT(false && "Unknown Event");
             }
