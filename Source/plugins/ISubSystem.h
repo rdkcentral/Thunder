@@ -38,7 +38,7 @@ namespace PluginHost {
             NOT_PROVISIONING, // Provisioning information is NOT available.
             NOT_DECRYPTION, // Decryption functionality is NOT available.
             NOT_WEBSOURCE, // Content exposed via a local web server is NOT available. 
-            NOT_STREAMING // Content can be streamed. 
+            NOT_STREAMING // Content can NOT be streamed. 
         };
 
         struct INotification
