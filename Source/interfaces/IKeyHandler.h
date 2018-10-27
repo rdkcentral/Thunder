@@ -5,12 +5,16 @@
 
 namespace WPEFramework {
 namespace Exchange {
+
+    struct IKeyProducer;
+
     struct IKeyHandler : virtual public Core::IUnknown {
         enum { ID = 0x00000050 };
 
         virtual ~IKeyHandler(){};
 
         virtual uint32_t KeyEvent(const bool pressed, const uint32_t code, const string& table) = 0;
+        virtual IKeyProducer* Producer(const string& name) = 0;
     };
 
     struct IKeyProducer : virtual public Core::IUnknown {

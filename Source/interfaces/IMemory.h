@@ -18,7 +18,7 @@ namespace Exchange {
         virtual uint8_t Processes() const = 0;
         virtual const bool IsOperational() const = 0;
 
-        virtual void Observe(const bool enable) = 0;
+        virtual void Observe(const uint32_t pid) = 0;
     };
 }
 }
