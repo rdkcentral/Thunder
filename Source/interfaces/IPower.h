@@ -35,7 +35,7 @@ namespace Exchange {
             {
             }
 
-            virtual void Resumed() = 0;
+            virtual void StateChange(const PCState) = 0;
         };
 
         virtual void Register(IPower::INotification* sink) = 0;

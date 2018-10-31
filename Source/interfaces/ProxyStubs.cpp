@@ -1614,16 +1614,15 @@ namespace ProxyStubs {
     // IPower::INotification interface stub definitions (interface/IPower.h)
     //
     ProxyStub::MethodHandler PowerNotificationStubMethods[] = {
-            [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-                //
-                // virtual void Resumed() = 0;
-                //
-                ASSERT(message.IsValid() == true);
-                ASSERT(message->Parameters().Implementation<IPower::INotification>() != nullptr);
-
-                message->Parameters().Implementation<IPower::INotification>()->Resumed();
-            },
-            nullptr
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+           //
+           // virtual void StateChange(const IPower::PCState) = 0;
+           //
+           RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+           IPower::PCState state(parameters.Number<IPower::PCState >());
+           message->Parameters().Implementation<IPower::INotification>()->StateChange(state);
+        },
+        nullptr
     };
 
     // IRPCLink::INotification interface stub definitions
@@ -3176,6 +3175,29 @@ namespace ProxyStubs {
 
     };
 
+    class PowerNotificationProxy : public ProxyStub::UnknownProxyType<IPower::INotification> {
+    public:
+        PowerNotificationProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+                                 const bool otherSideInformed)
+                : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~PowerNotificationProxy()
+        {
+        }
+
+    public:
+        // Stub order:
+        // virtual void StateChange(const IPower::PCState) = 0;
+        virtual void StateChange(const IPower::PCState state)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IPower::PCState>(state);
+            Invoke(newMessage);
+        }
+    };
     // -------------------------------------------------------------------------------------------
     // Registration
     // -------------------------------------------------------------------------------------------
@@ -3211,6 +3233,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IRPCLink::INotification, RPCLinkNotificationProxy, RPCLinkNotificationStub>();
             RPC::Administrator::Instance().Announce<IPlayGiga, PlayGigaProxy, PlayGigaStub>();
             RPC::Administrator::Instance().Announce<IPower, PowerProxy, PowerStub>();
+            RPC::Administrator::Instance().Announce<IPower::INotification, PowerNotificationProxy, PowerNotificationStub>();
             RPC::Administrator::Instance().Announce<IRtspClient, RtspClientProxy, RtspClientStub>();
         }
 
