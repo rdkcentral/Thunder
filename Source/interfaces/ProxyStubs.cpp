@@ -1564,7 +1564,66 @@ namespace ProxyStubs {
             const string settings(parameters.Text());
             message->Parameters().Implementation<IPower>()->Configure(settings);
         },
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void Register(IPower::INotification* sink) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+
+            IPower::INotification* implementation = reader.Number<IPower::INotification*>();
+            IPower::INotification* proxy = RPC::Administrator::Instance().CreateProxy<IPower::INotification>(channel,
+                                                                                                                implementation,
+                                                                                                                true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a stub for IPowerNotification: %p"), implementation);
+            } else {
+                parameters.Implementation<IPower>()->Register(proxy);
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void Unregister(IPower::INotification* sink) = 0;
+            //
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+
+            // Need to find the proxy that goes with the given implementation..
+            IPower::INotification* stub = reader.Number<IPower::INotification*>();
+
+            // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
+            IPower::INotification* proxy = RPC::Administrator::Instance().FindProxy<IPower::INotification>(channel.operator->(), stub);
+
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not find stub for IBrowserNotification: %p"), stub);
+            } else {
+                 parameters.Implementation<IPower>()->Unregister(proxy);
+           }
+        },
         nullptr
+    };
+
+    //
+    // IPower::INotification interface stub definitions (interface/IPower.h)
+    //
+    ProxyStub::MethodHandler PowerNotificationStubMethods[] = {
+            [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+                //
+                // virtual void Resumed() = 0;
+                //
+                ASSERT(message.IsValid() == true);
+                ASSERT(message->Parameters().Implementation<IPower::INotification>() != nullptr);
+
+                message->Parameters().Implementation<IPower::INotification>()->Resumed();
+            },
+            nullptr
     };
 
     // IRPCLink::INotification interface stub definitions
@@ -1598,6 +1657,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IPlayGiga, PlayGigaStubMethods, ProxyStub::UnknownStub> PlayGigaStub;
     typedef ProxyStub::StubType<IRtspClient, RtspClientStubMethods, ProxyStub::UnknownStub> RtspClientStub;
     typedef ProxyStub::StubType<IPower, PowerStubMethods, ProxyStub::UnknownStub> PowerStub;
+    typedef ProxyStub::StubType<IPower::INotification, PowerNotificationStubMethods, ProxyStub::UnknownStub> PowerNotificationStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
@@ -3095,6 +3155,22 @@ namespace ProxyStubs {
             IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(settings);
+            Invoke(newMessage);
+        }
+
+        virtual void Register(IPower::INotification* notification)
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IPower::INotification*>(notification);
+            Invoke(newMessage);
+        }
+
+        virtual void Unregister(IPower::INotification* notification)
+        {
+            IPCMessage newMessage(BaseClass::Message(5));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<IPower::INotification*>(notification);
             Invoke(newMessage);
         }
 

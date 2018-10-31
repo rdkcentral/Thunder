@@ -26,6 +26,21 @@ namespace Exchange {
             PCNotSupportedState  = 5
         };
 
+        struct INotification : virtual public Core::IUnknown {
+            enum {
+                ID = 0x0000006E
+            };
+
+            virtual ~INotification()
+            {
+            }
+
+            virtual void Resumed() = 0;
+        };
+
+        virtual void Register(IPower::INotification* sink) = 0;
+        virtual void Unregister(IPower::INotification* sink) = 0;
+
         virtual PCState GetState() const = 0;
         virtual PCStatus SetState(const PCState, const uint32_t) = 0;
         virtual void PowerKey() = 0;
