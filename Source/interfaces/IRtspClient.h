@@ -14,7 +14,7 @@ namespace Exchange {
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         virtual uint32_t Setup(const string& assetId, uint32_t position) = 0;
-        virtual uint32_t Play(int16_t scale, uint32_t position) = 0;
+        virtual uint32_t Play(int32_t scale, uint32_t position) = 0;
         virtual uint32_t Teardown() = 0;
 
         virtual void Set(const string& name, const string& value) = 0;

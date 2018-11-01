@@ -964,12 +964,12 @@ namespace ProxyStubs {
             // virtual uint32_t Setup(const string& assetId, uint32_t position)
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             string assetId(parameters.Text());
-            uint32_t position = parameters.Number<uint8_t>();
+            uint32_t position = parameters.Number<uint32_t>();
 
             message->Parameters().Implementation<IRtspClient>()->Setup(assetId, position);
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
-            // virtual uint32_t Play(int16_t scale, uint32_t position)
+            // virtual uint32_t Play(int32_t scale, uint32_t position)
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             int32_t  scale    = parameters.Number<int32_t>();
             uint32_t position = parameters.Number<uint32_t>();
@@ -2521,12 +2521,12 @@ namespace ProxyStubs {
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
 
-        virtual uint32_t Play(int16_t position, uint32_t scale)
+        virtual uint32_t Play(int32_t scale, uint32_t position)
         { TR();
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number(position);
             writer.Number(scale);
+            writer.Number(position);
             Invoke(newMessage);
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
