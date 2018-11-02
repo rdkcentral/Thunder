@@ -76,6 +76,7 @@ namespace Exchange {
 
         virtual ~IStream() {}
 
+        virtual string Metadata() const = 0;
         virtual streamtype Type() const = 0;
         virtual drmtype DRM() const = 0;
         virtual IControl* Control() = 0;

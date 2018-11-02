@@ -1230,6 +1230,13 @@ namespace ProxyStubs {
              RPC::Data::Frame::Writer response(message->Response().Writer());
              response.Number<uint32_t>(message->Parameters().Implementation<IStream>()->Load(configuration));
          },
+         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual string Metadata() const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+            response.Text(message->Parameters().Implementation<IStream>()->Metadata());
+         },
          nullptr
     };
 
@@ -1509,7 +1516,6 @@ namespace ProxyStubs {
 
             output.Number<uint32_t>(parameters.Implementation<IRPCLink>()->ForceCallback());
         },
-
         nullptr
     };
     // IRPCLink interface stub definitions
@@ -2800,7 +2806,13 @@ namespace ProxyStubs {
 
             return (newMessage->Response().Reader().Number<uint32_t>());
         }
+        virtual string Metadata() const
+        {
+            IPCMessage newMessage(BaseClass::Message(6));
+            Invoke(newMessage);
 
+            return (newMessage->Response().Reader().Text());
+        }
    };
 
    class StreamCallbackProxy : public ProxyStub::UnknownProxyType<IStream::ICallback> {
