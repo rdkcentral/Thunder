@@ -30,6 +30,61 @@ namespace Core {
 #endif
 
     // ---- Class Definition ----
+    class DataStore {
+    private:
+        DataStore(const DataStore&) = delete;
+        DataStore& operator= (const DataStore&) = delete;
+
+    public:
+        DataStore(const uint32_t size = 1024) 
+            : _size(size)
+            , _buffer(reinterpret_cast<uint8_t*>(::malloc(size))) {
+            ASSERT(_buffer != nullptr);
+            if (_buffer == nullptr) {
+                _size = 0;
+            }
+        }
+        virtual ~DataStore() {
+            if (_buffer != nullptr) {
+                ::free(_buffer);
+            }
+        }
+
+    public:
+        inline void Copy(const uint8_t data[], const uint16_t length, const uint16_t offset = 0) {
+            ASSERT (offset < _size);
+            if (offset < _size) {
+                ASSERT (offset + length <= _size);
+
+                uint32_t count (offset + length <= _size ? length : _size - offset);
+                
+                ::memcpy (&(_buffer[offset]), data, count);
+            }
+        }
+        inline uint8_t* Buffer() {
+            return(_buffer);
+        }
+        inline const uint8_t* Buffer() const {
+            return(_buffer);
+        }
+        inline uint32_t Size() const {
+            return(_size);
+        }
+        inline void Size(const uint32_t size) {
+            if (size >  _size) {
+                uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, size));
+                if (newBuffer != nullptr) {
+                    _buffer = newBuffer;
+                    _size = size;
+                }
+            }
+        }
+
+    private:
+        uint32_t _size;
+        uint8_t* _buffer;    
+    };
+
     class EXTERNAL DataElement {
     protected:
         void UpdateCache(const uint64_t offset, uint8_t* buffer, const uint64_t size, const uint64_t maxSize)
@@ -69,16 +124,16 @@ namespace Core {
             , m_MaxSize(size)
         {
         }
-        inline DataElement(ProxyType< ProxyStorage<Void> > buffer)
+        inline DataElement(const ProxyType<DataStore>& buffer)
             : m_Storage(buffer)
             , m_Buffer(buffer->Buffer())
             , m_Offset(0)
-            , m_Size(buffer->Size())
+            , m_Size(0)
             , m_MaxSize(buffer->Size())
         {
             ASSERT(buffer.IsValid());
         }
-        inline DataElement(ProxyType< ProxyStorage<Void> > buffer, const uint64_t offset, const uint64_t size = 0)
+        inline DataElement(const ProxyType<DataStore>& buffer, const uint64_t offset, const uint64_t size = 0)
             : m_Storage(buffer)
             , m_Buffer(&(buffer->Buffer())[offset])
             , m_Offset(offset)
@@ -147,21 +202,21 @@ namespace Core {
         {
             return (m_Buffer != nullptr);
         }
-        inline bool operator==(const ProxyType< ProxyStorage<Void> >& RHS) const
+        inline bool operator==(const ProxyType<DataStore>& RHS) const
         {
             return (m_Storage == RHS);
         }
-        inline bool operator!=(const ProxyType< ProxyStorage<Void> >& RHS) const
+        inline bool operator!=(const ProxyType<DataStore>& RHS) const
         {
             return (m_Storage != RHS);
-        }
-        inline operator ProxyType< ProxyStorage<Void> >&()
-        {
-            return (m_Storage);
         }
         virtual uint64_t Size() const
         {
             return (m_Size);
+        }
+        inline const ProxyType<DataStore>& Data() const
+        {
+            return (m_Storage);
         }
         inline const uint8_t* Buffer() const
         {
@@ -583,16 +638,16 @@ namespace Core {
                 // We need to "extend" the buffer, this is only possible if we control
                 // the buffer lifetime..
                 // Create a new buffer
-				m_Storage = m_Storage->Clone(static_cast<uint32_t>(size));
-				m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
-				m_Size = size;
-				m_MaxSize = m_Storage->Size();
+		m_Storage->Size(static_cast<uint32_t>(size));
+		m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
+		m_Size = size;
+		m_MaxSize = m_Storage->Size();
             }
         }
 
     private:
         friend class LinkedDataElement;
-        ProxyType< ProxyStorage<Void> > m_Storage;
+        ProxyType<DataStore> m_Storage;
 
         // Cached values
         uint8_t* m_Buffer;
