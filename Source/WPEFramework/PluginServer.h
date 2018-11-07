@@ -50,6 +50,7 @@ namespace WPEFramework {
                     , OOMAdjust(0)
                     , Policy()
                     , StackSize(0)
+                    , Umask(0003)
                 {
                     Add(_T("user"), &User);
                     Add(_T("group"), &Group);
@@ -57,6 +58,7 @@ namespace WPEFramework {
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
                     Add(_T("stacksize"), &StackSize);
+                    Add(_T("umask"), &Umask);
                 }
                 ProcessSet(const ProcessSet& copy)
                     : Core::JSON::Container()
@@ -66,6 +68,7 @@ namespace WPEFramework {
                     , OOMAdjust(copy.OOMAdjust)
                     , Policy(copy.Policy)
                     , StackSize(copy.StackSize)
+                    , Umask(copy.Umask)
                 {
                     Add(_T("user"), &User);
                     Add(_T("group"), &Group);
@@ -73,6 +76,7 @@ namespace WPEFramework {
                     Add(_T("policy"), &Policy);
                     Add(_T("oomadjust"), &OOMAdjust);
                     Add(_T("stacksize"), &StackSize);
+                    Add(_T("umask"), &Umask);
                 }
                 ~ProcessSet()
                 {
@@ -86,6 +90,7 @@ namespace WPEFramework {
                     Policy = RHS.Policy;
                     OOMAdjust = RHS.OOMAdjust;
                     StackSize = RHS.StackSize;
+                    Umask = RHS.Umask;
 
                     return (*this);
                 }
@@ -96,6 +101,7 @@ namespace WPEFramework {
                 Core::JSON::DecSInt8 OOMAdjust;
                 Core::JSON::EnumType<Core::ProcessInfo::scheduler> Policy;
                 Core::JSON::DecUInt32 StackSize;
+                Core::JSON::DecUInt16 Umask;
             };
 
             class InputConfig : public Core::JSON::Container {
@@ -105,7 +111,7 @@ namespace WPEFramework {
                     : Locator("127.0.0.1:9631")
                     , Type(PluginHost::InputHandler::VIRTUAL)
 #else
-					: Locator("/tmp/keyhandler")
+					: Locator("/tmp/keyhandler|0760")
 					, Type(PluginHost::InputHandler::VIRTUAL)
 #endif
                 {

@@ -348,6 +348,8 @@ namespace PluginHost {
             }
         }
 
+        ::umask(serviceConfig.Process.Umask.Value());
+
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
         const string tracePath(serviceConfig.VolatilePath.Value());
