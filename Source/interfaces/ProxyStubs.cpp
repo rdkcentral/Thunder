@@ -17,7 +17,6 @@
 #include "IWebDriver.h"
 #include "IWebServer.h"
 
-#define TR() printf("%s:%d\n", __FUNCTION__, __LINE__);
 MODULE_NAME_DECLARATION(BUILDREF_WEBBRIDGE)
 
 namespace WPEFramework {
@@ -938,7 +937,7 @@ namespace ProxyStubs {
     // IRtspClient interface stub definitions (interface/IRtspClient.h)
     //
     ProxyStub::MethodHandler RtspClientStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
@@ -960,7 +959,7 @@ namespace ProxyStubs {
                 }
             }
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Setup(const string& assetId, uint32_t position)
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             string assetId(parameters.Text());
@@ -968,7 +967,7 @@ namespace ProxyStubs {
 
             message->Parameters().Implementation<IRtspClient>()->Setup(assetId, position);
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Play(int32_t scale, uint32_t position)
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             int32_t  scale    = parameters.Number<int32_t>();
@@ -976,11 +975,11 @@ namespace ProxyStubs {
 
             message->Parameters().Implementation<IRtspClient>()->Play(scale, position);
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Teardown()
             message->Parameters().Implementation<IRtspClient>()->Teardown();
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual void Set(const string& name, const string& value) = 0;
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             string name(parameters.Text());
@@ -988,7 +987,7 @@ namespace ProxyStubs {
 
             message->Parameters().Implementation<IRtspClient>()->Set(name, value);
         },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) { TR();
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual string Get(const string& name) const = 0;
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             string name(parameters.Text());
@@ -2500,16 +2499,16 @@ namespace ProxyStubs {
     public:
         RtspClientProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
-        { TR();
+        {
         }
 
         virtual ~RtspClientProxy()
-        { TR();
+        {
         }
 
     public:
         virtual uint32_t Configure(PluginHost::IShell* service)
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(0));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<PluginHost::IShell*>(service);
@@ -2518,7 +2517,7 @@ namespace ProxyStubs {
         }
 
         virtual uint32_t Setup(const string& assetId, uint32_t position)
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(assetId);
@@ -2528,7 +2527,7 @@ namespace ProxyStubs {
         }
 
         virtual uint32_t Play(int32_t scale, uint32_t position)
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(2));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(scale);
@@ -2538,7 +2537,7 @@ namespace ProxyStubs {
         }
 
         virtual uint32_t Teardown()
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(3));
             Invoke(newMessage);
             return (newMessage->Response().Reader().Number<uint32_t>());
@@ -2546,7 +2545,7 @@ namespace ProxyStubs {
 
 
         virtual void Set(const string& name, const string& value)
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(4));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(name);
@@ -2555,7 +2554,7 @@ namespace ProxyStubs {
         }
 
         virtual string Get(const string& name) const
-        { TR();
+        {
             IPCMessage newMessage(BaseClass::Message(5));
             Invoke(newMessage);
 
