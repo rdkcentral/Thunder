@@ -145,10 +145,6 @@ namespace Core {
 		ServiceAdministrator::Instance().AddRef();
 	}
 
-
-
-
-
     public:
         template <typename INTERFACE>
         static INTERFACE* Create()

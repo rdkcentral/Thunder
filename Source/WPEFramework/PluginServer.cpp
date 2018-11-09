@@ -271,7 +271,7 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
         const string className(PluginHost::Service::Configuration().ClassName.Value());
 
         if (_handler == nullptr) {
-            SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [Could not be instantiated]"), className.c_str(), callSign.c_str()));
+            SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
             result = Core::ERROR_UNAVAILABLE;
 
         // See if the preconditions have been met..

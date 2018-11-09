@@ -821,6 +821,42 @@ namespace WPEFramework {
             }
 
         private:
+            inline PluginHost::IPlugin* CheckLibrary(const string& name, const TCHAR* className, const uint32_t version) {
+                PluginHost::IPlugin* newIF = nullptr;
+                Core::File libraryToLoad(name, true);
+
+                if (libraryToLoad.Exists() != true) {
+                    if (HasError() == false) {
+                        ErrorMessage(_T("library does not exist"));
+                    }
+                }
+                else {
+                    Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
+                    Core::Library myLib(name.c_str());
+
+                    if (myLib.IsLoaded() == false) {
+                        if ( (HasError() == false) || (ErrorMessage().substr(0, 7) == _T("library")) ) {
+                            ErrorMessage(myLib.Error());
+                        }
+                    }
+                    else if ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr) {
+                        ErrorMessage(_T("class definitions does not exist"));
+                    }
+                    else {
+                        Core::System::ModuleNameImpl moduleName = reinterpret_cast<Core::System::ModuleNameImpl>(myLib.LoadFunction(_T("ModuleName")));
+                        Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(myLib.LoadFunction(_T("ModuleBuildRef")));
+
+                        if (moduleName != nullptr) {
+                            _moduleName = moduleName();
+                        }
+                        if (moduleBuildRef != nullptr) {
+                            _versionHash = moduleBuildRef();
+                        }
+                    }
+                }
+                return (newIF);
+            }
+
             void AquireInterfaces()
             {
                 ASSERT(State() == DEACTIVATED);
@@ -830,53 +866,23 @@ namespace WPEFramework {
                 const string classNameString(PluginHost::Service::Configuration().ClassName.Value());
                 const TCHAR* className(classNameString.c_str());
                 uint32_t version(PluginHost::Service::Configuration().Version.IsSet() ? PluginHost::Service::Configuration().Version.Value() : static_cast<uint32_t>(~0));
-                Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-                Core::Library myLib;
-
-                if (locator.empty() == true) {
-                    newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version);
-                }
-                else {
-                    myLib = Core::Library((Information().PersistentPath() + locator).c_str());
-
-                    if ((!myLib.IsLoaded()) || ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr)) {
-                        myLib = Core::Library((Information().SystemPath() + locator).c_str());
-
-                        if ((!myLib.IsLoaded()) || ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr)) {
-                            myLib = Core::Library((Information().DataPath() + locator).c_str());
-
-                            if ((!myLib.IsLoaded()) || ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr)) {
-                                myLib = Core::Library((Information().AppPath() + "Plugins/" + locator).c_str());
-
-                                if ((!myLib.IsLoaded()) || ((newIF = admin.Instantiate<PluginHost::IPlugin>(myLib, className, version)) == nullptr)) {
-                                    ErrorMessage(_T("Location [") + locator + _T("] does not contain a loadable plugin."));
-                                }
-                            }
-                        }
-                    }
-                }
 
                 _moduleName.clear();
                 _versionHash.clear();
 
-                if (myLib.IsLoaded()) {
-                    Core::System::ModuleNameImpl moduleName = reinterpret_cast<Core::System::ModuleNameImpl>(myLib.LoadFunction(_T("ModuleName")));
-                    Core::System::ModuleBuildRefImpl moduleBuildRef = reinterpret_cast<Core::System::ModuleBuildRefImpl>(myLib.LoadFunction(_T("ModuleBuildRef")));
-
-                    if (moduleName != nullptr) {
-                        _moduleName = moduleName();
-                    }
-                    if (moduleBuildRef != nullptr) {
-                        _versionHash = moduleBuildRef();
-                    }
-                }
-
-                if (newIF == nullptr) {
-                    if (HasError() == false) {
-                        ErrorMessage(_T("plugin [") + string(className) + _T("] with callsign [") + PluginHost::Service::Configuration().Callsign.Value() + _T("] could not be instantiated."));
-                    }
+                if (locator.empty() == true) {
+                    Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
+                    newIF = admin.Instantiate<PluginHost::IPlugin>(Core::Library(), className, version);
                 }
                 else {
+                    if ((newIF = CheckLibrary((Information().PersistentPath() + locator), className, version)) == nullptr) {
+                        if ((newIF = CheckLibrary((Information().SystemPath() + locator), className, version)) == nullptr) {
+                            newIF = CheckLibrary((Information().AppPath() + _T("Plugins/") + locator), className, version);
+                        }
+                    }
+                }
+
+                if (newIF != nullptr) {
                     _extended = newIF->QueryInterface<PluginHost::IPluginExtended>();
                     _webRequest = newIF->QueryInterface<PluginHost::IWeb>();
                     _webSocket = newIF->QueryInterface<PluginHost::IWebSocket>();
