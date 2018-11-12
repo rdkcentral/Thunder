@@ -210,6 +210,15 @@ namespace Core {
         {
             return (m_Storage != RHS);
         }
+        inline bool operator==(const DataElement& RHS) const
+        {
+            return ((m_Size == RHS.m_Size) && (::memcmp(m_Buffer, RHS.m_Buffer, m_Size) == 0));
+        }
+        inline bool operator!=(const DataElement& RHS) const
+        {
+            return (!operator==(RHS));
+        }
+ 
         virtual uint64_t Size() const
         {
             return (m_Size);

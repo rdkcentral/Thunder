@@ -600,6 +600,9 @@ namespace Core {
                     start = _index + 1;
                 }
             }
+			if (valid == false) {
+				_index = start;
+			}
 
             return (valid);
         }
