@@ -377,7 +377,7 @@ namespace ASN1 {
     public:
         /**
          * name ASN1 Error codes
-         * These error codes are OR'ed to X509 error codes for
+         * These error codes are OR-ed to X509 error codes for
          * higher error granularity.
          * ASN1 is a standard to specify data structures.
          */
@@ -391,7 +391,7 @@ namespace ASN1 {
         Sequence(const Buffer& buffer, const uint16_t index = 0, const uint16_t length = ~0)
             : _buffer(buffer)
             , _index(index)
-            , _length(length == ~0 ? buffer.Size() : length)
+            , _length(length == static_cast<uint16_t>(~0) ? buffer.Size() : length)
         {
         }
         Sequence(const Sequence& copy)

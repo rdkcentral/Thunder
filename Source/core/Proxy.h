@@ -41,7 +41,7 @@ namespace Core {
     private:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
-        // Create a new object and modify it. If the assignement operator
+        // Create a new object and modify it. If the assignment operator
         // is used, give a compile error.
         // ----------------------------------------------------------------
         ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
@@ -62,10 +62,10 @@ namespace Core {
 		{
 			uint8_t* Space = nullptr;
 
-			// 32 bit align..
-			size_t alignedSize = ((stAllocateBlock + 3) & (static_cast<size_t>(~0) ^ 0x3));
+            // memory alignment
+            size_t alignedSize = ((stAllocateBlock + (sizeof(void *) - 1)) & (static_cast<size_t>(~(sizeof(void *) - 1))));
 
-			if (AdditionalSize != 0) {
+            if (AdditionalSize != 0) {
 				Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(uint32_t) + AdditionalSize));
 
 				if (Space != nullptr) {
@@ -73,7 +73,7 @@ namespace Core {
 				}
 			}
 			else {
-				// If we do not have an addtional buffer, it has to be "empty". The elements m_Size and m_Buffer will not be used !!!
+				// If we do not have an additional buffer, it has to be "empty". The elements m_Size and m_Buffer will not be used !!!
 				ASSERT(AdditionalSize == 0);
 
 				Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize));
@@ -470,7 +470,7 @@ namespace Core {
 		inline void Construct(const ProxyType<DERIVED>& source, const TemplateIntToType<false>&) {
 			CONTEXT* result(dynamic_cast<CONTEXT*>(source.operator->())); 
 			
-			// Althoug the constructor was called under the assumption that the object could be 
+			// Although the constructor was called under the assumption that the object could be 
 			// casted. It can *NOT* be casted, if we get a nullptr. Please fix your casting request
 			// that caused this assert !!!
 			ASSERT(result != nullptr);
@@ -540,7 +540,7 @@ namespace Core {
 
         unsigned int Find(const ProxyType<CONTEXT>& a_Entry)
         {
-            // Remeber the item on the location.
+            // Remember the item on the location.
             unsigned int l_Index = 0;
 
             ASSERT(a_Entry.IsValid() == true);
@@ -566,7 +566,7 @@ namespace Core {
                 // Copy the old list in (Dirty but quick !!!!)
                 memcpy(l_NewList, &m_List[0], (m_Max * sizeof(IReferenceCounted*)));
 
-                // Update the capcacity counter.
+                // Update the capacity counter.
                 m_Max = m_Max << 1;
 
                 // Delete the old buffer.
@@ -640,7 +640,7 @@ namespace Core {
             ASSERT(a_Entry.IsValid() != false);
             ASSERT(m_List != nullptr);
 
-            // Remeber the item on the location.
+            // Remember the item on the location.
             unsigned int l_Index = Find(a_Entry);
 
             // If it is found, remove it.
@@ -664,7 +664,7 @@ namespace Core {
                 for (unsigned int l_Teller = a_Start; l_Teller != a_Start + a_Count; l_Teller++) {
                     ASSERT(m_List[l_Teller] != nullptr);
 
-                    // Relinguish our reference to this element.
+                    // Relinquish our reference to this element.
                     m_List[l_Teller]->Release();
                 }
 
@@ -725,7 +725,7 @@ namespace Core {
         }
 
         //------------------------------------------------------------------------
-        // Protected Attributubes
+        // Protected Attributes
         //------------------------------------------------------------------------
     private:
         IReferenceCounted** m_List;
@@ -740,7 +740,7 @@ namespace Core {
         // This object should not be copied or assigned. Prevent the copy
         // constructor and assignment constructor from being used. Compiler
         // generated assignment and copy methods will be blocked by the
-        // following statments.
+        // following statements.
         // Define them but do not implement them, compile error/link error.
         // -------------------------------------------------------------------
         ProxyQueue();
