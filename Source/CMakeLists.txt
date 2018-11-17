@@ -24,6 +24,8 @@ option(WPEFRAMEWORK_LIBWPEFRAMEWORK
         "Include the libWPEFramework library." ON)
 option(WPEFRAMEWORK_CRYPTALGO
         "Include the encyption algorithm library." ON)
+option(WPEFRAMEWORK_BROADCAST
+        "Include the broadcasting library." OFF)
 option(WPEFRAMEWORK_WEBSOCKET
         "Include the websocket library." OFF)
 option(WPEFRAMEWORK_PROTOCOLS
@@ -129,6 +131,12 @@ endif()
 if(WPEFRAMEWORK_CRYPTALGO)
     set(CRYPTALGO_ARTIFACT ${NAMESPACE}Cryptalgo)
     add_subdirectory(cryptalgo)
+endif()
+
+
+if(WPEFRAMEWORK_BROADCAST)
+    set(BROADCAST_ARTIFACT ${NAMESPACE}Broadcast)
+    add_subdirectory(broadcast)
 endif()
 
 if(WPEFRAMEWORK_VIRTUALINPUT)
