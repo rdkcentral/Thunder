@@ -1,5 +1,7 @@
 set(TARGET Broadcast)
 
+find_package(Nexus REQUIRED)
+
 add_library(${TARGET} SHARED
         ProgramTable.cpp
         NexusTuner.cpp
@@ -19,6 +21,8 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}::Core
+          NEXUS::NEXUS
+          NEXUS::NXCLIENT
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -51,7 +55,7 @@ install(
 HandleStandardLib()
 
 set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/WPEFramework")
-set (LIBS_VAR "-l${TARGET}")
+set (LIBS_VAR "-l${BROADCAST_ARTIFACT}")
 
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.pc.in"

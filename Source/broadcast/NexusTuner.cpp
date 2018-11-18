@@ -68,7 +68,7 @@ namespace Broadcast {
                     , Decoders(1)
                     , Standard(ITuner::DVB)
                     , Annex(ITuner::Annex::A)
-                    , Scan(true)
+                    , Scan(false)
                     , Callsign("Streamer")
                 {
                     Add(_T("frontends"), &Frontends);
@@ -733,7 +733,7 @@ namespace Broadcast {
                 if (NEXUS_ParserBand_SetSettings(_parserBand, &parserBandSettings) == 0) {
 
                     _settings.symbolRate = symbolRate;
-                    _settings.frequency = frequency;
+                    _settings.frequency = frequency * 1000000;
                     switch (modulation) {
                     case QAM16:
                         _settings.mode = NEXUS_FrontendQamMode_e16;
@@ -795,7 +795,7 @@ namespace Broadcast {
                                 /* ATSC */ J83ASymbolRateQAM256);
                     }
 
-                    TRACE_L1("Tuning to %u Hz mode=%d sym=%d Annex=%s spectrumMode=%s Inversion=%s",
+                    TRACE_L1("Tuning to %u MHz mode=%d sym=%d Annex=%s spectrumMode=%s Inversion=%s",
                             frequency, _settings.mode, _settings.symbolRate,
                             _settings.annex == NEXUS_FrontendQamAnnex_eA ? "A" : "B",
                             _settings.spectrumMode == NEXUS_FrontendQamSpectrumMode_eAuto
@@ -912,7 +912,7 @@ namespace Broadcast {
             if (status.lockStatus == NEXUS_FrontendLockStatus_eLocked) {
                 NEXUS_Error rc = NEXUS_Frontend_RequestQamAsyncStatus(_frontend);
 
-                _collector.Open(_settings.frequency);
+                _collector.Open(_settings.frequency / 1000000);
 
                 if (rc != 0) {
                     TRACE_L1("QAM locked, but could not request Status, Error: %d !!", rc);
@@ -945,7 +945,7 @@ namespace Broadcast {
             _state.Lock();
 
             if ((_state == LOCKED) || (_state == PREPARED)) {
-                if (_collector.Program(_settings.frequency, _programId, _program) == true) {
+                if (_collector.Program((_settings.frequency / 1000000), _programId, _program) == true) {
 
                     // Just in case it was tuend to something..
                     Close();
