@@ -8,6 +8,10 @@
 #include "Configuration.h"
 #include "MetaData.h"
 
+#ifndef WPEFRAMEWORK_THREADPOOL_COUNT
+#define WPEFRAMEWORK_THREADPOOL_COUNT   6
+#endif
+
 namespace WPEFramework {
 namespace PluginHost {
 
@@ -92,7 +96,7 @@ namespace PluginHost {
             Core::ProxyType<Core::IDispatchType<void> > _job;
         };
 
-        typedef Core::ThreadPoolType<Core::Job, 6> ThreadPool;
+        typedef Core::ThreadPoolType<Core::Job, WPEFRAMEWORK_THREADPOOL_COUNT> ThreadPool;
 
     private:
         WorkerPool() = delete;
