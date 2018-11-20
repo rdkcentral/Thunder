@@ -489,7 +489,7 @@ static string DetermineProperModel(Core::JSON::String& input)
 
 Server::Server(Server::Config& configuration, ISecurity* securityHandler, const bool background)
     : _accessor()
-    , _dispatcher(PluginHost::WorkerPool::Instance(configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0))
+    , _dispatcher(configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
     , _connections(*this, DetermineAccessor(configuration, _accessor), configuration.IdleTime)
     , _config(configuration.Version.Value(),
               DetermineProperModel(configuration.Model),
@@ -567,6 +567,16 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
  
     // Add the controller as a service to the services.
     _controller = _services.Insert(metaDataConfig);
+}
+
+#ifdef __WIN32__
+#pragma warning( default : 4355 )
+#endif
+
+Server::~Server() {
+}
+
+void Server::Open() {
     _controller->Activate(PluginHost::IShell::STARTUP);
     _controller->ClassType<Plugin::Controller>()->SetServer(this);
     _controller->ClassType<Plugin::Controller>()->AddRef();
@@ -581,18 +591,15 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
 
         if (service->AutoStart() == true) {
 
-            PluginHost::WorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(&(*service), PluginHost::IShell::ACTIVATED, PluginHost::IShell::STARTUP));
+            _dispatcher.Submit(PluginHost::IShell::Job::Create(&(*service), PluginHost::IShell::ACTIVATED, PluginHost::IShell::STARTUP));
         } else {
             SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
         }
     }
+    Dispatcher().Open(MAX_EXTERNAL_WAITS);
 }
 
-#ifdef __WIN32__
-#pragma warning( default : 4355 )
-#endif
-
-Server::~Server() {
+void Server::Close () {
     Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
     _dispatcher.Block();
     _connections.Close(Core::infinite);
@@ -602,6 +609,7 @@ Server::~Server() {
     _inputHandler.Deinitialize();
     _dispatcher.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
 }
+
 
 }
 }

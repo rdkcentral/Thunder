@@ -4,6 +4,8 @@
 #include "Module.h"
 #include "SystemInfo.h"
 
+#define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
+
 namespace WPEFramework {
 
     namespace Core {
@@ -222,6 +224,124 @@ namespace WPEFramework {
             Core::JSON::ArrayType<Plugin::Config> Plugins;
         };
 
+    class EXTERNAL WorkerPoolImplementation : public PluginHost::WorkerPool {
+    private:
+        class TimedJob
+        {
+        public:
+            TimedJob ()
+                : _job()
+            {
+            }
+            TimedJob (const Core::ProxyType<Core::IDispatchType<void> >& job)
+                : _job(job)
+            {
+            }
+            TimedJob (const TimedJob& copy)
+                : _job(copy._job)
+            {
+            }
+            ~TimedJob ()
+            {
+            }
+
+            TimedJob& operator= (const TimedJob& RHS)
+            {
+                _job = RHS._job;
+                return (*this);
+            }
+            bool operator== (const TimedJob& RHS) const
+            {
+                return (_job == RHS._job);
+            }
+            bool operator!= (const TimedJob& RHS) const
+            {
+                return (_job != RHS._job);
+            }
+
+        public:
+            uint64_t Timed (const uint64_t /* scheduledTime */)
+            {
+                WorkerPoolImplementation::Instance().Submit(_job);
+                _job.Release();
+
+                // No need to reschedule, just drop it..
+                return (0);
+            }
+
+        private:
+            Core::ProxyType<Core::IDispatchType<void> > _job;
+        };
+
+        typedef Core::ThreadPoolType<Core::Job, WPEFRAMEWORK_THREADPOOL_COUNT> ThreadPool;
+
+    private:
+        WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
+
+    public:
+        WorkerPoolImplementation(const uint32_t stackSize)
+            : _workers(stackSize, _T("WorkerPoolImplementation"))
+            , _timer(stackSize, _T("WorkerTimer")) {
+        }
+        ~WorkerPoolImplementation() {
+        }
+
+    public:
+        // A-synchronous calls. If the method returns, the workers are accepting and handling work.
+        inline void Run()
+        {
+            _workers.Run();
+        }
+        // A-synchronous calls. If the method returns, the workers are all blocked, no new work will
+        // be accepted. Work in progress will be completed. Use the WaitState to wait for the actual block.
+        inline void Block()
+        {
+            _workers.Block();
+        }
+        inline void Wait(const uint32_t waitState, const uint32_t time)
+        {
+            _workers.Wait(waitState, time);
+        }
+        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            _workers.Submit(Core::Job(job), Core::infinite);
+        }
+        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch >& job) override
+        {
+            _timer.Schedule(time, TimedJob(job));
+        }
+        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch >& job, const uint32_t waitTime = Core::infinite) override
+        {
+           // First check the timer if it can be removed from there.
+            _timer.Revoke(TimedJob(job));
+
+            // Also make sure it is taken of the WorkerPoolImplementation, if applicable.
+            return (_workers.Revoke(Core::Job(job), waitTime));
+        }
+        virtual void GetMetaData(MetaData::Server& metaData) const override
+        {
+            metaData.PendingRequests = _workers.Pending();
+            metaData.PoolOccupation = _workers.Active();
+
+            for (uint8_t teller = 0; teller < _workers.Count(); teller++) {
+                // Example of why copy-constructor and assignment constructor should be equal...
+                Core::JSON::DecUInt32 newElement;
+                newElement = _workers[teller].Runs();
+                metaData.ThreadPoolRuns.Add(newElement);
+            }
+        }
+        inline ::ThreadId ThreadId(const uint8_t index) const {
+            return (index == 0 ? _timer.ThreadId() : _workers.ThreadId(index-1));
+        }
+
+    private:
+        ThreadPool _workers;
+        Core::TimerType<TimedJob> _timer;
+    };
+
+
     private:
         class ServiceMap;
         friend class Plugin::Controller;
@@ -392,7 +512,6 @@ namespace WPEFramework {
             std::string _text;
         };
  
-
         class EXTERNAL Service : public PluginHost::Service {
         private:
             Service() = delete;
@@ -978,7 +1097,7 @@ namespace WPEFramework {
 
 			public:
 				CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
-					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<64, 3> >::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
+					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16,WPEFRAMEWORK_RPCPOOL_COUNT> >::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 					, _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
 					, _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
 					, _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
@@ -1286,7 +1405,7 @@ namespace WPEFramework {
                     void Schedule() {
                         if (_schedule == false) {
                             _schedule = true;
-                            PluginHost::WorkerPool::Instance().Submit(Core::ProxyType< Core::IDispatchType<void> >(*this));
+                            _parent.WorkerPool().Submit(Core::ProxyType< Core::IDispatchType<void> >(*this));
                         }
                     }
                     virtual void Dispatch()
@@ -1307,7 +1426,7 @@ namespace WPEFramework {
                     , _decoupling(Core::ProxyType<Job>::Create(this)) {
                 }
                 virtual ~SubSystems() {
-		    PluginHost::WorkerPool::Instance().Revoke(_decoupling);
+		    _parent.WorkerPool().Revoke(_decoupling);
                 }
 
             private:
@@ -1317,6 +1436,9 @@ namespace WPEFramework {
                 }
                 inline void Evaluate() {
                     _parent.Evaluate();
+                }
+                inline PluginHost::WorkerPool& WorkerPool () {
+                    return(_parent.WorkerPool());
                 }
 
             private:
@@ -1578,6 +1700,9 @@ namespace WPEFramework {
                std::map<const string, Core::ProxyType<Service> >::iterator index(_services.begin());
 
                RecursiveNotification(index);
+           }
+           inline PluginHost::WorkerPool& WorkerPool() {
+               return (_server.WorkerPool());
            }
 
         private:
@@ -2221,6 +2346,10 @@ namespace WPEFramework {
         {
             return (_services);
         }
+        inline Server::WorkerPoolImplementation& WorkerPool()
+        {
+            return (_dispatcher);
+        }
         inline void Submit(const Core::ProxyType<Core::IDispatchType<void> >& job)
         {
             _dispatcher.Submit(job);
@@ -2248,14 +2377,15 @@ namespace WPEFramework {
         void Notify(const string& message) {
             _controller->Notification(message);
         }
-
+        void Open();
+        void Close();
 
     private:
         Core::NodeId _accessor;
 
         // Here we start dispatching to different threads for different requests if required and if we have a service
         // that can handle the request.
-        WorkerPool& _dispatcher;
+        WorkerPoolImplementation _dispatcher;
 
         // Create the server. This is a socket listening for incoming connections. Any connection comming in, will be
         // linked to this server and will forward the received requests to this server. This server will than handl it using a thread pool.

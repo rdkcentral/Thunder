@@ -4,10 +4,6 @@
 #include "TextFragment.h"
 #include "Sync.h"
 
-#ifdef __LINUX__
-#include <cxxabi.h>
-#endif
-
 namespace WPEFramework {
 namespace Core {
     class Demangling {

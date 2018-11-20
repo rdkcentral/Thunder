@@ -8,10 +8,6 @@
 #include "Configuration.h"
 #include "MetaData.h"
 
-#ifndef WPEFRAMEWORK_THREADPOOL_COUNT
-#define WPEFRAMEWORK_THREADPOOL_COUNT   6
-#endif
-
 namespace WPEFramework {
 namespace PluginHost {
 
@@ -49,116 +45,21 @@ namespace PluginHost {
 
     class EXTERNAL WorkerPool {
     private:
-        class TimedJob
-        {
-        public:
-            TimedJob ()
-                : _job()
-            {
-            }
-            TimedJob (const Core::ProxyType<Core::IDispatchType<void> >& job)
-                : _job(job)
-            {
-            }
-            TimedJob (const TimedJob& copy)
-                : _job(copy._job)
-            {
-            }
-            ~TimedJob ()
-            {
-            }
-
-            TimedJob& operator= (const TimedJob& RHS)
-            {
-                _job = RHS._job;
-                return (*this);
-            }
-            bool operator== (const TimedJob& RHS) const 
-            {
-                return (_job == RHS._job);
-            }
-            bool operator!= (const TimedJob& RHS) const 
-            {
-                return (_job != RHS._job);
-            }
-
-        public:
-            uint64_t Timed (const uint64_t /* scheduledTime */)
-            {
-                WorkerPool::Instance().Submit(_job);
-                _job.Release();
-
-                // No need to reschedule, just drop it..
-                return (0);
-            }
-
-        private:
-            Core::ProxyType<Core::IDispatchType<void> > _job;
-        };
-
-        typedef Core::ThreadPoolType<Core::Job, WPEFRAMEWORK_THREADPOOL_COUNT> ThreadPool;
-
-    private:
-        WorkerPool() = delete;
         WorkerPool(const WorkerPool&) = delete;
         WorkerPool& operator=(const WorkerPool&) = delete;
 
-        WorkerPool(const uint32_t stackSize);
+    protected:
+        WorkerPool() = default;
 
     public:
-        static WorkerPool& Instance(const uint32_t stackSize = 0);
-        ~WorkerPool();
+        static WorkerPool& Instance();
+        virtual ~WorkerPool() = default;
 
     public:
-        // A-synchronous calls. If the method returns, the workers are accepting and handling work.
-        inline void Run()
-        {
-            _workers.Run();
-        }
-        // A-synchronous calls. If the method returns, the workers are all blocked, no new work will
-        // be accepted. Work in progress will be completed. Use the WaitState to wait for the actual block.
-        inline void Block()
-        {
-            _workers.Block();
-        }
-        inline void Wait(const uint32_t waitState, const uint32_t time)
-        {
-            _workers.Wait(waitState, time);
-        }
-        inline void Submit(const Core::ProxyType<Core::IDispatch>& job)
-        {
-            _workers.Submit(Core::Job(job), Core::infinite);
-        }
-        inline void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch >& job)
-        {
-            _timer.Schedule(time, TimedJob(job));
-        }
-        inline uint32_t Revoke(const Core::ProxyType<Core::IDispatch >& job, const uint32_t waitTime = Core::infinite)
-        {
-            // First check the timer if it can be removed from there.
-            _timer.Revoke(TimedJob(job));
-
-            // Also make sure it is taken of the WorkerPool, if applicable.
-            return (_workers.Revoke(Core::Job(job), waitTime));
-        }
-        inline void GetMetaData(MetaData::Server& metaData) const
-        {
-            metaData.PendingRequests = _workers.Pending();
-            metaData.PoolOccupation = _workers.Active();
-
-            for (uint8_t teller = 0; teller < _workers.Count(); teller++) {
-                // Example of why copy-constructor and assignment constructor should be equal...
-                Core::JSON::DecUInt32 newElement;
-                newElement = _workers[teller].Runs();
-                metaData.ThreadPoolRuns.Add(newElement);
-            }
-        }
-
-    private:
-        ThreadPool _workers;
-        Core::TimerType<TimedJob> _timer;
-
-        friend class Core::SingletonType<WorkerPool>;
+        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch >& job) = 0;
+        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch >& job, const uint32_t waitTime = Core::infinite) = 0;
+        virtual void GetMetaData(MetaData::Server& metaData) const = 0;
     };
 
     class EXTERNAL Service : public IShell {

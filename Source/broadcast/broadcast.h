@@ -8,6 +8,8 @@
 #include "MPEGSection.h"
 #include "MPEGTable.h"
 #include "ProgramTable.h"
+#include "NIT.h"
+#include "SDT.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "broadcast.lib")

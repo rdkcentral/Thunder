@@ -45,24 +45,6 @@ namespace PluginHost {
         return (Core::proxy_cast<Core::IDispatchType<void>> (Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
-    WorkerPool::WorkerPool(const uint32_t stackSize)
-        : _workers(stackSize, _T("WorkerPool"))
-        , _timer(stackSize, _T("WorkerTimer"))
-    {
-        TRACE_L1("WorkerPool created with stacksize %d", stackSize);
-    }
-
-    WorkerPool::~WorkerPool()
-    {
-    }
-
-    /* static */ WorkerPool& WorkerPool::Instance(const uint32_t stackSize)
-    {
-        static WorkerPool& instance (Core::SingletonType<WorkerPool>::Instance(stackSize));
-
-        return (instance);
-    }
-
     Factories::Factories()
         : _requestFactory(10)
         , _responseFactory(10)

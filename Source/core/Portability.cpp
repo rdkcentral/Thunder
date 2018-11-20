@@ -7,9 +7,7 @@
 
 #ifdef __LINUX__
 #include <signal.h>
-#include <execinfo.h>
-
-#define CALLSTACK_SIG SIGUSR2
+#include <atomic>
 #endif
 
 using namespace WPEFramework;
@@ -30,12 +28,13 @@ int clock_gettime(int, struct timespec*){
 #endif
 
 #ifdef __LINUX__
-#if defined(__DEBUG__) || defined(CRITICAL_SECTION_LOCK_LOG)
-static pthread_t g_TargetThread, g_CallingThread;
-static void** g_ThreadCallstackBuffer;
-static int g_ThreadCallstackBufferSize;
-static int g_ThreadCallstackCount;
-static Core::CriticalSection g_CallstackMutex;
+
+static std::atomic<bool> g_lock(false);
+static pthread_t         g_targetThread;
+static void**            g_threadCallstackBuffer;
+static int               g_threadCallstackBufferSize;
+static int               g_threadCallstackBufferUsed;
+static Core::Event       g_callstackCompleted(true, true);
 
 static void* GetPCFromUContext(void* secret)
 {
@@ -95,77 +94,57 @@ static void OverrideStackTopWithPC(void** stack, int stackSize, void* secret)
 
 static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* info VARIABLE_IS_NOT_USED, void* secret)
 {
-    pthread_t myThread = pthread_self();
-    if (myThread != g_TargetThread) {
-        return;
+    if (pthread_self() == g_targetThread) {
+
+        // Initialize buffer to zeroes.
+        memset(g_threadCallstackBuffer, 0, (g_threadCallstackBufferSize * sizeof(void*)));
+
+        g_threadCallstackBufferUsed = backtrace(g_threadCallstackBuffer, g_threadCallstackBufferSize);
+
+        OverrideStackTopWithPC(g_threadCallstackBuffer, g_threadCallstackBufferSize, secret);
+
+        g_callstackCompleted.SetEvent();
     }
-
-    // Initialize buffer to zeroes.
-    memset(g_ThreadCallstackBuffer, 0, g_ThreadCallstackBufferSize);
-
-    g_ThreadCallstackCount = backtrace(g_ThreadCallstackBuffer, g_ThreadCallstackBufferSize);
-
-    OverrideStackTopWithPC(g_ThreadCallstackBuffer, g_ThreadCallstackBufferSize, secret);
-
-    // continue calling thread
-    pthread_kill((pthread_t)g_CallingThread, CALLSTACK_SIG);
 }
 
-static void SetupCallstackSignalHandler()
+uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
 {
-    struct sigaction sa;
-    sigfillset(&sa.sa_mask);
-    sa.sa_flags = SA_SIGINFO;
-    sa.sa_sigaction = CallstackSignalHandler;
-    sigaction(CALLSTACK_SIG, &sa, nullptr);
-}
-#endif
+#ifdef __LINUX__
+    uint32_t result = 0;
 
-int GetCallStack(void ** addresses, int bufferSize)
-{
-#if defined(__DEBUG__) || defined(CRITICAL_SECTION_LOCK_LOG)
-    return backtrace(addresses, bufferSize);
-#else
-    DEBUG_VARIABLE(addresses);
-    DEBUG_VARIABLE(bufferSize);
-    return 0;
-#endif
-}
+    if ( (threadId == 0) || (pthread_self() == threadId) ) {
+        result = backtrace(g_threadCallstackBuffer, g_threadCallstackBufferSize);
+    }
+    else {
+        while(std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire)) ; // spin until acquired
+    
+        struct sigaction original;
+        struct sigaction callstack;
+        sigfillset(&callstack.sa_mask);
+        callstack.sa_flags = SA_SIGINFO;
+        callstack.sa_sigaction = CallstackSignalHandler;
+        sigaction(SA_SIGINFO, &callstack, &original);
 
-int GetCallStack(ThreadId threadId, void ** addresses, int bufferSize)
-{
-#if defined(__DEBUG__) || defined(CRITICAL_SECTION_LOCK_LOG)
-    if (threadId == 0 || threadId == pthread_self()) {
-        return GetCallStack(threadId, addresses, bufferSize);
+        g_targetThread = (threadId == 0 ? pthread_self() : threadId);
+        g_threadCallstackBuffer = addresses;
+        g_threadCallstackBufferSize = bufferSize;
+        g_threadCallstackBufferUsed = 0;
+        g_callstackCompleted.ResetEvent();
+
+        // call _callstack_signal_handler in target thread
+        if (pthread_kill((pthread_t)threadId, SA_SIGINFO) == 0) {
+            g_callstackCompleted.Lock(200); // This should definitely be possible in 200 ms :-)
+        }
+
+        // Resore the original signal handler
+        sigaction(SA_SIGINFO, &original, nullptr);
+
+        result = g_threadCallstackBufferUsed;
+
+        std::atomic_store_explicit(&g_lock, false, std::memory_order_release);
     }
 
-    g_CallstackMutex.Lock();
-    g_CallingThread = pthread_self();
-    g_TargetThread = threadId;
-    g_ThreadCallstackBuffer = addresses;
-    g_ThreadCallstackBufferSize = bufferSize;
-
-    SetupCallstackSignalHandler();
-
-    // call _callstack_signal_handler in target thread
-    if (pthread_kill((pthread_t)threadId, CALLSTACK_SIG) != 0) {
-        return 0;
-    }
-
-    sigset_t mask;
-    sigfillset(&mask);
-    sigdelset(&mask, CALLSTACK_SIG);
-
-    // wait for CALLSTACK_SIG on this thread
-    sigsuspend(&mask);
-
-    g_ThreadCallstackBuffer = nullptr;
-    g_ThreadCallstackBufferSize = 0;
-    int threadCallstackCount = g_ThreadCallstackCount;
-
-    g_CallstackMutex.Unlock();
-
-    return threadCallstackCount;
+    return result;
 #else
     DEBUG_VARIABLE(threadId);
     DEBUG_VARIABLE(addresses);
@@ -176,14 +155,7 @@ int GetCallStack(ThreadId threadId, void ** addresses, int bufferSize)
 
 #else
 
-int GetCallStack(void ** addresses, int bufferSize)
-{
-    __debugbreak();
-
-	return (0);
-}
-
-int GetCallStack(ThreadId threadId, void ** addresses, int bufferSize)
+uint32_t GetCallStack(const ThreadId threadId, void*& addresses, const uint32_t bufferSize)
 {
     __debugbreak();
 
@@ -207,13 +179,13 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 
 extern "C" {
 
-void DumpCallStack()
+void DumpCallStack(const ThreadId threadId)
 {
 #ifdef __DEBUG__
 #ifdef __LINUX__
     void* addresses[20];
 
-    int addressCount = GetCallStack(addresses, (sizeof(addresses) / sizeof(addresses[0])));
+    int addressCount = GetCallStack(threadId, addresses, (sizeof(addresses) / sizeof(addresses[0])));
 
     backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
 #else

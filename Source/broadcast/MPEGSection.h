@@ -94,7 +94,7 @@ namespace MPEG {
         inline uint32_t Offset() const { return (HasSectionSyntax() ? 8 : 3); }
         inline uint16_t BaseLength() const
         {
-            return ((_section[1] & 0x03) << 8) | (_section[2]);
+            return ((_section[1] & 0x0F) << 8) | (_section[2]);
         }
         inline uint16_t DataLength() const
         {

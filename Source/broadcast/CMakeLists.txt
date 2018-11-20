@@ -15,6 +15,8 @@ set(PUBLIC_HEADERS
         MPEGSection.h
         MPEGTable.h
         ProgramTable.h
+        NIT.h
+        SDT.h
         Module.h
         )
 

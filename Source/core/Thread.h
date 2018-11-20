@@ -32,10 +32,6 @@
 #include "IAction.h"
 #include "Proxy.h"
 
-#ifdef __LINUX__
-#define CALLSTACK_SIG SIGUSR2
-#endif // __LINUX__
-
 namespace WPEFramework {
 namespace Core {
     template <typename THREADLOCALSTORAGE>
@@ -601,6 +597,9 @@ namespace Core {
         const ThreadUnitType<CONTEXT>& operator[](const uint32_t index) const
         {
             return (_units[index]);
+        }
+        ::ThreadId ThreadId(const uint8_t index) const {
+            return (index < THREADCOUNT ? _units[index].Id() : 0);
         }
 
     private:

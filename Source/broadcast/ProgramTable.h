@@ -122,7 +122,11 @@ namespace Broadcast {
 
             Programs::iterator index(_programs.find(key));
             if (index != _programs.end()) {
-                added = index->second.Load(data);
+                MPEG::PMT entry(data);
+                if (index->second != entry) {
+                    added = true;
+                    index->second = entry;
+                } 
             } else {
                 _programs.emplace(std::piecewise_construct, std::forward_as_tuple(key),
                     std::forward_as_tuple(data.Extension(), data.Data()));

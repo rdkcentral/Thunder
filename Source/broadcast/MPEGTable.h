@@ -243,15 +243,6 @@ namespace MPEG {
             return (StreamIterator(
                 Core::DataElement(_data, offset, _data.Size() - offset)));
         }
-        inline bool Load(const Table& data)
-        {
-            bool updated = false;
-            if ((data.TableId() == ID) && ((_programNumber != data.Extension()) || (_data != data.Data()))) {
-                _data = data.Data();
-                updated = true;
-            }
-            return (updated);
-        }
 
     private:
         inline uint16_t DescriptorSize() const

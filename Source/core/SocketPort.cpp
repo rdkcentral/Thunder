@@ -813,11 +813,9 @@ static SocketMonitor& g_SocketMonitor = SingletonType<SocketMonitor>::Instance()
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-#ifdef __DEBUG__
-/* static */ uint32_t SocketPort::GetCallStack(void* buffers[], uint32_t length) {
-    return (::GetCallStack(g_SocketMonitor.Id(), buffers, length));
+/* static */ ::ThreadId SocketPort::ThreadId() {
+    return (g_SocketMonitor.Id());
 }
-#endif
 
 uint32_t SocketPort::WaitForOpen (const uint32_t time) const {
 

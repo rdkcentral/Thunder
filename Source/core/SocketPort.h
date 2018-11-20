@@ -88,7 +88,7 @@ namespace Core {
         {
             return (m_State);
         }
-	static uint32_t GetCallStack(void* buffers[], uint32_t length);
+        static ::ThreadId ThreadId();
         inline void RemoteNode(const NodeId& remote)
         {
             ASSERT((IsOpen() == false) || (m_SocketType == DATAGRAM));

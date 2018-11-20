@@ -212,6 +212,10 @@ namespace Core {
 	    return (m_PendingQueue.size());
 	}
 
+        ::ThreadId ThreadId() const {
+            return (m_TimerThread.Id());
+        }
+
     protected:
         uint32_t Process()
         {

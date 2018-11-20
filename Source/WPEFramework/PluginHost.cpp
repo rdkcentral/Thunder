@@ -2,11 +2,11 @@
 
 #ifndef __WIN32__
 #include <syslog.h>
+#include <dlfcn.h>    // for dladdr
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
-#define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -98,6 +98,13 @@ namespace PluginHost {
         END_INTERFACE_MAP
     };
 
+    /* static */ WorkerPool& WorkerPool::Instance()
+    {
+        ASSERT (_dispatcher != nullptr);
+
+        return (_dispatcher->WorkerPool());
+    }
+
     extern "C" {
 
 #ifndef __WIN32__
@@ -123,6 +130,7 @@ namespace PluginHost {
 
         if (_dispatcher != nullptr) {
             PluginHost::Server* destructor = _dispatcher;
+            destructor->Close();
             _dispatcher = nullptr;
             delete destructor;
 
@@ -148,7 +156,6 @@ namespace PluginHost {
 
     void LoadPlugins(const string& name, Server::Config& config)
     {
-
         Core::Directory pluginDirectory(name.c_str(), _T("*.json"));
 
         while (pluginDirectory.Next() == true) {
@@ -195,7 +202,7 @@ namespace PluginHost {
         }
     }
 
-	#ifndef __WIN32__
+    #ifndef __WIN32__
     void StartLoopbackInterface () {
         Core::AdapterIterator adapter;
         uint8_t retries = 8;
@@ -241,6 +248,31 @@ namespace PluginHost {
         }
     }
 	#endif
+
+    static void PublishCallstack(const ::ThreadId threadId) {
+        void* callstack[32];
+        uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof (void*)));
+        char** symbols = backtrace_symbols(callstack, entries);
+
+        for (uint32_t i = 0; i < entries; i++) {
+            Dl_info info;
+            if (dladdr(callstack[i], &info) && info.dli_sname) {
+                char *demangled = NULL;
+                int status = -1;
+                if (info.dli_sname[0] == '_')
+                    demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+                fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+                     status == 0 ? demangled :
+                     info.dli_sname == 0 ? symbols[i] : info.dli_sname,
+                     (char *)callstack[i] - (char *)info.dli_saddr);
+                free(demangled);
+            } else {
+                fprintf(stdout, "%-3d %*p %s\n",
+                     i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
+            }
+        }
+        free(symbols);
+    }
 
 #ifdef __WIN32__
     int _tmain(int argc, _TCHAR* argv[])
@@ -405,7 +437,7 @@ namespace PluginHost {
         SYSLOG(PluginHost::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
         // If we have handlers open up the gates to analyze...
-        _dispatcher->Dispatcher().Open(MAX_EXTERNAL_WAITS);
+        _dispatcher->Open();
 
 #ifndef __WIN32__
         if (_background == true) {
@@ -573,24 +605,32 @@ namespace PluginHost {
                 }
 #if !defined(__WIN32__) && !defined(__APPLE__)
                 case 'M': {
-#ifdef __DEBUG__
                     printf("\nMonitor callstack:\n");
                     printf("============================================================\n");
-
-                    void* buffer[32];
-                    uint32_t length = Core::SocketPort::GetCallStack(buffer, sizeof(buffer));
-                    backtrace_symbols_fd(buffer, length, fileno(stderr));
-#else
-                    printf("Callstack for the monitor is only available in DEBUG mode.\n");
-#endif
+                    PublishCallstack(Core::SocketPort::ThreadId());
                     break;
                 }
-#endif
                 case 'Q':
                     break;
 
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                case '8':
+
+                    printf("\nThreadPool thread[%c] callstack:\n", keyPress);
+                    printf("============================================================\n");
+                    PublishCallstack(_dispatcher->WorkerPool().ThreadId((keyPress - '0')));
+                    break;
+#endif
+
                 case '?':
-                    printf("\nOptions are: [P]lugins, [C]hannels, [S]erver stats and [Q]uit\n\n");
+                    printf("\nOptions are: [P]lugins, [C]hannels, [S]erver stats, [M] Socket monitor stack, [0..8] Workerpool stack and [Q]uit\n\n");
                     break;
 
                 default:
