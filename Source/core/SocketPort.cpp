@@ -4,10 +4,10 @@
 #include "Singleton.h"
 #include "Timer.h"
 #include "ProcessInfo.h"
+#include "ResourceMonitor.h"
 
 #ifdef __POSIX__
 #include <arpa/inet.h>
-#include <poll.h>
 #include <fcntl.h>
 #include <net/if.h>
 #define __ERRORRESULT__               errno
@@ -42,19 +42,12 @@
 #pragma warning(disable: 4355) // 'this' used in initializer list
 #endif
 
-#define MAX_LISTEN_QUEUE 	64
 
 namespace WPEFramework {
 namespace Core {
-static uint32_t SLEEPSLOT_TIME = 100;
-
 
 #ifdef __DEBUG__
 #define WATCHDOG_ENABLED 
-#endif
-
-#ifdef WATCHDOG_ENABLED
-static const char WATCHDOG_THREAD_NAME[] = "SocketWatchDog";
 #endif
 
 //////////////////////////////////////////////////////////////////////
@@ -62,6 +55,9 @@ static const char WATCHDOG_THREAD_NAME[] = "SocketWatchDog";
 //////////////////////////////////////////////////////////////////////
 
 #ifdef __WIN32__
+
+namespace {
+
 class WinSocketInitializer {
 public:
     WinSocketInitializer() {
@@ -108,7 +104,22 @@ public:
 };
 
 static WinSocketInitializer g_SocketInitializer;
+
+} // Nameless namespace
+
 #endif
+
+
+//////////////////////////////////////////////////////////////////////
+// SocketPort::SocketMonitor
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+// SocketPort
+//////////////////////////////////////////////////////////////////////
+
+static constexpr uint32_t MAX_LISTEN_QUEUE = 64;
+static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
 inline void DestroySocket(SOCKET& socket) {
 #ifdef __LINUX__
@@ -148,755 +159,9 @@ bool SetNonBlocking (SOCKET socket) {
 
     return (false);
 }
-
-#ifdef WATCHDOG_ENABLED
-class SocketTimeOutHandler
-{
-public:
-   SocketTimeOutHandler()
-      : _socketMonitorThread(0)
-   {
-   }
-
-   SocketTimeOutHandler(ThreadId socketMonitorThread)
-      : _socketMonitorThread(socketMonitorThread)
-   {
-   }
-
-   SocketTimeOutHandler(const SocketTimeOutHandler& rhs)
-      : _socketMonitorThread(rhs._socketMonitorThread)
-   {
-   }
-
-   uint32_t Expired()
-   {
-      fprintf(stderr, "===> SocketPort monitor thread is in deadlock on process id %u !\nStack:\n", ProcessInfo().Id());
-      #if defined(__LINUX__) && !defined(__APPLE__)
-      void* addresses[_AllocatedStackEntries];
-      int addressCount = ::GetCallStack(_socketMonitorThread, addresses, _AllocatedStackEntries);
-      backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
-      #endif
-
-      return Core::infinite;
-   }
-
-private:
-	ThreadId _socketMonitorThread;
-
-   static const int _AllocatedStackEntries = 20;
-};
-#endif // __DEBUG__
-
-//////////////////////////////////////////////////////////////////////
-// SocketPort::SocketMonitor
-//////////////////////////////////////////////////////////////////////
-
-class SocketMonitor {
-private:
-#ifdef __LINUX__
-    static const uint8_t  FILE_DESCRIPTOR_ALLOCATION = 64;
-    static const uint32_t MAX_FILE_DESCRIPTORS = 3000;
-#endif
-
-    SocketMonitor(const SocketMonitor&) = delete;
-    SocketMonitor& operator= (const SocketMonitor&) = delete;
-
-    static constexpr uint32_t WatchDogStackSize = 1024 * 1024; // Was 64K
-
-    class MonitorWorker : public Core::Thread {
-    private:
-        MonitorWorker (const MonitorWorker&) = delete;
-        MonitorWorker& operator= (const MonitorWorker&) = delete;
-
-    public:
-        MonitorWorker(SocketMonitor& parent) :
-            Core::Thread(Thread::DefaultStackSize(), _T("SocketPortMonitor")),
-            _parent(parent) {
-            Thread::Init();
-#ifdef __WIN32__
-            if (g_SocketInitializer.IsInitialized() == false) {
-                TRACE_L1("SocketPortMonitor: Thread ID [%llu]", (uint64_t) Id());
-            }
-#else
-            TRACE_L1("SocketPortMonitor: Thread ID [%llu]", (uint64_t) Id());
-#endif
-        }
-        virtual ~MonitorWorker () {
-            Wait(Thread::BLOCKED|Thread::STOPPED, Core::infinite);
-        }
-
-    public:
-#ifdef __LINUX__
-        virtual bool Initialize() {
-            return ((Thread::Initialize() == true) && (_parent.Initialize() == true));
-        }
-#endif
-        virtual uint32_t Worker() {
-            return (_parent.Worker());
-        }
-    private:
-        SocketMonitor& _parent;
-    };
-
-public:
-    SocketMonitor() :
-        m_ThreadInstance(nullptr),
-        m_Admin(),
-        m_MonitoredPorts(),
-#ifdef SOCKET_TEST_VECTORS
-        m_MonitorRuns(0),
-#endif
-
-#ifdef __WIN32__
-        m_Action(WSACreateEvent())
-#else
-        m_MaxFileDescriptors(FILE_DESCRIPTOR_ALLOCATION),
-        m_FDArray(static_cast<struct pollfd*>(::malloc(sizeof(struct pollfd) * (m_MaxFileDescriptors+1)))),
-        m_SignalFD(-1)
-#endif
-
-#ifdef WATCHDOG_ENABLED
-        , _watchDog(WatchDogStackSize, WATCHDOG_THREAD_NAME)
-#endif
-    {
-    }
-    ~SocketMonitor() {
-        TRACE_L1("SocketPortMonitor: Closing [%d] sockets", static_cast<uint32_t>(m_MonitoredPorts.size()));
-
-        // all sockets should be gone !!! Close sockets !!!) before closing the App !!!!
-        ASSERT (m_MonitoredPorts.size() == 0);
-
-        if (m_ThreadInstance != nullptr) {
-            m_Admin.Lock();
-
-            m_MonitoredPorts.clear();
-
-            m_ThreadInstance->Block();
-            Break();
-
-            m_Admin.Unlock();
-
-            delete m_ThreadInstance;
-        }
-
-#ifdef __LINUX__
-        ::free(m_FDArray);
-        if (m_SignalFD != -1) {
-            ::close(m_SignalFD);
-        }
-#endif
-#ifdef __WIN32__
-        WSACloseEvent(m_Action);
-#endif
-    }
-
-public:
-    inline ::ThreadId Id () const {
-        return (m_ThreadInstance != nullptr ? m_ThreadInstance->Id() : 0);
-    }
-#ifdef __WIN32__
-    void Update (SocketPort& port) {
-        m_Admin.Lock();
-
-        // We are moving with the socket to -> Listning or to Connected...
-        if ((port.m_State & SocketPort::OPEN) == 0) {
-            ::WSAEventSelect(port.Socket(), m_Action, FD_CLOSE|FD_CONNECT);
-        } else if ((port.m_State & SocketPort::ACCEPT) != 0) {
-            ::WSAEventSelect(port.Socket(), m_Action, FD_CLOSE|FD_ACCEPT);
-        } else {
-            ::WSAEventSelect(port.Socket(), m_Action, FD_CLOSE|FD_READ|FD_WRITE);
-        }
-
-        m_Admin.Unlock();
-    }
-#endif
-    void Monitor(SocketPort& port) {
-        m_Admin.Lock();
-
-        // Make sure this entry does not exist, only register sockets once !!!
-#ifdef __DEBUG__
-        std::list<SocketPort*>::const_iterator index = m_MonitoredPorts.begin();
-
-        while ( (index != m_MonitoredPorts.end()) && (*index != &port) ) {
-            index++;
-        }
-        ASSERT(index == m_MonitoredPorts.end());
-#endif
-
-        m_MonitoredPorts.push_back(&port);
-
-        ASSERT ((port.m_State & SocketPort::MONITOR) == 0);
-
-        if (m_MonitoredPorts.size() == 1) {
-            if (m_ThreadInstance == nullptr) {
-                m_ThreadInstance = new MonitorWorker(*this);
-
-                // Wait till we are at least initialized
-                m_ThreadInstance->Wait (Thread::BLOCKED|Thread::STOPPED);
-            }
-
-            m_ThreadInstance->Run();
-        }
-        else {
-            Break();
-        }
-
-        m_Admin.Unlock();
-    }
-
-    inline ::ThreadId GetThreadId() {
-        return m_ThreadInstance->Id();
-    }
-
-#ifdef __DEBUG__
-    inline uint32_t SocketsInState(const SocketPort::enumState state) const {
-        switch (state) {
-        case SocketPort::ACCEPT:
-            return (m_States[0]);
-        case SocketPort::SHUTDOWN:
-            return (m_States[1]);
-        case SocketPort::OPEN:
-            return (m_States[2]);
-        case SocketPort::EXCEPTION:
-            return (m_States[3]);
-        case SocketPort::LINK:
-            return (m_States[4]);
-        case SocketPort::MONITOR:
-            return (m_States[5]);
-        default:
-            break;
-        }
-        return (0);
-    }
-#endif
-
-#ifdef SOCKET_TEST_VECTORS
-    inline uint32_t MonitorRuns () const {
-        return (m_MonitorRuns);
-    }
-#endif
-
-    inline void Suspend(SocketPort& port) {
-#ifdef __LINUX__
-        shutdown(port.Socket(), SHUT_RDWR);
-#endif
-
-#ifdef __WIN32__
-        ::WSAEventSelect(port.Socket(), m_Action, FD_CLOSE);
-        shutdown(port.Socket(), SD_BOTH);
-#endif
-    }
-
-    inline void Break() {
-
-#ifdef __APPLE__
-
-        int data = 0;
-        ::sendto(m_SignalFD,
-                 &data,
-                 sizeof(data), 0,
-                 m_signalNode,
-                 m_signalNode.Size());
-#elif defined(__LINUX__)
-        ASSERT (m_ThreadInstance != nullptr);
-
-        m_ThreadInstance->Signal(SIGUSR2);
-#endif
-
-#ifdef __WIN32__
-        ::WSASetEvent(m_Action);
-#endif
-    };
-
-private:
-#ifdef __LINUX__
-    bool Initialize() {
-        int err;
-
-
-#ifdef __APPLE__
-        char filename[] = "/tmp/WPE-communication.XXXXXX";
-        char *file = mktemp(filename);
-
-        m_SignalFD = INVALID_SOCKET;
-
-        if ((m_SignalFD = ::socket(AF_UNIX, SOCK_DGRAM, 0)) == INVALID_SOCKET) {
-            err = __ERRORRESULT__;
-            TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
-        } else if (SetNonBlocking (m_SignalFD) == false) {
-            err = 1;
-            m_SignalFD = INVALID_SOCKET;
-            ASSERT(false && "failed to make socket nonblocking ");
-        }
-        else {
-            // Do we need to find something to bind to or is it pre-destined
-            m_signalNode = Core::NodeId(file);
-            if (::bind(m_SignalFD, m_signalNode, m_signalNode.Size()) == SOCKET_ERROR) {
-                err = __ERRORRESULT__;
-                m_SignalFD = INVALID_SOCKET;
-                ASSERT(false && "failed to bind");
-            }
-            else {
-                err = 0;
-            }
-        }
-
-#else
-        sigset_t sigset;
-
-        /* Create a sigset of all the signals that we're interested in */
-        err = sigemptyset(&sigset);
-        ASSERT (err == 0);
-        err = sigaddset(&sigset, SIGUSR2);
-        ASSERT (err == 0);
-
-        /* We must block the signals in order for signalfd to receive them */
-        err = pthread_sigmask(SIG_BLOCK, &sigset, nullptr);
-        assert(err == 0);
-
-        /* Create the signalfd */
-        m_SignalFD = signalfd(-1, &sigset, 0);
-
-#endif
-        ASSERT(m_SignalFD != -1);
-
-        m_FDArray[0].fd = m_SignalFD;
-        m_FDArray[0].events = POLLIN;
-        m_FDArray[0].revents = 0;
-
-        return (err == 0);
-    }
-#endif
-
-#ifdef __LINUX__
-    uint32_t  Worker() {
-        uint32_t delay = 0;
-
-#ifdef SOCKET_TEST_VECTORS
-        m_MonitorRuns++;
-#endif
-
-        // Add entries not in the Array before we start !!!
-        m_Admin.Lock();
-
-        // Do we have enough space to allocate all file descriptors ?
-        if ((m_MonitoredPorts.size() + 1) > m_MaxFileDescriptors) {
-            m_MaxFileDescriptors = ((((m_MonitoredPorts.size() + 1) / FILE_DESCRIPTOR_ALLOCATION) + 1) * FILE_DESCRIPTOR_ALLOCATION);
-
-            ::free (m_FDArray);
-
-            // Resize the array to fit..
-            m_FDArray = static_cast<struct pollfd*>(::malloc(sizeof(struct pollfd) * m_MaxFileDescriptors));
-
-            m_FDArray[0].fd = m_SignalFD;
-            m_FDArray[0].events = POLLIN;
-            m_FDArray[0].revents = 0;
-        }
-
-        int filledFileDescriptors = 1;
-        std::list<SocketPort*>::iterator index = m_MonitoredPorts.begin();
-
-
-#ifdef __DEBUG__
-        // Determine the states of the sockets, start at 0..
-        ::memset (m_States, 0, sizeof (m_States));
-#endif
-
-        // Fill in all entries required/updated..
-        while (index != m_MonitoredPorts.end()) {
-            SocketPort* port = (*index);
-
-            ASSERT (port != nullptr);
-
-            // It is the first time we are going to pick this one up..
-            if ((port->m_State & SocketPort::MONITOR) == 0) {
-                port->m_State |= SocketPort::MONITOR;
-
-                if ((port->m_State & (SocketPort::OPEN|SocketPort::ACCEPT)) == SocketPort::OPEN) {
-                    port->Opened();
-                }
-                if ( (port->IsOpen ()) && ((port->m_State & SocketPort::WRITESLOT) != 0) ) {
-                    port->Write();
-                }
-            }
-
-            m_FDArray[filledFileDescriptors].fd = port->Socket();
-            m_FDArray[filledFileDescriptors].events = POLLIN|((port->m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)|((port->m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
-            m_FDArray[filledFileDescriptors].revents = 0;
-            filledFileDescriptors++;
-
-#ifdef __DEBUG__
-            // Determine the states of the sockets and their count..
-            //
-            // [0] = ACCEPT    = 0x04,
-            // [1] = SHUTDOWN  = 0x08,
-            // [2] = OPEN      = 0x10,
-            // [3] = EXCEPTION = 0x20,
-            // [4] = LINK      = 0x40 (TCP v.s. UDP sockets, here are the TCP socket, diff from 5 are the UDP)
-            // [5] = MONITOR   = 0x80 (Equals the number of socket available to the system to monitor.
-
-            m_States[0] += ((port->m_State & SocketPort::ACCEPT)    == 0 ? 0 : 1);
-            m_States[1] += ((port->m_State & SocketPort::SHUTDOWN)  == 0 ? 0 : 1);
-            m_States[2] += ((port->m_State & SocketPort::OPEN)      == 0 ? 0 : 1);
-            m_States[3] += ((port->m_State & SocketPort::EXCEPTION) == 0 ? 0 : 1);
-            m_States[4] += ((port->m_State & SocketPort::LINK)      == 0 ? 0 : 1);
-#endif
-
-            index++;
-        }
-
-#ifdef __DEBUG__
-        m_States[5] = filledFileDescriptors;
-#endif
-
-        if (filledFileDescriptors > 1) {
-            m_Admin.Unlock();
-
-            int result = poll(m_FDArray, filledFileDescriptors, -1);
-
-            m_Admin.Lock();
-
-            if (result ==  -1) {
-                TRACE_L1 ("poll failed with error <%d>", __ERRORRESULT__);
-
-            } else if (m_FDArray[0].revents & POLLIN) {
-#ifdef __APPLE__
-                int info;
-#else
-                /* We have a valid signal, read the info from the fd */
-                struct signalfd_siginfo info;
-#endif
-                uint32_t VARIABLE_IS_NOT_USED bytes = read(m_SignalFD, &info, sizeof(info));
-                ASSERT(bytes == sizeof(info) || bytes == 0);
-
-                // Clear the signal port..
-                m_FDArray[0].revents = 0;
-            }
-
-            // We are only interested in the filedescriptors that have a corresponding client.
-            // We also know that once a file descriptor is not found, we handled them all...
-            int fd_index = 1;
-            index = m_MonitoredPorts.begin();
-
-            while ( fd_index  < filledFileDescriptors ) {
-                ASSERT (index != m_MonitoredPorts.end());
-
-                SocketPort* socket = *index;
-
-                // As we are the only ones that take out the SocketPorts from the list, we
-                // always make sure that the iterator is on the right spot/filedescriptor.
-                ASSERT (socket->Socket() == m_FDArray[fd_index].fd);
-
-                uint16_t flagsSet = m_FDArray[fd_index].revents;
-
-#ifdef WATCHDOG_ENABLED
-                // This time is in milli seconds. Arm for 2S.
-                _watchDog.Arm(2000, SocketTimeOutHandler(Thread::ThreadId()));
-#endif
-
-                if(flagsSet != 0) {
-                    if (socket->IsListening()) {
-                        if ( (flagsSet & POLLIN) == POLLIN) {
-                            // This triggeres an Addition of clients
-                            socket->Accepted();
-                        }
-                    } else if (socket->IsOpen ()) {
-                        if (  (flagsSet & POLLOUT) != 0) {
-                            socket->Write();
-                        }
-                        if ( (flagsSet & POLLIN) != 0) {
-                            socket->Read();
-                        }
-                    } else if (socket->IsConnecting()) {
-                        if ( (flagsSet & POLLOUT) != 0) {
-                            socket->Opened();
-                        }
-                    }
-                }
-
-                if ( (socket->IsOpen ()) && ((socket->m_State & SocketPort::WRITESLOT) != 0) ) {
-                    socket->Write();
-                }
-                if ((((flagsSet & POLLHUP) != 0) || (socket->IsForcedClosing() == true)) && (socket->Closed() == true))  {
-                    index = m_MonitoredPorts.erase (index);
-                } else {
-                    index++;
-                }
-
-#ifdef WATCHDOG_ENABLED
-                _watchDog.Reset();
-#endif
- 
-                fd_index++;
-            }
-        } else {
-            m_ThreadInstance->Block();
-            delay = Core::infinite;
-        }
-
-        m_Admin.Unlock();
-
-        return (delay);
-    }
-#endif
-
-#ifdef __WIN32__
-    uint32_t  Worker() {
-        std::list<SocketPort*>::iterator index;
-
-#ifdef SOCKET_TEST_VECTORS
-        m_MonitorRuns++;
-#endif
-#ifdef __DEBUG__
-        // Determine the states of the sockets, start at 0..
-        ::memset (m_States, 0, sizeof (m_States));
-#endif
-
-        m_Admin.Lock();
-
-        // Now iterate over the sockets and determine their states..
-        index = m_MonitoredPorts.begin();
-
-        while (index != m_MonitoredPorts.end()) {
-
-#ifdef __DEBUG__
-            // Determine the states of the sockets and their count..
-            //
-            // [0] = ACCEPT    = 0x04,
-            // [1] = SHUTDOWN  = 0x08,
-            // [2] = OPEN      = 0x10,
-            // [3] = EXCEPTION = 0x20,
-            // [4] = LINK      = 0x40 (TCP v.s. UDP sockets, here are the TCP socket, diff from 5 are the UDP)
-            // [5] = MONITOR   = 0x80 (Equals the number of socket available to the system to monitor.
-
-            m_States[0] += (((*index)->m_State & SocketPort::ACCEPT)    == 0 ? 0 : 1);
-            m_States[1] += (((*index)->m_State & SocketPort::SHUTDOWN)  == 0 ? 0 : 1);
-            m_States[2] += (((*index)->m_State & SocketPort::OPEN)      == 0 ? 0 : 1);
-            m_States[3] += (((*index)->m_State & SocketPort::EXCEPTION) == 0 ? 0 : 1);
-            m_States[4] += (((*index)->m_State & SocketPort::LINK)      == 0 ? 0 : 1);
-#endif
-            // It is the first time we are going to pick this one up..
-            if (((*index)->m_State & SocketPort::MONITOR) == 0) {
-
-                (*index)->m_State |= SocketPort::MONITOR;
-
-                if (((*index)->m_State & SocketPort::OPEN) == 0) {
-                    ::WSAEventSelect((*index)->Socket(), m_Action, FD_CLOSE|FD_CONNECT);
-                } else {
-                    if (((*index)->m_State & SocketPort::ACCEPT) != 0) {
-                        ::WSAEventSelect((*index)->Socket(), m_Action, FD_CLOSE|FD_ACCEPT);
-                    } else {
-                        ::WSAEventSelect((*index)->Socket(), m_Action, FD_CLOSE|FD_READ|FD_WRITE);
-
-                        // We are observing, so it is safe to trigger a state change now.
-                        (*index)->Opened();
-                    }
-                }
-
-				if (((*index)->IsOpen()) && (((*index)->m_State & SocketPort::WRITESLOT) != 0)) {
-					(*index)->Write();
-				}
-            }
-            index++;
-        }
-
-#ifdef __DEBUG__
-        m_States[5] = m_MonitoredPorts.size();
-#endif
-
-        m_Admin.Unlock();
-
-        WaitForSingleObject(m_Action, Core::infinite);
-
-        m_Admin.Lock();
-
-        // Find all "pending" sockets and signal them..
-        index = m_MonitoredPorts.begin();
-
-        ::WSAResetEvent(m_Action);
-
-        while (index != m_MonitoredPorts.end()) {
-            SocketPort* socket = (*index);
-
-            ASSERT (index != m_MonitoredPorts.end());
-            ASSERT (socket != nullptr);
-
-            WSANETWORKEVENTS networkEvents;
-
-            // Re-enable monitoring for the next round..
-            ::WSAEnumNetworkEvents(socket->Socket(), nullptr, &networkEvents);
-
-            uint16_t result = static_cast<uint16_t>(networkEvents.lNetworkEvents);
-
-#ifdef WATCHDOG_ENABLED
-                // This time is in milli seconds. Arm for 2S.
-                _watchDog.Arm(2000, SocketTimeOutHandler(Thread::ThreadId()));
-#endif
-
-            if(result != 0) {
-
-                if ( (result & FD_ACCEPT) != 0) {
-                    // This triggeres an Addition of clients
-                    socket->Accepted();
-                } else if (socket->IsOpen()) {
-                    if ( (result & FD_WRITE) != 0) {
-                        socket->Write();
-                    }
-                    if ( (result & FD_READ) != 0) {
-                        socket->Read();
-                    }
-                } else if ( (result & FD_CONNECT) != 0) {
-                    ::WSAEventSelect((*index)->Socket(), m_Action, FD_CLOSE|FD_READ|FD_WRITE);
-                    socket->Opened();
-                }
-            }
-
-            if ( (socket->IsOpen()) && ((socket->m_State & SocketPort::WRITESLOT) != 0) ) {
-                socket->Write();
-            }
-
-            if ( (((result & FD_CLOSE) != 0) || (socket->IsForcedClosing() == true)) && (socket->Closed() == true) ) {
-                index = m_MonitoredPorts.erase (index);
-            } else {
-                index++;
-            }
-
-#ifdef WATCHDOG_ENABLED
-                _watchDog.Reset();
-#endif
-        }
-
-        bool socketToObserve = (m_MonitoredPorts.size() > 0);
-
-        if (socketToObserve == false) {
-            m_ThreadInstance->Block();
-        }
-
-        m_Admin.Unlock();
-
-        return (socketToObserve == false ? Core::infinite : 0);
-    }
-
-#endif
-
-private:
-    MonitorWorker* m_ThreadInstance;
-    mutable Core::CriticalSection     m_Admin;
-    std::list<SocketPort*>        m_MonitoredPorts;
-#ifdef SOCKET_TEST_VECTORS
-    uint32_t			      m_MonitorRuns;
-#endif
-
-#ifdef __LINUX__
-    uint32_t          m_MaxFileDescriptors;
-    struct pollfd*  m_FDArray;
-    int             m_SignalFD;
-#endif
-
-#ifdef __WIN32__
-    HANDLE          m_Action;
-#endif
-#ifdef __DEBUG__
-    uint32_t		m_States[8];
-#endif
-#ifdef WATCHDOG_ENABLED
-    WatchDogType<SocketTimeOutHandler> _watchDog;
-#endif
-#ifdef __APPLE__
-    Core::NodeId m_signalNode;
-#endif
-};
-
-
-static SocketMonitor& g_SocketMonitor = SingletonType<SocketMonitor>::Instance();
-
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-/* static */ ::ThreadId SocketPort::ThreadId() {
-    return (g_SocketMonitor.Id());
-}
-
-uint32_t SocketPort::WaitForOpen (const uint32_t time) const {
-
-    // Make sure the state does not change in the mean time.
-    m_syncAdmin.Lock();
-
-    uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
-
-    // Right, a wait till connection is closed is requested..
-    while ( (waiting > 0) && (IsOpen() == false) ) {
-        // Make sure we aren't in the monitor thread waiting for close completion.
-        ASSERT(Core::Thread::ThreadId() != g_SocketMonitor.GetThreadId());
-
-        uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ?  SLEEPSLOT_TIME : waiting);
-
-        m_syncAdmin.Unlock();
-
-        // Right, lets sleep in slices of 100 ms
-        SleepMs (sleepSlot);
-
-        m_syncAdmin.Lock();
-
-        waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
-    }
-
-    uint32_t result = (((time == 0) || (IsOpen() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
-
-    m_syncAdmin.Unlock();
-
-    return (result);
-}
-
-uint32_t SocketPort::WaitForClosure (const uint32_t time) const {
-    // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
-#ifdef __DEBUG__
-    uint32_t waiting = time; // Expect time in MS
-    uint32_t reportSlot = 0;
-#else
-    uint32_t waiting = (time == Core::infinite ? 20000 : time);
-#endif
-
-    // Right, a wait till connection is closed is requested..
-    while ( (waiting > 0) && (IsClosed() == false) ) {
-        // Make sure we aren't in the monitor thread waiting for close completion.
-        ASSERT(Core::Thread::ThreadId() != g_SocketMonitor.GetThreadId());
-
-        uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
-
-        m_syncAdmin.Unlock();
-
-        // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
-        SleepMs (sleepSlot);
-
-        m_syncAdmin.Lock();
-
-#ifdef __DEBUG__
-        if ((++reportSlot  & 0x1F) == 0) {
-            TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State);
-        }
-        waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
-#else
-        waiting -= sleepSlot;
-#endif
-    }
-    return (IsClosed() ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
-}
-
-/* static */ uint32_t SocketPort::SocketsInState(const enumState state) {
-#ifdef __DEBUG__
-    return (g_SocketMonitor.SocketsInState(state));
-#else
-    DEBUG_VARIABLE(state);
-    return (0);
-#endif
-}
-
-#ifdef SOCKET_TEST_VECTORS
-/* static */ uint32_t SocketPort::MonitorRuns() {
-    return (g_SocketMonitor.MonitorRuns());
-}
-#endif
 
 SocketPort::SocketPort(
     const enumType     socketType,
@@ -963,6 +228,11 @@ SocketPort::~SocketPort() {
     ::free(m_SendBuffer);
 }
 
+
+//////////////////////////////////////////////////////////////////////
+// PUBLIC SocketPort Interface
+//////////////////////////////////////////////////////////////////////
+
 uint32_t SocketPort::TTL() const
 {
 	uint32_t value;
@@ -973,8 +243,9 @@ uint32_t SocketPort::TTL() const
 #else
 	socklen_t size = sizeof(value);
 	if (getsockopt(m_Socket, SOL_IP, IP_TTL, reinterpret_cast<char*>(&value), &size) != 0)
+            
 #endif
-		return (static_cast<uint32_t>(~0));
+            return (static_cast<uint32_t>(~0));
 
 	return (value);
 }
@@ -1006,6 +277,157 @@ bool SocketPort::Broadcast(const bool enabled) {
     return (true);
 
 }
+
+uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface) {
+    uint32_t nStatus = Core::ERROR_ILLEGAL_STATE;
+
+	m_ReadBytes = 0;
+	m_SendBytes = 0;
+	m_SendOffset = 0;
+
+    if ((m_State & (SocketPort::LINK|SocketPort::OPEN|SocketPort::MONITOR)) == (SocketPort::LINK|SocketPort::OPEN)) {
+        // Open up an accepted socket, but not yet added to the monitor.
+        nStatus = Core::ERROR_NONE;
+    } else {
+        ASSERT ((m_Socket == INVALID_SOCKET) && (m_State == 0));
+
+        if ( (m_SocketType == SocketPort::RAW) || (m_SocketType == SocketPort::STREAM) ) {
+            if (m_LocalNode.IsValid() == false) {
+                m_LocalNode = m_RemoteNode.Origin();
+            }
+        }
+
+        ASSERT (((m_SocketType != LISTEN) || (m_LocalNode.IsValid() == true)) && ((m_SocketType != STREAM) || (m_RemoteNode.Type () == m_LocalNode.Type())));
+
+        m_Socket = ConstructSocket(m_LocalNode, specificInterface);
+
+        if(m_Socket != INVALID_SOCKET) {
+            if( (m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
+                m_State = SocketPort::OPEN|SocketPort::READ;
+
+                nStatus = Core::ERROR_NONE;
+            } else if(m_SocketType == LISTEN) {
+                if(::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
+                    TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
+                } else {
+                    // Trigger state to Open
+                    m_State = SocketPort::OPEN|SocketPort::ACCEPT;
+
+                    nStatus  = Core::ERROR_NONE;
+                }
+            } else {
+                if(::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
+                    m_State = SocketPort::LINK|SocketPort::OPEN|SocketPort::READ;
+                    nStatus = Core::ERROR_NONE;
+                } else {
+                    int l_Result = __ERRORRESULT__;
+
+                    if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
+                        m_State = SocketPort::LINK|SocketPort::WRITE;
+                        nStatus = Core::ERROR_INPROGRESS;
+                    } else if (l_Result == __ERROR_ISCONN__) {
+                        nStatus = Core::ERROR_ALREADY_CONNECTED;
+                    } else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
+                        nStatus = Core::ERROR_UNREACHABLE_NETWORK;
+                    } else {
+                        TRACE_L1 ("Connect failed, error: %d", l_Result);
+                        nStatus = Core::ERROR_ASYNC_FAILED;
+                    }
+                }
+            }
+        }
+    }
+
+    if ( (nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS) ) {
+        m_State |= SocketPort::UPDATE;
+        ResourceMonitor::Instance().Monitor(*this);
+
+        if (nStatus == Core::ERROR_INPROGRESS) {
+            if (waitTime > 0) {
+                // We are good to go, we just have to wait till we are connected..
+                nStatus = WaitForOpen(waitTime);
+            } else if (IsOpen() == true) {
+                nStatus = Core::ERROR_NONE;
+            }
+        }
+
+    } else {
+        DestroySocket(m_Socket);
+    }
+
+
+    return (nStatus);
+}
+
+uint32_t SocketPort::Close(const uint32_t waitTime) {
+
+    // Make sure the state does not change in the mean time.
+    m_syncAdmin.Lock();
+
+    bool closed = IsClosed();
+
+    if (m_Socket != INVALID_SOCKET) {
+
+        if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
+
+            if ( ((m_State & LINK) == 0) || ((m_State & OPEN) == 0) ) {
+                // This is a connectionless link, do not expect a close from the otherside.
+                // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
+                m_State |= (SHUTDOWN|EXCEPTION);
+
+                ResourceMonitor::Instance().Break();
+            } else {
+            	m_State |= SHUTDOWN;
+
+                // Block new data from coming in, signal the other side that we close !!
+                #ifdef __LINUX__
+                shutdown(m_Socket, SHUT_RDWR);
+                #endif
+
+                #ifdef __WIN32__
+                shutdown(m_Socket, SD_BOTH);
+                #endif
+            }
+        }
+
+        if (waitTime > 0) {
+            closed = (WaitForClosure(waitTime) == Core::ERROR_NONE);
+
+            if (closed == false) {
+                // Make this a forced close !!!
+                m_State |= EXCEPTION;
+
+                // We probably did not get a response from the otherside on the close
+                // sloppy but let's forcefully close it
+                ResourceMonitor::Instance().Break();
+
+                closed = (WaitForClosure(Core::infinite) == Core::ERROR_NONE);
+
+                ASSERT (closed == true);
+            }
+        }
+
+    }
+
+    m_syncAdmin.Unlock();
+
+    return (closed ? Core::ERROR_NONE : Core::ERROR_PENDING_SHUTDOWN);
+}
+
+void SocketPort::Trigger() {
+    m_syncAdmin.Lock();
+
+    if ((m_State & (SocketPort::SHUTDOWN|SocketPort::OPEN|SocketPort::EXCEPTION)) == SocketPort::OPEN) {
+
+        m_State |= SocketPort::WRITESLOT;
+        ResourceMonitor::Instance().Break();
+    }
+    m_syncAdmin.Unlock();
+}
+
+//////////////////////////////////////////////////////////////////////
+// PRIVATE SocketPort interface
+//////////////////////////////////////////////////////////////////////
 
 void SocketPort::BufferAlignment (SOCKET socket) {
     socklen_t valueLength = sizeof(int);
@@ -1155,145 +577,153 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
     return (INVALID_SOCKET);
 }
 
-uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface) {
-    uint32_t nStatus = Core::ERROR_ILLEGAL_STATE;
 
-	m_ReadBytes = 0;
-	m_SendBytes = 0;
-	m_SendOffset = 0;
-
-    if ((m_State & (SocketPort::LINK|SocketPort::OPEN|SocketPort::MONITOR)) == (SocketPort::LINK|SocketPort::OPEN)) {
-        // Open up an accepted socket, but not yet added to the monitor.
-        nStatus = Core::ERROR_NONE;
-    } else {
-        ASSERT ((m_Socket == INVALID_SOCKET) && (m_State == 0));
-
-        if ( (m_SocketType == SocketPort::RAW) || (m_SocketType == SocketPort::STREAM) ) {
-            if (m_LocalNode.IsValid() == false) {
-                m_LocalNode = m_RemoteNode.Origin();
-            }
-        }
-
-        ASSERT (((m_SocketType != LISTEN) || (m_LocalNode.IsValid() == true)) && ((m_SocketType != STREAM) || (m_RemoteNode.Type () == m_LocalNode.Type())));
-
-        m_Socket = ConstructSocket(m_LocalNode, specificInterface);
-
-        if(m_Socket != INVALID_SOCKET) {
-            if( (m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
-                m_State = SocketPort::OPEN|SocketPort::READ;
-
-                nStatus = Core::ERROR_NONE;
-            } else if(m_SocketType == LISTEN) {
-                if(::listen(m_Socket, MAX_LISTEN_QUEUE) == SOCKET_ERROR) {
-                    TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
-                } else {
-                    // Trigger state to Open
-                    m_State = SocketPort::OPEN|SocketPort::ACCEPT;
-
-                    nStatus  = Core::ERROR_NONE;
-                }
-            } else {
-                if(::connect(m_Socket, static_cast<const NodeId&>(m_RemoteNode), m_RemoteNode.Size()) != SOCKET_ERROR) {
-                    m_State = SocketPort::LINK|SocketPort::OPEN|SocketPort::READ;
-                    nStatus = Core::ERROR_NONE;
-                } else {
-                    int l_Result = __ERRORRESULT__;
-
-                    if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
-                        m_State = SocketPort::LINK|SocketPort::WRITE;
-                        nStatus = Core::ERROR_INPROGRESS;
-                    } else if (l_Result == __ERROR_ISCONN__) {
-                        nStatus = Core::ERROR_ALREADY_CONNECTED;
-                    } else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
-                        nStatus = Core::ERROR_UNREACHABLE_NETWORK;
-                    } else {
-                        TRACE_L1 ("Connect failed, error: %d", l_Result);
-                        nStatus = Core::ERROR_ASYNC_FAILED;
-                    }
-                }
-            }
-        }
-    }
-
-    if ( (nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS) ) {
-        g_SocketMonitor.Monitor(*this);
-
-        if (nStatus == Core::ERROR_INPROGRESS) {
-            if (waitTime > 0) {
-                // We are good to go, we just have to wait till we are connected..
-                nStatus = WaitForOpen(waitTime);
-            } else if (IsOpen() == true) {
-                nStatus = Core::ERROR_NONE;
-            }
-        }
-
-    } else {
-        DestroySocket(m_Socket);
-    }
-
-
-    return (nStatus);
-}
-
-uint32_t SocketPort::Close(const uint32_t waitTime) {
+uint32_t SocketPort::WaitForOpen (const uint32_t time) const {
 
     // Make sure the state does not change in the mean time.
     m_syncAdmin.Lock();
 
-    bool closed = IsClosed();
+    uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
 
-    if (m_Socket != INVALID_SOCKET) {
+    // Right, a wait till connection is closed is requested..
+    while ( (waiting > 0) && (IsOpen() == false) ) {
+        // Make sure we aren't in the monitor thread waiting for close completion.
+        ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-        if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
+        uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ?  SLEEPSLOT_TIME : waiting);
 
-            if ( ((m_State & LINK) == 0) || ((m_State & OPEN) == 0) ) {
-                // This is a connectionless link, do not expect a close from the otherside.
-                // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
-                m_State |= (SHUTDOWN|EXCEPTION);
+        m_syncAdmin.Unlock();
 
-                g_SocketMonitor.Break();
-            } else {
-            	m_State |= SHUTDOWN;
+        // Right, lets sleep in slices of 100 ms
+        SleepMs (sleepSlot);
 
-                // Block new data from coming in, signal the other side that we close !!
-                g_SocketMonitor.Suspend(*this);
-            }
-        }
+        m_syncAdmin.Lock();
 
-        if (waitTime > 0) {
-            closed = (WaitForClosure(waitTime) == Core::ERROR_NONE);
-
-            if (closed == false) {
-                // Make this a forced close !!!
-                m_State |= EXCEPTION;
-
-                // We probably did not get a response from the otherside on the close
-                // sloppy but let's forcefully close it
-                g_SocketMonitor.Break();
-
-                closed = (WaitForClosure(Core::infinite) == Core::ERROR_NONE);
-
-                ASSERT (closed == true);
-            }
-        }
-
+        waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
     }
+
+    uint32_t result = (((time == 0) || (IsOpen() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 
     m_syncAdmin.Unlock();
 
-    return (closed ? Core::ERROR_NONE : Core::ERROR_PENDING_SHUTDOWN);
+    return (result);
 }
 
-void SocketPort::Trigger() {
-    m_syncAdmin.Lock();
+uint32_t SocketPort::WaitForClosure (const uint32_t time) const {
+    // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
+#ifdef __DEBUG__
+    uint32_t waiting = time; // Expect time in MS
+    uint32_t reportSlot = 0;
+#else
+    uint32_t waiting = (time == Core::infinite ? 20000 : time);
+#endif
 
-    if ((m_State & (SocketPort::SHUTDOWN|SocketPort::OPEN|SocketPort::EXCEPTION)) == SocketPort::OPEN) {
+    // Right, a wait till connection is closed is requested..
+    while ( (waiting > 0) && (IsClosed() == false) ) {
+        // Make sure we aren't in the monitor thread waiting for close completion.
+        ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-        m_State |= SocketPort::WRITESLOT;
-        g_SocketMonitor.Break();
+        uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+
+        m_syncAdmin.Unlock();
+
+        // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
+        SleepMs (sleepSlot);
+
+        m_syncAdmin.Lock();
+
+#ifdef __DEBUG__
+        if ((++reportSlot  & 0x1F) == 0) {
+            TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State);
+        }
+        waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+#else
+        waiting -= sleepSlot;
+#endif
     }
-    m_syncAdmin.Unlock();
+    return (IsClosed() ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 }
+
+uint16_t SocketPort::Events() {
+    #ifdef __WIN32__
+    uint16_t result = FD_CLOSE;
+    #else
+    uint16_t result = POLLIN;
+    #endif 
+
+    // It is the first time we are going to pick this one up..
+    if ((m_State & SocketPort::MONITOR) == 0) {
+        m_State |= SocketPort::MONITOR;
+
+        if ((m_State & (SocketPort::OPEN|SocketPort::ACCEPT)) == SocketPort::OPEN) {
+            Opened();
+        }
+    }
+
+    if ((m_State & UPDATE) != 0) {
+        m_State ^= UPDATE;
+
+        #ifdef __WIN32__
+        result |= 0x8000 | ((m_State & SocketPort::ACCEPT) != 0 ? FD_ACCEPT : ((m_State & SocketPort::OPEN) != 0 ? FD_READ|FD_WRITE : FD_CONNECT));
+        #endif
+    }
+
+    #ifdef __LINUX__
+    result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)|((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
+    #endif
+    if ((IsForcedClosing() == true) && (Closed() == true))  {
+        result = 0;
+        m_State &= ~SocketPort::MONITOR;
+    }
+    else if ((IsOpen()) && ((m_State & SocketPort::WRITESLOT) != 0)) {
+        Write();
+    }
+
+    return (result);
+}
+
+void SocketPort::Handle (const uint16_t flagsSet) {
+
+    #ifdef __WIN32__
+    if (IsListening()) {
+        if ((flagsSet & FD_ACCEPTED) != 0) {
+            // This triggeres an Addition of clients
+            Accepted();
+        }
+    } else if (IsOpen()) {
+        if ((flagsSet & FD_WRITE) != 0) {
+            Write();
+        }
+        if ((flagsSet & FD_READ) != 0) {
+            Read();
+        }
+    } else if (IsConnecting()) {
+        if ( (flagsSet & FD_CONNECT) != 0) {
+            Opened();
+            m_State |= UPDATE;
+        }
+    }
+#else
+    if (IsListening()) {
+        if ((flagsSet & POLLIN) != 0) {
+            // This triggeres an Addition of clients
+            Accepted();
+        }
+    } else if (IsOpen()) {
+        if ((flagsSet & POLLOUT) != 0) {
+            Write();
+        }
+        if ((flagsSet & POLLIN) != 0) {
+            Read();
+        }
+    } else if (IsConnecting()) {
+        if ( (flagsSet & POLLOUT) != 0) {
+            Opened();
+        }
+    }
+#endif
+}
+
 
 void SocketPort::Write() {
     bool dataLeftToSend = true;
@@ -1494,11 +924,7 @@ NodeId SocketPort::Accept () {
         DestroySocket(m_Socket);
 
         m_Socket = result;
-        m_State = (SocketPort::MONITOR|SocketPort::LINK|SocketPort::OPEN|SocketPort::READ|SocketPort::WRITESLOT);
-
-#ifdef __WIN32__
-        g_SocketMonitor.Update(*this);
-#endif
+        m_State = (SocketPort::UPDATE|SocketPort::MONITOR|SocketPort::LINK|SocketPort::OPEN|SocketPort::READ|SocketPort::WRITESLOT);
     }
 
     return (newConnection);
@@ -1525,10 +951,7 @@ void SocketPort::Listen () {
             TRACE_L5("Error on port socket LISTEN. Error %d", __ERRORRESULT__);
         } else {
             // Trigger state to Open
-            m_State = SocketPort::MONITOR|SocketPort::OPEN|SocketPort::ACCEPT;
-#ifdef __WIN32__
-            g_SocketMonitor.Update(*this);
-#endif
+            m_State = SocketPort::UPDATE|SocketPort::MONITOR|SocketPort::OPEN|SocketPort::ACCEPT;
         }
     }
 }

@@ -212,6 +212,8 @@ typedef std::string string;
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <cxxabi.h>
+#include <poll.h>
+
 
 #ifdef __APPLE__
 #include <pthread_impl.h>

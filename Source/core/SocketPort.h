@@ -9,6 +9,7 @@
 #include "Portability.h"
 #include "NodeId.h"
 #include "StateTrigger.h"
+#include "ResourceMonitor.h"
 
 #ifdef __WIN32__
 #include <winsock2.h>
@@ -27,9 +28,15 @@
 
 namespace WPEFramework {
 namespace Core {
-    class EXTERNAL SocketPort {
-    private:
-        friend class SocketMonitor;
+   class EXTERNAL SocketPort : public IResource {
+   private:
+        // -------------------------------------------------------------------------
+        // This object should not be copied, assigned or created with a default
+        // constructor. Prevent them from being used, generatoed by the compiler.
+        // define them but do not implement them. Compile error and/or link error.
+        // -------------------------------------------------------------------------
+        SocketPort(const SocketPort& a_RHS) = delete;
+        SocketPort& operator=(const SocketPort& a_RHS) = delete;
 
     public:
         typedef enum {
@@ -41,7 +48,8 @@ namespace Core {
             EXCEPTION = 0x020,
             LINK = 0x040,
             MONITOR = 0x080,
-            WRITESLOT = 0x100
+            WRITESLOT = 0x100,
+            UPDATE = 0x8000
 
         } enumState;
 
@@ -52,21 +60,7 @@ namespace Core {
             RAW
 
         } enumType;
-        // -------------------------------------------------------------------------
-        // This object should not be copied, assigned or created with a default
-        // constructor. Prevent them from being used, generatoed by the compiler.
-        // define them but do not implement them. Compile error and/or link error.
-        // -------------------------------------------------------------------------
-    private:
-        SocketPort(const SocketPort& a_RHS) = delete;
-        SocketPort& operator=(const SocketPort& a_RHS) = delete;
 
-    public:
-        static uint32_t SocketsInState(const enumState state);
-
-#ifdef SOCKET_TEST_VECTORS
-        static uint32_t MonitorRuns();
-#endif
 
     public:
         SocketPort(const enumType socketType,
@@ -88,7 +82,6 @@ namespace Core {
         {
             return (m_State);
         }
-        static ::ThreadId ThreadId();
         inline void RemoteNode(const NodeId& remote)
         {
             ASSERT((IsOpen() == false) || (m_SocketType == DATAGRAM));
@@ -129,7 +122,6 @@ namespace Core {
         {
             return ((m_State & (SocketPort::SHUTDOWN | SocketPort::EXCEPTION)) == SocketPort::EXCEPTION);
         }
-
         inline bool operator==(const SocketPort& RHS) const
         {
             return (m_Socket == RHS.m_Socket);
@@ -203,7 +195,7 @@ namespace Core {
         virtual void StateChange() = 0;
 
         // In case of a single connection should be accepted, these methods help
-        // changing the scoket from a Listening socket to a connected socket and
+        // changing the socket from a Listening socket to a connected socket and
         // back in case the socket closes.
         // REMARK: These methods should ONLY be called on the StateChange to
         //         Accepted (Accept) and the StateChange to Closed (Listen).
@@ -212,14 +204,16 @@ namespace Core {
         SOCKET Accept(NodeId& remoteId);
 
     private:
-        inline SOCKET Socket()
+        virtual IResource::handle Descriptor() override
         {
-            return (m_Socket);
+            return (static_cast<IResource::handle>(m_Socket));
         }
         inline uint32_t SocketMode() const
         {
             return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : SOCK_RAW));
         }
+        virtual uint16_t Events() override;
+        virtual void Handle(const uint16_t events) override;
         bool Closed();
         void Opened();
         void Accepted();

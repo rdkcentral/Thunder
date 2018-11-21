@@ -679,8 +679,6 @@ namespace Broadcast {
                 _stcSettings.mode = NEXUS_StcChannelMode_ePcr;
                 _stcSettings.modeSettings.pcr.offsetThreshold = 0xFF;
                 _stcSettings.modeSettings.pcr.pidChannel = nullptr;
-
-                TRACE_L1("Frontend=%p ParserBand=%p", _frontend, _parserBand);
             }
         }
 

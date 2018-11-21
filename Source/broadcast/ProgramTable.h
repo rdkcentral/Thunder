@@ -65,7 +65,7 @@ namespace Broadcast {
 
             _adminLock.Lock();
 
-            ASSERT(_observers.find(frequency) == _observers.end());
+            ASSERT(_observers.find(callback) == _observers.end());
 
             auto index = _observers.emplace(
                 std::piecewise_construct, std::forward_as_tuple(callback),

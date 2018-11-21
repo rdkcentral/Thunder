@@ -37,6 +37,7 @@ add_library(${TARGET} SHARED
         Time.cpp
         Trace.cpp
         XGetopt.cpp
+        ResourceMonitor.cpp
         )
 
 #TODO: Remove all non public headers from this list,
@@ -88,6 +89,7 @@ set(PUBLIC_HEADERS
         ReadWriteLock.h
         Rectangle.h
         RequestResponse.h
+        ResourceMonitor.h
         Serialization.h
         SerialPort.h
         Services.h

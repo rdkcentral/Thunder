@@ -498,7 +498,7 @@ namespace PluginHost {
                     printf("\nServer statistics:\n");
                     printf("============================================================\n");
 #ifdef SOCKET_TEST_VECTORS
-                    printf("Monitorruns: %d\n", Core::SocketPort::MonitorRuns());
+                    printf("Monitorruns: %d\n", Core::ResourceMonitor::Instance().Runs());
 #endif
                     if (status != nullptr) {
                         uint8_t buffer[64] = {};
@@ -607,7 +607,7 @@ namespace PluginHost {
                 case 'M': {
                     printf("\nMonitor callstack:\n");
                     printf("============================================================\n");
-                    PublishCallstack(Core::SocketPort::ThreadId());
+                    PublishCallstack(Core::ResourceMonitor::Instance().Id());
                     break;
                 }
                 case 'Q':

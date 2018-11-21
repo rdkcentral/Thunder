@@ -27,6 +27,7 @@
 #include "Serialization.h"
 #include "StateTrigger.h"
 #include "Thread.h"
+#include "ResourceMonitor.h"
 #include "Time.h"
 #include "Timer.h"
 #include "Proxy.h"

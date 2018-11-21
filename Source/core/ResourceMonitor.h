@@ -5,10 +5,21 @@
 #include "Portability.h"
 #include "Trace.h"
 #include "Thread.h"
+#include "Singleton.h"
 
 namespace WPEFramework {
 
 namespace Core {
+
+struct IResource {
+    virtual ~IResource() {}
+
+    typedef signed int handle;
+
+    virtual handle Descriptor() = 0;
+    virtual uint16_t Events() = 0;
+    virtual void Handle(const uint16_t events) = 0;
+};
 
 template<typename RESOURCE, typename WATCHDOG = Void>
 class ResourceMonitorType {
@@ -33,7 +44,7 @@ private:
         }
         virtual ~MonitorWorker () {
             Stop();
-            Break();
+            _parent.Break();
             Wait(Thread::BLOCKED|Thread::STOPPED, Core::infinite);
         }
 
@@ -57,13 +68,13 @@ public:
         , _resourceList()
         , _monitorRuns(0) 
         , _watchDog()
-        , _name(_T("Monitor::) + ClassNameOnly(typeid(RESOURCE).name()).Text()) 
+        , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text()) 
         #ifdef __WIN32__
-        _action(WSACreateEvent())
+        , _action(WSACreateEvent())
         #else
-        _descriptorArrayLength(FILE_DESCRIPTOR_ALLOCATION),
-        _descriptorArray(static_cast<struct pollfd*>(::malloc(sizeof(struct pollfd) * (_descriptorArrayLength+1)))),
-        _signalDescriptor(-1)
+        , _descriptorArrayLength(FileDescriptorAllocation)
+        , _descriptorArray(static_cast<struct pollfd*>(::malloc(sizeof(::pollfd) * (_descriptorArrayLength+1))))
+        , _signalDescriptor(-1)
         #endif
     {
     }
@@ -155,7 +166,7 @@ private:
     inline typename Core::TypeTraits::enable_if<hasArm<TYPE, void(TYPE::*)()>::value, void>::type
     Arm()
     {
-        _watchdog.Arm();
+        _watchDog.Arm();
     }
 
     template <typename TYPE>
@@ -170,7 +181,7 @@ private:
     inline typename Core::TypeTraits::enable_if<hasReset<TYPE, void(TYPE::*)()>::value, void>::type
     Reset()
     {
-        _watchdog.Reset();
+        _watchDog.Reset();
     }
 
     template <typename TYPE>
@@ -181,8 +192,6 @@ private:
 
     #ifdef __LINUX__
     bool Initialize() {
-        int err;
-
         #ifdef __APPLE__
 
         if ((_signalDescriptor = ::socket(AF_UNIX, SOCK_DGRAM, 0)) == -1) {
@@ -206,7 +215,7 @@ private:
         sigset_t sigset;
 
         /* Create a sigset of all the signals that we're interested in */
-        err = sigemptyset(&sigset);
+        int VARIABLE_IS_NOT_USED err = sigemptyset(&sigset);
         ASSERT (err == 0);
         err = sigaddset(&sigset, SIGUSR2);
         ASSERT (err == 0);
@@ -246,7 +255,7 @@ private:
             ::free (_descriptorArray);
 
             // Resize the array to fit..
-            _descriptorArray = static_cast<struct pollfd*>(::malloc(sizeof(struct pollfd) * _descriptorArrayLength));
+            _descriptorArray = static_cast<::pollfd*>(::malloc(sizeof(::pollfd) * _descriptorArrayLength));
 
             _descriptorArray[0].fd = _signalDescriptor;
             _descriptorArray[0].events = POLLIN;
@@ -254,7 +263,7 @@ private:
         }
 
         int filledFileDescriptors = 1;
-        std::list<RESOURCE*>::iterator index = _resourceList.begin();
+        typename std::list<RESOURCE*>::iterator index = _resourceList.begin();
 
         // Fill in all entries required/updated..
         while (index != _resourceList.end()) {
@@ -269,7 +278,7 @@ private:
             }
             else {
                 _descriptorArray[filledFileDescriptors].fd = entry->Descriptor();
-                _descriptorArray[filledFileDescriptors].events = events|POLHUP;
+                _descriptorArray[filledFileDescriptors].events = events;
                 _descriptorArray[filledFileDescriptors].revents = 0;
                 filledFileDescriptors++;
                 index++;
@@ -293,7 +302,7 @@ private:
                 /* We have a valid signal, read the info from the fd */
                 struct signalfd_siginfo info;
                 #endif
-                uint32_t VARIABLE_IS_NOT_USED bytes = read(_signalDescriptor &info, sizeof(info));
+                uint32_t VARIABLE_IS_NOT_USED bytes = read(_signalDescriptor, &info, sizeof(info));
                 ASSERT(bytes == sizeof(info) || bytes == 0);
 
                 // Clear the signal port..
@@ -342,7 +351,7 @@ private:
     #ifdef __WIN32__
     uint32_t  Worker() {
         uint32_t delay = 0;
-        std::list<RESOURCE*>::iterator index;
+        typename std::list<RESOURCE*>::iterator index;
 
         _monitorRuns++;
 
@@ -427,7 +436,7 @@ private:
 
     #ifdef __LINUX__
     uint32_t                       _descriptorArrayLength;
-    struct pollfd*                 _descriptorArray;
+    struct ::pollfd*               _descriptorArray;
     int                            _signalDescriptor;
     #endif
 
@@ -439,4 +448,50 @@ private:
 #endif
 };
 
+#ifdef WATCHDOG_ENABLED
+class ResourceMonitorHandler
+{
+private:
+   ResourceMonitorHandler(const ResourceMonitorHandler& rhs) = delete;
+   ResourceMonitorHandler& operator= (const ResourceMonitorHandler& rhs) = delete;
+
+public:
+   ResourceMonitorHandler() {
+   }
+   ~ResourceMonitorHandler(){
+   }
+
+private:
+   uint32_t Expired()
+   {
+      fprintf(stderr, "===> Resource monitor thread is taking too long.");
+      return Core::infinite;
+   }
+};
+
+typedef ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler> > ResourceMonitorBase;
+#else
+typedef ResourceMonitorType<IResource> ResourceMonitorBase;
+#endif
+
+class ResourceMonitor : public ResourceMonitorBase {
+private:
+    ResourceMonitor() : ResourceMonitorBase() {}
+    ResourceMonitor(const ResourceMonitor&) = delete;
+    ResourceMonitor& operator= (const ResourceMonitor&) = delete;
+
+    friend class SingletonType<ResourceMonitor>;
+
+public:
+    static ResourceMonitor& Instance() {
+        return (_instance);
+    }
+    ~ResourceMonitor() {}
+
+private:
+    static ResourceMonitor& _instance;
+};
+
 } } // namespace WPEFramework::Core
+
+#endif // RESOURCE_MONITOR_TYPE_H
