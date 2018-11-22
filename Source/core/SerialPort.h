@@ -11,10 +11,16 @@
 #include <poll.h>
 #endif
 #include "Portability.h"
+#include "ResourceMonitor.h"
 
 namespace WPEFramework {
 namespace Core {
+
+#ifdef __WIN32__
     class EXTERNAL SerialPort {
+#else
+    class EXTERNAL SerialPort : public IResource {
+#endif
         friend class SerialMonitor;
 
     public:
@@ -66,9 +72,9 @@ namespace Core {
         typedef enum {
             READ = 0x0001,
             WRITE = 0x0002,
-			WRITESLOT = 0x2000,
-            EXCEPTION = 0x4000,
-            OPEN = 0x8000
+            WRITESLOT = 0x0100,
+            EXCEPTION = 0x0200,
+            OPEN = 0x0400,
 
         } enumState;
 
@@ -78,9 +84,9 @@ namespace Core {
         typedef enum {
             READ = POLLIN,
             WRITE = POLLOUT,
-            WRITESLOT = 0x2000,
-            EXCEPTION = 0x4000,
-            OPEN = 0x8000
+            WRITESLOT = 0x0100,
+            EXCEPTION = 0x0200,
+            OPEN = 0x0400
         } enumState;
 #endif
         // -------------------------------------------------------------------------
@@ -163,6 +169,15 @@ namespace Core {
             const uint16_t receiveBufferSize);
 
     private:
+        void Opened() {
+            m_State = SerialPort::OPEN|SerialPort::READ|SerialPort::WRITE;
+            StateChange();
+        }
+        void Closed() {
+            StateChange();
+            m_State = 0;
+        }
+        bool WaitForClosure(const uint32_t time) const;
 #ifdef __WIN32__
         void Write(const uint16_t writtenBytes);
         void Read(const uint16_t readBytes);
@@ -170,6 +185,12 @@ namespace Core {
 #ifdef __LINUX__
         void Write();
         void Read();
+        virtual IResource::handle Descriptor() const override
+        {
+            return (static_cast<IResource::handle>(m_Descriptor));
+        }
+        virtual uint16_t Events() override;
+        virtual void Handle(const uint16_t events) override;
 #endif
 
 #ifdef __LINUX__
@@ -178,12 +199,6 @@ namespace Core {
 #ifdef __WIN32__
         void BufferAlignment(HANDLE descriptor);
 #endif
-#ifdef __LINUX__
-        inline int Descriptor()
-        {
-            return (m_Descriptor);
-        }
-#endif
 #ifdef __WIN32__
         inline HANDLE Descriptor()
         {
@@ -191,7 +206,7 @@ namespace Core {
         }
 #endif
     private:
-        CriticalSection m_syncAdmin;
+        mutable CriticalSection m_syncAdmin;
         string m_PortName;
         uint16_t m_State;
         uint16_t m_SendBufferSize;

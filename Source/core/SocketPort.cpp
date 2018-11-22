@@ -340,7 +340,7 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
 
     if ( (nStatus == Core::ERROR_NONE) || (nStatus == Core::ERROR_INPROGRESS) ) {
         m_State |= SocketPort::UPDATE;
-        ResourceMonitor::Instance().Monitor(*this);
+        ResourceMonitor::Instance().Register(*this);
 
         if (nStatus == Core::ERROR_INPROGRESS) {
             if (waitTime > 0) {
@@ -370,7 +370,7 @@ uint32_t SocketPort::Close(const uint32_t waitTime) {
 
         if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
 
-            if ( ((m_State & LINK) == 0) || ((m_State & OPEN) == 0) ) {
+            if ((m_State & (LINK|OPEN)) != (LINK|OPEN)) {
                 // This is a connectionless link, do not expect a close from the otherside.
                 // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
                 m_State |= (SHUTDOWN|EXCEPTION);
@@ -645,38 +645,43 @@ uint32_t SocketPort::WaitForClosure (const uint32_t time) const {
 }
 
 uint16_t SocketPort::Events() {
-    #ifdef __WIN32__
-    uint16_t result = FD_CLOSE;
-    #else
-    uint16_t result = POLLIN;
-    #endif 
+    uint16_t result = 0;
 
-    // It is the first time we are going to pick this one up..
-    if ((m_State & SocketPort::MONITOR) == 0) {
-        m_State |= SocketPort::MONITOR;
-
-        if ((m_State & (SocketPort::OPEN|SocketPort::ACCEPT)) == SocketPort::OPEN) {
-            Opened();
-        }
-    }
-
-    if ((m_State & UPDATE) != 0) {
-        m_State ^= UPDATE;
-
+    if (m_State != 0) {
         #ifdef __WIN32__
-        result |= 0x8000 | ((m_State & SocketPort::ACCEPT) != 0 ? FD_ACCEPT : ((m_State & SocketPort::OPEN) != 0 ? FD_READ|FD_WRITE : FD_CONNECT));
-        #endif
-    }
+        result = FD_CLOSE;
+        #else
+        result = POLLIN;
+        #endif 
 
-    #ifdef __LINUX__
-    result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)|((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
-    #endif
-    if ((IsForcedClosing() == true) && (Closed() == true))  {
-        result = 0;
-        m_State &= ~SocketPort::MONITOR;
-    }
-    else if ((IsOpen()) && ((m_State & SocketPort::WRITESLOT) != 0)) {
-        Write();
+
+        // It is the first time we are going to pick this one up..
+        if ((m_State & SocketPort::MONITOR) == 0) {
+            m_State |= SocketPort::MONITOR;
+
+            if ((m_State & (SocketPort::OPEN|SocketPort::ACCEPT)) == SocketPort::OPEN) {
+                Opened();
+            }
+        }
+
+        if ((m_State & UPDATE) != 0) {
+            m_State ^= UPDATE;
+
+            #ifdef __WIN32__
+            result |= 0x8000 | ((m_State & SocketPort::ACCEPT) != 0 ? FD_ACCEPT : ((m_State & SocketPort::OPEN) != 0 ? FD_READ|FD_WRITE : FD_CONNECT));
+            #endif
+        }
+
+        #ifdef __LINUX__
+        result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)|((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
+        #endif
+        if ((IsForcedClosing() == true) && (Closed() == true))  {
+            result = 0;
+            m_State &= ~SocketPort::MONITOR;
+        }
+        else if ((IsOpen()) && ((m_State & SocketPort::WRITESLOT) != 0)) {
+            Write();
+        }
     }
 
     return (result);
@@ -703,6 +708,10 @@ void SocketPort::Handle (const uint16_t flagsSet) {
             m_State |= UPDATE;
         }
     }
+    else if ((flagSet & FD_CLOSE) != 0) {
+        Closed();
+    }
+
 #else
     if (IsListening()) {
         if ((flagsSet & POLLIN) != 0) {
@@ -720,6 +729,9 @@ void SocketPort::Handle (const uint16_t flagsSet) {
         if ( (flagsSet & POLLOUT) != 0) {
             Opened();
         }
+    }
+    else if ((flagsSet & POLLHUP) != 0) {
+        Closed();
     }
 #endif
 }

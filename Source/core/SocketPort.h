@@ -204,7 +204,7 @@ namespace Core {
         SOCKET Accept(NodeId& remoteId);
 
     private:
-        virtual IResource::handle Descriptor() override
+        virtual IResource::handle Descriptor() const override
         {
             return (static_cast<IResource::handle>(m_Socket));
         }

@@ -16,7 +16,7 @@ struct IResource {
 
     typedef signed int handle;
 
-    virtual handle Descriptor() = 0;
+    virtual handle Descriptor() const = 0;
     virtual uint16_t Events() = 0;
     virtual void Handle(const uint16_t events) = 0;
 };
@@ -117,7 +117,7 @@ public:
     ::ThreadId Id () const {
         return (_monitor != nullptr ? _monitor->Id() : 0);
     }
-    void Monitor(RESOURCE& resource) {
+    void Register(RESOURCE& resource) {
         _adminLock.Lock();
 
         // Make sure this entry does not exist, only register resources once !!!
@@ -136,6 +136,19 @@ public:
             _monitor->Run();
         }
         else {
+            Break();
+        }
+
+        _adminLock.Unlock();
+    }
+    void Unregister(RESOURCE& resource) {
+        _adminLock.Lock();
+
+        // Make sure this entry does not exist, only register resources once !!!
+        typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
+
+        if (index != _resourceList.end()) {
+            *index = nullptr;
             Break();
         }
 
@@ -269,11 +282,9 @@ private:
         while (index != _resourceList.end()) {
             RESOURCE* entry = (*index);
 
-            ASSERT (entry != nullptr);
+            uint16_t events;
 
-            uint16_t events = entry->Events();
-
-            if (events == 0) {
+            if ((entry == nullptr) || ((events = entry->Events()) == 0)) {
                 index = _resourceList.erase (index);
             }
             else {
@@ -319,19 +330,23 @@ private:
 
                 RESOURCE* entry = (*index);
 
-                // As we are the only ones that take out the resources from the list, we
-                // always make sure that the iterator is on the right spot/filedescriptor.
-                ASSERT (entry->Descriptor() == _descriptorArray[fd_index].fd);
+                // The entry might have been removed from observing in the mean time...
+                if (entry != nullptr) {
 
-                uint16_t flagsSet = _descriptorArray[fd_index].revents;
+                    // As we are the only ones that take out the resources from the list, we
+                    // always make sure that the iterator is on the right spot/filedescriptor.
+                    ASSERT (entry->Descriptor() == _descriptorArray[fd_index].fd);
 
-                if (flagsSet != 0) {
+                    uint16_t flagsSet = _descriptorArray[fd_index].revents;
 
-                    Arm<WATCHDOG>();
+                    if (flagsSet != 0) {
 
-                    entry->Handle(flagsSet);
+                        Arm<WATCHDOG>();
 
-                    Reset<WATCHDOG>();
+                        entry->Handle(flagsSet);
+
+                        Reset<WATCHDOG>();
+                    }
                 }
 
                 index++;
