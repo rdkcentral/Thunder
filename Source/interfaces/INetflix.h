@@ -33,8 +33,10 @@ namespace Exchange {
 
         virtual string GetESN() const = 0;
 
+        virtual void FactoryReset() = 0;
         virtual void SystemCommand(const string& command) = 0;
         virtual void Language(const string& language) = 0;
+        virtual void SetVisible(bool visibility) = 0;
     };
 }
 }
