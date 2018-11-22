@@ -553,7 +553,7 @@ namespace Broadcast {
 
                 if (_callback == nullptr) {
                     // Lets start collecting information (PAT/PMT)
-                    _callback = _programs.Register(this, frequency);
+                    _callback = ProgramTable::Instance().Register(this, frequency);
                 }
 
                 if (_callback == nullptr) {
@@ -571,7 +571,7 @@ namespace Broadcast {
                 _handler.Close();
 
                 if (_callback != nullptr) {
-                    _programs.Unregister(this);
+                    ProgramTable::Instance().Unregister(this);
                     _callback = nullptr;
                 }
 
@@ -579,7 +579,7 @@ namespace Broadcast {
             }
             bool Program(const uint32_t frequency, const uint16_t programId, MPEG::PMT& pmt) const
             {
-                return (_programs.Program(frequency, programId, pmt));
+                return (ProgramTable::Instance().Program(frequency, programId, pmt));
             }
 
         private:
@@ -593,7 +593,7 @@ namespace Broadcast {
                 if (newpid != static_cast<uint16_t>(~0)) {
                     _handler.Open(_parent.ParserBand(), newpid, MPEG::PMT::ID, this);
                 } else {
-                    _programs.Unregister(this);
+                    ProgramTable::Instance().Unregister(this);
                     _callback = nullptr;
                 }
             }
@@ -610,9 +610,6 @@ namespace Broadcast {
             Tuner& _parent;
             Section _handler;
             ISection* _callback;
-
-            // Maintain all ProgramId mappings to PMT's for active streams.
-            static ProgramTable _programs;
         };
 
         typedef std::map<uint32_t, Section> Sections;
