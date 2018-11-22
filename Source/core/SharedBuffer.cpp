@@ -114,10 +114,11 @@ namespace Core {
         , _consumer(&(_administration->_consumer))
 #endif
 	, _customerAdministration(PointerAlign(&(reinterpret_cast<uint8_t*>(_administration)[sizeof(Administration)]))) {
+        Align<uint64_t>();
     }	
     SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t bufferSize, const uint16_t administratorSize) 
         : DataElementFile(name, READABLE|WRITABLE|SHAREABLE|CREATE, bufferSize)
-        , _administrationBuffer((string(name) + ".admin"), READABLE|WRITABLE|SHAREABLE|CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)))
+        , _administrationBuffer((string(name) + ".admin"), READABLE|WRITABLE|SHAREABLE|CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WIN32__
 		, _producer((string(name) + ".producer").c_str())
@@ -134,6 +135,7 @@ namespace Core {
 	sem_init (&(_administration->_producer), 1, 1); /* Initial value is 1. */
 	sem_init (&(_administration->_consumer), 1, 0); /* Initial value is 0. */
 #endif
+        Align<uint64_t>();
     }
 
     SharedBuffer::~SharedBuffer() {

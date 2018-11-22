@@ -2,6 +2,7 @@
 #define __DATAELEMENT_H
 
 // ---- Include system wide include files ----
+#include <memory>
 
 // ---- Include local include files ----
 #include "Portability.h"
@@ -193,6 +194,21 @@ namespace Core {
             m_Buffer = nullptr;
             m_Storage.Release();
             m_MaxSize = 0;
+        }
+        template <typename TYPE>
+        inline void Align() {
+            if (m_Buffer != nullptr) {
+                size_t size (m_MaxSize);
+                uint8_t adjust(~0);
+                void* newPointer = m_Buffer; 
+                if (std::align(sizeof(TYPE), sizeof(TYPE), newPointer, size)) {
+                    uint8_t adjust (m_MaxSize - size);
+                    m_Buffer = reinterpret_cast<uint8_t*>(newPointer);
+                    m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
+                    m_MaxSize -= adjust;
+                }
+                printf ("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
+            }
         }
         inline uint64_t AllocatedSize() const
         {

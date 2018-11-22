@@ -36,8 +36,9 @@ namespace Core {
     // The consumer construct should be done with
     // TODO use resize from base class
     //
-    // MF2018, note: usage of this class is currently not supported when the system time can make large jumps. Do not use SharedBuffer class when
-    //         the Time subsystem is not yet available.
+    // MF2018, note: usage of this class is currently not supported when the system time can make large 
+    //               jumps. Do not use SharedBuffer class when the Time subsystem is not yet available.
+    //
     class EXTERNAL SharedBuffer : public DataElementFile {
     private:
         SharedBuffer() = delete;
