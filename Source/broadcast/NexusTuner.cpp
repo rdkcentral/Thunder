@@ -299,7 +299,10 @@ namespace Broadcast {
 
                     _decoder = NEXUS_SimpleVideoDecoder_Acquire(NexusInformation::Instance().VideoDecoder(index));
 
-                    if (_decoder != nullptr) {
+                    if (_decoder == nullptr) {
+                        TRACE_L1("Could not get a Simple Video Decoder index=%u", index);
+                    }
+                    else {
 
                         NEXUS_VideoDecoderSettings settings;
                         NEXUS_SimpleVideoDecoderStartSettings program;
@@ -492,9 +495,9 @@ namespace Broadcast {
                 size_t sectionSize = 0;
                 const void* section = nullptr;
 
-                NEXUS_Message_GetBuffer(_messages, &section, &sectionSize);
+                int rc = NEXUS_Message_GetBuffer(_messages, &section, &sectionSize);
 
-                if (sectionSize != 0) {
+                if ((rc == 0) && (sectionSize != 0)) {
                     uint8_t* data = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(section));
                     size_t handled = 0;
 
@@ -512,7 +515,7 @@ namespace Broadcast {
                             }
                             _adminLock.Unlock();
                         } else {
-                            printf("Invalid frame (%d - %d)!!!!\n", (sectionSize - handled), sectionLength);
+                            TRACE_L1("Invalid frame (%d - %d)!!!!\n", (sectionSize - handled), sectionLength);
                             DumpData(&(data[handled]), sectionSize - handled);
                         }
 
@@ -584,8 +587,7 @@ namespace Broadcast {
         private:
             virtual void ChangePid(const uint16_t newpid, ISection* observer) override
             {
-
-                ASSERT(_callback == this);
+                ASSERT(observer == _callback);
 
                 _handler.Close();
 
@@ -692,8 +694,7 @@ namespace Broadcast {
         static ITuner* Create (const string& info) {
             Tuner* result = nullptr;
 
-            uint8_t index = 0;
-            atoi(info.c_str()); // TODO: Define a proper conversion
+            uint8_t index = Core::NumberType<uint8_t>(Core::TextFragment(info)).Value();
 
             result = new Tuner(index);
 

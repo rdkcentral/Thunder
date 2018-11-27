@@ -126,7 +126,6 @@ namespace MPEG {
     public:
         inline void Storage(const Core::ProxyType<Core::DataStore>& data)
         {
-
             // Drop the current table, load a new storage
             _sections.clear();
             _data = Core::DataElement(data);
@@ -144,6 +143,14 @@ namespace MPEG {
         {
             return (_data.GetNumber<TYPE, Core::ENDIAN_BIG>(offset));
         }
+        inline void Clear()
+        {
+            // Drop the current table, load a new storage
+            _sections.clear();
+            _data.Size(0);
+            _lastSectionNumber = NUMBER_MAX_UNSIGNED(uint8_t);
+            _version = NUMBER_MAX_UNSIGNED(uint8_t);
+        }
         inline Core::DataElement& Data() { return (_data); }
         inline const Core::DataElement& Data() const { return (_data); }
         inline bool AddSection(const Section& section)
@@ -154,7 +161,9 @@ namespace MPEG {
                 if (_sections.size() != 0) {
                     // Starting something for TableId A and then continue with other
                     // TableId's Seems to me like a programming error.
-                    ASSERT(_tableId == section.TableId());
+                    if (_tableId != section.TableId()) {
+                        TRACE_L1("Will not add a section, destined for: %d in table: %d", section.TableId(), _tableId);
+                    }
 
                     addSection = (_tableId == section.TableId());
 

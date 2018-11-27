@@ -5,6 +5,7 @@ find_package(Nexus REQUIRED)
 add_library(${TARGET} SHARED
         ProgramTable.cpp
         NexusTuner.cpp
+        Definitions.cpp
         Module.cpp
         )
 
