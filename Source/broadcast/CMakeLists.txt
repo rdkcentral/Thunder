@@ -6,6 +6,8 @@ add_library(${TARGET} SHARED
         ProgramTable.cpp
         NexusTuner.cpp
         Definitions.cpp
+        TunerAdministrator.cpp
+        ServiceAdministrator.cpp
         Module.cpp
         )
 
@@ -16,6 +18,8 @@ set(PUBLIC_HEADERS
         MPEGSection.h
         MPEGTable.h
         ProgramTable.h
+        TunerAdministrator.h
+        ServiceAdministrator.h
         NIT.h
         SDT.h
         Module.h

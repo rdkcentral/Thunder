@@ -1,5 +1,6 @@
 #include "Definitions.h"
 #include "ProgramTable.h"
+#include "TunerAdministrator.h"
 
 #include <refsw/nexus_audio_decoder.h>
 #include <refsw/nexus_config.h>
@@ -626,6 +627,7 @@ namespace Broadcast {
             , _collector(*this)
             , _programId(~0)
             , _sections()
+            , _callback(nullptr)
         {
 
             NEXUS_FrontendAcquireSettings frontendAcquireSettings;
@@ -676,12 +678,16 @@ namespace Broadcast {
                 _stcSettings.mode = NEXUS_StcChannelMode_ePcr;
                 _stcSettings.modeSettings.pcr.offsetThreshold = 0xFF;
                 _stcSettings.modeSettings.pcr.pidChannel = nullptr;
+
+                _callback = TunerAdministrator::Instance().Announce(this);
             }
         }
 
     public:
         ~Tuner()
         {
+            TunerAdministrator::Instance().Revoke(this);
+            _callback = nullptr;
 
             Detach(0);
 
@@ -725,7 +731,10 @@ namespace Broadcast {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
             if (_frontend != nullptr) {
-                _state = IDLE;
+                if (_state != IDLE) {
+                    _state = IDLE;
+                    _callback->StateChange(this);
+                }
 
                 NEXUS_ParserBandSettings parserBandSettings;
                 NEXUS_FrontendUserParameters userParams;
@@ -839,7 +848,6 @@ namespace Broadcast {
         // found, and set, the Tuner will reach its PREPARED state.
         virtual uint32_t Prepare(const uint16_t programId) override
         {
-
             _state.Lock();
 
             if (_state != STREAMING) {
@@ -941,6 +949,7 @@ namespace Broadcast {
             if (_status.fecLock > 0) {
 
                 _state = LOCKED;
+                _callback->StateChange(this);
 
                 // Stop the time. We are tuned and have all info...
                 _lockDuration = Core::Time::Now().Ticks() - _lockDuration;
@@ -969,14 +978,17 @@ namespace Broadcast {
 
                         if (_state == LOCKED) {
                             _state = PREPARED;
+                            _callback->StateChange(this);
                         }
                     } else {
                         _state = LOCKED;
+                        _callback->StateChange(this);
                     }
                 } else if (_state == PREPARED) {
                     if (_program.IsValid() == false) {
                         Close();
                         _state = LOCKED;
+                        _callback->StateChange(this);
                     }
                 }
             }
@@ -1071,6 +1083,8 @@ namespace Broadcast {
 #endif
 
             NEXUS_FrontendDeviceStatus _deviceStatus;
+
+            TunerAdministrator::ICallback* _callback;
         };
 
         /* static */ Tuner::NexusInformation Tuner::NexusInformation::_instance;

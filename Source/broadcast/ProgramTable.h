@@ -55,7 +55,7 @@ namespace Broadcast {
         typedef std::map<IMonitor*, Observer> Observers;
 
     public:
-        static ProgramTable& Instance() { return (_instance); }
+        static ProgramTable& Instance();
         virtual ~ProgramTable() {}
 
     public:
@@ -142,8 +142,6 @@ namespace Broadcast {
         mutable Core::CriticalSection _adminLock;
         Observers _observers;
         Programs _programs;
-
-        static ProgramTable _instance;
     };
 
 } // namespace Broadcast

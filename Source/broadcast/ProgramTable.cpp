@@ -4,8 +4,12 @@ namespace WPEFramework {
 
 namespace Broadcast {
 
-    /* static */ ProgramTable ProgramTable::_instance;
     /* static */ Core::ProxyPoolType<Core::DataStore> ProgramTable::_storeFactory(2);
+
+    /* static */ ProgramTable& ProgramTable::Instance() {
+        static ProgramTable _instance;
+        return (_instance);
+    }
 
     /* virtual */ void
     ProgramTable::Observer::Handle(const MPEG::Section& section)
