@@ -42,9 +42,8 @@ namespace Broadcast {
         printf("\n\n");
     }
 
-    class Tuner : public ITuner {
+    class __attribute__ ((visibility ("hidden"))) Tuner : public ITuner {
     private:
-        Tuner(const DTVStandard standard, const Annex annex, const bool eScan, const uint8_t index);
         Tuner() = delete;
         Tuner(const Tuner&) = delete;
         Tuner& operator=(const Tuner&) = delete;
@@ -614,7 +613,6 @@ namespace Broadcast {
 
         typedef std::map<uint32_t, Section> Sections;
 
-    public:
         Tuner(uint8_t index)
             : _index(index)
             , _state(IDLE)
@@ -679,7 +677,8 @@ namespace Broadcast {
             }
         }
 
-        virtual ~Tuner()
+    public:
+        ~Tuner()
         {
 
             Detach(0);
@@ -690,6 +689,21 @@ namespace Broadcast {
             }
         }
 
+        static ITuner* Create (const string& info) {
+            Tuner* result = nullptr;
+
+            uint8_t index = 0;
+            atoi(info.c_str()); // TODO: Define a proper conversion
+
+            result = new Tuner(index);
+
+            if ((result != nullptr) && (result->IsValid() == false)) {
+                delete result;
+                result = nullptr;
+            }
+            return (result);
+ 
+        }
       public:
         inline bool IsValid() const { return (_frontend != nullptr); }
 
@@ -699,7 +713,9 @@ namespace Broadcast {
         // PREPARED:  The program that was requetsed to prepare fore, has been found in PAT/PMT, the needed information, like PIDS is loaded.
         //            If Priming is available, this means that the priming has started!
         // STREAMING: This means that the requested program is being streamed to decoder or file, depending on implementation/inpuy.
-        virtual state State() const override;
+        virtual state State() const override {
+            return(_state);
+        }
 
         // Using the next method, the allocated Frontend will try to lock the channel that is found at the given parameters.
         // Frequency is always in MHz.
@@ -1075,18 +1091,7 @@ namespace Broadcast {
         // Accessor to create a tuner.
         /* static */ ITuner* ITuner::Create(const string& info)
         {
-            Tuner* result = nullptr;
-
-            uint8_t index = 0;
-            atoi(info.c_str()); // TODO: Define a proper conversion
-
-            result = new Tuner(index);
-
-            if ((result != nullptr) && (result->IsValid() == false)) {
-                delete result;
-                result = nullptr;
-            }
-            return (result);
+            return (Tuner::Create(info));
         }
 
     } // namespace Broadcast

@@ -19,7 +19,7 @@ set(PUBLIC_HEADERS
         IContentDecryption.h
         IDictionary.h
         IDRM.h
-        IElement.h
+        IExternal.h
         IGuide.h
         IIPNetwork.h
         IKeyHandler.h

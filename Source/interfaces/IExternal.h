@@ -1,5 +1,5 @@
-#ifndef __IELEMENT_OBJECT_H
-#define __IELEMENT_OBJECT_H
+#ifndef __IEXTERNAL_OBJECT_H
+#define __IEXTERNAL_OBJECT_H
 
 // ---- Include system wide include files ----
 #include "Module.h"
@@ -16,8 +16,8 @@
 
 namespace WPEFramework {
 	namespace Exchange {
-		struct IElement : virtual public Core::IUnknown {
-			virtual ~IElement() {}
+		struct IExternal : virtual public Core::IUnknown {
+			virtual ~IExternal() {}
 
 			enum { ID = 0x0000004C };
 
@@ -43,13 +43,14 @@ namespace WPEFramework {
 
 					enum { ID = 0x0000004F };
 
-					virtual void Activated(IElement* source) = 0;
-					virtual void Deactivated(IElement* source) = 0;
+					virtual void Activated(IExternal* source) = 0;
+					virtual void Deactivated(IExternal* source) = 0;
 				};
 
 				// Pushing notifications to interested sinks
 				virtual void Register(INotification* sink) = 0;
 				virtual void Unregister(INotification* sink) = 0;
+                                virtual IExternal* Resource(const uint32_t id) = 0;
 			};
 
 			enum identification {
@@ -114,7 +115,7 @@ namespace WPEFramework {
 			virtual condition Condition() const = 0;
 
 			// Identification of this element.
-			virtual uint32_t Identification() const = 0;
+			virtual uint32_t Identifier() const = 0;
 
 			// Characteristics of this element
 			virtual uint32_t Type() const = 0;
@@ -130,11 +131,11 @@ namespace WPEFramework {
 			virtual void Trigger() = 0;
 		};
 
-	template<enum IElement::identification IDENTIFIER>
-	class ElementBase : public IElement {
+	template<enum IExternal::identification IDENTIFIER>
+	class ExternalBase : public IExternal {
 	private:
-		ElementBase(const ElementBase<IDENTIFIER>&) = delete;
-		ElementBase<IDENTIFIER>& operator= (const ElementBase<IDENTIFIER>&) = delete;
+		ExternalBase(const ExternalBase<IDENTIFIER>&) = delete;
+		ExternalBase<IDENTIFIER>& operator= (const ExternalBase<IDENTIFIER>&) = delete;
 
 		class Job : public Core::IDispatch {
 		private:
@@ -146,10 +147,10 @@ namespace WPEFramework {
 #ifdef __WIN32__ 
 #pragma warning( disable : 4355 )
 #endif
-			Job(ElementBase* parent)
+			Job(ExternalBase* parent)
 				: _parent(*parent)
 				, _submitted(false)
-				, _job(*this)
+				, _job()
 			{
 				ASSERT(parent != nullptr);
 			}
@@ -161,6 +162,11 @@ namespace WPEFramework {
 			}
 
 		public:
+			inline void Load() {
+				_job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
+                                printf("Valid pointer: %s - %p \n", _job.IsValid() ? _T("True") : _T("False"), dynamic_cast<Core::IReferenceCounted*>(this));
+				_job.AddRef();
+			}
 			void Submit() {
 
 				_parent.Lock();
@@ -182,13 +188,13 @@ namespace WPEFramework {
 			virtual void Dispatch()
 			{
 				_parent.Lock();
-				std::list<IElement::INotification*>::iterator index(_parent._clients.begin());
+				std::list<IExternal::INotification*>::iterator index(_parent._clients.begin());
 				_submitted = false;
 				_parent.RecursiveCall(index);
 			}
 
 		private:
-			ElementBase& _parent;
+			ExternalBase& _parent;
 			bool _submitted;
 			Core::ProxyType< Core::IDispatch > _job;
 		};
@@ -202,11 +208,12 @@ namespace WPEFramework {
 #ifdef __WIN32__ 
 #pragma warning( disable : 4355 )
 #endif
-			Timed(ElementBase* parent)
+			Timed(ExternalBase* parent)
 				: _parent(*parent)
 				, _nextTime(0)
 				, _periodicity(0)
-				, _job(*this) {
+				, _job()
+                        {
 				ASSERT(parent != nullptr);
 			}
 #ifdef __WIN32__ 
@@ -217,6 +224,11 @@ namespace WPEFramework {
 			}
 
 		public:
+			inline void Load() {
+				_job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
+                                printf("Valid pointer: %s\n", _job.IsValid() ? _T("True") : _T("False"));
+				_job.AddRef();
+			}
 			inline uint16_t Period() const {
 				return (_periodicity / (1000 * Core::Time::TicksPerMillisecond));
 			}
@@ -263,7 +275,7 @@ namespace WPEFramework {
 			}
 
 		private:
-			ElementBase& _parent;
+			ExternalBase& _parent;
 			uint64_t _nextTime;
 			uint32_t _periodicity;
 			Core::ProxyType<Timed> _job;
@@ -273,33 +285,33 @@ namespace WPEFramework {
 #ifdef __WIN32__ 
 #pragma warning( disable : 4355 )
 #endif
-		inline ElementBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals) 
+		inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals) 
 			: _adminLock()
-			, _id(ID | (id & 0x0FFFFFFF))
+			, _id(IDENTIFIER | (id & 0x0FFFFFFF))
 			, _type((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec)
-			, _condition(IElement::constructing)
+			, _condition(IExternal::constructing)
 			, _clients()
 			, _job(this)
 			, _timed(this) {
-			_job.AddRef();
-			_timed.AddRef();
+			_job.Load();
+			_timed.Load();
 		}
-		inline ElementBase(const uint32_t id, const uint32_t type)
+		inline ExternalBase(const uint32_t id, const uint32_t type)
 			: _adminLock()
-			, _id(ID | (id & 0x0FFFFFFF))
+			, _id(IDENTIFIER | (id & 0x0FFFFFFF))
 			, _type(type)
-			, _condition(IElement::constructing)
+			, _condition(IExternal::constructing)
 			, _clients()
 			, _job(this)
 			, _timed(this) {
-			_job.AddRef();
-			_timed.AddRef();
+			_job.Load();
+			_timed.Load();
 		}
 #ifdef __WIN32__ 
 #pragma warning( default : 4355 )
 #endif
 
-		virtual ~ElementBase() {
+		virtual ~ExternalBase() {
 			_job.Dispose();
 			_timed.Period(0);
 			_job.CompositRelease();
@@ -336,14 +348,14 @@ namespace WPEFramework {
 		}
 
 		// ------------------------------------------------------------------------
-		// IElement default interface implementation
+		// IExternal default interface implementation
 		// ------------------------------------------------------------------------
 		// Pushing notifications to interested sinks
-		virtual void Register(IElement::INotification* sink) override {
+		virtual void Register(IExternal::INotification* sink) override {
 
 			Lock();
 
-			std::list<IElement::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
+			std::list<IExternal::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
 
 			if (index == _clients.end()) {
 				sink->AddRef();
@@ -354,11 +366,11 @@ namespace WPEFramework {
 			Unlock();
 		}
 
-		virtual void Unregister(IElement::INotification* sink) override {
+		virtual void Unregister(IExternal::INotification* sink) override {
 
 			Lock();
 
-			std::list<IElement::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
+			std::list<IExternal::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
 
 			if (index != _clients.end()) {
 				sink->Release();
@@ -373,7 +385,7 @@ namespace WPEFramework {
 		}
 
 		// Identification of this element.
-		virtual uint32_t Identification() const override {
+		virtual uint32_t Identifier() const override {
 			return(_id);
 		}
 
@@ -437,22 +449,22 @@ namespace WPEFramework {
 			return(result);
 		}
 		virtual void Activate() {
-			IElement::condition expected = IElement::constructing;
+			IExternal::condition expected = IExternal::constructing;
 
-			if (_condition.compare_exchange_strong(expected, IElement::activated) == true) {
+			if (_condition.compare_exchange_strong(expected, IExternal::activated) == true) {
 				_job.Submit();
 			}
 		}
 		virtual void Deactivate() {
-			IElement::condition expected = IElement::activated;
+			IExternal::condition expected = IExternal::activated;
 
-			if (_condition.compare_exchange_strong(expected, IElement::deactivated) == true) {
+			if (_condition.compare_exchange_strong(expected, IExternal::deactivated) == true) {
 				_job.Submit();
 				_timed.Period(0);
 			}
 			else {
-				expected = IElement::constructing;
-				_condition.compare_exchange_strong(expected, IElement::deactivated);
+				expected = IExternal::constructing;
+				_condition.compare_exchange_strong(expected, IExternal::deactivated);
 			}
 		}
 
@@ -462,8 +474,8 @@ namespace WPEFramework {
 		virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
 		virtual void Revoke(const Core::ProxyType<Core::IDispatch>& job) = 0;
 
-		BEGIN_INTERFACE_MAP(ElementBase)
-			INTERFACE_ENTRY(Exchange::IElement)
+		BEGIN_INTERFACE_MAP(ExternalBase)
+			INTERFACE_ENTRY(Exchange::IExternal)
 		END_INTERFACE_MAP
 
 	protected:
@@ -484,12 +496,12 @@ namespace WPEFramework {
 		}
 
 	private:
-		void RecursiveCall(std::list<IElement::INotification*>::iterator& position) {
+		void RecursiveCall(std::list<IExternal::INotification*>::iterator& position) {
 			if (position == _clients.end()) {
 				Unlock();
 			}
 			else {
-				IElement::INotification* client(*position);
+				IExternal::INotification* client(*position);
 				client->AddRef();
 				position++;
 				RecursiveCall(position);
@@ -503,7 +515,7 @@ namespace WPEFramework {
 		uint32_t _id;
 		uint32_t _type;
 		std::atomic<condition> _condition;
-		std::list<IElement::INotification*> _clients;
+		std::list<IExternal::INotification*> _clients;
 		Core::ProxyObject<Job> _job;
 		Core::ProxyObject<Timed> _timed;
 	};

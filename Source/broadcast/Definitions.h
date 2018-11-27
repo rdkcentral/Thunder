@@ -24,6 +24,8 @@ class Section;
     };
 
     struct ITuner {
+        virtual ~ITuner() {}
+
         enum state {
             IDLE = 0x01,
             LOCKED = 0x02,
