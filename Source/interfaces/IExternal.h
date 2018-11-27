@@ -164,7 +164,6 @@ namespace WPEFramework {
 		public:
 			inline void Load() {
 				_job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
-                                printf("Valid pointer: %s - %p \n", _job.IsValid() ? _T("True") : _T("False"), dynamic_cast<Core::IReferenceCounted*>(this));
 				_job.AddRef();
 			}
 			void Submit() {
@@ -226,7 +225,6 @@ namespace WPEFramework {
 		public:
 			inline void Load() {
 				_job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
-                                printf("Valid pointer: %s\n", _job.IsValid() ? _T("True") : _T("False"));
 				_job.AddRef();
 			}
 			inline uint16_t Period() const {
