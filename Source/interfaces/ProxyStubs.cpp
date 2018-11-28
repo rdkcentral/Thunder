@@ -513,6 +513,12 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual void FactoryReset() = 0;
+            //
+            message->Parameters().Implementation<INetflix>()->FactoryReset();
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual void SystemCommand(const string& command) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
@@ -526,6 +532,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             string element(parameters.Text());
             message->Parameters().Implementation<INetflix>()->Language(element);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void SetVisible(bool visibility) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            message->Parameters().Implementation<INetflix>()->SetVisible(parameters.Boolean());
         },
         nullptr
     };
@@ -2106,6 +2119,7 @@ namespace ProxyStubs {
         // virtual void Register(INetflix::INotification* netflix) = 0;
         // virtual void Unregister(INetflix::INotification* netflix) = 0;
         // virtual string GetESN() const = 0;
+        // virtual void FactoryReset() = 0;
         // virtual void SystemCommand(const string& command) = 0;
         // virtual void Language(const string& language) = 0;
         virtual void Register(INetflix::INotification* notification)
@@ -2132,9 +2146,15 @@ namespace ProxyStubs {
             return reader.Text();
         }
 
-        virtual void SystemCommand(const string& command)
+        virtual void FactoryReset()
         {
             IPCMessage newMessage(BaseClass::Message(3));
+            Invoke(newMessage);
+        }
+
+        virtual void SystemCommand(const string& command)
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(command);
             Invoke(newMessage);
@@ -2142,9 +2162,17 @@ namespace ProxyStubs {
 
         virtual void Language(const string& language)
         {
-            IPCMessage newMessage(BaseClass::Message(4));
+            IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(language);
+            Invoke(newMessage);
+        }
+
+        virtual void SetVisible(bool visibility)
+        {
+            IPCMessage newMessage(BaseClass::Message(6));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Boolean(visibility);
             Invoke(newMessage);
         }
     };
