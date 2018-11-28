@@ -6,5 +6,5 @@ includedir=${prefix}/include
 Name: Broadcast 
 Description: Broadcast library
 Version: 1.0
-Cflags: -I${includedir} @CFLAGS_VAR@
+Cflags: -I${includedir} @CFLAGS_VAR@ @INCLUDE_SI_PARSING@
 Libs: -L${libdir} @LIBS_VAR@

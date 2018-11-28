@@ -2,13 +2,15 @@ set(TARGET Broadcast)
 
 find_package(Nexus REQUIRED)
 
-add_library(${TARGET} SHARED
+option(WPEFRAMEWORK_BROADCAST_SI_PARSING
+        "Add SI parsing and collecting functionality." OFF)
+
+set(SOURCE_FILES
         ProgramTable.cpp
-        NexusTuner.cpp
         Definitions.cpp
         TunerAdministrator.cpp
-        ServiceAdministrator.cpp
         Module.cpp
+        implementations/NexusTuner.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -24,6 +26,20 @@ set(PUBLIC_HEADERS
         SDT.h
         Module.h
         )
+
+set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/WPEFramework")
+set (LIBS_VAR "-l${BROADCAST_ARTIFACT}")
+
+if(WPEFRAMEWORK_BROADCAST_SI_PARSING)
+    target_compile_definitions(Support INTERFACE INCLUDE_SI_PARSING)
+    set(SOURCE_FILES ${SOURCE_FILES} 
+        ServiceAdministrator.cpp
+    )
+    set(CFLAGS_VAR "${CFLAGS_VAR} -DINCLUDE_SI_PARSING")
+    message(STATUS "Enabled SI Parsing inclusion.")
+endif()
+
+add_library(${TARGET} SHARED ${SOURCE_FILES})
 
 target_link_libraries(${TARGET}
         PRIVATE
@@ -60,9 +76,6 @@ install(
 )
 
 HandleStandardLib()
-
-set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/WPEFramework")
-set (LIBS_VAR "-l${BROADCAST_ARTIFACT}")
 
 configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.pc.in"
