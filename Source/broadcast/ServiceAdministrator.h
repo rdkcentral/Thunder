@@ -3,7 +3,10 @@
 
 #include "Definitions.h"
 #include "MPEGTable.h"
+#include "NIT.h"
 #include "SDT.h"
+#include "TDT.h"
+#include "ProgramTable.h"
 #include "TunerAdministrator.h"
 
 namespace WPEFramework {
@@ -46,9 +49,8 @@ namespace Broadcast {
         public:
             enum state {
                 IDLE,
-                NIT,
-                SDT,
-                EIT
+                METADATA,
+                SCHEDULE
             };
 
         private:
@@ -62,7 +64,8 @@ namespace Broadcast {
                 , _source(source)
                 , _state(IDLE)
                 , _pid(~0)
-                , _table(~0) {
+                , _NIT(Core::ProxyType<Core::DataStore>::Create(512))
+                , _SDT(Core::ProxyType<Core::DataStore>::Create(512)) {
             }
             virtual ~Parser() {
             }
@@ -81,29 +84,34 @@ namespace Broadcast {
             }
 
         public:
-            void Open(const state newState, const uint16_t pid) {
-                Close();
-                switch(newState) {
-                case IDLE:
-                     _state = newState;
-                     break;
-                case NIT:
-                     _state = newState;
-                     break;
-                case SDT:
-                     _state = newState;
-                     break;
-                case EIT:
-                     _state = newState;
-                     break;
-                default:
-                     ASSERT(false);
-                     break;
+            state State() const {
+                return (_state);
+            }
+            void Open() {
+                if (_state == IDLE) {
+                    _pid = ProgramTable::Instance().NITPid(_source->Id());
+                    if (_pid != static_cast<uint16_t>(~0)) {
+                        _state = METADATA;
+
+                        // Start loading the NIT info
+                        _source->Filter(_pid, DVB::NIT::ACTUAL, this);
+
+                        // Start loading the SDT info
+                        _source->Filter(0x11, DVB::SDT::ACTUAL, this);
+
+                        // Start loading the TDT info
+                        _source->Filter(0x14, DVB::TDT::ID, this);
+                    }
                 }
             }
             void Close() {
-                if (_pid != static_cast<uint16_t>(~0)) {
-                    _source->Filter(_pid, _table, nullptr);
+                if (_state == METADATA) {
+                    _source->Filter(0x14, DVB::TDT::ID, nullptr);
+                    _source->Filter(0x11, DVB::SDT::ACTUAL, nullptr);
+                    _source->Filter(_pid, DVB::NIT::ACTUAL, nullptr);
+                    _state = IDLE;
+                }
+                else if (_state == SCHEDULE) {
                 }
             }
 
@@ -115,7 +123,8 @@ namespace Broadcast {
             ITuner* _source;
             state _state;
             uint16_t _pid;
-            uint8_t _table;
+            MPEG::Table _NIT;
+            MPEG::Table _SDT;
         };
 
         ServiceAdministrator()
@@ -142,6 +151,9 @@ namespace Broadcast {
         void Activated(ITuner* tuner);
         void Deactivated(ITuner* tuner);
         void StateChange(ITuner* tuner);
+        void Load(const DVB::NIT& table);
+        void Load(const DVB::SDT& table);
+        void Load(const DVB::TDT& table);
 
     private:
         Core::CriticalSection _adminLock;

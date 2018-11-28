@@ -70,6 +70,11 @@ class Section;
         // Accessor to create a tuner.
         static ITuner* Create(const string& info);
 
+        // Currently locked on ID 
+        // This method return a unique number that will identify the locked on Transport stream. The ID will always 
+        // identify the uniquely locked on to Tune request. ID => 0 is reserved and means not locked on to anything.
+        virtual uint16_t Id() const = 0;
+
         // Using these methods the state of the tuner can be viewed.
         // IDLE:      Means there is no request, or the frequency requested (with other parameters) can not be locked.
         // LOCKED:    The stream has been locked, frequency, modulation, symbolrate and spectral inversion seem to be fine.
@@ -80,7 +85,7 @@ class Section;
 
         // Using the next method, the allocated Frontend will try to lock the channel that is found at the given parameters.
         // Frequency is always in MHz.
-        virtual uint32_t Tune(const uint32_t frequency, const Modulation, const uint32_t symbolRate, SpectralInversion ) = 0;
+        virtual uint32_t Tune(const uint16_t frequency, const Modulation, const uint32_t symbolRate, SpectralInversion ) = 0;
 
         // In case the tuner needs to be tuned to s apecific programId, please list it here. Once the PID's associated to this
         // programId have been found, and set, the Tuner will reach its PREPARED state.

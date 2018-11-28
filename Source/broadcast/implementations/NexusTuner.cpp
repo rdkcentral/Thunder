@@ -21,6 +21,14 @@ namespace WPEFramework {
 
 namespace Broadcast {
 
+    // Frequency for tuning...
+    // VHF: 30MHz - 300MHz
+    // UHF: 300MHz - 3GHz
+    // SHF: 3GHz - 30 GHz
+    // So the frequency, should be passed in MHz wich requires a range from 30MHz - 30000MHz. Which
+    // does not exceed the uint16_t value, so the key (uint32_t) should be sufficient to combine the
+    // Frequency and the ProgramNumber.
+
     static const unsigned J83ASymbolRateUpper = 7200000;
     static const unsigned J83ASymbolRateLower = 4000000;
     static const unsigned J83ASymbolRateDefault = 6952000;
@@ -48,6 +56,12 @@ namespace Broadcast {
         Tuner() = delete;
         Tuner(const Tuner&) = delete;
         Tuner& operator=(const Tuner&) = delete;
+
+        enum psi_state {
+            NONE,
+            PAT,
+            PMT
+        };
 
     public:
         class NexusInformation {
@@ -550,7 +564,7 @@ namespace Broadcast {
             ~Collector() { Close(); }
 
         public:
-            uint32_t Open(const uint32_t frequency)
+            uint32_t Open(const uint16_t frequency)
             {
                 uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -580,7 +594,7 @@ namespace Broadcast {
 
                 return (Core::ERROR_NONE);
             }
-            bool Program(const uint32_t frequency, const uint16_t programId, MPEG::PMT& pmt) const
+            bool Program(const uint16_t frequency, const uint16_t programId, MPEG::PMT& pmt) const
             {
                 return (ProgramTable::Instance().Program(frequency, programId, pmt));
             }
@@ -687,7 +701,6 @@ namespace Broadcast {
         ~Tuner()
         {
             TunerAdministrator::Instance().Revoke(this);
-            _callback = nullptr;
 
             Detach(0);
 
@@ -695,6 +708,8 @@ namespace Broadcast {
                 NEXUS_Frontend_Release(_frontend);
                 _frontend = nullptr;
             }
+
+            _callback = nullptr;
         }
 
         static ITuner* Create (const string& info) {
@@ -724,9 +739,16 @@ namespace Broadcast {
             return(_state);
         }
 
+        // Currently locked on ID
+        // This method return a unique number that will identify the locked on Transport stream. The ID will always
+        // identify the uniquely locked on to Tune request. ID => 0 is reserved and means not locked on to anything.
+        virtual uint16_t Id() const override {
+            return (_state == IDLE ? 0 : _settings.frequency / 1000000);
+        }
+
         // Using the next method, the allocated Frontend will try to lock the channel that is found at the given parameters.
         // Frequency is always in MHz.
-        virtual uint32_t Tune(const uint32_t frequency, const Modulation modulation, const uint32_t symbolRate, SpectralInversion inversion) override
+        virtual uint32_t Tune(const uint16_t frequency, const Modulation modulation, const uint32_t symbolRate, SpectralInversion inversion) override
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -735,6 +757,7 @@ namespace Broadcast {
                     _state = IDLE;
                     _callback->StateChange(this);
                 }
+                _psiLoaded = NONE;
 
                 NEXUS_ParserBandSettings parserBandSettings;
                 NEXUS_FrontendUserParameters userParams;
@@ -753,8 +776,9 @@ namespace Broadcast {
 
                 if (NEXUS_ParserBand_SetSettings(_parserBand, &parserBandSettings) == 0) {
 
+                    uint32_t value = frequency;
                     _settings.symbolRate = symbolRate;
-                    _settings.frequency = frequency * 1000000;
+                    _settings.frequency = value * 1000000;
                     switch (modulation) {
                     case QAM16:
                         _settings.mode = NEXUS_FrontendQamMode_e16;
@@ -966,9 +990,17 @@ namespace Broadcast {
             _state.Lock();
 
             if ((_state == LOCKED) || (_state == PREPARED)) {
-                if (_collector.Program((_settings.frequency / 1000000), _programId, _program) == true) {
+                uint16_t identifier = _settings.frequency / 1000000;
 
-                    // Just in case it was tuend to something..
+                bool updated ((_psiLoaded == NONE) && (ProgramTable::Instance().NITPid(identifier) != static_cast<uint16_t>(~0)));
+
+                if (updated == true) {
+                    _psiLoaded = PAT;
+                }
+
+                if (_collector.Program(identifier, _programId, _program) == true) {
+
+                    // Just in case it was tuned to something..
                     Close();
 
                     if (_program.IsValid() == true) {
@@ -978,18 +1010,23 @@ namespace Broadcast {
 
                         if (_state == LOCKED) {
                             _state = PREPARED;
-                            _callback->StateChange(this);
+                            _psiLoaded = PMT;
+                            updated = true;
                         }
                     } else {
                         _state = LOCKED;
-                        _callback->StateChange(this);
+                        updated = true;
                     }
                 } else if (_state == PREPARED) {
                     if (_program.IsValid() == false) {
                         Close();
                         _state = LOCKED;
-                        _callback->StateChange(this);
+                        updated = true;
                     }
+                }
+
+                if (updated == true) {
+                    _callback->StateChange(this);
                 }
             }
 
@@ -1084,6 +1121,7 @@ namespace Broadcast {
 
             NEXUS_FrontendDeviceStatus _deviceStatus;
 
+            psi_state _psiLoaded;
             TunerAdministrator::ICallback* _callback;
         };
 

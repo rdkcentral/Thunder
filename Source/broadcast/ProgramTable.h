@@ -30,10 +30,10 @@ namespace Broadcast {
             typedef std::list<uint32_t> ScanMap;
 
         public:
-            Observer(ProgramTable* parent, const uint32_t frequency, IMonitor* callback)
+            Observer(ProgramTable* parent, const uint16_t keyId, IMonitor* callback)
                 : _parent(*parent)
                 , _callback(callback)
-                , _frequency(frequency)
+                , _keyId(keyId)
                 , _table(_storeFactory.Element())
                 , _entries()
             {
@@ -46,13 +46,14 @@ namespace Broadcast {
         private:
             ProgramTable& _parent;
             IMonitor* _callback;
-            uint32_t _frequency;
+            uint16_t _keyId;
             MPEG::Table _table;
             ScanMap _entries;
         };
 
-        typedef std::map<uint64_t, MPEG::PMT> Programs;
+        typedef std::map<uint32_t, MPEG::PMT> Programs;
         typedef std::map<IMonitor*, Observer> Observers;
+        typedef std::map<uint32_t, uint16_t> NITPids;
 
     public:
         static ProgramTable& Instance();
@@ -60,16 +61,15 @@ namespace Broadcast {
 
     public:
         inline void Reset() { _programs.clear(); }
-        ISection* Register(IMonitor* callback, const uint32_t frequency)
+        ISection* Register(IMonitor* callback, const uint16_t keyId)
         {
-
             _adminLock.Lock();
 
             ASSERT(_observers.find(callback) == _observers.end());
 
             auto index = _observers.emplace(
                 std::piecewise_construct, std::forward_as_tuple(callback),
-                std::forward_as_tuple(this, frequency, callback));
+                std::forward_as_tuple(this, keyId, callback));
 
             _adminLock.Unlock();
 
@@ -88,14 +88,13 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        inline bool Program(const uint32_t frequency, const uint16_t programId,
-            MPEG::PMT& pmt) const
+        inline bool Program(const uint16_t keyId, const uint16_t programId, MPEG::PMT& pmt) const
         {
             bool updated = false;
 
             _adminLock.Lock();
 
-            Programs::const_iterator index(_programs.find(Key(frequency, programId)));
+            Programs::const_iterator index(_programs.find(Key(keyId, programId)));
             if (index != _programs.end()) {
                 updated = (index->second != pmt);
                 pmt = index->second;
@@ -105,18 +104,28 @@ namespace Broadcast {
 
             return (updated);
         }
+        uint16_t NITPid(const uint16_t keyId) const {
+            uint16_t result(~0);
+
+            NITPids::const_iterator index (_nitPids.find(keyId));
+
+            if (index != _nitPids.end()) {
+                result = index->second;
+            }
+
+            return (result);
+        }
 
     private:
-        inline uint64_t Key(const uint32_t frequency,
-            const uint16_t programId) const
+        inline uint32_t Key(const uint16_t keyId, const uint16_t programId) const
         {
-            uint64_t result = frequency;
+            uint64_t result = keyId;
             return ((result << 16) | programId);
         }
-        bool AddProgram(const uint32_t frequency, const MPEG::Table& data)
+        bool AddProgram(const uint16_t keyId, const MPEG::Table& data)
         {
             bool added = false;
-            uint64_t key(Key(frequency, data.Extension()));
+            uint64_t key(Key(keyId, data.Extension()));
 
             _adminLock.Lock();
 
@@ -142,6 +151,7 @@ namespace Broadcast {
         mutable Core::CriticalSection _adminLock;
         Observers _observers;
         Programs _programs;
+        NITPids _nitPids;
     };
 
 } // namespace Broadcast

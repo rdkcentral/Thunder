@@ -43,6 +43,7 @@ namespace MPEG {
     public:
         inline uint8_t Tag() const { return (_descriptor[0]); }
         inline uint8_t Length() const { return (_descriptor[1] + 2); }
+        inline const uint8_t& operator[] (const uint8_t index) const { ASSERT (index < _descriptor[1]); return (_descriptor[2 + index]); }
 
     private:
         Core::DataElement _descriptor;
@@ -80,14 +81,20 @@ namespace MPEG {
         inline void Reset() { _index = NUMBER_MAX_UNSIGNED(uint32_t); }
         bool Next()
         {
+            uint8_t descriptorLength;
+
             if (_index == NUMBER_MAX_UNSIGNED(uint32_t)) {
                 _index = 0;
+                descriptorLength = _descriptors[1] + 2;
             } else if (_index < _descriptors.Size()) {
-                _index += Descriptor(Core::DataElement(_descriptors, _index)).Length();
+                _index += (_descriptors[_index + 1] + 2);
+                if ((_index + 2) < _descriptors.Size()) {
+                    descriptorLength = _descriptors[_index + 1] + 2;
+                }
             }
 
             // See if we have a valid descriptor, Does it fit the block we have ?
-            if ((_index + Descriptor(Core::DataElement(_descriptors, _index)).Length()) > _descriptors.Size()) {
+            if ((_index + descriptorLength) > _descriptors.Size()) {
                 // It's too big, Jump to the end..
                 _index = static_cast<uint32_t>(_descriptors.Size());
             }
@@ -102,7 +109,24 @@ namespace MPEG {
         {
             return (Descriptor(Core::DataElement(_descriptors, _index)));
         }
+        bool Tag(const uint8_t tagId) {
 
+            if (_index == NUMBER_MAX_UNSIGNED(uint32_t)) {
+                _index = 0;
+            }
+
+            while (((_index + 2) < _descriptors.Size()) && (_descriptors[_index] != tagId)) {
+                _index += _descriptors[1] + 2;
+            }
+
+            // See if we have a valid descriptor, Does it fit the block we have ?
+            if (((_index + 2) >= _descriptors.Size()) || ((_descriptors[_index+1] + 2 + _index) > _descriptors.Size())) {
+                // It's too big, or none was found, jump to the end..
+                _index = static_cast<uint32_t>(_descriptors.Size());
+            }
+
+            return (IsValid());
+        }
         uint32_t Count() const
         {
             uint32_t count = 0;

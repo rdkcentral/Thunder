@@ -26,7 +26,11 @@ namespace Broadcast {
                     MPEG::PAT::ProgramIterator index(patTable.Programs());
                     while (index.Next() == true) {
 
-                        if (index.Pid() != 0x10) {
+                        if (index.ProgramNumber() == 0) {
+                            // ProgramNumber == 0 is reserved for the NIT pid
+                            _parent._nitPids[_keyId] = index.Pid();
+                        }
+                        else {
                             _entries.push_back(index.Pid() | (index.ProgramNumber() << 16));
                             TRACE_L1("ProgramNumber: %d on PID: %d", index.ProgramNumber(), index.Pid());
                         }
@@ -53,7 +57,7 @@ namespace Broadcast {
                         }
                     }
 
-                    if (_parent.AddProgram(_frequency, _table) == true) {
+                    if (_parent.AddProgram(_keyId, _table) == true) {
                         // do not forget to get a new storage space, the previous one is now
                         // with the AddProgram !!!
                         _table.Storage(_storeFactory.Element());
