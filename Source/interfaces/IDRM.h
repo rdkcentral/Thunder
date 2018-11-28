@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include <stdint.h>
+#include <type_traits>
 
 #ifdef __GNUC__
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
@@ -284,6 +285,7 @@ struct ISystemFactory {
     virtual IMediaKeys* Instance() = 0;
     virtual const char* KeySystem() const = 0;
     virtual const std::vector<std::string>& MimeTypes() const = 0;
+    virtual void SystemConfig(const std::string& configline) = 0;
 };
 
 template <typename IMPLEMENTATION>
@@ -294,7 +296,9 @@ private:
     SystemFactoryType<IMPLEMENTATION>& operator=(const SystemFactoryType<IMPLEMENTATION>&) = delete;
 
 public:
-    SystemFactoryType(const std::vector<std::string>& list) : _mimes(list) {
+    SystemFactoryType(const std::vector<std::string>& list) 
+        : _mimes(list)
+        , _instance() {
     }
     virtual ~SystemFactoryType() {
     }
@@ -310,7 +314,29 @@ public:
         return (typeid(IMPLEMENTATION).name());
     }
 
+    virtual void SystemConfig(const std::string& configline) {
+        OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+    }
+
 private:
+    template<typename T>
+    struct HasOnSystemConfigurationAvailable
+    {
+        template<typename U, void (U::*)(const std::string&)> struct SFINAE {};
+        template<typename U> static uint8_t Test(SFINAE<U, &U::OnSystemConfigurationAvailable>*);
+        template<typename U> static uint32_t Test(...);
+        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
+    };
+
+    void OnSystemConfig(const std::string& configline, std::true_type) {  
+        _instance.OnSystemConfigurationAvailable(configline);
+    } 
+
+    void OnSystemConfig(const std::string&, std::false_type) {
+    }
+
+
+
     const std::vector<std::string> _mimes;
     IMPLEMENTATION _instance;
 };
