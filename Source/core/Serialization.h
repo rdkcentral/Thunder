@@ -43,7 +43,7 @@ namespace Core {
 #endif
 #endif
     }
-    EXTERNAL const string ToString(const wchar_t realstring[], const unsigned int length);
+    EXTERNAL string ToString(const wchar_t realstring[], const unsigned int length);
     EXTERNAL void ToString(const wchar_t realstring[], std::string& result);
     EXTERNAL void ToString(const char realstring[], std::wstring& result);
 
@@ -52,7 +52,7 @@ namespace Core {
         result = realstring;
     }
 
-    inline const string ToString(const wchar_t realstring[])
+    inline string ToString(const wchar_t realstring[])
     {
 #ifdef _UNICODE
         return (std::wstring(realstring));
@@ -64,7 +64,7 @@ namespace Core {
     }
 #endif // __NO_WCHAR_SUPPORT__
 
-    EXTERNAL const string ToString(const char realstring[], const unsigned int length);
+    EXTERNAL string ToString(const char realstring[], const unsigned int length);
 
     inline void ToString(const char realstring[], std::string& result)
     {

@@ -77,9 +77,11 @@ namespace Broadcast {
     }
 
     void ServiceAdministrator::Load(const DVB::NIT& table) {
+    
     }
 
     void ServiceAdministrator::Load(const DVB::SDT& table) {
+        
     }
 
     void ServiceAdministrator::Load(const DVB::TDT& table) {

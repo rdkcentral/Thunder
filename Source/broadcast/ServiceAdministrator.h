@@ -127,6 +127,16 @@ namespace Broadcast {
             MPEG::Table _SDT;
         };
 
+        class EXTERNAL ServiceInfo {
+        private:
+            ServiceInfo() = delete;
+            ServiceInfo(const ServiceInfo&) = delete;
+            ServiceInfo& operator= (const ServiceInfo&) = delete;
+
+        public:
+            ServiceInfo (
+        };
+
         ServiceAdministrator()
             : _adminLock()
             , _scanners()
@@ -146,6 +156,7 @@ namespace Broadcast {
         }
 
     public:
+        const Service& Program
 
     private:
         void Activated(ITuner* tuner);
@@ -159,6 +170,7 @@ namespace Broadcast {
         Core::CriticalSection _adminLock;
         Scanners _scanners;
         Sink _sink;
+        std::map<uint16_t, Service> _services;
     };
 
 } // namespace Broadcast

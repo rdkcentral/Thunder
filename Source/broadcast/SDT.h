@@ -19,6 +19,57 @@
 namespace WPEFramework {
 namespace Broadcast {
 namespace DVB {
+
+    class EXTERNAL ServiceDescriptor : public  {
+    private:
+        ServiceDescriptor operator= (const ServiceDescriptor& rhs) = delete;
+
+    public:
+        constexpr static uint8_t TAG = 0x48;
+
+        enum type {
+            DIGITAL_TELEVISION          = 0x01,
+            DIGITAL_RADIO               = 0x02,
+            TELETEXT                    = 0x03,
+            NVOD_REFERENCE              = 0x04,
+            NVOD_TIME_SHIFT             = 0x05,
+            MOSAIC                      = 0x06,  
+            ADVANCED_DIGITAL_RADIO      = 0x0A,
+            ADVANCED_DIGITAL_MOSAIC     = 0x0B,
+            DATA_BROADCAST_SERVICE      = 0x0C,
+            ADVANCED_SD_TELEVISION      = 0x16,
+            ADVANCED_SD_NVOD_TIME_SHIFT = 0x17,
+            ADVANCED_SD_NVOD_REFERENCE  = 0x18,
+            ADVANCED_HD_TELEVISION      = 0x19,
+            ADVANCED_HD_NVOD_TIME_SHIFT = 0x1A,
+            ADVANCED_HD_NVOD_REFERENCE  = 0x1B
+        };
+
+    public:
+        ServiceDescriptor () : _data() {
+        }
+        ServiceDescriptor (const ServiceDescriptor& copy) : _data(copy) {
+        }
+        ServiceDescriptor (const MPEG::Descriptor& copy) : _data(copy) {
+        }
+        ~ServiceDescriptor() {
+        }
+
+    public:
+        type Type() const {
+            return (static_cast<type>(_data[0]));
+        }
+        string Provider() const {
+            return (ToString(reinterpret_cast<const char*>(&(_data[2])), _data[1]));
+        }
+        string Name() const {
+            uint8_t offset = 1 /* service type */ + 1 /* length */ + _data[1];
+            return (ToString(reinterpret_cast<const char*>(&(_data[offset + 1])), _data[offset]));
+        }
+
+    private:
+        MPEG::Descriptor _data;
+    };
   
     class EXTERNAL SDT {
     public:

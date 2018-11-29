@@ -64,7 +64,7 @@ namespace Core {
         result = std::wstring(convertedText);
     }
 
-    const string ToString(const wchar_t realString[], unsigned int length)
+    string ToString(const wchar_t realString[], unsigned int length)
     {
 #ifdef _UNICODE
 
@@ -109,7 +109,7 @@ namespace Core {
 
 #endif // __NO_WCHAR_SUPPORT__
 
-    const string ToString(const char realString[], unsigned int length)
+    string ToString(const char realString[], unsigned int length)
     {
 #ifdef _UNICODE
 
