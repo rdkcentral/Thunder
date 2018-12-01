@@ -10,6 +10,11 @@
 #include "ProgramTable.h"
 #include "NIT.h"
 #include "SDT.h"
+#include "TDT.h"
+#include "Descriptors.h"
+#include "Services.h"
+#include "Networks.h"
+#include "TimeDate.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "broadcast.lib")

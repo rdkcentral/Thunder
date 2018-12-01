@@ -28,13 +28,9 @@ namespace DVB {
         static const uint16_t ID = 0x70;
 
     public:
-        TDT()
-            : _time(~0)
-        {
+        TDT() : _time() {
         }
-        TDT(const MPEG::Section& data)
-            : _time(~0)
-        {
+        TDT(const MPEG::Section& data) : _time() {
             if (data.IsValid() == true) {
                 const Core::DataElement info(data.Data());
 
@@ -49,33 +45,60 @@ namespace DVB {
                 J = J - 1461 * Y / 4 + 31;
                 M = 80 * J / 2447;
 
-               uint32_t day = J - 2447 * M / 80;
+               uint8_t day = static_cast<uint8_t>(J - 2447 * M / 80);
                J = M / 11;
-               uint32_t month = M + 2 - (12 * J);
-               uint32_t year = 100 * (C - 49) + Y + J;
-               uint16_t uren = ((info[2] >> 4) * 10) + (info[2] & 0xF);
-               uint16_t minuten = ((info[3] >> 4) * 10) + (info[3] & 0xF);
-               uint16_t seconden = ((info[4] >> 4) * 10) + (info[4] & 0xF);
+               uint8_t month = static_cast<uint8_t>(M + 2 - (12 * J));
+               uint16_t year = static_cast<uint16_t>(100 * (C - 49) + Y + J);
+               uint8_t uren = ((info[2] >> 4) * 10) + (info[2] & 0xF);
+               uint8_t minuten = ((info[3] >> 4) * 10) + (info[3] & 0xF);
+               uint8_t seconden = ((info[4] >> 4) * 10) + (info[4] & 0xF);
 
                printf ("Loadeded: %d-%d-%d %d:%d.%d\n", day, month, year, uren, minuten, seconden);
+               _time = Core::Time(year, month, day, uren, minuten, seconden, 0, false);
             }
         }
-        TDT(const TDT& copy)
-            : _time(copy._time)
-        {
+        TDT(const TDT& copy) : _time(copy._time) {
         }
         ~TDT() {}
 
     public:
         inline bool IsValid() const
         {
-            return (_time != static_cast<uint64_t>(~0));
+            return (_time.IsValid());
         }
-        inline uint64_t Time() const { return (_time); }
+        inline const Core::Time& Time() const { return (_time); }
 
     private:
-        uint64_t _time;
+        Core::Time _time;
     };
+
+    class EXTERNAL TOT : public TDT {
+    private:
+        TOT& operator=(const TOT& rhs) = delete;
+
+    public:
+        static const uint16_t ID = 0x73;
+
+    public:
+        TOT() : TDT(), _data() {
+        }
+        TOT(const MPEG::Section& data) : TDT(data), _data(data.Data()) {
+        }
+        TOT(const TOT& copy) : TDT(copy), _data(copy._data) {
+        }
+        ~TOT() {}
+
+    public:
+        MPEG::DescriptorIterator Descriptors() const
+        {
+            uint16_t size(((_data[6] & 0xF) << 8) | _data[7]);
+            return (MPEG::DescriptorIterator(Core::DataElement(_data, 8, size)));
+        }
+        
+    private:
+        Core::DataElement _data;
+    };
+
 
 } // namespace DVB 
 } // namespace Broadcast

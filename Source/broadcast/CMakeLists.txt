@@ -21,7 +21,8 @@ set(PUBLIC_HEADERS
         MPEGTable.h
         ProgramTable.h
         TunerAdministrator.h
-        ServiceAdministrator.h
+        Services.h
+        Networks.h
         NIT.h
         SDT.h
         Module.h
@@ -29,15 +30,6 @@ set(PUBLIC_HEADERS
 
 set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/WPEFramework")
 set (LIBS_VAR "-l${BROADCAST_ARTIFACT}")
-
-if(WPEFRAMEWORK_BROADCAST_SI_PARSING)
-    target_compile_definitions(Support INTERFACE INCLUDE_SI_PARSING)
-    set(SOURCE_FILES ${SOURCE_FILES} 
-        ServiceAdministrator.cpp
-    )
-    set(CFLAGS_VAR "${CFLAGS_VAR} -DINCLUDE_SI_PARSING")
-    message(STATUS "Enabled SI Parsing inclusion.")
-endif()
 
 add_library(${TARGET} SHARED ${SOURCE_FILES})
 

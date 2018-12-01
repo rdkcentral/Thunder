@@ -19,7 +19,7 @@
 namespace WPEFramework {
 namespace Broadcast {
 namespace DVB {
-  
+
     class EXTERNAL NIT {
     public:
         static const uint16_t ACTUAL = 0x40;
