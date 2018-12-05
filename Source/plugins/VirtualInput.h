@@ -466,6 +466,8 @@ namespace PluginHost {
         uint32_t _modifiers;
         std::map<const string, KeyMap> _mappingTables;
         KeyMap* _defaultMap;
+        string _keyTable;
+        uint32_t _pressedCode;
         NotifierMap _notifierMap;
         PostLookupMap _postLookupTable;
     };
