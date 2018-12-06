@@ -16,6 +16,7 @@ set(SOURCE_FILES
 set(PUBLIC_HEADERS
         broadcast.h
         Definitions.h
+        Descriptors.h
         MPEGDescriptor.h
         MPEGSection.h
         MPEGTable.h
@@ -23,8 +24,12 @@ set(PUBLIC_HEADERS
         TunerAdministrator.h
         Services.h
         Networks.h
+        TimeDate.h
+        Schedule.h
         NIT.h
         SDT.h
+        TDT.h
+        EIT.h
         Module.h
         )
 
