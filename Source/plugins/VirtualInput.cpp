@@ -179,6 +179,8 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
             , _defaultMap(nullptr)
             , _notifierMap()
             , _pressedCode(0)
+            , _repeatCounter(0)
+            , _repeatLimit(0)
         {
             // The derived class shoud set, the initial value of the modifiers...
         }
@@ -293,6 +295,7 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                         if (_pressedCode)
                             KeyEvent(false, _pressedCode, _keyTable);
                         TRACE_L1("Ingested keyCode: %d pressed", sendCode);
+                        _repeatCounter = _repeatLimit;
                         _repeatKey.Arm(sendCode);
                         _pressedCode = code;
 
@@ -333,7 +336,9 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
         void VirtualInput::RepeatKey(const uint32_t code)
         {
             AdministerAndSendKey(REPEAT, code);
-            KeyEvent(false, _pressedCode, _keyTable);
+            _repeatCounter--;
+            if (!_repeatCounter)
+                KeyEvent(false, _pressedCode, _keyTable);
         }
 
         void VirtualInput::AdministerAndSendKey(const actiontype type, const uint32_t code)
