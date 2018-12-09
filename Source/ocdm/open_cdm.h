@@ -194,7 +194,7 @@ typedef struct
     * \param challenge Buffer containing challenge.
     * \param challengeLength Length of challenge (in bytes).
     */
-   void (*process_challenge) (OpenCDMSession* session, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
+   void (*process_challenge) (struct OpenCDMSession* session, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
 
    /**
     * Called when status of a key changes. Use \ref opencdm_session_status to find out new key status.
@@ -203,14 +203,14 @@ typedef struct
     * \param keyId Buffer containing key ID.
     * \param length Length of key ID buffer.
     */
-   void (*key_update)        (OpenCDMSession* session, const uint8_t keyId[], const uint8_t length);
+   void (*key_update)        (struct OpenCDMSession* session, const uint8_t keyId[], const uint8_t length);
 
    /**
     * Called when a message is received from the DRM system
     *
     * \param message Text string, null terminated, from the DRM session.
     */
-   void (*message)        (OpenCDMSession* userData, const char message[]);
+   void (*message)        (struct OpenCDMSession* userData, const char message[]);
 } OpenCDMSessionCallbacks;
 
 /**
