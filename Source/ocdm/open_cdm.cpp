@@ -756,17 +756,18 @@ public:
         Core::InterlockedIncrement(_refCount);
     }
     virtual uint32_t Release() const override {
+        uint32_t result = Core::ERROR_NONE;
 
         _systemLock.Lock();
 
         if (Core::InterlockedDecrement(_refCount) == 0) {
             delete this;
-            return (Core::ERROR_DESTRUCTION_SUCCEEDED);
+            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 
         _systemLock.Unlock();
 
-        return (Core::ERROR_NONE);
+        return (result);
     }
     BEGIN_INTERFACE_MAP(OpenCDMAccessor)
         INTERFACE_ENTRY(OCDM::IAccessorOCDM)
