@@ -68,6 +68,42 @@ uint16_t Netlink::Deserialize (const uint8_t stream[], const uint16_t streamLeng
     return (completed == false ? 0 : streamLength);
 }
 
+uint32_t SocketNetlink::Send (const Core::Netlink& outbound, const uint32_t waitTime) {
+    uint32_t result = Core::ERROR_BAD_REQUEST;
+            
+    _adminLock.Lock();
+
+    _pending.emplace_back(outbound);
+
+    Message& myEntry = _pending.back();
+
+    _adminLock.Unlock();
+
+    Core::SocketDatagram::Trigger();
+
+    if (myEntry.Wait(waitTime) == false) {
+        result = Core::ERROR_RPC_CALL_FAILED;
+    }
+    else {
+        result = Core::ERROR_NONE;
+    }
+
+    // if we leave we need to take out "our" element.
+    _adminLock.Lock();
+
+    PendingList::iterator index (std::find(_pending.begin(), _pending.end(), outbound));
+
+    ASSERT (index != _pending.end());
+
+    if (index != _pending.end()) {
+        _pending.erase(index);
+    }
+
+    _adminLock.Unlock();
+
+    return (result);
+}
+
 uint32_t SocketNetlink::Exchange (const Core::Netlink& outbound, Core::Netlink& inbound, const uint32_t waitTime) {
     uint32_t result = Core::ERROR_BAD_REQUEST;
             

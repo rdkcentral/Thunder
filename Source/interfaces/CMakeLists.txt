@@ -8,7 +8,6 @@ add_library(Interfaces SHARED
         Enumerations.cpp
         )
 
-
 set(PUBLIC_HEADERS
         IAVNClient.h
         IBluetooth.h
@@ -53,7 +52,6 @@ target_link_libraries(Interfaces
           ${NAMESPACE}::Core
         )
 
-
 if (WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(Marshalling
             PRIVATE
@@ -73,7 +71,7 @@ set_target_properties(Marshalling PROPERTIES
         FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME WPEFrameworkMarshalling
+        OUTPUT_NAME "${NAMESPACE}Marshalling"
         )
 
 set_target_properties(Interfaces PROPERTIES
@@ -83,7 +81,7 @@ set_target_properties(Interfaces PROPERTIES
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        OUTPUT_NAME WPEFrameworkInterfaces
+        OUTPUT_NAME "${NAMESPACE}Interfaces"
         )
 
 
@@ -104,13 +102,21 @@ install(
 
 # package config
 configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/WPEFrameworkInterfaces.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/WPEFrameworkInterfaces.pc"
+        "${CMAKE_CURRENT_SOURCE_DIR}/interfaces.pc.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}Interfaces.pc"
         @ONLY)
 
 install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFrameworkInterfaces.pc
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}Interfaces.pc
         DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig"
+)
+
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/interfaces.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/FindInterfaces.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FindInterfaces.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
 )
 
 include (CMakePackageConfigHelpers)

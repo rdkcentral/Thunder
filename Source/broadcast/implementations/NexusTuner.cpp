@@ -748,7 +748,7 @@ namespace Broadcast {
 
         // Using the next method, the allocated Frontend will try to lock the channel that is found at the given parameters.
         // Frequency is always in MHz.
-        virtual uint32_t Tune(const uint16_t frequency, const Modulation modulation, const uint32_t symbolRate, SpectralInversion inversion) override
+        virtual uint32_t Tune(const uint16_t frequency, const Modulation modulation, const uint32_t symbolRate, const uint16_t fec, const SpectralInversion inversion) override
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 

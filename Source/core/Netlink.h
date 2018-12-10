@@ -177,10 +177,10 @@ namespace Core {
 
     // https://www.kernel.org/doc/Documentation/connector/connector.txt
 
-    template<const uint32_t IDX, const uint32_t VAL, const uint16_t BASE>
+    template<const uint32_t IDX, const uint32_t VAL>
     class ConnectorType: public Core::Netlink {
     private:
-        ConnectorType<IDX,VAL,BASE>& operator= (const ConnectorType<IDX,VAL,BASE>&) = delete;
+        ConnectorType<IDX,VAL>& operator= (const ConnectorType<IDX,VAL>&) = delete;
 
     public:
         ConnectorType()
@@ -188,7 +188,7 @@ namespace Core {
             Type(NLMSG_DONE);
             Flags(0);
         }
-        ConnectorType(const ConnectorType<IDX,VAL,BASE>& copy) 
+        ConnectorType(const ConnectorType<IDX,VAL>& copy) 
             : Core::Netlink(copy) {
         }
         ~ConnectorType() {
@@ -197,12 +197,17 @@ namespace Core {
         inline uint32_t Acknowledge() const {
             return (_ack);
         }
+        inline bool Ingest(const uint8_t stream[], const uint16_t length) {
+            return (Core::Netlink::Deserialize(stream, length) == length);
+        }
 
     private:
         virtual uint16_t Message(uint8_t stream[], const uint16_t length) const = 0;
         virtual uint16_t Message(const uint8_t stream[], const uint16_t length) = 0;
 
         virtual uint16_t Write(uint8_t stream[], const uint16_t length) const {
+
+            static_assert( NLMSG_ALIGNTO == 4, "Assuming the message element are 32 bites aligbned!!" );
 
             uint32_t value = IDX;
             memcpy (&(stream[0]), &value, 4);
@@ -269,9 +274,15 @@ private:
         };
 
     public:
+        Message (const Netlink& outbound) 
+            : _outbound(outbound)
+            , _inbound(nullptr) 
+            , _signaled(false, true)
+            , _state(LOADED) {
+        }
         Message (const Netlink& outbound, Netlink& inbound) 
             : _outbound(outbound)
-            , _inbound(inbound) 
+            , _inbound(&inbound) 
             , _signaled(false, true)
             , _state(LOADED) {
         }
@@ -283,7 +294,6 @@ private:
             return (_state != LOADED);
         }
         inline uint32_t Sequence () const {
-            ASSERT (_state != LOADED);
             return (_outbound.Sequence());
         }
         inline void Deserialize(const Netlink::Frames& frame) {
@@ -293,15 +303,19 @@ private:
             if (frame.Type() == NLMSG_ERROR) {
                 // It means we received an error.
                 _state = FAILURE;
+                _signaled.SetEvent();
             }
-
-            if (_inbound.Deserialize(frame.RawData(), frame.RawSize()) != 0) {
+            else if ((_inbound != nullptr) && (_inbound->Deserialize(frame.RawData(), frame.RawSize()) != 0)) {
                 _signaled.SetEvent();
             }
         }
         inline uint16_t Serialize (uint8_t buffer[], const uint16_t length) const {
             _state = SEND;
-            return (_outbound.Serialize(buffer, length));
+            uint16_t handled = _outbound.Serialize(buffer, length);
+            if (_inbound == nullptr) {
+                _signaled.SetEvent();
+            }
+            return (handled);
         }
         inline bool operator== (const Core::Netlink& rhs) const {
             return (&rhs == &_outbound);
@@ -316,8 +330,8 @@ private:
 
     private:
         const Netlink& _outbound;
-        Netlink& _inbound;
-        Core::Event _signaled;
+        Netlink* _inbound;
+        mutable Core::Event _signaled;
         mutable state _state;
     };
     typedef std::list<Message> PendingList;
@@ -333,6 +347,7 @@ public:
     }
 
 public:
+    uint32_t Send (const Core::Netlink& outbound, const uint32_t waitTime);
     uint32_t Exchange (const Core::Netlink& outbound, Core::Netlink& inbound, const uint32_t waitTime);
 
     virtual uint16_t Deserialize (const uint8_t dataFrame[], const uint16_t receivedSize) = 0;

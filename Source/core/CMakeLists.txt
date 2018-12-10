@@ -122,14 +122,14 @@ set(PUBLIC_HEADERS
 add_library(Support INTERFACE)
 add_library(${NAMESPACE}::Support ALIAS Support)
 
-set(WCHAR_SUPPORT_DEFINITION)
 if(NOT WPEFRAMEWORK_WCHAR_SUPPORT)
+    set(PC_FLAGS "${PC_FLAGS} -D__NO_WCHAR_SUPPORT__")
     target_compile_definitions(Support INTERFACE __NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support")
 endif()
 
-set(CRITICAL_SECTION_LOCK_DEFINITION)
 if(WPEFRAMEWORK_DEADLOCK_DETECTION)
+    set(PC_FLAGS "${PC_FLAGS} -DCRITICAL_SECTION_LOCK_LOG")
     target_compile_definitions(Support INTERFACE CRITICAL_SECTION_LOCK_LOG)
     message(STATUS "Enabled deadlock detection.")
 endif()
@@ -204,14 +204,35 @@ if (BCM_HOST_FOUND)
             )
 endif (BCM_HOST_FOUND)
 
+# ===========================================================================================
+# Install ARTIFACTS:
+# ===========================================================================================
 install(
         TARGETS Support ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # headers for mac (note the different component -> different package)
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # for mac 
         INCLUDES DESTINATION include/${NAMESPACE}/core      # headers
+)
+
+# ===========================================================================================
+# Install METADATA:
+# ===========================================================================================
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/core.pc.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/${CORE_ARTIFACT}.pc"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CORE_ARTIFACT}.pc
+        DESTINATION "lib/pkgconfig")
+
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/core.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
 )
 
 HandleStandardLib()

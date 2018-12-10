@@ -17,6 +17,8 @@ set(WPEFRAMEWORK_PLATFORM "PC_UNIX" CACHE STRING
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
 
+set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
+
 #FIXME: find how to set -Wall cmake style :-)
 set(CMAKE_COMPILER_IS_CLANG OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -39,6 +41,17 @@ if (INSTALL_LOCALLY)
 else()
     set(CMAKE_PREFIX_PATH ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/cmake ${CMAKE_PREFIX_PATH})
 endif()
+
+# make sure others can make use of the JSON creation tools as well!!!
+configure_file( "${CMAKE_SOURCE_DIR}/cmake/tools.cmake"
+                "${CMAKE_CURRENT_BINARY_DIR}/tools.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tools.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake")
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/config/
+        DESTINATION include/cmake/tools)
+
 
 if (POSITION_INDEPENDENT_CODE)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -72,7 +85,6 @@ endif()
 
 message(STATUS "Setting up ${PROJECT_NAME} v${VERSION}")
 
-set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
 if(APPLE)
     # Mac needed variables

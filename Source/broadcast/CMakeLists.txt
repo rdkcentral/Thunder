@@ -1,9 +1,5 @@
 set(TARGET Broadcast)
 
-find_package(Nexus REQUIRED)
-
-option(WPEFRAMEWORK_BROADCAST_SI_PARSING
-        "Add SI parsing and collecting functionality." OFF)
 
 set(SOURCE_FILES
         ProgramTable.cpp
@@ -33,9 +29,9 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/WPEFramework")
-set (LIBS_VAR "-l${BROADCAST_ARTIFACT}")
+set(PC_CFLAGS "")
 
+find_package(Nexus REQUIRED)
 add_library(${TARGET} SHARED ${SOURCE_FILES})
 
 target_link_libraries(${TARGET}
@@ -62,25 +58,35 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
+# ===========================================================================================
+# Install ARTIFACTS:
+# ===========================================================================================
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/broadcast COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/broadcast # headers
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
+        INCLUDES DESTINATION include/${NAMESPACE}/plugins      # headers
+)
+
+# ===========================================================================================
+# Install METADATA:
+# ===========================================================================================
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.pc.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/${BROADCAST_ARTIFACT}.pc"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BROADCAST_ARTIFACT}.pc
+        DESTINATION "lib/pkgconfig")
+
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
 )
 
 HandleStandardLib()
-
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/broadcast.pc"
-        @ONLY)
-
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/broadcast.pc
-        DESTINATION lib/pkgconfig
-)
-

@@ -209,11 +209,3 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
         DESTINATION include/WPEFramework)
 
 include(GenericConfig.cmake)
-
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/WPEFramework.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.pc"
-        @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.pc
-        DESTINATION "lib/pkgconfig")

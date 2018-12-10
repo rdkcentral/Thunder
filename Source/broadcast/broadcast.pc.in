@@ -1,10 +1,10 @@
 prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
-includedir=${prefix}/include
+includedir=${prefix}/include/@NAMESPACE@
 
-Name: Broadcast 
+Name: @BROADCAST_ARTIFACT@
 Description: Broadcast library
 Version: 1.0
-Cflags: -I${includedir} @CFLAGS_VAR@ @INCLUDE_SI_PARSING@
-Libs: -L${libdir} @LIBS_VAR@
+Cflags: -I${includedir} @PC_CFLAGS@
+Libs: -L${libdir} -l@BROADCAST_ARTIFACT@ -l@CORE_ARTIFACT@

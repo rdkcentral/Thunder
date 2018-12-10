@@ -147,7 +147,7 @@ class Section;
         QAM4096            = 4096
     };
 
-    enum fec_inner {
+    enum fec {
         FEC_INNER_UNKNOWN  = 0,
         FEC_1_2            = 1,
         FEC_2_3            = 2,
@@ -158,6 +158,8 @@ class Section;
         FEC_3_5            = 7,
         FEC_4_5            = 8,
         FEC_9_10           = 9,
+        FEC_2_5            = 10,
+        FEC_6_7            = 11,
         FEC_INNER_NONE     = 15
     };
 
@@ -165,6 +167,37 @@ class Section;
         FEC_OUTER_UNKNOWN  = 0,
         FEC_OUTER_NONE     = 1,
         RS                 = 2
+    };
+
+    enum transmission {
+        TRANSMISSION_AUTO,
+        TRANSMISSION_1K,
+        TRANSMISSION_2K,
+        TRANSMISSION_4K,
+        TRANSMISSION_8K,
+        TRANSMISSION_16K,
+        TRANSMISSION_32K,
+        TRANSMISSION_C3780,
+        TRANSMISSION_C1
+    };
+
+    enum guard {
+        GUARD_AUTO,
+        GUARD_1_4,
+        GUARD_1_8,
+        GUARD_1_16,
+        GUARD_1_32,
+        GUARD_1_128,
+        GUARD_19_128,
+        GUARD_19_256,
+    };
+
+    enum hierarchy {
+        NoHierarchy,
+        AutoHierarchy,
+        Hierarchy1,
+        Hierarchy2,
+        Hierarchy4,
     };
 
     struct ITuner {
@@ -178,14 +211,23 @@ class Section;
         };
 
         enum DTVStandard {
-            DVB,
-            ATSC
+            DVB   = 0x1000,
+            ATSC  = 0x2000,
+            ISDB  = 0x3000,
+            DAB   = 0x4000
+        };
+
+        enum Modus {
+            Satellite     = 0x001,
+            Terrestrial   = 0x002,
+            Cable         = 0x003
         };
 
         enum Annex {
-            A,
-            B,
-            C
+            NoAnnex = 0x000, // NoAnnex -> S/T
+            A       = 0x400, // A       -> S2/T2
+            B       = 0x800,
+            C       = 0xC00
         };
 
         // The following methods will be called before any create is called. It allows for an initialization,
@@ -211,7 +253,7 @@ class Section;
 
         // Using the next method, the allocated Frontend will try to lock the channel that is found at the given parameters.
         // Frequency is always in MHz.
-        virtual uint32_t Tune(const uint16_t frequency, const Modulation, const uint32_t symbolRate, SpectralInversion ) = 0;
+        virtual uint32_t Tune(const uint16_t frequency, const Modulation, const uint32_t symbolRate, const uint16_t fec, const SpectralInversion) = 0;
 
         // In case the tuner needs to be tuned to s apecific programId, please list it here. Once the PID's associated to this
         // programId have been found, and set, the Tuner will reach its PREPARED state.

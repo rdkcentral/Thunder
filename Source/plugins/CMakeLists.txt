@@ -39,18 +39,20 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}::Cryptalgo
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if(WPEFRAMEWORK_PROTOCOLS)
+    set(PROTOCOL_WRAPPER "-l${PROTOCOLS_ARTIFACT}")
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}::Protocols
             )
 else()
+    set(PROTOCOL_WRAPPER "-l${COM_ARTIFACT} -l{WEBSOCKET_ARTIFACT}")
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}::WebSocket
               ${NAMESPACE}::COM
             )
-endif ()
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
@@ -62,25 +64,35 @@ set_target_properties(${TARGET} PROPERTIES
         OUTPUT_NAME  ${PLUGINS_ARTIFACT}
         )
 
+# ===========================================================================================
+# Install ARTIFACTS:
+# ===========================================================================================
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel   # headers for mac (note the different component -> different package)
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
         INCLUDES DESTINATION include/${NAMESPACE}/plugins      # headers
 )
 
-HandleStandardLib()
+# ===========================================================================================
+# Install METADATA:
+# ===========================================================================================
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/plugins.pc.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc"
+                @ONLY)
 
-# package config
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/${PLUGINS_ARTIFACT}.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc"
-        @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc
+        DESTINATION "lib/pkgconfig")
 
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig"
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/plugins.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
 )
+
+HandleStandardLib()

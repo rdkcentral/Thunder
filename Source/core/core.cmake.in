@@ -1,0 +1,37 @@
+# Try to find all dependencies to build proprietary plugins
+# Once done this will be defined:
+#  CORE_SUPPORT_FOUND        - System has support to build Proprietary Plugins
+#  CORE_SUPPORT_INCLUDE_DIRS - The include directories
+#  CORE_SUPPORT_LIBRARIES    - The libraries needed
+#  CORE_SUPPORT_LIBRARY_DIR  - The libraries needed
+#  CORE_SUPPORT_DEFINITIONS  - The compiler flags needed to compile this library correctly
+# 
+# Input: CORE_SUPPORT_VERSION
+
+find_package(PkgConfig)
+pkg_check_modules(PC_CORE_SUPPORT @NAMESPACE@Core)
+
+if(PC_CORE_SUPPORT_FOUND)
+    if(CORE_SUPPORT_VERSION AND PC_CORE_SUPPORT_VERSION)
+        if ("${CORE_SUPPORT_VERSION}" VERSION_GREATER "${PC_CORE_SUPPORT_VERSION}")
+            message(WARNING "Incorrect version, found ${PC_CORE_SUPPORT_VERSION}, need at least ${CORE_SUPPORT_VERSION}, please install correct version.")
+            set(CORE_SUPPORT_FOUND_TEXT "Found incorrect version")
+            unset(PC_CORE_SUPPORT_FOUND)
+        endif()
+    endif()
+else()
+    set(CORE_SUPPORT_FOUND_TEXT "Not found")
+endif()
+
+if(PC_CORE_SUPPORT_FOUND)
+    set(CORE_SUPPORT_DEFINITIONS ${PC_CORE_SUPPORT_CFLAGS_OTHER})
+    set(CORE_SUPPORT_INCLUDE_DIR ${PC_CORE_SUPPORT_INCUDE_DIRS})
+    set(CORE_SUPPORT_LIBRARIES   ${PC_CORE_SUPPORT_LIBRARIES})
+    set(CORE_SUPPORT_LIBRARY_DIR ${PC_CORE_SUPPORT_LIBRARY_DIRS})
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CORE_SUPPORT DEFAULT_MSG
+    CORE_SUPPORT_LIBRARIES CORE_SUPPORT_INCLUDE_DIR)
+
+mark_as_advanced(CORE_SUPPORT_DEFINITIONS CORE_SUPPORT_INCLUDE_DIR CORE_SUPPORT_LIBRARIES CORE_SUPPORT_LIBRARY_DIR)
