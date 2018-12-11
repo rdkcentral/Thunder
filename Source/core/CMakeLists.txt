@@ -121,6 +121,7 @@ set(PUBLIC_HEADERS
 #non-buildable interfce target to carry the definitions
 add_library(Support INTERFACE)
 add_library(${NAMESPACE}::Support ALIAS Support)
+set(PC_FLAGS "-std=c++11")
 
 if(NOT WPEFRAMEWORK_WCHAR_SUPPORT)
     set(PC_FLAGS "${PC_FLAGS} -D__NO_WCHAR_SUPPORT__")
