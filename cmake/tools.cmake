@@ -82,3 +82,15 @@ macro(write_config)
     endforeach()
 endmacro()
 
+function(add_compiler_flags modulename options)
+    foreach(VAL ${${options}})
+        set_target_properties(${modulename} PROPERTIES COMPILE_FLAGS "${VAL}")
+    endforeach()
+endfunction()
+
+function(add_linker_flags modulename options)
+    foreach(VAL ${${options}})
+        set_target_properties(${modulename} PROPERTIES LINK_FLAGS "${VAL}")
+    endforeach()
+endfunction()
+

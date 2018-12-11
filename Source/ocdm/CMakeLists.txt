@@ -63,7 +63,7 @@ set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/opencdm")
 set (LIBS_VAR "-l${TARGET}")
 
 if (WPEFRAMEWORK_CDMI_BCM_NEXUS_SVP)
-    set(CFLAGS_VAR "${CFLAGS_VAR} -I${CMAKE_INSTALL_PREFIX}/include/refsw -DUSE_OPENCDM_BCM_NEXUS_SVP ")
+    set(CFLAGS_VAR "${CFLAGS_VAR} -I${CMAKE_INSTALL_PREFIX}/include/refsw -DUSE_OPENCDM_BCM_NEXUS_SVP")
     set(LIBS_VAR "${LIBS_VAR} -lb_secbuf -lbrcmsvpmeta")
 endif()
 
@@ -76,3 +76,13 @@ install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/ocdm.pc
         DESTINATION lib/pkgconfig
 )
+
+configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/ocdm.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
+                @ONLY)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
+)
+
+
