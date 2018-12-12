@@ -6,5 +6,5 @@ includedir=${prefix}/include/@NAMESPACE@
 Name: @CORE_ARTIFACT@
 Description: Abstraction layer basis for all bridge functionality
 Version: 1.0
-Cflags: @PC_FLAGS@
+Cflags: -I${includedir} @PC_FLAGS@
 Libs: -L${libdir} -l@CORE_ARTIFACT@
