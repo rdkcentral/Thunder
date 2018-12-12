@@ -1,6 +1,5 @@
 set(TARGET Broadcast)
 
-
 set(SOURCE_FILES
         ProgramTable.cpp
         Definitions.cpp
@@ -67,8 +66,8 @@ install(
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}/plugins      # headers
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/broadcast COMPONENT devel # for mac
+        INCLUDES DESTINATION include/${NAMESPACE}/broadcast # headers
 )
 
 # ===========================================================================================

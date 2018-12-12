@@ -63,8 +63,8 @@ namespace Descriptors {
         uint32_t SymbolRate() const {
             return (Broadcast::ConvertBCD<uint32_t>(&(_data[7]), 7, true));
         }
-        fec_inner FECInner() const {
-            return (static_cast<fec_inner>(_data[5] & 0xF));
+        fec FECInner() const {
+            return (static_cast<fec>(_data[5] & 0xF));
         }
 
     private:
@@ -101,8 +101,8 @@ namespace Descriptors {
         uint32_t SymbolRate() const {
             return (Broadcast::ConvertBCD<uint32_t>(&(_data[7]), 7, true));
         }
-        fec_inner FECInner() const {
-            return (static_cast<fec_inner>(_data[5] & 0xF));
+        fec FECInner() const {
+            return (static_cast<fec>(_data[5] & 0xF));
         }
         fec_outer FECOuter() const {
             return (static_cast<fec_outer>(_data[10] & 0x3));
