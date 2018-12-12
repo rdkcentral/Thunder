@@ -10,7 +10,7 @@
 
 find_package(PkgConfig)
 pkg_check_modules(PC_CORE @NAMESPACE@Core)
-pkg_check_modules(PC_INTERFACES @NAMESPACE@Plugins)
+pkg_check_modules(PC_INTERFACES @NAMESPACE@Interfaces)
 
 if(PC_CORE_FOUND AND PC_INTERFACES_FOUND)
     if(INTERFACES_VERSION AND PC_INTERFACES_VERSION)
