@@ -96,7 +96,7 @@ namespace Core {
                 while (index.Next() == true) {
                     const string& value(*index);
 
-                    size += 2 + static_cast<uint16_t>(index.Key().length());
+                    size += 1 + static_cast<uint16_t>(index.Key().length());
 
                     if ((value.empty() != true) && (value[0] != '\0')) {
                         size += 1 + static_cast<uint16_t>(value.length());
@@ -118,7 +118,7 @@ namespace Core {
                     string value(*index);
 
                     argCount++;
-                    size += 1 + static_cast<uint16_t>(index.Key().length()) + 1;
+                    size += static_cast<uint16_t>(index.Key().length()) + 1;
 
                     if (value.empty() != true) {
                         argCount++;
@@ -149,8 +149,7 @@ namespace Core {
 
                     commandCount++;
                     *destination++ = ' ';
-                    *destination++ = '-';
-                    data -= 2;
+                    data -= 1;
 
                     ::strncpy(destination, index.Key().c_str(), data);
                     destination = &destination[index.Key().length()];
@@ -213,8 +212,6 @@ namespace Core {
 
                         commandCount++;
                         *indexer++ = destination;
-                        *destination++ = '-';
-                        data -= 1;
 
                         ::strncpy(destination, index.Key().c_str(), data);
                         destination = &destination[index.Key().length() + 1];

@@ -335,33 +335,33 @@ namespace RPC {
 				ASSERT(instance.ClassName().empty() == false);
 				ASSERT(config.Connector().empty() == false);
 
-				options[_T("l")] = instance.Locator();
-				options[_T("c")] = instance.ClassName();
-				options[_T("r")] = config.Connector();
-				options[_T("i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+				options[_T("-l")] = instance.Locator();
+				options[_T("-c")] = instance.ClassName();
+				options[_T("-r")] = config.Connector();
+				options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
 				if (instance.Version() != static_cast<uint32_t>(~0)) {
-					options[_T("v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+					options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
 				}
 				if (instance.User().empty() == false) {
-					options[_T("u")] = instance.User();
+					options[_T("-u")] = instance.User();
 				}
 				if (instance.Group().empty() == false) {
-					options[_T("g")] = instance.Group();
+					options[_T("-g")] = instance.Group();
 				}
 				if (config.PersistentPath().empty() == false) {
-					options[_T("p")] = config.PersistentPath();
+					options[_T("-p")] = config.PersistentPath();
 				}
 				if (config.SystemPath().empty() == false) {
-					options[_T("s")] = config.SystemPath();
+					options[_T("-s")] = config.SystemPath();
 				}
 				if (config.DataPath().empty() == false) {
-					options[_T("d")] = config.DataPath();
+					options[_T("-d")] = config.DataPath();
 				}
 				if (config.ApplicationPath().empty() == false) {
-					options[_T("a")] = config.ApplicationPath();
+					options[_T("-a")] = config.ApplicationPath();
 				}
 				if (config.ProxyStubPath().empty() == false) {
-					options[_T("m")] = config.ProxyStubPath();
+					options[_T("-m")] = config.ProxyStubPath();
 				}
 
 				return (Core::Service<MasterRemoteProcess>::Create<MasterRemoteProcess>(&parent, &pid, &options));
