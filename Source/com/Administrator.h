@@ -36,7 +36,7 @@ namespace RPC {
 #ifdef __DEBUG__
     enum { CommunicationTimeOut = Core::infinite }; // Time in ms. Forever
 #else
-    enum { CommunicationTimeOut = 10000 }; // Time in ms. 10 Seconden
+    enum { CommunicationTimeOut = 20000 }; // Time in ms. 20 Seconden
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
