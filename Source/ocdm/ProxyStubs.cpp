@@ -88,9 +88,7 @@ namespace WPEFramework {
             OCDM::ISession::ICallback* proxy = nullptr;
 
             if (implementation != nullptr) {
-                proxy = RPC::Administrator::Instance().CreateProxy<OCDM::ISession::ICallback>(channel,
-                    implementation,
-                    true, false);
+                proxy = RPC::Administrator::Instance().ProxyInstance<OCDM::ISession::ICallback>(channel, implementation);
 
                 ASSERT((proxy != nullptr) && "Failed to create proxy");
             }
@@ -147,9 +145,7 @@ namespace WPEFramework {
             OCDM::IAccessorOCDM::INotification* proxy = nullptr;
 
             if (implementation != nullptr) {
-                proxy = RPC::Administrator::Instance().CreateProxy<OCDM::IAccessorOCDM::INotification>(channel,
-                    implementation,
-                    true, false);
+                proxy = RPC::Administrator::Instance().ProxyInstance<OCDM::IAccessorOCDM::INotification>(channel, implementation);
 
                 ASSERT((proxy != nullptr) && "Failed to create proxy");
             }
@@ -171,7 +167,7 @@ namespace WPEFramework {
             OCDM::IAccessorOCDM::INotification* stub = reader.Number<OCDM::IAccessorOCDM::INotification*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            OCDM::IAccessorOCDM::INotification* proxy = RPC::Administrator::Instance().FindProxy<OCDM::IAccessorOCDM::INotification>(channel.operator->(), stub);
+            OCDM::IAccessorOCDM::INotification* proxy = RPC::Administrator::Instance().ProxyFind<OCDM::IAccessorOCDM::INotification>(channel, stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Coud not find stub for OCDM::IAccessorOCDM::INotification: %p"), stub);
@@ -363,7 +359,7 @@ namespace WPEFramework {
             OCDM::ISession::ICallback* stub = reader.Number<OCDM::ISession::ICallback*>();
 
             // NOTE: FindProxy does *NOT* AddRef the result. Do not release what is obtained via FindProxy..
-            OCDM::ISession::ICallback* proxy = RPC::Administrator::Instance().FindProxy<OCDM::ISession::ICallback>(channel.operator->(), stub);
+            OCDM::ISession::ICallback* proxy = RPC::Administrator::Instance().ProxyFind<OCDM::ISession::ICallback>(channel, stub);
 
             if (proxy == nullptr) {
                 TRACE_L1(_T("Coud not find stub for OCDM::ISession::ICallback: %p"), stub);
@@ -385,17 +381,17 @@ namespace WPEFramework {
         nullptr
     };
 
-    typedef ProxyStub::StubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods, ProxyStub::UnknownStub> AccessorOCDMStub;
-    typedef ProxyStub::StubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMNotificationStubMethods, ProxyStub::UnknownStub> AccessorOCDMNotificationStub;
-    typedef ProxyStub::StubType<OCDM::ISession::ICallback, CallbackStubMethods, ProxyStub::UnknownStub> CallbackStub;
-    typedef ProxyStub::StubType<OCDM::ISession, SessionStubMethods, ProxyStub::UnknownStub> SessionStub;
+    typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods> AccessorOCDMStub;
+    typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMNotificationStubMethods> AccessorOCDMNotificationStub;
+    typedef ProxyStub::UnknownStubType<OCDM::ISession::ICallback, CallbackStubMethods> CallbackStub;
+    typedef ProxyStub::UnknownStubType<OCDM::ISession, SessionStubMethods> SessionStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
     class AccessorOCDMProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDM> {
     public:
-        AccessorOCDMProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+        AccessorOCDMProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
             const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
@@ -416,9 +412,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            return (Number<OCDM::OCDM_RESULT>(newMessage->Response()));
         } 
         virtual OCDM::ISession* Session (
             const std::string sessionId) {
@@ -429,9 +423,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>()));
+            return (reinterpret_cast<OCDM::ISession*>(Interface(newMessage->Response(), OCDM::ISession::ID)));
         }
         virtual OCDM::ISession* Session (
             const uint8_t keyId[],
@@ -443,9 +435,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>()));
+            return (reinterpret_cast<OCDM::ISession*>(Interface(newMessage->Response(), OCDM::ISession::ID)));
         }
  
         //
@@ -478,7 +468,9 @@ namespace WPEFramework {
             OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT>();
 
             sessionId = reader.Text(); 
-            session = CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>());
+            session = reinterpret_cast<OCDM::ISession*>(ProxyInstance(reader.Number<void*>(), OCDM::ISession::ID));
+
+            Complete(reader);
 
             return (result);
         }
@@ -496,9 +488,7 @@ namespace WPEFramework {
 
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            return (Number<OCDM::OCDM_RESULT>(newMessage->Response()));
         }
         //
         // Register for a KeyId change notification
@@ -510,6 +500,8 @@ namespace WPEFramework {
             writer.Number(callback);
 
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
         //
         // Unregister for a KeyId change notification
@@ -521,12 +513,14 @@ namespace WPEFramework {
             writer.Number(callback);
 
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
     };
  
     class AccessorOCDMNotificationProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDM::INotification> {
     public:
-        AccessorOCDMNotificationProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        AccessorOCDMNotificationProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -541,12 +535,16 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(sessionId);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
         virtual void Destroy(const string& sessionId) override {
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(sessionId);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
         virtual void KeyChange(const string& sessionId, const uint8_t keyId[], const uint8_t length, const OCDM::ISession::KeyStatus status) override {
             IPCMessage newMessage(BaseClass::Message(2));
@@ -555,12 +553,14 @@ namespace WPEFramework {
             writer.Buffer(length, keyId);
             writer.Number(status);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
     };
 
     class CallbackProxy : public ProxyStub::UnknownProxyType<OCDM::ISession::ICallback> {
     public:
-        CallbackProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        CallbackProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -580,6 +580,8 @@ namespace WPEFramework {
             writer.Buffer(length, keyMessage);
             writer.Text(URL);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
 
         //
@@ -589,6 +591,8 @@ namespace WPEFramework {
         {
             IPCMessage newMessage(BaseClass::Message(1));
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
 
         //
@@ -602,6 +606,8 @@ namespace WPEFramework {
             writer.Number(sysError);
             writer.Text(message);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
 
         virtual void OnKeyStatusUpdate(const OCDM::ISession::KeyStatus status)
@@ -610,13 +616,15 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(status);
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
     };
 
 
     class SessionProxy : public ProxyStub::UnknownProxyType<OCDM::ISession> {
     public:
-        SessionProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+        SessionProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
             const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
@@ -634,9 +642,7 @@ namespace WPEFramework {
 
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            return (Number<OCDM::OCDM_RESULT>(newMessage->Response()));
         }
         //
         // Process a key message response.
@@ -647,6 +653,8 @@ namespace WPEFramework {
             writer.Buffer(keyLength, keyMessage);
 
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         } 
         //
         // Removes all license(s) and key(s) associated with the session
@@ -656,9 +664,7 @@ namespace WPEFramework {
 
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            return (Number<OCDM::OCDM_RESULT>(newMessage->Response()));
         }
         //
         // report the current status of the Session with respect to the KeyExchange.
@@ -669,9 +675,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::ISession::KeyStatus>());
+            return (Number<OCDM::ISession::KeyStatus>(newMessage->Response()));
         }
         //
         // Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
@@ -682,9 +686,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Text());
+            return (Text (newMessage->Response()));
         }
         //
         // We are done with the Sesison, close it.
@@ -694,6 +696,8 @@ namespace WPEFramework {
             IPCMessage newMessage(BaseClass::Message(5));
  
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
         //
         // Revoke the Session Callback for change notifications
@@ -705,6 +709,8 @@ namespace WPEFramework {
             writer.Number(callback);
 
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
         //
         // Revoke the Session Callback for change notifications
@@ -715,9 +721,7 @@ namespace WPEFramework {
  
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Text());
+            return (Text(newMessage->Response()));
         }
  
     };

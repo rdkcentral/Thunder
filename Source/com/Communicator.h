@@ -3,6 +3,7 @@
 
 #include "Module.h"
 #include "Administrator.h"
+#include "IUnknown.h"
 #include "ITracing.h"
 
 #include "../tracing/TraceUnit.h"
@@ -638,11 +639,15 @@ namespace RPC {
 
                 if (index != _processes.end()) {
 
-                    std::list< std::pair< const uint32_t, const Core::IUnknown* > > deadProxies;
+                    std::list< ProxyStub::UnknownProxy* > deadProxies;
                     RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
-                    std::list< std::pair< const uint32_t, const Core::IUnknown* > >::const_iterator loop (deadProxies.begin());
+                    std::list< ProxyStub::UnknownProxy* >::const_iterator loop (deadProxies.begin());
                     while (loop != deadProxies.end()) {
-                        _parent.Revoke(pid, loop->second, loop->first);
+                        Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
+                        _parent.Revoke(pid, base, (*loop)->InterfaceId());
+                        if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                            TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
+                        }
                         loop++;
                     }
                     index->second->State(IRemoteProcess::DEACTIVATED);
@@ -741,9 +746,8 @@ namespace RPC {
 						}
 					}
                     else if ((info.IsOffer() == true) || (info.IsRequested())) {
-                        Core::IUnknown* result = Administrator::Instance().CreateProxy(info.InterfaceId(), channel, implementation, true, info.IsRequested());
+                        Core::IUnknown* result = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, implementation, info.InterfaceId(), info.IsRequested());
 						if (result != nullptr) {
-
 							_parent.Offer(index->first, result, info.InterfaceId());
 							result->Release();
 						}
@@ -751,7 +755,7 @@ namespace RPC {
 					else {
 						ASSERT(info.IsRevoke() == true);
 
-						Core::IUnknown* result = Administrator::Instance().FindProxy(channel.operator->(), implementation);
+						Core::IUnknown* result = Administrator::Instance().ProxyFind<Core::IUnknown>(channel, implementation, info.InterfaceId());
 						if (result != nullptr) {
 							_parent.Revoke(index->first, result, info.InterfaceId());
 							result->Release();
@@ -1142,7 +1146,7 @@ namespace RPC {
 
 						ASSERT(baseChannel.IsValid() == true);
 
-						result = Administrator::Instance().CreateProxy<INTERFACE>(baseChannel, static_cast<INTERFACE*>(implementation), false, true);
+						result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
 					}
 				}
 			}
@@ -1231,7 +1235,7 @@ namespace RPC {
 
 					ASSERT(baseChannel.IsValid() == true);
 
-					result = Administrator::Instance().CreateProxy<INTERFACE>(baseChannel, static_cast<INTERFACE*>(implementation), false, true);
+					result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
 				}
 			}
 

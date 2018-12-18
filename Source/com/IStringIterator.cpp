@@ -57,14 +57,14 @@ namespace ProxyStub {
 		nullptr
 	};
 
-	typedef ProxyStub::StubType<RPC::IStringIterator, StringIteratorStubMethods, ProxyStub::UnknownStub> StringIteratorStub;
+	typedef ProxyStub::UnknownStubType<RPC::IStringIterator, StringIteratorStubMethods> StringIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
 	class StringIteratorProxy : public UnknownProxyType<RPC::IStringIterator> {
 	public:
-		StringIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		StringIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 			TRACE_L1("Constructed StringIteratorProxy: %p", this);
@@ -80,14 +80,14 @@ namespace ProxyStub {
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Boolean());
+			return (Boolean(newMessage->Response()));
 		}
         	virtual bool Previous() override {
 			IPCMessage newMessage(BaseClass::Message(1));
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Boolean());
+			return (Boolean(newMessage->Response()));
 		}
         	virtual void Reset(const uint32_t position) override {
 			IPCMessage newMessage(BaseClass::Message(2));
@@ -95,27 +95,29 @@ namespace ProxyStub {
 			writer.Number(position);
 
 			Invoke(newMessage);
+
+                        Complete(newMessage->Response());
 		}
         	virtual bool IsValid() const override {
 			IPCMessage newMessage(BaseClass::Message(3));
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Boolean());
+			return (Boolean(newMessage->Response()));
 		}
         	virtual uint32_t Count() const override {
 			IPCMessage newMessage(BaseClass::Message(4));
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+			return (Number<uint32_t>(newMessage->Response()));
 		}
         	virtual string Current() const override {
 			IPCMessage newMessage(BaseClass::Message(5));
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Text());
+			return (Text(newMessage->Response()));
 		}
 	};
 
