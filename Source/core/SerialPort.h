@@ -177,7 +177,7 @@ namespace Core {
             StateChange();
             m_State = 0;
         }
-        bool WaitForClosure(const uint32_t time) const;
+        uint32_t WaitForClosure(const uint32_t time) const;
 #ifdef __WIN32__
         void Write(const uint16_t writtenBytes);
         void Read(const uint16_t readBytes);

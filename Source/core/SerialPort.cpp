@@ -541,7 +541,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         return (OK);
     }
 
-    bool SerialPort::WaitForClosure(const uint32_t time) const {
+    uint32_t SerialPort::WaitForClosure(const uint32_t time) const {
     // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
 #ifdef __DEBUG__
     uint32_t waiting = time; // Expect time in MS
