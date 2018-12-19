@@ -651,6 +651,7 @@ namespace Core {
     const uint32_t ERROR_PLAYER_UNAVAILABLE = 33;
     const uint32_t ERROR_FIRST_RESOURCE_NOT_FOUND = 34;
     const uint32_t ERROR_SECOND_RESOURCE_NOT_FOUND = 35;
+    const uint32_t ERROR_ALREADY_RELEASED = 36;
 }
 }
 

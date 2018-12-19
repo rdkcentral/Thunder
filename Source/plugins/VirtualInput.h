@@ -335,6 +335,11 @@ namespace PluginHost {
             _repeatKey.Interval(startTime, intervalTime);
         }
 
+        inline void RepeatLimit(uint16_t limit)
+        {
+            _repeatLimit = limit;
+        }
+
         virtual uint32_t Open() = 0;
         virtual uint32_t Close() = 0;
         void Default(const string& table)
@@ -468,6 +473,10 @@ namespace PluginHost {
         KeyMap* _defaultMap;
         NotifierMap _notifierMap;
         PostLookupMap _postLookupTable;
+        string _keyTable;
+        uint32_t _pressedCode;
+        uint16_t _repeatCounter;
+        uint16_t _repeatLimit;
     };
 
 #if !defined(__WIN32__) && !defined(__APPLE__)
