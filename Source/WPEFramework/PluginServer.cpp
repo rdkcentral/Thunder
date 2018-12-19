@@ -90,8 +90,8 @@ static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core:
 
         accessor.PortNumber(configuration.Port.Value());
 
-        SYSLOG(Startup, (_T("Accessor: %s"), URL.c_str()));
-        SYSLOG(Startup, (_T("Interface IP: %s"), result.HostAddress().c_str()));
+        SYSLOG(Logging::Startup, (_T("Accessor: %s"), URL.c_str()));
+        SYSLOG(Logging::Startup, (_T("Interface IP: %s"), result.HostAddress().c_str()));
     }
 
     return (result);
@@ -174,7 +174,7 @@ void Server::ServiceMap::Destroy() {
         while (index != pidList.end()) {
             _processAdministrator.Destroy(*index);
 
-            SYSLOG(Shutdown, (_T("Process [%d] requested to be shutdown."), *index));
+            SYSLOG(Logging::Shutdown, (_T("Process [%d] requested to be shutdown."), *index));
 
             index++;
         }
@@ -202,7 +202,7 @@ void Server::ServiceMap::Destroy() {
             index = pidList.begin();
 
             while (index != pidList.end()) {
-                SYSLOG(Shutdown, (_T("Process [%d] could not be destroyed in time."), *index));
+                SYSLOG(Logging::Shutdown, (_T("Process [%d] could not be destroyed in time."), *index));
                 index++;
             }
         }
@@ -271,12 +271,12 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
         const string className(PluginHost::Service::Configuration().ClassName.Value());
 
         if (_handler == nullptr) {
-            SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+            SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
             result = Core::ERROR_UNAVAILABLE;
 
         // See if the preconditions have been met..
         } else if (_precondition.IsMet() == false) {
-            SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
+            SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], postponed, preconditions have not been met, yet."), className.c_str(), callSign.c_str()));
             result = Core::ERROR_PENDING_CONDITIONS;
             _reason = why;
             State(PRECONDITION);
@@ -321,7 +321,7 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
             if (HasError() == true) {
                 result = Core::ERROR_GENERAL;
 
-                SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
+                SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s], failed. Error [%s]"), className.c_str(), callSign.c_str(), ErrorMessage().c_str()));
 
                 Lock();
                 ReleaseInterfaces();
@@ -333,7 +333,7 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
                     EnableWebServer(webUI, EMPTY_STRING);
                 }
 
-                SYSLOG(Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+                SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                 Lock();
                 State(ACTIVATED);
                 _administrator.StateChange(this);
@@ -388,7 +388,7 @@ uint32_t Server::Service::Deactivate(const reason why) {
             Lock();
         }
 
-        SYSLOG(Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
+        SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
         TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
  
@@ -593,7 +593,7 @@ void Server::Open() {
 
             _dispatcher.Submit(PluginHost::IShell::Job::Create(&(*service), PluginHost::IShell::ACTIVATED, PluginHost::IShell::STARTUP));
         } else {
-            SYSLOG(Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
+            SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
         }
     }
     Dispatcher().Open(MAX_EXTERNAL_WAITS);

@@ -4,7 +4,6 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
 add_library(${TARGET} SHARED
         Channel.cpp
-        Logging.cpp
         MetaData.cpp
         Module.cpp
         Service.cpp
@@ -23,7 +22,6 @@ set(PUBLIC_HEADERS
         IShell.h
         IStateControl.h
         ISubSystem.h
-        Logging.h
         MetaData.h
         plugins.h
         Request.h

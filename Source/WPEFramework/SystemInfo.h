@@ -206,21 +206,21 @@ namespace PluginHost {
 
             switch (type) {
             case PLATFORM: {
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Platform")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Platform")));
                 break;
             }
             case NOT_PLATFORM: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Platform")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Platform")));
                 break;
             }
             case NETWORK: {
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Network")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Network")));
                 break;
             }
             case NOT_NETWORK: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Network")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Network")));
                 break;
             }
             case IDENTIFIER: {
@@ -257,12 +257,12 @@ namespace PluginHost {
 
                 }
 
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
                 break;
             }
             case NOT_IDENTIFIER: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Identifier")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Identifier")));
                 break;
             }
             case INTERNET: {
@@ -297,12 +297,12 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Internet [%s]"), _internet->PublicIPAddress().c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Internet [%s]"), _internet->PublicIPAddress().c_str()));
                 break;
             }
             case NOT_INTERNET: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Internet")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Internet")));
                 break;
             }
             case LOCATION: {
@@ -336,7 +336,7 @@ namespace PluginHost {
 
                }
 
-               SYSLOG(PluginHost::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"),
+               SYSLOG(Logging::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"),
                    _location->TimeZone().c_str(),
                    _location->Country().c_str(),
                    _location->Region().c_str(),
@@ -346,7 +346,7 @@ namespace PluginHost {
             }
             case NOT_LOCATION: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Location")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Location")));
                 break;
             }
             case TIME: {
@@ -381,63 +381,63 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Time: %s"),
+                SYSLOG(Logging::Startup, (_T("EVENT: Time: %s"),
                     Core::Time(_time->TimeSync()).ToRFC1123(false).c_str()));
                 break;
             }
             case NOT_TIME: {
                 /* Clearing the flag does not require information */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Time")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Time")));
                 break;
             }
             case PROVISIONING: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Provisioning")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
                 break;
             }
             case NOT_PROVISIONING: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Provisioning")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Provisioning")));
                 break;
             }
             case DECRYPTION: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Decryption")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Decryption")));
                 break;
             }
             case NOT_DECRYPTION: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Decryption")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Decryption")));
                 break;
             }
             case GRAPHICS: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Graphics")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Graphics")));
                 break;
             }
             case NOT_GRAPHICS: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Graphics")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Graphics")));
                 break;
             }
             case WEBSOURCE: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Startup, (_T("EVENT: WebSource")));
+                SYSLOG(Logging::Startup, (_T("EVENT: WebSource")));
                 break;
             }
             case NOT_WEBSOURCE: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: WebSource")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: WebSource")));
                 break;
             }
             case STREAMING: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Startup, (_T("EVENT: Streaming")));
+                SYSLOG(Logging::Startup, (_T("EVENT: Streaming")));
                 break;
             }
             case NOT_STREAMING: {
                 /* No information to set yet */
-                SYSLOG(PluginHost::Shutdown, (_T("EVENT: Streaming")));
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Streaming")));
                 break;
             }
             default: {

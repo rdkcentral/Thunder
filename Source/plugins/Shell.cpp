@@ -55,20 +55,24 @@ namespace PluginHost {
                 : Locator()
                 , User()
                 , Group() 
+                , Threads(1)
                 , OutOfProcess(true) {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
                 Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
                 Add(_T("outofprocess"), &OutOfProcess);
             }    
             Object(const IShell* info) 
                 : Locator()
                 , User()
                 , Group()
+                , Threads()
                 , OutOfProcess(true) {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
                 Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
                 Add(_T("outofprocess"), &OutOfProcess);
  
                 RootObject config; config.FromString(info->ConfigLine());
@@ -89,10 +93,12 @@ namespace PluginHost {
                 : Locator(copy.Locator)
                 , User(copy.User)
                 , Group(copy.Group)
+                , Threads(copy.Threads)
                 , OutOfProcess(true) {
                 Add(_T("locator"), &Locator);
                 Add(_T("user"), &User);
                 Add(_T("group"), &Group);
+                Add(_T("threads"), &Threads);
                 Add(_T("outofprocess"), &OutOfProcess);
             }     
             virtual ~Object() {
@@ -103,6 +109,7 @@ namespace PluginHost {
                 Locator = RHS.Locator;
                 User = RHS.User;
                 Group = RHS.Group;
+                Threads = RHS.Threads;
                 OutOfProcess = RHS.OutOfProcess;
 
                 return (*this);
@@ -112,6 +119,7 @@ namespace PluginHost {
             Core::JSON::String Locator;
             Core::JSON::String User;
             Core::JSON::String Group;
+            Core::JSON::DecUInt8 Threads;
             Core::JSON::Boolean OutOfProcess;
 
         };
@@ -162,7 +170,8 @@ namespace PluginHost {
 					interface, 
 					version, 
 					rootObject.User.Value(), 
-					rootObject.Group.Value());
+					rootObject.Group.Value(),
+                                        rootObject.Threads.Value());
 
                     result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
                 }

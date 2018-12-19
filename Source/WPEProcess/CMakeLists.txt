@@ -16,6 +16,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}::COMProcess
         PRIVATE
+          ${NAMESPACE}::Tracing
           ${NAMESPACE}::Core
         )
 

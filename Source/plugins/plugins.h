@@ -13,7 +13,6 @@
 #include "Service.h"
 #include "Channel.h"
 #include "VirtualInput.h"
-#include "Logging.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "plugins.lib")

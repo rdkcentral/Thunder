@@ -5,6 +5,7 @@ add_library(${TARGET} SHARED
         TraceCategories.cpp
         TraceMedia.cpp
         TraceUnit.cpp
+        Logging.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -14,6 +15,7 @@ set(PUBLIC_HEADERS
         TraceControl.h
         TraceMedia.h
         TraceUnit.h
+        Logging.h
         tracing.h
         Module.h
         )

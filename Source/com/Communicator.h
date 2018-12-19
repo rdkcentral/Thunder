@@ -18,7 +18,8 @@ namespace RPC {
             , _interface(~0)
             , _version(~0)
             , _user()
-            , _group() {
+            , _group()
+            , _threads() {
         }
         Object (const Object& copy) 
             : _locator(copy._locator)
@@ -26,15 +27,17 @@ namespace RPC {
             , _interface(copy._interface)
             , _version(copy._version)
             , _user(copy._user)
-            , _group(copy._group) {
+            , _group(copy._group)
+            , _threads(copy._threads) {
         }
-        Object (const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group) 
+        Object (const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group, const uint8_t threads) 
             : _locator(locator)
             , _className(className)
             , _interface(interface)
             , _version(version)
             , _user(user)
-            , _group(group) {
+            , _group(group)
+            , _threads(threads) {
         }
         ~Object() {
         }
@@ -46,6 +49,7 @@ namespace RPC {
             _version = RHS._version;
             _user = RHS._user;
             _group = RHS._group;
+            _threads = RHS._threads;
 
             return (*this);
         }
@@ -69,6 +73,9 @@ namespace RPC {
         inline const string& Group() const {
             return (_group);
         }
+        inline uint8_t Threads() const {
+            return (_threads);
+        }
 
     private:
         string _locator;
@@ -77,7 +84,7 @@ namespace RPC {
         uint32_t _version;
         string _user;
         string _group;
- 
+        uint8_t _threads;
     };
 
     class EXTERNAL Config {
@@ -235,6 +242,9 @@ namespace RPC {
             }
 
         public:
+            inline bool HasChannel () const {
+                return (_channel.IsValid());
+            }
             inline const Core::IPCChannel* Channel () const {
                 return (_channel.operator->());
             }
@@ -329,6 +339,10 @@ namespace RPC {
 		public:
 			inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
 			{
+                                uint32_t loggingSettings = (Trace::TraceType<Logging::Startup,      &Logging::MODULE_LOGGING>::IsEnabled() ? 0x01 : 0) |
+                                                           (Trace::TraceType<Logging::Shutdown,     &Logging::MODULE_LOGGING>::IsEnabled() ? 0x02 : 0) |
+                                                           (Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x04 : 0) ;
+                                 
 				Core::Process::Options options(config.HostApplication());
 
 				ASSERT(instance.Locator().empty() == false);
@@ -339,6 +353,7 @@ namespace RPC {
 				options[_T("-c")] = instance.ClassName();
 				options[_T("-r")] = config.Connector();
 				options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+                                options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
 				if (instance.Version() != static_cast<uint32_t>(~0)) {
 					options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
 				}
@@ -362,6 +377,9 @@ namespace RPC {
 				}
 				if (config.ProxyStubPath().empty() == false) {
 					options[_T("-m")] = config.ProxyStubPath();
+				}
+				if (instance.Threads() > 1) {
+					options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
 				}
 
 				return (Core::Service<MasterRemoteProcess>::Create<MasterRemoteProcess>(&parent, &pid, &options));
@@ -638,13 +656,18 @@ namespace RPC {
 
                 if (index != _processes.end()) {
 
-                    std::list< std::pair< const uint32_t, const Core::IUnknown* > > deadProxies;
-                    RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
-                    std::list< std::pair< const uint32_t, const Core::IUnknown* > >::const_iterator loop (deadProxies.begin());
-                    while (loop != deadProxies.end()) {
-                        _parent.Revoke(pid, loop->second, loop->first);
-                        loop++;
+                    // Experience show that sometimes the process dies before a channel is setup and
+                    // no additional cleanup is needed.
+                    if (index->second->HasChannel() == true) {
+                        std::list< std::pair< const uint32_t, const Core::IUnknown* > > deadProxies;
+                        RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
+                        std::list< std::pair< const uint32_t, const Core::IUnknown* > >::const_iterator loop (deadProxies.begin());
+                        while (loop != deadProxies.end()) {
+                            _parent.Revoke(pid, loop->second, loop->first);
+                            loop++;
+                        }
                     }
+
                     index->second->State(IRemoteProcess::DEACTIVATED);
 
 					MasterRemoteProcess* base = dynamic_cast<MasterRemoteProcess*>(index->second);

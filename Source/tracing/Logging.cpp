@@ -4,7 +4,7 @@
 #include <syslog.h>
 #endif
 
-namespace WPEFramework { namespace PluginHost {
+namespace WPEFramework { namespace Logging {
 
 static const string LoggingToConsole(_T("LOGGING_TO_CONSOLE"));
 

@@ -7,8 +7,10 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
 namespace Process {
+
     class InvokeServer : public RPC::IHandler {
     private:
+        InvokeServer() = delete;
         InvokeServer(const InvokeServer&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
@@ -18,6 +20,31 @@ namespace Process {
         };
         typedef Core::QueueType<Info> MessageQueue;
 
+        class Minion : public Core::Thread {
+        private:
+            Minion() = delete;
+            Minion(const Minion&) = delete;
+            Minion& operator=(const Minion&) = delete;
+
+        public:
+            Minion(InvokeServer& parent) : _parent(parent) {
+            }
+            virtual ~Minion() {
+                Stop();
+                Wait(Core::Thread::STOPPED, Core::infinite);
+            }
+
+        public:
+            virtual uint32_t Worker() override {
+                _parent.ProcessProcedures();
+                Block();
+                return (Core::infinite);
+            }
+
+        private:
+            InvokeServer& _parent;
+        };
+
         class InvokeHandlerImplementation : public Core::IPCServerType<RPC::InvokeMessage> {
         private:
             InvokeHandlerImplementation() = delete;
@@ -25,7 +52,7 @@ namespace Process {
             InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
 
         public:
-            InvokeHandlerImplementation (MessageQueue* queue) : _handleQueue(*queue) {
+            InvokeHandlerImplementation (MessageQueue* queue, std::atomic<uint8_t>* runningFree) : _handleQueue(*queue), _runningFree(*runningFree) {
             }
             virtual ~InvokeHandlerImplementation() {
             }
@@ -40,11 +67,16 @@ namespace Process {
 
                 ASSERT(newElement.channel.IsValid() == true);
 
+                if (_runningFree == 0) {
+                    SYSLOG(Logging::Notification, ("Possible DEADLOCK in the hosting"));
+                }
+
                 _handleQueue.Insert(newElement, Core::infinite);
             }
 
         private:
             MessageQueue& _handleQueue;
+            std::atomic<uint8_t>& _runningFree;
         };
         class AnnounceHandlerImplementation : public Core::IPCServerType<RPC::AnnounceMessage> {
         private:
@@ -76,17 +108,26 @@ namespace Process {
         };
 
     public:
-        InvokeServer()
+        InvokeServer(const uint8_t threads)
             : _handleQueue(64)
+            , _runningFree(threads)
             , _handler(RPC::Administrator::Instance())
-            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue))
+            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue, &_runningFree))
             , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(&_handleQueue))
             , _announcements(nullptr)
+            , _minions()
         {
+           for (uint8_t index = 1; index < threads; index++) {
+               _minions.emplace_back(*this);
+           }
+           if (threads > 1) {
+               SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads-1));
+           }
         }
-
         ~InvokeServer()
         {
+            _handleQueue.Disable();
+            _minions.clear();
         }
 
         virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override {
@@ -106,44 +147,50 @@ namespace Process {
 
             _announcements = handler;
         }
-        void ProcessProcedures()
-        {
+        void ProcessProcedures() {
             Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
             Info newRequest;
 
             while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
-
-               if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
+                _runningFree--;
+                if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
                     Core::ProxyType<RPC::InvokeMessage> message (Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
 
                     _handler.Invoke(newRequest.channel, message);
                 }
                 else {
                     ASSERT (newRequest.message->Label() == RPC::AnnounceMessage::Id());
-					ASSERT(_announcements != nullptr);
+                    ASSERT (_announcements != nullptr);
 
                     Core::ProxyType<RPC::AnnounceMessage> message (Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
 
-                     _announcements->Procedure(*(newRequest.channel), message);
+                    _announcements->Procedure(*(newRequest.channel), message);
                 }
+
+                _runningFree++;
                 newRequest.channel->ReportResponse(newRequest.message);
 
                 // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
-                admin.FlushLibraries();
+                Core::ServiceAdministrator::Instance().FlushLibraries();
             }
+
+            _handleQueue.Disable();
         }
+ 
     private:
         MessageQueue _handleQueue;
+        std::atomic<uint8_t> _runningFree;
         RPC::Administrator& _handler;
         Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> > _invokeHandler;
         Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> > _announceHandler;
         Core::IPCServerType<RPC::AnnounceMessage>* _announcements;
+        std::list<Minion> _minions;
     };
 
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -156,6 +203,8 @@ namespace Process {
             , ProxyStubPath(nullptr)
             , User(nullptr)
             , Group(nullptr)
+            , Threads(1)
+            , EnabledLoggings(0)
         {
             Parse();
         }
@@ -176,6 +225,8 @@ namespace Process {
         const TCHAR* ProxyStubPath;
         const TCHAR* User;
         const TCHAR* Group;
+        uint8_t Threads;
+        uint32_t EnabledLoggings;
 
     private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
@@ -214,8 +265,14 @@ namespace Process {
             case 'i':
                 InterfaceId = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
+            case 'e':
+                EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                break;
             case 'v':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                break;
+            case 't':
+                Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
                 break;
             case 'h':
             default:
@@ -334,14 +391,16 @@ int main(int argc, char** argv)
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
         printf("        [-i <interface ID>]\n");
+        printf("        [-t <thread count>\n");
         printf("        [-v <version>]\n");
         printf("        [-u <user>]\n");
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
-        printf("        [-a <app path>]\n\n");
-        printf("        [-m <proxy stub library path>]\n\n");
+        printf("        [-a <app path>]\n");
+        printf("        [-m <proxy stub library path>]\n");
+        printf("        [-e <enabled SYSLOG categories>]\n\n");
         printf("This application spawns a seperate process space for a plugin. The plugins");
         printf("are searched in the same order as they are done in process. Starting from:\n");
         printf(" 1) <persistent path>/<locator>\n");
@@ -359,6 +418,11 @@ int main(int argc, char** argv)
     else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
+        // Time to open up the LOG tracings as specified by the caller.
+        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000001) != 0);
+        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000002) != 0);
+        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+
         if (remoteNode.IsValid()) {
             void* base = nullptr;
 
@@ -374,7 +438,7 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create();
+            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create(options.Threads);
             _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
 
             // Register an interface to handle incoming requests for interfaces.

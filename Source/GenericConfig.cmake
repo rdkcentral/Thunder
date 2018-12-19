@@ -65,15 +65,25 @@ endif()
 
 map()
     kv(category "Startup")
+    kv(module "SysLog")
     kv(enabled true)
 end()
 ans(WPEFRAMEWORK_PLUGIN_STARTUP_TRACING)
 
 map()
     kv(category "Shutdown")
+    kv(module "SysLog")
     kv(enabled true)
 end()
 ans(WPEFRAMEWORK_PLUGIN_SHUTDOWN_TRACING)
+
+map()
+    kv(category "Notification")
+    kv(module "SysLog")
+    kv(enabled true)
+end()
+ans(WPEFRAMEWORK_PLUGIN_NOTIFICATION_TRACING)
+
 
 map()
     kv(category "Fatal")
@@ -96,6 +106,7 @@ endif(NOT WPEFRAMEWORK_VIRTUALINPUT)
 map_append(${WPEFRAMEWORK_CONFIG} tracing ___array___)
 map_append(${WPEFRAMEWORK_CONFIG} tracing ${WPEFRAMEWORK_PLUGIN_STARTUP_TRACING})
 map_append(${WPEFRAMEWORK_CONFIG} tracing ${WPEFRAMEWORK_PLUGIN_SHUTDOWN_TRACING})
+map_append(${WPEFRAMEWORK_CONFIG} tracing ${WPEFRAMEWORK_PLUGIN_NOTIFICATION_TRACING})
 map_append(${WPEFRAMEWORK_CONFIG} tracing ${WPEFRAMEWORK_PLUGIN_FATAL_TRACING})
 
 

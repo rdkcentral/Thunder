@@ -640,6 +640,7 @@ namespace Core {
         public:
             EnumType()
                 : _value()
+                , _default(static_cast<ENUMERATE>(0))
             {
             }
             EnumType(const ENUMERATE Value)

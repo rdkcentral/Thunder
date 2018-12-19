@@ -169,7 +169,7 @@ namespace PluginHost {
                     }
                 }
                 else if (file.Open(true) == false) {
-                    SYSLOG(PluginHost::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
+                    SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 }
                 else {
                     Plugin::Config pluginConfig;
@@ -177,7 +177,7 @@ namespace PluginHost {
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
-                        SYSLOG(PluginHost::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
+                        SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
                     }
                     else {
                         if (pluginConfig.Callsign.Value().empty() == true) {
@@ -191,7 +191,7 @@ namespace PluginHost {
                             ;
 
                         if (index.IsValid() == true) {
-                            SYSLOG(PluginHost::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
+                            SYSLOG(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
                         }
                         else {
                             config.Plugins.Add(pluginConfig);
@@ -219,7 +219,7 @@ namespace PluginHost {
         } while ( (retries-- != 0) && (adapter.IsValid() == false) );
  	
 	if (adapter.IsValid() == false) {
-            SYSLOG(PluginHost::Startup, (_T("Interface [lo], not available")));
+            SYSLOG(Logging::Startup, (_T("Interface [lo], not available")));
         }
         else {
 
@@ -240,10 +240,10 @@ namespace PluginHost {
             } while ( (retries-- != 0) && (nodeId.IsValid() == false) );
 
 	    if (retries != 0) {
-                SYSLOG(PluginHost::Startup, (string(_T("Interface [lo], fully functional"))));
+                SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
             }
             else {
-                SYSLOG(PluginHost::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
+                SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
 	    }
         }
     }
@@ -328,7 +328,7 @@ namespace PluginHost {
         else
 #endif
 
-        PluginHost::SysLog(!_background);
+        Logging::SysLog(!_background);
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile), false);
@@ -388,8 +388,9 @@ namespace PluginHost {
         Trace::TraceUnit::Instance().Open(tracePath);
 
         // Time to open up the LOG tracings by default.
-        Trace::TraceType<PluginHost::Startup, &PluginHost::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<PluginHost::Shutdown, &PluginHost::MODULE_LOGGING>::Enable(true);
+        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable(true);
+        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable(true);
+        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable(true);
 
         Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories);
 
@@ -398,12 +399,12 @@ namespace PluginHost {
 
         ISecurity* securityOptions = Core::Service<SecurityOptions>::Create<ISecurity>();
 
-        SYSLOG(PluginHost::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
-        SYSLOG(PluginHost::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
-        SYSLOG(PluginHost::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
-        SYSLOG(PluginHost::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
-        SYSLOG(PluginHost::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
-        SYSLOG(PluginHost::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
+        SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
+        SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+        SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
+        SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
+        SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
+        SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
 
 		#ifndef __WIN32__
         // We need at least the loopback interface before we continue...
@@ -412,7 +413,7 @@ namespace PluginHost {
 
         // Before we do any translation of IP, make sure we have the right network info...
         if (serviceConfig.IPV6.Value() == false) {
-            SYSLOG(PluginHost::Startup, (_T("Forcing the network to IPv4 only.")));
+            SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
             Core::NodeId::ClearIPV6Enabled();
         }
 
@@ -434,7 +435,7 @@ namespace PluginHost {
         // We don't need it anymore..
         securityOptions->Release();
 
-        SYSLOG(PluginHost::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
+        SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();

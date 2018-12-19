@@ -1,5 +1,4 @@
-#ifndef __INCLUSION_COM_H__
-#define __INCLUSION_COM_H__
+#pragma once
 
 #include "Messages.h"
 #include "IUnknown.h"
@@ -11,5 +10,3 @@
 #ifdef __WIN32__
 #pragma comment(lib, "com.lib")
 #endif
-
-#endif // __INCLUSION_COM_H__
