@@ -37,7 +37,7 @@ namespace Core {
         DataStore& operator= (const DataStore&) = delete;
 
     public:
-        DataStore(const uint32_t size = 1024) 
+        DataStore(const uint32_t size = 1024)
             : _size(size)
             , _buffer(reinterpret_cast<uint8_t*>(::malloc(size))) {
             ASSERT(_buffer != nullptr);
@@ -58,7 +58,7 @@ namespace Core {
                 ASSERT (offset + length <= _size);
 
                 uint32_t count (offset + length <= _size ? length : _size - offset);
-                
+
                 ::memcpy (&(_buffer[offset]), data, count);
             }
         }
@@ -83,7 +83,7 @@ namespace Core {
 
     private:
         uint32_t _size;
-        uint8_t* _buffer;    
+        uint8_t* _buffer;
     };
 
     class EXTERNAL DataElement {
@@ -200,7 +200,7 @@ namespace Core {
             if (m_Buffer != nullptr) {
                 size_t size (m_MaxSize);
                 uint8_t adjust(~0);
-                void* newPointer = m_Buffer; 
+                void* newPointer = m_Buffer;
                 if (std::align(sizeof(TYPE), sizeof(TYPE), newPointer, size)) {
                     uint8_t adjust (m_MaxSize - size);
                     m_Buffer = reinterpret_cast<uint8_t*>(newPointer);
@@ -234,7 +234,7 @@ namespace Core {
         {
             return (!operator==(RHS));
         }
- 
+
         virtual uint64_t Size() const
         {
             return (m_Size);
@@ -633,7 +633,7 @@ namespace Core {
             ASSERT((offset + size) <= m_Size);
 
             // Nope, one plain copy !!!
-            ::memcpy(&m_Buffer[offset], buffer, size);
+            ::memmove(&m_Buffer[offset], buffer, size);
         }
 
         bool Size(const uint64_t size)
@@ -663,10 +663,10 @@ namespace Core {
                 // We need to "extend" the buffer, this is only possible if we control
                 // the buffer lifetime..
                 // Create a new buffer
-		m_Storage->Size(static_cast<uint32_t>(size));
-		m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
-		m_Size = size;
-		m_MaxSize = m_Storage->Size();
+        m_Storage->Size(static_cast<uint32_t>(size));
+        m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
+        m_Size = size;
+        m_MaxSize = m_Storage->Size();
             }
         }
 
