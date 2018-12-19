@@ -43,7 +43,6 @@
 #include "TextReader.h"
 #include "ReadWriteLock.h"
 #include "LockableContainer.h"
-#include "Processor.h"
 #include "TypeTraits.h"
 #include "Optional.h"
 #include "ISO639.h"

@@ -82,7 +82,6 @@ set(PUBLIC_HEADERS
         Portability.h
         Process.h
         ProcessInfo.h
-        Processor.h
         Proxy.h
         Queue.h
         Range.h
