@@ -289,6 +289,8 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                     sendModifiers = element->Modifiers;
                 }
 
+                if ((!pressed) && (_pressedCode != code))
+                    result = Core::ERROR_ALREADY_RELEASED;
 
                 if ( (result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY_PASSED) ) {
                     if (pressed) {
@@ -308,9 +310,6 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                             TRACE_L1("Ingested keyCode: %d Released", sendCode);
                             _repeatKey.Reset();
                             _pressedCode = 0;
-                        } else {
-                            _lock.Unlock();
-                            return Core::ERROR_NONE;
                         }
                     }
 
