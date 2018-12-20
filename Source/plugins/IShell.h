@@ -266,7 +266,7 @@ namespace PluginHost {
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
-                RPC::Object definition (locator, className, REQUESTEDINTERFACE::ID, version, string(), string());
+                RPC::Object definition (locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
 
 				void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
 
