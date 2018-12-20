@@ -35,9 +35,9 @@ function(config_dir key)
 endfunction()
 
 ## includes all cmake files of cmakepp 
-include("${CMAKE_BASE_DIR}/tools/core/require.cmake")
+include("${CMAKE_BASE_DIR}/@NAMESPACE@/config/core/require.cmake")
 
-require("${CMAKE_BASE_DIR}/tools/*.cmake")
+require("${CMAKE_BASE_DIR}/@NAMESPACE@/config/*.cmake")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_BASE_DIR}" "${CMAKE_BASE_DIR}/@NAMESPACE@/")
 set(NAMESPACE "@NAMESPACE@")

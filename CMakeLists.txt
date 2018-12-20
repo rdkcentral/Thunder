@@ -43,14 +43,19 @@ else()
 endif()
 
 # make sure others can make use of the JSON creation tools as well!!!
-configure_file( "${CMAKE_SOURCE_DIR}/cmake/tools.cmake"
-                "${CMAKE_CURRENT_BINARY_DIR}/tools.cmake"
+configure_file( "${CMAKE_SOURCE_DIR}/cmake/wpeframework.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake"
                 @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tools.cmake
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake
         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake")
+# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake
+#         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake"
+#         RENAME tools.cmake)
+# install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/config/
+#         DESTINATION include/cmake/tools)
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/config/
-        DESTINATION include/cmake/tools)
+        DESTINATION include/cmake/WPEFramework/config)
 
 
 if (POSITION_INDEPENDENT_CODE)
