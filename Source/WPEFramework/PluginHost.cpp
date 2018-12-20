@@ -550,7 +550,7 @@ namespace PluginHost {
                                                                                         : "Unavailable");
 
                         printf("------------------------------------------------------------\n");
-                        if (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) {
+                        if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                             printf("Network Type: %s\n",
                                 (internet->NetworkType() == PluginHost::ISubSystem::IInternet::UNKNOWN ? "Unknown" :
                                    (internet->NetworkType() == PluginHost::ISubSystem::IInternet::IPV6 ? "IPv6"
