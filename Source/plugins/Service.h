@@ -43,19 +43,13 @@ namespace PluginHost {
         Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
     };
 
-    class EXTERNAL WorkerPool {
-    private:
-        WorkerPool(const WorkerPool&) = delete;
-        WorkerPool& operator=(const WorkerPool&) = delete;
+    struct EXTERNAL WorkerPool {
 
-    protected:
-        WorkerPool() = default;
-
-    public:
         static WorkerPool& Instance();
+        static void Instance(WorkerPool& instance);
+
         virtual ~WorkerPool() = default;
 
-    public:
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch >& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch >& job, const uint32_t waitTime = Core::infinite) = 0;
