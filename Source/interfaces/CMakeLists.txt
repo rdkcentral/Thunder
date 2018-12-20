@@ -50,6 +50,7 @@ target_link_libraries(Marshalling
 target_link_libraries(Interfaces
         PRIVATE
           ${NAMESPACE}::Core
+          ${NAMESPACE}::Tracing
         )
 
 if (WPEFRAMEWORK_PROTOCOLS)
