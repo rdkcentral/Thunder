@@ -64,7 +64,7 @@ set (LIBS_VAR "-l${TARGET}")
 
 if (WPEFRAMEWORK_CDMI_BCM_NEXUS_SVP)
     set(CFLAGS_VAR "${CFLAGS_VAR} -I${CMAKE_INSTALL_PREFIX}/include/refsw -DUSE_OPENCDM_BCM_NEXUS_SVP")
-    set(LIBS_VAR "${LIBS_VAR} -lb_secbuf -lbrcmsvpmeta")
+    set(LIBS_VAR "${LIBS_VAR}")
 endif()
 
 configure_file(
