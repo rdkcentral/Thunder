@@ -32,8 +32,6 @@
 #include "Timer.h"
 #include "Proxy.h"
 #include "Queue.h"
-#include "ILogService.h"
-#include "Logger.h"
 #include "KeyValue.h"
 #include "TriState.h"
 #include "MessageException.h"
