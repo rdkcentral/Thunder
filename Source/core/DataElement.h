@@ -207,7 +207,7 @@ namespace Core {
                     m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
                     m_MaxSize -= adjust;
                 }
-                printf ("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
+                TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
             }
         }
         inline uint64_t AllocatedSize() const
