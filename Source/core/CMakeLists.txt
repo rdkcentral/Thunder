@@ -57,7 +57,6 @@ set(PUBLIC_HEADERS
         Frame.h
         IAction.h
         IIterator.h
-        ILogService.h
         IObserver.h
         IPCChannel.h
         IPCConnector.h
@@ -67,8 +66,6 @@ set(PUBLIC_HEADERS
         Library.h
         Link.h
         LockableContainer.h
-        Logger.h
-        LogService.h
         Measurement.h
         Media.h
         MessageException.h
