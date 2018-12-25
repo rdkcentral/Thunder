@@ -10,7 +10,7 @@ add_executable(${TARGET}
 
 target_compile_definitions(${TARGET}
         PRIVATE
-          INSTALL_COMMON_PREFIX=${NAMESPACE}
+          NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${PLUGINHOST_ARTIFACT}
           WPEFRAMEWORK_THREADPOOL_COUNT=3
           WPEFRAMEWORK_RPCPOOL_COUNT=3

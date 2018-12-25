@@ -9,7 +9,7 @@
 # Input: VIRTUALINPUT_VERSION
 
 find_package(PkgConfig)
-pkg_check_modules(PC_VIRTUALINPUT virtualkeyboard)
+pkg_check_modules(PC_VIRTUALINPUT @NAMESPACE@VirtualInput)
 
 if(PC_VIRTUALINPUT_FOUND)
     if(VIRTUALINPUT_VERSION AND PC_VIRTUALINPUT_VERSION)
