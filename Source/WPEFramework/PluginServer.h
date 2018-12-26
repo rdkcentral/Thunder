@@ -4,6 +4,10 @@
 #include "Module.h"
 #include "SystemInfo.h"
 
+#ifndef HOSTING_COMPROCESS
+#error "Please define the name of the COM process!!!"
+#endif
+
 #define MAX_EXTERNAL_WAITS 2000 /* Wait for 2 Seconds */
 
 namespace WPEFramework {
@@ -1104,9 +1108,9 @@ namespace WPEFramework {
 					, _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
 					, _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 #ifdef __WIN32__
-					, _application(_systemPath + EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
+					, _application(_systemPath + EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #else
-					, _application(EXPAND_AND_QUOTE(ARTIFACT_COMPROCESS))
+					, _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #endif
                     , _offeredInterfaces()
                     , _adminLock()
