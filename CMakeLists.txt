@@ -16,6 +16,8 @@ set(WPEFRAMEWORK_PLATFORM "PC_UNIX" CACHE STRING
 
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
+option(BUILD_TESTS "Build tests (requires gtest)" OFF)
+option(DISABLE_TRACING "Even in debug build, disable tracing" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
@@ -101,4 +103,12 @@ if(APPLE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+if(DISABLE_TRACING)
+    add_definitions(-D_TRACE_LEVEL=0)
+endif()
+
 add_subdirectory(Source)
+
+if(BUILD_TESTS)
+    add_subdirectory(Tests)
+endif()
