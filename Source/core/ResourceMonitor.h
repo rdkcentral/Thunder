@@ -11,7 +11,7 @@ namespace WPEFramework {
 
 namespace Core {
 
-struct IResource {
+struct EXTERNAL IResource {
     virtual ~IResource() {}
 
     typedef signed int handle;
@@ -489,7 +489,7 @@ typedef ResourceMonitorType<IResource, WatchDogType<ResourceMonitorHandler> > Re
 typedef ResourceMonitorType<IResource> ResourceMonitorBase;
 #endif
 
-class ResourceMonitor : public ResourceMonitorBase {
+class EXTERNAL ResourceMonitor : public ResourceMonitorBase {
 private:
     ResourceMonitor() : ResourceMonitorBase() {}
     ResourceMonitor(const ResourceMonitor&) = delete;
@@ -498,13 +498,10 @@ private:
     friend class SingletonType<ResourceMonitor>;
 
 public:
-    static ResourceMonitor& Instance() {
-        return (_instance);
-    }
+	static ResourceMonitor& Instance();
     ~ResourceMonitor() {}
 
 private:
-    static ResourceMonitor& _instance;
 };
 
 } } // namespace WPEFramework::Core

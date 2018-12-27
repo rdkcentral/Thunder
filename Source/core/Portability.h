@@ -88,6 +88,7 @@
 #include <memory.h>
 #include <assert.h>
 #include <algorithm>
+#include <WinSock2.h>
 
 #define AF_NETLINK    16
 

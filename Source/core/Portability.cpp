@@ -155,7 +155,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 #else
 
-uint32_t GetCallStack(const ThreadId threadId, void*& addresses, const uint32_t bufferSize)
+uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize)
 {
     __debugbreak();
 

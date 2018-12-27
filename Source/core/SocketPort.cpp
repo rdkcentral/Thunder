@@ -691,7 +691,7 @@ void SocketPort::Handle (const uint16_t flagsSet) {
 
     #ifdef __WIN32__
     if (IsListening()) {
-        if ((flagsSet & FD_ACCEPTED) != 0) {
+        if ((flagsSet & FD_ACCEPT) != 0) {
             // This triggeres an Addition of clients
             Accepted();
         }
@@ -708,7 +708,7 @@ void SocketPort::Handle (const uint16_t flagsSet) {
             m_State |= UPDATE;
         }
     }
-    else if ((flagSet & FD_CLOSE) != 0) {
+    else if ((flagsSet & FD_CLOSE) != 0) {
         Closed();
     }
 
@@ -735,7 +735,6 @@ void SocketPort::Handle (const uint16_t flagsSet) {
     }
 #endif
 }
-
 
 void SocketPort::Write() {
     bool dataLeftToSend = true;

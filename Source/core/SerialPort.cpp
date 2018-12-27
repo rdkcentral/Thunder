@@ -174,12 +174,12 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             while (index != m_MonitoredPorts.end()) {
                 SerialPort* port = (*index);
 
-                if ((port->State() & SerialPort::OPEN) == 0) {
+                if (port->IsOpen() == false) {
                     index = m_MonitoredPorts.erase(index);
                     port->Closed();
                 }
                 else {
-                    if ((port->State() & (SerialPort::OPEN|SerialPort::EXCEPTION|SerialPort::READ|SerialPort::WRITE)) == SerialPort::OPEN) {
+                    if (port->IsOpen() == true) {
                         port->Opened();
                     }
                     m_Slots[filledSlot++] = (*index)->m_ReadInfo.hEvent;
@@ -190,7 +190,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
             if (filledSlot <= 1) {
                 m_ThreadInstance->Block();
-                delay = Core::infinite:
+				delay = Core::infinite;
             }
             else {
                 m_Admin.Unlock();
@@ -591,6 +591,8 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
         m_syncAdmin.Unlock();
     }
+
+#ifndef __WIN32__
     /* virtual */ uint16_t SerialPort::Events() {
         uint16_t result = SerialPort::READ;
         if ((m_State & SerialPort::OPEN) == 0) {
@@ -618,7 +620,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         }
     }
 
-#ifdef __WIN32__
+#else
     void SerialPort::Write(const uint16_t writtenBytes)
     {
         m_syncAdmin.Lock();

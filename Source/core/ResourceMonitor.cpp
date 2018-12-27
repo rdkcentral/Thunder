@@ -5,6 +5,10 @@ namespace WPEFramework {
 
 namespace Core {
 
-/* static */ ResourceMonitor& ResourceMonitor::_instance (SingletonType< ResourceMonitor >::Instance() );
+	/* static */ ResourceMonitor& ResourceMonitor::Instance() 
+	{
+		static ResourceMonitor& _instance = SingletonType< ResourceMonitor >::Instance();
+		return (_instance);
+	}
 
 } } // namespace WPEFramework::Core

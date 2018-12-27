@@ -243,6 +243,7 @@ namespace PluginHost {
 	#endif
 
     static void PublishCallstack(const ::ThreadId threadId) {
+		#ifndef __WIN32__
         void* callstack[32];
         uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof (void*)));
         char** symbols = backtrace_symbols(callstack, entries);
@@ -265,6 +266,7 @@ namespace PluginHost {
             }
         }
         free(symbols);
+		#endif
     }
 
 #ifdef __WIN32__
@@ -373,7 +375,9 @@ namespace PluginHost {
             }
         }
 
+		#ifndef __WIN32__
         ::umask(serviceConfig.Process.Umask.Value());
+		#endif
 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
