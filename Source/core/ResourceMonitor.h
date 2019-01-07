@@ -498,10 +498,8 @@ private:
     friend class SingletonType<ResourceMonitor>;
 
 public:
-	static ResourceMonitor& Instance();
+    static ResourceMonitor& Instance();
     ~ResourceMonitor() {}
-
-private:
 };
 
 } } // namespace WPEFramework::Core
