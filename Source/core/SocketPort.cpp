@@ -672,15 +672,19 @@ uint16_t SocketPort::Events() {
             #endif
         }
 
-        #ifdef __LINUX__
-        result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)|((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
-        #endif
+
         if ((IsForcedClosing() == true) && (Closed() == true))  {
             result = 0;
             m_State &= ~SocketPort::MONITOR;
         }
-        else if ((IsOpen()) && ((m_State & SocketPort::WRITESLOT) != 0)) {
-            Write();
+        else {
+
+            if ((IsOpen()) && ((m_State & SocketPort::WRITESLOT) != 0)) {
+                Write();
+            }
+            #ifdef __LINUX__
+                result |= ((m_State & SocketPort::LINK) != 0 ? POLLHUP : 0)| ((m_State & SocketPort::WRITE) != 0 ? POLLOUT : 0);
+            #endif
         }
     }
 
