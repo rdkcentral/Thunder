@@ -130,14 +130,13 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             // Start waiting for characters to come in...
             port.Read(0);
 
-            if (m_MonitoredPorts.size() == 1) {
+			Break();
+		
+			if (m_MonitoredPorts.size() == 1) {
                 if (m_ThreadInstance == nullptr) {
                     m_ThreadInstance = new MonitorWorker(*this);
                 }
                 m_ThreadInstance->Run();
-            }
-            else {
-                Break();
             }
 
             m_Admin.Unlock();
@@ -217,14 +216,9 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                             port->Read(static_cast<uint16_t>(info));
                         }
 
-                        if ((port->m_State & SerialPort::WRITESLOT) != 0) {
-                            ::SetEvent(port->m_WriteInfo.hEvent);
-                        }
-
                         if ((::WaitForSingleObject(port->m_WriteInfo.hEvent, 0) == WAIT_OBJECT_0) && (::GetOverlappedResult(port->Descriptor(), &(port->m_WriteInfo), &info, FALSE))) {
-                            ::ResetEvent(port->m_WriteInfo.hEvent);
-
-                            port->Write(static_cast<uint16_t>(info));
+							::ResetEvent(port->m_WriteInfo.hEvent);
+							port->Write(static_cast<uint16_t>(info));
                         }
                     }
 
@@ -580,14 +574,16 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
     {
         m_syncAdmin.Lock();
 
-        if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION | SerialPort::WRITESLOT)) == SerialPort::OPEN) {
- 		m_State |= WRITESLOT;
-                #ifdef __WIN32__
-        	g_SerialPortMonitor.Break();
-                #else
-                ResourceMonitor::Instance().Break();
-                #endif
-        }
+#ifdef __WIN32__
+		if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION)) == SerialPort::OPEN) {
+			::SetEvent(m_WriteInfo.hEvent);
+		}
+#else
+		if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION | SerialPort::WRITESLOT)) == SerialPort::OPEN) {
+			m_State |= SerialPort::WRITESLOT;
+			ResourceMonitor::Instance().Break();
+		}
+#endif
 
         m_syncAdmin.Unlock();
     }
@@ -625,7 +621,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
     {
         m_syncAdmin.Lock();
 
-        m_State &= (~(SerialPort::WRITE|SerialPort::WRITESLOT));
+        m_State &= (~(SerialPort::WRITE));
 
         ASSERT(((m_SendBytes == 0) && (m_SendOffset == 0)) || ((writtenBytes + m_SendOffset) <= m_SendBytes));
 
@@ -634,10 +630,10 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         }
 
         do {
-            if (m_SendOffset == m_SendBytes) {
-                m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
-                m_SendOffset = 0;
-            }
+			if (m_SendOffset == m_SendBytes) {
+				m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
+				m_SendOffset = 0;
+			}
 
             if (m_SendOffset < m_SendBytes) {
                 DWORD sendSize;

@@ -72,7 +72,6 @@ namespace Core {
         typedef enum {
             READ = 0x0001,
             WRITE = 0x0002,
-            WRITESLOT = 0x0100,
             EXCEPTION = 0x0200,
             OPEN = 0x0400,
 
@@ -208,7 +207,7 @@ namespace Core {
     private:
         mutable CriticalSection m_syncAdmin;
         string m_PortName;
-        uint16_t m_State;
+        volatile uint16_t m_State;
         uint16_t m_SendBufferSize;
         uint16_t m_ReceiveBufferSize;
         uint8_t* m_SendBuffer;
