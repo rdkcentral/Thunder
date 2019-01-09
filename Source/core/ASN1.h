@@ -6,7 +6,6 @@
 // ---- Include local include files ----
 #include "Portability.h"
 #include "Module.h"
-#include "DataStorage.h"
 
 // ---- Referenced classes and types ----
 

@@ -24,6 +24,12 @@ namespace Core {
         friend class SerialMonitor;
 
     public:
+        enum FlowControl {
+            OFF,
+            SOFTWARE,
+            HARDWARE
+        };
+
         enum BaudRate {
             BAUDRATE_0 = B0, /* HANG UP */
 
@@ -105,8 +111,10 @@ namespace Core {
             const Parity parityE,
             const DataBits dataBits,
             const StopBits stopBits,
+            const FlowControl flowControl,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
+ 
         virtual ~SerialPort();
 
     public:
@@ -136,6 +144,10 @@ namespace Core {
             m_ReadBytes = 0;
             m_SendOffset = 0;
             m_SendBytes = 0;
+            #ifndef __WIN32__ 
+            tcflush(m_Descriptor, TCIOFLUSH);
+            #endif
+      
             m_syncAdmin.Unlock();
         }
         inline const string& LocalId() const
@@ -150,22 +162,56 @@ namespace Core {
         uint32_t Open(uint32_t waitTime);
         uint32_t Close(uint32_t waitTime);
         void Trigger();
-        void Configuration();
 
         // Methods to extract and insert data into the socket buffers
         virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) = 0;
         virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) = 0;
         virtual void StateChange() = 0;
 
-        // Signal a state change, Opened, Closed or Accepted
         bool Configuration(
             const string& port,
             const BaudRate baudRate,
             const Parity parity,
             const DataBits dataBits,
             const StopBits stopBits,
+            const FlowControl flowControl,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
+
+        bool Configuration(
+            const string& port,
+            const BaudRate baudRate,
+            const FlowControl flowControl,
+            const uint16_t sendBufferSize,
+            const uint16_t receiveBufferSize);
+
+        void SetBaudrate(const BaudRate baudrate) {
+            #ifdef __WIN32__
+            m_PortSettings.BaudRate = baudRate;
+            if (m_Descriptor != -1) {
+                // TODO implementa on the fly changes..
+                ASSERT(false);
+            }
+            #else
+            cfsetospeed(&m_PortSettings, baudrate);
+	    cfsetispeed(&m_PortSettings, baudrate);
+            if (m_Descriptor != -1) {
+                
+	        if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
+		    TRACE_L1("Error setting a new speed: %d", -errno);
+                }
+            }
+            #endif
+        }
+        void SendBreak() {
+            #ifdef __WIN32__
+            static_assert(false);
+            #else
+	    if (m_Descriptor != -1) {
+                tcsendbreak(m_Descriptor, 0);
+            }
+            #endif
+        }
 
     private:
         void Opened() {

@@ -57,17 +57,34 @@ namespace Core {
 
             _adminLock.Unlock();
         }
+        void Load()
+        {
+            _adminLock.Lock();
+
+            ASSERT(_response == nullptr);
+
+            _signal.ResetEvent();
+
+            _response = static_cast<MESSAGE*>(~0);
+
+            _adminLock.Unlock();
+        }
+        void Evaluate() 
+        {
+            _adminLock.Lock();
+
+            if (_response == static_cast<MESSAGE*>(~0)) {
+                _response = nullptr;
+                _signal.SetEvent();
+            }
+
+            _adminLock.Unlock();
+        }
         uint32_t Aquire(const uint32_t duration)
         {
             uint32_t result = Core::ERROR_NONE;
 
-            Core::Time currentTime(Core::Time::Now());
-
-            currentTime.Add(duration);
-
-            uint32_t endTick = static_cast<uint32_t>(currentTime.Ticks());
-
-            _signal.Lock(endTick);
+            _signal.Lock(duration);
 
             _adminLock.Lock();
 
@@ -80,6 +97,12 @@ namespace Core {
             _adminLock.Unlock();
 
             return (result);
+        }
+        inline void Lock () {
+            _adminLock.Lock();
+        }
+        inline void Unlock () {
+            _adminLock.Unlock();
         }
 
     private:

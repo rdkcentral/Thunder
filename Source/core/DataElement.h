@@ -6,8 +6,8 @@
 
 // ---- Include local include files ----
 #include "Portability.h"
-#include "DataStorage.h"
 #include "Serialization.h"
+#include "Proxy.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -199,15 +199,14 @@ namespace Core {
         inline void Align() {
             if (m_Buffer != nullptr) {
                 size_t size (static_cast<size_t>(m_MaxSize));
-                uint8_t adjust(~0);
                 void* newPointer = m_Buffer;
                 if (std::align(sizeof(TYPE), sizeof(TYPE), newPointer, size)) {
                     uint8_t adjust (static_cast<uint8_t>(m_MaxSize - size));
                     m_Buffer = reinterpret_cast<uint8_t*>(newPointer);
                     m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
                     m_MaxSize -= adjust;
+                    TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
                 }
-                TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
             }
         }
         inline uint64_t AllocatedSize() const

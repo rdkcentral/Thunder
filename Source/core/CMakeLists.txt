@@ -50,7 +50,6 @@ set(PUBLIC_HEADERS
         DataBuffer.h
         DataElementFile.h
         DataElement.h
-        DataStorage.h
         Enumerate.h
         Factory.h
         FileSystem.h

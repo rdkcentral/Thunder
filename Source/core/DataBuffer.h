@@ -14,6 +14,39 @@ namespace Core {
     // ---- Helper types and constants ----
 
     // ---- Helper functions ----
+    template <const unsigned int BLOCKSIZE>
+    class ScopedStorage {
+    private:
+        // ----------------------------------------------------------------
+        // Never, ever allow reference counted objects to be assigned.
+        // Create a new object and modify it. If the assignement operator
+        // is used, give a compile error.
+        // ----------------------------------------------------------------
+        ScopedStorage(const ScopedStorage<BLOCKSIZE>& a_Copy) = delete;
+        ScopedStorage<BLOCKSIZE>& operator=(const ScopedStorage<BLOCKSIZE>& a_RHS) = delete;
+
+    public:
+        ScopedStorage()
+        {
+        }
+        virtual ~ScopedStorage()
+        {
+        }
+
+    public:
+        uint8_t* Buffer()
+        {
+            return &(m_Buffer[0]);
+        }
+        uint32_t Size() const
+        {
+            return (BLOCKSIZE);
+        }
+
+    private:
+        uint8_t m_Buffer[BLOCKSIZE];
+    };
+
     template <typename BUFFER>
     class CyclicDataBuffer : public BUFFER {
     private:

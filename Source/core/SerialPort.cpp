@@ -279,6 +279,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         const Parity parity,
         const DataBits dataBits,
         const StopBits stopBits,
+        const FlowControl flowControl,
         const uint16_t sendBufferSize,
         const uint16_t receiveBufferSize)
         : m_syncAdmin()
@@ -301,7 +302,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             m_Descriptor(-1)
 #endif
     {
-        Configuration(port, baudRate, parity, dataBits, stopBits, sendBufferSize, receiveBufferSize);
+        Configuration(port, baudRate, parity, dataBits, stopBits, flowControl, sendBufferSize, receiveBufferSize);
     }
 
     /* virtual */ SerialPort::~SerialPort()
@@ -343,13 +344,82 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             }
         }
     }
+    bool SerialPort::Configuration(
+        const string& port,
+        const BaudRate baudRate,
+        const FlowControl flowControl,
+        const uint16_t sendBufferSize,
+        const uint16_t receiveBufferSize)
+    {
+#ifdef __LINUX__
+        if (m_Descriptor == -1)
+#endif
+#ifdef __WIN32__
+            if (m_Descriptor == INVALID_HANDLE_VALUE)
+#endif
+            {
+                m_PortName = port;
+                m_SendBufferSize = sendBufferSize;
+                m_ReceiveBufferSize = receiveBufferSize;
 
+#ifdef __LINUX__
+                cfmakeraw(&m_PortSettings);
+
+                cfsetispeed(&m_PortSettings, baudRate); // set baud rates for in
+                cfsetospeed(&m_PortSettings, baudRate); // and out
+                m_PortSettings.c_cflag |= CLOCAL;
+
+	        if (flowControl == OFF) {
+		    m_PortSettings.c_cflag &= ~CRTSCTS;
+                    m_PortSettings.c_iflag &= ~IXON;
+                }
+	        else if (flowControl == SOFTWARE) {
+		    m_PortSettings.c_cflag &= ~CRTSCTS;
+                    m_PortSettings.c_iflag |= IXON;
+                }
+	        else if (flowControl == HARDWARE) {
+		    m_PortSettings.c_cflag |= CRTSCTS;
+                    m_PortSettings.c_iflag &= (~IXON);
+                }
+#endif
+#ifdef __WIN32__
+                m_PortSettings.DCBlength = sizeof(DCB);
+                m_PortSettings.BaudRate = baudRate;
+                m_PortSettings.ByteSize = BITS_8;
+                m_PortSettings.Parity = NONE;
+                m_PortSettings.StopBits = BITS_1;
+                ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+                ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+                m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+                m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+#endif
+
+                ASSERT((m_SendBufferSize != 0) || (m_ReceiveBufferSize != 0));
+
+                if (m_SendBuffer != nullptr) {
+                    ::free(m_SendBuffer);
+                }
+
+                uint8_t* allocatedMemory = static_cast<uint8_t*>(::malloc(m_SendBufferSize + m_ReceiveBufferSize));
+                if (m_SendBufferSize != 0) {
+                    m_SendBuffer = allocatedMemory;
+                }
+                if (m_ReceiveBufferSize != 0) {
+                    m_ReceiveBuffer = &(allocatedMemory[m_SendBufferSize]);
+                }
+
+                return (true);
+            }
+        return (false);
+    }
+ 
     bool SerialPort::Configuration(
         const string& port,
         const BaudRate baudRate,
         const Parity parity,
         const DataBits dataBits,
         const StopBits stopBits,
+        const FlowControl flowControl,
         const uint16_t sendBufferSize,
         const uint16_t receiveBufferSize)
     {
@@ -370,6 +440,20 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
                 m_PortSettings.c_cflag &= ~(PARENB | PARODD | CSTOPB | CS5 | CS6 | CS7 | CS8); // Clear all relevant bits
                 m_PortSettings.c_cflag |= parity | stopBits | dataBits; // Set the requested bits
+                m_PortSettings.c_cflag |= CLOCAL;
+
+                if (flowControl == OFF) {
+                    m_PortSettings.c_cflag &= ~CRTSCTS;
+                    m_PortSettings.c_iflag &= ~IXON;
+                }
+                else if (flowControl == SOFTWARE) {
+                    m_PortSettings.c_cflag &= ~CRTSCTS;
+                    m_PortSettings.c_iflag |= IXON;
+                }
+                else if (flowControl == HARDWARE) {
+                    m_PortSettings.c_cflag |= CRTSCTS;
+                    m_PortSettings.c_iflag &= (~IXON);
+                }
 #endif
 #ifdef __WIN32__
                 m_PortSettings.DCBlength = sizeof(DCB);
@@ -401,7 +485,6 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             }
         return (false);
     }
-
     uint32_t SerialPort::Open(uint32_t /* waitTime */)
     {
         uint32_t result = 0;
