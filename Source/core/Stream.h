@@ -31,44 +31,9 @@ namespace Core {
         StreamType<BASESTREAM>& operator=(const StreamType<BASESTREAM>&);
 
     public:
-        StreamType()
-            : BASESTREAM()
-        {
-        }
-        template <typename arg1>
-        inline StreamType(arg1 a_Arg1)
-            : BASESTREAM(a_Arg1)
-        {
-        }
-        template <typename arg1, typename arg2>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2)
-            : BASESTREAM(a_Arg1, a_Arg2)
-        {
-        }
-        template <typename arg1, typename arg2, typename arg3>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-            : BASESTREAM(a_Arg1, a_Arg2, a_Arg3)
-        {
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-            : BASESTREAM(a_Arg1, a_Arg2, a_Arg3, a_Arg4)
-        {
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-            : BASESTREAM(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5)
-        {
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-            : BASESTREAM(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6)
-        {
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6, typename arg7>
-        inline StreamType(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6, arg7 a_Arg7)
-            : BASESTREAM(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6, a_Arg7)
-        {
+        template<typename... Args>
+        StreamType(Args... args)
+            : BASESTREAM(args...) {
         }
         virtual ~StreamType()
         {
