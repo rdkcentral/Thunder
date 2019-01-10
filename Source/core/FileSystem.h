@@ -586,9 +586,14 @@ namespace Core {
 
             return (valid);
         }
-        inline string Current()
-        {
+        inline string Current() const {
             return (_name + _entry->d_name);
+        }
+        inline string Name() const {
+            return (_entry->d_name);
+        }
+        inline bool IsDirectory() const {
+            return ((_entry->d_type & DT_DIR) != 0);
         }
 #endif
 
@@ -621,6 +626,12 @@ namespace Core {
         inline string Current() const
         {
             return (_name + _data.cFileName);
+        }
+        inline string Name() const {
+            return (_data.cFileName);
+        }
+        inline bool IsDirectory() const {
+            return ( (_data_data..dwFileAttributes & FILE_DIRECTORY) == FILE_DIRECTORY );
         }
 #endif
 
