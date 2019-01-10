@@ -693,6 +693,10 @@ uint16_t SocketPort::Events() {
 
 void SocketPort::Handle (const uint16_t flagsSet) {
 
+    bool breakIssued = ((m_State & SocketPort::WRITESLOT) != 0);
+
+    if ((flagsSet != 0) || (breakIssued == true)) {
+
     #ifdef __WIN32__
     if (IsListening()) {
         if ((flagsSet & FD_ACCEPT) != 0) {
@@ -700,7 +704,7 @@ void SocketPort::Handle (const uint16_t flagsSet) {
             Accepted();
         }
     } else if (IsOpen()) {
-        if ((flagsSet & FD_WRITE) != 0) {
+        if ( ((flagsSet & FD_WRITE) != 0) || (breakIssued == true) )  {
             Write();
         }
         if ((flagsSet & FD_READ) != 0) {
@@ -723,7 +727,7 @@ void SocketPort::Handle (const uint16_t flagsSet) {
             Accepted();
         }
     } else if (IsOpen()) {
-        if ((flagsSet & POLLOUT) != 0) {
+        if ( ((flagsSet & POLLOUT) != 0) || (breakIssued == true) )  {
             Write();
         }
         if ((flagsSet & POLLIN) != 0) {
@@ -738,6 +742,7 @@ void SocketPort::Handle (const uint16_t flagsSet) {
         Closed();
     }
 #endif
+    }
 }
 
 void SocketPort::Write() {

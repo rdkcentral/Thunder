@@ -673,7 +673,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
 #ifndef __WIN32__
     /* virtual */ uint16_t SerialPort::Events() {
-        uint16_t result = SerialPort::READ;
+        uint16_t result = SerialPort::READ|POLLRDNORM|POLLRDBAND;
         if ((m_State & SerialPort::OPEN) == 0) {
             result  = 0;
             Closed();
@@ -689,8 +689,12 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
     }
 
     /* virtual */ void SerialPort::Handle(const uint16_t events) {
-        if ((m_State & SerialPort::OPEN) != 0) {
-            if ((events & POLLOUT) != 0) {
+
+        bool breakIssued = ((m_State & SerialPort::WRITESLOT) != 0);
+
+        if ( ((events != 0) || (breakIssued == true)) && ((m_State & SerialPort::OPEN) != 0) ) {
+
+            if ( ((events & POLLOUT) != 0) || (breakIssued == true) ) {
                 Write();
             }
             if ((events & POLLIN) != 0) {

@@ -315,9 +315,6 @@ private:
                 #endif
                 uint32_t VARIABLE_IS_NOT_USED bytes = read(_signalDescriptor, &info, sizeof(info));
                 ASSERT(bytes == sizeof(info) || bytes == 0);
-
-                // Clear the signal port..
-                _descriptorArray[0].revents = 0;
             }
 
             // We are only interested in the filedescriptors that have a corresponding client.
@@ -339,14 +336,12 @@ private:
 
                     uint16_t flagsSet = _descriptorArray[fd_index].revents;
 
-                    if (flagsSet != 0) {
+                    Arm<WATCHDOG>();
 
-                        Arm<WATCHDOG>();
+                    // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
+                    entry->Handle(flagsSet);
 
-                        entry->Handle(flagsSet);
-
-                        Reset<WATCHDOG>();
-                    }
+                    Reset<WATCHDOG>();
                 }
 
                 index++;
@@ -418,14 +413,12 @@ private:
 
                 uint16_t flagsSet = static_cast<uint16_t>(networkEvents.lNetworkEvents);
 
-                if (flagsSet != 0) {
+                Arm<WATCHDOG>();
 
-                    Arm<WATCHDOG>();
+                // Event if the flagsSet == 0, call handle, maybe a break was issued by this RESOURCE..
+                entry->Handle(flagsSet);
 
-                    entry->Handle(flagsSet);
-
-                    Reset<WATCHDOG>();
-                }
+                Reset<WATCHDOG>();
 
                 index++;
             }
