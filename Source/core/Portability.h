@@ -655,6 +655,8 @@ namespace Core {
     const uint32_t ERROR_ALREADY_RELEASED = 36;
     const uint32_t ERROR_NEGATIVE_ACKNOWLEDGE = 37;
     const uint32_t ERROR_INVALID_SIGNATURE = 38;
+    const uint32_t ERROR_READ_ERROR = 39;
+    const uint32_t ERROR_WRITE_ERROR = 40;
 }
 }
 
