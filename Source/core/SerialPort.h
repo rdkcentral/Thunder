@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <poll.h>
+#include <stdarg.h>
 #endif
 #include "Portability.h"
 #include "ResourceMonitor.h"
@@ -210,6 +211,20 @@ namespace Core {
 	    if (m_Descriptor != -1) {
                 tcsendbreak(m_Descriptor, 0);
             }
+            #endif
+        }
+        int Control(int request, ...) {
+            #ifdef __WIN32__
+            static_assert(false);
+            #else
+            int result = -1;
+	    if (m_Descriptor != -1) {
+                va_list args;
+                va_start(args, request);
+                result = ::ioctl(m_Descriptor, request, args);
+                va_end(args);
+            }
+            return (result);
             #endif
         }
 

@@ -23,6 +23,16 @@ namespace Exchange {
             virtual void Closure() = 0;
         };
 
+        struct IMetadata : virtual public Core::IUnknown { 
+            enum { ID = 0x00000078 };
+
+            virtual ~IMetadata() {}
+
+            virtual string LocalCache() const = 0;
+            virtual string CookieStore() const = 0;
+            virtual void GarbageCollect() = 0;
+        };
+
         virtual ~IBrowser() {}
 
         virtual void Register(IBrowser::INotification* sink) = 0;
