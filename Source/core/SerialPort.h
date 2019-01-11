@@ -45,8 +45,11 @@ namespace Core {
             BAUDRATE_38400 = B38400,
             BAUDRATE_57600 = B57600,
             BAUDRATE_115200 = B115200,
-
+            BAUDRATE_230400 = B230400,
+            BAUDRATE_460800 = B460800,
             BAUDRATE_500000 = B500000,
+            BAUDRATE_576000 = B576000,
+            BAUDRATE_921600 = B921600,
             BAUDRATE_1000000 = B1000000,
             BAUDRATE_1152000 = B1152000,
             BAUDRATE_1500000 = B1500000,
@@ -54,6 +57,9 @@ namespace Core {
             BAUDRATE_2500000 = B2500000,
             BAUDRATE_3000000 = B3000000,
             BAUDRATE_3500000 = B3500000,
+#ifdef B3710000
+            BAUDRATE_3710000 = B3710000,
+#endif
             BAUDRATE_4000000 = B4000000
         };
 
@@ -106,6 +112,7 @@ namespace Core {
 
     public:
         SerialPort();
+        SerialPort(const string& port);
         SerialPort(
             const string& port,
             const BaudRate baudRate,
@@ -180,13 +187,12 @@ namespace Core {
             const uint16_t receiveBufferSize);
 
         bool Configuration(
-            const string& port,
             const BaudRate baudRate,
             const FlowControl flowControl,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
 
-        void SetBaudrate(const BaudRate baudrate) {
+        void SetBaudRate(const BaudRate baudrate) {
             #ifdef __WIN32__
             m_PortSettings.BaudRate = baudRate;
             if (m_Descriptor != -1) {
@@ -211,20 +217,6 @@ namespace Core {
 	    if (m_Descriptor != -1) {
                 tcsendbreak(m_Descriptor, 0);
             }
-            #endif
-        }
-        int Control(int request, ...) {
-            #ifdef __WIN32__
-            static_assert(false);
-            #else
-            int result = -1;
-	    if (m_Descriptor != -1) {
-                va_list args;
-                va_start(args, request);
-                result = ::ioctl(m_Descriptor, request, args);
-                va_end(args);
-            }
-            return (result);
             #endif
         }
 
