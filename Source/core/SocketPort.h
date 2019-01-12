@@ -57,7 +57,8 @@ namespace Core {
             DATAGRAM,
             STREAM,
             LISTEN,
-            RAW
+            RAW,
+            SEQUENCED
 
         } enumType;
 
@@ -210,7 +211,7 @@ namespace Core {
         }
         inline uint32_t SocketMode() const
         {
-            return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : SOCK_RAW));
+            return (((m_SocketType == LISTEN) || (m_SocketType == STREAM)) ? SOCK_STREAM : ((m_SocketType == DATAGRAM) ? SOCK_DGRAM : (m_SocketType == SEQUENCED ? SOCK_SEQPACKET : SOCK_RAW)));
         }
         virtual uint16_t Events() override;
         virtual void Handle(const uint16_t events) override;

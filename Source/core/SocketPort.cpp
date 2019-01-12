@@ -291,7 +291,7 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
     } else {
         ASSERT ((m_Socket == INVALID_SOCKET) && (m_State == 0));
 
-        if ( (m_SocketType == SocketPort::RAW) || (m_SocketType == SocketPort::STREAM) ) {
+        if ( (m_SocketType == SocketPort::STREAM) || (m_SocketType == SocketPort::SEQUENCED) || (m_SocketType == SocketPort::RAW) ) {
             if (m_LocalNode.IsValid() == false) {
                 m_LocalNode = m_RemoteNode.Origin();
             }
@@ -302,7 +302,7 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
         m_Socket = ConstructSocket(m_LocalNode, specificInterface);
 
         if(m_Socket != INVALID_SOCKET) {
-            if( (m_SocketType == DATAGRAM) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
+            if( (m_SocketType == DATAGRAM) || (m_SocketType == SEQUENCED) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
                 m_State = SocketPort::OPEN|SocketPort::READ;
 
                 nStatus = Core::ERROR_NONE;
