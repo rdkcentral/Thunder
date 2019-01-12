@@ -82,9 +82,7 @@ namespace Core {
         }
         uint32_t Aquire(const uint32_t duration)
         {
-            uint32_t result = Core::ERROR_NONE;
-
-            _signal.Lock(duration);
+            uint32_t result = _signal.Lock(duration);
 
             _adminLock.Lock();
 
