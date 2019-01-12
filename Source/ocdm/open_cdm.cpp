@@ -83,7 +83,7 @@ private:
 
                 SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                 SetSubSampleData(0, nullptr);
-                KeyId(keyIdLength, keyId);
+                KeyId(static_cast<uint8_t>(keyIdLength), keyId);
                 Write(encryptedDataLength, encryptedData);
 
                 // This will trigger the OpenCDMIServer to decrypt this memory...
@@ -450,7 +450,7 @@ private:
             _state = static_cast<sessionState>(_state | SESSION_MESSAGE | SESSION_UPDATE);
         }
         else {
-            _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), _message.length());
+            _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
         }
     }
     // Event fired when MediaKeySession has found a usable key.
@@ -503,7 +503,7 @@ private:
 };
 
 
-class OpenCDMAccessor : public OCDM::IAccessorOCDM {
+struct OpenCDMAccessor : public OCDM::IAccessorOCDM {
 private:
     OpenCDMAccessor () = delete;
     OpenCDMAccessor (const OpenCDMAccessor&) = delete;
