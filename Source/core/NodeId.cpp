@@ -38,6 +38,30 @@ static string NetlinkName(const NodeId::SocketInfo& input) {
 }
 #endif
 
+#ifdef CORE_BLUETOOTH
+static string BTName(const NodeId::SocketInfo& input) {
+    static TCHAR _hexArray[] = "01234567890ABCDEF";
+
+    if (input.L2Socket.l2_type == BTPROTO_HCI) {
+        return (_T("Bluetooth:") + 
+                Core::NumberType<uint16_t>(input.BTSocket.hci_dev).Text() + 
+                ':' + 
+                Core::NumberType<uint16_t>(input.BTSocket.hci_channel).Text());
+    }
+    TCHAR address[14];
+    for (uint8_t index = 0; index < sizeof(input.L2Socket.l2_bdaddr); index++) {
+        address[(index * 2)]     = _hexArray[(input.L2Socket.l2_bdaddr.b[index] >> 4)];
+        address[(index * 2) + 1] = _hexArray[(input.L2Socket.l2_bdaddr.b[index] & 0xF)];
+    }
+    return (_T("BluetoothL2:") + 
+            Core::NumberType<uint32_t>(input.L2Socket.l2_cid).Text() + 
+            ':' + 
+            Core::NumberType<pid_t>(input.L2Socket.l2_bdaddr_type).Text() + 
+            ':' +
+            address);
+}
+#endif
+
 /* static */ bool NodeId::m_isIPV6Enabled = true;
 
 //----------------------------------------------------------------------------
@@ -109,6 +133,33 @@ NodeId::NodeId(const uint32_t destination, const pid_t pid, const uint32_t group
     m_structInfo.NetlinkSocket.nl_destination = destination;
 
     m_hostName = NetlinkName(m_structInfo);
+}
+#endif
+
+#ifdef CORE_BLUETOOTH
+NodeId::NodeId(const uint16_t device, const uint16_t channel) {
+
+    memset(&m_structInfo.BTSocket, 0, sizeof(m_structInfo.BTSocket));
+
+    m_structInfo.BTSocket.hci_family = AF_BLUETOOTH;
+    m_structInfo.BTSocket.hci_dev = device;
+    m_structInfo.BTSocket.hci_channel = channel;
+    m_structInfo.L2Socket.l2_type = BTPROTO_HCI;
+
+    m_hostName = BTName(m_structInfo);
+}
+NodeId::NodeId(const uint8_t address[6], const uint16_t cid, const uint8_t addressType) {
+
+    memset(&m_structInfo.L2Socket, 0, sizeof(m_structInfo.L2Socket));
+
+    m_structInfo.L2Socket.l2_family = AF_BLUETOOTH;
+    m_structInfo.L2Socket.l2_cid = htobs(cid);
+    m_structInfo.L2Socket.l2_bdaddr_type = addressType;
+    m_structInfo.L2Socket.l2_type = BTPROTO_L2CAP;
+    
+    ::memcpy(m_structInfo.L2Socket.l2_bdaddr.b, address, sizeof(m_structInfo.L2Socket.l2_bdaddr));
+
+    m_hostName = BTName(m_structInfo);
 }
 #endif
 
@@ -236,11 +287,25 @@ NodeId::operator== (const NodeId& rInfo) const {
         else if (m_structInfo.DomainSocket.sun_family == AF_UNIX){
             return (strcmp (m_structInfo.DomainSocket.sun_path, rInfo.m_structInfo.DomainSocket.sun_path) == 0);
         }
-        else {
+        else if (m_structInfo.DomainSocket.sun_family == AF_NETLINK){
             return ( (m_structInfo.NetlinkSocket.nl_destination == rInfo.m_structInfo.NetlinkSocket.nl_destination) && 
                      (m_structInfo.NetlinkSocket.nl_pid         == rInfo.m_structInfo.NetlinkSocket.nl_pid)         && 
                      (m_structInfo.NetlinkSocket.nl_groups      == rInfo.m_structInfo.NetlinkSocket.nl_groups)      );
-
+        }
+        #endif
+        #ifdef CORE_BLUETOOTH
+        else if (m_structInfo.DomainSocket.sun_family == AF_BLUETOOTH){
+            if (m_structInfo.L2Socket.l2_type == rInfo.m_structInfo.L2Socket.l2_type) {
+                if (m_structInfo.L2Socket.l2_type == BTPROTO_HCI) {
+                   return ( (m_structInfo.BTSocket.hci_channel == rInfo.m_structInfo.BTSocket.hci_channel) &&
+                            (m_structInfo.BTSocket.hci_dev     == rInfo.m_structInfo.BTSocket.hci_dev)     );
+                }
+                else {
+                   return ( (m_structInfo.L2Socket.l2_cid         == rInfo.m_structInfo.L2Socket.l2_cid)         &&
+                            (m_structInfo.L2Socket.l2_bdaddr_type == rInfo.m_structInfo.L2Socket.l2_bdaddr_type) &&
+                            (::memcmp(m_structInfo.L2Socket.l2_bdaddr.b, rInfo.m_structInfo.L2Socket.l2_bdaddr.b, sizeof(m_structInfo.L2Socket.l2_bdaddr)) == 0) );
+                }
+            }
         }
         #endif
     }
@@ -309,6 +374,32 @@ NodeId::operator= (const struct sockaddr_nl& rInfo) {
 }
 #endif
 
+#ifdef CORE_BLUETOOTH
+NodeId&
+NodeId::operator= (const struct sockaddr_hci& rInfo) {
+    // Copy the struct info
+    memcpy(&m_structInfo.BTSocket, &rInfo, sizeof(struct sockaddr_hci));
+
+    m_structInfo.L2Socket.l2_type = BTPROTO_HCI;
+    m_hostName = BTName(m_structInfo);
+
+    // Give back our-selves.
+    return (*this);
+}
+
+NodeId&
+NodeId::operator= (const struct sockaddr_l2& rInfo) {
+    // Copy the struct info
+    memcpy(&m_structInfo.L2Socket, &rInfo, sizeof(struct sockaddr_l2));
+
+    m_structInfo.L2Socket.l2_type = BTPROTO_L2CAP;
+    m_hostName = BTName(m_structInfo);
+
+    // Give back our-selves.
+    return (*this);
+}
+#endif
+
 NodeId&
 NodeId::operator= (const union SocketInfo& rInfo) {
 
@@ -322,11 +413,21 @@ NodeId::operator= (const union SocketInfo& rInfo) {
     else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
         m_hostName = m_structInfo.DomainSocket.sun_path;
     }
+#ifdef CORE_BLUETOOTH
+    else if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
+        m_hostName = BTName(m_structInfo);
+    }
+#endif
     else {
-		m_hostName.clear();
-	}
-#else
 	m_hostName.clear();
+    }
+#else
+#ifdef CORE_BLUETOOTH
+    if (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH) {
+        m_hostName = BTName(m_structInfo);
+    else
+#endif
+        m_hostName.clear();
 #endif
 
     // Give back our-selves.

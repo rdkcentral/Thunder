@@ -3,7 +3,9 @@ set(TARGET Core)
 option(WPEFRAMEWORK_DEADLOCK_DETECTION
         "Enable deadlock detection tooling." OFF)
 option(WPEFRAMEWORK_WCHAR_SUPPORT
-        "Enable support for WCHAR in ccpsdk." OFF)
+        "Enable support for WCHAR in the core." OFF)
+option(WPEFRAMEWORK_BLUETOOTH_SUPPORT
+        "Enable support for Bluetooth in the core." OFF)
 
 find_package(Threads REQUIRED)
 find_package(LIBRT)
@@ -129,7 +131,13 @@ endif()
 if(NOT WPEFRAMEWORK_WCHAR_SUPPORT)
     set(PC_FLAGS "${PC_FLAGS} -D__NO_WCHAR_SUPPORT__")
     target_compile_definitions(Support INTERFACE __NO_WCHAR_SUPPORT__)
-    message(STATUS "Disabled WCHAR support")
+    message(STATUS "Disabled WCHAR support.")
+endif()
+
+if (WPEFRAMEWORK_BLUETOOTH_SUPPORT)
+    set(PC_FLAGS "${PC_FLAGS} -DCORE_BLUETOOTH")
+    target_compile_definitions(Support INTERFACE CORE_BLUETOOTH)
+    message(STATUS "Enable Bluetooth support.")
 endif()
 
 if(WPEFRAMEWORK_DEADLOCK_DETECTION)

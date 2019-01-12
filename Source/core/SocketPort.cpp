@@ -481,7 +481,7 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
     }
 #endif
 
-    if ((l_Result = ::socket(localNode.Type(), SocketMode(), (localNode.Type() == NodeId::TYPE_NETLINK ? localNode.Extension() : 0))) == INVALID_SOCKET) {
+    if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
 	TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
     } else if (SetNonBlocking (l_Result) == false) {
 #ifdef __WIN32__
@@ -547,8 +547,8 @@ SOCKET SocketPort::ConstructSocket(NodeId& localNode, const string& specificInte
             if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
 #ifndef __WIN32__
-                if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Extension() <= 0777)) {
-                    if (::chmod(localNode.HostName().c_str(), localNode.Extension()) == 0) {
+                if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Rights() <= 0777)) {
+                    if (::chmod(localNode.HostName().c_str(), localNode.Rights()) == 0) {
                         BufferAlignment(l_Result);
                         return (l_Result);
                     } else {
