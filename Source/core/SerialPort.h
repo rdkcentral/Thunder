@@ -45,11 +45,19 @@ namespace Core {
             BAUDRATE_38400 = B38400,
             BAUDRATE_57600 = B57600,
             BAUDRATE_115200 = B115200,
+#ifdef B230400
             BAUDRATE_230400 = B230400,
-            BAUDRATE_460800 = B460800,
-            BAUDRATE_500000 = B500000,
-            BAUDRATE_576000 = B576000,
-            BAUDRATE_921600 = B921600,
+#endif
+#ifdef B460800
+			BAUDRATE_460800 = B460800,
+#endif
+			BAUDRATE_500000 = B500000,
+#ifdef B3710000
+			BAUDRATE_576000 = B576000,
+#endif
+#ifdef B3710000
+			BAUDRATE_921600 = B921600,
+#endif
             BAUDRATE_1000000 = B1000000,
             BAUDRATE_1152000 = B1152000,
             BAUDRATE_1500000 = B1500000,
@@ -194,8 +202,8 @@ namespace Core {
 
         void SetBaudRate(const BaudRate baudrate) {
             #ifdef __WIN32__
-            m_PortSettings.BaudRate = baudRate;
-            if (m_Descriptor != -1) {
+            m_PortSettings.BaudRate = baudrate;
+            if (m_Descriptor != INVALID_HANDLE_VALUE) {
                 // TODO implementa on the fly changes..
                 ASSERT(false);
             }
@@ -212,7 +220,8 @@ namespace Core {
         }
         void SendBreak() {
             #ifdef __WIN32__
-            static_assert(false);
+			// TODO: Implement a windows variant..
+            ASSERT(false);
             #else
 	    if (m_Descriptor != -1) {
                 tcsendbreak(m_Descriptor, 0);

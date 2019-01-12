@@ -73,7 +73,6 @@
 #define  __SIZEOF_POINTER__ 8
 #endif
 
-#define NOMINMAX
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
 #define WIN32_LEAN_AND_MEAN
 #define NOWINRES
@@ -167,6 +166,8 @@ typedef std::string string;
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
 #undef DELETE
+#undef min
+#undef max
 
 //#if _MSC_VER >= 1600
 //const std::basic_string<char>::size_type std::basic_string<char>::npos = (std::basic_string<char>::size_type) - 1;

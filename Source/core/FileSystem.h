@@ -631,7 +631,7 @@ namespace Core {
             return (_data.cFileName);
         }
         inline bool IsDirectory() const {
-            return ( (_data_data..dwFileAttributes & FILE_DIRECTORY) == FILE_DIRECTORY );
+            return ( (_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
         }
 #endif
 

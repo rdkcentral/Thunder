@@ -394,12 +394,36 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         m_PortSettings.ByteSize = BITS_8;
         m_PortSettings.Parity = NONE;
         m_PortSettings.StopBits = BITS_1;
-        ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+			if (flowControl == OFF) {
+				m_PortSettings.fOutX = FALSE;
+				m_PortSettings.fInX  = FALSE;
+				m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+				m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+				m_PortSettings.fOutxCtsFlow = FALSE;
+				m_PortSettings.fOutxDsrFlow = FALSE;
+			}
+			else if (flowControl == SOFTWARE) {
+				m_PortSettings.fOutX = TRUE;
+				m_PortSettings.fInX = TRUE;
+				m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+				m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+				m_PortSettings.fOutxCtsFlow = FALSE;
+				m_PortSettings.fOutxDsrFlow = FALSE;
+			}
+			else if (flowControl == HARDWARE) {
+				m_PortSettings.fOutX = FALSE;
+				m_PortSettings.fInX = FALSE;
+				m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
+				m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
+				m_PortSettings.fOutxCtsFlow = TRUE;
+				m_PortSettings.fOutxDsrFlow = TRUE;
+			}
+		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
         ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
         m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
         m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
         if (m_Descriptor != INVALID_HANDLE_VALUE) {
-            ::SetCommState(m_Descriptor, &currentSettings);
+            ::SetCommState(m_Descriptor, &m_PortSettings);
         }
 #endif
 
@@ -480,6 +504,30 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
                 m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
                 m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+				if (flowControl == OFF) {
+					m_PortSettings.fOutX = FALSE;
+					m_PortSettings.fInX = FALSE;
+					m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+					m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+					m_PortSettings.fOutxCtsFlow = FALSE;
+					m_PortSettings.fOutxDsrFlow = FALSE;
+				}
+				else if (flowControl == SOFTWARE) {
+					m_PortSettings.fOutX = TRUE;
+					m_PortSettings.fInX = TRUE;
+					m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+					m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+					m_PortSettings.fOutxCtsFlow = FALSE;
+					m_PortSettings.fOutxDsrFlow = FALSE;
+				}
+				else if (flowControl == HARDWARE) {
+					m_PortSettings.fOutX = FALSE;
+					m_PortSettings.fInX = FALSE;
+					m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
+					m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
+					m_PortSettings.fOutxCtsFlow = TRUE;
+					m_PortSettings.fOutxDsrFlow = TRUE;
+				}
 #endif
 
                 ASSERT((m_SendBufferSize != 0) || (m_ReceiveBufferSize != 0));
