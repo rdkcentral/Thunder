@@ -272,7 +272,13 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             m_Descriptor(-1)
 #endif
     {
-    }
+#ifdef __WIN32__
+		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+#endif
+	}
     SerialPort::SerialPort(const string& port)
         : m_syncAdmin()
         , m_PortName(port)
@@ -294,7 +300,13 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             m_Descriptor(-1)
 #endif
     {
-    }
+#ifdef __WIN32__
+		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+#endif
+	}
     SerialPort::SerialPort(
         const string& port,
         const BaudRate baudRate,
@@ -324,6 +336,12 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             m_Descriptor(-1)
 #endif
     {
+#ifdef __WIN32__
+		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+#endif
         Configuration(port, baudRate, parity, dataBits, stopBits, flowControl, sendBufferSize, receiveBufferSize);
     }
 
@@ -337,8 +355,9 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 #ifdef __WIN32__
         ASSERT(m_Descriptor == INVALID_HANDLE_VALUE);
 #endif
-
-        ::free(m_SendBuffer);
+		if (m_SendBuffer != nullptr) {
+			::free(m_SendBuffer);
+		}
 
 #ifdef __WIN32__
         ::CloseHandle(m_ReadInfo.hEvent);
@@ -418,10 +437,6 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 				m_PortSettings.fOutxCtsFlow = TRUE;
 				m_PortSettings.fOutxDsrFlow = TRUE;
 			}
-		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
-        ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
-        m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
-        m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
         if (m_Descriptor != INVALID_HANDLE_VALUE) {
             ::SetCommState(m_Descriptor, &m_PortSettings);
         }
@@ -500,10 +515,6 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 m_PortSettings.ByteSize = dataBits;
                 m_PortSettings.Parity = parity;
                 m_PortSettings.StopBits = stopBits;
-                ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
-                ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
-                m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
-                m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
 				if (flowControl == OFF) {
 					m_PortSettings.fOutX = FALSE;
 					m_PortSettings.fInX = FALSE;

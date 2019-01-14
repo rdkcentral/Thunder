@@ -197,7 +197,7 @@ struct TypeLengthValueType {
                 Request::Length(current);
             }
             if ((length - result) > 0) {
-                uint16_t copyLength = std::min(static_cast<uint16_t>(Request::Length() - Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))), static_cast<uint16_t>(length - result));
+                uint16_t copyLength = std::min(static_cast<uint16_t>(Request::Length() - (Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)))), static_cast<uint16_t>(length - result));
                 if (copyLength > 0) {
                     ::memcpy (&(_value[Request::Offset()-(sizeof(TYPE) + sizeof(LENGTH))]), &(stream[result]), copyLength);
                     Request::Offset(Request::Offset() + copyLength);
