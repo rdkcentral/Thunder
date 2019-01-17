@@ -85,8 +85,12 @@ namespace RPC {
         template <typename ACTUALINTERFACE, typename PROXY, typename STUB>
         void Announce()
         {
+            _adminLock.Lock();
+
             _stubs.insert(std::pair<uint32_t, ProxyStub::UnknownStub*>(ACTUALINTERFACE::ID, new STUB()));
             _proxy.insert(std::pair<uint32_t, IMetadata*>(ACTUALINTERFACE::ID, new ProxyType<PROXY>()));
+
+            _adminLock.Unlock();
         }
 
         Core::ProxyType<InvokeMessage> Message()
@@ -173,13 +177,17 @@ namespace RPC {
 		}
 		void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
         {
+            bool found = false;
             uint32_t interfaceId(message->Parameters().InterfaceId());
 
             _adminLock.Lock();
 
             std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
+            found = (index != _stubs.end());
 
-            if (index != _stubs.end()) {
+            _adminLock.Unlock();
+
+            if (found) {
                 uint32_t methodId(message->Parameters().MethodId());
                 index->second->Handle(methodId, channel, message);
             }
@@ -187,8 +195,6 @@ namespace RPC {
                 // Oops this is an unknown interface, Do not think this could happen.
                 TRACE_L1("Unknown interface. %d", interfaceId);
             }
-
-            _adminLock.Unlock();
         }
         void DeleteProxy(const Core::IPCChannel* channel, void* implementation)
         {
