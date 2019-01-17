@@ -762,11 +762,11 @@ void SocketPort::Write() {
         }
 
         if (dataLeftToSend == true) {
-            uint32_t sendSize;
+            int32_t sendSize;
 
             // Sockets are non blocking the Send buffer size is equal to the buffer size. We only send
             // if the buffer free (SEND flag) is active, so the buffer should always fit.
-            if (((m_State & SocketPort::LINK) == 0) && (m_LocalNode.Type() != NodeId::TYPE_NETLINK)) {
+            if (((m_State & SocketPort::LINK) == 0) && (m_RemoteNode.IsValid() == true)) {
                 ASSERT (m_RemoteNode.IsValid() == true);
 
                 sendSize = ::sendto(m_Socket,
@@ -774,23 +774,24 @@ void SocketPort::Write() {
                                     m_SendBytes - m_SendOffset, 0,
                                     static_cast<const NodeId&>(m_RemoteNode),
                                     m_RemoteNode.Size());
+
             } else {
                 sendSize = ::send(m_Socket,
                                   reinterpret_cast <const char*>(&m_SendBuffer[m_SendOffset]),
                                   m_SendBytes - m_SendOffset, 0);
             }
 
-            if (sendSize != static_cast<uint32_t>(SOCKET_ERROR)) {
-                m_SendOffset += sendSize;
+            if (sendSize >= 0) {
+                m_SendOffset = ((m_State & SocketPort::LINK) != 0 ? m_SendOffset + sendSize : m_SendBytes);
             } else {
                 uint32_t l_Result = __ERRORRESULT__;
 
                 if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
                     m_State |= SocketPort::WRITE;
                 } else {
+                    printf ("Write exception. %d\n", l_Result);
                     m_State |= SocketPort::EXCEPTION;
                     StateChange();
-                    printf ("Write exception. %d\n", l_Result);
                 }
             }
         }

@@ -28,15 +28,18 @@ namespace RPC {
         StringIterator& operator= (const StringIterator&) = delete;
 
     public:
+        template <typename CONTAINER, typename PREDICATE>
+        StringIterator(const CONTAINER& container, PREDICATE predicate) 
+            : _container()
+            , _index(0) {
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), predicate);
+            _iterator = _container.begin();
+        }
         template <typename CONTAINER>
         StringIterator(const CONTAINER& container) 
             : _container()
             , _index(0) {
-            typename CONTAINER::const_iterator index (container.begin());
-            while (index != container.end()) {
-                _container.push_back(*index);
-                index++;
-            }
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const string& data) { return (true); } );
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
