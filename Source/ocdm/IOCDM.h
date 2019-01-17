@@ -84,7 +84,7 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     // TODO: should derive from ISession?
     struct ISessionExt : virtual public WPEFramework::Core::IUnknown
     {
-        enum { ID = 0x00000072 };
+        enum { ID = 0x00000272 };
 
         enum LicenseTypeExt {
             Invalid = 0,
@@ -188,7 +188,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 };
     struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
 
-        enum { ID = 0x00000071 };
+        enum { ID = 0x00000271 };
 
         virtual time_t GetDrmSystemTime() const = 0;
 
