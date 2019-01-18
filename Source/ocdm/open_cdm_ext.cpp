@@ -300,7 +300,7 @@ OpenCDMError opencdm_session_get_content_id(struct OpenCDMSession * opencdmSessi
         assert(contentIdStr.length() <= *bufferSize);
 
         *bufferSize = contentIdStr.length();
-        strcpy(buffer, contentIdStr.c_str());
+        memcpy(buffer, contentIdStr.c_str(), *bufferSize);
     }
 
     return ERROR_NONE;
