@@ -148,7 +148,7 @@ NodeId::NodeId(const uint16_t device, const uint16_t channel) {
 
     m_hostName = BTName(m_structInfo);
 }
-NodeId::NodeId(const uint8_t address[6], const uint16_t cid, const uint8_t addressType) {
+NodeId::NodeId(const bdaddr_t& address, const uint16_t cid, const uint8_t addressType) {
 
     memset(&m_structInfo.L2Socket, 0, sizeof(m_structInfo.L2Socket));
 
@@ -157,7 +157,7 @@ NodeId::NodeId(const uint8_t address[6], const uint16_t cid, const uint8_t addre
     m_structInfo.L2Socket.l2_bdaddr_type = addressType;
     m_structInfo.L2Socket.l2_type = BTPROTO_L2CAP;
     
-    ::memcpy(m_structInfo.L2Socket.l2_bdaddr.b, address, sizeof(m_structInfo.L2Socket.l2_bdaddr));
+    ::memcpy(m_structInfo.L2Socket.l2_bdaddr.b, address.b, sizeof(m_structInfo.L2Socket.l2_bdaddr));
 
     m_hostName = BTName(m_structInfo);
 }

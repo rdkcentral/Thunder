@@ -95,7 +95,7 @@ public:
     #endif
     #ifdef CORE_BLUETOOTH
     NodeId(const uint16_t device, const uint16_t channel);
-    NodeId(const uint8_t address[6], const uint16_t cid, const uint8_t addressType);
+    NodeId(const bdaddr_t& address, const uint16_t cid, const uint8_t addressType);
     #endif
     NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED);
     NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED);
