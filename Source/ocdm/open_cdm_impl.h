@@ -10,7 +10,7 @@ using namespace WPEFramework;
 extern Core::CriticalSection _systemLock;
 
 // TODO: Introduce OpenCDMAccessorExt, no need to mis here
-class OpenCDMAccessor : public OCDM::IAccessorOCDM, public OCDM::IAccessorOCDMExt {
+struct OpenCDMAccessor : public OCDM::IAccessorOCDM, public OCDM::IAccessorOCDMExt {
 private:
     OpenCDMAccessor () = delete;
     OpenCDMAccessor (const OpenCDMAccessor&) = delete;
@@ -266,17 +266,18 @@ public:
         Core::InterlockedIncrement(_refCount);
     }
     virtual uint32_t Release() const override {
+        uint32_t result = Core::ERROR_NONE;
 
         _systemLock.Lock();
 
         if (Core::InterlockedDecrement(_refCount) == 0) {
             delete this;
-            return (Core::ERROR_DESTRUCTION_SUCCEEDED);
+            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 
         _systemLock.Unlock();
 
-        return (Core::ERROR_NONE);
+        return (result);
     }
     BEGIN_INTERFACE_MAP(OpenCDMAccessor)
         INTERFACE_ENTRY(OCDM::IAccessorOCDM)
@@ -509,7 +510,7 @@ private:
 
                 SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                 SetSubSampleData(0, nullptr);
-                KeyId(keyIdLength, keyId);
+                KeyId(static_cast<uint8_t>(keyIdLength), keyId);
                 Write(encryptedDataLength, encryptedData);
 
                 // This will trigger the OpenCDMIServer to decrypt this memory...
