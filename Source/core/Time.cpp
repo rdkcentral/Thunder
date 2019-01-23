@@ -669,7 +669,7 @@ namespace Core {
         }
 
         // Calculate ticks..
-        _ticks = (flatTime * MicroSecondsPerSecond) + (millisecond * MicroSecondsPerMilliSecond) + OffsetTicksForEpoch;
+        _ticks = (static_cast<uint64_t>(flatTime) * static_cast<uint64_t>(MicroSecondsPerSecond)) + (static_cast<uint64_t>(millisecond) * static_cast<uint64_t>(MicroSecondsPerMilliSecond)) + OffsetTicksForEpoch;
     }
 
     Time::Time(const struct timeval& info)
