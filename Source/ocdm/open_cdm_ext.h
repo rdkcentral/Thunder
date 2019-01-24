@@ -79,10 +79,6 @@ uint16_t opencdm_session_get_playlevel_analog_video(struct OpenCDMSession * mOpe
 uint16_t opencdm_session_get_playlevel_compressed_audio(struct OpenCDMSession * mOpenCDMSession);
 uint16_t opencdm_session_get_playlevel_uncompressed_audio(struct OpenCDMSession * mOpenCDMSession);
 
-// LEAN: can also be stored local to Netflix
-enum OcdmSessionState opencdm_session_get_session_state(struct OpenCDMSession * opencdmSession);
-OpenCDMError opencdm_session_set_session_state(struct OpenCDMSession * opencdmSession, enum OcdmSessionState sessionState);
-
 // LEAN: this one is more complicated to remove, is needed at a few sports: initdecryptcontext and genchallenge
 OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderSize);
 
