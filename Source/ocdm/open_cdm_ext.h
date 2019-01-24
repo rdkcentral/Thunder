@@ -79,10 +79,6 @@ uint16_t opencdm_session_get_playlevel_analog_video(struct OpenCDMSession * mOpe
 uint16_t opencdm_session_get_playlevel_compressed_audio(struct OpenCDMSession * mOpenCDMSession);
 uint16_t opencdm_session_get_playlevel_uncompressed_audio(struct OpenCDMSession * mOpenCDMSession);
 
-// LEAN: can be kept local to Netflix, store in ctor, return in getter, setter is not used
-enum OcdmLicenseType opencdm_session_get_license_type(struct OpenCDMSession * opencdmSession);
-OpenCDMError opencdm_session_set_license_type(struct OpenCDMSession * opencdmSession, enum OcdmLicenseType licenseType);
-
 // LEAN: can also be stored local to Netflix
 enum OcdmSessionState opencdm_session_get_session_state(struct OpenCDMSession * opencdmSession);
 OpenCDMError opencdm_session_set_session_state(struct OpenCDMSession * opencdmSession, enum OcdmSessionState sessionState);
