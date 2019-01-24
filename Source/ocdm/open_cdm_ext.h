@@ -64,9 +64,6 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
 OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
                                             enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);
 
-// LEAN: can be local to netflix, only stored in constructor, never changed inside OCDM PlayReady
-uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmSession);
-
 // TODO: do we need a specific "opencdm_destroy_session" for Netflix?
 // TODO: rename to "destruct"?
 OpenCDMError opencdm_destroy_session_netflix(struct OpenCDMSession * opencdmSession);
