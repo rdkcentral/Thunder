@@ -60,7 +60,7 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
 // Session
 //////////////////////////////////////
 
-// LEAN: can remove these args: session ID, license type
+// LEAN: can remove these args: session ID, license type, content id
 OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
                                             enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);
 
@@ -92,7 +92,8 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
 
 // TODO: document that IVData can be NULL.
 // LEAN: this one needs to use regular decrypt, move some logic to Neflix side
-OpenCDMError opencdm_session_decrypt_netflix(struct OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize);
+// TODO: maybe different name for "initWithLast15"?
+OpenCDMError opencdm_session_decrypt_netflix(struct OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, uint32_t initWithLast15 = 0);
 
 #ifdef __cplusplus
 } // extern "C"

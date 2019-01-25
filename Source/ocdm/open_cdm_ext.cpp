@@ -149,11 +149,11 @@ public:
         return _realSession->InitDecryptContextByKid();
     }
 
-    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize) {
+    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, bool initWithLast15) {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
         if (_decryptSession != nullptr) {
             result = OpenCDMError::ERROR_NONE;
-            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize);
+            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize, initWithLast15);
         }
         return (result);
     }
@@ -389,12 +389,12 @@ OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system)
     return (OpenCDMError)system->InitSystemNetflix();
 }
 
-OpenCDMError opencdm_session_decrypt_netflix(OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize)
+OpenCDMError opencdm_session_decrypt_netflix(OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, uint32_t initWithLast15)
 {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (mOpenCDMSession != nullptr) {
-        result  = static_cast<OpenCDMError>(mOpenCDMSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize));
+        result  = static_cast<OpenCDMError>(mOpenCDMSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize, initWithLast15 != 0));
     }
 
     return (result);

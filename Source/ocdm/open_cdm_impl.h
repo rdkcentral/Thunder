@@ -537,7 +537,7 @@ private:
             return (ret);
         }
 
-        uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize)
+        uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, bool initWithLast15)
         {
             int ret = 0;
 
@@ -550,6 +550,7 @@ private:
                 SetIV(static_cast<uint8_t>(IVDataSize), IVData);
                 SetSubSampleData(0, nullptr);  // TODO: needed?
                 ByteOffset(byteOffset);
+                InitWithLast15(initWithLast15);
                 Write(dataBufferSize, dataBuffer);
 
                 // This will trigger the OpenCDMIServer to decrypt this memory...
@@ -719,11 +720,11 @@ protected:
     }
 
 public:
-    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize) {
+    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, bool initWithLast15) {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
         if (_decryptSession != nullptr) {
             result = OpenCDMError::ERROR_NONE;
-            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize);
+            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize, initWithLast15);
         }
         return (result);
     }
