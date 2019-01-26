@@ -40,7 +40,7 @@ static string NetlinkName(const NodeId::SocketInfo& input) {
 
 #ifdef CORE_BLUETOOTH
 static string BTName(const NodeId::SocketInfo& input) {
-    static TCHAR _hexArray[] = "01234567890ABCDEF";
+    static TCHAR _hexArray[] = "0123456789ABCDEF";
 
     if (input.L2Socket.l2_type == BTPROTO_HCI) {
         return (_T("Bluetooth:") + 
@@ -50,9 +50,10 @@ static string BTName(const NodeId::SocketInfo& input) {
     }
     TCHAR address[14];
     for (uint8_t index = 0; index < sizeof(input.L2Socket.l2_bdaddr); index++) {
-        address[(index * 2)]     = _hexArray[(input.L2Socket.l2_bdaddr.b[index] >> 4)];
-        address[(index * 2) + 1] = _hexArray[(input.L2Socket.l2_bdaddr.b[index] & 0xF)];
+        address[(index * 2)]     = _hexArray[(input.L2Socket.l2_bdaddr.b[(sizeof(input.L2Socket.l2_bdaddr) - 1) - index] >> 4)];
+        address[(index * 2) + 1] = _hexArray[(input.L2Socket.l2_bdaddr.b[(sizeof(input.L2Socket.l2_bdaddr) - 1) - index] & 0xF)];
     }
+    address[12] = '\0';
     return (_T("BluetoothL2:") + 
             Core::NumberType<uint32_t>(input.L2Socket.l2_cid).Text() + 
             ':' + 

@@ -204,6 +204,9 @@ namespace Core {
         void Listen();
         SOCKET Accept(NodeId& remoteId);
 
+    protected:
+        virtual bool Initialize();
+
     private:
         virtual IResource::handle Descriptor() const override
         {

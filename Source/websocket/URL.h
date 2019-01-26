@@ -79,6 +79,17 @@ namespace Core {
 				}
 				return (defaultValue);
 			}
+			template<typename ENUMERATE>
+			ENUMERATE Enumerate(const TCHAR key[], ENUMERATE defaultValue, const bool caseSensitive = true) const
+			{
+				Core::TextFragment result;
+				if (LoadKey(key, result, caseSensitive) == true)
+				{
+					return (Core::EnumerateType<ENUMERATE>(result).Value());
+				}
+				return (defaultValue);
+			}
+	
 			bool HasKey(const TCHAR key[], const bool caseSensitive = true) const
 			{
 				Core::TextFragment result;

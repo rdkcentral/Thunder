@@ -278,6 +278,10 @@ bool SocketPort::Broadcast(const bool enabled) {
 
 }
 
+/* virtual */ bool SocketPort::Initialize() {
+    return (true);
+}
+
 uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterface) {
     uint32_t nStatus = Core::ERROR_ILLEGAL_STATE;
 
@@ -301,8 +305,9 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
 
         m_Socket = ConstructSocket(m_LocalNode, specificInterface);
 
-        if(m_Socket != INVALID_SOCKET) {
-            if( (m_SocketType == DATAGRAM) || (m_SocketType == SEQUENCED) || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
+        if ( (m_Socket != INVALID_SOCKET) && (Initialize () == true) ){
+
+            if( (m_SocketType == DATAGRAM)  || ((m_SocketType == RAW) && (m_RemoteNode.IsValid() == false)) ) {
                 m_State = SocketPort::OPEN|SocketPort::READ;
 
                 nStatus = Core::ERROR_NONE;
@@ -330,11 +335,13 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
                     } else if (l_Result == __ERROR_NETWORK_UNREACHABLE__) {
                         nStatus = Core::ERROR_UNREACHABLE_NETWORK;
                     } else {
-                        TRACE_L1 ("Connect failed, error: %d", l_Result);
                         nStatus = Core::ERROR_ASYNC_FAILED;
                     }
                 }
             }
+        }
+        else {
+            nStatus = Core::ERROR_GENERAL;
         }
     }
 
@@ -354,7 +361,6 @@ uint32_t SocketPort::Open(const uint32_t waitTime, const string& specificInterfa
     } else {
         DestroySocket(m_Socket);
     }
-
 
     return (nStatus);
 }
