@@ -495,7 +495,7 @@ private:
         }
 
     public:
-        uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, uint16_t keyIdLength) {
+        uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, uint16_t keyIdLength, unsigned long long byteOffset /* = 0 */, uint32_t initWithLast15 /* = 0 */) {
             int ret = 0;
 
             // This works, because we know that the Audio and the Video streams are fed from
@@ -511,6 +511,8 @@ private:
                 SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                 SetSubSampleData(0, nullptr);
                 KeyId(static_cast<uint8_t>(keyIdLength), keyId);
+                ByteOffset(byteOffset);
+                InitWithLast15(initWithLast15);
                 Write(encryptedDataLength, encryptedData);
 
                 // This will trigger the OpenCDMIServer to decrypt this memory...
@@ -668,11 +670,11 @@ public:
 
         _session->Update(pbResponse, cbResponse);
     }
-    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength) {
+    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength, unsigned long long byteOffset, uint32_t initWithLast15) {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
         if (_decryptSession != nullptr) {
             result = OpenCDMError::ERROR_NONE;
-            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength, keyId, keyIdLength);
+            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength, keyId, keyIdLength, byteOffset, initWithLast15);
         }
         return (result);
     }

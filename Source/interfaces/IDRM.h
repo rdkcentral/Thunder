@@ -270,8 +270,9 @@ public:
         uint32_t* f_pcbOpaqueClearContent,
         uint8_t** f_ppbOpaqueClearContent,
         const uint8_t keyIdLength,
-        const uint8_t* keyId)
-        = 0;
+        const uint8_t* keyId,
+        unsigned long long byteOffset,
+        bool initWithLast15) = 0;
 
     virtual CDMi_RESULT ReleaseClearContent(
         const uint8_t* f_pbSessionKey,

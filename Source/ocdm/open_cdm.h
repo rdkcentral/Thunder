@@ -115,46 +115,45 @@ public:
     static OpenCdm& Instance();
 
 public:
-    bool GetSession(const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
+  bool GetSession(const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
 
-    // ---------------------------------------------------------------------------------------------
-    // INSTANTIATION OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    // Before instantiating the ROOT DRM OBJECT, Check if it is capable of decrypting the requested
-    // asset.
-    bool IsTypeSupported(const std::string& keySystem, const std::string& mimeType) const;
+  // ---------------------------------------------------------------------------------------------
+  // INSTANTIATION OPERATIONS:
+  // ---------------------------------------------------------------------------------------------
+  // Before instantiating the ROOT DRM OBJECT, Check if it is capable of decrypting the requested
+  // asset.
+  bool IsTypeSupported(const std::string& keySystem, const std::string& mimeType) const;
 
-    // The next call is the startng point of creating a decryption context. It select the DRM system
-    // to be used within this OpenCDM object.
-    void SelectKeySystem(const std::string& keySystem);
+  // The next call is the startng point of creating a decryption context. It select the DRM system 
+  // to be used within this OpenCDM object.
+  void SelectKeySystem(const std::string& keySystem);
 
-    // ---------------------------------------------------------------------------------------------
-    // ROOT DRM OBJECT OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    // If required, ServerCertificates can be added to this OpenCdm object (DRM Context).
-    int SetServerCertificate(const uint8_t*, const uint32_t);
+  // ---------------------------------------------------------------------------------------------
+  // ROOT DRM OBJECT OPERATIONS:
+  // ---------------------------------------------------------------------------------------------
+  // If required, ServerCertificates can be added to this OpenCdm object (DRM Context).
+  int SetServerCertificate(const uint8_t*, const uint32_t);
 
-    // Now for every particular stream a session needs to be created. Create a session for all
-    // encrypted streams that require decryption. (This allows for MultiKey decryption)
-    std::string CreateSession(const std::string&, const uint8_t* addData, const uint16_t addDataLength, const uint8_t* cdmData, const uint16_t cdmDataLength, const LicenseType license);
+  // Now for every particular stream a session needs to be created. Create a session for all
+  // encrypted streams that require decryption. (This allows for MultiKey decryption)
+  std::string CreateSession(const std::string&, const uint8_t* addData, const uint16_t addDataLength, const uint8_t* cdmData, const uint16_t cdmDataLength, const LicenseType license);
 
-    // ---------------------------------------------------------------------------------------------
-    // ROOT DRM -> SESSION OBJECT OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    void GetKeyMessage(std::string&, uint8_t*, uint16_t&);
-    KeyStatus Update(const uint8_t*, const uint16_t, std::string&);
-    int Load(std::string&);
-    int Remove(std::string&);
-    int Close();
-    KeyStatus Status() const;
+  // ---------------------------------------------------------------------------------------------
+  // ROOT DRM -> SESSION OBJECT OPERATIONS:
+  // ---------------------------------------------------------------------------------------------
+  void GetKeyMessage(std::string&, uint8_t*, uint16_t&);
+  KeyStatus Update(const uint8_t*, const uint16_t, std::string&);
+  int Load(std::string&);
+  int Remove(std::string&);
+  int Close();
+  KeyStatus Status() const;
 
-    uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
-    uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, const uint8_t, const uint8_t[], const uint32_t waitTime = 6000);
+  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, unsigned long long, uint32_t);
+  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, const uint8_t, const uint8_t[], unsigned long long, uint32_t, const uint32_t waitTime = 6000);
 
-    inline const std::string& KeySystem() const
-    {
-        return (_keySystem);
-    }
+  inline const std::string& KeySystem() const {
+    return (_keySystem);
+  }
 
 private:
     OpenCDMAccessor* _implementation;
@@ -378,7 +377,9 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
  * \return Zero on success, non-zero on error.
  * REPLACING: uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
  */
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t IV[], uint16_t IVLength);
+// TODO: document that IV can be NULL.
+// TODO: maybe different name for "initWithLast15"?
+OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, unsigned long long byteOffset = 0, uint32_t initWithLast15 = 0);
 
 #ifdef __cplusplus
 }

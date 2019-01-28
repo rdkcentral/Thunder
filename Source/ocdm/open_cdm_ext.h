@@ -90,11 +90,6 @@ OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDM
 // LEAN: this one uses a playready "_Netflix" suffix
 OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession * mOpenCDMSession);
 
-// TODO: document that IVData can be NULL.
-// LEAN: this one needs to use regular decrypt, move some logic to Neflix side
-// TODO: maybe different name for "initWithLast15"?
-OpenCDMError opencdm_session_decrypt_netflix(struct OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, uint32_t initWithLast15 = 0);
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
