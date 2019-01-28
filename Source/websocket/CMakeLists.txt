@@ -1,4 +1,4 @@
-set(TARGET WebSocket)
+set(TARGET ${NAMESPACE}WebSocket)
 
 add_library(${TARGET} SHARED
         Module.cpp
@@ -26,8 +26,8 @@ target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
         PUBLIC #
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Cryptalgo
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -37,7 +37,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${WEBSOCKET_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
@@ -54,8 +53,7 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/websocket COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/websocket      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-HandleStandardLib()
-
+InstallCMakeConfig(TARGETS ${TARGET})

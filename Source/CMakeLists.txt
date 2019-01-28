@@ -1,25 +1,5 @@
 include(config)
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    add_definitions(-D_DEBUG)
-    set(CONFIG_DIR "debug" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "Release")
-    add_definitions(-DNDEBUG)
-    set(CONFIG_DIR "release" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "MinSizeRel")
-    add_definitions(-DNDEBUG)
-    set(CONFIG_DIR "releaseMinSize" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "RelWithDebInfo")
-    add_definitions(-DNDEBUG)
-    set(CONFIG_DIR "releaseMinSize" CACHE STRING "Build config directory" FORCE)
-elseif(${CMAKE_BUILD_TYPE} STREQUAL "Production")
-    add_definitions(-DNDEBUG)
-    add_definitions(-DPRODUCTION)
-    set(CONFIG_DIR "production" CACHE STRING "Build config directory" FORCE)
-else()
-    message(FATAL_ERROR "Invalid build type: " ${CMAKE_BUILD_TYPE})
-endif()
-
 option(WPEFRAMEWORK_LIBWPEFRAMEWORK
         "Include the libWPEFramework library." ON)
 option(WPEFRAMEWORK_CRYPTALGO
@@ -83,22 +63,10 @@ set(WPEFRAMEWORK_OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
 set(WPEFRAMEWORK_STACKSIZE 0 CACHE STRING "Default stack size per thread")
 
 
-set(EXTERN_EVENTS ${WPEFRAMEWORK_EXTERN_EVENTS} CACHE INTERNAL
+set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other wpeframework plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
-
-#FIXME: This is only here for package config files
-set(WCHAR_SUPPORT_DEFINITION)
-if(NOT WPEFRAMEWORK_WCHAR_SUPPORT)
-    set(WCHAR_SUPPORT_DEFINITION __NO_WCHAR_SUPPORT__)
-endif()
-
-#FIXME: This is only here for package config files
-set(CRITICAL_SECTION_LOCK_DEFINITION)
-if(WPEFRAMEWORK_DEADLOCK_DETECTION)
-    set(CRITICAL_SECTION_LOCK_DEFINITION CRITICAL_SECTION_LOCK_LOG)
-endif()
 
 #FIXME: We shouldn't touch cflags...
 if(WPEFRAMEWORK_TEST_MEASUREMENTS)
@@ -106,62 +74,35 @@ if(WPEFRAMEWORK_TEST_MEASUREMENTS)
     set(CMAKE_EXE_LINKER_FLAGS -lgcov)
 endif ()
 
-
-#FIXME: for now this is at directory scope instead of target scope for convenience.
-add_definitions(-DPLATFORM_${WPEFRAMEWORK_PLATFORM}=1)
-
-if (BUILDREF_WPEFRAMEWORK)
-    set(BUILDREF_WPEFRAMEWORK "${WPEFRAMEWORK_VERSION}|${BUILDREF_WPEFRAMEWORK}")
-else()
-    set(BUILDREF_WPEFRAMEWORK "${WPEFRAMEWORK_VERSION}")
-endif()
-
-#FIXME: for now this is at directory scope instead of target scope for convenience.
-add_definitions(-DBUILDREF_WPEFRAMEWORK=${BUILDREF_WPEFRAMEWORK})
-
-# We are introducing *_ARTIFACT variables, that enable linking to already built targets.
-# These need to be defined here, contrary to inside the module folder, as variables are not normally exported to the parent.
-# The *_ARTIFACT variables are also used as the names of generated libraries, so you can link against them by using the variables.
-set(WPEPROCESS_ARTIFACT WPEProcess)
-
 if(WPEFRAMEWORK_LIBWPEFRAMEWORK)
-    set(CORE_ARTIFACT ${NAMESPACE}Core)
     add_subdirectory(core)
 endif()
 
 if(WPEFRAMEWORK_CRYPTALGO)
-    set(CRYPTALGO_ARTIFACT ${NAMESPACE}Cryptalgo)
     add_subdirectory(cryptalgo)
 endif()
 
-
 if(WPEFRAMEWORK_BROADCAST)
-    set(BROADCAST_ARTIFACT ${NAMESPACE}Broadcast)
     add_subdirectory(broadcast)
 endif()
 
 if(WPEFRAMEWORK_VIRTUALINPUT)
-    set(VIRTUALINPUT_ARTIFACT ${NAMESPACE}VirtualInput)
     add_subdirectory(virtualinput)
 endif()
 
 if(WPEFRAMEWORK_PROVISIONPROXY)
-    set(PROVISIONPROXY_ARTIFACT provisionproxy)
     add_subdirectory(provisionproxy)
 endif()
 
 if(WPEFRAMEWORK_CDMI)
-    set(CDMI_ARTIFACT ocdm)
     add_subdirectory(ocdm)
 endif()
 
 if(WPEFRAMEWORK_WEBSOCKET)
-    set(WEBSOCKET_ARTIFACT ${NAMESPACE}WebSocket)
     add_subdirectory(websocket)
 endif()
 
 if(WPEFRAMEWORK_TRACING)
-    set(TRACING_ARTIFACT ${NAMESPACE}Tracing)
     add_subdirectory(tracing)
 endif()
 
@@ -172,12 +113,10 @@ if(WPEFRAMEWORK_PROFILER)
 endif()
 
 if(WPEFRAMEWORK_COM)
-    set(COM_ARTIFACT ${NAMESPACE}COM)
     add_subdirectory(com)
 endif()
 
 if(WPEFRAMEWORK_PROTOCOLS)
-    set(PROTOCOLS_ARTIFACT ${NAMESPACE}Protocols)
     add_subdirectory(protocols)
 endif()
 
@@ -186,22 +125,18 @@ if(WPEFRAMEWORK_PROCESS)
 endif()
 
 if(WPEFRAMEWORK_PROXY_STUB)
-    set(PROXYSTUBS_ARTIFACT ${NAMESPACE}ProxyStubs)
     add_subdirectory(proxystubs)
 endif()
 
 if(WPEFRAMEWORK_PLUGINS_LIB)
-    set(PLUGINS_ARTIFACT ${NAMESPACE}Plugins)
     add_subdirectory(plugins)
 endif()
 
 if(WPEFRAMEWORK_INTERFACES_LIB)
-    set(PLUGINS_INTERFACES_ARTIFACT ${NAMESPACE}Interfaces)
     add_subdirectory(interfaces)
 endif()
 
 if(WPEFRAMEWORK_WPEFRAMEWORK_EXECUTABLE)
-    set(PLUGINHOST_ARTIFACT WPEFramework)
     add_subdirectory(WPEFramework)
 endif()
 

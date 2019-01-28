@@ -1,6 +1,8 @@
-set(TARGET Plugins)
+set(TARGET ${NAMESPACE}Plugins)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
+
+#include(CompileSettings)
 
 add_library(${TARGET} SHARED
         Channel.cpp
@@ -32,25 +34,30 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Tracing
-          ${NAMESPACE}::Cryptalgo
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
 if(WPEFRAMEWORK_PROTOCOLS)
-    set(PROTOCOL_WRAPPER "-l${PROTOCOLS_ARTIFACT}")
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
-    set(PROTOCOL_WRAPPER "-l${COM_ARTIFACT} -l{WEBSOCKET_ARTIFACT}")
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif()
+
+target_include_directories( ${TARGET}
+        PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}>
+        )
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
@@ -59,7 +66,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME  ${PLUGINS_ARTIFACT}
         )
 
 # ===========================================================================================
@@ -72,25 +78,15 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/plugins COMPONENT devel # for mac
-        INCLUDES DESTINATION include/${NAMESPACE}/plugins      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/plugins.pc.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc"
-                @ONLY)
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "Basic library to realize the glue between a proprietary plugin and the framework host.")
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PLUGINS_ARTIFACT}.pc
-        DESTINATION "lib/pkgconfig")
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/plugins.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
-)
-
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})

@@ -1,6 +1,9 @@
-set(TARGET Broadcast)
+set(TARGET ${NAMESPACE}Broadcast)
 
-set(SOURCE_FILES
+find_package(NEXUS REQUIRED)
+find_package(NXCLIENT REQUIRED)
+
+add_library(${TARGET} SHARED 
         ProgramTable.cpp
         Definitions.cpp
         TunerAdministrator.cpp
@@ -28,16 +31,11 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-set(PC_CFLAGS "")
-
-find_package(Nexus REQUIRED)
-add_library(${TARGET} SHARED ${SOURCE_FILES})
-
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
           NEXUS::NEXUS
-          NEXUS::NXCLIENT
+          NXCLIENT::NXCLIENT
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -47,7 +45,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${BROADCAST_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
@@ -73,19 +70,9 @@ install(
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.pc.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/${BROADCAST_ARTIFACT}.pc"
-                @ONLY)
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "Broadcast library" )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${BROADCAST_ARTIFACT}.pc
-        DESTINATION "lib/pkgconfig")
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/broadcast.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
-)
-
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})

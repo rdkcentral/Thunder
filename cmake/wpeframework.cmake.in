@@ -16,7 +16,14 @@ if(POLICY CMP0054)
   cmake_policy(SET CMP0054 OLD)
 endif()
 # installation dir of cmakepp
-set(CMAKE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
+set(NAMESPACE "@NAMESPACE@")
+
+set(MODULE_BASE_DIR "@CMAKE_SYSROOT@@CMAKE_INSTALL_PREFIX@/include/@NAMESPACE@/cmake")
+
+list(APPEND CMAKE_MODULE_PATH 
+            "${MODULE_BASE_DIR}" 
+            "${MODULE_BASE_DIR}/modules")
 
 # get temp dir which is needed by a couple of functions in cmakepp
 # first uses env variable TMP if it does not exists TMPDIR is used
@@ -35,12 +42,9 @@ function(config_dir key)
 endfunction()
 
 ## includes all cmake files of cmakepp 
-set(NAMESPACE "@NAMESPACE@")
-include("${CMAKE_BASE_DIR}/${NAMESPACE}/config/core/require.cmake")
+include("${MODULE_BASE_DIR}/config/core/require.cmake")
 
-require("${CMAKE_BASE_DIR}/${NAMESPACE}/config/*.cmake")
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_BASE_DIR}" "${CMAKE_BASE_DIR}/${NAMESPACE}/")
+require("${MODULE_BASE_DIR}/config/*.cmake")
 
 macro(write_config)
     foreach(plugin ${ARGV})
@@ -105,4 +109,40 @@ function(add_linker_flags modulename options)
     if (NOT "${linkoptions}" STREQUAL "")
         set_target_properties(${modulename} PROPERTIES LINK_FLAGS "${linkoptions}")
     endif()
-endfunction()
+endfunction()# Get all propreties that cmake supports
+
+# for debugging cmake targets 
+execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+
+# Convert command output into a CMake list
+STRING(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+STRING(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+
+function(print_properties)
+    message ("CMAKE_PROPERTY_LIST = ${CMAKE_PROPERTY_LIST}")
+endfunction(print_properties)
+
+function(print_target_properties tgt)
+    if(NOT TARGET ${tgt})
+      message("There is no target named '${tgt}'")
+      return()
+    endif()
+
+    foreach (prop ${CMAKE_PROPERTY_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" prop ${prop})
+    # Fix https://stackoverflow.com/questions/32197663/how-can-i-remove-the-the-location-property-may-not-be-read-from-target-error-i
+    if(prop STREQUAL "LOCATION" OR prop MATCHES "^LOCATION_" OR prop MATCHES "_LOCATION$")
+        continue()
+    endif()
+        # message ("Checking ${prop}")
+        get_property(propval TARGET ${tgt} PROPERTY ${prop} SET)
+        if (propval)
+            get_target_property(propval ${tgt} ${prop})
+            message ("${tgt} ${prop} = ${propval}")
+        endif()
+    endforeach(prop)
+endfunction(print_target_properties)
+
+
+
+

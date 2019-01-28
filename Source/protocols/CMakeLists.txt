@@ -1,4 +1,4 @@
-set(TARGET Protocols)
+set(TARGET ${NAMESPACE}Protocols)
 
 find_package(ZLIB REQUIRED)
 
@@ -83,10 +83,10 @@ add_library(${TARGET} SHARED
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
         PUBLIC #FIXME: Added PUBLIC to fix linker warning that dependecies were not found
-          ${NAMESPACE}::Tracing
-          ${NAMESPACE}::Cryptalgo
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -96,7 +96,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${PROTOCOLS_ARTIFACT}
         )
 
 
@@ -107,10 +106,10 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/protocols COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/protocols      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-HandleStandardLib()
+InstallCMakeConfig(TARGETS ${TARGET})
 
 #FIXME: This is messy, but it's the consequence of combining more independent libraries in one.
 install(

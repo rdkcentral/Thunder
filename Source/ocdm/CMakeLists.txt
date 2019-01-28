@@ -14,19 +14,24 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
+        )
+
+target_include_directories( ${TARGET}
+        PUBLIC
+          $<INSTALL_INTERFACE:include/opencdm> 
         )
 
 if (WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
 
@@ -37,7 +42,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${CDMI_ARTIFACT}
         )
 
 
@@ -48,7 +52,7 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/ocdm COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/ocdm      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}/ocdm   # default include path
 )
 
 #FIXME: This needs to become a sysmlink.
@@ -57,27 +61,9 @@ install(
         DESTINATION include/opencdm
 )
 
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})
 
-set (CFLAGS_VAR "-I${CMAKE_INSTALL_PREFIX}/include/opencdm")
-set (LIBS_VAR "-l${TARGET}")
-
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/ocdm.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/ocdm.pc"
-        @ONLY)
-
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/ocdm.pc
-        DESTINATION lib/pkgconfig
-)
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/ocdm.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
-)
-
-
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "OCDM library")

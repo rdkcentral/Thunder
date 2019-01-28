@@ -1,4 +1,4 @@
-set(TARGET ProxyStubs)
+set(TARGET ${NAMESPACE}ProxyStubs)
 
 find_package(ZLIB)
 
@@ -10,13 +10,13 @@ add_library(${TARGET} SHARED
 if (WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
 
@@ -26,7 +26,6 @@ set_target_properties(${TARGET} PROPERTIES
         FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME  ${PROXYSTUBS_ARTIFACT}
         )
 
 install(
@@ -39,4 +38,4 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}/proxystubs      # headers
 )
 
-HandleStandardLib()
+InstallCMakeConfig(TARGETS ${TARGET})

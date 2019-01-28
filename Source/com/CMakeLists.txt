@@ -1,4 +1,4 @@
-set(TARGET COM)
+set(TARGET ${NAMESPACE}COM)
 
 add_library(${TARGET} SHARED
         Administrator.cpp
@@ -23,8 +23,8 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PUBLIC
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Tracing
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -45,7 +45,7 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/com COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/com      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-HandleStandardLib()
+InstallCMakeConfig(TARGETS ${TARGET})

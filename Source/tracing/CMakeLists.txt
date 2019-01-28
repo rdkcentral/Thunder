@@ -1,4 +1,4 @@
-set(TARGET Tracing)
+set(TARGET ${NAMESPACE}Tracing)
 
 add_library(${TARGET} SHARED
         Module.cpp
@@ -22,7 +22,7 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -32,7 +32,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${TRACING_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
@@ -49,7 +48,7 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/tracing COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/tracing      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-HandleStandardLib()
+InstallCMakeConfig(TARGETS ${TARGET})

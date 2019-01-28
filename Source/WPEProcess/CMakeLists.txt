@@ -1,4 +1,4 @@
-set(TARGET RPCProcess)
+set(TARGET WPEProcess)
 
 add_executable(${TARGET}
         Process.cpp
@@ -6,30 +6,30 @@ add_executable(${TARGET}
 
 # Non-buildable interface target to carry the definitions for users
 add_library(COMProcess INTERFACE)
-add_library(${NAMESPACE}::COMProcess ALIAS COMProcess)
+add_library(${NAMESPACE}COMProcess::${NAMESPACE}COMProcess ALIAS COMProcess)
 target_compile_definitions(COMProcess
         INTERFACE
-          ARTIFACT_COMPROCESS=${WPEPROCESS_ARTIFACT}
+          HOSTING_COMPROCESS=${TARGET}
         )
 
 target_link_libraries(${TARGET}
         PUBLIC
-          ${NAMESPACE}::COMProcess
+          ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess
         PRIVATE
-          ${NAMESPACE}::Tracing
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
 if (WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
 
@@ -39,7 +39,6 @@ set_target_properties(${TARGET} PROPERTIES
         FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${WPEPROCESS_ARTIFACT}
         )
 
 install(
@@ -48,6 +47,4 @@ install(
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE} COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}      # headers
 )

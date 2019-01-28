@@ -1,4 +1,4 @@
-set(TARGET ProvisionProxy)
+set(TARGET provisionproxy)
 
 find_package(OpenSSL REQUIRED)
 find_package(libprovision REQUIRED)
@@ -15,7 +15,7 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
           Metrological::libprovision
         )
 
@@ -26,16 +26,20 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${PROVISIONPROXY_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:include>
         )
 
+target_compile_options(${TARGET}
+            PUBLIC
+                "-u OpenSSLModule"
+            )
+        
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
@@ -46,15 +50,9 @@ install(
         INCLUDES DESTINATION include/provision      # headers
 )
 
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})
 
-
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/provisionproxy.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/provisionproxy.pc"
-        @ONLY)
-
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/provisionproxy.pc
-        DESTINATION lib/pkgconfig
-)
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "Link the binairy encryption library and the communications channel to the encrypted provisioning store together." )

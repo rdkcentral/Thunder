@@ -1,14 +1,17 @@
-set(TARGET Core)
+set(TARGET ${NAMESPACE}Core)
 
-option(WPEFRAMEWORK_DEADLOCK_DETECTION
+option(DEADLOCK_DETECTION 
         "Enable deadlock detection tooling." OFF)
-option(WPEFRAMEWORK_WCHAR_SUPPORT
-        "Enable support for WCHAR in the core." OFF)
+option(WCHAR_SUPPORT 
+        "Enable support for WCHAR." OFF)
+option(DISABLE_TRACING 
+        "Disable tracing in debug" OFF)
 option(WPEFRAMEWORK_BLUETOOTH_SUPPORT
         "Enable support for Bluetooth in the core." OFF)
 
 find_package(Threads REQUIRED)
-find_package(LIBRT)
+
+include(CompileSettings)
 
 add_library(${TARGET} SHARED
         CyclicBuffer.cpp
@@ -116,21 +119,13 @@ set(PUBLIC_HEADERS
         )
 
 #non-buildable interfce target to carry the definitions
-add_library(Support INTERFACE)
-add_library(${NAMESPACE}::Support ALIAS Support)
-set(PC_FLAGS "-std=c++11")
-
-if(${CONFIG_DIR} STREQUAL "debug")
-    set(PC_FLAGS "${PC_FLAGS} -D_DEBUG -g0")
-elseif(${CONFIG_DIR} STREQUAL "production")
-    set(PC_FLAGS "${PC_FLAGS} -DNDEBUG -DPRODUCTION")
-else()
-    set(PC_FLAGS "${PC_FLAGS} -DNDEBUG")
+        if(DISABLE_TRACING)
+    target_compile_definitions(${TARGET} INTERFACE _TRACE_LEVEL=0)
+    message(STATUS "Force trace level to 0")
 endif()
 
-if(NOT WPEFRAMEWORK_WCHAR_SUPPORT)
-    set(PC_FLAGS "${PC_FLAGS} -D__NO_WCHAR_SUPPORT__")
-    target_compile_definitions(Support INTERFACE __NO_WCHAR_SUPPORT__)
+if(NOT WCHAR_SUPPORT)
+    target_compile_definitions(${TARGET} INTERFACE __NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
@@ -140,22 +135,14 @@ if (WPEFRAMEWORK_BLUETOOTH_SUPPORT)
     message(STATUS "Enable Bluetooth support.")
 endif()
 
-if(WPEFRAMEWORK_DEADLOCK_DETECTION)
-    set(PC_FLAGS "${PC_FLAGS} -DCRITICAL_SECTION_LOCK_LOG")
-    target_compile_definitions(Support INTERFACE CRITICAL_SECTION_LOCK_LOG)
+if(DEADLOCK_DETECTION)
+    target_compile_definitions(${TARGET} INTERFACE CRITICAL_SECTION_LOCK_LOG)
     message(STATUS "Enabled deadlock detection.")
 endif()
 
-if (WPEFRAMEWORK_SYSTEM_PREFIX)
-    target_compile_definitions(Support INTERFACE SYSTEM_PREFIX=${WPEFRAMEWORK_SYSTEM_PREFIX})
-    message(STATUS "System prefix is set to: ${WPEFRAMEWORK_SYSTEM_PREFIX}")
-endif()
-
-find_package(BCMHost QUIET)
-
 target_link_libraries(${TARGET}
         PUBLIC
-          ${NAMESPACE}::Support
+          CompileSettings::CompileSettings
         PRIVATE
           ${CMAKE_DL_LIBS}
           LIBRT::LIBRT
@@ -169,16 +156,15 @@ set_target_properties(${TARGET} PROPERTIES
           PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
           VERSION ${VERSION}
           SOVERSION ${VERSION_MAJOR}
-          OUTPUT_NAME ${CORE_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../> #core.h
-          $<INSTALL_INTERFACE:include/${NAMESPACE}>
-        )
+          $<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
+find_package(LIBRT)
 if(LIBRT_FOUND)
     target_link_libraries(${TARGET}
             PRIVATE
@@ -186,65 +172,34 @@ if(LIBRT_FOUND)
             )
 endif()
 
-# Hardware specific
-if(${WPEFRAMEWORK_PLATFORM} STREQUAL "INTELCE")
-    target_include_directories(${TARGET}
-            PRIVATE
-              ${INTELCE_OSAL_LIBRARIES}
-              ${INTELCE_GDL_LIBRARIES})
-
+find_package(BCM_HOST)
+if(BCM_HOST_FOUND)
     target_link_libraries(${TARGET}
             PRIVATE
-              ${INTELCE_OSAL_INCLUDE_DIRS}
-              ${INTELCE_GDL_INCLUDE_DIRS}
+              BCM_HOST::BCM_HOST
             )
 endif()
-find_package(BCMHost)
-if (BCM_HOST_FOUND)
-    target_compile_definitions(${TARGET}
-            PRIVATE
-             -DPLATFORM_RPI
-            )
-    target_include_directories(${TARGET}
-            PRIVATE
-              ${BCM_HOST_INCLUDE_DIRS})
-
-    target_link_libraries(${TARGET}
-            PRIVATE
-            ${BCM_HOST_LIBRARIES}
-            -lvchostif
-            )
-endif (BCM_HOST_FOUND)
 
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS Support ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/core COMPONENT devel   # for mac 
-        INCLUDES DESTINATION include/${NAMESPACE}/core      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
 # ===========================================================================================
 # Install METADATA:
 # ===========================================================================================
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/core.pc.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/${CORE_ARTIFACT}.pc"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${CORE_ARTIFACT}.pc
-        DESTINATION "lib/pkgconfig")
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/core.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
+InstallPackageConfig(
+        TARGETS ${TARGET}
+        DESCRIPTION "Abstraction layer basis for all core functionality"
 )
 
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})
