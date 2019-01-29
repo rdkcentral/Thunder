@@ -746,12 +746,8 @@ namespace WPEFramework {
 
 } // namespace WPEFramework
 
-#ifdef _MSVC_LANG
-
 extern "C" {
-	void* ocdm_proxystubs() {
+	void* opencdm_announce_proxy_stubs() {
 		return (&WPEFramework::OCDMProxyStubRegistration);
 	}
 }
-
-#endif

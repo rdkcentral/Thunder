@@ -170,6 +170,13 @@ extern "C" {
 #endif
 
 /**
+ * Sometimes the compiler would like to be smart, if we do not reference anything here
+ * and you enable the rightflags, the linker drops the dependency. Than Proxy/Stubs do
+ * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
+ */
+void* opencdm_announce_proxy_stubs();
+ 
+/**
  * OpenCDM error code. Zero always means success.
  */
 typedef enum {
