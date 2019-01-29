@@ -13,11 +13,11 @@ extern "C" {
 //////////////////////////////////////
 
 // LEAN: Only netflix uses secure store, but is generic PlayReady functionality? 
-struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[]);
+struct OpenCDMAccessor* opencdm_create_system_ext(const char readDir[], const char storeLocation[]);
 
 // LEAN: - Is called seperately from create_system, so might be called more than once
 //       - Sets a revocation buffer, only used in netflix case
-OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system);
+OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system);
 
 // TODO: document we need at least 64 bytes in "versionStr"
 // LEAN: GetVersionStr might only be used by Netflix, but appears to be generic PlayReady functionality.
@@ -46,11 +46,11 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
 //////////////////////////////////////
 
 // LEAN: can remove these args: session ID, license type, content id
-OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength);
+OpenCDMError opencdm_create_session_ext(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength);
 
 // TODO: do we need a specific "opencdm_destroy_session" for Netflix?
 // TODO: rename to "destruct"?
-OpenCDMError opencdm_destroy_session_netflix(struct OpenCDMSession * opencdmSession);
+OpenCDMError opencdm_destroy_session_ext(struct OpenCDMSession * opencdmSession);
 
 // play levels
 // LEAN: use json for this
@@ -65,7 +65,7 @@ OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSessi
 
 // TODO: document that this is a two-pass system (first get size, then get data).
 // LEAN: this one uses a playready "_netflix" suffix
-OpenCDMError opencdm_session_get_challenge_data_netflix(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL);
+OpenCDMError opencdm_session_get_challenge_data_ext(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL);
 
 // TODO: document that "secureStopId" should be 16 bytes.
 // LEAN: this one uses a playready "_Netflix" suffix

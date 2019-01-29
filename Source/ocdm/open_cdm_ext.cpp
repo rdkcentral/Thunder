@@ -170,7 +170,7 @@ private:
     OCDM::ISessionExt* _realSession;
 };
 
-struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], const char storeLocation[])
+struct OpenCDMAccessor* opencdm_create_system_ext(const char readDir[], const char storeLocation[])
 {
     OpenCDMAccessor* output = opencdm_create_system();
 
@@ -219,7 +219,7 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t 
     return (result);
 }
 
-OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength)
+OpenCDMError opencdm_create_session_ext(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength)
 {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
@@ -231,14 +231,14 @@ OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, stru
     return (result);
 }
 
-uint32_t opencdm_session_get_session_id_netflix(struct OpenCDMSession * opencdmSession)
+uint32_t opencdm_session_get_session_id_ext(struct OpenCDMSession * opencdmSession)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
 
     return sessionExt->SessionIdExt();
 }
 
-OpenCDMError opencdm_destroy_session_netflix(OpenCDMSession * opencdmSession)
+OpenCDMError opencdm_destroy_session_ext(OpenCDMSession * opencdmSession)
 {
     OpenCDMError result (OpenCDMError::ERROR_INVALID_SESSION);
 
@@ -321,7 +321,7 @@ OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSessi
     return (OpenCDMError)sessionExt->SetDrmHeader(drmHeader, drmHeaderSize);
 }
 
-OpenCDMError opencdm_session_get_challenge_data_netflix(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL)
+OpenCDMError opencdm_session_get_challenge_data_ext(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
 
@@ -345,12 +345,12 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
     return (OpenCDMError)sessionExt->InitDecryptContextByKid();
 }
 
-OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system)
+OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system)
 {
     return (OpenCDMError)system->InitSystemNetflix();
 }
 
-OpenCDMError opencdm_session_decrypt_netflix(OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, uint32_t initWithLast15)
+OpenCDMError opencdm_session_decrypt_ext(OpenCDMSession * mOpenCDMSession, const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, uint32_t initWithLast15)
 {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
