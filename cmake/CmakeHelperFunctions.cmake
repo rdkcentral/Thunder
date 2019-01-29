@@ -257,17 +257,53 @@ function(get_if_include_dirs _result _target)
 endfunction()
 
 function(InstallCMakeConfig)
-    set(optionsArgs)
-    set(oneValueArgs LOCATION)
-    set(multiValueArgs TARGETS)
+    set(optionsArgs NO_SKIP_INTERFACE_LIBRARIES)
+    set(oneValueArgs LOCATION TEMPLATE)
+    set(multiValueArgs TARGETS EXTRA_DEPENDENCIES)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-    set(_install_path "lib/cmake") # default path
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    endif()
 
+    set(_install_path "lib/cmake") # default path
+    
     if(Agument_LOCATION)
         set(_install_path "${Agument_LOCATION}" FORCE)
     endif()
+
+    if("${Argument_TEMPLATE}" STREQUAL "")
+        find_file( _config_template
+            NAMES "defaultConfig.cmake.in"
+            PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake
+            NO_DEFAULT_PATH
+            NO_CMAKE_ENVIRONMENT_PATH
+            NO_CMAKE_PATH
+            NO_SYSTEM_ENVIRONMENT_PATH
+            NO_CMAKE_SYSTEM_PATH
+            NO_CMAKE_FIND_ROOT_PATH)
+
+        find_file(_config_template  
+            NAMES "defaultConfig.cmake.in"
+            PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake )
+
+        if(NOT EXISTS "${_config_template}")
+            message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
+            return()
+        endif()
+    elseif(EXISTS "${Argument_TEMPLATE}")
+        set(_config_template  ${Argument_TEMPLATE})
+    else()
+        message(SEND_ERROR "PC file generation, template '${_config_template}' not found")
+        return()
+    endif()
+
+    # add manual dependecies to look for... 
+    # make sure its a valid list with valid names for find_package 
+    foreach(_extra_dep ${Argument_EXTRA_DEPENDENCIES})
+        list(APPEND dependencies  ${_extra_dep})
+    endforeach()
 
     foreach(_target ${Argument_TARGETS})
         if(NOT TARGET ${_target})
@@ -277,6 +313,7 @@ function(InstallCMakeConfig)
 
         get_target_property(_version ${_target} VERSION)
         get_target_property(_name ${_target} OUTPUT_NAME)
+        get_target_property(_dependencies ${_target} INTERFACE_LINK_LIBRARIES)
     
         if(NOT _name)
             get_target_property(_name ${_target} NAME)
@@ -292,14 +329,40 @@ function(InstallCMakeConfig)
 
         message(STATUS "${_target} added support for cmake consumers via '${_install_path}/${_name}Config.cmake'")
 
+        # The alias is used by local targets project
         add_library(${_name}::${_name} ALIAS ${_target})
 
+        foreach(_dependency ${_dependencies})
+            if(TARGET ${_dependency})
+                get_target_property(_type ${_dependency} TYPE)
+
+                if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
+                    set(_type_is_ok TRUE)
+                else()
+                    set(_type_is_ok FALSE)
+                endif()
+
+                get_target_property(_is_imported ${_dependency} IMPORTED)
+
+                if (NOT _is_imported AND _type_is_ok)
+                    get_target_property(_dep_name ${_dependency} NAME)
+                    list(APPEND dependencies  ${_dep_name})
+                endif()
+            endif()
+        endforeach()
+
+        configure_file( "${_config_template}"
+                "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
+                @ONLY)
+
         install(EXPORT "${_target}Targets"
-            FILE "${_name}Config.cmake"
+            FILE "${_name}Targets.cmake"
             NAMESPACE  "${_name}::"
             DESTINATION "${_install_path}/${_name}")
 
-        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
+        install(FILES 
+                "${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake"
+                "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
             DESTINATION "${_install_path}/${_name}")
     endforeach()
 endfunction(InstallCMakeConfig)
@@ -310,6 +373,10 @@ function(InstallPackageConfig)
     set(multiValueArgs TARGETS)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to InstallPackageConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    endif()
 
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template

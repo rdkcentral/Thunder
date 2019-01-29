@@ -1,0 +1,10 @@
+set(dependencies @dependencies@)
+
+# First load dependencies
+foreach(dependency  ${dependencies})
+    find_package(${dependency}  REQUIRED)
+endforeach()
+
+# import target exports
+get_filename_component(_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+include(${_DIR}/@_name@Targets.cmake)
