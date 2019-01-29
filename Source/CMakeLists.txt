@@ -32,10 +32,6 @@ option(WPEFRAMEWORK_WPEFRAMEWORK_EXECUTABLE
         "Include WPEFramework executable." ON)
 option(WPEFRAMEWORK_VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
-option(WPEFRAMEWORK_DEADLOCK_DETECTION
-        "Enable deadlock detection tooling." OFF)
-option(WPEFRAMEWORK_WCHAR_SUPPORT
-        "Enable support for WCHAR in ccpsdk." OFF)
 option(WPEFRAMEWORK_TEST_APPS
         "Include test applications." OFF)
 option(WPEFRAMEWORK_UNIT_TESTS
@@ -45,7 +41,6 @@ option(WPEFRAMEWORK_TEST_MEASUREMENTS
 option(WPEFRAMEWORK_STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 
-# TODO make the helpstings more helpful.
 set(WPEFRAMEWORK_PORT 80 CACHE STRING "The port for the webinterface")
 set(WPEFRAMEWORK_BINDING "0.0.0.0" CACHE STRING "The binding interface")
 set(WPEFRAMEWORK_IDLE_TIME 180 CACHE STRING "Idle time")
