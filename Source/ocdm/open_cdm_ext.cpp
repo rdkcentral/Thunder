@@ -29,8 +29,7 @@ private:
 
 public:
     ExtendedOpenCDMSessionExt(
-        OpenCDMAccessor* system, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
-        enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength)
+        OpenCDMAccessor* system, const uint8_t drmHeader[], uint32_t drmHeaderLength)
         : OpenCDMSession()
         //, _sink(this)
         , _state(SESSION_INIT)
@@ -47,7 +46,7 @@ public:
         OCDM::ISessionExt* realSession = nullptr;
 
         // TODO: real conversion between license types
-        system->CreateSessionExt(sessionId, contentId, contentIdLength, (OCDM::ISessionExt::LicenseTypeExt)(uint32_t)licenseType, drmHeader, drmHeaderLength, realSession);
+        system->CreateSessionExt(drmHeader, drmHeaderLength, realSession);
 
         if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
@@ -220,14 +219,12 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t 
     return (result);
 }
 
-OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
-                                            enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength)
+OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength)
 {
-
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        *opencdmSession = new ExtendedOpenCDMSessionExt(system, sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength);
+        *opencdmSession = new ExtendedOpenCDMSessionExt(system, drmHeader, drmHeaderLength);
         result = OpenCDMError::ERROR_NONE;
     }
 
@@ -312,42 +309,6 @@ OpenCDMError opencdm_session_set_content_id(struct OpenCDMSession * opencdmSessi
 
     std::string contentIdStr(contentId, contentIdLength);
     sessionExt->SetContentIdExt(contentIdStr);
-
-    return ERROR_NONE;
-}
-
-enum OcdmLicenseType opencdm_session_get_license_type(struct OpenCDMSession * opencdmSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
-
-    // TODO: real conversion
-    return (OcdmLicenseType)sessionExt->GetLicenseTypeExt();
-}
-
-OpenCDMError opencdm_session_set_license_type(struct OpenCDMSession * opencdmSession, enum OcdmLicenseType licenseType)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
-
-    // TODO: real conversion
-    sessionExt->SetLicenseTypeExt((OCDM::ISessionExt::LicenseTypeExt)licenseType);
-
-    return ERROR_NONE;
-}
-
-enum OcdmSessionState opencdm_session_get_session_state(struct OpenCDMSession * opencdmSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
-
-    // TODO: real conversion
-    return (OcdmSessionState)sessionExt->GetSessionStateExt();
-}
-
-OpenCDMError opencdm_session_set_session_state(struct OpenCDMSession * opencdmSession, enum OcdmSessionState sessionState)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(opencdmSession);
-
-    // TODO: real conversion
-    sessionExt->SetSessionStateExt((OCDM::ISessionExt::SessionStateExt)sessionState);
 
     return ERROR_NONE;
 }

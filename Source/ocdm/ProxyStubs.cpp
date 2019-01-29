@@ -196,10 +196,6 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual OCDM_RESULT CreateSessionExt(
-            //    uint32_t sessionId,
-            //    const char contentId[],
-            //    uint32_t contentIdLength,
-            //    LicenseTypeExt licenseType,
             //    const uint8_t drmHeader[],
             //    uint32_t drmHeaderLength,
             //    ISessionExt*& session) = 0;
@@ -208,24 +204,14 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-
             const uint8_t* drmHeader = nullptr;
             uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
             parameters.UnlockBuffer(drmHeaderLength);
 
-            uint32_t sessionId = parameters.Number<uint32_t>();
-
-            const uint8_t* contentIdPtr = nullptr;
-            uint32_t contentIdLength = parameters.LockBuffer<uint32_t>(contentIdPtr);
-            parameters.UnlockBuffer(contentIdLength);
-
-            OCDM::ISessionExt::LicenseTypeExt licenseType = parameters.Number<OCDM::ISessionExt::LicenseTypeExt>();
-
             OCDM::ISessionExt* session = nullptr;
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
 
-            const char * contentId = reinterpret_cast<const char *>(contentIdPtr);
-            OCDM::OCDM_RESULT result = accessor->CreateSessionExt(sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength, session);
+            OCDM::OCDM_RESULT result = accessor->CreateSessionExt(drmHeader, drmHeaderLength, session);
 
             response.Number<OCDM::OCDM_RESULT>(result);
             response.Number<OCDM::ISessionExt*>(session);
@@ -995,24 +981,14 @@ public:
         }
 
         virtual OCDM::OCDM_RESULT CreateSessionExt(
-            uint32_t sessionId,
-            const char contentId[],
-            uint32_t contentIdLength,
-            OCDM::ISessionExt::LicenseTypeExt licenseType,
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             OCDM::ISessionExt*& session) override
         {
-            const uint8_t * contentIdPtr = reinterpret_cast<const uint8_t *>(contentId);
-
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
-
             writer.Buffer(drmHeaderLength, drmHeader);
-            writer.Number(sessionId);
-            writer.Buffer(contentIdLength, contentIdPtr);
-            writer.Number(licenseType);
 
             Invoke(newMessage);
 

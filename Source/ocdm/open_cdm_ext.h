@@ -8,22 +8,6 @@
 extern "C" {
 #endif
 
-enum OcdmLicenseType {
-    // this is in the order of priority
-    // standard license has priority over limited duration license
-    // TODO: do we need prefix here?
-    OCDM_LICENSE_INVALID = 0,
-    OCDM_LICENSE_LIMITED_DURATION,
-    OCDM_LICENSE_STANDARD
-};
-
-enum OcdmSessionState {
-    LicenseAcquisitionState = 0,
-    InactiveDecryptionState,
-    ActiveDecryptionState,
-    InvalidState
-};
-
 //////////////////////////////////////
 // System
 //////////////////////////////////////
@@ -36,6 +20,7 @@ struct OpenCDMAccessor* opencdm_create_system_netflix(const char readDir[], cons
 OpenCDMError opencdm_init_system_netflix(struct OpenCDMAccessor* system);
 
 // TODO: document we need at least 64 bytes in "versionStr"
+// LEAN: GetVersionStr might only be used by Netflix, but appears to be generic PlayReady functionality.
 OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
 
 // LEAN: uses "_Netflix"-suffixed PR call
@@ -61,8 +46,7 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
 //////////////////////////////////////
 
 // LEAN: can remove these args: session ID, license type, content id
-OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, uint32_t sessionId, const char contentId[], uint32_t contentIdLength,
-                                            enum OcdmLicenseType licenseType, const uint8_t drmHeader[], uint32_t drmHeaderLength);
+OpenCDMError opencdm_create_session_netflix(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength);
 
 // TODO: do we need a specific "opencdm_destroy_session" for Netflix?
 // TODO: rename to "destruct"?

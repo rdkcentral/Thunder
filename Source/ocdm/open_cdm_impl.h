@@ -396,15 +396,11 @@ public:
     }
 
     virtual OCDM::OCDM_RESULT CreateSessionExt(
-        uint32_t sessionId,
-        const char contentId[],
-        uint32_t contentIdLength,
-        OCDM::ISessionExt::LicenseTypeExt licenseType,
         const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
         OCDM::ISessionExt*& session) override
     {
-        return (_remoteExt->CreateSessionExt(sessionId, contentId, contentIdLength, licenseType, drmHeader, drmHeaderLength, session));
+        return (_remoteExt->CreateSessionExt(drmHeader, drmHeaderLength, session));
     }
 
     virtual time_t GetDrmSystemTime() const override {

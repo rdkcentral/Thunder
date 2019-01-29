@@ -193,10 +193,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
         virtual time_t GetDrmSystemTime() const = 0;
 
         virtual OCDM_RESULT CreateSessionExt(
-            uint32_t sessionId,
-            const char contentId[],
-            uint32_t contentIdLength,
-            ISessionExt::LicenseTypeExt licenseType,
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             ISessionExt*& session) = 0;
