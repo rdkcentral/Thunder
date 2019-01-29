@@ -48,11 +48,16 @@ function(get_if_link_libraries libs dirs target)
         if(_is_imported)
             get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
             
-            list(LENGTH includes _includes_count)
 
-            if (_includes_count GREATER 0)
+            if (NOT "${_configurations}" MATCHES "^.*NOTFOUND")
+                list(LENGTH _configurations _configurations_count)
+
                 list(GET _configurations 0 _config)
                 set (config _${_config})
+
+                if (_configurations_count GREATER 1)
+                    message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
+                endif()
             endif()
             
             get_target_property(_lib_loc ${target} IMPORTED_LOCATION${config})
@@ -82,11 +87,15 @@ function(get_if_link_libraries libs dirs target)
         # we remove the absolute systroot to make it relative. Later we can decide to use the path in a -L argument <;-)
         get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
         
-        list(LENGTH includes _includes_count)
+        if (NOT "${_configurations}" MATCHES "^.*NOTFOUND")
+            list(LENGTH _configurations _configurations_count)
 
-        if (_includes_count GREATER 0)
             list(GET _configurations 0 _config)
             set (config _${_config})
+
+            if (_configurations_count GREATER 1)
+                message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
+            endif()
         endif()
         
         get_target_property(_location ${target} IMPORTED_LOCATION${config})
@@ -327,7 +336,7 @@ function(InstallCMakeConfig)
             VERSION ${_version}
             COMPATIBILITY SameMajorVersion)
 
-        message(STATUS "${_target} added support for cmake consumers via '${_install_path}/${_name}Config.cmake'")
+        message(STATUS "${_target} added support for cmake consumers via '${_name}Config.cmake'")
 
         # The alias is used by local targets project
         add_library(${_name}::${_name} ALIAS ${_target})
