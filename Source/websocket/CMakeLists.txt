@@ -25,7 +25,7 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
-        PUBLIC #
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )

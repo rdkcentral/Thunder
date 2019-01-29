@@ -14,8 +14,9 @@ set(PUBLIC_HEADERS
         )
 
 target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
+        PRIVATE
           Metrological::libprovision
         )
 

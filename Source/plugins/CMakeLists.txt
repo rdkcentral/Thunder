@@ -2,8 +2,6 @@ set(TARGET ${NAMESPACE}Plugins)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
-#include(CompileSettings)
-
 add_library(${TARGET} SHARED
         Channel.cpp
         MetaData.cpp
@@ -33,7 +31,7 @@ set(PUBLIC_HEADERS
         )
 
 target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
@@ -41,12 +39,12 @@ target_link_libraries(${TARGET}
 
 if(WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(${TARGET}
-            PRIVATE
+            PUBLIC
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
     target_link_libraries(${TARGET}
-            PRIVATE
+            PUBLIC
               ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
               ${NAMESPACE}COM::${NAMESPACE}COM
             )

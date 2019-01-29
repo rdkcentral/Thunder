@@ -83,8 +83,8 @@ add_library(${TARGET} SHARED
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-        PUBLIC #FIXME: Added PUBLIC to fix linker warning that dependecies were not found
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )

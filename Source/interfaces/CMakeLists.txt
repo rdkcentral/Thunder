@@ -49,7 +49,7 @@ target_link_libraries(${TargetMarshalling}
         )
 
 target_link_libraries(${TargetInterfaces}
-        PRIVATE
+        PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
