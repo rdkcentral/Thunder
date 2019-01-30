@@ -487,6 +487,8 @@ namespace Core {
                 stderrfd[0] = -1;
                 stderrfd[1] = -1;
 
+                _exitCode = static_cast<uint32_t>(~0);
+
                 /* Create the pipe and set non-blocking on the readable end. */
                 if ((_stdin == -1) && (pipe(stdinfd) == 0) && (pipe(stdoutfd) == 0) && (pipe(stderrfd) == 0)) {
                     // int flags = ( fcntl(p[0], F_GETFL, 0) & (~O_NONBLOCK) );
