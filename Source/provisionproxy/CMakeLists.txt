@@ -1,6 +1,5 @@
 set(TARGET provisionproxy)
 
-find_package(OpenSSL REQUIRED)
 find_package(libprovision REQUIRED)
 
 # Construct a library object
@@ -17,7 +16,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
         PRIVATE
-          Metrological::libprovision
+          libprovision::libprovision
         )
 
 set_target_properties(${TARGET} PROPERTIES
