@@ -41,12 +41,15 @@ function(config_dir key)
 	return("${TMP_DIR}")
 endfunction()
 
-## includes all cmake files of cmakepp 
-include("${MODULE_BASE_DIR}/config/core/require.cmake")
-
-require("${MODULE_BASE_DIR}/config/*.cmake")
+macro(IncludeConfig)
+    ## includes all cmake files of cmakepp to write json files
+    include("${MODULE_BASE_DIR}/config/core/require.cmake")
+    require("${MODULE_BASE_DIR}/config/*.cmake")
+endmacro()
 
 macro(write_config)
+    IncludeConfig()
+
     foreach(plugin ${ARGV})
         message("Writing configuration for ${plugin}")
 
