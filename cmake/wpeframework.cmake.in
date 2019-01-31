@@ -48,7 +48,9 @@ macro(IncludeConfig)
 endmacro()
 
 macro(write_config)
-    IncludeConfig()
+    if(NOT COMMAND map)
+        IncludeConfig()
+    endif()
 
     foreach(plugin ${ARGV})
         message("Writing configuration for ${plugin}")
