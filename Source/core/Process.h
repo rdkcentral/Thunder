@@ -400,6 +400,9 @@ namespace Core {
                     ::free(_parameters);
                 }
 
+                // If we are "relaunched" make sure we reset the _exitCode.
+                _exitCode = static_cast<uint32_t>(~0);
+
 #ifdef __WIN32__
                 STARTUPINFO si;
                 ZeroMemory(&si, sizeof(si));
@@ -486,8 +489,6 @@ namespace Core {
                 stdoutfd[1] = -1;
                 stderrfd[0] = -1;
                 stderrfd[1] = -1;
-
-                _exitCode = static_cast<uint32_t>(~0);
 
                 /* Create the pipe and set non-blocking on the readable end. */
                 if ((_stdin == -1) && (pipe(stdinfd) == 0) && (pipe(stdoutfd) == 0) && (pipe(stderrfd) == 0)) {
