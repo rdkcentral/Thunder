@@ -19,19 +19,12 @@ struct OpenCDMAccessor* opencdm_create_system_ext(const char readDir[], const ch
 //       - Sets a revocation buffer, only used in netflix case
 OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system);
 
-// TODO: document we need at least 64 bytes in "versionStr"
-// LEAN: GetVersionStr might only be used by Netflix, but appears to be generic PlayReady functionality.
-OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
-
 // LEAN: uses "_Netflix"-suffixed PR call
 OpenCDMError opencdm_system_get_ldl_session_limit(struct OpenCDMAccessor* system, uint32_t * ldlLimit);
 
 // LEAN: Secure Stop might only be used by Netflix, but appears to be generic PlayReady functionality.
 OpenCDMError opencdm_system_enable_secure_stop(struct OpenCDMAccessor* system, uint32_t use);
 OpenCDMError opencdm_system_commit_secure_stop(struct OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength);
-
-// LEAN: DrmSystemTime might only be used by Netflix, but appears to be generic PlayReady functionality.
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
 
 OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system);
 
