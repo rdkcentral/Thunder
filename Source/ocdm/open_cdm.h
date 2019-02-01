@@ -148,8 +148,8 @@ public:
   int Close();
   KeyStatus Status() const;
 
-  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, unsigned long long, uint32_t);
-  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, const uint8_t, const uint8_t[], unsigned long long, uint32_t, const uint32_t waitTime = 6000);
+  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, uint32_t);
+  uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t, const uint8_t, const uint8_t[], uint32_t, const uint32_t waitTime = 6000);
 
   inline const std::string& KeySystem() const {
     return (_keySystem);
@@ -385,9 +385,9 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
 // TODO: maybe different name for "initWithLast15"?
 #ifdef __cplusplus
 // Default args for backward compatibility
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, unsigned long long byteOffset = 0, uint32_t initWithLast15 = 0);
+OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, uint32_t initWithLast15 = 0);
 #else
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, unsigned long long byteOffset, uint32_t initWithLast15);
+OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, uint32_t initWithLast15);
 #endif // __cplusplus
 
 #ifdef __cplusplus

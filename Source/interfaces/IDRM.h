@@ -271,7 +271,6 @@ public:
         uint8_t** f_ppbOpaqueClearContent,
         const uint8_t keyIdLength,
         const uint8_t* keyId,
-        unsigned long long byteOffset,
         bool initWithLast15) = 0;
 
     virtual CDMi_RESULT ReleaseClearContent(

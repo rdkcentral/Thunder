@@ -491,7 +491,7 @@ private:
         }
 
     public:
-        uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, uint16_t keyIdLength, unsigned long long byteOffset /* = 0 */, uint32_t initWithLast15 /* = 0 */) {
+        uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, uint16_t keyIdLength, uint32_t initWithLast15 /* = 0 */) {
             int ret = 0;
 
             // This works, because we know that the Audio and the Video streams are fed from
@@ -507,7 +507,6 @@ private:
                 SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                 SetSubSampleData(0, nullptr);
                 KeyId(static_cast<uint8_t>(keyIdLength), keyId);
-                ByteOffset(byteOffset);
                 InitWithLast15(initWithLast15);
                 Write(encryptedDataLength, encryptedData);
 
@@ -519,46 +518,6 @@ private:
 
                     // For nowe we just copy the clear data..
                     Read(encryptedDataLength, encryptedData);
-
-                    // Get the status of the last decrypt.
-                    ret = Status();
-
-                    // And free the lock, for the next production Scenario..
-                    Consumed();
-                }
-            }
-
-            _busy = false;
-
-            _systemLock.Unlock();
-
-            return (ret);
-        }
-
-        uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, bool initWithLast15)
-        {
-            int ret = 0;
-
-            _systemLock.Lock();
-
-            _busy = true;
-
-            if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
-
-                SetIV(static_cast<uint8_t>(IVDataSize), IVData);
-                SetSubSampleData(0, nullptr);  // TODO: needed?
-                ByteOffset(byteOffset);
-                InitWithLast15(initWithLast15);
-                Write(dataBufferSize, dataBuffer);
-
-                // This will trigger the OpenCDMIServer to decrypt this memory...
-                Produced();
-
-                // Now we should wait till it is decrypted, that happens if the Producer, can run again.
-                if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
-
-                    // For nowe we just copy the clear data..
-                    Read(dataBufferSize, dataBuffer);
 
                     // Get the status of the last decrypt.
                     ret = Status();
@@ -666,11 +625,11 @@ public:
 
         _session->Update(pbResponse, cbResponse);
     }
-    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength, unsigned long long byteOffset, uint32_t initWithLast15) {
+    uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength, const uint8_t* ivData, uint16_t ivDataLength, const uint8_t* keyId, const uint8_t keyIdLength, uint32_t initWithLast15) {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
         if (_decryptSession != nullptr) {
             result = OpenCDMError::ERROR_NONE;
-            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength, keyId, keyIdLength, byteOffset, initWithLast15);
+            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData, ivDataLength, keyId, keyIdLength, initWithLast15);
         }
         return (result);
     }
@@ -715,16 +674,6 @@ protected:
             delete _decryptSession;
             _decryptSession = nullptr;
         }
-    }
-
-public:
-    uint32_t DecryptNetflix(const unsigned char* IVData, uint32_t IVDataSize, unsigned long long byteOffset, unsigned char dataBuffer[], uint32_t dataBufferSize, bool initWithLast15) {
-        uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
-        if (_decryptSession != nullptr) {
-            result = OpenCDMError::ERROR_NONE;
-            _decryptSession->DecryptNetflix(IVData, IVDataSize, byteOffset, dataBuffer, dataBufferSize, initWithLast15);
-        }
-        return (result);
     }
 
 protected:

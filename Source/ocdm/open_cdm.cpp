@@ -1218,19 +1218,19 @@ int OpenCdm::Close()
     return (0);
 }
 
-uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, unsigned long long byteOffset, uint32_t initWithLast15) {
+uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, uint32_t initWithLast15) {
     ASSERT (_session != nullptr);
 
-    return (_session != nullptr ? _session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0, byteOffset, initWithLast15) : 1);
+    return (_session != nullptr ? _session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0, initWithLast15) : 1);
 }
 
-uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], unsigned long long byteOffset, uint32_t initWithLast15, const uint32_t waitTime) {
+uint32_t OpenCdm::Decrypt(uint8_t* encrypted, const uint32_t encryptedLength, const uint8_t* IV, const uint16_t IVLength, const uint8_t keyIdLength, const uint8_t keyId[], uint32_t initWithLast15, const uint32_t waitTime) {
 
     if (_implementation->WaitForKey(keyIdLength, keyId, waitTime, OCDM::ISession::Usable) == true) {
         if (_session == nullptr) {
             _session = new OpenCDMSession(_implementation->Session(keyId, keyIdLength));
         }
-        return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength, keyId, keyIdLength, byteOffset, initWithLast15));
+        return (_session->Decrypt(encrypted, encryptedLength, IV, IVLength, keyId, keyIdLength, initWithLast15));
     }
 
     return (1);
@@ -1535,11 +1535,11 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session)
  * \return Zero on success, non-zero on error.
  * REPLACING: uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
  */
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, const uint16_t IVLength, unsigned long long byteOffset /* = 0 */, uint32_t initWithLast15 /* = 0 */) {
+OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, const uint16_t IVLength, uint32_t initWithLast15 /* = 0 */) {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
-        result  = static_cast<OpenCDMError>(session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0, byteOffset, initWithLast15));
+        result  = static_cast<OpenCDMError>(session->Decrypt(encrypted, encryptedLength, IV, IVLength, nullptr, 0, initWithLast15));
     }
 
     return (result);
