@@ -189,9 +189,9 @@ OpenCDMError opencdm_system_get_version(OpenCDMAccessor* system, char versionStr
     return ERROR_NONE;
 }
 
-OpenCDMError opencdm_system_get_ldl_session_limit(OpenCDMAccessor* system, uint32_t * ldlLimit)
+OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystemExt* system, uint32_t * ldlLimit)
 {
-    *ldlLimit = system->GetLdlSessionLimit();
+    *ldlLimit = (reinterpret_cast<OpenCDMAccessor*>(system))->GetLdlSessionLimit();
     return ERROR_NONE;
 }
 
