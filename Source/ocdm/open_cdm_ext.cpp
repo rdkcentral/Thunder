@@ -170,6 +170,8 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
     const char storeLocation[] = "/home/sander/Projects/Netflix/5.0/build/build/netflix5/build/src/platform/gibbon/data/var/dpi/playready/storage/drmstore";
     output->CreateSystemNetflix(readDir, storeLocation);
 
+    output->InitSystemNetflix();
+
     // TODO: create struct/class keeping track of selected key system.
     return reinterpret_cast<OpenCDMSystemExt *>(output);
 }

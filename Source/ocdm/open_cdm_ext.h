@@ -16,10 +16,6 @@ struct OpenCDMSystemExt;
 
 struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[]);
 
-// LEAN: - Is called seperately from create_system, so might be called more than once
-//       - Sets a revocation buffer, only used in netflix case
-OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system);
-
 // LEAN: uses "_Netflix"-suffixed PR call
 OpenCDMError opencdm_system_get_ldl_session_limit(struct OpenCDMAccessor* system, uint32_t * ldlLimit);
 
