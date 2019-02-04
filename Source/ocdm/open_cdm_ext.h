@@ -8,12 +8,13 @@
 extern "C" {
 #endif
 
+struct OpenCDMSystemExt;
+
 //////////////////////////////////////
 // System
 //////////////////////////////////////
 
-// LEAN: Only netflix uses secure store, but is generic PlayReady functionality? 
-struct OpenCDMAccessor* opencdm_create_system_ext(const char readDir[], const char storeLocation[]);
+struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[]);
 
 // LEAN: - Is called seperately from create_system, so might be called more than once
 //       - Sets a revocation buffer, only used in netflix case

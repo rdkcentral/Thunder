@@ -160,13 +160,18 @@ private:
     OCDM::ISessionExt* _realSession;
 };
 
-struct OpenCDMAccessor* opencdm_create_system_ext(const char readDir[], const char storeLocation[])
+struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[])
 {
     OpenCDMAccessor* output = opencdm_create_system();
 
+    // TODO: read from JSON, OCDM side
+
+    const char readDir[] = "/home/sander/Projects/Netflix/5.0/build/build/netflix5/build/src/platform/gibbon/data/dpi/playready";
+    const char storeLocation[] = "/home/sander/Projects/Netflix/5.0/build/build/netflix5/build/src/platform/gibbon/data/var/dpi/playready/storage/drmstore";
     output->CreateSystemNetflix(readDir, storeLocation);
 
-    return output;
+    // TODO: create struct/class keeping track of selected key system.
+    return reinterpret_cast<OpenCDMSystemExt *>(output);
 }
 
 OpenCDMError opencdm_system_get_version(OpenCDMAccessor* system, char versionStr[])
@@ -199,11 +204,13 @@ OpenCDMError opencdm_system_commit_secure_stop(OpenCDMAccessor* system, const un
     return (OpenCDMError)system->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
 }
 
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time) {
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, uint64_t * time) {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        *time = system->GetDrmSystemTime();
+        time_t cTime;
+        cTime = system->GetDrmSystemTime();
+        *time = static_cast<uint64_t>(cTime);
         result = ERROR_NONE;
     }
     return (result);

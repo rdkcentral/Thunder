@@ -245,7 +245,7 @@ OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system, const cha
 
 OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
 
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, time_t * time);
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, uint64_t * time);
 
 /**
  * \brief Maps key ID to \ref OpenCDMSession instance.
