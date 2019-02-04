@@ -360,13 +360,13 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system)
     return (result);
 }
 
-OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength)
+OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength)
 {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         // TODO: real conversion
-        result = (OpenCDMError)system->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+        result = (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
     }
     return (result);
 }

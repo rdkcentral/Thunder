@@ -27,7 +27,7 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system);
 
 // LEAN: Secure Store might only be used by Netflix, but appears to be generic PlayReady functionality.
 // TODO: document that buffer needs to be at least 256 bytes big
-OpenCDMError opencdm_get_secure_store_hash(struct OpenCDMAccessor* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
+OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
 OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system);
 
 
