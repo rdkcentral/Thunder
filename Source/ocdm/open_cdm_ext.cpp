@@ -201,9 +201,9 @@ OpenCDMError opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* syst
     return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->EnableSecureStop(use != 0);
 }
 
-OpenCDMError opencdm_system_commit_secure_stop(OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength)
+OpenCDMError opencdm_system_ext_commit_secure_stop(OpenCDMSystemExt* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength)
 {
-    return (OpenCDMError)system->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
+    return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
 }
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, uint64_t * time) {
@@ -320,7 +320,7 @@ OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSessi
     return (OpenCDMError)sessionExt->SetDrmHeader(drmHeader, drmHeaderSize);
 }
 
-OpenCDMError opencdm_session_get_challenge_data_ext(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL)
+OpenCDMError opencdm_session_get_challenge_data(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
 
@@ -349,13 +349,13 @@ OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system)
     return (OpenCDMError)system->InitSystemNetflix();
 }
 
-OpenCDMError opencdm_delete_secure_store(struct OpenCDMAccessor* system)
+OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystemExt* system)
 {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         // TODO: real conversion
-        result = (OpenCDMError)system->DeleteSecureStore();
+        result = (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->DeleteSecureStore();
     }
     return (result);
 }
