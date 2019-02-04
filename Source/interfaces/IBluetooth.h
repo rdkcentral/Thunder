@@ -36,8 +36,10 @@ namespace Exchange {
             virtual bool IsDiscovered () const = 0;
             virtual bool IsPaired() const = 0;
             virtual bool IsConnected() const = 0;
-            virtual uint32_t Pair(const string& address) = 0;
+            virtual uint32_t Pair() = 0;
             virtual uint32_t Unpair() = 0;
+            virtual uint32_t Connect() = 0;
+            virtual uint32_t Disconnect(const uint16_t reason) = 0;
         };
 
         struct INotification : virtual public Core::IUnknown {

@@ -55,7 +55,9 @@ static string BTName(const NodeId::SocketInfo& input) {
     }
     address[12] = '\0';
     return (_T("BluetoothL2:") + 
-            Core::NumberType<uint32_t>(input.L2Socket.l2_cid).Text() + 
+            Core::NumberType<uint16_t>(input.L2Socket.l2_cid).Text() + 
+            ':' + 
+            Core::NumberType<uint16_t>(input.L2Socket.l2_psm).Text() + 
             ':' + 
             Core::NumberType<pid_t>(input.L2Socket.l2_bdaddr_type).Text() + 
             ':' +
@@ -149,12 +151,13 @@ NodeId::NodeId(const uint16_t device, const uint16_t channel) {
 
     m_hostName = BTName(m_structInfo);
 }
-NodeId::NodeId(const bdaddr_t& address, const uint16_t cid, const uint8_t addressType) {
+NodeId::NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm) {
 
     memset(&m_structInfo.L2Socket, 0, sizeof(m_structInfo.L2Socket));
 
     m_structInfo.L2Socket.l2_family = AF_BLUETOOTH;
-    m_structInfo.L2Socket.l2_cid = htobs(cid);
+    m_structInfo.L2Socket.l2_psm = psm;
+    m_structInfo.L2Socket.l2_cid = cid;
     m_structInfo.L2Socket.l2_bdaddr_type = addressType;
     m_structInfo.L2Socket.l2_type = BTPROTO_L2CAP;
     
