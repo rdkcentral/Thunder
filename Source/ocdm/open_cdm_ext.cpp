@@ -195,10 +195,10 @@ OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystemExt* system, 
     return ERROR_NONE;
 }
 
-OpenCDMError opencdm_system_enable_secure_stop(OpenCDMAccessor* system, uint32_t use)
+OpenCDMError opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* system, uint32_t use)
 {
     // TODO: conversion
-    return (OpenCDMError)system->EnableSecureStop(use != 0);
+    return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->EnableSecureStop(use != 0);
 }
 
 OpenCDMError opencdm_system_commit_secure_stop(OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength)

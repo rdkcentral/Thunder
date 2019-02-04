@@ -20,7 +20,7 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
 OpenCDMError opencdm_system_ext_get_ldl_session_limit(struct OpenCDMSystemExt* system, uint32_t * ldlLimit);
 
 // LEAN: Secure Stop might only be used by Netflix, but appears to be generic PlayReady functionality.
-OpenCDMError opencdm_system_enable_secure_stop(struct OpenCDMAccessor* system, uint32_t use);
+OpenCDMError opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* system, uint32_t use);
 OpenCDMError opencdm_system_commit_secure_stop(struct OpenCDMAccessor* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength);
 
 OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system);
