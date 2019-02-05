@@ -42,16 +42,16 @@ function(config_dir key)
 endfunction()
 
 macro(IncludeConfig)
-    ## includes all cmake files of cmakepp to write json files
-    include("${MODULE_BASE_DIR}/config/core/require.cmake")
-    require("${MODULE_BASE_DIR}/config/*.cmake")
+    if(NOT COMMAND map)
+        ## includes all cmake files of cmakepp to write json files
+        include("${MODULE_BASE_DIR}/config/core/require.cmake")
+        require("${MODULE_BASE_DIR}/config/*.cmake")
+    endif()
 endmacro()
 
-macro(write_config)
-    if(NOT COMMAND map)
-        IncludeConfig()
-    endif()
-
+macro(write_config)    
+    IncludeConfig()
+    
     foreach(plugin ${ARGV})
         message("Writing configuration for ${plugin}")
 
