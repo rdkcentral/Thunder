@@ -601,11 +601,7 @@ namespace Core {
                 }
             }
 
-            if (IsActive() == false) {
-                return (Core::ERROR_NONE);
-            }
-
-            return (Core::ERROR_TIMEDOUT);
+            return ((IsActive() == false) ? Core::ERROR_NONE: Core::ERROR_TIMEDOUT);
 #endif
         }
 
