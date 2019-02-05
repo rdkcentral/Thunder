@@ -2,6 +2,8 @@
 
 #include "open_cdm_impl.h"
 
+#include "ExtendedOpenCDMSession.h"
+
 #define ASSERT_NOT_EXECUTED() {                             \
     fprintf(stderr, "Error: didn't expect to use %s (%s:%d)!!\n", __PRETTY_FUNCTION__, __FILE__, __LINE__); \
     abort(); \
@@ -382,4 +384,39 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system)
     return (result);
 }
 
+/**
+ * \brief Create DRM session (for actual decrypting of data).
+ *
+ * Creates an instance of \ref OpenCDMSession using initialization data.
+ * \param keySystem DRM system to create the session for.
+ * \param licenseType DRM specifc signed integer selecting License Type (e.g. "Limited Duration" for PlayReady).
+ * \param initDataType Type of data passed in \ref initData.
+ * \param initData Initialization data.
+ * \param initDataLength Length (in bytes) of initialization data.
+ * \param CDMData CDM data.
+ * \param CDMDataLength Length (in bytes) of \ref CDMData.
+ * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
+ * \return Zero on success, non-zero on error.
+ */
+OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+                                    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
+                                    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks * callbacks,
+                                    struct OpenCDMSession** session) {
 
+    OpenCDMError result (ERROR_INVALID_ACCESSOR);
+
+    if (strcmp(keySystem, "com.netflix.playready") != 0) {
+        if (system != nullptr) {
+            *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength,CDMData,CDMDataLength, licenseType, callbacks);
+
+            result = (*session != nullptr ? OpenCDMError::ERROR_NONE : OpenCDMError::ERROR_INVALID_SESSION);
+        }
+    } else {
+        if (system != nullptr) {
+            *session = new ExtendedOpenCDMSessionExt(system, initData, initDataLength);
+            result = OpenCDMError::ERROR_NONE;
+        }
+    }
+
+    return (result);
+}
