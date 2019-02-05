@@ -178,8 +178,9 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
     return reinterpret_cast<OpenCDMSystemExt *>(output);
 }
 
-OpenCDMError opencdm_system_get_version(OpenCDMAccessor* system, char versionStr[])
+OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const char keySystem[], char versionStr[])
 {
+    // TODO: use keySystem
     versionStr[0] = '\0';
 
     std::string versionStdStr = system->GetVersionExt();
@@ -208,7 +209,9 @@ OpenCDMError opencdm_system_ext_commit_secure_stop(OpenCDMSystemExt* system, con
     return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
 }
 
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, uint64_t * time) {
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, const char keySystem[], uint64_t * time)
+{
+    // TODO: use keySystem
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {

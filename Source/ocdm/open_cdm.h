@@ -194,17 +194,17 @@ typedef struct
     * Request of process of DRM challenge data. Server is indicated by \ref url. The response of the server
     * needs to be send to \ref opencdm_session_update.
     *
-    * \param userData Pointer passed along when \ref opencdm_session_callback was called.
+    * \param session Open CDM session requesting process.
     * \param url Target URL to send challenge to.
     * \param challenge Buffer containing challenge.
-    * \param challengeLength Length of challenge (in bytes).
+    * \param challengeLength Length of challenge buffer (in bytes).
     */
     void (*process_challenge)(struct OpenCDMSession* session, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
 
     /**
     * Called when status of a key changes. Use \ref opencdm_session_status to find out new key status.
     *
-    * \param userData Pointer passed along when \ref opencdm_session_callback was issued.
+    * \param session Open CDM session requesting process.
     * \param keyId Buffer containing key ID.
     * \param length Length of key ID buffer.
     */
@@ -213,6 +213,7 @@ typedef struct
     /**
     * Called when a message is received from the DRM system
     *
+    * \param session Open CDM session requesting process.
     * \param message Text string, null terminated, from the DRM session.
     */
     void (*message)(struct OpenCDMSession* userData, const char message[]);
@@ -221,7 +222,6 @@ typedef struct
 /**
  * \brief Creates DRM system.
  *
- * \param keySystem Name of required key system (See \ref opencdm_is_type_supported)
  * \return \ref OpenCDMAccessor instance, NULL on error.
  */
 struct OpenCDMAccessor* opencdm_create_system();
@@ -236,6 +236,7 @@ OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
 /**
  * \brief Checks if a DRM system is supported.
  *
+ * \param system Instance of \ref OpenCDMAccessor.
  * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
  * \param mimeType MIME type.
  * \return Zero if supported, Non-zero otherwise.
@@ -243,21 +244,39 @@ OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
  */
 OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system, const char keySystem[], const char mimeType[]);
 
-OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, char versionStr[]);
+/**
+ * \brief Returns string describing version of DRM system.
+ *
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \param keySystem Name of queried  key system (e.g. "com.microsoft.playready").
+ * \param versionStr Char buffer to receive NULL-terminated version string. (Should as least be 64 chars long.)
+ * \return Zero if successful, non-zero on error.
+ */
+OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const char keySystem[], char versionStr[]);
 
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, uint64_t * time);
+/**
+ * \brief Returns time according to DRM system.
+ * Some systems (e.g. PlayReady) keep their own clocks, for example to prevent rollback. Systems
+ * not implementing their own clock can return the system time.
+ *
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \param keySystem Name of queried key system (e.g. "com.microsoft.playready").
+ * \param time Output variable that will contain DRM system time.
+ * \return Zero if successful, non-zero on error.
+ */
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, const char keySystem[], uint64_t * time);
 
 /**
  * \brief Maps key ID to \ref OpenCDMSession instance.
  *
  * In some situations we only have the key ID, but need the specific \ref OpenCDMSession instance that
  * belongs to this key ID. This method facilitates this requirement.
+ * \param system Instance of \ref OpenCDMAccessor.
  * \param keyId Array containing key ID.
  * \param length Length of keyId array.
  * \param maxWaitTime Maximum allowed time to block (in miliseconds).
  * \return \ref OpenCDMSession belonging to key ID, or NULL when not found or timed out. This instance
  *         also needs to be destructed using \ref opencdm_session_destruct.
- * REPLACING: void* acquire_session(const uint8_t* keyId, const uint8_t keyLength, const uint32_t waitTime);
  */
 struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system, const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
 
@@ -265,6 +284,8 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system, const
  * \brief Sets server certificate.
  *
  * Some DRMs (e.g. WideVine) use a system-wide server certificate. This method will set that certificate. Other DRMs will ignore this call.
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \param keySystem Name of key system to set server certificate for.
  * \param serverCertificate Buffer containing certificate data.
  * \param serverCertificateLength Buffer length of certificate data.
  * \return Zero on success, non-zero on error.
@@ -275,6 +296,7 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
  * \brief Create DRM session (for actual decrypting of data).
  *
  * Creates an instance of \ref OpenCDMSession using initialization data.
+ * \param system Instance of \ref OpenCDMAccessor.
  * \param keySystem DRM system to create the session for.
  * \param licenseType DRM specifc signed integer selecting License Type (e.g. "Limited Duration" for PlayReady).
  * \param initDataType Type of data passed in \ref initData.
@@ -282,6 +304,8 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
  * \param initDataLength Length (in bytes) of initialization data.
  * \param CDMData CDM data.
  * \param CDMDataLength Length (in bytes) of \ref CDMData.
+ * \param callbacks Instance of \ref OpenCDMSessionCallbacks receiving callback notifications. Can be NULL, in that case
+ *                  no events will be returned.
  * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
  * \return Zero on success, non-zero on error.
  */
@@ -294,7 +318,6 @@ OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char k
  * Destructs an \ref OpenCDMSession instance.
  * \param system \ref OpenCDMSession instance to desctruct.
  * \return Zero on success, non-zero on error.
- * REPLACING: void release_session(void* session);
  */
 OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session);
 
@@ -376,15 +399,12 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
  * \param session \ref OpenCDMSession instance.
  * \param encrypted Buffer containing encrypted data. If applicable, decrypted data will be stored here after this call returns.
  * \param encryptedLength Length of encrypted data buffer (in bytes).
- * \param IV Initial vector (IV) used during decryption.
+ * \param IV Initial vector (IV) used during decryption. Can be NULL, in that case and IV of all zeroes is assumed.
  * \param IVLength Length of IV buffer (in bytes).
+ * \param initWithLast15 Whether decryption context needs to be initialized with last 15 bytes. Currently this only applies to PlayReady DRM.
  * \return Zero on success, non-zero on error.
- * REPLACING: uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
- */
-// TODO: document that IV can be NULL.
-// TODO: maybe different name for "initWithLast15"?
+ */ 
 #ifdef __cplusplus
-// Default args for backward compatibility
 OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, uint32_t initWithLast15 = 0);
 #else
 OpenCDMError opencdm_session_decrypt(struct OpenCDMSession * session, uint8_t encrypted[], const uint32_t encryptedLength, const uint8_t * IV, uint16_t IVLength, uint32_t initWithLast15);
