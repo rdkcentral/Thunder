@@ -2,6 +2,7 @@
 #include "IBrowser.h"
 #include "IComposition.h"
 #include "IDictionary.h"
+#include "IDsgccClient.h"
 #include "IGuide.h"
 #include "INetflix.h"
 #include "IContentDecryption.h"
@@ -316,6 +317,53 @@ namespace ProxyStubs {
         nullptr
     };
     // IWebDriver interface stub definitions
+
+    //
+    // IDsgccClient interface stub definitions (interface/IDsgccClient.h)
+    //
+    ProxyStub::MethodHandler DsgccClientStubMethods[] = {
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
+            RPC::Data::Input& parameters(message->Parameters());
+            RPC::Data::Frame::Reader reader(parameters.Reader());
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            PluginHost::IShell* implementation = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* proxy = RPC::Administrator::Instance().CreateProxy<PluginHost::IShell>(channel, implementation, true, false);
+
+            ASSERT((proxy != nullptr) && "Failed to create proxy");
+
+            if (proxy == nullptr) {
+                TRACE_L1(_T("Could not create a stub for IGuide: %p"), implementation);
+                writer.Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            }
+            else {
+                writer.Number(parameters.Implementation<IDsgccClient>()->Configure(proxy));
+                if (proxy->Release() != Core::ERROR_NONE) {
+                    TRACE_L1("Oops seems like we did not maintain a reference to this sink. %d", __LINE__);
+                }
+            }
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual void DsgccClientSet(const string& path) = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            string path(parameters.Text());
+
+            message->Parameters().Implementation<IDsgccClient>()->DsgccClientSet(path);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual string DsgccClientGet() const = 0;
+            //
+            string str = message->Parameters().Implementation<IDsgccClient>()->DsgccClientGet();
+            RPC::Data::Frame::Writer output(message->Response().Writer());
+            output.Text(str);
+        },
+        nullptr
+    };
+    // IDsgccClient interface stub definitions
 
     //
     // IOCDM interface stub definitions (interface/IOCDM.h)
@@ -1574,6 +1622,7 @@ namespace ProxyStubs {
     typedef ProxyStub::StubType<IGuide::INotification, GuideNotificationStubMethods, ProxyStub::UnknownStub> GuideNotificationStub;
     typedef ProxyStub::StubType<IWebDriver, WebDriverStubMethods, ProxyStub::UnknownStub> WebDriverStub;
     typedef ProxyStub::StubType<IContentDecryption, OpenCDMiStubMethods, ProxyStub::UnknownStub> OpenCDMiStub;
+    typedef ProxyStub::StubType<IDsgccClient, DsgccClientStubMethods, ProxyStub::UnknownStub> DsgccClientStub;
     typedef ProxyStub::StubType<INetflix, NetflixStubMethods, ProxyStub::UnknownStub> NetflixStub;
     typedef ProxyStub::StubType<INetflix::INotification, NetflixNotificationStubMethods, ProxyStub::UnknownStub> NetflixNotificationStub;
     typedef ProxyStub::StubType<IProvisioning, ProvisioningStubMethods, ProxyStub::UnknownStub> ProvisioningStub;
@@ -1918,6 +1967,44 @@ namespace ProxyStubs {
         }
     };
 
+    class DsgccClientProxy : public ProxyStub::UnknownProxyType<IDsgccClient> {
+    public:
+        DsgccClientProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
+        }
+
+        virtual ~DsgccClientProxy()
+        {
+        }
+
+    public:
+        virtual uint32_t Configure(PluginHost::IShell* service)
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(service);
+            Invoke(newMessage);
+            return (newMessage->Response().Reader().Number<uint32_t>());
+        }
+        virtual void DsgccClientSet(const string& str)
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(str);
+            Invoke(newMessage);
+        }
+
+        virtual string DsgccClientGet() const
+        {
+            IPCMessage newMessage(BaseClass::Message(2));
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            string str = reader.Text();
+            return str;
+        }
+    };
     class NetflixProxy : public ProxyStub::UnknownProxyType<INetflix> {
     public:
         NetflixProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -3065,6 +3152,7 @@ namespace ProxyStubs {
             RPC::Administrator::Instance().Announce<IGuide::INotification, GuideNotificationProxy, GuideNotificationStub>();
             RPC::Administrator::Instance().Announce<IWebDriver, WebDriverProxy, WebDriverStub>();
             RPC::Administrator::Instance().Announce<IContentDecryption, OpenCDMiProxy, OpenCDMiStub>();
+            RPC::Administrator::Instance().Announce<IDsgccClient, DsgccClientProxy, DsgccClientStub>();
             RPC::Administrator::Instance().Announce<INetflix, NetflixProxy, NetflixStub>();
             RPC::Administrator::Instance().Announce<INetflix::INotification, NetflixNotificationProxy, NetflixNotificationStub>();
             RPC::Administrator::Instance().Announce<IProvisioning, ProvisioningProxy, ProvisioningStub>();

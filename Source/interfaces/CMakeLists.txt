@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
         IContentDecryption.h
         IDictionary.h
         IDRM.h
+        IDsgccClient.h
         IExternal.h
         IGuide.h
         IIPNetwork.h
