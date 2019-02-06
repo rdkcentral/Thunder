@@ -48,8 +48,7 @@ function(get_if_link_libraries libs dirs target)
         if(_is_imported)
             get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
             
-
-            if (NOT "${_configurations}" MATCHES "^.*NOTFOUND")
+            if (_configurations)
                 list(LENGTH _configurations _configurations_count)
 
                 list(GET _configurations 0 _config)
@@ -87,7 +86,7 @@ function(get_if_link_libraries libs dirs target)
         # we remove the absolute systroot to make it relative. Later we can decide to use the path in a -L argument <;-)
         get_target_property(_configurations ${target} IMPORTED_CONFIGURATIONS)
         
-        if (NOT "${_configurations}" MATCHES "^.*NOTFOUND")
+        if (_configurations)
             list(LENGTH _configurations _configurations_count)
 
             list(GET _configurations 0 _config)
@@ -100,7 +99,7 @@ function(get_if_link_libraries libs dirs target)
         
         get_target_property(_location ${target} IMPORTED_LOCATION${config})
 
-        if (NOT "${_location}" MATCHES "^.*NOTFOUND")
+        if (_location)
                 _get_default_link_name(${_location} _name _dir)
 
                 if(NOT "${_dir}" STREQUAL "")
@@ -116,7 +115,7 @@ function(get_if_link_libraries libs dirs target)
     # Check its public dependecies
     get_target_property(_if_link_libraries ${target} INTERFACE_LINK_LIBRARIES)
     
-    if (NOT "${_if_link_libraries}" MATCHES "^.*NOTFOUND")
+    if (_if_link_libraries)
         foreach(_library  ${_if_link_libraries})
             if ("${_library}" MATCHES "LINK_ONLY")
                 string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_library})
@@ -154,7 +153,7 @@ function(get_if_compile_defines _result _target)
 
     get_target_property(_if_compile_defines ${_target} INTERFACE_COMPILE_DEFINITIONS)
 
-    if (NOT "${_if_compile_defines}" MATCHES "^.*NOTFOUND")
+    if (_if_compile_defines)
         foreach(_define ${_if_compile_defines})
             if(TARGET ${_define})
                 get_if_compile_defines(_compile_defines ${_define})
@@ -167,7 +166,7 @@ function(get_if_compile_defines _result _target)
 
     get_target_property(_if_link_libraries ${_target} INTERFACE_LINK_LIBRARIES) 
     
-    if (NOT "${_if_link_libraries}" MATCHES "^.*NOTFOUND")
+    if (_if_link_libraries)
         foreach(_link ${_if_link_libraries})
             if(TARGET ${_link})
                 get_if_compile_defines(_compile_defines ${_link})
@@ -190,7 +189,7 @@ function(get_if_compile_options _result _target)
 
     get_target_property(_if_compile_options ${_target} INTERFACE_COMPILE_OPTIONS)
 
-    if (NOT "${_if_compile_options}" MATCHES "^.*NOTFOUND")
+    if (_if_compile_options)
         foreach(_option ${_if_compile_options})
             if(TARGET ${_option})
                 get_if_compile_options(_compile_options ${_option})
@@ -203,7 +202,7 @@ function(get_if_compile_options _result _target)
 
     get_target_property(_if_link_libraries ${_target} INTERFACE_LINK_LIBRARIES) 
     
-    if (NOT "${_if_link_libraries}" MATCHES "^.*NOTFOUND")
+    if (_if_link_libraries)
         foreach(_link ${_if_link_libraries})
             if(TARGET ${_link})
                 get_if_compile_options(_compile_options ${_link})
@@ -226,7 +225,7 @@ function(get_if_include_dirs _result _target)
 
     get_target_property(_if_include_dirs ${_target} INTERFACE_INCLUDE_DIRECTORIES)
 
-    if (NOT "${_if_include_dirs}" MATCHES "^.*NOTFOUND")
+    if (_if_include_dirs)
         foreach(_include ${_if_include_dirs})
             if(TARGET ${_include})
                get_if_include_dirs(__include_dirs ${_include})
@@ -252,7 +251,7 @@ function(get_if_include_dirs _result _target)
 
     get_target_property(_if_link_libraries ${_target} INTERFACE_LINK_LIBRARIES) 
     
-    if (NOT "${_if_link_libraries}" MATCHES "^.*NOTFOUND")
+    if (_if_link_libraries)
         foreach(_link ${_if_link_libraries})
             if(TARGET ${_link})
                 get_if_include_dirs(_include_dirs ${_link})
@@ -304,7 +303,7 @@ function(InstallCMakeConfig)
     elseif(EXISTS "${Argument_TEMPLATE}")
         set(_config_template  ${Argument_TEMPLATE})
     else()
-        message(SEND_ERROR "PC file generation, template '${_config_template}' not found")
+        message(SEND_ERROR "Cmake config file generation, template '${_config_template}' not found")
         return()
     endif()
 
@@ -328,7 +327,7 @@ function(InstallCMakeConfig)
             get_target_property(_name ${_target} NAME)
         endif()
 
-        if ("${_name}" MATCHES "^.*NOTFOUND")
+        if (NOT _name)
             message(FATAL_ERROR "right... ${_target} should have a name right, time for coffee?!")
         endif()
 
@@ -341,24 +340,57 @@ function(InstallCMakeConfig)
         # The alias is used by local targets project
         add_library(${_name}::${_name} ALIAS ${_target})
 
-        foreach(_dependency ${_dependencies})
-            if(TARGET ${_dependency})
-                get_target_property(_type ${_dependency} TYPE)
-
-                if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
-                    set(_type_is_ok TRUE)
-                else()
-                    set(_type_is_ok FALSE)
+        if(_dependencies)
+            foreach(_dependency ${_dependencies})
+                if ("${_dependency}" MATCHES "LINK_ONLY")
+                    string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_dependency})
+                    string(REGEX REPLACE ">$" "" _dependency ${__fix})
                 endif()
 
-                get_target_property(_is_imported ${_dependency} IMPORTED)
+                if(TARGET ${_dependency})
+                    get_target_property(_type ${_dependency} TYPE)
 
-                if (NOT _is_imported AND _type_is_ok)
-                    get_target_property(_dep_name ${_dependency} NAME)
-                    list(APPEND dependencies  ${_dep_name})
-                endif()
-            endif()
-        endforeach()
+                    if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
+                        set(_type_is_ok TRUE)
+                    else()
+                        set(_type_is_ok FALSE)
+                    endif()
+
+                    get_target_property(_is_imported ${_dependency} IMPORTED)
+                    
+                    if (_type_is_ok)
+                        if(_is_imported)
+                            get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
+                            
+                            if (_configurations)
+                                list(LENGTH _configurations _configurations_count)
+
+                                list(GET _configurations 0 _config)
+                                set (config _${_config})
+
+                                if (_configurations_count GREATER 1)
+                                    message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
+                                endif()
+                            endif()
+                            
+                            get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
+                            
+                            _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                        else()
+                            get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
+
+                            if(NOT _dep_name)
+                                get_target_property( _dep_name ${_dependency} NAME)
+                            endif()
+                        endif(_is_imported)
+                        
+                        if(_dep_name)
+                            list(APPEND dependencies  ${_dep_name})
+                        endif()
+                    endif()
+               endif()
+            endforeach()
+        endif()
 
         configure_file( "${_config_template}"
                 "${CMAKE_CURRENT_BINARY_DIR}/${_name}Config.cmake"
@@ -443,7 +475,7 @@ function(InstallPackageConfig)
             get_target_property(NAME ${_target} NAME)
         endif()
 
-        if ("${NAME}" MATCHES "^.*NOTFOUND")
+        if (NOT NAME)
             message(FATAL_ERROR "right... ${_target} should have a name right, time for coffee?!")
         endif()
 
