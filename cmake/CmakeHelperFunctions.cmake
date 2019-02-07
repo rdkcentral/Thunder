@@ -68,6 +68,10 @@ function(get_if_link_libraries libs dirs target)
             if(NOT _name)
                 get_target_property(_name ${target} NAME)
             endif()
+
+            if(NOT _version)
+                set(_version 0.0.0)
+            endif()
         endif(_is_imported)
         
         if(NOT "${_dir}" STREQUAL "")
@@ -137,7 +141,13 @@ function(get_if_link_libraries libs dirs target)
         endforeach()
     endif()
 
-    list(REMOVE_DUPLICATES _link_libraries)
+    if(_link_libraries)
+        list(REMOVE_DUPLICATES _link_libraries)
+    endif()
+
+    if(_link_dirs)
+        list(REMOVE_DUPLICATES _link_dirs)
+    endif()
 
     set(${libs} ${_link_libraries} PARENT_SCOPE)
     set(${dirs} ${_link_dirs} PARENT_SCOPE)
@@ -174,8 +184,10 @@ function(get_if_compile_defines _result _target)
         endforeach()
     endif()
 
-    list(REMOVE_DUPLICATES _compile_defines)
-
+    if(_compile_defines)
+        list(REMOVE_DUPLICATES _compile_defines)
+    endif()
+    
     set(${_result} ${_compile_defines} PARENT_SCOPE )
 endfunction()
 
@@ -210,7 +222,9 @@ function(get_if_compile_options _result _target)
         endforeach()
     endif()
 
-    list(REMOVE_DUPLICATES _compile_options)
+    if(_compile_options)
+        list(REMOVE_DUPLICATES _compile_options)
+    endif()
 
     set(${_result} ${_compile_options} PARENT_SCOPE)
 endfunction() 
@@ -259,7 +273,9 @@ function(get_if_include_dirs _result _target)
         endforeach()
     endif()
 
-    list(REMOVE_DUPLICATES _include_dirs)
+    if(_include_dirs)
+        list(REMOVE_DUPLICATES _include_dirs)
+    endif()
 
     set(${_result} ${_include_dirs} PARENT_SCOPE)
 endfunction()
@@ -329,6 +345,10 @@ function(InstallCMakeConfig)
 
         if (NOT _name)
             message(FATAL_ERROR "right... ${_target} should have a name right, time for coffee?!")
+        endif()
+
+        if(NOT _version)
+            set(_version 0.0.0)
         endif()
 
         write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/${_name}ConfigVersion.cmake
@@ -479,6 +499,10 @@ function(InstallPackageConfig)
             message(FATAL_ERROR "right... ${_target} should have a name right, time for coffee?!")
         endif()
 
+        if(NOT VERSION)
+            set(VERSION 0.0.0)
+        endif()
+
         # Default path on UNIX, if you want Windows or Apple support add the path here. ;-) 
         set(_install_path "lib/pkgconfig")
 
@@ -537,7 +561,12 @@ function(InstallPackageConfig)
         endforeach()
 
         foreach(library ${libraries})
-            set (LIBRARIES "${LIBRARIES} -l${library}")
+            # Maybe its a linker flag
+            if(library MATCHES "^-u" OR library MATCHES "^-l" OR library MATCHES "^-s")
+                set (LIBRARIES "${LIBRARIES} ${library}")
+            else()
+                set (LIBRARIES "${LIBRARIES} -l${library}")
+            endif()
         endforeach()
 
         message(STATUS "${_target} added support for generic consumers via ${_pc_filename}")
