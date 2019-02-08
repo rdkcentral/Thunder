@@ -529,6 +529,8 @@ namespace Core {
                     if (execvp(*actualParameters, actualParameters) < 0) {
                         // TRACE_L1("Failed to start process: %s.", explain_execvp(*actualParameters, actualParameters));
                         TRACE_L1("Failed to start process: %d.", errno);
+			// No glory, so lets quit our selves..
+			Exit(0);
                     }
                 }
                 else if (static_cast<int>(_PID) != -1) {
