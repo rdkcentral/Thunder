@@ -31,6 +31,7 @@ set(PUBLIC_HEADERS
         IRPCLink.h
         IStreaming.h
         ISwitchBoard.h
+        ISystemCommands.h
         ITimeSync.h
         ITVControl.h
         ITVPlatform.h
