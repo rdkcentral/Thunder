@@ -528,9 +528,10 @@ namespace Core {
                     /* fork a child process           */
                     if (execvp(*actualParameters, actualParameters) < 0) {
                         // TRACE_L1("Failed to start process: %s.", explain_execvp(*actualParameters, actualParameters));
-                        TRACE_L1("Failed to start process: %d.", errno);
-			// No glory, so lets quit our selves..
-			exit(0);
+                        int result = errno;
+                        TRACE_L1("Failed to start process: %d - %d.", getpid(), result);
+			// No glory, so lets quit our selves, avoid the _atexit handlers they should not be there yet...
+			_exit(result);
                     }
                 }
                 else if (static_cast<int>(_PID) != -1) {
