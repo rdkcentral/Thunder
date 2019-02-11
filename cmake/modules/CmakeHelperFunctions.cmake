@@ -300,7 +300,7 @@ function(InstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake
+            PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/include/cmake/${NAMESPACE}/templates
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -310,8 +310,8 @@ function(InstallCMakeConfig)
 
         find_file(_config_template  
             NAMES "defaultConfig.cmake.in"
-            PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake )
-
+            PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/include/cmake/${NAMESPACE}/templates )
+            
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
             return()
@@ -442,7 +442,7 @@ function(InstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake
+                    PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/include/cmake/${NAMESPACE}/templates
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -452,7 +452,7 @@ function(InstallPackageConfig)
 
         find_file(_pc_template  
                     NAMES "default.pc.in"
-                    PATHS ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_SYSROOT}/usr/include/${NAMESPACE}/cmake )
+                    PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/include/cmake/${NAMESPACE}/templates )
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")

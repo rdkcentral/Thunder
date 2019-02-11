@@ -31,26 +31,35 @@ option(BUILD_TESTS "Build tests (requires gtest)" OFF)
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
 if (INSTALL_LOCALLY)
-    set(CMAKE_INSTALL_PREFIX ${PROJECT_BINARY_DIR}/install)
-    set(CMAKE_PREFIX_PATH ${PROJECT_BINARY_DIR}/cmake)
-else()
-    set(CMAKE_PREFIX_PATH ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/cmake ${CMAKE_PREFIX_PATH})
+    set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install")
+    set(CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/cmake")
 endif()
 
 # make sure others can make use of the JSON creation tools as well!!!
-configure_file( "${CMAKE_SOURCE_DIR}/cmake/wpeframework.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake"
+configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
+                "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
                 @ONLY)
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake")
-# install(FILES ${CMAKE_CURRENT_BINARY_DIR}/WPEFramework.cmake
-#         DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake"
-#         RENAME tools.cmake)
-# install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/config/
-#         DESTINATION include/cmake/tools)
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/config/
-        DESTINATION include/cmake/WPEFramework/config)
+# TODO: Remove this install if all other projects use the generic find_package
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
+        DESTINATION include/cmake)
+
+# TODO: Remove this install if all other projects use the generic find_package
+install(DIRECTORY 
+            "${CMAKE_SOURCE_DIR}/cmake/config"
+            "${CMAKE_SOURCE_DIR}/cmake/templates"
+            "${CMAKE_SOURCE_DIR}/cmake/modules"
+        DESTINATION include/cmake/${NAMESPACE})
+
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
+        RENAME "${NAMESPACE}Config.cmake"
+        DESTINATION lib/cmake/${NAMESPACE})
+
+install(DIRECTORY 
+            "${CMAKE_SOURCE_DIR}/cmake/config"
+            "${CMAKE_SOURCE_DIR}/cmake/templates"
+            "${CMAKE_SOURCE_DIR}/cmake/modules"
+        DESTINATION lib/cmake/${NAMESPACE})
 
 if(APPLE)
     # Mac needed variables
