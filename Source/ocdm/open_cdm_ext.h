@@ -132,7 +132,4 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
 } // extern "C"
 #endif
 
-// TODO: remove
-OpenCDMError opencdm_create_session_ext(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength);
-
 #endif // __OPEN_OCDM_EXT_H_
