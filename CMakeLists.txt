@@ -40,17 +40,6 @@ configure_file( "${CMAKE_SOURCE_DIR}/cmake/project.cmake.in"
                 "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
                 @ONLY)
 
-# TODO: Remove this install if all other projects use the generic find_package
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
-        DESTINATION include/cmake)
-
-# TODO: Remove this install if all other projects use the generic find_package
-install(DIRECTORY 
-            "${CMAKE_SOURCE_DIR}/cmake/config"
-            "${CMAKE_SOURCE_DIR}/cmake/templates"
-            "${CMAKE_SOURCE_DIR}/cmake/modules"
-        DESTINATION include/cmake/${NAMESPACE})
-
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
         DESTINATION lib/cmake/${NAMESPACE})

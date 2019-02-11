@@ -22,8 +22,7 @@ set(NAMESPACE "@NAMESPACE@")
 set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 
 list(APPEND CMAKE_MODULE_PATH 
-            "${MODULE_BASE_DIR}/modules"
-            "${MODULE_BASE_DIR}/${NAMESPACE}/modules")
+            "${MODULE_BASE_DIR}/modules")
 
 # get temp dir which is needed by a couple of functions in cmakepp
 # first uses env variable TMP if it does not exists TMPDIR is used
@@ -44,14 +43,8 @@ endfunction()
 macro(IncludeConfig)
     if(NOT COMMAND map)
         ## includes all cmake files of cmakepp to write json files
-        if(EXISTS "${MODULE_BASE_DIR}/config/core/require.cmake")
-            include("${MODULE_BASE_DIR}/config/core/require.cmake")
-            require("${MODULE_BASE_DIR}/config/*.cmake")
-        else()
-            #TODO: Remove these locations if all other projects use the generic find_package
-            include("${MODULE_BASE_DIR}/${NAMESPACE}/config/core/require.cmake")
-            require("${MODULE_BASE_DIR}/${NAMESPACE}/config/*.cmake")
-        endif()
+        include("${MODULE_BASE_DIR}/config/core/require.cmake")
+        require("${MODULE_BASE_DIR}/config/*.cmake")
     endif()
 endmacro()
 
