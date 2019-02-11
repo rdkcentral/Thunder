@@ -54,7 +54,7 @@ target_link_libraries(${TargetInterfaces}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if (PROTOCOLS)
     target_link_libraries(${TargetMarshalling}
             PRIVATE
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols

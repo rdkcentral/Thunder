@@ -277,7 +277,7 @@ namespace WPEFramework {
             Core::ProxyType<Core::IDispatchType<void> > _job;
         };
 
-        typedef Core::ThreadPoolType<Core::Job, WPEFRAMEWORK_THREADPOOL_COUNT> ThreadPool;
+        typedef Core::ThreadPoolType<Core::Job, THREADPOOL_COUNT> ThreadPool;
 
     private:
         WorkerPoolImplementation() = delete;
@@ -1101,7 +1101,7 @@ namespace WPEFramework {
 
 			public:
 				CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
-					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16,WPEFRAMEWORK_RPCPOOL_COUNT> >::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
+					: RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16,RPCPOOL_COUNT> >::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 					, _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
 					, _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
 					, _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)

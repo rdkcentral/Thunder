@@ -7,7 +7,7 @@ add_library(${TARGET} SHARED
         Module.cpp
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols

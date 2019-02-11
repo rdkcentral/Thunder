@@ -37,7 +37,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
-if(WPEFRAMEWORK_PROTOCOLS)
+if(PROTOCOLS)
     target_link_libraries(${TARGET}
             PUBLIC
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols

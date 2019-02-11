@@ -1,61 +1,61 @@
 include(config)
 
-option(WPEFRAMEWORK_LIBWPEFRAMEWORK
+option(LIBWPEFRAMEWORK
         "Include the libWPEFramework library." ON)
-option(WPEFRAMEWORK_CRYPTALGO
+option(CRYPTALGO
         "Include the encyption algorithm library." ON)
-option(WPEFRAMEWORK_BROADCAST
+option(BROADCAST
         "Include the broadcasting library." OFF)
-option(WPEFRAMEWORK_WEBSOCKET
+option(WEBSOCKET
         "Include the websocket library." OFF)
-option(WPEFRAMEWORK_PROTOCOLS
+option(PROTOCOLS
         "Include the protocols library." ON)
-option(WPEFRAMEWORK_TRACING
+option(TRACING
         "Include the tracing library." ON)
-option(WPEFRAMEWORK_PROFILER
+option(PROFILER
         "Include the profiler library." OFF)
-option(WPEFRAMEWORK_COM
+option(COM
         "Include the COM library." OFF)
-option(WPEFRAMEWORK_PROTOCOLS
+option(PROTOCOLS
         "Include Protocols lib." ON)
-option(WPEFRAMEWORK_CDMI
+option(CDMI
         "Include OpenCDM interface." OFF)
-option(WPEFRAMEWORK_PROCESS
+option(PROCESS
         "Include WPEProcess executable." ON)
-option(WPEFRAMEWORK_PROXY_STUB
+option(PROXY_STUB
         "Include proxy/stubs." ON)
-option(WPEFRAMEWORK_PLUGINS_LIB
+option(PLUGINS_LIB
         "Include plugins library." ON)
-option(WPEFRAMEWORK_INTERFACES_LIB
+option(INTERFACES_LIB
         "Include interfaces library." ON)
-option(WPEFRAMEWORK_WPEFRAMEWORK_EXECUTABLE
+option(EXECUTABLE
         "Include WPEFramework executable." ON)
-option(WPEFRAMEWORK_VIRTUALINPUT
+option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
-option(WPEFRAMEWORK_TEST_APPS
+option(TEST_APPS
         "Include test applications." OFF)
-option(WPEFRAMEWORK_UNIT_TESTS
+option(UNIT_TESTS
         "Include unit tests (new gtest based)." OFF)
-option(WPEFRAMEWORK_TEST_MEASUREMENTS
+option(TEST_MEASUREMENTS
         "Include code coverage measurments." OFF)
-option(WPEFRAMEWORK_STUB_HARDWARE
+option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 
-set(WPEFRAMEWORK_PORT 80 CACHE STRING "The port for the webinterface")
-set(WPEFRAMEWORK_BINDING "0.0.0.0" CACHE STRING "The binding interface")
-set(WPEFRAMEWORK_IDLE_TIME 180 CACHE STRING "Idle time")
-set(WPEFRAMEWORK_PERSISTENT_PATH "/root" CACHE STRING "Persistent path")
-set(WPEFRAMEWORK_DATA_PATH "/usr/share/WPEFramework" CACHE STRING "Data path")
-set(WPEFRAMEWORK_SYSTEM_PATH "/usr/lib/wpeframework/plugins" CACHE STRING "System path")
-set(WPEFRAMEWORK_WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
-set(WPEFRAMEWORK_WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
-set(WPEFRAMEWORK_PROXYSTUB_PATH "/usr/lib/wpeframework/proxystubs" CACHE STRING "Proxy stub path")
-set(WPEFRAMEWORK_CONFIG_INSTALL_PATH "/etc/wpeframework" CACHE STRING "Install location of the wpeframework configuration")
-set(WPEFRAMEWORK_IPV6_SUPPORT false CACHE STRING "Controls if wpeframework should support ipv6")
-set(WPEFRAMEWORK_PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
-set(WPEFRAMEWORK_POLICY 0 CACHE STRING "NA")
-set(WPEFRAMEWORK_OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
-set(WPEFRAMEWORK_STACKSIZE 0 CACHE STRING "Default stack size per thread")
+set(PORT 80 CACHE STRING "The port for the webinterface")
+set(BINDING "0.0.0.0" CACHE STRING "The binding interface")
+set(IDLE_TIME 180 CACHE STRING "Idle time")
+set(PERSISTENT_PATH "/root" CACHE STRING "Persistent path")
+set(DATA_PATH "/usr/share/WPEFramework" CACHE STRING "Data path")
+set(SYSTEM_PATH "/usr/lib/wpeframework/plugins" CACHE STRING "System path")
+set(WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
+set(WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
+set(PROXYSTUB_PATH "/usr/lib/wpeframework/proxystubs" CACHE STRING "Proxy stub path")
+set(CONFIG_INSTALL_PATH "/etc/wpeframework" CACHE STRING "Install location of the wpeframework configuration")
+set(IPV6_SUPPORT false CACHE STRING "Controls if wpeframework should support ipv6")
+set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
+set(POLICY 0 CACHE STRING "NA")
+set(OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
+set(STACKSIZE 0 CACHE STRING "Default stack size per thread")
 
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
@@ -64,74 +64,74 @@ string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
 
 #FIXME: We shouldn't touch cflags...
-if(WPEFRAMEWORK_TEST_MEASUREMENTS)
+if(TEST_MEASUREMENTS)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
     set(CMAKE_EXE_LINKER_FLAGS -lgcov)
 endif ()
 
-if(WPEFRAMEWORK_LIBWPEFRAMEWORK)
+if(LIBWPEFRAMEWORK)
     add_subdirectory(core)
 endif()
 
-if(WPEFRAMEWORK_CRYPTALGO)
+if(CRYPTALGO)
     add_subdirectory(cryptalgo)
 endif()
 
-if(WPEFRAMEWORK_BROADCAST)
+if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
 
-if(WPEFRAMEWORK_VIRTUALINPUT)
+if(VIRTUALINPUT)
     add_subdirectory(virtualinput)
 endif()
 
-if(WPEFRAMEWORK_PROVISIONPROXY)
+if(PROVISIONPROXY)
     add_subdirectory(provisionproxy)
 endif()
 
-if(WPEFRAMEWORK_CDMI)
+if(CDMI)
     add_subdirectory(ocdm)
 endif()
 
-if(WPEFRAMEWORK_WEBSOCKET)
+if(WEBSOCKET)
     add_subdirectory(websocket)
 endif()
 
-if(WPEFRAMEWORK_TRACING)
+if(TRACING)
     add_subdirectory(tracing)
 endif()
 
-if(WPEFRAMEWORK_PROFILER)
-    message(FATAL_ERROR "WPEFRAMEWORK_PROFILER option does not exist?")
-    set(PROFILER_INCLUDE_DIR "${WPEFRAMEWORK_ROOT}/Source/profiler")
+if(PROFILER)
+    message(FATAL_ERROR "PROFILER option does not exist?")
+    set(PROFILER_INCLUDE_DIR "${ROOT}/Source/profiler")
     add_subdirectory(profiler)
 endif()
 
-if(WPEFRAMEWORK_COM)
+if(COM)
     add_subdirectory(com)
 endif()
 
-if(WPEFRAMEWORK_PROTOCOLS)
+if(PROTOCOLS)
     add_subdirectory(protocols)
 endif()
 
-if(WPEFRAMEWORK_PROCESS)
+if(PROCESS)
     add_subdirectory(WPEProcess)
 endif()
 
-if(WPEFRAMEWORK_PROXY_STUB)
+if(PROXY_STUB)
     add_subdirectory(proxystubs)
 endif()
 
-if(WPEFRAMEWORK_PLUGINS_LIB)
+if(PLUGINS_LIB)
     add_subdirectory(plugins)
 endif()
 
-if(WPEFRAMEWORK_INTERFACES_LIB)
+if(INTERFACES_LIB)
     add_subdirectory(interfaces)
 endif()
 
-if(WPEFRAMEWORK_WPEFRAMEWORK_EXECUTABLE)
+if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
 

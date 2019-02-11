@@ -12,8 +12,8 @@ target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
-          WPEFRAMEWORK_THREADPOOL_COUNT=3
-          WPEFRAMEWORK_RPCPOOL_COUNT=3
+          THREADPOOL_COUNT=3
+          RPCPOOL_COUNT=3
         )
 
 if (TREE_REFERENCE)
@@ -33,7 +33,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols

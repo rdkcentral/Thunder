@@ -22,7 +22,7 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include/opencdm> 
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols

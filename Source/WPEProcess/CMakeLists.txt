@@ -20,7 +20,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
-if (WPEFRAMEWORK_PROTOCOLS)
+if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
               ${NAMESPACE}Protocols::${NAMESPACE}Protocols
