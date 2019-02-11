@@ -1,10 +1,9 @@
-# - Try to find bcm_host.
-# Once done, this will define
+# - Try to find Broadcom Nexus local client.
+# Once done this will define
+#  LIBNXCLIENT_LOCAL_LIBRARY_FOUND - System has Nexus local client
+#  NXCLIENT_LOCAL::NXCLIENT_LOCAL  - The Nexus local client library
 #
-#  BCM_HOST_INCLUDE_DIRS - the bcm_host include directories
-#  BCM_HOST_LIBRARIES - link these to use bcm_host.
-#
-# Copyright (C) 2015 Igalia S.L.
+# Copyright (C) 2019 Metrological B.V.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,19 +26,24 @@
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-find_package(PkgConfig)
-pkg_check_modules(BCM_HOST bcm_host)
+find_path(LIBNXCLIENT_LOCAL_INCLUDE nexus_config.h
+        PATH_SUFFIXES refsw)
 
-include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(BCM_HOST DEFAULT_MSG BCM_HOST_LIBRARIES)
+find_library(LIBNXCLIENT_LOCAL_LIBRARY nxclient_local)
 
-mark_as_advanced(BCM_HOST_INCLUDE_DIRS BCM_HOST_LIBRARIES)
+if(EXISTS "${LIBNXCLIENT_LOCAL_LIBRARY}")
+    include(FindPackageHandleStandardArgs)
+    
+    set(NXCLIENT_LOCAL_FOUND TRUE)
+    
+    find_package_handle_standard_args(LIBNXCLIENT_LOCAL_LIBRARY DEFAULT_MSG LIBNXCLIENT_LOCAL_INCLUDE LIBNXCLIENT_LOCAL_LIBRARY)
+    mark_as_advanced(LIBNXCLIENT_LOCAL_LIBRARY)
 
-if(NOT TARGET BCMHOST::BCMHOST)
-    add_library(BCMHOST::BCMHOST UNKNOWN IMPORTED)
-    if(EXISTS "${LIBRT_LIBRARY}")
-        set_target_properties(LIBRT::LIBRT PROPERTIES
+    if(NOT TARGET NXCLIENT_LOCAL::NXCLIENT_LOCAL)
+        add_library(NXCLIENT_LOCAL::NXCLIENT_LOCAL UNKNOWN IMPORTED)
+        set_target_properties(NXCLIENT_LOCAL::NXCLIENT_LOCAL PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                IMPORTED_LOCATION "${LIBRT_LIBRARY}")
+                IMPORTED_LOCATION "${LIBNXCLIENT_LOCAL_LIBRARY}"
+                INTERFACE_INCLUDE_DIRECTORIES "${LIBNXCLIENT_LOCAL_INCLUDE}"
     endif()
 endif()

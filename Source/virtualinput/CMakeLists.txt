@@ -1,4 +1,4 @@
-set(TARGET VirtualInput)
+set(TARGET ${NAMESPACE}VirtualInput)
 
 option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
@@ -15,7 +15,7 @@ set(PUBLIC_HEADERS
 
 target_link_libraries(${TARGET}
         PRIVATE
-          ${NAMESPACE}::Core
+          ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -25,7 +25,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${VIRTUALINPUT_ARTIFACT}
         )
 
 target_include_directories( ${TARGET}
@@ -33,9 +32,10 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}/virtualinput>
         )
 
-
+        
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
@@ -46,28 +46,14 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}/virtualinput      # headers
 )
 
-HandleStandardLib()
+InstallCMakeConfig(
+        TARGETS ${TARGET})
+
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "An abstraction layer for input virtualisation using an IPC message channel.")
 
 if (VIRTUALINPUT_TOOLS)
     add_subdirectory(tools)
 endif()
-
-
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/virtualinput.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}VirtualInput.pc"
-        @ONLY)
-
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}VirtualInput.pc
-        DESTINATION lib/pkgconfig
-)
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/virtualinput.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Find${TARGET}.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
-)
 

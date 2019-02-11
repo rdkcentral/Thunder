@@ -1,10 +1,11 @@
+set(TargetMarshalling ${NAMESPACE}Marshallings)
+set(TargetInterfaces ${NAMESPACE}Interfaces)
 
-# ${TARGET} mentioned here is the name to be used by other CMake projects.
-add_library(Marshalling SHARED
+add_library(${TargetMarshalling} SHARED
         ProxyStubs.cpp
         )
 
-add_library(Interfaces SHARED
+add_library(${TargetInterfaces} SHARED
         Enumerations.cpp
         )
 
@@ -41,98 +42,73 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
-target_link_libraries(Marshalling
+target_link_libraries(${TargetMarshalling}
         PRIVATE
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Tracing
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
-target_link_libraries(Interfaces
-        PRIVATE
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Tracing
+target_link_libraries(${TargetInterfaces}
+        PUBLIC
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
 if (WPEFRAMEWORK_PROTOCOLS)
-    target_link_libraries(Marshalling
+    target_link_libraries(${TargetMarshalling}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
-    target_link_libraries(Marshalling
+    target_link_libraries(${TargetMarshalling}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
 
-set_target_properties(Marshalling PROPERTIES
+set_target_properties(${TargetMarshalling} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME "${NAMESPACE}Marshalling"
         )
 
-set_target_properties(Interfaces PROPERTIES
+set_target_properties(${TargetInterfaces} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        OUTPUT_NAME "${NAMESPACE}Interfaces"
         )
 
+target_include_directories(${TargetInterfaces}
+        PUBLIC
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+          $<INSTALL_INTERFACE:include/${NAMESPACE}>
+        )
 
 install(
-        TARGETS Interfaces EXPORT InterfacesTargets  # for downstream dependencies
+        TARGETS ${TargetInterfaces} EXPORT ${TargetInterfaces}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib/ COMPONENT libs      # static lib
         LIBRARY DESTINATION lib/ COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin/ COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/interfaces COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}/interfaces      # headers
+        INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
 install(
-        TARGETS Marshalling EXPORT MarshallingTargets  # for downstream dependencies
+        TARGETS ${TargetMarshalling} EXPORT ${TargetMarshalling}Targets  # for downstream dependencies
         LIBRARY DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # shared lib
 )
 
-# package config
-configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/interfaces.pc.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}Interfaces.pc"
-        @ONLY)
-
-install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}Interfaces.pc
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig"
-)
-
-configure_file( "${CMAKE_CURRENT_SOURCE_DIR}/interfaces.cmake.in"
-                "${CMAKE_CURRENT_BINARY_DIR}/FindInterfaces.cmake"
-                @ONLY)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/FindInterfaces.cmake
-        DESTINATION "${CMAKE_INSTALL_PREFIX}/include/cmake/${NAMESPACE}"
-)
-
-include (CMakePackageConfigHelpers)
-
-write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/InterfacesConfigVersion.cmake
-        VERSION ${VERSION}
-        COMPATIBILITY SameMajorVersion
+InstallPackageConfig(
+        TARGETS ${TargetInterfaces}
+        DESCRIPTION "Share lookup tables associated with interface enums."
         )
 
-add_library(${NAMESPACE}::Interfaces ALIAS Interfaces)
-
-install(EXPORT InterfacesTargets
-        FILE InterfacesConfig.cmake
-        NAMESPACE ${NAMESPACE}::
-        DESTINATION include/cmake)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/InterfacesConfigVersion.cmake
-        DESTINATION include/cmake )
+InstallCMakeConfig(TARGETS ${TargetInterfaces})

@@ -1,12 +1,9 @@
-# - Try to find BroadCom RefSW.
+# - Try to find Broadcom Nexus.
 # Once done this will define
-#  BCMREFSW_FOUND - System has Nexus
-#  BCMREFSW_INCLUDE_DIRS - The Nexus include directories
+#  NEXUS_FOUND  - System has Nexus
+#  NEXUS::NEXUS - The Nexus library
 #
-#  All variable from platform_app.inc are available except:
-#  - NEXUS_PLATFORM_VERSION_NUMBER.
-#
-# Copyright (C) 2015 Metrological.
+# Copyright (C) 2019 Metrological B.V
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -34,29 +31,23 @@ find_path(LIBNEXUS_INCLUDE nexus_config.h
 
 find_library(LIBNEXUS_LIBRARY nexus)
 
-find_library(LIBB_OS_LIBRARY b_os)
+if(EXISTS "${LIBNEXUS_LIBRARY}")
+    set(NEXUS_FOUND TRUE)
+    
+    find_library(LIBB_OS_LIBRARY b_os)
 
-find_library(LIBNXCLIENT_LOCAL_LIBRARY nxclient_local)
+    find_library(LIBNEXUS_CLIENT_LIBRARY nexus_client)
 
-find_library(LIBNXCLIENT_LIBRARY nxclient)
+    find_library(LIBNXCLIENT_LIBRARY nxclient)
 
-find_library(LIBNEXUS_CLIENT_LIBRARY nexus_client)
+    include(FindPackageHandleStandardArgs)
 
-include(FindPackageHandleStandardArgs)
+    find_package_handle_standard_args(LIBNEXUS DEFAULT_MSG LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
 
-find_package_handle_standard_args(LIBNEXUS DEFAULT_MSG LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
+    mark_as_advanced(LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
 
-mark_as_advanced(LIBNEXUS_INCLUDE LIBNEXUS_LIBRARY)
-
-if(EXISTS "${LIBNXCLIENT_LIBRARY}")
-  find_package_handle_standard_args(LIBNXCLIENT DEFAULT_MSG LIBNEXUS_INCLUDE LIBNXCLIENT_LIBRARY)
-  mark_as_advanced(LIBNXCLIENT_LIBRARY)
-endif()
-
-
-if(NOT TARGET NEXUS::NEXUS)
-    add_library(NEXUS::NEXUS UNKNOWN IMPORTED)
-    if(EXISTS "${LIBNEXUS_LIBRARY}")
+    if(NOT TARGET NEXUS::NEXUS)
+        add_library(NEXUS::NEXUS UNKNOWN IMPORTED)
         set_target_properties(NEXUS::NEXUS PROPERTIES
                 IMPORTED_LINK_INTERFACE_LANGUAGES "C"
                 INTERFACE_INCLUDE_DIRECTORIES "${LIBNEXUS_INCLUDE}"
@@ -68,7 +59,6 @@ if(NOT TARGET NEXUS::NEXUS)
                     IMPORTED_LOCATION "${LIBNEXUS_LIBRARY}"
                     )
         else()
-
             message(STATUS "Nexus in Client mode")
             set_target_properties(NEXUS::NEXUS PROPERTIES
                     IMPORTED_LOCATION "${LIBNEXUS_CLIENT_LIBRARY}"
@@ -77,8 +67,8 @@ if(NOT TARGET NEXUS::NEXUS)
 
         if(NOT EXISTS "${LIBNXCLIENT_LIBRARY}")
             set_target_properties(NEXUS::NEXUS PROPERTIES
-                 INTERFACE_COMPILE_DEFINITIONS NO_NXCLIENT
-                 )
+                    INTERFACE_COMPILE_DEFINITIONS NO_NXCLIENT
+                    )
         endif()
 
         if(EXISTS "${LIBB_OS_LIBRARY}")
@@ -86,27 +76,5 @@ if(NOT TARGET NEXUS::NEXUS)
                     IMPORTED_LINK_INTERFACE_LIBRARIES "${LIBB_OS_LIBRARY}"
                     )
         endif()
-    endif()
-endif()
-
-if(NOT TARGET NEXUS::NXCLIENT)
-    add_library(NEXUS::NXCLIENT UNKNOWN IMPORTED)
-    if(EXISTS "${LIBNXCLIENT_LIBRARY}")
-        set_target_properties(NEXUS::NXCLIENT PROPERTIES
-                IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                IMPORTED_LOCATION "${LIBNXCLIENT_LIBRARY}"
-                INTERFACE_INCLUDE_DIRECTORIES "${LIBNEXUS_INCLUDE}"
-                )
-    endif()
-endif()
-
-if(NOT TARGET NEXUS::NXCLIENT_LOCAL)
-    add_library(NEXUS::NXCLIENT_LOCAL UNKNOWN IMPORTED)
-    if(EXISTS "${LIBNXCLIENT_LOCAL_LIBRARY}")
-        set_target_properties(NEXUS::NXCLIENT_LOCAL PROPERTIES
-                IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-                IMPORTED_LOCATION "${LIBNXCLIENT_LOCAL_LIBRARY}"
-                INTERFACE_INCLUDE_DIRECTORIES "${LIBNEXUS_INCLUDE}"
-                )
     endif()
 endif()

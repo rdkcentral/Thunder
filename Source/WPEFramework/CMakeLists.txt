@@ -1,4 +1,4 @@
-set(TARGET PluginHost)
+set(TARGET WPEFramework)
 
 add_executable(${TARGET}
         Controller.cpp
@@ -11,8 +11,7 @@ add_executable(${TARGET}
 target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
-          APPLICATION_NAME=${PLUGINHOST_ARTIFACT}
-          HOSTING_COMPROCESS=${WPEPROCESS_ARTIFACT}
+          APPLICATION_NAME=${TARGET}
           WPEFRAMEWORK_THREADPOOL_COUNT=3
           WPEFRAMEWORK_RPCPOOL_COUNT=3
         )
@@ -27,23 +26,23 @@ endif()
 target_link_libraries(${TARGET}
         PRIVATE
           ${CMAKE_DL_LIBS}
-          ${NAMESPACE}::Core
-          ${NAMESPACE}::Tracing
-          ${NAMESPACE}::Cryptalgo
-          ${NAMESPACE}::Plugins
-          ${NAMESPACE}::COMProcess  # For COM executable define
+          ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+          ${NAMESPACE}Plugins::${NAMESPACE}Plugins
+          ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
 if (WPEFRAMEWORK_PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::Protocols
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
             )
 else()
     target_link_libraries(${TARGET}
             PRIVATE
-              ${NAMESPACE}::WebSocket
-              ${NAMESPACE}::COM
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+              ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
 
@@ -52,7 +51,6 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
         VERSION ${VERSION}
-        OUTPUT_NAME ${PLUGINHOST_ARTIFACT}
         )
 
 install(
@@ -61,6 +59,4 @@ install(
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/${NAMESPACE} COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/${NAMESPACE}      # headers
 )

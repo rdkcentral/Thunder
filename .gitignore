@@ -2,6 +2,7 @@ CMakeFiles/
 .cproject
 .project
 .idea/
+.vscode
 build/
 output/
 cmake-build-*/
