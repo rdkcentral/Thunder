@@ -23,6 +23,11 @@ if (SYSTEM_PREFIX)
     message(STATUS "System prefix is set to: ${SYSTEM_PREFIX}")
 endif()
 
+if(NOT BUILD_TYPE)
+    set(BUILD_TYPE Production)
+    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
+endif()
+
 target_compile_definitions(CompileSettings INTERFACE PLATFORM_${PLATFORM}=1)
 message(STATUS "Selected platform ${PLATFORM}")
 
@@ -31,7 +36,7 @@ target_compile_options(CompileSettings INTERFACE -std=c++11)
 #
 # Build type specific options
 #
-if(${BUILD_TYPE} STREQUAL "Debug")
+if("${BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _DEBUG)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
@@ -39,7 +44,7 @@ if(${BUILD_TYPE} STREQUAL "Debug")
         target_compile_options(CompileSettings INTERFACE -g -Og)
     endif()
 
-elseif(${BUILD_TYPE} STREQUAL "DebugOptimized")
+elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _DEBUG)
     set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
@@ -47,24 +52,24 @@ elseif(${BUILD_TYPE} STREQUAL "DebugOptimized")
         target_compile_options(CompileSettings INTERFACE -g)
     endif()
 
-elseif(${BUILD_TYPE} STREQUAL "ReleaseSymbols")
+elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
     target_compile_definitions(CompileSettings INTERFACE NDEBUG)
     set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
     target_compile_options(CompileSettings INTERFACE "${CMAKE_C_FLAGS_DEBUG}")
 
-elseif(${BUILD_TYPE} STREQUAL "Release")
+elseif("${BUILD_TYPE}" STREQUAL "Release")
     set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
     target_compile_definitions(CompileSettings INTERFACE NDEBUG)
 
-elseif(${BUILD_TYPE} STREQUAL "Production")
+elseif("${BUILD_TYPE}" STREQUAL "Production")
     set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
     target_compile_definitions(CompileSettings INTERFACE NDEBUG PRODUCTION)
 
 else()
-    message(FATAL_ERROR "Invalid build type: " ${BUILD_TYPE})
+    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
 endif()
 
 #
