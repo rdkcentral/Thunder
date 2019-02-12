@@ -370,9 +370,7 @@ public:
             uint32_t serverResponseLength) = 0;
 
     // TODO: rename to something like "SetStoreDirs"
-    virtual CDMi_RESULT CreateSystemNetflix(
-            const std::string& readDir,
-            const std::string& storeLocation) = 0;
+    virtual CDMi_RESULT CreateSystemNetflix() = 0;
 
     virtual CDMi_RESULT InitSystemNetflix() = 0;
 

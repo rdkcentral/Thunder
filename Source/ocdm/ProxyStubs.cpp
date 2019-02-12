@@ -273,19 +273,12 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT CreateSystemNetflix(
-            //        const std::string& readDir,
-            //        const std::string& storeLocation) = 0;
+            // virtual OCDM_RESULT CreateSystemNetflix() = 0;
             //
-
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            std::string readDir = parameters.Text();
-            std::string storeLocation = parameters.Text();
-
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->CreateSystemNetflix(readDir, storeLocation));
+            response.Number(accessor->CreateSystemNetflix());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -1059,16 +1052,9 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT CreateSystemNetflix(
-                const std::string& readDir,
-                const std::string& storeLocation) override
+        virtual OCDM::OCDM_RESULT CreateSystemNetflix() override
         {
             IPCMessage newMessage(BaseClass::Message(6));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-
-            writer.Text(readDir);
-            writer.Text(storeLocation);
-
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());

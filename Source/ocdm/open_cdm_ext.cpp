@@ -166,11 +166,7 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
 {
     OpenCDMAccessor* output = opencdm_create_system();
 
-    // TODO: read from JSON, OCDM side
-
-    const char readDir[] = "/home/sander/Projects/Netflix/5.0/build/build/netflix5/build/src/platform/gibbon/data/dpi/playready";
-    const char storeLocation[] = "/home/sander/Projects/Netflix/5.0/build/build/netflix5/build/src/platform/gibbon/data/var/dpi/playready/storage/drmstore";
-    output->CreateSystemNetflix(readDir, storeLocation);
+    output->CreateSystemNetflix();
 
     output->InitSystemNetflix();
 

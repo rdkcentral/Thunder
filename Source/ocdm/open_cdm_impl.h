@@ -427,10 +427,8 @@ public:
         return _remoteExt->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
 
-    virtual OCDM::OCDM_RESULT CreateSystemNetflix(
-            const std::string& readDir,
-            const std::string& storeLocation) override {
-        return _remoteExt->CreateSystemNetflix(readDir, storeLocation);
+    virtual OCDM::OCDM_RESULT CreateSystemNetflix() override {
+        return _remoteExt->CreateSystemNetflix();
     }
 
     virtual OCDM::OCDM_RESULT InitSystemNetflix() override {
