@@ -534,7 +534,7 @@ namespace Core {
 
             _adminLock.Unlock();
 
-            return (result);
+            return ((result > maxLength) ? maxLength : result);
         }
     }
 }
