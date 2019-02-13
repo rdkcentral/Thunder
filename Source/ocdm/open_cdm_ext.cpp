@@ -13,6 +13,59 @@
 // TODO: shares code with ExtendedOpenCDMSession, maybe intro baseclass?
 struct ExtendedOpenCDMSessionExt : public OpenCDMSession {
 private:
+    // TODO: this is copies from "ExtendedOpenCDMSession"
+    class Sink : public OCDM::ISession::ICallback {
+    private:
+        Sink() = delete;
+        Sink(const Sink&) = delete;
+        Sink& operator= (const Sink&) = delete;
+    public:
+        Sink(ExtendedOpenCDMSessionExt* parent)
+            : _parent(*parent) {
+            ASSERT(parent != nullptr);
+        }
+        virtual ~Sink() {
+        }
+
+    public:
+        // TODO: forward messages to parent
+
+        // Event fired when a key message is successfully created.
+        virtual void OnKeyMessage(
+            const uint8_t* keyMessage, //__in_bcount(f_cbKeyMessage)
+            const uint16_t keyLength, //__in
+            const std::string URL)
+        {
+            _parent.OnKeyMessage(std::string(reinterpret_cast<const char*>(keyMessage), keyLength), URL);
+        }
+        // Event fired when MediaKeySession has found a usable key.
+        virtual void OnKeyReady()
+        {
+            _parent.OnKeyReady();
+        }
+        // Event fired when MediaKeySession encounters an error.
+        virtual void OnKeyError(
+            const int16_t error,
+            const OCDM::OCDM_RESULT sysError,
+            const std::string errorMessage)
+        {
+            _parent.OnKeyError(error, sysError, errorMessage);
+        }
+        // Event fired on key status update
+        virtual void OnKeyStatusUpdate(const OCDM::ISession::KeyStatus keyMessage)
+        {
+            _parent.OnKeyStatusUpdate(keyMessage);
+        }
+
+        BEGIN_INTERFACE_MAP(Sink)
+            INTERFACE_ENTRY(OCDM::ISession::ICallback)
+        END_INTERFACE_MAP
+
+    private:
+        ExtendedOpenCDMSessionExt& _parent;
+    };
+
+private:
     ExtendedOpenCDMSessionExt() = delete;
     ExtendedOpenCDMSessionExt(const ExtendedOpenCDMSessionExt&) = delete;
     ExtendedOpenCDMSessionExt& operator= (ExtendedOpenCDMSessionExt&) = delete;
@@ -31,9 +84,10 @@ private:
 
 public:
     ExtendedOpenCDMSessionExt(
-        OpenCDMAccessor* system, const uint8_t drmHeader[], uint32_t drmHeaderLength)
+        OpenCDMAccessor* system, const uint8_t drmHeader[], uint32_t drmHeaderLength,
+        OpenCDMSessionCallbacks * callbacks)
         : OpenCDMSession()
-        //, _sink(this)
+        , _sink(this)
         , _state(SESSION_INIT)
         , _message()
         , _URL()
@@ -42,13 +96,13 @@ public:
         , _sysError(0)
         , _userData(this)
         , _realSession(nullptr)
+        , _callback(callbacks)
      {
 
-        std::string bufferId;
         OCDM::ISessionExt* realSession = nullptr;
 
         // TODO: real conversion between license types
-        system->CreateSessionExt(drmHeader, drmHeaderLength, realSession);
+        system->CreateSessionExt(drmHeader, drmHeaderLength, &_sink, _sessionId, realSession);
 
         if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
@@ -63,11 +117,9 @@ public:
 
     virtual ~ExtendedOpenCDMSessionExt() {
         // TODO: do we need something like this here as well?
-        /*
-        if (OpenCDMSession::IsValid() == true) {
-            OpenCDMSession::Session(nullptr);
-        }
-        */
+        //if (OpenCDMSession::IsValid() == true) {
+        //    OpenCDMSession::Session(nullptr);
+        //}
     }
 
     uint32_t SessionIdExt() const
@@ -150,8 +202,47 @@ public:
         return _realSession->InitDecryptContextByKid();
     }
 
+    // TODO: these are copy/pasted from "ExtendedOpenCDMSession", merge
+    // Event fired when a key message is successfully created.
+    void OnKeyMessage(const std::string& keyMessage, const std::string& URL) {
+        _message = keyMessage;
+        _URL = URL;
+        TRACE_L1("Received URL: [%s]", _URL.c_str());
+
+        if (_callback != nullptr) {
+            _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
+        }
+    }
+    // Event fired when MediaKeySession has found a usable key.
+    void OnKeyReady() {
+        //_key = OCDM::ISession::Usable;
+        if (_callback != nullptr) {
+            _callback->key_update(this, nullptr, 0);
+        }
+    }
+    // Event fired when MediaKeySession encounters an error.
+    void OnKeyError(const int16_t error, const OCDM::OCDM_RESULT sysError, const std::string& errorMessage) {
+        //_key = OCDM::ISession::InternalError;
+        _error = errorMessage;
+        _errorCode = error;
+        _sysError = sysError;
+
+        if (_callback != nullptr) {
+            _callback->key_update(this, nullptr, 0);
+            _callback->message(this, errorMessage.c_str());
+        }
+    }
+    // Event fired on key status update
+    void OnKeyStatusUpdate(const OCDM::ISession::KeyStatus status) {
+        //_key = status;
+
+        if (_callback != nullptr) {
+            _callback->key_update(this, nullptr, 0);
+        }
+    }
+
 private:
-    //WPEFramework::Core::Sink<Sink> _sink;
+    WPEFramework::Core::Sink<Sink> _sink;
     WPEFramework::Core::StateTrigger<sessionState> _state;
     std::string _message;
     std::string _URL;
@@ -160,6 +251,7 @@ private:
     OCDM::OCDM_RESULT _sysError;
     void* _userData;
     OCDM::ISessionExt* _realSession;
+    OpenCDMSessionCallbacks* _callback;
 };
 
 struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[])
@@ -216,18 +308,6 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, const c
         *time = static_cast<uint64_t>(cTime);
         result = ERROR_NONE;
     }
-    return (result);
-}
-
-OpenCDMError opencdm_create_session_ext(struct OpenCDMAccessor* system, struct OpenCDMSession ** opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderLength)
-{
-    OpenCDMError result (ERROR_INVALID_ACCESSOR);
-
-    if (system != nullptr) {
-        *opencdmSession = new ExtendedOpenCDMSessionExt(system, drmHeader, drmHeaderLength);
-        result = OpenCDMError::ERROR_NONE;
-    }
-
     return (result);
 }
 
@@ -412,7 +492,7 @@ OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char k
         }
     } else {
         if (system != nullptr) {
-            *session = new ExtendedOpenCDMSessionExt(system, initData, initDataLength);
+            *session = new ExtendedOpenCDMSessionExt(system, initData, initDataLength, callbacks);
             result = OpenCDMError::ERROR_NONE;
         }
     }

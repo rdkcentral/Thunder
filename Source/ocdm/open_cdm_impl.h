@@ -398,9 +398,11 @@ public:
     virtual OCDM::OCDM_RESULT CreateSessionExt(
         const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
+        ::OCDM::ISession::ICallback* callback,
+        std::string& sessionId,
         OCDM::ISessionExt*& session) override
     {
-        return (_remoteExt->CreateSessionExt(drmHeader, drmHeaderLength, session));
+        return (_remoteExt->CreateSessionExt(drmHeader, drmHeaderLength, callback, sessionId, session));
     }
 
     virtual time_t GetDrmSystemTime() const override {
