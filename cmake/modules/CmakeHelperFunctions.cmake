@@ -6,7 +6,7 @@ macro(add_element list element)
 endmacro()
 
 function(_get_default_link_name lib name location) 
-    string(REPLACE ${CMAKE_SYSROOT} "" _rel_location ${lib})
+    string(REPLACE "${CMAKE_SYSROOT}" "" _rel_location ${lib})
 
     get_filename_component(_extention "${_rel_location}" EXT)
     get_filename_component(_name "${_rel_location}" NAME)
@@ -248,7 +248,7 @@ function(get_if_include_dirs _result _target)
                 if (NOT "${_include}" MATCHES "BUILD_INTERFACE")
                     string(REGEX REPLACE "\\$<INSTALL_INTERFACE:" "" __include ${_include})
                     string(REGEX REPLACE ">$" "" ___include ${__include})
-                    string(REPLACE ${CMAKE_SYSROOT} "" ____include ${___include})
+                    string(REPLACE "${CMAKE_SYSROOT}" "" ____include ${___include})
 
                     string(REGEX MATCH "^/.*" _is_absolute_path "${____include}")
                     if(_is_absolute_path)
@@ -300,7 +300,7 @@ function(InstallCMakeConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _config_template
             NAMES "defaultConfig.cmake.in"
-            PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates
+            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates"
             NO_DEFAULT_PATH
             NO_CMAKE_ENVIRONMENT_PATH
             NO_CMAKE_PATH
@@ -310,7 +310,7 @@ function(InstallCMakeConfig)
 
         find_file(_config_template  
             NAMES "defaultConfig.cmake.in"
-            PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates )
+            PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" )
             
         if(NOT EXISTS "${_config_template}")
             message(SEND_ERROR "Config file generation failed, template '${_config_template}' not found")
@@ -442,7 +442,7 @@ function(InstallPackageConfig)
     if("${Argument_TEMPLATE}" STREQUAL "")
         find_file( _pc_template
                     NAMES "default.pc.in"
-                    PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates
+                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates"
                     NO_DEFAULT_PATH
                     NO_CMAKE_ENVIRONMENT_PATH
                     NO_CMAKE_PATH
@@ -452,7 +452,7 @@ function(InstallPackageConfig)
 
         find_file(_pc_template  
                     NAMES "default.pc.in"
-                    PATHS ${PROJECT_SOURCE_DIR}/cmake/templates ${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates )
+                    PATHS "${PROJECT_SOURCE_DIR}/cmake/templates" "${CMAKE_SYSROOT}/usr/lib/cmake/${NAMESPACE}/templates" )
 
         if(NOT EXISTS "${_pc_template}")
             message(SEND_ERROR "PC file generation failed, template '${_pc_template}' not found")
@@ -468,8 +468,9 @@ function(InstallPackageConfig)
     set(DESCRIPTION "${Argument_DESCRIPTION}")
 
     if (${Argument_LOCATION})
-        string(REPLACE ${CMAKE_SYSROOT}/ "" TARGET_LIBRARY_DIR ${Argument_LOCATION})
-        string(REPLACE "${CMAKE_INSTALL_PREFIX}/" "" TARGET_LIBRARY_DIR ${TARGET_LIBRARY_DIR})
+        string(REPLACE "${CMAKE_SYSROOT}" "" TARGET_LIBRARY_DIR ${Argument_LOCATION})
+        string(REPLACE "${CMAKE_INSTALL_PREFIX}" "" TARGET_LIBRARY_DIR ${TARGET_LIBRARY_DIR})
+        string(REGEX REPLACE "^(/+)" "" TARGET_LIBRARY_DIR ${TARGET_LIBRARY_DIR})
     else()
         set(TARGET_LIBRARY_DIR "lib")
     endif()
