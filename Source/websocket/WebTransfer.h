@@ -308,7 +308,7 @@ namespace Web {
                         _state = TRANSFER_UPLOAD;
                         _request.Verb = Web::Request::HTTP_PUT;
                         _request.Path = '/' + destination.Path().Value().Text();
-                        _request.Body(Core::ProxyType<FILEBODY>(&_fileBody));
+                        _request.Body(Core::ProxyType<FILEBODY>(_fileBody));
 
                         // Maybe we need to add a hash value...
                         _SerializedHashValue<LINK, FILEBODY>();
@@ -653,7 +653,7 @@ namespace Web {
 
                 if (_fileBody.Create() == true) {
                     // Seems we will receive a file.
-                    element->Body(Core::ProxyType<FILEBODY>(&_fileBody));
+                    element->Body(Core::ProxyType<FILEBODY>(_fileBody));
                 }
             }
         }
@@ -703,7 +703,7 @@ namespace Web {
                     string message = Authorize(*element);
 
                     if (message.empty() == true) {
-                        _response.Body(Core::ProxyType<FILEBODY>(&_fileBody));
+                        _response.Body(Core::ProxyType<FILEBODY>(_fileBody));
                         _SerializedHashValue<LINK, FILEBODY>();
                     }
                     else {
@@ -717,7 +717,7 @@ namespace Web {
                     _response.Message = _T("File: ") + element->Path + _T(" was not found server side.");
                 }
             }
-            BaseClass::Submit(Core::ProxyType<Web::Response>(&_response));
+            BaseClass::Submit(Core::ProxyType<Web::Response>(_response));
         }
 
         // Notification of a Response send.
