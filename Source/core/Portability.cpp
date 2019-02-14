@@ -113,7 +113,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
     uint32_t result = 0;
 
     if ( (threadId == 0) || (pthread_self() == threadId) ) {
-        result = backtrace(g_threadCallstackBuffer, g_threadCallstackBufferSize);
+        result = backtrace(addresses, bufferSize);
     }
     else {
         while(std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire)) ; // spin until acquired
@@ -187,7 +187,9 @@ void DumpCallStack(const ThreadId threadId)
 
     int addressCount = GetCallStack(threadId, addresses, (sizeof(addresses) / sizeof(addresses[0])));
 
+    fprintf(stderr, "=== Stack traceback (most recent call first):\n");
     backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
+    fflush(stderr);
 #else
     __debugbreak();
 #endif
