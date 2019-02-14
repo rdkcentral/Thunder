@@ -9,7 +9,7 @@ namespace Exchange {
     // This interface gives direct access to a Netflix instance
     struct INetflix : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000053 };
+        enum { ID = ID_NETFLIX };
 
         enum state {
             PLAYING = 0x0001,
@@ -18,7 +18,7 @@ namespace Exchange {
         };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x00000054 };
+            enum { ID = ID_NETFLIX_NOTIFICATION };
 
             virtual ~INotification() {}
 

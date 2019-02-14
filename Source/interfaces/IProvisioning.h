@@ -7,10 +7,10 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IProvisioning : virtual public Core::IUnknown {
-        enum { ID = 0x00000056 };
+        enum { ID = ID_PROVISIONING };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x00000057 };
+            enum { ID = ID_PROVISIONING_NOTIFICATION };
 
             virtual ~INotification() {}
 

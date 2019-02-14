@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Ids.h"
 #include "Messages.h"
 #include "IUnknown.h"
 #include "ITracing.h"

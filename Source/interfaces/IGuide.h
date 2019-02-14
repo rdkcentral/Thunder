@@ -8,10 +8,10 @@ namespace Exchange {
 
     // This interface gives direct access to a SIControl to change
     struct IGuide : virtual public Core::IUnknown {
-        enum { ID = 0x00000061 };
+        enum { ID = ID_GUIDE };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x00000062 };
+            enum { ID = ID_GUIDE_NOTIFICATION };
 
             virtual ~INotification() {}
             virtual void EITBroadcast() = 0;

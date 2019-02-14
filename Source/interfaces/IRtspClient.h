@@ -7,7 +7,7 @@ namespace WPEFramework {
 namespace Exchange {
     struct IRtspClient : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000071 };
+        enum { ID = ID_RTSPCLIENT };
 
         virtual ~IRtspClient() {}
 

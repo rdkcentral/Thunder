@@ -10,7 +10,7 @@ namespace Exchange {
     // This interface gives direct access to a OpenCDMi server instance, running as a plugin in the framework.
     struct IContentDecryption : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000055 };
+        enum { ID = ID_CONTENTDECRYPTION };
 
         virtual ~IContentDecryption() {}
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;

@@ -6,7 +6,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct ISystemCommands : virtual public Core::IUnknown {
-        enum { ID = 0x00000082 };
+        enum { ID = ID_SYSTEMCOMMAND };
 
         virtual uint32_t USBReset(const string& device) = 0;
     };

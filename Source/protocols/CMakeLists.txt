@@ -9,6 +9,7 @@ set(SOURCES_COM
         com/Administrator.h
         com/com.h
         com/Communicator.h
+        com/Ids.h
         com/ITracing.h
         com/IUnknown.h
         com/Messages.h
@@ -43,6 +44,7 @@ set(COM_INCLUDES
         Administrator.h
         com.h
         Communicator.h
+        Ids.h
         ITracing.h
         IUnknown.h
         Messages.h

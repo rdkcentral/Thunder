@@ -25,7 +25,7 @@ namespace OCDM {
         // events originated from the session.
         struct ICallback : virtual public WPEFramework::Core::IUnknown
         {
-            enum { ID = 0x00000013 };
+            enum { ID = WPEFramework::RPC::ID_SESSION_CALLBACK };
 
             virtual ~ICallback() {}
 
@@ -48,7 +48,7 @@ namespace OCDM {
             virtual void OnKeyStatusUpdate(const ISession::KeyStatus status) = 0;
         };
 
-        enum { ID = 0x00000012 };
+        enum { ID = WPEFramework::RPC::ID_SESSION };
 
         virtual ~ISession(void) {}
 
@@ -81,11 +81,11 @@ namespace OCDM {
 
     struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
-        enum { ID = 0x00000010 };
+        enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM };
 
         struct INotification : virtual public WPEFramework::Core::IUnknown {
 
-            enum { ID = 0x00000011 };
+            enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_NOTIFICATION };
 
             virtual ~INotification () {}
 

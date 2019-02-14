@@ -19,14 +19,14 @@ namespace WPEFramework {
 		struct IExternal : virtual public Core::IUnknown {
 			virtual ~IExternal() {}
 
-			enum { ID = 0x0000004C };
+            enum { ID = ID_EXTERNAL };
 
 
 			struct INotification : virtual public Core::IUnknown {
 
 				virtual ~INotification() {}
 
-				enum { ID = 0x0000004D };
+                enum { ID = ID_EXTERNAL_NOTIFICATION };
 
 				// Push changes. If the Current value changes, the next method is called.
 				virtual void Update() = 0;
@@ -35,13 +35,13 @@ namespace WPEFramework {
 			struct IFactory : virtual public Core::IUnknown {
 				virtual ~IFactory() {}
 
-				enum { ID = 0x0000004E };
+                enum { ID = ID_EXTERNAL_FACTORY };
 
 				struct INotification : virtual public Core::IUnknown {
 
 					virtual ~INotification() {}
 
-					enum { ID = 0x0000004F };
+                    enum { ID = ID_EXTERNAL_FACTORY_NOTIFICATION };
 
 					virtual void Activated(IExternal* source) = 0;
 					virtual void Deactivated(IExternal* source) = 0;

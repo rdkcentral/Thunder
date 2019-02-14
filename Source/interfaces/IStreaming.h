@@ -9,10 +9,10 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IStreaming : virtual public Core::IUnknown {
-        enum { ID = 0x00000068 };
+        enum { ID = ID_STREAMING };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x00000067 };
+            enum { ID = ID_STREAMING_NOTIFICATION };
 
             virtual ~INotification() {}
 

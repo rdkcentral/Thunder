@@ -14,7 +14,7 @@ namespace Exchange {
     // This interface gives direct access to a WebDriver instance
     struct IWebDriver : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000065 };
+        enum { ID = ID_WEBDRIVER };
 
         virtual ~IWebDriver() {}
         virtual uint32_t Configure(PluginHost::IShell* framework) = 0;

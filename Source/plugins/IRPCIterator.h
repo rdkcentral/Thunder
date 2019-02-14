@@ -9,7 +9,7 @@ namespace PluginHost {
     struct IStringIterator : virtual public Core::IUnknown {
         virtual ~IStringIterator() {}
 
-        enum { ID = 0x00000027 };
+        enum { ID = WPEFramework::RPC::ID_RPC_STRINGITERATOR };
 
         virtual bool IsValid() const = 0;
         virtual void Reset() = 0;
@@ -19,7 +19,7 @@ namespace PluginHost {
     struct IValueIterator : virtual public Core::IUnknown {
         virtual ~IValueIterator() {}
 
-        enum { ID = 0x00000028 };
+        enum { ID = WPEFramework::RPC::ID_VALUEITERATOR };
 
         virtual bool IsValid() const = 0;
         virtual void Reset() = 0;

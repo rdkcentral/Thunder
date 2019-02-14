@@ -8,6 +8,7 @@
 #include "../core/core.h"
 #include "../tracing/tracing.h"
 #include "../cryptalgo/cryptalgo.h"
+#include "../com/Ids.h"
 
 #ifdef __WIN32__
 #include "../websocket/windows/include/zlib.h"

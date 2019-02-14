@@ -13,7 +13,7 @@ namespace PluginHost {
         : virtual public Core::IUnknown {
 
         enum {
-            ID = 0x00000029
+            ID = WPEFramework::RPC::ID_SHELL
         };
 
         // This interface is only returned if the IShell is aceessed in the WPEFramework process. The interface can 

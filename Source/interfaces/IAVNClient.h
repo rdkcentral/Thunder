@@ -7,7 +7,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IAVNClient : virtual public Core::IUnknown {
-        enum { ID = 0x0000006C };
+        enum { ID = ID_AVNCLIENT };
         virtual uint32_t Configure(PluginHost::IShell*) = 0;
         virtual void Launch(const string&) = 0;
     };

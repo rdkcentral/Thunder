@@ -163,12 +163,12 @@ namespace RPC {
     };
 
     struct EXTERNAL IRemoteProcess : virtual public Core::IUnknown {
-        enum { ID = 0x00000001 };
+        enum { ID = ID_REMOTEPROCESS };
 
         virtual ~IRemoteProcess() {}
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x00000002 };
+            enum { ID = ID_REMOTEPROCESS_NOTIFICATION };
 
             virtual ~INotification() {}
 			virtual void Activated(IRemoteProcess* process) = 0;
