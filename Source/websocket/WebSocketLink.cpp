@@ -69,7 +69,7 @@ namespace Web {
                     // Only if this is a smallFrame, we need to "flush" 2 bytes..
                     if ((result == 2) && (usedSize != 0)) {
                         // No masking, so just move and insert the header up front..
-                        ::memcpy(&dataFrame[2], &(dataFrame[4]), usedSize);
+                        ::memmove(&dataFrame[2], &(dataFrame[4]), usedSize);
                     }
                 }
                 else {
