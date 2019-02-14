@@ -126,6 +126,7 @@ namespace RPC {
                 }
                 else {
                     TRACE_L1("Failed to find a Proxy for %d.", interfaceNumber);
+                    SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceNumber));
                 }
 
                 _adminLock.Unlock ();
@@ -194,6 +195,7 @@ namespace RPC {
             else {
                 // Oops this is an unknown interface, Do not think this could happen.
                 TRACE_L1("Unknown interface. %d", interfaceId);
+                SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
             }
         }
         void DeleteProxy(const Core::IPCChannel* channel, void* implementation)
