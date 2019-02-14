@@ -1151,13 +1151,16 @@ namespace WPEFramework {
 
                     OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
 
-                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
-
-                    if( index != _offeredInterfaces.end() )  {  
+                    if( index != _offeredInterfaces.end() )  {
                         result = index->second->QueryInterface(interfaceId);
                         index->second->Release();
                         _offeredInterfaces.erase(index);
                     }           
+                    else  {
+                        SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
+                    }
+
+                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
 
                     _adminLock.Unlock();
 
