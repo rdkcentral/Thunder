@@ -7,10 +7,10 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IIPNetwork : virtual public Core::IUnknown {
-        enum { ID = 0x0000005E };
+        enum { ID = ID_IPNETWORK };
 
         struct IDNSServers : virtual public Core::IUnknown {
-            enum { ID = 0x0000005F };
+            enum { ID = ID_IPNETWORK_DNSSERVER };
 
             virtual ~IDNSServers() {}
 

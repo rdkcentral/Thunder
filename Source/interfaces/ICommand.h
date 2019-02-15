@@ -10,7 +10,7 @@ namespace Exchange {
     // the CommanderPlugin
     struct ICommand {
 
-        enum { ID = 0x00000044 };
+        enum { ID = ID_COMMAND };
 
         virtual ~ICommand() {}
 
@@ -21,7 +21,7 @@ namespace Exchange {
         };
 
        struct IRegistration {
-            enum { ID = 0x00000045 };
+            enum { ID = ID_COMMAND_REGISTRATION };
 
             virtual ~IRegistration() {}
 

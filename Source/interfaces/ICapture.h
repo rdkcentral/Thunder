@@ -8,7 +8,7 @@ namespace WPEFramework {
     namespace Exchange {
 
         struct ICapture : virtual public Core::IUnknown {
-            enum { ID = 0x00000069 };
+            enum { ID = ID_CAPTURE };
 
             struct IStore {
 

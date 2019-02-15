@@ -8,6 +8,7 @@
 #include "../core/core.h"
 #include "../com/com.h"
 #include "../plugins/plugins.h"
+#include "Ids.h"
 
 #undef EXTERNAL
 #define EXTERNAL

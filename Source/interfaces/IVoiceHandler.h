@@ -7,7 +7,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IVoiceHandler : virtual public Core::IUnknown {
-        enum { ID = 0x00000063 };
+        enum { ID = ID_VOICEHANDLER };
 
         virtual ~IVoiceHandler(){};
 
@@ -15,7 +15,7 @@ namespace Exchange {
     };
 
     struct IVoiceProducer : virtual public Core::IUnknown {
-        enum { ID = 0x00000064 };
+        enum { ID = ID_VOICEPRODUCER };
 
         enum audioCodec {
             PCM,

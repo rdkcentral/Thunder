@@ -8,10 +8,10 @@ namespace Exchange {
 
     // This interface show the use case of communicating transparently over process boundaries
     struct IRPCLink : virtual public Core::IUnknown {
-        enum { ID = 0x0000006B };
+        enum { ID = ID_RPCLINK };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x0000006A };
+            enum { ID = ID_RPCLINK_NOTIFICATION };
 
             virtual ~INotification() {}
 

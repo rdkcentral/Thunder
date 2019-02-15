@@ -9,7 +9,7 @@ namespace Exchange {
     // This interface allows for retrieval of memory usage specific to the implementor
     // of the interface
     struct IMemory : virtual public Core::IUnknown {
-        enum { ID = 0x00000052 };
+        enum { ID = ID_MEMORY };
         virtual ~IMemory() {}
 
         virtual uint64_t Resident() const = 0;

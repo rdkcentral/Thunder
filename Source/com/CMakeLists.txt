@@ -13,6 +13,7 @@ set(PUBLIC_HEADERS
         Administrator.h
         com.h
         Communicator.h
+        Ids.h
         IStringIterator.h
         ITracing.h
         IUnknown.h

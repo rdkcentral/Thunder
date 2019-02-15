@@ -9,17 +9,17 @@ namespace Exchange {
     // This interface gives direct access to a Bluetooth server instance, running as a plugin in the framework.
     struct IBluetooth : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000070 };
+        enum { ID = ID_BLUETOOTH };
 
         virtual ~IBluetooth() {}
 
         struct IDevice : virtual public Core::IUnknown {
             
-            enum { ID = 0x0000007D };
+            enum { ID = ID_BLUETOOTH_DEVICE };
 
             struct IIterator : virtual public Core::IUnknown {
 
-                enum { ID = 0x0000007E };
+                enum { ID = ID_BLUETOOTH_DEVICE_ITERATOR };
 
                 virtual ~IIterator() {}
 
@@ -44,7 +44,7 @@ namespace Exchange {
 
         struct INotification : virtual public Core::IUnknown {
 
-            enum { ID = 0x0000007F };
+            enum { ID = ID_BLUETOOTH_NOTIFICATION };
 
             virtual ~INotification() {}
 

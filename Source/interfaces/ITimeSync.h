@@ -8,10 +8,10 @@ namespace Exchange {
 
     // This interface gives direct access to a time synchronize / update
     struct ITimeSync : virtual public Core::IUnknown {
-        enum { ID = 0x0000005C };
+        enum { ID = ID_TIMESYNC };
 
         struct INotification : virtual public Core::IUnknown {
-            enum { ID = 0x0000005D };
+            enum { ID = ID_TIMESYNC_NOTIFICATION };
 
             virtual ~INotification() {}
 

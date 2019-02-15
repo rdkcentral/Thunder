@@ -9,7 +9,7 @@ namespace Exchange {
     struct IKeyProducer;
 
     struct IKeyHandler : virtual public Core::IUnknown {
-        enum { ID = 0x00000050 };
+        enum { ID = ID_KEYHANDLER };
 
         virtual ~IKeyHandler(){};
 
@@ -18,7 +18,7 @@ namespace Exchange {
     };
 
     struct IKeyProducer : virtual public Core::IUnknown {
-        enum { ID = 0x00000051 };
+        enum { ID = ID_KEYPRODUCER };
 
         virtual ~IKeyProducer(){};
 

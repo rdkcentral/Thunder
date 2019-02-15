@@ -17,6 +17,7 @@ set(PUBLIC_HEADERS
         ICommand.h
         IComposition.h
         IContentDecryption.h
+        Ids.h
         IDictionary.h
         IDRM.h
         IDsgccClient.h

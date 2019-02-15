@@ -7,7 +7,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     struct IPlayGiga : virtual public Core::IUnknown {
-        enum { ID = 0x00000043 };
+        enum { ID = ID_PLAYGIGA };
 
         virtual void Launch(const string&, const string&) = 0;
     };

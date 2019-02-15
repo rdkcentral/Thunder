@@ -9,11 +9,11 @@ namespace Exchange {
     // This interface gives direct access to a Browser to change
     // Browser specific properties like displayed URL.
     struct IDictionary : virtual public Core::IUnknown {
-        enum { ID = 0x00000049 };
+        enum { ID = ID_DICTIONARY };
 
         struct INotification : public Core::IUnknown {
 
-            enum { ID = 0x0000004A };
+            enum { ID = ID_DICTIONARY_NOTIFICATION };
 
             virtual ~INotification() {}
 
@@ -23,7 +23,7 @@ namespace Exchange {
 
 		struct IIterator : public Core::IUnknown {
 
-			enum { ID = 0x0000004B };
+            enum { ID = ID_DICTIONARY_ITERATOR };
 
 			virtual ~IIterator() {}
 

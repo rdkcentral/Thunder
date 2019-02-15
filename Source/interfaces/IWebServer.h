@@ -10,7 +10,7 @@ namespace Exchange {
     // Server specific properties like .....
     struct IWebServer : virtual public Core::IUnknown {
 
-        enum { ID = 0x00000066 };
+        enum { ID = ID_WEBSERVER };
 
         virtual ~IWebServer() {}
 

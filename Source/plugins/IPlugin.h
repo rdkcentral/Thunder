@@ -21,14 +21,14 @@ namespace PluginHost {
         : public virtual Core::IUnknown {
 
         enum {
-            ID = 0x00000020
+            ID = WPEFramework::RPC::ID_PLUGIN
         };
 
         struct INotification
             : virtual public Core::IUnknown {
 
             enum {
-                ID = 0x00000021
+                ID = WPEFramework::RPC::ID_PLUGIN_NOTIFICATION
             };
 
             virtual ~INotification()
@@ -79,7 +79,7 @@ namespace PluginHost {
         : public IPlugin {
 
         enum {
-            ID = 0x00000022
+            ID = WPEFramework::RPC::ID_PLUGINEXTENDED
         };
 
         virtual ~IPluginExtended()
@@ -98,7 +98,7 @@ namespace PluginHost {
     struct IWeb
         : virtual public Core::IUnknown {
         enum {
-            ID = 0x00000023
+            ID = WPEFramework::RPC::ID_WEB,
         };
 
         //! @{
@@ -121,7 +121,7 @@ namespace PluginHost {
     struct IWebSocket
         : virtual public Core::IUnknown {
         enum {
-            ID = 0x00000024
+            ID = WPEFramework::RPC::ID_WEBSOCKET
         };
 
         //! @{
@@ -144,7 +144,7 @@ namespace PluginHost {
     struct ITextSocket
         : virtual public Core::IUnknown {
         enum {
-            ID = 0x00000025
+            ID = WPEFramework::RPC::ID_TEXTSOCKET
         };
 
         //! @{
@@ -159,7 +159,7 @@ namespace PluginHost {
     struct IChannel
         : virtual public Core::IUnknown {
         enum {
-            ID = 0x00000026
+            ID = WPEFramework::RPC::ID_CHANNEL
         };
 
         //! @{
@@ -180,7 +180,7 @@ namespace PluginHost {
     struct ISecurity
         : virtual public Core::IUnknown {
         enum {
-            ID = 0x00000027
+            ID = WPEFramework::RPC::ID_SECURITY
         };
 
         //! Allow a request to be checked before it is offered for processing.
