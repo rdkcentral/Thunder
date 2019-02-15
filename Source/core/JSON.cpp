@@ -490,7 +490,7 @@ namespace Core {
                         result++;
                     }
 
-                    if (result <= maxLength) {
+                    if (result < maxLength) {
                         // We handled the ','..
                         result++;
 
@@ -534,7 +534,7 @@ namespace Core {
 
             _adminLock.Unlock();
 
-            return ((result > maxLength) ? maxLength : result);
+            return result;
         }
     }
 }
