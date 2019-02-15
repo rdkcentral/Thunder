@@ -426,7 +426,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
             // See if there is a ';' in the line
             if ((index = text.find(';', 0)) != string::npos) {
                 // We need to split, we have more.
-                enumValue = Core::EnumerateType<MIMETypes>(Core::TextFragment(text, 0, index - 1));
+                enumValue = Core::EnumerateType<MIMETypes>(Core::TextFragment(text, 0, index));
 
                 // Check what is behind the colon
                 index = text.find_first_not_of(_T(" \t"), index + 1);
