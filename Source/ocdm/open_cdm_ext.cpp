@@ -9,6 +9,11 @@
     abort(); \
 }
 
+struct OpenCDMSystemExt {
+    OpenCDMAccessor * m_accessor;
+    std::string m_keySystem;
+};
+
 // TODO: naming: Extended...Ext
 // TODO: shares code with ExtendedOpenCDMSession, maybe intro baseclass?
 struct ExtendedOpenCDMSessionExt : public OpenCDMSession {
@@ -256,14 +261,14 @@ private:
 
 struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[])
 {
-    OpenCDMAccessor* output = opencdm_create_system();
+    OpenCDMAccessor* accessor = opencdm_create_system();
+    accessor->CreateSystemNetflix();
+    accessor->InitSystemNetflix();
 
-    output->CreateSystemNetflix();
-
-    output->InitSystemNetflix();
-
-    // TODO: create struct/class keeping track of selected key system.
-    return reinterpret_cast<OpenCDMSystemExt *>(output);
+    OpenCDMSystemExt * output = new OpenCDMSystemExt;
+    output->m_accessor = accessor;
+    output->m_keySystem = keySystem;
+    return output;
 }
 
 OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const char keySystem[], char versionStr[])
@@ -271,7 +276,7 @@ OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const ch
     // TODO: use keySystem
     versionStr[0] = '\0';
 
-    std::string versionStdStr = system->GetVersionExt();
+    std::string versionStdStr = system->GetVersionExt(keySystem);
 
     assert(versionStdStr.length() < 64);
 
@@ -282,29 +287,35 @@ OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const ch
 
 OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystemExt* system, uint32_t * ldlLimit)
 {
-    *ldlLimit = (reinterpret_cast<OpenCDMAccessor*>(system))->GetLdlSessionLimit();
+    OpenCDMAccessor* accessor = system->m_accessor;
+    std::string keySystem = system->m_keySystem;
+    *ldlLimit = accessor->GetLdlSessionLimit(keySystem);
     return ERROR_NONE;
 }
 
 OpenCDMError opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* system, uint32_t use)
 {
     // TODO: conversion
-    return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->EnableSecureStop(use != 0);
+    OpenCDMAccessor* accessor = system->m_accessor;
+    return (OpenCDMError)accessor->EnableSecureStop(system->m_keySystem, use != 0);
 }
 
 OpenCDMError opencdm_system_ext_commit_secure_stop(OpenCDMSystemExt* system, const unsigned char sessionID[], uint32_t sessionIDLength, const unsigned char serverResponse[], uint32_t serverResponseLength)
 {
-    return (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
+    OpenCDMAccessor* accessor = system->m_accessor;
+    return (OpenCDMError)accessor->CommitSecureStop(system->m_keySystem, sessionID, sessionIDLength, serverResponse, serverResponseLength);
 }
 
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system, const char keySystem[], uint64_t * time)
 {
+    //OpenCDMAccessor* accessor = system->m_accessor;
+
     // TODO: use keySystem
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         time_t cTime;
-        cTime = system->GetDrmSystemTime();
+        cTime = system->GetDrmSystemTime(keySystem);
         *time = static_cast<uint64_t>(cTime);
         result = ERROR_NONE;
     }
@@ -436,7 +447,8 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystemExt* system)
 
     if (system != nullptr) {
         // TODO: real conversion
-        result = (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->DeleteSecureStore();
+        OpenCDMAccessor * accessor = system->m_accessor;
+        result = (OpenCDMError)accessor->DeleteSecureStore();
     }
     return (result);
 }
@@ -447,7 +459,8 @@ OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, 
 
     if (system != nullptr) {
         // TODO: real conversion
-        result = (OpenCDMError)(reinterpret_cast<OpenCDMAccessor*>(system))->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+        OpenCDMAccessor * accessor = system->m_accessor;
+        result = (OpenCDMError)accessor->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
     }
     return (result);
 }

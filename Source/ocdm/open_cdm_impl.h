@@ -405,28 +405,29 @@ public:
         return (_remoteExt->CreateSessionExt(drmHeader, drmHeaderLength, callback, sessionId, session));
     }
 
-    virtual time_t GetDrmSystemTime() const override {
-        return _remoteExt->GetDrmSystemTime();
+    virtual time_t GetDrmSystemTime(const std::string & keySystem) const override {
+        return _remoteExt->GetDrmSystemTime(keySystem);
     }
 
-    virtual std::string GetVersionExt() const override {
-        return _remoteExt->GetVersionExt();
+    virtual std::string GetVersionExt(const std::string & keySystem) const override {
+        return _remoteExt->GetVersionExt(keySystem);
     }
 
-    virtual uint32_t GetLdlSessionLimit() const {
-        return _remoteExt->GetLdlSessionLimit();
+    virtual uint32_t GetLdlSessionLimit(const std::string & keySystem) const {
+        return _remoteExt->GetLdlSessionLimit(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT EnableSecureStop(bool enable) override {
-        return _remoteExt->EnableSecureStop(enable);
+    virtual OCDM::OCDM_RESULT EnableSecureStop(const std::string & keySystem, bool enable) override {
+        return _remoteExt->EnableSecureStop(keySystem, enable);
     }
 
     virtual OCDM::OCDM_RESULT CommitSecureStop(
+            const std::string & keySystem,
             const unsigned char sessionID[],
             uint32_t sessionIDLength,
             const unsigned char serverResponse[],
             uint32_t serverResponseLength) override {
-        return _remoteExt->CommitSecureStop(sessionID, sessionIDLength, serverResponse, serverResponseLength);
+        return _remoteExt->CommitSecureStop(keySystem, sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
 
     virtual OCDM::OCDM_RESULT CreateSystemNetflix() override {
