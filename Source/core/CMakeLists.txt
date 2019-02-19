@@ -119,23 +119,23 @@ set(PUBLIC_HEADERS
         )
 
 #non-buildable interfce target to carry the definitions
-        if(DISABLE_TRACING)
-    target_compile_definitions(${TARGET} INTERFACE _TRACE_LEVEL=0)
+if(DISABLE_TRACING)
+    target_compile_definitions(${TARGET} PUBLIC _TRACE_LEVEL=0)
     message(STATUS "Force trace level to 0")
 endif()
 
 if(NOT WCHAR_SUPPORT)
-    target_compile_definitions(${TARGET} INTERFACE __NO_WCHAR_SUPPORT__)
+    target_compile_definitions(${TARGET} PUBLIC __NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
 if (BLUETOOTH_SUPPORT)
-    target_compile_definitions(${TARGET} INTERFACE CORE_BLUETOOTH)
+    target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
     message(STATUS "Enable Bluetooth support.")
 endif()
 
 if(DEADLOCK_DETECTION)
-    target_compile_definitions(${TARGET} INTERFACE CRITICAL_SECTION_LOCK_LOG)
+    target_compile_definitions(${TARGET} PUBLIC CRITICAL_SECTION_LOCK_LOG)
     message(STATUS "Enabled deadlock detection.")
 endif()
 
