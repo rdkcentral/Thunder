@@ -490,11 +490,11 @@ namespace Core {
                         result++;
                     }
 
-                    if (result < maxLength) {
+                    if (result <= maxLength) {
                         // We handled the ','..
-                        result++;
 
                         if (current != nullptr) {
+                            result++;
                             IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
 
                             if (elementList == nullptr) {
