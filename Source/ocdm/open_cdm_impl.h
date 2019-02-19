@@ -430,26 +430,27 @@ public:
         return _remoteExt->CommitSecureStop(keySystem, sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
 
-    virtual OCDM::OCDM_RESULT CreateSystemNetflix() override {
-        return _remoteExt->CreateSystemNetflix();
+    virtual OCDM::OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) override {
+        return _remoteExt->CreateSystemNetflix(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT InitSystemNetflix() override {
-        return _remoteExt->InitSystemNetflix();
+    virtual OCDM::OCDM_RESULT InitSystemNetflix(const std::string & keySystem) override {
+        return _remoteExt->InitSystemNetflix(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT TeardownSystemNetflix() override {
-        return _remoteExt->TeardownSystemNetflix();
+    virtual OCDM::OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) override {
+        return _remoteExt->TeardownSystemNetflix(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT DeleteSecureStore() override {
-        return _remoteExt->DeleteSecureStore();
+    virtual OCDM::OCDM_RESULT DeleteSecureStore(const std::string & keySystem) override {
+        return _remoteExt->DeleteSecureStore(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStoreHash(
+            const std::string & keySystem,
             uint8_t secureStoreHash[],
             uint32_t secureStoreHashLength) override {
-        return _remoteExt->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+        return _remoteExt->GetSecureStoreHash(keySystem, secureStoreHash, secureStoreHashLength);
     }
 
 private:

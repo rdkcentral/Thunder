@@ -214,15 +214,16 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
                 uint32_t serverResponseLength) = 0;
 
         // TODO: rename to something like "SetStoreDirs"
-        virtual OCDM_RESULT CreateSystemNetflix() = 0;
+        virtual OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) = 0;
 
-        virtual OCDM_RESULT InitSystemNetflix() = 0;
+        virtual OCDM_RESULT InitSystemNetflix(const std::string & keySystem) = 0;
 
-        virtual OCDM_RESULT TeardownSystemNetflix() = 0;
+        virtual OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) = 0;
 
-        virtual OCDM_RESULT DeleteSecureStore() = 0;
+        virtual OCDM_RESULT DeleteSecureStore(const std::string & keySystem) = 0;
 
         virtual OCDM_RESULT GetSecureStoreHash(
+                const std::string & keySystem,
                 uint8_t secureStoreHash[],
                 uint32_t secureStoreHashLength) = 0;
     };

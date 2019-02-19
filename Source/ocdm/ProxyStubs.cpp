@@ -300,49 +300,60 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT CreateSystemNetflix() = 0;
+            // virtual OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) = 0;
             //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
+            std::string keySystem = parameters.Text();
+
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->CreateSystemNetflix());
+            response.Number(accessor->CreateSystemNetflix(keySystem));
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT InitSystemNetflix() = 0;
+            // virtual OCDM_RESULT InitSystemNetflix(const std::string & keySystem) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->InitSystemNetflix(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->TeardownSystemNetflix(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT DeleteSecureStore(const std::string & keySystem) = 0;
             //
 
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->InitSystemNetflix());
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual OCDM_RESULT TeardownSystemNetflix() = 0;
-            //
 
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
+            std::string keySystem = parameters.Text();
 
-            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->TeardownSystemNetflix());
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual OCDM_RESULT DeleteSecureStore() = 0;
-            //
-
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->DeleteSecureStore());
+            response.Number(accessor->DeleteSecureStore(keySystem));
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // virtual OCDM_RESULT GetSecureStoreHash(
+            //          const std::string & keySystem
             //          uint8_t secureStoreHash[],
             //          uint32_t secureStoreHashLength) = 0;
             //
@@ -352,10 +363,12 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
 
+            std::string keySystem = parameters.Text();
+
             const uint32_t secureStoreHashLength = 256;
             uint8_t secureStoreHash[secureStoreHashLength];
 
-            OCDM::OCDM_RESULT result = accessor->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+            OCDM::OCDM_RESULT result = accessor->GetSecureStoreHash(keySystem, secureStoreHash, secureStoreHashLength);
 
             response.Buffer(secureStoreHashLength, secureStoreHash);
 
@@ -1092,9 +1105,11 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT CreateSystemNetflix() override
+        virtual OCDM::OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(6));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(keySystem);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
@@ -1102,10 +1117,11 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT InitSystemNetflix() override
+        virtual OCDM::OCDM_RESULT InitSystemNetflix(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(7));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(keySystem);
 
             Invoke(newMessage);
 
@@ -1114,10 +1130,11 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT TeardownSystemNetflix() override
+        virtual OCDM::OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(8));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(keySystem);
 
             Invoke(newMessage);
 
@@ -1126,10 +1143,11 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT DeleteSecureStore() override
+        virtual OCDM::OCDM_RESULT DeleteSecureStore(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(9));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(keySystem);
 
             Invoke(newMessage);
 
@@ -1139,6 +1157,7 @@ public:
         }
 
         virtual OCDM::OCDM_RESULT GetSecureStoreHash(
+                const std::string & keySystem,
                 uint8_t secureStoreHash[],
                 uint32_t secureStoreHashLength)
         {
@@ -1146,6 +1165,8 @@ public:
 
             IPCMessage newMessage(BaseClass::Message(10));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
 
             Invoke(newMessage);
 

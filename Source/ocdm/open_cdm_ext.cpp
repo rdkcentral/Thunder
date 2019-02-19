@@ -262,8 +262,8 @@ private:
 struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[])
 {
     OpenCDMAccessor* accessor = opencdm_create_system();
-    accessor->CreateSystemNetflix();
-    accessor->InitSystemNetflix();
+    accessor->CreateSystemNetflix(keySystem);
+    accessor->InitSystemNetflix(keySystem);
 
     OpenCDMSystemExt * output = new OpenCDMSystemExt;
     output->m_accessor = accessor;
@@ -436,10 +436,12 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
     return (OpenCDMError)sessionExt->InitDecryptContextByKid();
 }
 
+/*
 OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system)
 {
     return (OpenCDMError)system->InitSystemNetflix();
 }
+*/
 
 OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystemExt* system)
 {
@@ -448,7 +450,8 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystemExt* system)
     if (system != nullptr) {
         // TODO: real conversion
         OpenCDMAccessor * accessor = system->m_accessor;
-        result = (OpenCDMError)accessor->DeleteSecureStore();
+        std::string keySystem = system->m_keySystem;
+        result = (OpenCDMError)accessor->DeleteSecureStore(keySystem);
     }
     return (result);
 }
@@ -460,11 +463,13 @@ OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, 
     if (system != nullptr) {
         // TODO: real conversion
         OpenCDMAccessor * accessor = system->m_accessor;
-        result = (OpenCDMError)accessor->GetSecureStoreHash(secureStoreHash, secureStoreHashLength);
+        std::string keySystem = system->m_keySystem;
+        result = (OpenCDMError)accessor->GetSecureStoreHash(keySystem, secureStoreHash, secureStoreHashLength);
     }
     return (result);
 }
 
+/*
 OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system)
 {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
@@ -475,6 +480,7 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system)
     }
     return (result);
 }
+*/
 
 /**
  * \brief Create DRM session (for actual decrypting of data).
