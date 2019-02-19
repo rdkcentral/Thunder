@@ -492,9 +492,9 @@ namespace Core {
 
                     if (result <= maxLength) {
                         // We handled the ','..
-                        result++;
 
                         if (current != nullptr) {
+                            result++;
                             IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
 
                             if (elementList == nullptr) {
@@ -534,7 +534,7 @@ namespace Core {
 
             _adminLock.Unlock();
 
-            return (result);
+            return result;
         }
     }
 }
