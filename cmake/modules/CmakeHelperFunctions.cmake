@@ -596,7 +596,7 @@ function(InstallFindModule)
 
     if(Argument_RECURSE)
         if(Argument_RECURSE)
-            file(GLOB extra_files "${DIRECTORY}/*.cmake")
+            file(GLOB extra_files "${DIRECTORY}/find*.cmake")
         else()
             file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
         endif(Argument_RECURSE)
