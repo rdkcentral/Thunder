@@ -581,6 +581,34 @@ function(InstallPackageConfig)
     endforeach()
 endfunction(InstallPackageConfig)
 
+function(InstallFindModule)
+    set(optionsArgs RECURSE)
+    set(multiValueArgs FILES)
+    set(oneValueArgs DIRECTORY)
+
+    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    set(DESTINATION lib/cmake/${NAMESPACE}/modules) 
+
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to InstallCMakeConfig(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    endif()
+
+    if(Argument_RECURSE)
+        if(Argument_RECURSE)
+            file(GLOB extra_files "${DIRECTORY}/*.cmake")
+        else()
+            file(GLOB_RECURSE extra_files "${DIRECTORY}/*.cmake")
+        endif(Argument_RECURSE)
+        install(FILES "${extra_files}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+    endif()
+
+    if (Argument_FILES)
+        install(FILES "${Argument_FILES}" DESTINATION lib/cmake/${NAMESPACE}/modules)
+    endif()
+
+endfunction(InstallFindModule)
+
 # Get all propreties that cmake supports
 execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
 
