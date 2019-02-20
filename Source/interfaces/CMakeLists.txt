@@ -3,6 +3,7 @@ set(TargetInterfaces ${NAMESPACE}Interfaces)
 
 add_library(${TargetMarshalling} SHARED
         ProxyStubs.cpp
+        ProxyStubs_Packager.cpp
         )
 
 add_library(${TargetInterfaces} SHARED
@@ -27,6 +28,7 @@ set(PUBLIC_HEADERS
         IKeyHandler.h
         IMemory.h
         INetflix.h
+        IPackager.h
         IPlayGiga.h
         IPower.h
         IProvisioning.h
