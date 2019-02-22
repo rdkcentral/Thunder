@@ -21,6 +21,7 @@ set(CMAKE_MODULE_PATH
 
 include(platform)
 include(CmakeHelperFunctions)
+find_package(ExecInfo)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform WPEFramework will run")
@@ -44,7 +45,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${NAMESPACE}.cmake"
         RENAME "${NAMESPACE}Config.cmake"
         DESTINATION lib/cmake/${NAMESPACE})
 
-install(DIRECTORY 
+install(DIRECTORY
             "${CMAKE_SOURCE_DIR}/cmake/config"
             "${CMAKE_SOURCE_DIR}/cmake/templates"
             "${CMAKE_SOURCE_DIR}/cmake/modules"
