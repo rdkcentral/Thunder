@@ -157,17 +157,20 @@ namespace PluginHost {
         //! DataPath: <config:datapath>/<plugin:classname>/
         virtual string DataPath() const = 0;
 
-		//! VolatilePath: <config:volatilepath>/<plugin:callsign>/
-		virtual string ProxyStubPath() const = 0;
+	//! VolatilePath: <config:volatilepath>/<plugin:callsign>/
+	virtual string ProxyStubPath() const = 0;
 
-		//! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
+	//! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
 
         virtual string HashKey() const = 0;
         virtual string ConfigLine() const = 0;
 
+        //! Return whether the given version is supported by this IShell instance.
+        virtual bool IsSupported(const uint8_t version) const = 0;
+
         // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the 
-        // status of the isub systems is.
+        // status of the sub systems is.
         virtual ISubSystem* SubSystems() = 0;
 
         // Notify all subscribers of this service with the given string.

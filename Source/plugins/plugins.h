@@ -8,6 +8,7 @@
 #include "IShell.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"
+#include "JSONRPC.h"
 #include "IRPCIterator.h"
 #include "Request.h"
 #include "Service.h"

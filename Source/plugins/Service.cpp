@@ -35,7 +35,7 @@ namespace PluginHost {
 			_service.Release();
 		}
 	}
-	void PluginHost::Request::Service(const bool correctSignature, const Core::ProxyType<PluginHost::Service>& service)
+	void PluginHost::Request::Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service)
 	{
 		ASSERT(_service.IsValid() == false);
 		ASSERT(_state == INCOMPLETE);
@@ -44,10 +44,13 @@ namespace PluginHost {
 			_state = COMPLETE;
 			_service = service;
 		}
-		else if (correctSignature == false) {
+		else if (errorCode == Core::ERROR_BAD_REQUEST) {
 			_state = OBLIVIOUS;
 		}
-		else {
+                else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
+                        _state = INVALID_VERSION;
+                }
+		else if (errorCode == Core::ERROR_UNAVAILABLE) {
 			_state = MISSING_CALLSIGN;
 		}
 	}

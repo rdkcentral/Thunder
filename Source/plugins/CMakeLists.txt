@@ -22,6 +22,7 @@ set(PUBLIC_HEADERS
         IShell.h
         IStateControl.h
         ISubSystem.h
+        JSONRPC.h
         MetaData.h
         plugins.h
         Request.h

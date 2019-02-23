@@ -16,7 +16,7 @@ namespace Plugin {
             , Callsign()
             , Locator()
             , ClassName()
-            , Version(static_cast<uint32_t>(~0))
+            , Versions()
             , AutoStart(true)
             , WebUI()
             , Precondition()
@@ -26,7 +26,7 @@ namespace Plugin {
         Add(_T("callsign"), &Callsign);
         Add(_T("locator"), &Locator);
         Add(_T("classname"), &ClassName);
-        Add(_T("version"), &Version);
+        Add(_T("versions"), &Versions);
         Add(_T("autostart"), &AutoStart);
         Add(_T("webui"), &WebUI);
         Add(_T("precondition"), &Precondition);
@@ -38,7 +38,7 @@ namespace Plugin {
             , Callsign(copy.Callsign)
             , Locator(copy.Locator)
             , ClassName(copy.ClassName)
-            , Version(copy.Version)
+            , Versions(copy.Versions)
             , AutoStart(copy.AutoStart)
             , WebUI(copy.WebUI)
             , Precondition(copy.Precondition)
@@ -48,7 +48,7 @@ namespace Plugin {
         Add(_T("callsign"), &Callsign);
         Add(_T("locator"), &Locator);
         Add(_T("classname"), &ClassName);
-        Add(_T("version"), &Version);
+        Add(_T("versions"), &Versions);
         Add(_T("autostart"), &AutoStart);
         Add(_T("webui"), &WebUI);
         Add(_T("precondition"), &Precondition);
@@ -64,7 +64,7 @@ namespace Plugin {
         Callsign = RHS.Callsign;
         Locator = RHS.Locator;
         ClassName = RHS.ClassName;
-        Version = RHS.Version;
+        Versions = RHS.Versions;
         AutoStart = RHS.AutoStart;
         WebUI = RHS.WebUI;
         Configuration = RHS.Configuration;
@@ -78,7 +78,7 @@ namespace Plugin {
     Core::JSON::String    Callsign;
     Core::JSON::String    Locator;
     Core::JSON::String    ClassName;
-    Core::JSON::DecUInt32 Version;
+    Core::JSON::ArrayType<Core::JSON::DecUInt8> Versions;
     Core::JSON::Boolean   AutoStart;
     Core::JSON::String    WebUI;
     Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> > Precondition;
@@ -89,7 +89,7 @@ namespace Plugin {
     public:
         inline bool IsSameInstance(const Config& RHS) const
         {
-            return ((Locator.Value() == RHS.Locator.Value()) && (ClassName.Value() == RHS.ClassName.Value()) && (Version.Value() == RHS.Version.Value()));
+            return ((Locator.Value() == RHS.Locator.Value()) && (ClassName.Value() == RHS.ClassName.Value()));
     }
     };
 
@@ -150,8 +150,8 @@ namespace PluginHost {
         const string& redirect,
             ISecurity* security)
             : _webPrefix('/' + webPrefix)
-			, _volatilePath(Core::Directory::Normalize(volatilePath))
-			, _persistentPath(Core::Directory::Normalize(persistentPath))
+            , _volatilePath(Core::Directory::Normalize(volatilePath))
+            , _persistentPath(Core::Directory::Normalize(persistentPath))
             , _dataPath(Core::Directory::Normalize(dataPath))
             , _hashKey(hashKey)
             , _appPath(Core::File::PathName((Core::ProcessInfo().Executable())))

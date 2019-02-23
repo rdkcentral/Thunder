@@ -27,6 +27,7 @@ ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
 namespace PluginHost {
 /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
+/* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Service::_missingHandler(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Service::_unavailableHandler(Core::ProxyType<Web::Response>::Create());
@@ -47,6 +48,7 @@ namespace PluginHost {
 
 
 static const TCHAR _defaultControllerCallsign[] = _T("Controller");
+static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
 
 static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor) {
     Core::NodeId result(configuration.Binding.Value().c_str());
@@ -423,12 +425,12 @@ uint32_t Server::Service::Deactivate(const reason why) {
     _administrator.Notification(fullMessage);
 }
 
-Core::ProxyType<PluginHost::Server::Service> Server::ServiceMap::FromLocator(const string& identifier, bool& correctHeader) {
-	Core::ProxyType<PluginHost::Server::Service> result;
+uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service) {
+	uint32_t result = Core::ERROR_BAD_REQUEST;
 	const string& locator(_webbridgeConfig.WebPrefix());
 
 	// Check the header (prefix part)
-	correctHeader = (identifier.compare(0, locator.length(), locator.c_str()) == 0);
+	bool correctHeader = (identifier.compare(0, locator.length(), locator.c_str()) == 0);
 
 	// Yippie the path prefix keyword is found correctly.
 	if ((correctHeader == true) && (identifier.length() > (locator.length() + 1))) {
@@ -437,15 +439,8 @@ Core::ProxyType<PluginHost::Server::Service> Server::ServiceMap::FromLocator(con
 
 		const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-		_adminLock.Lock();
+                result = FromIdentifier(callSign, service);
 
-		std::map<const string, Core::ProxyType<Service> >::iterator index(_services.find(callSign));
-
-		if (index != _services.end()) {
-			result = index->second;
-		}
-
-		_adminLock.Unlock();
 	}
 
 	return (result);
@@ -555,8 +550,8 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
         metaDataConfig.Callsign = string(_defaultControllerCallsign);
     }
 
-	// Get the configuration from the persistent location.
-	_services.Load();
+    // Get the configuration from the persistent location.
+    _services.Load();
 
     // Create input handle
     _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());

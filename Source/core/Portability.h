@@ -658,6 +658,7 @@ namespace Core {
     const uint32_t ERROR_INVALID_SIGNATURE = 38;
     const uint32_t ERROR_READ_ERROR = 39;
     const uint32_t ERROR_WRITE_ERROR = 40;
+    const uint32_t ERROR_INVALID_DESIGNATOR = 41;
 }
 }
 

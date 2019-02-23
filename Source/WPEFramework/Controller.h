@@ -9,7 +9,7 @@
 namespace WPEFramework {
 namespace Plugin {
 
-    class Controller : public PluginHost::IPlugin, public PluginHost::IWeb {
+    class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
         class Downloader : public PluginHost::DownloadEngine {
         private:
@@ -36,7 +36,8 @@ namespace Plugin {
         private:
             Controller& _parent;
         };
-       class Sink : 
+
+        class Sink : 
             public PluginHost::IPlugin::INotification,
             public PluginHost::ISubSystem::INotification {
         private:
@@ -110,6 +111,16 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
+        uint32_t exists(const uint32_t id, const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            // Core::ERROR_BAD_REQUEST the designator is not found at all.
+            // Core::ERROR_INVALID_SIGNATURE the designator is found, but the version is not supported.
+            // Core::ERROR_NONE the designator is found and the version is supported.
+            response = _pluginServer->Services().FromIdentifier(designator, service);
+
+            return (Core::ERROR_NONE);
+        }
 
         // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Configure
@@ -186,6 +197,7 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
         {
+            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"), &Controller::exists, this);
         }
 
     public:
@@ -255,11 +267,19 @@ namespace Plugin {
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
         BEGIN_INTERFACE_MAP(Controller)
-        INTERFACE_ENTRY(PluginHost::IPlugin)
-        INTERFACE_ENTRY(PluginHost::IWeb)
+            INTERFACE_ENTRY(PluginHost::IPlugin)
+            INTERFACE_ENTRY(PluginHost::IWeb)
+            INTERFACE_ENTRY(PluginHost::IDispatcher)
         END_INTERFACE_MAP
 
     private:
+        inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier (const string& callsign) const {
+            Core::ProxyType<PluginHost::Server::Service> service;
+ 
+            _pluginServer->Services().FromIdentifier(callsign, service); 
+
+            return (service);
+        }
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> >::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
@@ -267,6 +287,7 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
+        uint32_t Invoke (const Message& inbound, string& response);
 
     private:
         Core::CriticalSection _adminLock;

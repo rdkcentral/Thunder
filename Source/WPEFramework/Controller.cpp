@@ -13,6 +13,8 @@ namespace WPEFramework {
 			// typedef Web::SignedJSONBodyType<Controller::Download, Crypto::SHA256HMAC> SignedDownload;
 			// Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
 			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData> > jsonBodyMetaDataFactory(1);
+			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::JSONRPC::Message> > jsonBodyRPCFactory(2);
+			static Core::ProxyPoolType<Web::TextBody > jsonBodyRPCResponseFactory(2);
 			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service> > jsonBodyServiceFactory(1);
 			static Core::ProxyPoolType<Web::TextBody> jsonBodyConfigureFactory(1);
 			static Core::ProxyPoolType<Web::JSONBodyType<Controller::Download> > jsonBodyDownloadFactory(1);
@@ -79,6 +81,8 @@ namespace WPEFramework {
 				_service = service;
 				_skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
+                                SetMetadata(_service);
+
 				Config config;
 				config.FromString(_service->ConfigLine());
 
@@ -137,6 +141,8 @@ namespace WPEFramework {
 					_service->Unregister(&_systemInfoReport);
 				}
 
+                                SetMetadata(nullptr);
+
 				/* stop the file serving over http.... */
 				service->DisableWebServer();
 			}
@@ -151,7 +157,10 @@ namespace WPEFramework {
 			{
 				ASSERT(request.HasBody() == false);
 
-				if (request.Verb == Web::Request::HTTP_PUT) {
+				if (request.Verb == Web::Request::HTTP_POST) {
+					request.Body(Core::proxy_cast<Web::IBody>(jsonBodyRPCFactory.Element()));
+                                }
+				else if (request.Verb == Web::Request::HTTP_PUT) {
 					Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
 
 					// Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
@@ -182,7 +191,24 @@ namespace WPEFramework {
 				index.Next();
 
 				// For now, whatever the URL, we will just, on a get, drop all info we have
-				if (request.Verb == Web::Request::HTTP_GET) {
+				if (request.Verb == Web::Request::HTTP_POST) {
+                                    if (request.HasBody() == true) {
+                                        Core::ProxyType<Web::TextBody> response (jsonBodyRPCResponseFactory.Element());
+                                        uint32_t errorCode = Invoke(*request.Body<PluginHost::JSONRPC::Message>(), *response);
+                                        if (response->empty() == false) {
+                                            result->Body(response);
+                                        }
+                                        if (errorCode != Core::ERROR_NONE) {
+						result->ErrorCode = Web::STATUS_OK;
+						result->Message = _T("JSONRPC executed succesfully");
+                                        }
+                                        else {
+						result->ErrorCode = Web::STATUS_NO_CONTENT;
+						result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(errorCode).Text();
+                                        }
+                                    }
+                                }
+				else if (request.Verb == Web::Request::HTTP_GET) {
 					result = GetMethod(index);
 				}
 				else if (request.Verb == Web::Request::HTTP_PUT) {
@@ -244,7 +270,7 @@ namespace WPEFramework {
 				}
 				else if (index.Current() == _T("Plugin")) {
 					if (index.Next() == true) {
-						Core::ProxyType<const PluginHost::Server::Service> serviceInfo(_pluginServer->Services().FromLocator(index.Current().Text()));
+						Core::ProxyType<PluginHost::Server::Service> serviceInfo (FromIdentifier(index.Current().Text()));
 
 						if (serviceInfo.IsValid() == true) {
 							Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData::Service> > response(jsonBodyServiceFactory.Element());
@@ -257,7 +283,7 @@ namespace WPEFramework {
 				}
 				else if (index.Current() == _T("Configuration")) {
 					if (index.Next() == true) {
-						Core::ProxyType<const PluginHost::Service> serviceInfo(_pluginServer->Services().FromLocator(index.Current().Text()));
+						Core::ProxyType<PluginHost::Service> serviceInfo (FromIdentifier(index.Current().Text()));
 
 						if (serviceInfo.IsValid() == true) {
 							Core::ProxyType<Web::TextBody> response(jsonBodyConfigureFactory.Element());
@@ -320,7 +346,7 @@ namespace WPEFramework {
 								result->Message = _T("The PluginHost Controller can not be activated.");
 							}
 							else {
-								Core::ProxyType<PluginHost::Server::Service> pluginInfo(_pluginServer->Services().FromLocator(callSign));
+								Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
 
 								if (pluginInfo.IsValid()) {
 									if (pluginInfo->State() == PluginHost::IShell::DEACTIVATED) {
@@ -354,7 +380,7 @@ namespace WPEFramework {
 								result->Message = _T("The PluginHost Controller can not be deactivated.");
 							}
 							else {
-								Core::ProxyType<PluginHost::Server::Service> pluginInfo(_pluginServer->Services().FromLocator(callSign));
+								Core::ProxyType<PluginHost::Server::Service> pluginInfo(FromIdentifier(callSign));
 
 								if (pluginInfo.IsValid()) {
 									if (pluginInfo->State() == PluginHost::IShell::ACTIVATED) {
@@ -375,7 +401,7 @@ namespace WPEFramework {
 					else if (index.Current() == _T("Configuration")) {
 						if ((index.Next() == true) && (request.HasBody() == true)) {
 
-							Core::ProxyType<PluginHost::Service> serviceInfo(_pluginServer->Services().FromLocator(index.Current().Text()));
+							Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
 							Core::ProxyType<const Web::TextBody> data(request.Body<const Web::TextBody>());
 
 							if ((data.IsValid() == false) || (serviceInfo.IsValid() == false)) {
@@ -591,5 +617,52 @@ namespace WPEFramework {
 				    _pluginServer->Notify(message);
 				}
        			}
+
+        uint32_t Controller::Invoke (const Message& inbound, string& response) {
+            uint32_t result = Validate(inbound);
+
+            if (result == Core::ERROR_NONE) {
+                result = JSONRPC::Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
+            }
+            else {
+                response.clear();
+
+                if ( result == Core::ERROR_INVALID_DESIGNATOR) {
+                    Core::ProxyType<PluginHost::Server::Service> service;
+
+                    result = _pluginServer->Services().FromIdentifier(inbound.Callsign(), service);
+
+                    if (result == Core::ERROR_NONE) {
+                        ASSERT (service.IsValid());
+                        PluginHost::IDispatcher* plugin = nullptr;
+                        Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(service->QueryInterface(PluginHost::IDispatcher::ID));
+                        if (iuptr != nullptr) {
+                            plugin = dynamic_cast<PluginHost::IDispatcher*>(iuptr);
+
+                            if (plugin != nullptr) {
+                                result = plugin->Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
+                            }
+                            iuptr->Release();
+                        }
+                        else {
+                            result = Core::ERROR_BAD_REQUEST;
+                        }
+                    }
+                }
+
+                if ((response.empty() == true) && (inbound.Id.Value() != static_cast<uint32_t>(~0))) {
+                    Message message;
+                    message.Version = _T("2.0");
+                    message.Error.SetError(result);
+                    message.Error.Text = "Invalid JSONRPC Request";
+                    message.Id = inbound.Id.Value();
+                    message.ToString(response);
+                }
+            }
+
+            return (result);
+        }
+
+
 		}
 	}

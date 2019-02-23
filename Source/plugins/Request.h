@@ -20,6 +20,7 @@ namespace PluginHost {
             INCOMPLETE,
             OBLIVIOUS,
             MISSING_CALLSIGN,
+            INVALID_VERSION,
             COMPLETE
         };
 
@@ -42,7 +43,7 @@ namespace PluginHost {
         }
 
 		void Clear();
-		void Service(const bool correctSignature, const Core::ProxyType<PluginHost::Service>& service);
+		void Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service);
 
     private:
         enumState _state;

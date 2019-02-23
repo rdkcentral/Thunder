@@ -343,7 +343,18 @@ namespace ProxyStubs {
 
 			response.Text(message->Parameters().Implementation<IShell>()->ProxyStubPath());
 		},
-		nullptr
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual bool IsSupported(const uint8_t reason) const = 0;
+            //
+            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            uint8_t version(reader.Number<uint8_t>());
+
+            response.Boolean(message->Parameters().Implementation<IShell>()->IsSupported(version));
+        },
+	nullptr
     };
     // IShell stub definitions
 
@@ -659,6 +670,7 @@ namespace ProxyStubs {
         // virtual state State() const = 0;
         // virtual reason Reason() const = 0;
         // virtual string Model() const = 0;
+        // virtual bool IsSupported(const uint8_t version) const = 0;
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -911,6 +923,17 @@ namespace ProxyStubs {
 
 			return (reader.Text());
 		}
+        virtual bool IsSupported(const uint8_t version) const override
+        {
+            IPCMessage newMessage(BaseClass::Message(26));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Number<uint8_t>(version);
+            Invoke(newMessage);
+
+            return (newMessage->Response().Reader().Boolean());
+        }
+ 
 	};
 
     class StateControlProxy : public ProxyStub::UnknownProxyType<IStateControl> {
