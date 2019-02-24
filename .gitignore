@@ -31,3 +31,4 @@ workspace/
 /artifacts/Debug
 /Source/protocols
 *.user
+/artifacts/Release

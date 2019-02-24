@@ -95,7 +95,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;APPLICATION_NAME=WPEFramework;NDEBUG;_CONSOLE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;APPLICATION_NAME=WPEFramework;HOSTING_COMPROCESS=WPEProcess;THREADPOOL_COUNT=3;RPCPOOL_COUNT=3;NDEBUG;_CONSOLE;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>../../;$(SolutionDir)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
