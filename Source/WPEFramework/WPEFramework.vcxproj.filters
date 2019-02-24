@@ -1,57 +1,59 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="TraceMedia.cpp">
+    <ClCompile Include="Controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TraceUnit.cpp">
+    <ClCompile Include="PluginHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TraceCategories.cpp">
+    <ClCompile Include="PluginServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Module.cpp">
+    <ClCompile Include="Probe.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Logging.cpp">
+    <ClCompile Include="SystemInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ITraceControl.h">
+    <ClInclude Include="Controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceControl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TraceCategories.h">
+    <ClInclude Include="DownloadEngine.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Module.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ITraceMedia.h">
+    <ClInclude Include="PluginServer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceMedia.h">
+    <ClInclude Include="Probe.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TraceUnit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Tracing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logging.h">
+    <ClInclude Include="SystemInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{7acb9efa-0b13-430a-bb19-c51decbb9609}</UniqueIdentifier>
+      <UniqueIdentifier>{b9cee3d7-6403-4f6e-8539-61c6e223ac46}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{e16bb1a1-0ebc-40de-a2f8-7aad72ca2f9f}</UniqueIdentifier>
+      <UniqueIdentifier>{1d85d564-3b27-46e9-9869-c902fdf1ac16}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Configs">
+      <UniqueIdentifier>{12726c09-a2af-4d9f-949f-2301b97e9588}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ExampleConfigWindows.json">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="ExampleConfigTest.json">
+      <Filter>Configs</Filter>
+    </None>
   </ItemGroup>
 </Project>

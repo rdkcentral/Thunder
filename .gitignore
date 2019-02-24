@@ -27,3 +27,7 @@ Source/Config.json
 /clion-environment/WPEFrameworkPlugins/WebServer/WebServer.json
 /clion-environment/WPEFrameworkPlugins/WebShell/WebShell.json
 workspace/
+/.vs
+/artifacts/Debug
+/Source/protocols
+*.user
