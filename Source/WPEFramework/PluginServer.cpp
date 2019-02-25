@@ -412,6 +412,10 @@ uint32_t Server::Service::Deactivate(const reason why) {
     return (result);
 }
 
+/* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) {
+    return(_administrator.Submit(id, response));
+}
+
 /* virtual */ ISubSystem* Server::Service::SubSystems() {
     return (_administrator.SubSystemsInterface());
 }

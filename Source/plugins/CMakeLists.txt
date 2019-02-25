@@ -11,6 +11,7 @@ add_library(${TARGET} SHARED
         StateControl.cpp
         SubSystem.cpp
         VirtualInput.cpp
+        JSONRPC.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -18,7 +19,6 @@ set(PUBLIC_HEADERS
         Config.h
         Configuration.h
         IPlugin.h
-        IRPCIterator.h
         IShell.h
         IStateControl.h
         ISubSystem.h

@@ -78,7 +78,7 @@ namespace Plugin {
     Core::JSON::String    Callsign;
     Core::JSON::String    Locator;
     Core::JSON::String    ClassName;
-    Core::JSON::ArrayType<Core::JSON::DecUInt8> Versions;
+    Core::JSON::String    Versions;
     Core::JSON::Boolean   AutoStart;
     Core::JSON::String    WebUI;
     Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> > Precondition;

@@ -161,8 +161,9 @@ namespace PluginHost {
 
                 _versions.clear();
 
-                // Extract the cersion list from the config
-                Core::JSON::ArrayType<Core::JSON::DecUInt8>::ConstIterator index(config.Versions.Elements());
+                // Extract the version list from the config
+                Core::JSON::ArrayType<Core::JSON::DecUInt8> versions; versions.FromString(config.Versions.Value());
+                Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
 
                 while (index.Next() == true) {
                     _versions.push_back(index.Current().Value());
@@ -210,6 +211,10 @@ namespace PluginHost {
         virtual string Version () const
         {
             return (_config.Information().Version());
+        }
+        virtual string Versions () const
+        {
+            return (_config.Configuration().Versions.Value());
         }
         virtual string Model () const
         {

@@ -20,6 +20,7 @@ add_library(${TARGET} SHARED
         FileSystem.cpp
         ISO639.cpp
         JSON.cpp
+        JSONRPC.cpp
         Library.cpp
         MessageException.cpp
         Netlink.cpp
@@ -66,6 +67,7 @@ set(PUBLIC_HEADERS
         IPCConnector.h
         ISO639.h
         JSON.h
+        JSONRPC.h
         KeyValue.h
         Library.h
         Link.h

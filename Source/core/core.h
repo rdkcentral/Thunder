@@ -49,6 +49,7 @@
 #include "Range.h"
 #include "Parser.h"
 #include "JSON.h"
+#include "JSONRPC.h"
 #include "SocketPort.h"
 #include "StreamText.h"
 #include "StreamJSON.h"

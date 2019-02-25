@@ -924,6 +924,7 @@ namespace WPEFramework {
 
                 Unlock();
             }
+            virtual uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             virtual ISubSystem* SubSystems() override;
             virtual void Notify(const string& message) override;
             virtual void* QueryInterface(const uint32_t id) override;
@@ -1477,6 +1478,9 @@ namespace WPEFramework {
             }
 
         public:
+            inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) {
+                return(_server.Dispatcher().Submit(id, response));
+            }
             inline uint32_t SubSystemInfo() const {
                 return (_subSystems.Value());
             }
@@ -1665,9 +1669,12 @@ namespace WPEFramework {
 
                 std::map<const string, Core::ProxyType<Service> >::const_iterator index(_services.begin());
 
-                while ((index != _services.end()) && (result == Core::ERROR_BAD_REQUEST)) {
+                while ((index != _services.end()) && (result == Core::ERROR_UNAVAILABLE)) {
                     const string& source(index->first);
-                    if (source.compare(0, source.length(), callSign) == 0) {
+                    if (source.compare(0, source.length(), callSign) != 0) {
+                        index++;
+                    }
+                    else {
                         result = Core::ERROR_INVALID_SIGNATURE;
                         uint32_t length = source.length();
 
@@ -1678,6 +1685,8 @@ namespace WPEFramework {
                         }
                     }
                 }
+
+                _adminLock.Unlock();
 
                 return (result);
             }

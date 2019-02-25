@@ -659,6 +659,7 @@ namespace Core {
     const uint32_t ERROR_READ_ERROR = 39;
     const uint32_t ERROR_WRITE_ERROR = 40;
     const uint32_t ERROR_INVALID_DESIGNATOR = 41;
+    const uint32_t ERROR_DUPLICATE_KEY = 42;
 }
 }
 

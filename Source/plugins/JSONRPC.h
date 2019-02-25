@@ -1,8 +1,7 @@
 #pragma once
 
 #include "Module.h"
-
-#include <functional>
+#include "IShell.h"
 
 namespace WPEFramework {
 
@@ -11,240 +10,244 @@ namespace PluginHost {
     struct IDispatcher : public virtual Core::IUnknown {
         virtual ~IDispatcher() {}
 
+        enum { ID = RPC::ID_DISPATCHER };
+
+        virtual void Activate(IShell* service) = 0;
+        virtual void Deactivate() = 0;
+
         virtual uint32_t Invoke (const uint32_t id, const string& methodName, const string& parameters, string& result) = 0;
+        virtual uint32_t Notify (const string& event, const string& parameters) = 0;
+
+        virtual void Closed(const uint32_t id) = 0;
     };
 
-    class EXTERNAL JSONRPC : public IDispatcher  {
+    class EXTERNAL JSONRPC : public IDispatcher {
     private:
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator= (const JSONRPC&) = delete;
 
-    public:
-        class Message : public Core::JSON::Container {
-        private:
-            Message(const Message&) = delete;
-            Message& operator=(const Message&) = delete;
-
-        public:
-            class Info : public Core::JSON::Container {
-            public:
-                Info() 
-                    : Core::JSON::Container()
-                    , Code(0)
-                    , Text()
-                    , Data() {
-                    Add(_T("code"), &Code);
-                    Add(_T("message"), &Text);
-                    Add(_T("data"), &Data);
-                }
-                Info(const Info& copy) 
-                    : Core::JSON::Container()
-                    , Code(0)
-                    , Text()
-                    , Data() {
-                    Add(_T("code"), &Code);
-                    Add(_T("message"), &Text);
-                    Add(_T("data"), &Data);
-                    Code = copy.Code;
-                    Text = copy.Text;
-                    Data = copy.Data;
-                }
-                virtual ~Info() {
-                }
-
-                Info& operator= (const Info& RHS) {
-                    Code = RHS.Code;
-                    Text = RHS.Text;
-                    Data = RHS.Data;
-                    return (*this);
-                }
-
-            public:
-                void SetError(const uint32_t frameworkError) {
-                    switch (frameworkError) {
-                    case Core::ERROR_BAD_REQUEST:
-                         Code = -32603; // Internal Error
-                         break;
-                    case Core::ERROR_INVALID_DESIGNATOR:
-                         Code = -32600; // Invalid request
-                         break;
-                    case Core::ERROR_INVALID_SIGNATURE:
-                         Code = -32602; // Invalid parameters
-                         break;
-                    case Core::ERROR_UNKNOWN_KEY_PASSED:
-                         Code = -32601; // Method not found
-                         break;
-                    default: 
-                         Code = static_cast<int32_t>(frameworkError);
-                         break;
-                    }
-                }
-                Core::JSON::DecSInt32 Code;
-                Core::JSON::String Text;
-                Core::JSON::String Data;
-            };
-
-        public:
-            Message()
-                : Core::JSON::Container()
-                , Version()
-                , Id(~0)
-                , Designator()
-                , Parameters()
-                , Result()
-                , Error()
-            {
-                Add(_T("jsonrpc"), &Version);
-                Add(_T("id"), &Id);
-                Add(_T("method"), &Designator);
-                Add(_T("params"), &Parameters);
-                Add(_T("result"), &Result);
-                Add(_T("error"), &Error);
-            }
-            ~Message()
-            {
-            }
-
-        public:
-            string Callsign() const {
-                size_t pos = Designator.Value().find_last_of('.');
-                return (pos == string::npos ? _T("") : Designator.Value().substr(0, pos));
-            }
-            string Method() const {
-                size_t pos = Designator.Value().find_last_of('.');
-                return (pos == string::npos ? Designator.Value() : Designator.Value().substr(pos));
-            }
-            Core::JSON::String Version;
-            Core::JSON::DecUInt32 Id;
-            Core::JSON::String Designator;
-            Core::JSON::String Parameters;
-            Core::JSON::String Result;
-            Info Error;
+        struct ThreadLocalStorageId {
+            uint32_t _id;
         };
 
-   private:
-        typedef std::function<uint32_t(const uint32_t id, const string& parameters, string& result)> InvokeFunction;
-        typedef std::map<const string, InvokeFunction > HandlerMap;
+        class Observer {
+        private:
+            Observer(const Observer&) = delete;
+            Observer& operator=(const Observer&) = delete;
+
+        public:
+            Observer(const uint32_t id, const string& designator) 
+                : _id(id)
+                , _designator(designator) {
+            }
+            ~Observer() {
+            }
+
+            bool operator== (const Observer& rhs) const {
+                return ((rhs._id == _id) && (rhs._designator == _designator));
+            }
+            bool operator!= (const Observer& rhs) const {
+                return (!operator== (rhs));
+            }
+
+            uint32_t Id() const {
+                return (_id);
+            }
+            const string& Designator() const {
+                return (_designator);
+            }
+
+        private:
+            uint32_t _id;
+            string _designator;
+        };
+
+        typedef std::list<Observer> ObserverList;
+        typedef std::map<string, ObserverList > ObserverMap;
 
     public:
         JSONRPC() 
-            : _handlers()
+            : _adminLock()
+            , _handler() 
+            , _observers()
             , _service(nullptr) {
         }
         virtual ~JSONRPC() {
         }
 
     public:
-        uint32_t Validate (const Message& message) const {
-            const string callsign (message.Callsign());
-            uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
-            if ( (result != Core::ERROR_NONE) && (_service != nullptr) ) {
-                const string source (_service->Callsign());
-                if (source.compare(0, source.length(), callsign) == 0) {
-                    result = Core::ERROR_INVALID_SIGNATURE;
-                    uint32_t length = source.length();
-
-                    if ((callsign.length() == length) ||
-                        ((callsign[length] == '.') && (HasVersionSupport(callsign.substr(length+1))))) {
-                        result = Core::ERROR_NONE;
-                    }
-                }
-            }
-            return (result);
-        }
         template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register (const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
-            std::function<uint32_t(const uint32_t id, const INBOUND& parameters, OUTBOUND& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-            InvokeFunction implementation = [actualMethod](const uint32_t id, const string& parameters, string& result) -> uint32_t {
-                                               INBOUND inbound; 
-                                               OUTBOUND outbound;
-                                               inbound.FromString(parameters);
-                                               uint32_t code = actualMethod(id, inbound, outbound);
-                                               if (id != static_cast<uint32_t>(~0)) { 
-                                                   string response; 
-                                                   Message message;
-                                                   message.Version = _T("2.0");
-                                                   message.Id = id;
-                                                   outbound.ToString(response);
-                                                   if (code == Core::ERROR_NONE) {
-                                                       message.Result = response;
-                                                   }
-                                                   else {
-                                                       message.Error.SetError(code);
-                                                       message.Error.Text = response;
-                                                   }
-                                                   message.ToString(result);
-                                               }
-                                               return (code);
-                                            };
-            Register(methodName, implementation);
+            _handler.Register<INBOUND,OUTBOUND,METHOD,REALOBJECT>(methodName, method, objectPtr);
         }
-        void Register (const string& methodName, const InvokeFunction& lambda) {
-            ASSERT (_handlers.find(methodName) == _handlers.end());
-            _handlers[methodName] = lambda;
+        template<typename METHOD, typename REALOBJECT>
+        void Register (const string& methodName, const METHOD& method, REALOBJECT objectPtr ) {
+            _handler.Register<METHOD,REALOBJECT>(methodName, method, objectPtr);
         }
         void Unregister (const string& methodName) {
-            HandlerMap::iterator index = _handlers.find(methodName);
-
-            if (index == _handlers.end()) {
-                _handlers.erase(index);
-            }
+            _handler.Unregister(methodName);
         }
-        virtual uint32_t Invoke (const uint32_t id, const string& method, const string& parameters, string& response) override {
-            uint32_t result = Core::ERROR_UNKNOWN_KEY_PASSED;
-
-            response.clear();
-
-            HandlerMap::iterator index = _handlers.find(method);
-            if (index != _handlers.end()) {
-                result = index->second(id, parameters, response);
-            }
-            else if (id != static_cast<uint32_t>(~0)) {
-                Message message;
-                message.Version = _T("2.0");
-                message.Error.SetError(result);
-                message.Error.Text = "Method not found";
-                message.Id = id;
-                message.ToString(response);
-            }
-            return (result);
+        uint32_t Validate  (const Core::JSONRPC::Message& message) const {
+            return (_handler.Validate(message));
         }
-        uint32_t Invoke (const Message& inbound, string& response) {
-            uint32_t result = Validate(inbound);
-            
-            if (result == Core::ERROR_NONE) {
-               result = Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
+        uint32_t Invoke (const uint32_t ID, const Core::JSONRPC::Message& inbound, string& response) {
+            // Store the Channel Id on the thread local storage, might be used during registrations...            
+            Core::Thread::GetContext<ThreadLocalStorageId>()._id = ID;
+
+            return (_handler.Invoke(inbound, response));
+        }
+        virtual void Activate(IShell* service) override {
+            ASSERT (_service == nullptr);
+            ASSERT (service != nullptr);
+
+            _service = service;
+            std::vector<uint8_t> data;
+
+            // Extract the version list from the config
+            Core::JSON::ArrayType<Core::JSON::DecUInt8> versions; versions.FromString(service->Versions());
+            Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
+
+            while (index.Next() == true) {
+                data.push_back(index.Current().Value());
             }
-            else if (inbound.Id.Value() != static_cast<uint32_t>(~0)) {
-                Message message;
-                message.Version = _T("2.0");
-                message.Error.SetError(result);
-                message.Error.Text = "Invalid JSONRPC Request";
-                message.Id = inbound.Id.Value();
-                message.ToString(response);
-            }
-            else {
-                response.clear();
+
+            // If no versions are give, lets assume this is version 1, and we support it :-)
+            if (data.empty() == true) {
+                data.push_back(1);
             }
  
+            _handler.Designator(_service->Callsign(), data);
+        }
+        virtual void Deactivate() override {
+            _service = nullptr;
+            _observers.clear();
+        }
+        virtual uint32_t Invoke (const uint32_t id, const string& method, const string& parameters, string& response) override {
+            return (_handler.Invoke(id,method,parameters,response));
+        }
+        virtual uint32_t Notify (const string& event, const string& parameters) override {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY_PASSED;
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(event);
+
+            if (index != _observers.end()) {
+                ObserverList& clients = index->second;
+                ObserverList::iterator loop = clients.begin();
+
+                result = Core::ERROR_NONE;
+
+                while (loop != clients.end()) {
+                    const string& designator (loop->Designator());
+                    Core::ProxyType<Web::JSONBodyType< Core::JSONRPC::Message > > message = _jsonRPCMessageFactory.Element();
+
+                    ASSERT (_service != nullptr);
+
+                    message->Parameters = parameters;
+                    message->Designator = (designator.empty() == false ? designator + '.' + event : event);
+                    message->Version = Core::JSONRPC::Message::DefaultVersion;
+
+                    _service->Submit(loop->Id(), message);
+                    loop++;
+                }
+            }
+
+            _adminLock.Unlock();
+
             return (result);
         }
-        void SetMetadata(const IShell* service) {
-            ASSERT ((service != nullptr) ^ (_service != nullptr));
-            _service = service;
-        }
+        uint32_t Register (const string& event, const string& designator) {
+            uint32_t result = Core::ERROR_NONE;
+            uint32_t id = Core::Thread::GetContext<ThreadLocalStorageId>()._id;
 
-    private:
-        bool HasVersionSupport(const string& number) const {
-            return (number.length() > 0) &&
-                   (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) &&
-                   (_service->IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
-        }
+            _adminLock.Lock();
 
+            ObserverMap::iterator index = _observers.find(event);
+
+            if (index == _observers.end()) {
+                _observers[event].emplace_back(id, designator);
+            }
+            else if (std::find(index->second.begin(), index->second.end(), Observer(id, designator)) == index->second.end()) {
+                index->second.emplace_back(id, designator);
+            }
+            else {
+                result = Core::ERROR_DUPLICATE_KEY;
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
+        uint32_t Unregister (const string& event, const string& designator) {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
+            uint32_t id = Core::Thread::GetContext<ThreadLocalStorageId>()._id;
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.find(event);
+
+            if (index != _observers.end()) {
+                ObserverList& clients = index->second;
+                ObserverList::iterator loop = clients.begin();
+                Observer key(id, designator);
+
+                while ((loop != clients.end()) && (*loop != key)) { loop++; }
+
+                if (loop != clients.end()) {
+                    clients.erase(loop);
+                    if (clients.empty() == true) {
+                        _observers.erase(index);
+                    }
+                    result = Core::ERROR_NONE;
+                }
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+ 
+        }
+        virtual void Closed(const uint32_t id) override {
+
+            _adminLock.Lock();
+
+            ObserverMap::iterator index = _observers.begin();
+
+            while (index != _observers.end()) {
+                ObserverList& clients = index->second;
+                ObserverList::iterator loop = clients.begin();
+
+                while (loop != clients.end()) {
+                    if (loop->Id() != id) {
+                        loop++;
+                    }
+                    else {
+                        loop = clients.erase(loop);
+                        
+                   }
+                }
+                if (clients.empty() == true) {
+                    index = _observers.erase(index);
+                }
+                else {
+                    index++;
+                }
+            }
+
+            _adminLock.Unlock();
+        }
+   
     private:
-        HandlerMap _handlers;
-        const IShell* _service;
+        Core::CriticalSection _adminLock;
+        Core::JSONRPC::Handler _handler;
+        ObserverMap _observers;
+        IShell* _service;
+
+        static Core::ProxyPoolType<Web::JSONBodyType< Core::JSONRPC::Message > > _jsonRPCMessageFactory;
     };
+
+
 
 } } // Namespace WPEFramework::PluginHost
 

@@ -17,6 +17,7 @@ set(SOURCES_COM
         com/Communicator.cpp
         com/ITracing.cpp
         com/IStringIterator.cpp
+        com/IValueIterator.cpp
         com/IUnknown.cpp
         com/IStringIterator.h
         )
@@ -49,6 +50,7 @@ set(COM_INCLUDES
         IUnknown.h
         Messages.h
         IStringIterator.h
+        IValueIterator.h
         )
 
 set(PROTOCOLS_INCLUDES
@@ -80,6 +82,7 @@ add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
         IStringIterator.cpp
+        IValueIterator.cpp
         )
 
 target_link_libraries(${TARGET}

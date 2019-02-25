@@ -13,7 +13,7 @@ namespace WPEFramework {
 			// typedef Web::SignedJSONBodyType<Controller::Download, Crypto::SHA256HMAC> SignedDownload;
 			// Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
 			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData> > jsonBodyMetaDataFactory(1);
-			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::JSONRPC::Message> > jsonBodyRPCFactory(2);
+			static Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message> > jsonBodyRPCFactory(2);
 			static Core::ProxyPoolType<Web::TextBody > jsonBodyRPCResponseFactory(2);
 			static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service> > jsonBodyServiceFactory(1);
 			static Core::ProxyPoolType<Web::TextBody> jsonBodyConfigureFactory(1);
@@ -81,8 +81,6 @@ namespace WPEFramework {
 				_service = service;
 				_skipURL = static_cast<uint8_t>(_service->WebPrefix().length());
 
-                                SetMetadata(_service);
-
 				Config config;
 				config.FromString(_service->ConfigLine());
 
@@ -141,8 +139,6 @@ namespace WPEFramework {
 					_service->Unregister(&_systemInfoReport);
 				}
 
-                                SetMetadata(nullptr);
-
 				/* stop the file serving over http.... */
 				service->DisableWebServer();
 			}
@@ -194,7 +190,7 @@ namespace WPEFramework {
 				if (request.Verb == Web::Request::HTTP_POST) {
                                     if (request.HasBody() == true) {
                                         Core::ProxyType<Web::TextBody> response (jsonBodyRPCResponseFactory.Element());
-                                        uint32_t errorCode = Invoke(*request.Body<PluginHost::JSONRPC::Message>(), *response);
+                                        uint32_t errorCode = Invoke(*request.Body<Core::JSONRPC::Message>(), *response);
                                         if (response->empty() == false) {
                                             result->Body(response);
                                         }
@@ -618,7 +614,7 @@ namespace WPEFramework {
 				}
        			}
 
-        uint32_t Controller::Invoke (const Message& inbound, string& response) {
+        uint32_t Controller::Invoke (const Core::JSONRPC::Message& inbound, string& response) {
             uint32_t result = Validate(inbound);
 
             if (result == Core::ERROR_NONE) {
@@ -651,7 +647,7 @@ namespace WPEFramework {
                 }
 
                 if ((response.empty() == true) && (inbound.Id.Value() != static_cast<uint32_t>(~0))) {
-                    Message message;
+                    Core::JSONRPC::Message message;
                     message.Version = _T("2.0");
                     message.Error.SetError(result);
                     message.Error.Text = "Invalid JSONRPC Request";

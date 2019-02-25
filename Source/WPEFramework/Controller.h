@@ -111,13 +111,43 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-        uint32_t exists(const uint32_t id, const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+        uint32_t exists(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) const {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             // Core::ERROR_BAD_REQUEST the designator is not found at all.
             // Core::ERROR_INVALID_SIGNATURE the designator is found, but the version is not supported.
             // Core::ERROR_NONE the designator is found and the version is supported.
             response = _pluginServer->Services().FromIdentifier(designator, service);
+
+            return (Core::ERROR_NONE);
+        }
+        uint32_t activate(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+
+                ASSERT (service.IsValid() == true);
+
+                if (service->State() == PluginHost::IShell::DEACTIVATED) {
+                    // Activate the plugin.
+                    response = service->Activate(PluginHost::IShell::REQUESTED);
+                }
+            }
+
+            return (Core::ERROR_NONE);
+        }
+        uint32_t deactivate(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+
+                ASSERT (service.IsValid() == true);
+
+                if (service->State() == PluginHost::IShell::ACTIVATED) {
+                    // Deactivate the plugin.
+                    response = service->Deactivate(PluginHost::IShell::REQUESTED);
+                }
+            }
 
             return (Core::ERROR_NONE);
         }
@@ -197,7 +227,9 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
         {
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"), &Controller::exists, this);
+            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"),     &Controller::exists,     this);
+            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("activate"),   &Controller::activate,   this);
+            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("deactivate"), &Controller::deactivate, this);
         }
 
     public:
@@ -287,7 +319,7 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
-        uint32_t Invoke (const Message& inbound, string& response);
+        uint32_t Invoke (const Core::JSONRPC::Message& inbound, string& response);
 
     private:
         Core::CriticalSection _adminLock;

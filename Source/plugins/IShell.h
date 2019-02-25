@@ -11,7 +11,6 @@ namespace PluginHost {
 
     struct EXTERNAL IShell
         : virtual public Core::IUnknown {
-
         enum {
             ID = WPEFramework::RPC::ID_SHELL
         };
@@ -124,10 +123,10 @@ namespace PluginHost {
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) = 0;
         virtual void DisableWebServer() = 0;
 
-        //! Version: Returns a Human Readable version as indicated in the configuration.
+        //! Versions: Returns the version of the application hosting the plugin
         virtual string Version() const = 0;
 
-        //! Version: Returns a Human Readable name for the platform it is running on.
+        //! Model: Returns a Human Readable name for the platform it is running on.
         virtual string Model() const = 0;
 
         //! Background: If enabled, the PluginHost is running in daemon mode
@@ -144,6 +143,9 @@ namespace PluginHost {
 
         //! ClassName: Name of the class to be instantiated for this IShell
         virtual string ClassName() const = 0;
+
+        //! Versions: Returns a JSON Array of versions supported by this plugin.
+        virtual string Versions() const = 0;
 
         //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
         virtual string Callsign() const = 0;
@@ -191,6 +193,10 @@ namespace PluginHost {
         virtual uint32_t Activate(const reason) = 0;
         virtual uint32_t Deactivate(const reason) = 0;
         virtual reason Reason() const = 0;
+
+        // Method to access, in the WPEFramework space, the channel factory to submit JSON objects to be send.
+        // This method will return a error if it is NOT in the WPEFramework process.
+        virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
         // Method to access, in the WPEFramework space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the WPEFramework process.

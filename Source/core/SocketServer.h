@@ -154,8 +154,9 @@ namespace Core {
                 return (_clients.size());
             }
             template <typename PACKAGE>
-            void Submit(const uint32_t ID, PACKAGE package)
+            uint32_t Submit(const uint32_t ID, PACKAGE package)
             {
+                uint32_t result = Core::ERROR_UNAVAILABLE;
                 _lock.Lock();
 
                 typename ClientMap::iterator index = _clients.find(ID);
@@ -163,9 +164,12 @@ namespace Core {
                 if (index != _clients.end()) {
                     // Oke connection still exists, send the message..
                     index->second->Submit(package);
+                    result = Core::ERROR_NONE;
                 }
 
                 _lock.Unlock();
+
+                return (result);
             }
             inline Iterator Clients() const
             {
@@ -321,9 +325,9 @@ namespace Core {
             _handler.LocalNode(localNode);
         }
         template <typename PACKAGE>
-        inline void Submit(const uint32_t ID, PACKAGE package)
+        inline uint32_t Submit(const uint32_t ID, PACKAGE package)
         {
-            _handler.Submit(ID, package);
+            return (_handler.Submit(ID, package));
         }
         inline Iterator Clients() const
         {
