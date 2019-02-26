@@ -123,7 +123,7 @@ public:
     virtual ~ExtendedOpenCDMSessionExt() {
         // TODO: do we need something like this here as well?
         //if (OpenCDMSession::IsValid() == true) {
-        //    OpenCDMSession::Session(nullptr);
+            OpenCDMSession::SessionExt(nullptr);
         //}
     }
 
@@ -197,6 +197,12 @@ public:
         return _realSession->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
     }
 
+
+    OCDM::OCDM_RESULT CancelChallengeDataNetflix()
+    {
+        return _realSession->CancelChallengeDataNetflix();
+    }
+
     OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId)
     {
         return _realSession->StoreLicenseData(licenseData, licenseDataSize, secureStopId);
@@ -207,6 +213,10 @@ public:
         return _realSession->InitDecryptContextByKid();
     }
 
+    OCDM::OCDM_RESULT CleanDecryptContext()
+    {
+        return _realSession->CleanDecryptContext();
+    }
     // TODO: these are copy/pasted from "ExtendedOpenCDMSession", merge
     // Event fired when a key message is successfully created.
     void OnKeyMessage(const std::string& keyMessage, const std::string& URL) {
@@ -329,7 +339,7 @@ uint32_t opencdm_session_get_session_id_ext(struct OpenCDMSession * opencdmSessi
     return sessionExt->SessionIdExt();
 }
 
-OpenCDMError opencdm_destroy_session_ext(OpenCDMSession * opencdmSession)
+OpenCDMError opencdm_destruct_session_ext(OpenCDMSession * opencdmSession)
 {
     OpenCDMError result (OpenCDMError::ERROR_INVALID_SESSION);
 
@@ -420,6 +430,14 @@ OpenCDMError opencdm_session_get_challenge_data(struct OpenCDMSession * mOpenCDM
     return (OpenCDMError)sessionExt->GetChallengeDataNetflix(challenge, *challengeSize, isLDL);
 }
 
+OpenCDMError opencdm_session_cancel_challenge_data(struct OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->CancelChallengeDataNetflix();
+}
+
 OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDMSession, const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
@@ -436,6 +454,13 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession *
     return (OpenCDMError)sessionExt->InitDecryptContextByKid();
 }
 
+OpenCDMError opencdm_session_clean_decrypt_context(struct OpenCDMSession * mOpenCDMSession)
+{
+    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
+
+    // TODO: real conversion
+    return (OpenCDMError)sessionExt->CleanDecryptContext();
+}
 /*
 OpenCDMError opencdm_init_system_ext(struct OpenCDMAccessor* system)
 {
@@ -469,18 +494,19 @@ OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, 
     return (result);
 }
 
-/*
-OpenCDMError opencdm_system_teardown(struct OpenCDMAccessor* system)
+
+OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
 {
     OpenCDMError result (ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         // TODO: real conversion
-        result = (OpenCDMError)system->TeardownSystemNetflix();
+        OpenCDMAccessor * accessor = system->m_accessor;
+        std::string keySystem = system->m_keySystem;
+        result = (OpenCDMError)accessor->TeardownSystemNetflix(keySystem);
     }
     return (result);
 }
-*/
 
 /**
  * \brief Create DRM session (for actual decrypting of data).

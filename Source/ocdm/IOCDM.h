@@ -123,9 +123,13 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
         virtual OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
 
+        virtual OCDM_RESULT CancelChallengeDataNetflix() = 0;
+
         virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
 
         virtual OCDM_RESULT InitDecryptContextByKid() = 0;
+
+        virtual OCDM_RESULT CleanDecryptContext() = 0;
     };
 
 struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {

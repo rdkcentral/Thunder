@@ -109,6 +109,7 @@ OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSessi
  * \return Zero if successful, non-zero otherwise. 
  */
 OpenCDMError opencdm_session_get_challenge_data(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL);
+OpenCDMError opencdm_session_cancel_challenge_data(struct OpenCDMSession * mOpenCDMSession);
 
 /**
  * Stores challenge data for session.
@@ -128,6 +129,20 @@ OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDM
  */
 OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession * mOpenCDMSession);
 
+/**
+ * Tear down the drm system
+ * \param system Extended OCDM system handle.
+ * \return Zero if successful, non-zero otherwise.
+ */
+OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system);
+
+/**
+ * Deinitializes the decryption context of a session via (unused Key ID).
+ * Some applications (e.g. Netflix) require to call this function for some DRM systems (e.g. PlayReady 2.0).
+ * \param opencdmSession OCDM Session.
+ * \return Zero if successful, non-zero otherwise.
+ */
+OpenCDMError opencdm_session_clean_decrypt_context(struct OpenCDMSession * mOpenCDMSession);
 #ifdef __cplusplus
 } // extern "C"
 #endif

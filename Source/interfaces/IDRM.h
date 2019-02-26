@@ -251,6 +251,8 @@ public:
     // Explicitly release all resources associated with the MediaKeySession.
     virtual CDMi_RESULT Close(void) = 0;
 
+    virtual void UninitializeContext() = 0;
+
     // Return the session ID of the MediaKeySession. The returned pointer
     // is valid as long as the associated MediaKeySession still exists.
     virtual const char* GetSessionId(void) const = 0;
@@ -309,9 +311,13 @@ public:
 
     virtual CDMi_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
 
+    virtual CDMi_RESULT CancelChallengeDataNetflix()  = 0;;
+
     virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
 
     virtual CDMi_RESULT InitDecryptContextByKid() = 0;
+
+    virtual CDMi_RESULT CleanDecryptContext() = 0;
 };
 
 // IMediaKeys defines the MediaKeys interface.
@@ -356,6 +362,10 @@ public:
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
             IMediaKeySessionExt** session) = 0;
+
+    // Destroy a MediaKeySession instance.
+    virtual CDMi_RESULT DestroyMediaKeySessionExt(
+            IMediaKeySession *f_piMediaKeySession) = 0;
 
     virtual std::string GetVersionExt() const = 0;
 

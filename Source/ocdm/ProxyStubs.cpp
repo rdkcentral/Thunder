@@ -794,6 +794,17 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual OCDM_RESULT CancelChallengeDataNetflix() = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->CancelChallengeDataNetflix();
+
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
@@ -823,6 +834,17 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->InitDecryptContextByKid();
+
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT CleanDecryptContext() = 0;
+            //
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->CleanDecryptContext();
 
             response.Number(result);
         },
@@ -1569,8 +1591,20 @@ public:
             return result;
         }
 
-        virtual OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) override {
+        virtual OCDM::OCDM_RESULT CancelChallengeDataNetflix() override {
             IPCMessage newMessage(BaseClass::Message(15));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+
+            return result;
+        }
+
+        virtual OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) override {
+            IPCMessage newMessage(BaseClass::Message(16));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             //writer.Buffer(licenseDataSize, licenseData);
@@ -1589,7 +1623,19 @@ public:
         }
 
         virtual OCDM::OCDM_RESULT InitDecryptContextByKid() override {
-            IPCMessage newMessage(BaseClass::Message(16));
+            IPCMessage newMessage(BaseClass::Message(17));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT >();
+
+            return result;
+        }
+
+        virtual OCDM::OCDM_RESULT CleanDecryptContext() override {
+            IPCMessage newMessage(BaseClass::Message(18));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             Invoke(newMessage);
