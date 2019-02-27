@@ -271,7 +271,9 @@ private:
 
 struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[])
 {
-    OpenCDMAccessor* accessor = opencdm_create_system();
+    ASSERT(system != nullptr);
+
+    OpenCDMAccessor* accessor = system;
     accessor->CreateSystemNetflix(keySystem);
     accessor->InitSystemNetflix(keySystem);
 
@@ -279,6 +281,14 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
     output->m_accessor = accessor;
     output->m_keySystem = keySystem;
     return output;
+}
+
+OpenCDMError opencdm_destruct_system_ext(struct OpenCDMSystemExt * system)
+{
+    if (system != nullptr) {
+       delete system;
+    }
+    return ERROR_NONE;
 }
 
 OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system, const char keySystem[], char versionStr[])
