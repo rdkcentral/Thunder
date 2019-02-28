@@ -62,12 +62,14 @@ namespace JSONRPC {
             }
             virtual void Send(Core::ProxyType<Core::JSON::IElement>& jsonObject) override {
                 #ifdef __DEBUG__
-                Core::ProxyType<Core::JSONRPC::Message> inbound (Core::proxy_type<Core::JSONRPC::Message>(jsonObject));
+                Core::ProxyType<Core::JSONRPC::Message> inbound (Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
 
                 ASSERT (inbound.IsValid() == true);
 
                 if (inbound.IsValid() == true) {
-                    TRACE_L1("Message: %s send", inbound.ToString().c_str());
+					string message;
+					inbound->ToString(message);
+                    TRACE_L1("Message: %s send", message.c_str());
                 }
                 #endif
             }
@@ -322,12 +324,12 @@ namespace JSONRPC {
 
             uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
-            ASSERT (inbound.IsValis() == true);
+            ASSERT (inbound.IsValid() == true);
 
             if ((inbound->Id.IsSet() == true) && (inbound->Result.IsSet() || inbound->Error.IsSet())) {
                 // Looks like this is a response..
                 ASSERT (inbound->Parameters.IsSet() == false);
-                ASSERT (inbound->Method.IsSet() == false);
+                ASSERT (inbound->Designator.IsSet() == false);
 
                 _adminLock.Lock();
 
@@ -349,7 +351,7 @@ namespace JSONRPC {
 
                 if (result == Core::ERROR_NONE) {
                     // Looks like this is an event.
-                    ASSERT (inbound.Id.IsSet() == false);
+                    ASSERT (inbound->Id.IsSet() == false);
 
                     string response;
                     _handler.Invoke(~0, inbound->Method(), inbound->Parameters.Value(), response);
