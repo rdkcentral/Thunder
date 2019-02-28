@@ -313,7 +313,7 @@ public:
 
     virtual CDMi_RESULT CancelChallengeDataNetflix()  = 0;;
 
-    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
+    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) = 0;
 
     virtual CDMi_RESULT InitDecryptContextByKid() = 0;
 
@@ -371,12 +371,26 @@ public:
 
     virtual uint32_t GetLdlSessionLimit() const = 0;
 
+    virtual bool IsSecureStopEnabled() = 0;
+
     virtual CDMi_RESULT EnableSecureStop(bool enable) = 0;
 
-    virtual CDMi_RESULT CommitSecureStop(
-            const unsigned char sessionID[],
+    virtual uint32_t ResetSecureStops() = 0;
+
+    virtual CDMi_RESULT GetSecureStopIds(
+            uint8_t * ids[],
+            uint32_t & count) = 0;
+
+    virtual CDMi_RESULT GetSecureStop(
+            const uint8_t sessionID[],
             uint32_t sessionIDLength,
-            const unsigned char serverResponse[],
+            uint8_t * rawData,
+            uint16_t & rawSize) = 0;
+
+    virtual CDMi_RESULT CommitSecureStop(
+            const uint8_t sessionID[],
+            uint32_t sessionIDLength,
+            const uint8_t serverResponse[],
             uint32_t serverResponseLength) = 0;
 
     // TODO: rename to something like "SetStoreDirs"
@@ -386,7 +400,13 @@ public:
 
     virtual CDMi_RESULT TeardownSystemNetflix() = 0;
 
+    virtual CDMi_RESULT DeleteKeyStore() = 0;
+
     virtual CDMi_RESULT DeleteSecureStore() = 0;
+
+    virtual CDMi_RESULT GetKeyStoreHash(
+            uint8_t secureStoreHash[],
+            uint32_t secureStoreHashLength) = 0;
 
     virtual CDMi_RESULT GetSecureStoreHash(
             uint8_t secureStoreHash[],

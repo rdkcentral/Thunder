@@ -92,6 +92,9 @@ typedef enum {
 #include <list>
 #include <string>
 
+#define SESSION_ID_LEN 16
+#define MAX_NUM_SECURE_STOPS 8
+
 namespace media {
 
 class EXTERNAL OpenCdm {

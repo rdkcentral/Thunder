@@ -417,15 +417,40 @@ public:
         return _remoteExt->GetLdlSessionLimit(keySystem);
     }
 
+    virtual bool IsSecureStopEnabled(const std::string & keySystem) override {
+        return _remoteExt->IsSecureStopEnabled(keySystem);
+    }
+
     virtual OCDM::OCDM_RESULT EnableSecureStop(const std::string & keySystem, bool enable) override {
         return _remoteExt->EnableSecureStop(keySystem, enable);
     }
 
+    virtual uint32_t ResetSecureStops(const std::string & keySystem) override {
+        return _remoteExt->ResetSecureStops(keySystem);
+    }
+
+    virtual OCDM::OCDM_RESULT GetSecureStopIds(
+                const std::string & keySystem,
+                uint8_t * ids[],
+                uint32_t & count) {
+
+        return _remoteExt->GetSecureStopIds(keySystem, ids, count);
+    }
+
+    virtual OCDM::OCDM_RESULT GetSecureStop(
+                const std::string & keySystem,
+                const uint8_t sessionID[],
+                uint32_t sessionIDLength,
+                uint8_t rawData[],
+                uint16_t & rawSize) {
+        return _remoteExt->GetSecureStop(keySystem, sessionID, sessionIDLength, rawData, rawSize);
+    }
+
     virtual OCDM::OCDM_RESULT CommitSecureStop(
             const std::string & keySystem,
-            const unsigned char sessionID[],
+            const uint8_t sessionID[],
             uint32_t sessionIDLength,
-            const unsigned char serverResponse[],
+            const uint8_t serverResponse[],
             uint32_t serverResponseLength) override {
         return _remoteExt->CommitSecureStop(keySystem, sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
@@ -442,8 +467,19 @@ public:
         return _remoteExt->TeardownSystemNetflix(keySystem);
     }
 
+    virtual OCDM::OCDM_RESULT DeleteKeyStore(const std::string & keySystem) override {
+        return _remoteExt->DeleteKeyStore(keySystem);
+    }
+
     virtual OCDM::OCDM_RESULT DeleteSecureStore(const std::string & keySystem) override {
         return _remoteExt->DeleteSecureStore(keySystem);
+    }
+
+    virtual OCDM::OCDM_RESULT GetKeyStoreHash(
+            const std::string & keySystem,
+            uint8_t keyStoreHash[],
+            uint32_t keyStoreHashLength) override {
+        return _remoteExt->GetKeyStoreHash(keySystem, keyStoreHash, keyStoreHashLength);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStoreHash(

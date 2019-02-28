@@ -262,6 +262,19 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual bool IsSecureStopEnabled(const std::string & keySystem) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Boolean(accessor->IsSecureStopEnabled(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual OCDM_RESULT EnableSecureStop(const std::string & keySystem, bool enable) = 0;
             //
 
@@ -276,11 +289,84 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual uint32_t ResetSecureStops(const std::string & keySystem) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            response.Number(accessor->ResetSecureStops(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT GetSecureStopIds(
+            //                const std::string & keySystem,
+            //                uint8_t * ids[]) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+            uint32_t count = parameters.Number<uint32_t>();
+            //TODO: cross check the functionalities
+            uint8_t** ids = (uint8_t**) malloc(MAX_NUM_SECURE_STOPS * sizeof(uint8_t*));
+            for (uint32_t i = 0; i < MAX_NUM_SECURE_STOPS; i++ ) {
+                ids[i] = (uint8_t*) malloc(SESSION_ID_LEN * sizeof(uint8_t));
+            }
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            OCDM::OCDM_RESULT result = accessor->GetSecureStopIds(keySystem, ids, count);
+            for (uint32_t i = 0; i < count; i++) {
+                response.Buffer(SESSION_ID_LEN, ids[i]);
+                free(ids[i]);
+            }
+            free(ids);
+
+            response.Number(count);
+            response.Number(result);
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT GetSecureStop(
+            //                const std::string & keySystem,
+            //                const uint8_t sessionID[],
+            //                uint32_t sessionIDLength,
+            //                uint8_t * rawData,
+            //                uint16_t & rawSize) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            std::string keySystem = parameters.Text();
+            const uint8_t* sessionID = nullptr;
+            uint32_t sessionIDLength = parameters.LockBuffer<uint32_t>(sessionID);
+            parameters.UnlockBuffer(sessionIDLength);
+            const uint8_t* buffer = nullptr;
+            uint16_t rawSize = parameters.LockBuffer<uint16_t>(buffer);
+            parameters.UnlockBuffer(rawSize);
+            rawSize = parameters.Number<uint16_t>();
+            uint8_t* rawData = const_cast<uint8_t*>(buffer);
+            uint16_t passedRawSize = rawSize;
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            OCDM::OCDM_RESULT result = accessor->GetSecureStop(keySystem, sessionID, sessionIDLength, rawData, rawSize);
+            response.Buffer(rawSize, rawData);
+            response.Number(rawSize);
+            response.Number(result);
+
+
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual OCDM_RESULT CommitSecureStop(
             //                const std::string & keySystem,
-            //                const unsigned char sessionID[],
+            //                const uint8_t sessionID[],
             //                uint32_t sessionIDLength,
-            //                const unsigned char serverResponse[],
+            //                const uint8_t serverResponse[],
             //                uint32_t serverResponseLength) = 0;
             //
 
@@ -338,6 +424,20 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
+            // virtual OCDM_RESULT DeleteKeyStore(const std::string & keySystem) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+
+            std::string keySystem = parameters.Text();
+
+            response.Number(accessor->DeleteKeyStore(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
             // virtual OCDM_RESULT DeleteSecureStore(const std::string & keySystem) = 0;
             //
 
@@ -349,6 +449,30 @@ ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
             std::string keySystem = parameters.Text();
 
             response.Number(accessor->DeleteSecureStore(keySystem));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual OCDM_RESULT GetKeyStoreHash(
+            //          const std::string & keySystem
+            //          uint8_t keyStoreHash[],
+            //          uint32_t keyStoreHashLength) = 0;
+            //
+
+            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+
+            std::string keySystem = parameters.Text();
+
+            const uint32_t keyStoreHashLength = 256;
+            uint8_t keyStoreHash[keyStoreHashLength];
+
+            OCDM::OCDM_RESULT result = accessor->GetKeyStoreHash(keySystem, keyStoreHash, keyStoreHashLength);
+
+            response.Buffer(keyStoreHashLength, keyStoreHash);
+
+            response.Number(result);
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -805,7 +929,7 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) = 0;
+            // virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -1091,9 +1215,23 @@ public:
             return reader.Number<uint32_t>();
         }
 
-        virtual OCDM::OCDM_RESULT EnableSecureStop(const std::string & keySystem, bool enable) override
+        virtual bool IsSecureStopEnabled(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(4));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Boolean();
+        }
+
+        virtual OCDM::OCDM_RESULT EnableSecureStop(const std::string & keySystem, bool enable) override
+        {
+            IPCMessage newMessage(BaseClass::Message(5));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Text(keySystem);
@@ -1106,14 +1244,76 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
+        virtual uint32_t ResetSecureStops(const std::string & keySystem) override
+        {
+            IPCMessage newMessage(BaseClass::Message(6));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            return reader.Number<uint32_t>();
+        }
+
+        virtual OCDM::OCDM_RESULT GetSecureStopIds(
+                const std::string & keySystem,
+                uint8_t * Ids[],
+                uint32_t & count) override
+        {
+            IPCMessage newMessage(BaseClass::Message(7));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
+            for (uint32_t i = 0; i < count; i++) {
+                writer.Buffer(SESSION_ID_LEN, Ids[i]);
+            }
+
+            writer.Number(count);
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            count = reader.Number<uint32_t>();
+            for (uint32_t i = 0; i < count; i++) {
+                reader.Buffer(SESSION_ID_LEN, Ids[i]);
+            }
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT GetSecureStop(
+                const std::string & keySystem,
+                const uint8_t sessionID[],
+                uint32_t sessionIDLength,
+                uint8_t * rawData,
+                uint16_t & rawSize) override
+        {
+            IPCMessage newMessage(BaseClass::Message(8));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
+            writer.Buffer(sessionIDLength, sessionID);
+            writer.Buffer(rawSize, rawData);
+            writer.Number(rawSize);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            reader.Buffer(rawSize, rawData);
+            rawSize = reader.Number<uint16_t>();
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
         virtual OCDM::OCDM_RESULT CommitSecureStop(
                 const std::string & keySystem,
-                const unsigned char sessionID[],
+                const uint8_t sessionID[],
                 uint32_t sessionIDLength,
-                const unsigned char serverResponse[],
+                const uint8_t serverResponse[],
                 uint32_t serverResponseLength) override
         {
-            IPCMessage newMessage(BaseClass::Message(5));
+            IPCMessage newMessage(BaseClass::Message(9));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Text(keySystem);
@@ -1129,7 +1329,7 @@ public:
 
         virtual OCDM::OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) override
         {
-            IPCMessage newMessage(BaseClass::Message(6));
+            IPCMessage newMessage(BaseClass::Message(10));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(keySystem);
             Invoke(newMessage);
@@ -1141,7 +1341,7 @@ public:
 
         virtual OCDM::OCDM_RESULT InitSystemNetflix(const std::string & keySystem) override
         {
-            IPCMessage newMessage(BaseClass::Message(7));
+            IPCMessage newMessage(BaseClass::Message(11));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(keySystem);
 
@@ -1154,7 +1354,7 @@ public:
 
         virtual OCDM::OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) override
         {
-            IPCMessage newMessage(BaseClass::Message(8));
+            IPCMessage newMessage(BaseClass::Message(12));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(keySystem);
 
@@ -1165,15 +1365,50 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT DeleteSecureStore(const std::string & keySystem) override
+        virtual OCDM::OCDM_RESULT DeleteKeyStore(const std::string & keySystem) override
         {
-            IPCMessage newMessage(BaseClass::Message(9));
+            IPCMessage newMessage(BaseClass::Message(13));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(keySystem);
 
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+
+        virtual OCDM::OCDM_RESULT DeleteSecureStore(const std::string & keySystem) override
+        {
+            IPCMessage newMessage(BaseClass::Message(14));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(keySystem);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return reader.Number<OCDM::OCDM_RESULT>();
+        }
+
+        virtual OCDM::OCDM_RESULT GetKeyStoreHash(
+                const std::string & keySystem,
+                uint8_t keyStoreHash[],
+                uint32_t keyStoreHashLength)
+        {
+            assert(keyStoreHashLength >= 256);
+
+            IPCMessage newMessage(BaseClass::Message(15));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(keySystem);
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            reader.Buffer(256, keyStoreHash);
 
             return reader.Number<OCDM::OCDM_RESULT>();
         }
@@ -1185,7 +1420,7 @@ public:
         {
             assert(secureStoreHashLength >= 256);
 
-            IPCMessage newMessage(BaseClass::Message(10));
+            IPCMessage newMessage(BaseClass::Message(16));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Text(keySystem);
@@ -1603,7 +1838,7 @@ public:
             return result;
         }
 
-        virtual OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, unsigned char * secureStopId) override {
+        virtual OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) override {
             IPCMessage newMessage(BaseClass::Message(16));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
