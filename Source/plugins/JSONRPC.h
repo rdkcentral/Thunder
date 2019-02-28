@@ -7,7 +7,7 @@ namespace WPEFramework {
 
 namespace PluginHost {
 
-    struct IDispatcher : public virtual Core::IUnknown {
+    struct EXTERNAL IDispatcher : public virtual Core::IUnknown {
         virtual ~IDispatcher() {}
 
         enum { ID = RPC::ID_DISPATCHER };

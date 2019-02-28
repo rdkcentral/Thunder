@@ -1,7 +1,7 @@
-set(TARGET jsonrpclink)
+set(TARGET jsonrpc)
 
 # Construct a library object
-add_library(${TARGET} STATIC
+add_library(${TARGET} 
         Channel.cpp
         Module.cpp
         )

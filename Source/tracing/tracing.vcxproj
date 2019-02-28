@@ -89,6 +89,7 @@
   <ItemGroup>
     <ClInclude Include="ITraceControl.h" />
     <ClInclude Include="ITraceMedia.h" />
+    <ClInclude Include="Logging.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="TraceCategories.h" />
     <ClInclude Include="TraceControl.h" />
@@ -97,6 +98,7 @@
     <ClInclude Include="Tracing.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Logging.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="TraceCategories.cpp" />
     <ClCompile Include="TraceMedia.cpp" />

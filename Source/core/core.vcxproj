@@ -92,13 +92,12 @@
     <ClInclude Include="core.h" />
     <ClInclude Include="CyclicBuffer.h" />
     <ClInclude Include="DataElement.h" />
-    <ClInclude Include="DataElementContainer.h" />
     <ClInclude Include="DataElementFile.h" />
-    <ClInclude Include="DataStorage.h" />
     <ClInclude Include="Enumerate.h" />
     <ClInclude Include="FileSystem.h" />
     <ClInclude Include="IPCChannel.h" />
     <ClInclude Include="IPCConnector.h" />
+    <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="Measurement.h" />
     <ClInclude Include="Process.h" />
     <ClInclude Include="IAction.h" />
@@ -112,8 +111,6 @@
     <ClInclude Include="KeyValue.h" />
     <ClInclude Include="Library.h" />
     <ClInclude Include="LockableContainer.h" />
-    <ClInclude Include="Logger.h" />
-    <ClInclude Include="LogService.h" />
     <ClInclude Include="MessageException.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="NetworkInfo.h" />
@@ -123,7 +120,6 @@
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Portability.h" />
     <ClInclude Include="ProcessInfo.h" />
-    <ClInclude Include="Processor.h" />
     <ClInclude Include="Proxy.h" />
     <ClInclude Include="Queue.h" />
     <ClInclude Include="Range.h" />
@@ -150,7 +146,6 @@
     <ClInclude Include="Trace.h" />
     <ClInclude Include="TriState.h" />
     <ClInclude Include="TypeTraits.h" />
-    <ClInclude Include="UniVector.h" />
     <ClInclude Include="XGetopt.h" />
   </ItemGroup>
   <ItemGroup>
@@ -168,6 +163,7 @@
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
     <ClCompile Include="JSON.cpp" />
+    <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="Library.cpp" />
     <ClCompile Include="MessageException.cpp" />
     <ClCompile Include="NetworkInfo.cpp" />
@@ -176,6 +172,7 @@
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="Portability.cpp" />
     <ClCompile Include="ProcessInfo.cpp" />
+    <ClCompile Include="ResourceMonitor.cpp" />
     <ClCompile Include="Serialization.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Services.cpp" />

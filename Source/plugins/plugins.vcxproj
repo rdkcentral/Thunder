@@ -89,7 +89,7 @@
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Logging.cpp" />
+    <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="MetaData.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
@@ -109,7 +109,7 @@
     <ClInclude Include="IPlugin.h" />
     <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="ISystemInfo.h" />
-    <ClInclude Include="Logging.h" />
+    <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="MetaData.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />

@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <functional>
+#include <cctype>
 
 namespace WPEFramework {
 
