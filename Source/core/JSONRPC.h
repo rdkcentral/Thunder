@@ -252,7 +252,7 @@ namespace JSONRPC {
             _versions = versions;
             _designator = callsign + '.' + Core::NumberType<uint8_t>(versions.back()).Text();
         }
-        const string& Designator() const {
+        const string& Callsign() const {
             return (_designator);
         }
 

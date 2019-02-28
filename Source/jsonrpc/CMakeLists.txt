@@ -2,17 +2,29 @@ set(TARGET jsonrpclink)
 
 # Construct a library object
 add_library(${TARGET} STATIC
-        JSONRPCLink.cpp
+        Channel.cpp
+        Module.cpp
         )
 
 set(PUBLIC_HEADERS
-        JSONRPCLink.h
+        Channel.h
+        Module.h
+        jsonrpc.h
         )
 
-target_link_libraries(${TARGET}
-        PUBLIC
-          ${NAMESPACE}Core::${NAMESPACE}Core
-        )
+if(PROTOCOLS)
+    target_link_libraries(${TARGET}
+            PUBLIC
+              ${NAMESPACE}Core::${NAMESPACE}Core
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
+            )
+else()
+    target_link_libraries(${TARGET}
+            PUBLIC
+              ${NAMESPACE}Core::${NAMESPACE}Core
+              ${NAMESPACE}WebSocket::${NAMESPACE}WebSocket
+            )
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
@@ -36,8 +48,8 @@ install(
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
-        PUBLIC_HEADER DESTINATION include/jsonrpclink COMPONENT devel   # headers for mac (note the different component -> different package)
-        INCLUDES DESTINATION include/jsonrpclink    # headers
+        PUBLIC_HEADER DESTINATION include/${NAMESPACE}/jsonrpc COMPONENT devel   # headers for mac (note the different component -> different package)
+        INCLUDES DESTINATION include/${NAMESPACE}/jsonrpc    # headers
 )
 
 InstallCMakeConfig(
