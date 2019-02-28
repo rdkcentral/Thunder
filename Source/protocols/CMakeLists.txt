@@ -18,6 +18,7 @@ set(SOURCES_COM
         com/ITracing.cpp
         com/IStringIterator.cpp
         com/IValueIterator.cpp
+        com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
         )
