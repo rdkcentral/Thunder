@@ -126,6 +126,7 @@
     <ClInclude Include="ReadWriteLock.h" />
     <ClInclude Include="Rectangle.h" />
     <ClInclude Include="RequestResponse.h" />
+    <ClInclude Include="ResourceMonitor.h" />
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Services.h" />

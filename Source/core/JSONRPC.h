@@ -106,7 +106,7 @@ namespace JSONRPC {
         }
         string Method() const {
             size_t pos = Designator.Value().find_last_of('.');
-            return (pos == string::npos ? Designator.Value() : Designator.Value().substr(pos));
+            return (pos == string::npos ? Designator.Value() : Designator.Value().substr(pos + 1));
         }
         Core::JSON::String Version;
         Core::JSON::DecUInt32 Id;
@@ -137,7 +137,7 @@ namespace JSONRPC {
             uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
             if (result != Core::ERROR_NONE) {
                 uint32_t length = _callsign.length();
-                if (_callsign.compare(0, length, callsign) == 0) {
+                if (callsign.compare(0, length, _callsign) == 0) {
                     result = Core::ERROR_INVALID_SIGNATURE;
 
                     if ((callsign.length() == length) ||
@@ -154,34 +154,10 @@ namespace JSONRPC {
             InvokeFunction implementation = [actualMethod](const uint32_t id, const string& parameters, string& result) -> uint32_t {
                                                INBOUND inbound; 
                                                OUTBOUND outbound;
-                                               inbound.FromString(parameters);
+                                               inbound = parameters;
                                                uint32_t code = actualMethod(inbound, outbound);
                                                if (id != static_cast<uint32_t>(~0)) { 
-                                                   string response; 
-                                                   Message message;
-                                                   message.Version = Message::DefaultVersion;
-                                                   message.Id = id;
-                                                   outbound.ToString(response);
-                                                   if (code == Core::ERROR_NONE) {
-                                                       message.Result = response;
-                                                   }
-                                                   else {
-                                                       message.Error.SetError(code);
-                                                       message.Error.Text = response;
-                                                   }
-                                                   message.ToString(result);
-                                               }
-                                               return (code);
-                                            };
-            Register(methodName, implementation);
-        }
-        template<typename METHOD, typename REALOBJECT>
-        void Register (const string& methodName, const METHOD& method, REALOBJECT objectPtr ) {
-            std::function<uint32_t(const string& parameters, string& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-            InvokeFunction implementation = [actualMethod](const uint32_t id, const string& parameters, string& result) -> uint32_t {
-                                               string response; 
-                                               uint32_t code = actualMethod(parameters, response);
-                                               if (id != static_cast<uint32_t>(~0)) { 
+                                                   string response = outbound; 
                                                    Message message;
                                                    message.Version = Message::DefaultVersion;
                                                    message.Id = id;

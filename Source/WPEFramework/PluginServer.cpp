@@ -330,10 +330,16 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
                 State(DEACTIVATED);
                 _administrator.StateChange(this);
             } else {
-		const string webUI (PluginHost::Service::Configuration().WebUI.Value());
+				const string webUI (PluginHost::Service::Configuration().WebUI.Value());
                 if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false) ) {
                     EnableWebServer(webUI, EMPTY_STRING);
                 }
+
+				PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+
+				if (dispatcher != nullptr) {
+					dispatcher->Activate(this);
+				}
 
                 SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                 Lock();
@@ -388,7 +394,13 @@ uint32_t Server::Service::Deactivate(const reason why) {
             _handler->Deinitialize(this);
 
             Lock();
-        }
+	
+			PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+
+			if (dispatcher != nullptr) {
+				dispatcher->Deactivate();
+			}
+		}
 
         SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
@@ -431,20 +443,37 @@ uint32_t Server::Service::Deactivate(const reason why) {
 
 uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service) {
 	uint32_t result = Core::ERROR_BAD_REQUEST;
-	const string& locator(_webbridgeConfig.WebPrefix());
+	const string& serviceHeader(_webbridgeConfig.WebPrefix());
+	const string& JSONRPCHeader(_webbridgeConfig.JSONRPCPrefix());
 
 	// Check the header (prefix part)
-	bool correctHeader = (identifier.compare(0, locator.length(), locator.c_str()) == 0);
+	if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
+		if (identifier.length() <= (serviceHeader.length() + 1)) {
+			service = _server._controller;
+			result = Core::ERROR_NONE;
+		}
+		else {
+			size_t length;
+			uint32_t offset = serviceHeader.length() + 1; /* skip the slash after */
 
-	// Yippie the path prefix keyword is found correctly.
-	if ((correctHeader == true) && (identifier.length() > (locator.length() + 1))) {
-		size_t length;
-		uint32_t offset = locator.length() + 1; /* skip the slash after */
+			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
-		const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
+			result = FromIdentifier(callSign, service);
+		}
+	}
+	else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
+		if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
+			service = _server._controller;
+			result = Core::ERROR_NONE;
+		}
+		else {
+			size_t length;
+			uint32_t offset = JSONRPCHeader.length() + 1; /* skip the slash after */
 
-                result = FromIdentifier(callSign, service);
+			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
+			result = FromIdentifier(callSign, service);
+		}
 	}
 
 	return (result);
@@ -494,6 +523,7 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
               DetermineProperModel(configuration.Model),
               background,
               configuration.Prefix.Value(),
+			  configuration.JSONRPC.Value(),
 			  configuration.VolatilePath.Value(),
               configuration.PersistentPath.Value(),
               configuration.DataPath.Value(),

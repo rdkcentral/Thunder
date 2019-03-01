@@ -381,13 +381,15 @@ private:
             if (events == 0) {
                 index = _resourceList.erase (index);
             }
-            else if ((events & 0x8000) != 0) {
-                ::WSAEventSelect((*index)->Descriptor(), _action, (events & 0x7FFF));
-            }
-            index++;
+			else {
+				if ((events & 0x8000) != 0) {
+					::WSAEventSelect((*index)->Descriptor(), _action, (events & 0x7FFF));
+				}
+				index++;
+			}
         }
 
-        if (_resourceList.size() == 0) {
+        if (_resourceList.size() > 0) {
 
             _adminLock.Unlock();
 

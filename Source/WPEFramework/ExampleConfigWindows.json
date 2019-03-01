@@ -1,6 +1,6 @@
 {
-  "port": 9999,
-  "interface": "WiFi",
+  "port": 80,
+  "interface": "LAN",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",

@@ -154,6 +154,7 @@ namespace WPEFramework {
                 , Binding(_T("0.0.0.0"))
                 , Interface()
                 , Prefix(_T("Service"))
+				, JSONRPC(_T("jsonrpc"))
                 , PersistentPath()
                 , DataPath()
                 , SystemPath()
@@ -175,7 +176,7 @@ namespace WPEFramework {
                 , DefaultTraceCategories(false)
                 , Process()
                 , Input()
-                , Configs()
+				, Configs()
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -197,8 +198,8 @@ namespace WPEFramework {
                 Add(_T("redirect"), &Redirect);
                 Add(_T("process"), &Process);
                 Add(_T("input"), &Input);
-                Add(_T("configs"), &Configs);
                 Add(_T("plugins"), &Plugins);
+				Add(_T("configs"), &Configs);
             }
             ~Config()
             {
@@ -211,6 +212,7 @@ namespace WPEFramework {
             Core::JSON::String Binding;
             Core::JSON::String Interface;
             Core::JSON::String Prefix;
+			Core::JSON::String JSONRPC;
             Core::JSON::String PersistentPath;
             Core::JSON::String DataPath;
             Core::JSON::String SystemPath;
@@ -224,7 +226,7 @@ namespace WPEFramework {
             Core::JSON::String DefaultTraceCategories;
             ProcessSet Process;
             InputConfig Input;
-            Core::JSON::String Configs;
+			Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
         };
 
@@ -1671,7 +1673,7 @@ namespace WPEFramework {
 
                 while ((index != _services.end()) && (result == Core::ERROR_UNAVAILABLE)) {
                     const string& source(index->first);
-                    if (source.compare(0, source.length(), callSign) != 0) {
+                    if (callSign.compare(0, source.length(), source) != 0) {
                         index++;
                     }
                     else {
@@ -1966,7 +1968,6 @@ namespace WPEFramework {
             }
             static void Initialize(const string& serverPrefix)
             {
-
                 WebRequestJob::Initialize();
 
                 _missingCallsign->ErrorCode = Web::STATUS_BAD_REQUEST;
@@ -2179,15 +2180,26 @@ namespace WPEFramework {
                     // see if we need to subscribe...
                     _parent.Services().FromLocator(Path(), _service);
 
-                    if ((_service.IsValid() == true) && (Name().length() > _service->WebPrefix().length())) {
-                        Properties(_service->WebPrefix().length() + 1);
-                    }
-
                     if (_service.IsValid() == false) {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     }
                     else {
-                        if (Protocol() == _T("notification")) {
+						const string& source(Name());
+						const string& serviceHeader(_parent._config.WebPrefix());
+						const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
+
+						if (source.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
+							if (source.length() > (serviceHeader.length() + 1)) {
+								Properties(serviceHeader.length() + 1);
+							}
+						}
+						else if (source.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
+							if (source.length() > (JSONRPCHeader.length() + 1)) {
+								Properties(JSONRPCHeader.length() + 1);
+							}
+						}
+
+						if (Protocol() == _T("notification")) {
                             State(TEXT, true);
                         }
                         else if (Protocol() == _T("json")) {

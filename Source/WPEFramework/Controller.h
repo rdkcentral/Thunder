@@ -111,7 +111,7 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-        uint32_t exists(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) const {
+        uint32_t exists(const string& designator, string& response) const {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             // Core::ERROR_BAD_REQUEST the designator is not found at all.
@@ -121,7 +121,7 @@ namespace Plugin {
 
             return (Core::ERROR_NONE);
         }
-        uint32_t activate(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+        uint32_t activate(const string& designator, string& response) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
@@ -136,7 +136,7 @@ namespace Plugin {
 
             return (Core::ERROR_NONE);
         }
-        uint32_t deactivate(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
+        uint32_t deactivate(const string& designator, string& response) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
@@ -227,9 +227,9 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
         {
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"),     &Controller::exists,     this);
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("activate"),   &Controller::activate,   this);
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("deactivate"), &Controller::deactivate, this);
+            Register<string, string>(_T("exists"),     &Controller::exists,     this);
+            Register<string, string>(_T("activate"),   &Controller::activate,   this);
+            Register<string, string>(_T("deactivate"), &Controller::deactivate, this);
         }
 
     public:
