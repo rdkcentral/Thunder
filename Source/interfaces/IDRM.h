@@ -149,20 +149,6 @@ namespace CDMi {
 #define MEDIA_KEYERR_HARDWARECHANGE 5
 #define MEDIA_KEYERR_DOMAIN 6
 
-// The status code returned by CDMi APIs.
-typedef int32_t CDMi_RESULT;
-
-// REVIEW: Why make up new truth values, what's wrong with true/false?
-#define CDMi_SUCCESS ((CDMi_RESULT)0)
-#define CDMi_S_FALSE ((CDMi_RESULT)1)
-#define CDMi_E_OUT_OF_MEMORY ((CDMi_RESULT)0x80000002)
-#define CDMi_E_FAIL ((CDMi_RESULT)0x80004005)
-#define CDMi_E_INVALID_ARG ((CDMi_RESULT)0x80070057)
-
-#define CDMi_E_SERVER_INTERNAL_ERROR ((CDMi_RESULT)0x8004C600)
-#define CDMi_E_SERVER_INVALID_MESSAGE ((CDMi_RESULT)0x8004C601)
-#define CDMi_E_SERVER_SERVICE_SPECIFIC ((CDMi_RESULT)0x8004C604)
-
 // More CDMi status codes can be defined. In general
 // CDMi status codes should use the same PK error codes.
 
@@ -177,6 +163,20 @@ typedef int32_t CDMi_RESULT;
 #define MEDIA_KEY_STATUS_OUTPUT_DOWNSCALED 4
 #define MEDIA_KEY_STATUS_KEY_STATUS_PENDING 5
 #define MEDIA_KEY_STATUS_KEY_STATUS_MAX KEY_STATUS_PENDING
+
+typedef enum {
+    CDMi_SUCCESS                  = 0,
+    CDMi_S_FALSE                  = 1,
+    CDMi_KEYSYSTEM_NOT_SUPPORTED  = 0x80000002,
+    CDMi_INVALID_SESSION          = 0x80000003,
+    CDMi_INVALID_DECRYPT_BUFFER   = 0x80000004,
+    CDMi_OUT_OF_MEMORY            = 0x80000005,
+    CDMi_FAIL                     = 0x80004005,
+    CDMi_INVALID_ARG              = 0x80070057,
+    CDMi_SERVER_INTERNAL_ERROR    = 0x8004C600,
+    CDMi_SERVER_INVALID_MESSAGE   = 0x8004C601,
+    CDMi_SERVER_SERVICE_SPECIFIC  = 0x8004C604,
+} CDMi_RESULT;
 
 typedef enum {
     Temporary,
@@ -297,15 +297,6 @@ public:
     virtual uint16_t PlaylevelAnalogVideo() const = 0;
     virtual uint16_t PlaylevelCompressedAudio() const = 0;
     virtual uint16_t PlaylevelUncompressedAudio() const = 0;
-
-    virtual std::string GetContentIdExt() const = 0;
-    virtual void SetContentIdExt(const std::string & contentId) = 0;
-
-    virtual LicenseTypeExt GetLicenseTypeExt() const = 0;
-    virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) = 0;
-
-    virtual SessionStateExt GetSessionStateExt() const = 0;
-    virtual void SetSessionStateExt(SessionStateExt sessionState) = 0;
 
     virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 

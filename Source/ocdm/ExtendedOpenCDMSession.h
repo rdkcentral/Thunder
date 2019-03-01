@@ -14,11 +14,12 @@ extern const char EmptyString[];
 KeyStatus CDMState(const OCDM::ISession::KeyStatus state);
 
 struct ExtendedOpenCDMSession : public OpenCDMSession {
-private:
+protected:
     ExtendedOpenCDMSession() = delete;
     ExtendedOpenCDMSession(const ExtendedOpenCDMSession&) = delete;
     ExtendedOpenCDMSession& operator= (ExtendedOpenCDMSession&) = delete;
 
+protected:
     enum sessionState {
         // Initialized.
         SESSION_INIT    = 0x00,
@@ -31,7 +32,7 @@ private:
         SESSION_UPDATE  = 0x10
     };
 
-private:
+protected:
     class Sink : public OCDM::ISession::ICallback {
     private:
         Sink() = delete;
@@ -79,6 +80,20 @@ private:
 
 public:
     ExtendedOpenCDMSession(
+        OpenCDMSessionCallbacks * callbacks)
+       : OpenCDMSession()
+        , _sink(this)
+        , _state(SESSION_INIT)
+        , _message()
+        , _URL()
+        , _error()
+        , _errorCode(0)
+        , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
+        , _key(OCDM::ISession::StatusPending)
+        , _callback(callbacks) {
+        TRACE_L1("Constructing the Session Client side - ExtendedOpenCDMSession: %p, (nil)", this);
+    }
+    ExtendedOpenCDMSession(
         OCDM::IAccessorOCDM* system,
         const string keySystem, 
         const std::string& initDataType, 
@@ -95,7 +110,7 @@ public:
         , _URL()
         , _error()
         , _errorCode(0)
-        , _sysError(0)
+        , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
         , _key(OCDM::ISession::StatusPending)
         , _callback(callbacks) {
 
@@ -208,7 +223,7 @@ public:
         return (ret);
     }
 
-private:
+protected:
     // void (*process_challenge) (void * userData, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
     // void (*key_update)        (void * userData, const uint8_t keyId[], const uint8_t length);
     // void (*message)           (void * userData, const char message[]);
@@ -263,7 +278,7 @@ private:
         }
     }
 
-private:
+protected:
     WPEFramework::Core::Sink<Sink> _sink;
     WPEFramework::Core::StateTrigger<sessionState> _state;
     std::string _message;

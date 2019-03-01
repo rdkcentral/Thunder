@@ -9,7 +9,6 @@ using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;
 
-// TODO: Introduce OpenCDMAccessorExt, no need to mis here
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM, public OCDM::IAccessorOCDMExt {
 private:
     OpenCDMAccessor () = delete;
@@ -283,7 +282,7 @@ public:
         INTERFACE_ENTRY(OCDM::IAccessorOCDM)
     END_INTERFACE_MAP
 
-    virtual OCDM::OCDM_RESULT IsTypeSupported(
+    virtual bool IsTypeSupported(
         const std::string keySystem,
         const std::string mimeType) const override {
         return (_remote->IsTypeSupported(keySystem, mimeType));
@@ -503,7 +502,7 @@ private:
 };
 
 struct OpenCDMSession {
-private:
+protected:
     OpenCDMSession(const OpenCDMSession&) = delete;
     OpenCDMSession& operator= (OpenCDMSession&) = delete;
 

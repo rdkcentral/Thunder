@@ -6,6 +6,20 @@
 
 namespace OCDM {
 
+    typedef enum {
+        OCDM_SUCCESS                  = 0,
+        OCDM_S_FALSE                  = 1,
+        OCDM_KEYSYSTEM_NOT_SUPPORTED  = 0x80000002,
+        OCDM_INVALID_SESSION          = 0x80000003,
+        OCDM_INVALID_DECRYPT_BUFFER   = 0x80000004,
+        OCDM_OUT_OF_MEMORY            = 0x80000005,
+        OCDM_FAIL                     = 0x80004005,
+        OCDM_INVALID_ARG              = 0x80070057,
+        OCDM_SERVER_INTERNAL_ERROR    = 0x8004C600,
+        OCDM_SERVER_INVALID_MESSAGE   = 0x8004C601,
+        OCDM_SERVER_SERVICE_SPECIFIC  = 0x8004C604,
+    } OCDM_RESULT;
+
 typedef int32_t OCDM_RESULT;
 
 // ISession defines the interface towards a DRM context that can decrypt data
@@ -81,7 +95,6 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     virtual void Revoke(OCDM::ISession::ICallback* callback) = 0;
 };
 
-    // TODO: should derive from ISession?
     struct ISessionExt : virtual public WPEFramework::Core::IUnknown
     {
         enum { ID = WPEFramework::RPC::ID_SESSION_EXTENSION };
@@ -109,15 +122,6 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
         virtual uint16_t PlaylevelAnalogVideo() const = 0;
         virtual uint16_t PlaylevelCompressedAudio() const = 0;
         virtual uint16_t PlaylevelUncompressedAudio() const = 0;
-
-        virtual std::string GetContentIdExt() const = 0;
-        virtual void SetContentIdExt(const std::string & contentId) = 0;
-
-        virtual LicenseTypeExt GetLicenseTypeExt() const = 0;
-        virtual void SetLicenseTypeExt(LicenseTypeExt licenseType) = 0;
-
-        virtual SessionStateExt GetSessionStateExt() const = 0;
-        virtual void SetSessionStateExt(SessionStateExt sessionState) = 0;
 
         virtual OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 
@@ -149,7 +153,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     virtual ~IAccessorOCDM() {}
 
-    virtual OCDM::OCDM_RESULT IsTypeSupported(
+    virtual bool IsTypeSupported(
         const std::string keySystem,
         const std::string mimeType) const = 0;
 
@@ -185,6 +189,10 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     virtual ISession* Session(
         const std::string sessionId)
         = 0;
+        
+    virtual ISession* Session(
+            const uint8_t keyId[], const uint8_t length) = 0;
+    };
 
     virtual ISession* Session(
         const uint8_t keyId[], const uint8_t length)
@@ -196,7 +204,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
         virtual time_t GetDrmSystemTime(const std::string & keySystem) const = 0;
 
-        // TODO: remove
         virtual OCDM_RESULT CreateSessionExt(
             const uint8_t drmHeader[],
             uint32_t drmHeaderLength,
@@ -233,7 +240,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
                 const uint8_t serverResponse[],
                 uint32_t serverResponseLength) = 0;
 
-        // TODO: rename to something like "SetStoreDirs"
         virtual OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) = 0;
 
         virtual OCDM_RESULT InitSystemNetflix(const std::string & keySystem) = 0;

@@ -20,7 +20,7 @@ private:
         uint32_t Status;
         uint8_t KeyId[17];
         uint8_t IVLength;
-        uint8_t IV[20];
+        uint8_t IV[24];
         uint16_t SubLength;
         uint8_t Sub[2048];
         bool InitWithLast15;
