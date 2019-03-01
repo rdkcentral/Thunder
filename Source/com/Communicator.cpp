@@ -186,7 +186,13 @@ namespace RPC {
                 TRACE_L1("Error during invoke of AnnounceMessage: %d", result);
             }
         }
+        else
+        {
+            TRACE_L1("Connection to the server is down (ticket has been raised: WPE-255)");
+
+        }
     }
+
 
     /* virtual */ void CommunicatorClient::Dispatch(Core::IIPC & element)
     {
