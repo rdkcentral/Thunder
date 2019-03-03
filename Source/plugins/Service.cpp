@@ -18,7 +18,7 @@ namespace PluginHost {
 
 	PluginHost::Request::Request()
 		: Web::Request()
-		, _state(INCOMPLETE)
+		, _state(INCOMPLETE | SERVICE_CALL)
 		, _service()
 	{
 	}
@@ -29,29 +29,33 @@ namespace PluginHost {
 	void PluginHost::Request::Clear()
 	{
 		Web::Request::Clear();
-		_state = INCOMPLETE;
+		_state = INCOMPLETE | SERVICE_CALL;
 
 		if (_service.IsValid()) {
 			_service.Release();
 		}
 	}
-	void PluginHost::Request::Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service)
+	void PluginHost::Request::Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const bool serviceCall)
 	{
 		ASSERT(_service.IsValid() == false);
-		ASSERT(_state == INCOMPLETE);
+		ASSERT(State() == INCOMPLETE);
 
 		if (service.IsValid() == true) {
-			_state = COMPLETE;
+			_state = COMPLETE | SERVICE_CALL;
 			_service = service;
 		}
 		else if (errorCode == Core::ERROR_BAD_REQUEST) {
-			_state = OBLIVIOUS;
+			_state = OBLIVIOUS | SERVICE_CALL;
 		}
-                else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
-                        _state = INVALID_VERSION;
-                }
+        else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
+			_state = INVALID_VERSION | SERVICE_CALL;
+        }
 		else if (errorCode == Core::ERROR_UNAVAILABLE) {
-			_state = MISSING_CALLSIGN;
+			_state = MISSING_CALLSIGN | SERVICE_CALL;
+		}
+
+		if (serviceCall == false) {
+			_state &= (~SERVICE_CALL);
 		}
 	}
 
@@ -61,9 +65,10 @@ namespace PluginHost {
     }
 
     Factories::Factories()
-        : _requestFactory(10)
-        , _responseFactory(10)
-        , _fileBodyFactory(10)
+        : _requestFactory(5)
+        , _responseFactory(5)
+        , _fileBodyFactory(5)
+		, _jsonRPCFactory(5)
     {
     }
 

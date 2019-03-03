@@ -111,17 +111,38 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-        uint32_t exists(const string& designator, string& response) const {
-            Core::ProxyType<PluginHost::Server::Service> service;
+		uint32_t exists(const string& designator, string& response) {
+			Core::ProxyType<PluginHost::Server::Service> service;
+			string callsign = Core::JSONRPC::Message::Callsign(designator);
+			response = _T("22"); // ERROR_UNKNOWN_KEY
 
-            // Core::ERROR_BAD_REQUEST the designator is not found at all.
-            // Core::ERROR_INVALID_SIGNATURE the designator is found, but the version is not supported.
-            // Core::ERROR_NONE the designator is found and the version is supported.
-            response = _pluginServer->Services().FromIdentifier(designator, service);
+			if (callsign.empty() == true) {
+				if (Exists(designator, Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
+					response = _T("0");
+				}
+			}
+			else {
+				uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
 
-            return (Core::ERROR_NONE);
-        }
-        uint32_t activate(const string& designator, string& response) {
+				if (result == Core::ERROR_NONE) {
+					ASSERT(service.IsValid());
+					PluginHost::IDispatcher* plugin = service->Dispatcher();
+					if (plugin != nullptr) {
+						if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
+							response = _T("0");
+						}
+					}
+				}
+				else if (result == Core::ERROR_INVALID_DESIGNATOR) {
+					response = _T("41");
+				}
+				else if (result == Core::ERROR_INVALID_SIGNATURE) {
+					response = _T("38");
+				}
+			}
+			return (Core::ERROR_NONE);
+		}
+		uint32_t activate(const string& designator, string& response) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
@@ -226,9 +247,9 @@ namespace Plugin {
             , _systemInfoReport(this)
             , _resumes()
             , _lastReported()
-        {
-            Register<string, string>(_T("exists"),     &Controller::exists,     this);
-            Register<string, string>(_T("activate"),   &Controller::activate,   this);
+        {		
+			Register<string, string>(_T("exists"), &Controller::exists, this);
+			Register<string, string>(_T("activate"),   &Controller::activate,   this);
             Register<string, string>(_T("deactivate"), &Controller::deactivate, this);
         }
 
@@ -319,9 +340,9 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
-        uint32_t Invoke (const Core::JSONRPC::Message& inbound, string& response);
+		virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
 
-    private:
+	private:
         Core::CriticalSection _adminLock;
         uint8_t _skipURL;
         string _webPath;
@@ -331,7 +352,7 @@ namespace Plugin {
         Probe* _probe;
         Core::Sink<Sink> _systemInfoReport;
         std::list<string> _resumes;
-	uint32_t _lastReported;
+		uint32_t _lastReported;
     };
 }
 }

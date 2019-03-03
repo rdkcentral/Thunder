@@ -64,7 +64,7 @@ namespace JSONRPC {
                 case Core::ERROR_INVALID_SIGNATURE:
                     Code = -32602; // Invalid parameters
                     break;
-                case Core::ERROR_UNKNOWN_KEY_PASSED:
+                case Core::ERROR_UNKNOWN_KEY:
                     Code = -32601; // Method not found
                     break;
                 default: 
@@ -82,13 +82,13 @@ namespace JSONRPC {
 
         Message()
             : Core::JSON::Container()
-            , Version(DefaultVersion)
+            , JSONRPC(DefaultVersion)
             , Id(~0)
             , Designator()
             , Parameters()
-            , Result()
+            , Result(false)
             , Error() {
-            Add(_T("jsonrpc"), &Version);
+            Add(_T("jsonrpc"), &JSONRPC);
             Add(_T("id"), &Id);
             Add(_T("method"), &Designator);
             Add(_T("params"), &Parameters);
@@ -100,15 +100,39 @@ namespace JSONRPC {
         }
 
     public:
-        string Callsign() const {
-            size_t pos = Designator.Value().find_last_of('.');
-            return (pos == string::npos ? _T("") : Designator.Value().substr(0, pos));
+		static string Callsign(const string& designator) {
+			size_t pos = designator.find_last_of('.');
+			return (pos == string::npos ? _T("") : designator.substr(0, pos));
+		}
+		static string Method(const string& designator) {
+			size_t pos = designator.find_last_of('.');
+			return (pos == string::npos ? designator : designator.substr(pos + 1));
+		}
+		static uint8_t Version(const string& designator) {
+			uint8_t result = ~0;
+			string number(Callsign(designator));
+			size_t pos = number.find_last_of('.');
+
+			if (pos != string::npos) {
+				number = number.substr(pos + 1);
+
+				if ((number.length() > 0) &&
+					(std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
+					result = static_cast<uint8_t>(atoi(number.c_str()));
+				}
+			}
+			return (result);
+		}
+		string Callsign() const {
+			return (Callsign(Designator.Value()));
         }
         string Method() const {
-            size_t pos = Designator.Value().find_last_of('.');
-            return (pos == string::npos ? Designator.Value() : Designator.Value().substr(pos + 1));
-        }
-        Core::JSON::String Version;
+			return (Method(Designator.Value()));
+		}
+		uint8_t Version() const {
+			return (Version(Designator.Value()));
+		}
+		Core::JSON::String JSONRPC;
         Core::JSON::DecUInt32 Id;
         Core::JSON::String Designator;
         Core::JSON::String Parameters;
@@ -121,7 +145,7 @@ namespace JSONRPC {
         Handler(const Handler&) = delete;
         Handler& operator= (const Handler&) = delete;
 
-        typedef std::function<uint32_t(const uint32_t id, const string& parameters, string& result)> InvokeFunction;
+        typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
         typedef std::map<const string, InvokeFunction > HandlerMap;
 
     public:
@@ -132,6 +156,11 @@ namespace JSONRPC {
         }
 
     public:
+		// For now the version is not used for exist determination, but who knows what will happen in the future.
+		// The interface is prepared.
+		inline uint32_t Exists(const string& methodName, const uint8_t version) const {
+			return(_handlers.find(methodName) != _handlers.end() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+		}
         uint32_t Validate (const Message& message) const {
             const string callsign (message.Callsign());
             uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
@@ -151,25 +180,12 @@ namespace JSONRPC {
         template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register (const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
             std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-            InvokeFunction implementation = [actualMethod](const uint32_t id, const string& parameters, string& result) -> uint32_t {
+            InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                                                INBOUND inbound; 
                                                OUTBOUND outbound;
                                                inbound = parameters;
                                                uint32_t code = actualMethod(inbound, outbound);
-                                               if (id != static_cast<uint32_t>(~0)) { 
-                                                   string response = outbound; 
-                                                   Message message;
-                                                   message.Version = Message::DefaultVersion;
-                                                   message.Id = id;
-                                                   if (code == Core::ERROR_NONE) {
-                                                       message.Result = response;
-                                                   }
-                                                   else {
-                                                       message.Error.SetError(code);
-                                                       message.Error.Text = response;
-                                                   }
-                                                   message.ToString(result);
-                                               }
+                                               result = outbound; 
                                                return (code);
                                             };
             Register(methodName, implementation);
@@ -185,42 +201,14 @@ namespace JSONRPC {
                 _handlers.erase(index);
             }
         }
-        uint32_t Invoke (const Message& inbound, string& response) {
-            uint32_t result = Validate(inbound);
-
-            if (result == Core::ERROR_NONE) {
-               result = Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
-            }
-            else if (inbound.Id.Value() != static_cast<uint32_t>(~0)) {
-                Message message;
-                message.Version = Message::DefaultVersion;
-                message.Error.SetError(result);
-                message.Error.Text = "Invalid JSONRPC Request";
-                message.Id = inbound.Id.Value();
-                message.ToString(response);
-            }
-            else {
-                response.clear();
-            }
- 
-            return (result);
-        }
-        uint32_t Invoke (const uint32_t id, const string& method, const string& parameters, string& response) {
-            uint32_t result = Core::ERROR_UNKNOWN_KEY_PASSED;
+        uint32_t Invoke (const string& method, const string& parameters, string& response) {
+            uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
             response.clear();
 
             HandlerMap::iterator index = _handlers.find(method);
             if (index != _handlers.end()) {
-                result = index->second(id, parameters, response);
-            }
-            else if (id != static_cast<uint32_t>(~0)) {
-                Message message;
-                message.Version = Message::DefaultVersion;
-                message.Error.SetError(result);
-                message.Error.Text = "Method not found";
-                message.Id = id;
-                message.ToString(response);
+                result = index->second(parameters, response);
             }
             return (result);
         }

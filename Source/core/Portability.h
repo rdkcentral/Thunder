@@ -646,8 +646,8 @@ namespace Core {
     const uint32_t ERROR_UNREACHABLE_NETWORK = 26;
     const uint32_t ERROR_REQUEST_SUBMITTED = 27;
     const uint32_t ERROR_UNKNOWN_TABLE = 28;
-    const uint32_t ERROR_UNKNOWN_KEY_PASSED = 29;
-    const uint32_t ERROR_BAD_REQUEST = 30;
+	const uint32_t ERROR_DUPLICATE_KEY = 29;
+	const uint32_t ERROR_BAD_REQUEST = 30;
     const uint32_t ERROR_PENDING_CONDITIONS = 31;
     const uint32_t ERROR_SURFACE_UNAVAILABLE = 32;
     const uint32_t ERROR_PLAYER_UNAVAILABLE = 33;
@@ -659,7 +659,6 @@ namespace Core {
     const uint32_t ERROR_READ_ERROR = 39;
     const uint32_t ERROR_WRITE_ERROR = 40;
     const uint32_t ERROR_INVALID_DESIGNATOR = 41;
-    const uint32_t ERROR_DUPLICATE_KEY = 42;
 }
 }
 

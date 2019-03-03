@@ -279,7 +279,7 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                         result = Core::ERROR_UNKNOWN_KEY;
                     }
                     else {
-                        result = Core::ERROR_UNKNOWN_KEY_PASSED;
+                        result = Core::ERROR_UNKNOWN_KEY;
                         sendCode = code;
                         sendModifiers = 0;
                     }
@@ -292,7 +292,7 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                 if ((!pressed) && (_pressedCode != code))
                     result = Core::ERROR_ALREADY_RELEASED;
 
-                if ( (result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY_PASSED) ) {
+                if ( (result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY) ) {
                     if (pressed) {
                         if (_pressedCode)
                             KeyEvent(false, _pressedCode, _keyTable);

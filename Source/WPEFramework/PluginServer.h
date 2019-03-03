@@ -603,6 +603,7 @@ namespace WPEFramework {
                 , _textSocket(nullptr)
                 , _rawSocket(nullptr)
                 , _webSecurity(nullptr)
+				, _jsonrpc(nullptr)
                 , _precondition(plugin->Precondition, true)
                 , _termination(plugin->Termination, false)
                 , _activity(0)
@@ -623,6 +624,7 @@ namespace WPEFramework {
                 ASSERT(_textSocket == nullptr);
                 ASSERT(_rawSocket == nullptr);
                 ASSERT(_webSecurity == nullptr);
+				ASSERT(_jsonrpc == nullptr);
             }
 
         public:
@@ -637,6 +639,9 @@ namespace WPEFramework {
             }
 
         public:
+			inline IDispatcher* Dispatcher() {
+				return (_jsonrpc);
+			}
             inline const string& ModuleName() const
             {
                 return (_moduleName);
@@ -1021,6 +1026,7 @@ namespace WPEFramework {
                     _textSocket = newIF->QueryInterface<PluginHost::ITextSocket>();
                     _rawSocket = newIF->QueryInterface<PluginHost::IChannel>();
                     _webSecurity = newIF->QueryInterface<PluginHost::ISecurity>();
+					_jsonrpc = newIF->QueryInterface<PluginHost::IDispatcher>();
                     if (_webSecurity == nullptr) {
                         _webSecurity = Information().Security();
                         _webSecurity->AddRef();
@@ -1062,6 +1068,10 @@ namespace WPEFramework {
                     _extended->Release();
                     _extended = nullptr;
                 }
+				if (_jsonrpc != nullptr) {
+					_jsonrpc->Release();
+					_jsonrpc = nullptr;
+				}
 
                 Lock();
                 _handler = nullptr;
@@ -1082,6 +1092,7 @@ namespace WPEFramework {
             ITextSocket* _textSocket;
             IChannel* _rawSocket;
             ISecurity* _webSecurity;
+			IDispatcher* _jsonrpc;
             reason _reason;
             string _moduleName;
             string _versionHash;
@@ -1254,7 +1265,7 @@ namespace WPEFramework {
                     Plugin(Plugin const& copy) 
                         : Core::JSON::Container()
                         , AutoStart(copy.AutoStart)
-                        , Configuration(copy.AutoStart)
+                        , Configuration(copy.Configuration)
                     {
                         Add(_T("autostart"), &AutoStart);
                         Add(_T("configuration"), &Configuration);
@@ -1692,13 +1703,11 @@ namespace WPEFramework {
 
                 return (result);
             }
-            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service);
+            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
 
             void Destroy();
 
         private:
-           void RecursiveGetMetaData(Core::JSON::ArrayType<MetaData::Service>&, std::map<const string, Core::ProxyType<Service> >::const_iterator&) const;
-
            void RecursiveNotification(std::map<const string, Core::ProxyType<Service> >::iterator& index) {
                if (index != _services.end()) {
                    Core::ProxyType<Service> element (index->second);
@@ -1758,6 +1767,7 @@ namespace WPEFramework {
                     : _server(server)
                     , _service()
                     , _request()
+					, _jsonrpc(false)
                 {
                 }
                 virtual ~WebRequestJob()
@@ -1779,7 +1789,7 @@ namespace WPEFramework {
                     _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
                     _missingResponse->Message = _T("There is no response from the requested service.");
                 }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request)
+                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const bool JSONRPC)
                 {
                     ASSERT(_request.IsValid() == false);
                     ASSERT(_service.IsValid() == false);
@@ -1787,6 +1797,7 @@ namespace WPEFramework {
                     _service = service;
                     _request = request;
                     _ID = id;
+					_jsonrpc = JSONRPC;
                 }
                 virtual void Dispatch()
                 {
@@ -1798,7 +1809,23 @@ namespace WPEFramework {
                         ASSERT(_service.IsValid() == true);
 
                         if (_service.IsValid() == true) {
-                            response = _service->Process(*_request);
+							if ((_jsonrpc == true) && (_request->HasBody() == true)) {
+								response = Factories::Instance().Response();
+								Core::ProxyType<Core::JSONRPC::Message> message (_request->Body< Core::JSONRPC::Message>());
+								Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
+								response->Body(body);
+								if (body->Error.IsSet() == false) {
+									response->ErrorCode = Web::STATUS_OK;
+									response->Message = _T("JSONRPC executed succesfully");
+								}
+								else {
+									response->ErrorCode = Web::STATUS_NO_CONTENT;
+									response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+								}
+							}
+							else {
+								response = _service->Process(*_request);
+							}
                             _service.Release();
                         }
 
@@ -1832,6 +1859,7 @@ namespace WPEFramework {
                 Server* _server;
                 Core::ProxyType<Service> _service;
                 Core::ProxyType<Web::Request> _request;
+				bool _jsonrpc;
 
                 static Core::ProxyType<Web::Response> _missingResponse;
             };
@@ -1847,6 +1875,7 @@ namespace WPEFramework {
                     : _server(server)
                     , _service()
                     , _element()
+					, _jsonrpc(false)
                 {
                 }
                 virtual ~JSONElementJob()
@@ -1863,7 +1892,7 @@ namespace WPEFramework {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element)
+                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const bool JSONRPC)
                 {
                     ASSERT(_element.IsValid() == false);
                     ASSERT(_service.IsValid() == false);
@@ -1871,6 +1900,7 @@ namespace WPEFramework {
                     _service = service;
                     _element = element;
                     _ID = id;
+					_jsonrpc = JSONRPC;
                 }
                 virtual void Dispatch()
                 {
@@ -1882,8 +1912,21 @@ namespace WPEFramework {
 
                         if (_service.IsValid() == true) {
 
-                            _element = _service->Inbound(_ID, *_element);
-                            _service.Release();
+							if (_jsonrpc == true) {
+								Core::ProxyType<Core::JSONRPC::Message> message (Core::proxy_cast<Core::JSONRPC::Message>(_element));
+								PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(&(*_service));
+
+								ASSERT(dispatcher != nullptr);
+								ASSERT(message.IsValid() == true);
+
+								if ( (dispatcher != nullptr) && (message.IsValid() == true)) {
+									_element = dispatcher->Invoke(_ID, *message);
+								}
+							}
+							else {
+								_element = _service->Inbound(_ID, *_element);
+								_service.Release();
+							}
                         }
 
                         if (_element.IsValid()) {
@@ -1899,6 +1942,7 @@ namespace WPEFramework {
                 Server* _server;
                 Core::ProxyType<Service> _service;
                 Core::ProxyType<Core::JSON::IElement> _element;
+				bool _jsonrpc;
             };
 
             class EXTERNAL TextJob : public Core::IDispatchType<void> {
@@ -1988,17 +2032,23 @@ namespace WPEFramework {
 
                 // Remember the path and options..
                 Core::ProxyType<Service> service;
+				bool serviceCall;
 
-                uint32_t status = _parent.Services().FromLocator(request->Path, service);
+                uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
 
-                request->Service(status, Core::proxy_cast<PluginHost::Service>(service));
+                request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
 
                 ASSERT(request->State() != Request::INCOMPLETE);
 
                 if (request->State() == Request::COMPLETE) {
-                    ASSERT(service.IsValid() == true);
 
-                    service->Inbound(*request);
+					ASSERT(service.IsValid() == true);
+					if (serviceCall == true) {
+						service->Inbound(*request);
+					}
+					else {
+						request->Body(Factories::Instance().JSONRPC());
+					}
                 }
             }
             virtual void Received(Core::ProxyType<Request>& request)
@@ -2009,9 +2059,10 @@ namespace WPEFramework {
                 if (request->State() == Request::INCOMPLETE) {
 
                     Core::ProxyType<Service> service;
-                    uint32_t status = _parent.Services().FromLocator(request->Path, service);
+					bool serviceCall;
+                    uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
 
-                    request->Service(status, Core::proxy_cast<PluginHost::Service>(service));
+                    request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
                 }
 
                 switch (request->State()) {
@@ -2061,7 +2112,7 @@ namespace WPEFramework {
 
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
-                            job->Set(Id(), service, baseRequest);
+                            job->Set(Id(), service, baseRequest, !request->ServiceCall());
                             _parent.Submit(Core::proxy_cast<Core::IDispatchType<void> >(job));
                         }
                     }
@@ -2108,7 +2159,7 @@ namespace WPEFramework {
                 ASSERT(job.IsValid() == true);
 
                 if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, element);
+                    job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
                     _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                 }
             }
@@ -2176,49 +2227,57 @@ namespace WPEFramework {
                 }
                 else if (IsWebSocket() == true) {
                     ASSERT(_service.IsValid() == false);
-
+					bool serviceCall;
                     // see if we need to subscribe...
-                    _parent.Services().FromLocator(Path(), _service);
+                    _parent.Services().FromLocator(Path(), _service, serviceCall);
 
                     if (_service.IsValid() == false) {
                         AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
                     }
-                    else {
-						const string& source(Name());
+                    else if (serviceCall == true) {
 						const string& serviceHeader(_parent._config.WebPrefix());
-						const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
-
-						if (source.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
-							if (source.length() > (serviceHeader.length() + 1)) {
-								Properties(serviceHeader.length() + 1);
-							}
-						}
-						else if (source.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
-							if (source.length() > (JSONRPCHeader.length() + 1)) {
-								Properties(JSONRPCHeader.length() + 1);
-							}
-						}
 
 						if (Protocol() == _T("notification")) {
-                            State(TEXT, true);
-                        }
-                        else if (Protocol() == _T("json")) {
-                            State(JSON, false);
-                        }
-                        else if (Protocol() == _T("text")) {
-                            State(TEXT, false);
-                        }
-                        else {
-                            // Channel is a raw communication channel.
-                            // This channel allows for passing binary data back and forth
-                            State(RAW, false);
-                        }
+							State(TEXT, true);
+						}
+						else if (Protocol() == _T("json")) {
+							State(JSON, false);
+						}
+						else if (Protocol() == _T("text")) {
+							State(TEXT, false);
+						}
+						else if (Protocol() == _T("jsonrpc")) {
+							State(JSONRPC, false);
+						}
+						else {
+							// Channel is a raw communication channel.
+							// This channel allows for passing binary data back and forth
+							State(RAW, false);
+						}
+						if (Name().length() > (serviceHeader.length() + 1)) {
+							Properties(serviceHeader.length() + 1);
+						}
+						// The state needs to be correct before we c
+						if (_service->Subscribe(*this) == false) {
+							State(WEB, false);
+							AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+						}
+					}
+					else if (_service->Dispatcher() == nullptr) {
+						AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Plugin does not support JSONRPC."));
+					}
+					else {
+						const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
+						if (Name().length() > (JSONRPCHeader.length() + 1)) {
+							Properties(JSONRPCHeader.length() + 1);
+						}
+						State(JSONRPC, false);
 
-                        // The state needs to be correct before we c
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
-                        }
+						// The state needs to be correct before we c
+						if (_service->Subscribe(*this) == false) {
+							State(WEB, false);
+							AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+						}
                     }
                 }
             }

@@ -174,7 +174,7 @@ extern "C" {
  * and you enable the rightflags, the linker drops the dependency. Than Proxy/Stubs do
  * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
  */
-void* opencdm_announce_proxy_stubs();
+EXTERNAL void* opencdm_announce_proxy_stubs();
  
 /**
  * OpenCDM error code. Zero always means success.

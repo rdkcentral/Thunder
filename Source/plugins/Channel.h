@@ -132,7 +132,8 @@ namespace PluginHost {
             WEB = 0x02,
             JSON = 0x04,
             RAW = 0x08,
-            TEXT = 0x10
+            TEXT = 0x10,
+			JSONRPC = 0x20
         };
 
     public:
@@ -165,7 +166,7 @@ namespace PluginHost {
         }
         const string Name() const
         {
-            return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : EMPTY_STRING);
+            return string(_nameOffset != static_cast<uint32_t>(~0) ? &(BaseClass::Path().c_str()[_nameOffset]) : BaseClass::Path().c_str());
         }
         inline uint32_t Id() const
         {
@@ -257,7 +258,8 @@ namespace PluginHost {
 
                 switch(State()) {
                     case JSON:
-                    {
+					case JSONRPC:
+					{
                         // Seems we are sending JSON structs
                         size = _serializer.Serialize(dataFrame, maxSendSize);
 
@@ -325,6 +327,7 @@ namespace PluginHost {
 
             switch(State()) {
                 case JSON:
+				case JSONRPC:
                 {
                     handled = _deserializer.Deserialize(dataFrame, receivedSize);
                     break;

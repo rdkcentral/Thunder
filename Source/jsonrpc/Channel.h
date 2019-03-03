@@ -354,7 +354,7 @@ namespace JSONRPC {
                     ASSERT (inbound->Id.IsSet() == false);
 
                     string response;
-                    _handler.Invoke(~0, inbound->Method(), inbound->Parameters.Value(), response);
+                    _handler.Invoke(inbound->Method(), inbound->Parameters.Value(), response);
                 }
             }
 

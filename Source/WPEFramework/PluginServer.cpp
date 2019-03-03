@@ -441,13 +441,16 @@ uint32_t Server::Service::Deactivate(const reason why) {
     _administrator.Notification(fullMessage);
 }
 
-uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service) {
+uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall) {
 	uint32_t result = Core::ERROR_BAD_REQUEST;
 	const string& serviceHeader(_webbridgeConfig.WebPrefix());
 	const string& JSONRPCHeader(_webbridgeConfig.JSONRPCPrefix());
 
 	// Check the header (prefix part)
 	if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
+
+		serviceCall = true;
+
 		if (identifier.length() <= (serviceHeader.length() + 1)) {
 			service = _server._controller;
 			result = Core::ERROR_NONE;
@@ -462,6 +465,9 @@ uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyTy
 		}
 	}
 	else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
+
+		serviceCall = false;
+
 		if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
 			service = _server._controller;
 			result = Core::ERROR_NONE;

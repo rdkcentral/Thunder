@@ -1,6 +1,6 @@
 {
   "port": 80,
-  "interface": "LAN",
+  "binding": "0.0.0.0",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",

@@ -291,9 +291,9 @@ namespace Web {
 
         class JSONDeserializer : public Core::JSON::IElement::Deserializer {
         private:
-            JSONDeserializer();
-            JSONDeserializer(const JSONDeserializer&);
-            JSONDeserializer& operator=(const JSONDeserializer&);
+            JSONDeserializer() = delete;
+            JSONDeserializer(const JSONDeserializer&) = delete;
+            JSONDeserializer& operator=(const JSONDeserializer&) = delete;
 
         public:
             JSONDeserializer(JSONOBJECT& jsonElement)

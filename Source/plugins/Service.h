@@ -34,14 +34,19 @@ namespace PluginHost {
         {
             return (_fileBodyFactory.Element());
         }
+		inline Core::ProxyType< Web::JSONBodyType<Core::JSONRPC::Message> > JSONRPC()
+		{
+			return (_jsonRPCFactory.Element());
+		}
 
     private:
 	friend class Core::SingletonType<Factories>;
 
-	Core::ProxyPoolType<Web::Request> _requestFactory;
+		Core::ProxyPoolType<Web::Request> _requestFactory;
         Core::ProxyPoolType<Web::Response> _responseFactory;
         Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-    };
+		Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message> > _jsonRPCFactory;
+	};
 
     struct EXTERNAL WorkerPool {
 

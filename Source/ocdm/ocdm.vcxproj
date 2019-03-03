@@ -20,6 +20,9 @@
     <ClCompile Include="open_cdm.cpp" />
     <ClCompile Include="ProxyStubs.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{1BBA24B2-8FDA-42C7-B40B-B0A4F5462CB9}</ProjectGuid>
     <RootNamespace>cdmi</RootNamespace>

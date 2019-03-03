@@ -538,6 +538,12 @@ namespace Core {
 
                 return (*this);
             }
+			NumberType<TYPE, SIGNED, BASETYPE>& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline const TYPE Default() const
             {
@@ -551,6 +557,12 @@ namespace Core {
             {
                 return Value();
             }
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
 
             // IElement interface methods
             virtual bool IsSet() const override
@@ -669,6 +681,12 @@ namespace Core {
 
                 return (*this);
             }
+			EnumType<ENUMERATE>& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline const ENUMERATE Default() const
             {
@@ -682,7 +700,13 @@ namespace Core {
             {
                 return Value();
             }
-            const TCHAR* Data() const
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
+			const TCHAR* Data() const
             {
                 return (_value.Data());
             }
@@ -787,6 +811,12 @@ namespace Core {
 
                 return (*this);
             }
+			Boolean& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline bool Value() const
             {
@@ -800,6 +830,12 @@ namespace Core {
             {
                 return Value();
             }
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
 
             // IElement interface methods
             virtual bool IsSet() const override
@@ -1287,6 +1323,18 @@ namespace Core {
                     index++;
                 }
             }
+			inline operator string () const
+			{
+				string result;
+				this->ToString(result);
+				return (result);
+			}
+			inline Container& operator= (const string& RHS)
+			{
+				this->FromString(RHS);
+				return (*this);
+			}
+
 
         private:
             // IElement interface methods (private)
@@ -1652,6 +1700,17 @@ namespace Core {
 
                 return (*this);
             }
+			inline operator string () const
+			{
+				string result;
+				ToString(result);
+				return (result);
+			}
+			inline ArrayType<ELEMENT>& operator= (const string& RHS)
+			{
+				FromString(RHS);
+				return (*this);
+			}
 
         private:
             // IElement interface methods (private)

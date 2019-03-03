@@ -13,10 +13,8 @@ namespace WPEFramework {
 		// typedef Web::SignedJSONBodyType<Controller::Download, Crypto::SHA256HMAC> SignedDownload;
 		// Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
 		static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData> > jsonBodyMetaDataFactory(1);
-		static Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message> > jsonBodyRPCFactory(2);
-		static Core::ProxyPoolType<Web::TextBody > jsonBodyRPCResponseFactory(2);
 		static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service> > jsonBodyServiceFactory(1);
-		static Core::ProxyPoolType<Web::TextBody> jsonBodyConfigureFactory(1);
+		static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
 		static Core::ProxyPoolType<Web::JSONBodyType<Controller::Download> > jsonBodyDownloadFactory(1);
 
 		static void DeleteDirectory(const string& directory)
@@ -154,7 +152,7 @@ namespace WPEFramework {
 			ASSERT(request.HasBody() == false);
 
 			if (request.Verb == Web::Request::HTTP_POST) {
-				request.Body(Core::proxy_cast<Web::IBody>(jsonBodyRPCFactory.Element()));
+				request.Body(PluginHost::Factories::Instance().JSONRPC());
 			}
 			else if (request.Verb == Web::Request::HTTP_PUT) {
 				Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
@@ -168,7 +166,7 @@ namespace WPEFramework {
 						request.Body(Core::proxy_cast<Web::IBody>(jsonBodyDownloadFactory.Element()));
 					}
 					else if (index.Current() == _T("Configuration")) {
-						request.Body(Core::proxy_cast<Web::IBody>(jsonBodyConfigureFactory.Element()));
+						request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
 					}
 				}
 			}
@@ -188,23 +186,24 @@ namespace WPEFramework {
 
 			// For now, whatever the URL, we will just, on a get, drop all info we have
 			if (request.Verb == Web::Request::HTTP_POST) {
-				Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+				result = PluginHost::Factories::Instance().Response();
 				result->ErrorCode = Web::STATUS_BAD_REQUEST;
 				result->Message = _T("Request has no JSOBNRPC body!");
 
 				if (request.HasBody() == true) {
-					Core::ProxyType<Web::TextBody> response(jsonBodyRPCResponseFactory.Element());
-					uint32_t errorCode = Invoke(*request.Body<Core::JSONRPC::Message>(), *response);
+					Core::ProxyType<Web::TextBody> response (jsonBodyTextFactory.Element());
+					Core::ProxyType<Core::JSONRPC::Message> answer = Invoke(~0, *request.Body<Core::JSONRPC::Message>());
+					answer->ToString(*response);
 					if (response->empty() == false) {
 						result->Body(response);
 					}
-					if (errorCode != Core::ERROR_NONE) {
+					if (answer->Error.IsSet() == false) {
 						result->ErrorCode = Web::STATUS_OK;
 						result->Message = _T("JSONRPC executed succesfully");
 					}
 					else {
 						result->ErrorCode = Web::STATUS_NO_CONTENT;
-						result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(errorCode).Text();
+						result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(answer->Error.Code).Text();
 					}
 				}
 			}
@@ -286,7 +285,7 @@ namespace WPEFramework {
 					Core::ProxyType<PluginHost::Service> serviceInfo(FromIdentifier(index.Current().Text()));
 
 					if (serviceInfo.IsValid() == true) {
-						Core::ProxyType<Web::TextBody> response(jsonBodyConfigureFactory.Element());
+						Core::ProxyType<Web::TextBody> response(jsonBodyTextFactory.Element());
 
 						*response = serviceInfo->ConfigLine();
 
@@ -616,16 +615,16 @@ namespace WPEFramework {
 				_pluginServer->Notify(message);
 			}
 		}
+		/* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) {
 
-		uint32_t Controller::Invoke(const Core::JSONRPC::Message& inbound, string& response) {
+			Core::ProxyType<Core::JSONRPC::Message> response;
 			uint32_t result = Validate(inbound);
 
 			if (result == Core::ERROR_NONE) {
-				result = JSONRPC::Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
+				// Call the real baseclass, we should be able to handle it.
+				response = PluginHost::JSONRPC::Invoke (channelId, inbound);
 			}
 			else {
-				response.clear();
-
 				if (result == Core::ERROR_INVALID_DESIGNATOR) {
 					Core::ProxyType<PluginHost::Server::Service> service;
 
@@ -633,15 +632,14 @@ namespace WPEFramework {
 
 					if (result == Core::ERROR_NONE) {
 						ASSERT(service.IsValid());
-						PluginHost::IDispatcher* plugin = nullptr;
-						Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(service->QueryInterface(PluginHost::IDispatcher::ID));
-						if (iuptr != nullptr) {
-							plugin = dynamic_cast<PluginHost::IDispatcher*>(iuptr);
+						PluginHost::IDispatcher* plugin = service->Dispatcher();
+						if (plugin != nullptr) {
+							Core::JSONRPC::Message forwarder;
 
-							if (plugin != nullptr) {
-								result = plugin->Invoke(inbound.Id.Value(), inbound.Method(), inbound.Parameters.Value(), response);
-							}
-							iuptr->Release();
+							forwarder.Id = inbound.Id;
+							forwarder.Parameters = inbound.Parameters;
+							forwarder.Designator = inbound.Method();
+							response = plugin->Invoke(channelId, forwarder);
 						}
 						else {
 							result = Core::ERROR_BAD_REQUEST;
@@ -649,19 +647,16 @@ namespace WPEFramework {
 					}
 				}
 
-				if ((response.empty() == true) && (inbound.Id.Value() != static_cast<uint32_t>(~0))) {
-					Core::JSONRPC::Message message;
-					message.Version = _T("2.0");
-					message.Error.SetError(result);
-					message.Error.Text = "Invalid JSONRPC Request";
-					message.Id = inbound.Id.Value();
-					message.ToString(response);
+				if ((response.IsValid() == false) && (inbound.Id.Value() != static_cast<uint32_t>(~0))) {
+					response = Message();
+					response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+					response->Error.SetError(result);
+					response->Error.Text = "Invalid JSONRPC Request";
+					response->Id = inbound.Id.Value();
 				}
 			}
 
-			return (result);
+			return (response);
 		}
-
-
 	}
 }
