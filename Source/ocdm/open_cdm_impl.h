@@ -430,10 +430,11 @@ public:
 
     virtual OCDM::OCDM_RESULT GetSecureStopIds(
                 const std::string & keySystem,
-                uint8_t * ids[],
+                uint8_t ids[],
+                uint8_t idSize,
                 uint32_t & count) {
 
-        return _remoteExt->GetSecureStopIds(keySystem, ids, count);
+        return _remoteExt->GetSecureStopIds(keySystem, ids, idSize, count);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStop(

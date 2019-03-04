@@ -81,7 +81,7 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystemExt* system);
  * \param count number of valid stop Ids
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystemExt* system, uint8_t* Ids[], uint32_t * count);
+OpenCDMError opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystemExt* system, uint8_t Ids[], uint8_t idSize, uint32_t * count);
 
 /**
  * Get a secure stop.

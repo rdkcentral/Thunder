@@ -304,27 +304,27 @@ namespace WPEFramework {
             //
             // virtual OCDM_RESULT GetSecureStopIds(
             //                const std::string & keySystem,
-            //                uint8_t * ids[]) = 0;
+            //                uint8_t * ids[],
+            //                uint8_t idSize,
+            //                uint32_t& count) = 0;
             //
 
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             std::string keySystem = parameters.Text();
-            uint32_t count = parameters.Number<uint32_t>();
-            //TODO: cross check the functionalities
-            uint8_t** ids = (uint8_t**) malloc(MAX_NUM_SECURE_STOPS * sizeof(uint8_t*));
-            for (uint32_t i = 0; i < MAX_NUM_SECURE_STOPS; i++ ) {
-                ids[i] = (uint8_t*) malloc(SESSION_ID_LEN * sizeof(uint8_t));
-            }
-            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            OCDM::OCDM_RESULT result = accessor->GetSecureStopIds(keySystem, ids, count);
-            for (uint32_t i = 0; i < count; i++) {
-                response.Buffer(SESSION_ID_LEN, ids[i]);
-                free(ids[i]);
-            }
-            free(ids);
 
+            const uint8_t* buffer = nullptr;
+            uint8_t idSize = parameters.LockBuffer<uint8_t>(buffer);
+            parameters.UnlockBuffer(idSize);
+            idSize = parameters.Number<uint8_t>();
+            uint8_t* ids = const_cast<uint8_t*>(buffer);
+
+            uint32_t count = parameters.Number<uint32_t>();
+
+            OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
+            OCDM::OCDM_RESULT result = accessor->GetSecureStopIds(keySystem, ids, idSize, count);
+            response.Buffer(idSize, ids);
             response.Number(count);
             response.Number(result);
         },
@@ -840,7 +840,6 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             parameters.UnlockBuffer(challengeSize);
             uint32_t isLDL = parameters.Number<uint32_t>();
 
-            uint32_t orgChallengeSize = challengeSize;
             uint8_t* challenge = const_cast<uint8_t*>(buffer);
 
             OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
@@ -1191,25 +1190,22 @@ public:
 
         virtual OCDM::OCDM_RESULT GetSecureStopIds(
                 const std::string & keySystem,
-                uint8_t * Ids[],
+                uint8_t Ids[],
+                uint8_t idSize,
                 uint32_t & count) override
         {
             IPCMessage newMessage(BaseClass::Message(7));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Text(keySystem);
-            for (uint32_t i = 0; i < count; i++) {
-                writer.Buffer(SESSION_ID_LEN, Ids[i]);
-            }
-
+            writer.Buffer(idSize, Ids);
+            writer.Number(idSize);
             writer.Number(count);
             Invoke(newMessage);
 
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            reader.Buffer(idSize, Ids);
             count = reader.Number<uint32_t>();
-            for (uint32_t i = 0; i < count; i++) {
-                reader.Buffer(SESSION_ID_LEN, Ids[i]);
-            }
 
             return reader.Number<OCDM::OCDM_RESULT>();
         }

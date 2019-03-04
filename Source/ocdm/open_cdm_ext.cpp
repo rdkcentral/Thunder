@@ -174,10 +174,10 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystemExt* system)
     return (OpenCDMError)accessor->ResetSecureStops(system->m_keySystem);
 }
 
-OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystemExt* system, uint8_t * ids[], uint32_t * count)
+OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystemExt* system, uint8_t ids[], uint8_t idSize, uint32_t * count)
 {
     OpenCDMAccessor* accessor = system->m_accessor;
-    return (OpenCDMError)accessor->GetSecureStopIds(system->m_keySystem, ids, *count);
+    return (OpenCDMError)accessor->GetSecureStopIds(system->m_keySystem, ids, idSize, *count);
 }
 
 OpenCDMError opencdm_system_ext_get_secure_stop(OpenCDMSystemExt* system, const uint8_t sessionID[], uint32_t sessionIDLength, uint8_t rawData[], uint16_t * rawSize)

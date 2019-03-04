@@ -369,7 +369,8 @@ public:
     virtual uint32_t ResetSecureStops() = 0;
 
     virtual CDMi_RESULT GetSecureStopIds(
-            uint8_t * ids[],
+            uint8_t ids[],
+            uint8_t idSize,
             uint32_t & count) = 0;
 
     virtual CDMi_RESULT GetSecureStop(
