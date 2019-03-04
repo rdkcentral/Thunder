@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27703.2035
@@ -88,6 +88,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jsonrpc", "Source\jsonrpc\j
 		{52613581-6E99-4ECB-826D-8AD0BA812258} = {52613581-6E99-4ECB-826D-8AD0BA812258}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JSONRPCTest", "..\WPEFrameworkTests\Functional\JSONRPCTest\JSONRPCTest.vcxproj", "{D13BB6BD-114F-4983-8F0C-1233ADE5363A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -146,6 +148,10 @@ Global
 		{923A24C2-8FDA-82C7-B40B-B2A4F5462CB9}.Debug|x86.Build.0 = Debug|Win32
 		{923A24C2-8FDA-82C7-B40B-B2A4F5462CB9}.Release|x86.ActiveCfg = Release|Win32
 		{923A24C2-8FDA-82C7-B40B-B2A4F5462CB9}.Release|x86.Build.0 = Release|Win32
+		{D13BB6BD-114F-4983-8F0C-1233ADE5363A}.Debug|x86.ActiveCfg = Debug|Win32
+		{D13BB6BD-114F-4983-8F0C-1233ADE5363A}.Debug|x86.Build.0 = Debug|Win32
+		{D13BB6BD-114F-4983-8F0C-1233ADE5363A}.Release|x86.ActiveCfg = Release|Win32
+		{D13BB6BD-114F-4983-8F0C-1233ADE5363A}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
