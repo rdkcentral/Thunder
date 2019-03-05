@@ -97,6 +97,8 @@ namespace RPC {
 		, _announceEvent(false, true)
 		, _handler(handler)
 		, _announcements(*this)
+        , _observer(nullptr)
+        , _adminLock()
 	{
 		CreateFactory<RPC::AnnounceMessage>(1);
 		CreateFactory<RPC::InvokeMessage>(2);
@@ -104,7 +106,7 @@ namespace RPC {
 		Register(_handler->AnnounceHandler());
 		_handler->AnnounceHandler(&_announcements);
 
-                // For now clients do not support announce messages from the server...
+        // For now clients do not support announce messages from the server...
 		// Register(_handler->AnnounceHandler());
 	}
 
@@ -117,6 +119,7 @@ namespace RPC {
 		_handler->AnnounceHandler(nullptr);
 		DestroyFactory<RPC::InvokeMessage>();
 		DestroyFactory<RPC::AnnounceMessage>();
+		Unsubscribe();
     }
 
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
@@ -169,6 +172,26 @@ namespace RPC {
         return (BaseClass::Close(waitTime));
     }
 
+    void CommunicatorClient::Subscirbe(const OnRevoked &callback)
+    {
+        TRACE_L1("Subscribe revoked connection callback");
+        _adminLock.Lock();
+
+        _observer = callback;
+
+        _adminLock.Unlock();
+    }
+
+    void CommunicatorClient::Unsubscribe()
+    {
+        TRACE_L1("Unsubscribe revoked connection callback");
+        _adminLock.Lock();
+
+        _observer = nullptr;
+
+        _adminLock.Unlock();
+    }
+
     /* virtual */ void CommunicatorClient::StateChange()
     {
         BaseClass::StateChange();
@@ -190,9 +213,12 @@ namespace RPC {
         {
             TRACE_L1("Connection to the server is down (ticket has been raised: WPE-255)");
 
+            // Call OnRevoked callback to inform client about connection issue
+            if (_observer != nullptr) {
+                _observer();
+            }
         }
     }
-
 
     /* virtual */ void CommunicatorClient::Dispatch(Core::IIPC & element)
     {
