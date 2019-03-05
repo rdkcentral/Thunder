@@ -8,7 +8,7 @@ namespace JSONRPC {
 
     class Client;
 
-    class Channel {
+    class EXTERNAL Channel {
     private:
         // -----------------------------------------------------------------------------------------------
         // Create a resource allocator for all JSON objects used in these tests
@@ -44,7 +44,7 @@ namespace JSONRPC {
 
         public:
             ChannelImpl(Channel& parent, const Core::NodeId& remoteNode, const string& callsign)
-                : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), "", "",  false, true, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
+                : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), "", "",  false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
                 , _parent(parent) {
             }
             virtual ~ChannelImpl() {
@@ -102,6 +102,9 @@ namespace JSONRPC {
         static Core::ProxyType<Core::JSONRPC::Message> Message() {
             return (FactoryImpl::Instance().Element(string()));
         }
+		bool IsOperational() const {
+			return (const_cast<Channel&>(*this).Open(0));
+		}
         uint32_t Sequence () const {
             return (++_sequence);
         }
@@ -123,7 +126,15 @@ namespace JSONRPC {
             _channel.Submit(message);
         }
 
-    private:
+	protected:
+		bool Open(const uint32_t waitTime) {
+			bool result = true;
+			if (_channel.IsOpen() == false) {
+				result = (_channel.Open(waitTime) == Core::ERROR_NONE);
+			}
+			return (result);
+		}
+	private:
         uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound);
 
     private:
@@ -133,7 +144,7 @@ namespace JSONRPC {
         std::list<Client*> _observers;
     };
 
-    class Client {
+    class EXTERNAL Client {
     private:
         Client() = delete;
         Client(const Client&) = delete;
@@ -146,7 +157,7 @@ namespace JSONRPC {
 
         public:
             Entry()
-                : _signal(true, false) 
+                : _signal(false, true) 
                 , _response() {
             }
             ~Entry() {
@@ -179,12 +190,13 @@ namespace JSONRPC {
         }
 
         typedef std::map<uint32_t, Entry > PendingMap;
+		typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
 
     public:
         Client(const string& remoteCallsign, const TCHAR* localCallsign = nullptr, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
-            , _channel(Channel::Instance(_connectId, string("/Service/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
+            , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
             , _handler()
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
             , _pendingQueue() {
@@ -202,15 +214,19 @@ namespace JSONRPC {
                 size_t pos = designator.find_last_of('.');
                 if (pos != string::npos) {
                     string number = designator.substr(pos+1);
+					designator = designator.substr(0, pos);
                     if ( (number.length() > 0) &&
                          (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) ) {
                         versions.push_back(static_cast<uint8_t>(atoi(number.c_str())));
                     }
                 }
+				_handler.Designator(designator, versions);
             }
+			_channel->Register(*this);
         }
         virtual ~Client() {
-        }
+			_channel->Unregister(*this);
+		}
 
     public:
         const string& Callsign() const {
@@ -219,58 +235,75 @@ namespace JSONRPC {
         void Callsign(const string& callsign) {
             _callsign = callsign;
         }
-        template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
-        uint32_t Register (const string& eventName, const METHOD& method, REALOBJECT* objectPtr, const uint32_t waitTime) {
-            _handler.Register<INBOUND,OUTBOUND,METHOD,REALOBJECT>(eventName, method, objectPtr);
-            const string parameters ("{ \"event\": \"" + eventName + "\", \"callsign\": \"" + _handler.Callsign() + "\"}" );
+        template<typename INBOUND, typename METHOD>
+        uint32_t Subscribe (const uint32_t waitTime, const string& eventName, const METHOD& method) {
+			std::function<void(const INBOUND& parameters)> actualMethod = method;
+			InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+				INBOUND inbound;
+				inbound = parameters;
+				actualMethod(inbound);
+				result.clear();
+				return (Core::ERROR_NONE);
+			};
+            _handler.Register(eventName, implementation);
+            const string parameters ("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}" );
             Core::ProxyType<Core::JSONRPC::Message> response;
 
-            uint32_t result = Send("register", parameters, response, waitTime);
+            uint32_t result = Send(waitTime, "register", parameters, response);
 
-            if ( (result != Core::ERROR_NONE) || (response->Error.IsSet() == true)) {
+            if ( (result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true) ) {
                 _handler.Unregister(eventName);
             }
 
             return (result);
         }
-        template<typename METHOD, typename REALOBJECT>
-        uint32_t Register (const string& eventName, const METHOD& method, REALOBJECT objectPtr, const uint32_t waitTime) {
-            _handler.Register<METHOD,REALOBJECT>(eventName, method, objectPtr);
-            const string parameters ("{ \"event\": \"" + eventName + "\", \"callsign\": \"" + _handler.Callsign() + "\"}" );
+		template<typename INBOUND, typename METHOD, typename REALOBJECT>
+		uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr) {
+			std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+			InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+				INBOUND inbound;
+				inbound = parameters;
+				actualMethod(inbound);
+				result.clear();
+				return (Core::ERROR_NONE);
+			};
+			_handler.Register(eventName, implementation);
+			const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}");
+			Core::ProxyType<Core::JSONRPC::Message> response;
+
+			uint32_t result = Send(waitTime, "register", parameters, response);
+
+			if ((result != Core::ERROR_NONE) || (response.IsValid() == false) || (response->Error.IsSet() == true)) {
+				_handler.Unregister(eventName);
+			}
+
+			return (result);
+		}
+		void Unsubscribe (const uint32_t waitTime, const string& eventName) {
+            const string parameters ("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}" );
             Core::ProxyType<Core::JSONRPC::Message> response;
 
-            uint32_t result = Send("register", parameters, response, waitTime);
-
-            if ( (result != Core::ERROR_NONE) || (response->Error.IsSet() == true)) {
-                _handler.Unregister(eventName);
-            }
-
-            return (result);
-        }
-        void Unregister (const string& eventName, const uint32_t waitTime) {
-            const string parameters ("{ \"event\": \"" + eventName + "\", \"callsign\": \"" + _handler.Callsign() + "\"}" );
-            Core::ProxyType<Core::JSONRPC::Message> response;
-
-            Send("unregister", parameters, response, waitTime);
+            Send(waitTime, "unregister", parameters, response);
 
             _handler.Unregister(eventName);
         }
         template <typename PARAMETERS, typename RESPONSE>
-        uint32_t Invoke (const string& method, const PARAMETERS& parameters, RESPONSE& response, const uint32_t waitTime) {
-            uint32_t result = Send(method, parameters.ToString(), response, waitTime);
+        uint32_t Invoke (const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound) {
+			Core::ProxyType<Core::JSONRPC::Message> response;
+            uint32_t result = Send(waitTime, method, parameters, response);
             if (result == Core::ERROR_NONE) {
-                response.FromString(response->result.Value());
+				inbound = response->Result.Value();
             }
             return (result);
         }
-        uint32_t Invoke (const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response, const uint32_t waitTime) {
-            return (Send(method, parameters, response, waitTime));
+        uint32_t Invoke (const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response) {
+            return (Send(waitTime, method, parameters, response));
         }
 
     private:
         friend class Channel;
 
-        uint32_t Send (const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response, const uint32_t waitTime) {
+        uint32_t Send (const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response) {
             uint32_t result = Core::ERROR_UNAVAILABLE;
 
             if (_channel.IsValid() == true) {

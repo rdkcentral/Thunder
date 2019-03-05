@@ -37,35 +37,41 @@ namespace JSONRPC {
             static Core::ProxyType<Channel> Instance(const Core::NodeId& remoteNode, const string& callsign) {
                 return (_administrator.InstanceImpl(remoteNode, callsign));
             }
-            static uint32_t Release (const Core::ProxyType<Channel>& object) {
+            static uint32_t Release (ChannelProxy* object) {
                 return (_administrator.ReleaseImpl(object));
             }
 
         private:
-            Core::ProxyType<Channel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign) {
-                Core::ProxyType<Channel> result;
+			Core::ProxyType<Channel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign) {
+				Core::ProxyType<Channel> result;
 
-                _adminLock.Lock();
+				_adminLock.Lock();
 
-                string searchLine = remoteNode.HostName() + '@' + callsign;
+				string searchLine = remoteNode.HostName() + '@' + callsign;
 
-                CallsignMap::iterator index (_callsignMap.find(searchLine));
-                if (index != _callsignMap.end()) {
-                    result = Core::ProxyType<Channel>(*(index->second));
-                }
-                else {
-                    ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign);
-                    _callsignMap[searchLine] = entry;
-                    result = Core::ProxyType<Channel>(static_cast<IReferenceCounted*>(entry), entry);
-                }
-                _adminLock.Unlock();
+				CallsignMap::iterator index(_callsignMap.find(searchLine));
+				if (index != _callsignMap.end()) {
+					result = Core::ProxyType<Channel>(*(index->second));
+				}
+				else {
+					ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign);
+					_callsignMap[searchLine] = entry;
+					result = Core::ProxyType<ChannelProxy>(*entry);
+				}
+				_adminLock.Unlock();
+
+				ASSERT(result.IsValid() == true);
+
+				if (result.IsValid() == true) {
+					static_cast<ChannelProxy&>(*result).Open(100);
+				}
 
                 return (result);
             }
-            uint32_t ReleaseImpl (const Core::ProxyType<Channel>& object) {
+            uint32_t ReleaseImpl (ChannelProxy* object) {
                 _adminLock.Lock();
 
-                uint32_t result = object.Release();
+				uint32_t result = object->ActualRelease();
 
                 if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
                     // Oke remove the entry from the MAP.
@@ -103,9 +109,16 @@ namespace JSONRPC {
     public:
         virtual uint32_t Release() const override
         {
-            return (Administrator::Release(Core::ProxyType<Channel>(*const_cast<ChannelProxy*>(this))));
+            return (Administrator::Release(const_cast<ChannelProxy*>(this)));
         }
 
+	private:
+		uint32_t ActualRelease() const {
+			return (Core::ProxyObject<Channel>::Release());
+		}
+		bool Open(const uint32_t waitTime) {
+			return (Channel::Open(waitTime));
+		}
     private:
         Core::CriticalSection _adminLock;
     };

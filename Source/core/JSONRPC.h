@@ -53,7 +53,12 @@ namespace JSONRPC {
             }
 
         public:
-            void SetError(const uint32_t frameworkError) {
+			void Clear() {
+				Code.Clear();
+				Text.Clear();
+				Data.Clear();
+			}
+			void SetError(const uint32_t frameworkError) {
                 switch (frameworkError) {
                 case Core::ERROR_BAD_REQUEST:
                     Code = -32603; // Internal Error
@@ -123,6 +128,14 @@ namespace JSONRPC {
 			}
 			return (result);
 		}
+		void Clear() {
+			JSONRPC.Clear();
+			Id.Clear();
+			Designator.Clear();
+			Parameters.Clear();
+			Result.Clear();
+			Error.Clear();
+		}
 		string Callsign() const {
 			return (Callsign(Designator.Value()));
         }
@@ -177,9 +190,9 @@ namespace JSONRPC {
             }
             return (result);
         }
-        template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
-        void Register (const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
-            std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
+        template<typename INBOUND, typename OUTBOUND, typename METHOD>
+        void Register (const string& methodName, const METHOD& method) {
+            std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                                                INBOUND inbound; 
                                                OUTBOUND outbound;
@@ -190,14 +203,30 @@ namespace JSONRPC {
                                             };
             Register(methodName, implementation);
         }
-        void Register (const string& methodName, const InvokeFunction& lambda) {
+		template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+		void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
+			std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
+			InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+				INBOUND inbound;
+				OUTBOUND outbound;
+				inbound = parameters;
+				uint32_t code = actualMethod(inbound, outbound);
+				result = outbound;
+				return (code);
+			};
+			Register(methodName, implementation);
+		}
+		void Register (const string& methodName, const InvokeFunction& lambda) {
             ASSERT (_handlers.find(methodName) == _handlers.end());
             _handlers[methodName] = lambda;
         }
         void Unregister (const string& methodName) {
             HandlerMap::iterator index = _handlers.find(methodName);
 
-            if (index == _handlers.end()) {
+			// Only unregister if you registered.
+			ASSERT(index != _handlers.end());
+
+            if (index != _handlers.end()) {
                 _handlers.erase(index);
             }
         }

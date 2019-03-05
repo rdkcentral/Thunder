@@ -1133,6 +1133,7 @@ namespace Core {
 
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
+				bool noScoping = true;
                 bool finished = false;
                 uint16_t result = 0;
                 ASSERT(maxLength > 0);
@@ -1153,21 +1154,21 @@ namespace Core {
                 while ((result < maxLength) && (finished == false)) {
                     if (escapedSequence == false) {
                         if (EnterScope(stream[result])) {
+							noScoping = false;
                             _scopeCount++;
-                        } else if (ExitScope(stream[result]) || EndOfQuotedString(stream[result])) {
-                            _scopeCount--;
-                        }
+                        } else if ((_scopeCount > 0) && (ExitScope(stream[result]) || EndOfQuotedString(stream[result]))) {
+							_scopeCount--;
+						}
+						finished = (((_scopeCount & ScopeMask) == 0) && ((stream[result] == '\"') || (stream[result] == '}') || (stream[result] == ']') || (stream[result] == ',') || (stream[result] == ' ') || (stream[result] == '\t')));
+					}
 
-                        finished = (((_scopeCount & ScopeMask) == 0) && ((stream[result] == '\"') || (stream[result] == '}') || (stream[result] == ']') || (stream[result] == ',') || (stream[result] == ' ') || (stream[result] == '\t')));
-                    }
-
-                    if ((finished == false) || ExitScope(stream[result])) {
+                    if ((finished == false) || ((noScoping == false) &&  ExitScope(stream[result]))) {
                         escapedSequence = (stream[result] == '\\');
                         // Write the amount we possibly can..
                         _value += stream[result];
                         // Move on to the next position
                         result++;
-                    } else if (stream[result] != ',') {
+                    } else if (stream[result] == '"') {
                         result++;
                     }
                 }

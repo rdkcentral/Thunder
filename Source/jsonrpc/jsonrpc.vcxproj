@@ -61,7 +61,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__MODULE_CDMI__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__MODULE_JSONRPC__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32;</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
@@ -80,7 +80,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>__MODULE_CDMI__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32;NDEBUG</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__MODULE_JSONRPC__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32;NDEBUG</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>

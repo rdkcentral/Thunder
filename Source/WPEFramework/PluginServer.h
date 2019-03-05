@@ -1914,7 +1914,7 @@ namespace WPEFramework {
 
 							if (_jsonrpc == true) {
 								Core::ProxyType<Core::JSONRPC::Message> message (Core::proxy_cast<Core::JSONRPC::Message>(_element));
-								PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(&(*_service));
+								PluginHost::IDispatcher* dispatcher = _service->Dispatcher();
 
 								ASSERT(dispatcher != nullptr);
 								ASSERT(message.IsValid() == true);
@@ -2137,7 +2137,12 @@ namespace WPEFramework {
                 Core::ProxyType<Core::JSON::IElement> result;
 
                 if (_service.IsValid() == true) {
-                    result = _service->Inbound(identifier);
+					if (State() == JSONRPC) {
+						result = Factories::Instance().JSONRPC();
+					}
+					else {
+						result = _service->Inbound(identifier);
+					}
                 }
 
                 return (result);

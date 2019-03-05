@@ -5,8 +5,8 @@
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
   "volatilepath": "D:/WPEFramework/artifacts/temp",
-  "datapath": "D:/WPEFrameworkPlugins/artifacts/Data",
-  "systempath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "systempath": "D:/WPEFramework/artifacts/Debug",
   "proxystubpath": "D:/WPEFramework/artifacts/Debugproxystubs",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
@@ -23,6 +23,12 @@
           "default": "WebKitBrowser"
         }
       }
+    },
+    {
+      "callsign": "TestPlugin",
+      "locator": "libtestplugin.so",
+      "classname": "TestPlugin",
+      "autostart": true
     },
     {
       "callsign": "WebServer",
