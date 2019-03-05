@@ -1925,9 +1925,10 @@ namespace WPEFramework {
 							}
 							else {
 								_element = _service->Inbound(_ID, *_element);
-								_service.Release();
 							}
-                        }
+
+							_service.Release();
+						}
 
                         if (_element.IsValid()) {
                             // Fire and forget, We are done !!!

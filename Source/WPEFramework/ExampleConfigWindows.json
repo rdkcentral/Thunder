@@ -6,7 +6,7 @@
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
   "volatilepath": "D:/WPEFramework/artifacts/temp",
   "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
-  "systempath": "D:/WPEFramework/artifacts/Debug",
+  "systempath": "D:/WPEFrameworkPlugins/artifacts/Debug",
   "proxystubpath": "D:/WPEFramework/artifacts/Debugproxystubs",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
@@ -25,9 +25,9 @@
       }
     },
     {
-      "callsign": "TestPlugin",
-      "locator": "libtestplugin.so",
-      "classname": "TestPlugin",
+      "callsign": "JSONRPCExamplePlugin",
+      "locator": "libjsonrpcexampleplugin.so",
+      "classname": "JSONRPCExamplePlugin",
       "autostart": true
     },
     {
