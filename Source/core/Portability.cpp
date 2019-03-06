@@ -7,6 +7,7 @@
 
 #ifdef __LINUX__
 #include <signal.h>
+#include <execinfo.h>
 #include <atomic>
 #endif
 
