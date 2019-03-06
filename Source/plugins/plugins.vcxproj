@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -89,6 +89,7 @@
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="JSONRPC.cpp" />
     <ClCompile Include="MetaData.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="Service.cpp" />
@@ -108,6 +109,7 @@
     <ClInclude Include="IPlugin.h" />
     <ClInclude Include="ISubSystem.h" />
     <ClInclude Include="ISystemInfo.h" />
+    <ClInclude Include="JSONRPC.h" />
     <ClInclude Include="MetaData.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="plugins.h" />

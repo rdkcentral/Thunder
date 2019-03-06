@@ -538,6 +538,12 @@ namespace Core {
 
                 return (*this);
             }
+			NumberType<TYPE, SIGNED, BASETYPE>& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline const TYPE Default() const
             {
@@ -551,6 +557,12 @@ namespace Core {
             {
                 return Value();
             }
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
 
             // IElement interface methods
             virtual bool IsSet() const override
@@ -669,6 +681,12 @@ namespace Core {
 
                 return (*this);
             }
+			EnumType<ENUMERATE>& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline const ENUMERATE Default() const
             {
@@ -682,7 +700,13 @@ namespace Core {
             {
                 return Value();
             }
-            const TCHAR* Data() const
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
+			const TCHAR* Data() const
             {
                 return (_value.Data());
             }
@@ -787,6 +811,12 @@ namespace Core {
 
                 return (*this);
             }
+			Boolean& operator=(const string& RHS)
+			{
+				Deserialize(RHS);
+
+				return (*this);
+			}
 
             inline bool Value() const
             {
@@ -800,6 +830,12 @@ namespace Core {
             {
                 return Value();
             }
+			inline operator string () const
+			{
+				string result;
+				Serialize(result);
+				return (result);
+			}
 
             // IElement interface methods
             virtual bool IsSet() const override
@@ -1097,6 +1133,7 @@ namespace Core {
 
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
+				bool noScoping = true;
                 bool finished = false;
                 uint16_t result = 0;
                 ASSERT(maxLength > 0);
@@ -1117,21 +1154,21 @@ namespace Core {
                 while ((result < maxLength) && (finished == false)) {
                     if (escapedSequence == false) {
                         if (EnterScope(stream[result])) {
+							noScoping = false;
                             _scopeCount++;
-                        } else if (ExitScope(stream[result]) || EndOfQuotedString(stream[result])) {
-                            _scopeCount--;
-                        }
+                        } else if ((_scopeCount > 0) && (ExitScope(stream[result]) || EndOfQuotedString(stream[result]))) {
+							_scopeCount--;
+						}
+						finished = (((_scopeCount & ScopeMask) == 0) && ((stream[result] == '\"') || (stream[result] == '}') || (stream[result] == ']') || (stream[result] == ',') || (stream[result] == ' ') || (stream[result] == '\t')));
+					}
 
-                        finished = (((_scopeCount & ScopeMask) == 0) && ((stream[result] == '\"') || (stream[result] == '}') || (stream[result] == ']') || (stream[result] == ',') || (stream[result] == ' ') || (stream[result] == '\t')));
-                    }
-
-                    if ((finished == false) || ExitScope(stream[result])) {
+                    if ((finished == false) || ((noScoping == false) &&  ExitScope(stream[result]))) {
                         escapedSequence = (stream[result] == '\\');
                         // Write the amount we possibly can..
                         _value += stream[result];
                         // Move on to the next position
                         result++;
-                    } else if (stream[result] != ',') {
+                    } else if (stream[result] == '"') {
                         result++;
                     }
                 }
@@ -1287,6 +1324,18 @@ namespace Core {
                     index++;
                 }
             }
+			inline operator string () const
+			{
+				string result;
+				this->ToString(result);
+				return (result);
+			}
+			inline Container& operator= (const string& RHS)
+			{
+				this->FromString(RHS);
+				return (*this);
+			}
+
 
         private:
             // IElement interface methods (private)
@@ -1652,6 +1701,17 @@ namespace Core {
 
                 return (*this);
             }
+			inline operator string () const
+			{
+				string result;
+				ToString(result);
+				return (result);
+			}
+			inline ArrayType<ELEMENT>& operator= (const string& RHS)
+			{
+				FromString(RHS);
+				return (*this);
+			}
 
         private:
             // IElement interface methods (private)

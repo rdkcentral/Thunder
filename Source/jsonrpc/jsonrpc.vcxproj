@@ -10,11 +10,19 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Channel.h" />
+    <ClInclude Include="jsonrpc.h" />
+    <ClInclude Include="Module.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Channel.cpp" />
+    <ClCompile Include="Module.cpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{ECB4F390-087E-4E94-BD5D-82D4AC832067}</ProjectGuid>
-    <Keyword>Win32Proj</Keyword>
-    <RootNamespace>tracing</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{923A24C2-8FDA-82C7-B40B-B2A4F5462CB9}</ProjectGuid>
+    <RootNamespace>cdmi</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -50,16 +58,16 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>__MODULE_TRACING__;_MBCS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>__MODULE_JSONRPC__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32;</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <BuildLog>
       <Path>$(IntDir)$(MSBuildProjectName).log</Path>
@@ -68,42 +76,24 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <PrecompiledHeader>
-      </PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>__MODULE_TRACING__;_MBCS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>__MODULE_JSONRPC__;_MBCS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions);WIN32;NDEBUG</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>..</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <BuildLog>
       <Path>$(IntDir)$(MSBuildProjectName).log</Path>
     </BuildLog>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClInclude Include="ITraceControl.h" />
-    <ClInclude Include="ITraceMedia.h" />
-    <ClInclude Include="Logging.h" />
-    <ClInclude Include="Module.h" />
-    <ClInclude Include="TraceCategories.h" />
-    <ClInclude Include="TraceControl.h" />
-    <ClInclude Include="TraceMedia.h" />
-    <ClInclude Include="TraceUnit.h" />
-    <ClInclude Include="Tracing.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="Logging.cpp" />
-    <ClCompile Include="Module.cpp" />
-    <ClCompile Include="TraceCategories.cpp" />
-    <ClCompile Include="TraceMedia.cpp" />
-    <ClCompile Include="TraceUnit.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

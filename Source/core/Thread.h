@@ -36,9 +36,17 @@ namespace WPEFramework {
 namespace Core {
     template <typename THREADLOCALSTORAGE>
     class ThreadLocalStorageType {
-        friend class Thread;
-
     private:
+#ifdef __POSIX__
+        static void destruct (void* value)
+        {
+            printf("Destructor ThreadControlBlockInfo <0x%p>\n", value);
+            if (value != nullptr) {
+                delete reinterpret_cast<THREADLOCALSTORAGE*>(value);
+            }
+        }
+#endif
+
         ThreadLocalStorageType()
         {
             TRACE_L5("Constructor ThreadControlBlockInfo <0x%X>", TRACE_POINTER(this));
@@ -50,7 +58,7 @@ namespace Core {
 #endif
 
 #ifdef __POSIX__
-            if (pthread_key_create(&m_Key, nullptr) != 0) {
+            if (pthread_key_create(&m_Key, &destruct) != 0) {
                 ASSERT(false);
             }
 #endif
@@ -79,46 +87,27 @@ namespace Core {
             return (g_Singleton);
         }
 
-        THREADLOCALSTORAGE* Context()
+        THREADLOCALSTORAGE& Context()
         {
 #ifdef __WIN32__
             void* l_Result = TlsGetValue(m_Index);
-#endif
 
-#ifdef __POSIX__
-            void* l_Result = pthread_getspecific(m_Key);
-#endif
-
-            return reinterpret_cast<THREADLOCALSTORAGE*>(l_Result);
-        }
-
-        const THREADLOCALSTORAGE* Context() const
-        {
-#ifdef __WIN32__
-            void* l_Result = TlsGetValue(m_Index);
-#endif
-
-#ifdef __POSIX__
-            void* l_Result = pthread_getspecific(m_Key);
-#endif
-
-            return reinterpret_cast<const THREADLOCALSTORAGE*>(l_Result);
-        }
-
-    private:
-        void Context(THREADLOCALSTORAGE* l_Info)
-        {
-#ifdef __WIN32__
-            if (TlsSetValue(m_Index, &l_Info) == FALSE) {
-                ASSERT(false);
+            if (l_Result == nullptr) {
+                l_Result = new THREADLOCALSTORAGE;
+                TlsSetValue(m_Index, l_Result);
             }
 #endif
 
 #ifdef __POSIX__
-            if (pthread_setspecific(m_Key, &l_Info) != 0) {
-                ASSERT(false);
+            void* l_Result = pthread_getspecific(m_Key);
+
+            if (l_Result == nullptr) {
+                l_Result = new THREADLOCALSTORAGE;
+                pthread_setspecific(m_Key, l_Result);
             }
 #endif
+
+            return *(reinterpret_cast<THREADLOCALSTORAGE*>(l_Result));
         }
 
     private:
@@ -194,11 +183,11 @@ namespace Core {
         static ::ThreadId ThreadId();
 
         template <typename STORAGETYPE>
-        static STORAGETYPE* GetContext()
+        static STORAGETYPE& GetContext()
         {
             Core::ThreadLocalStorageType<STORAGETYPE>& block = Core::ThreadLocalStorageType<STORAGETYPE>::Instance();
 
-            return (block.GetContext());
+            return (block.Context());
         }
 #ifdef __LINUX__
         inline void Signal(const int signal) const

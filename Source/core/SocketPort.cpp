@@ -704,30 +704,33 @@ void SocketPort::Handle (const uint16_t flagsSet) {
     if ((flagsSet != 0) || (breakIssued == true)) {
 
     #ifdef __WIN32__
-    if (IsListening()) {
-        if ((flagsSet & FD_ACCEPT) != 0) {
-            // This triggeres an Addition of clients
-            Accepted();
-        }
-    } else if (IsOpen()) {
+	if ((flagsSet & FD_CLOSE) != 0) {
+		Closed();
+	}
+	else if (IsListening()) {
+		if ((flagsSet & FD_ACCEPT) != 0) {
+			// This triggeres an Addition of clients
+			Accepted();
+		}
+	}
+	else if (IsOpen()) {
         if ( ((flagsSet & FD_WRITE) != 0) || (breakIssued == true) )  {
             Write();
         }
         if ((flagsSet & FD_READ) != 0) {
             Read();
         }
-    } else if (IsConnecting()) {
-        if ( (flagsSet & FD_CONNECT) != 0) {
-            Opened();
-            m_State |= UPDATE;
-        }
     }
-    else if ((flagsSet & FD_CLOSE) != 0) {
-        Closed();
+	else if ( (flagsSet & FD_CONNECT) != 0) {
+		Opened();
+        m_State |= UPDATE;
     }
 
 #else
-    if (IsListening()) {
+	if ((flagsSet & POLLHUP) != 0) {
+		Closed();
+	}
+	else  if (IsListening()) {
         if ((flagsSet & POLLIN) != 0) {
             // This triggeres an Addition of clients
             Accepted();
@@ -739,13 +742,8 @@ void SocketPort::Handle (const uint16_t flagsSet) {
         if ((flagsSet & POLLIN) != 0) {
             Read();
         }
-    } else if (IsConnecting()) {
-        if ( (flagsSet & POLLOUT) != 0) {
-            Opened();
-        }
-    }
-    else if ((flagsSet & POLLHUP) != 0) {
-        Closed();
+    } else if ((IsConnecting() == true) && ((flagsSet & POLLOUT) != 0)) {
+        Opened();
     }
 #endif
     }

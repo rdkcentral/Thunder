@@ -27,6 +27,7 @@ ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
 namespace PluginHost {
 /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
+/* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Service::_missingHandler(Core::ProxyType<Web::Response>::Create());
 /* static */ Core::ProxyType<Web::Response> Server::Service::_unavailableHandler(Core::ProxyType<Web::Response>::Create());
@@ -47,6 +48,7 @@ namespace PluginHost {
 
 
 static const TCHAR _defaultControllerCallsign[] = _T("Controller");
+static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
 
 static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor) {
     Core::NodeId result(configuration.Binding.Value().c_str());
@@ -328,10 +330,16 @@ uint32_t Server::Service::Activate(const PluginHost::IShell::reason why) {
                 State(DEACTIVATED);
                 _administrator.StateChange(this);
             } else {
-		const string webUI (PluginHost::Service::Configuration().WebUI.Value());
+				const string webUI (PluginHost::Service::Configuration().WebUI.Value());
                 if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false) ) {
                     EnableWebServer(webUI, EMPTY_STRING);
                 }
+
+				PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+
+				if (dispatcher != nullptr) {
+					dispatcher->Activate(this);
+				}
 
                 SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                 Lock();
@@ -386,7 +394,13 @@ uint32_t Server::Service::Deactivate(const reason why) {
             _handler->Deinitialize(this);
 
             Lock();
-        }
+	
+			PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+
+			if (dispatcher != nullptr) {
+				dispatcher->Deactivate();
+			}
+		}
 
         SYSLOG(Logging::Shutdown, (_T("Deactivated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
 
@@ -410,6 +424,10 @@ uint32_t Server::Service::Deactivate(const reason why) {
     return (result);
 }
 
+/* virtual */ uint32_t Server::Service::Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) {
+    return(_administrator.Submit(id, response));
+}
+
 /* virtual */ ISubSystem* Server::Service::SubSystems() {
     return (_administrator.SubSystemsInterface());
 }
@@ -423,29 +441,45 @@ uint32_t Server::Service::Deactivate(const reason why) {
     _administrator.Notification(fullMessage);
 }
 
-Core::ProxyType<PluginHost::Server::Service> Server::ServiceMap::FromLocator(const string& identifier, bool& correctHeader) {
-	Core::ProxyType<PluginHost::Server::Service> result;
-	const string& locator(_webbridgeConfig.WebPrefix());
+uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall) {
+	uint32_t result = Core::ERROR_BAD_REQUEST;
+	const string& serviceHeader(_webbridgeConfig.WebPrefix());
+	const string& JSONRPCHeader(_webbridgeConfig.JSONRPCPrefix());
 
 	// Check the header (prefix part)
-	correctHeader = (identifier.compare(0, locator.length(), locator.c_str()) == 0);
+	if (identifier.compare(0, serviceHeader.length(), serviceHeader.c_str()) == 0) {
 
-	// Yippie the path prefix keyword is found correctly.
-	if ((correctHeader == true) && (identifier.length() > (locator.length() + 1))) {
-		size_t length;
-		uint32_t offset = locator.length() + 1; /* skip the slash after */
+		serviceCall = true;
 
-		const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
-
-		_adminLock.Lock();
-
-		std::map<const string, Core::ProxyType<Service> >::iterator index(_services.find(callSign));
-
-		if (index != _services.end()) {
-			result = index->second;
+		if (identifier.length() <= (serviceHeader.length() + 1)) {
+			service = _server._controller;
+			result = Core::ERROR_NONE;
 		}
+		else {
+			size_t length;
+			uint32_t offset = serviceHeader.length() + 1; /* skip the slash after */
 
-		_adminLock.Unlock();
+			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
+
+			result = FromIdentifier(callSign, service);
+		}
+	}
+	else if (identifier.compare(0, JSONRPCHeader.length(), JSONRPCHeader.c_str()) == 0) {
+
+		serviceCall = false;
+
+		if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
+			service = _server._controller;
+			result = Core::ERROR_NONE;
+		}
+		else {
+			size_t length;
+			uint32_t offset = JSONRPCHeader.length() + 1; /* skip the slash after */
+
+			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
+
+			result = FromIdentifier(callSign, service);
+		}
 	}
 
 	return (result);
@@ -495,6 +529,7 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
               DetermineProperModel(configuration.Model),
               background,
               configuration.Prefix.Value(),
+			  configuration.JSONRPC.Value(),
 			  configuration.VolatilePath.Value(),
               configuration.PersistentPath.Value(),
               configuration.DataPath.Value(),
@@ -555,8 +590,8 @@ Server::Server(Server::Config& configuration, ISecurity* securityHandler, const 
         metaDataConfig.Callsign = string(_defaultControllerCallsign);
     }
 
-	// Get the configuration from the persistent location.
-	_services.Load();
+    // Get the configuration from the persistent location.
+    _services.Load();
 
     // Create input handle
     _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());

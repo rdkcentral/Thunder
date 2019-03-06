@@ -7,42 +7,42 @@
 
 namespace WPEFramework {
 namespace RPC {
-    struct IStringIterator : virtual public Core::IUnknown {
+    struct IValueIterator : virtual public Core::IUnknown {
         enum { ID = ID_STRINGITERATOR };
 
-        virtual ~IStringIterator(){};
+        virtual ~IValueIterator(){};
 
-        virtual bool Next(string& result) = 0;
-        virtual bool Previous(string& result) = 0;
+        virtual bool Next(uint32_t& result) = 0;
+        virtual bool Previous(uint32_t& result) = 0;
         virtual void Reset(const uint32_t position) = 0;
         virtual bool IsValid() const = 0;
         virtual uint32_t Count() const = 0;
-        virtual string Current() const = 0;
+        virtual uint32_t Current() const = 0;
     };
 
-    class StringIterator : virtual public IStringIterator {
+    class ValueIterator : virtual public IValueIterator {
     private:
-        StringIterator() = delete;
-        StringIterator(const StringIterator&) = delete;
-        StringIterator& operator= (const StringIterator&) = delete;
+        ValueIterator() = delete;
+        ValueIterator(const ValueIterator&) = delete;
+        ValueIterator& operator= (const ValueIterator&) = delete;
 
     public:
         template <typename CONTAINER, typename PREDICATE>
-        StringIterator(const CONTAINER& container, PREDICATE predicate) 
+        ValueIterator(const CONTAINER& container, PREDICATE predicate) 
             : _container()
             , _index(0) {
             std::copy_if(container.begin(), container.end(), std::back_inserter(_container), predicate);
             _iterator = _container.begin();
         }
         template <typename CONTAINER>
-        StringIterator(const CONTAINER& container) 
+        ValueIterator(const CONTAINER& container) 
             : _container()
             , _index(0) {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const string& data) { return (true); } );
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const uint32_t& data) { return (true); } );
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
-        StringIterator(const std::map<KEY, VALUE>& container) 
+        ValueIterator(const std::map<KEY, VALUE>& container) 
             : _container()
             , _index(0) {
             typename std::map<KEY,VALUE>::const_iterator index (container.begin());
@@ -52,17 +52,17 @@ namespace RPC {
             }
             _iterator = _container.begin();
         }
-        StringIterator(IStringIterator* index) 
+        ValueIterator(IValueIterator* index) 
             : _container()
             , _index(0) {
-            string result;
+            uint32_t result;
             while (index->Next(result) == true) {
                 _container.push_back(result);
             }
             _iterator = _container.begin();
         }
  
-        ~StringIterator() {
+        ~ValueIterator() {
         }
 
     public:
@@ -100,7 +100,7 @@ namespace RPC {
             }
         }
 
-        virtual bool Previous(string& result) override
+        virtual bool Previous(uint32_t& result) override
         {
             if (_index != 0) {
                 if (_index > 1) {
@@ -116,7 +116,7 @@ namespace RPC {
             }
             return (IsValid());
         }
-        virtual bool Next(string& result) override
+        virtual bool Next(uint32_t& result) override
         {
             uint32_t length = _container.size();
 
@@ -139,20 +139,20 @@ namespace RPC {
         {
             return (static_cast<uint32_t>(_container.size()));
         }
-        virtual string Current() const override
+        virtual uint32_t Current() const override
         {
             ASSERT(IsValid());
 
             return (*_iterator);
         }
 
-        BEGIN_INTERFACE_MAP(StringIterator)
-            INTERFACE_ENTRY(IStringIterator)
+        BEGIN_INTERFACE_MAP(ValueIterator)
+            INTERFACE_ENTRY(IValueIterator)
         END_INTERFACE_MAP
 
     private:
-        std::list<string> _container;
-        mutable std::list<string>::iterator _iterator;
+        std::list<uint32_t> _container;
+        mutable std::list<uint32_t>::iterator _iterator;
         mutable uint32_t _index;
     };
 }

@@ -136,7 +136,7 @@ namespace PluginHost {
         //! @{
         //! ==================================== CALLED ON THREADPOOL THREAD ======================================
         //! Once the passed object from the previous method is filled (completed), this method allows it to be handled
-        //! and to form an answer on the incoming JSON messagev(if needed).
+        //! and to form an answer on the incoming JSON message(if needed).
         //! @}
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::JSON::IElement& element) = 0;
     };

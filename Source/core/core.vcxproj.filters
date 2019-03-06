@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">
@@ -85,6 +85,9 @@
     <ClCompile Include="SharedBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="JSONRPC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ResourceMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -99,13 +102,7 @@
     <ClInclude Include="DataElement.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DataElementContainer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DataElementFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DataStorage.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Enumerate.h">
@@ -136,12 +133,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="LockableContainer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="LogService.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Measurement.h">
@@ -181,9 +172,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ProcessInfo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Processor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Proxy.h">
@@ -261,9 +249,6 @@
     <ClInclude Include="TypeTraits.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="UniVector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="XGetopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -283,6 +268,9 @@
       <Filter>Interface Files</Filter>
     </ClInclude>
     <ClInclude Include="SharedBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="JSONRPC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ResourceMonitor.h">

@@ -16,11 +16,13 @@ namespace PluginHost {
     // used but are not actively used.
     class EXTERNAL Request : public Web::Request {
     public:
-        enum enumState {
-            INCOMPLETE,
-            OBLIVIOUS,
-            MISSING_CALLSIGN,
-            COMPLETE
+        enum enumState : uint8_t {
+            INCOMPLETE         = 0x01,
+            OBLIVIOUS          = 0x02,
+            MISSING_CALLSIGN   = 0x04,
+            INVALID_VERSION    = 0x08,
+            COMPLETE           = 0x10,
+			SERVICE_CALL       = 0x80
         };
 
     private:
@@ -32,9 +34,13 @@ namespace PluginHost {
 		virtual ~Request();
 
     public:
-        inline enumState State() const
+		inline bool ServiceCall() const
+		{
+			return ((_state & SERVICE_CALL) != 0);
+		}
+		inline enumState State() const
         {
-            return (_state);
+            return (static_cast<enumState>(_state & 0x3F));
         }
         inline Core::ProxyType<PluginHost::Service>& Service()
         {
@@ -42,10 +48,10 @@ namespace PluginHost {
         }
 
 		void Clear();
-		void Service(const bool correctSignature, const Core::ProxyType<PluginHost::Service>& service);
+		void Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const bool serviceCall);
 
     private:
-        enumState _state;
+        uint8_t _state;
         Core::ProxyType<PluginHost::Service> _service;
     };
 

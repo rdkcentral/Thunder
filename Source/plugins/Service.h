@@ -34,14 +34,19 @@ namespace PluginHost {
         {
             return (_fileBodyFactory.Element());
         }
+		inline Core::ProxyType< Web::JSONBodyType<Core::JSONRPC::Message> > JSONRPC()
+		{
+			return (_jsonRPCFactory.Element());
+		}
 
     private:
 	friend class Core::SingletonType<Factories>;
 
-	Core::ProxyPoolType<Web::Request> _requestFactory;
+		Core::ProxyPoolType<Web::Request> _requestFactory;
         Core::ProxyPoolType<Web::Response> _responseFactory;
         Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-    };
+		Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message> > _jsonRPCFactory;
+	};
 
     struct EXTERNAL WorkerPool {
 
@@ -82,6 +87,9 @@ namespace PluginHost {
             }
 
         public:
+            inline bool IsSupported(const uint8_t number) const {
+                return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
+            }
             inline void Configuration(const string& value)
             {
                 _config.Configuration = value;
@@ -144,9 +152,9 @@ namespace PluginHost {
                 _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
                 _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
                 _dataPath = _baseConfig.DataPath() + config.ClassName.Value() + '/';
-				_volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
+                _volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
 
-				// Volatile means that the path could not have been created, create it for now.
+                // Volatile means that the path could not have been created, create it for now.
                 Core::Directory(_volatilePath.c_str()).CreatePath();
 
                 if (_baseConfig.Accessor().PortNumber() == 80) {
@@ -154,6 +162,21 @@ namespace PluginHost {
                 }
                 else {
                     _accessor = string(_T("http://")) + _baseConfig.Accessor().HostAddress() + ':' + Core::NumberType<uint16_t>(_baseConfig.Accessor().PortNumber()).Text() + _webPrefix;
+                }
+
+                _versions.clear();
+
+                // Extract the version list from the config
+                Core::JSON::ArrayType<Core::JSON::DecUInt8> versions; versions.FromString(config.Versions.Value());
+                Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
+
+                while (index.Next() == true) {
+                    _versions.push_back(index.Current().Value());
+                }
+
+                // If no versions are give, lets assume this is version 1, and we support it :-)
+                if (_versions.empty() == true) {
+                    _versions.push_back(1); 
                 }
             }
 
@@ -164,8 +187,9 @@ namespace PluginHost {
             string _webPrefix;
             string _persistentPath;
             string _volatilePath;
-			string _dataPath;
+            string _dataPath;
             string _accessor;
+            std::list<uint8_t> _versions;
         };
 
     public:
@@ -192,6 +216,10 @@ namespace PluginHost {
         virtual string Version () const
         {
             return (_config.Information().Version());
+        }
+        virtual string Versions () const
+        {
+            return (_config.Configuration().Versions.Value());
         }
         virtual string Model () const
         {
@@ -252,6 +280,9 @@ namespace PluginHost {
         virtual bool AutoStart() const
         {
             return (_config.Configuration().AutoStart.Value());
+        }
+        virtual bool IsSupported(const uint8_t number) const {
+            return (_config.IsSupported(number));
         }
         inline const Plugin::Config& Configuration() const
         {

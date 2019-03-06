@@ -1,6 +1,6 @@
 #include "IUnknown.h"
 #include "Communicator.h"
-#include "IStringIterator.h"
+#include "IValueIterator.h"
 
 namespace WPEFramework {
 namespace ProxyStub {
@@ -9,35 +9,35 @@ namespace ProxyStub {
     // STUB
     // -------------------------------------------------------------------------------------------
 
-	ProxyStub::MethodHandler StringIteratorStubMethods[] = {
+	ProxyStub::MethodHandler ValueIteratorStubMethods[] = {
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-                        string result;
+                        uint32_t result = 0;
 
 			// virtual bool Next(string& text) = 0;
 			RPC::Data::Frame::Writer response(message->Response().Writer());
 
-			bool valid = message->Parameters().Implementation<RPC::IStringIterator>()->Next(result);
+			bool valid = message->Parameters().Implementation<RPC::IValueIterator>()->Next(result);
 
                         response.Boolean(valid);
 
                         if (valid == true) {
-                            response.Text(result);
+                            response.Number(result);
                         }
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-                        string result;
+                        uint32_t result = 0;
 
 			// virtual bool Previous() = 0;
 			RPC::Data::Frame::Writer response(message->Response().Writer());
 
-			bool valid = message->Parameters().Implementation<RPC::IStringIterator>()->Previous(result);
+			bool valid = message->Parameters().Implementation<RPC::IValueIterator>()->Previous(result);
 
                         response.Boolean(valid);
 
                         if (valid == true) {
-                            response.Text(result);
+                            response.Number(result);
                         }
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -47,51 +47,51 @@ namespace ProxyStub {
 
 			uint32_t position(parameters.Number<uint32_t>());
 
-			message->Parameters().Implementation<RPC::IStringIterator>()->Reset(position);
+			message->Parameters().Implementation<RPC::IValueIterator>()->Reset(position);
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
 			// virtual bool IsValid() const = 0;
 			RPC::Data::Frame::Writer response(message->Response().Writer());
 
-			response.Boolean(message->Parameters().Implementation<RPC::IStringIterator>()->IsValid());
+			response.Boolean(message->Parameters().Implementation<RPC::IValueIterator>()->IsValid());
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
 			// virtual uint32_t Count() const = 0;
 			RPC::Data::Frame::Writer response(message->Response().Writer());
 
-			response.Number<uint32_t>(message->Parameters().Implementation<RPC::IStringIterator>()->Count());
+			response.Number<uint32_t>(message->Parameters().Implementation<RPC::IValueIterator>()->Count());
 		},
 		[](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
         		// virtual string Current() const = 0;
 			RPC::Data::Frame::Writer response(message->Response().Writer());
 
-			response.Text(message->Parameters().Implementation<RPC::IStringIterator>()->Current());
+			response.Number(message->Parameters().Implementation<RPC::IValueIterator>()->Current());
 		},
 		nullptr
 	};
 
-	typedef ProxyStub::StubType<RPC::IStringIterator, StringIteratorStubMethods, ProxyStub::UnknownStub> StringIteratorStub;
+	typedef ProxyStub::StubType<RPC::IValueIterator, ValueIteratorStubMethods, ProxyStub::UnknownStub> ValueIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
-	class StringIteratorProxy : public UnknownProxyType<RPC::IStringIterator> {
+	class ValueIteratorProxy : public UnknownProxyType<RPC::IValueIterator> {
 	public:
-		StringIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		ValueIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
-			TRACE_L1("Constructed StringIteratorProxy: %p", this);
+			TRACE_L1("Constructed ValueIteratorProxy: %p", this);
 		}
-		virtual ~StringIteratorProxy()
+		virtual ~ValueIteratorProxy()
 		{
-			TRACE_L1("Destructed StringIteratorProxy: %p", this);
+			TRACE_L1("Destructed ValueIteratorProxy: %p", this);
 		}
 
 	public:
-	        virtual bool Next(string& result) override {
+	        virtual bool Next(uint32_t& result) override {
 			IPCMessage newMessage(BaseClass::Message(0));
 
 			Invoke(newMessage);
@@ -101,12 +101,12 @@ namespace ProxyStub {
 			bool valid = reader.Boolean();
 
                         if (valid == true) {
-                           result = reader.Text();
+                           result = reader.Number<uint32_t>();
                         }
 
 			return (valid);
 		}
-        	virtual bool Previous(string& result) override {
+        	virtual bool Previous(uint32_t& result) override {
 			IPCMessage newMessage(BaseClass::Message(1));
 
 			Invoke(newMessage);
@@ -116,7 +116,7 @@ namespace ProxyStub {
 			bool valid = reader.Boolean();
 
                         if (valid == true) {
-                           result = reader.Text();
+                           result = reader.Number<uint32_t>();
                         }
 	
 			return (valid);
@@ -142,12 +142,12 @@ namespace ProxyStub {
 
 			return (newMessage->Response().Reader().Number<uint32_t>());
 		}
-        	virtual string Current() const override {
+        	virtual uint32_t Current() const override {
 			IPCMessage newMessage(BaseClass::Message(5));
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Text());
+			return (newMessage->Response().Reader().Number<uint32_t>());
 		}
 	};
 
@@ -162,8 +162,8 @@ namespace
     public:
         RPCInstantiation()
         {
-			RPC::Administrator::Instance().Announce<RPC::IStringIterator, StringIteratorProxy, StringIteratorStub>();
-		}
+		RPC::Administrator::Instance().Announce<RPC::IValueIterator, ValueIteratorProxy, ValueIteratorStub>();
+	}
         ~RPCInstantiation()
         {
         }

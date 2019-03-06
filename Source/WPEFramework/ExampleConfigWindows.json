@@ -1,13 +1,13 @@
 {
-  "port": 9999,
-  "interface": "WiFi",
+  "port": 80,
+  "binding": "0.0.0.0",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Windows/WPEFrameworkPlugins/artifacts/Persistent",
-  "volatilepath": "D:/Windows/WPEFrameworkPlugins/artifacts/Volatile",
-  "datapath": "D:/Windows/WPEFrameworkPlugins/artifacts/Data",
-  "systempath": "D:/Windows/WPEFrameworkPlugins/artifacts/Debug",
-  "proxystubpath": "D:/Windows/WPEFramework/artifacts/Debugproxystubs",
+  "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
+  "volatilepath": "D:/WPEFramework/artifacts/temp",
+  "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "systempath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "proxystubpath": "D:/WPEFramework/artifacts/Debugproxystubs",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "plugins": [
@@ -23,6 +23,12 @@
           "default": "WebKitBrowser"
         }
       }
+    },
+    {
+      "callsign": "JSONRPCExamplePlugin",
+      "locator": "libjsonrpcexampleplugin.so",
+      "classname": "JSONRPCExamplePlugin",
+      "autostart": true
     },
     {
       "callsign": "WebServer",

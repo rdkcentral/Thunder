@@ -5,6 +5,7 @@ add_library(${TARGET} SHARED
         Communicator.cpp
         ITracing.cpp
         IStringIterator.cpp
+        IValueIterator.cpp
         IUnknown.cpp
         Module.cpp
         )
@@ -15,6 +16,7 @@ set(PUBLIC_HEADERS
         Communicator.h
         Ids.h
         IStringIterator.h
+        IValueIterator.h
         ITracing.h
         IUnknown.h
         Messages.h

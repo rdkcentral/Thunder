@@ -9,7 +9,7 @@
 namespace WPEFramework {
 namespace Plugin {
 
-    class Controller : public PluginHost::IPlugin, public PluginHost::IWeb {
+    class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
         class Downloader : public PluginHost::DownloadEngine {
         private:
@@ -36,7 +36,8 @@ namespace Plugin {
         private:
             Controller& _parent;
         };
-       class Sink : 
+
+        class Sink : 
             public PluginHost::IPlugin::INotification,
             public PluginHost::ISubSystem::INotification {
         private:
@@ -110,6 +111,67 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
+		uint32_t exists(const string& designator, string& response) {
+			Core::ProxyType<PluginHost::Server::Service> service;
+			string callsign = Core::JSONRPC::Message::Callsign(designator);
+			response = _T("22"); // ERROR_UNKNOWN_KEY
+
+			if (callsign.empty() == true) {
+				if (Exists(designator, Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
+					response = _T("0");
+				}
+			}
+			else {
+				uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
+
+				if (result == Core::ERROR_NONE) {
+					ASSERT(service.IsValid());
+					PluginHost::IDispatcher* plugin = service->Dispatcher();
+					if (plugin != nullptr) {
+						if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
+							response = _T("0");
+						}
+					}
+				}
+				else if (result == Core::ERROR_INVALID_DESIGNATOR) {
+					response = _T("41");
+				}
+				else if (result == Core::ERROR_INVALID_SIGNATURE) {
+					response = _T("38");
+				}
+			}
+			return (Core::ERROR_NONE);
+		}
+		uint32_t activate(const string& designator, string& response) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+
+                ASSERT (service.IsValid() == true);
+
+                if (service->State() == PluginHost::IShell::DEACTIVATED) {
+                    // Activate the plugin.
+                    response = service->Activate(PluginHost::IShell::REQUESTED);
+                }
+            }
+
+            return (Core::ERROR_NONE);
+        }
+        uint32_t deactivate(const string& designator, string& response) {
+            Core::ProxyType<PluginHost::Server::Service> service;
+
+            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+
+                ASSERT (service.IsValid() == true);
+
+                if (service->State() == PluginHost::IShell::ACTIVATED) {
+                    // Deactivate the plugin.
+                    response = service->Deactivate(PluginHost::IShell::REQUESTED);
+                }
+            }
+
+            return (Core::ERROR_NONE);
+        }
 
         // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Configure
@@ -185,7 +247,10 @@ namespace Plugin {
             , _systemInfoReport(this)
             , _resumes()
             , _lastReported()
-        {
+        {		
+			Register<string, string>(_T("exists"), &Controller::exists, this);
+			Register<string, string>(_T("activate"),   &Controller::activate,   this);
+            Register<string, string>(_T("deactivate"), &Controller::deactivate, this);
         }
 
     public:
@@ -255,11 +320,19 @@ namespace Plugin {
         //  IUnknown methods
         // -------------------------------------------------------------------------------------------------------
         BEGIN_INTERFACE_MAP(Controller)
-        INTERFACE_ENTRY(PluginHost::IPlugin)
-        INTERFACE_ENTRY(PluginHost::IWeb)
+            INTERFACE_ENTRY(PluginHost::IPlugin)
+            INTERFACE_ENTRY(PluginHost::IWeb)
+            INTERFACE_ENTRY(PluginHost::IDispatcher)
         END_INTERFACE_MAP
 
     private:
+        inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier (const string& callsign) const {
+            Core::ProxyType<PluginHost::Server::Service> service;
+ 
+            _pluginServer->Services().FromIdentifier(callsign, service); 
+
+            return (service);
+        }
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> >::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
@@ -267,8 +340,9 @@ namespace Plugin {
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
+		virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
 
-    private:
+	private:
         Core::CriticalSection _adminLock;
         uint8_t _skipURL;
         string _webPath;
@@ -278,7 +352,7 @@ namespace Plugin {
         Probe* _probe;
         Core::Sink<Sink> _systemInfoReport;
         std::list<string> _resumes;
-	uint32_t _lastReported;
+		uint32_t _lastReported;
     };
 }
 }

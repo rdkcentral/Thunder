@@ -100,11 +100,11 @@ namespace ProxyStubs {
             //
             // Careful, out of order due to ConfigLine() in incorrect position.
             //
-            // virtual string Version () const = 0;
+            // virtual string Versions () const = 0;
             //
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            response.Text(message->Parameters().Implementation<IShell>()->Version());
+            response.Text(message->Parameters().Implementation<IShell>()->Versions());
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -343,7 +343,28 @@ namespace ProxyStubs {
 
 			response.Text(message->Parameters().Implementation<IShell>()->ProxyStubPath());
 		},
-		nullptr
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual bool IsSupported(const uint8_t reason) const = 0;
+            //
+            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            uint8_t version(reader.Number<uint8_t>());
+
+            response.Boolean(message->Parameters().Implementation<IShell>()->IsSupported(version));
+        },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // Careful, out of order due to ConfigLine() in incorrect position.
+            //
+            // virtual string Version () const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<IShell>()->Version());
+        },
+	nullptr
     };
     // IShell stub definitions
 
@@ -638,7 +659,7 @@ namespace ProxyStubs {
         // virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) = 0;
         // virtual void DisableWebServer() = 0;
         // virtual string ConfigLine() const = 0;
-        // virtual string Version () const = 0;
+        // virtual string Versions () const = 0;
         // virtual bool Background() const = 0;
         // virtual string Accessor() const = 0;
         // virtual string WebPrefix() const = 0;
@@ -659,6 +680,7 @@ namespace ProxyStubs {
         // virtual state State() const = 0;
         // virtual reason Reason() const = 0;
         // virtual string Model() const = 0;
+        // virtual bool IsSupported(const uint8_t version) const = 0;
         virtual void EnableWebServer(const string& URLPath, const string& fileSystemPath) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
@@ -685,7 +707,7 @@ namespace ProxyStubs {
 
             return (reader.Text());
         }
-        virtual string Version() const override
+        virtual string Versions() const override
         {
             IPCMessage newMessage(BaseClass::Message(3));
 
@@ -898,19 +920,43 @@ namespace ProxyStubs {
 
             return (CreateProxy<ISubSystem>(reader.Number<ISubSystem*>()));
         }
+	virtual string ProxyStubPath() const override
+	{
+		IPCMessage newMessage(BaseClass::Message(25));
+
+		Invoke(newMessage);
+
+		RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+		return (reader.Text());
+	}
+        virtual bool IsSupported(const uint8_t version) const override
+        {
+            IPCMessage newMessage(BaseClass::Message(26));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Number<uint8_t>(version);
+            Invoke(newMessage);
+
+            return (newMessage->Response().Reader().Boolean());
+        }
+        virtual string Version() const override
+        {
+            IPCMessage newMessage(BaseClass::Message(27));
+
+            Invoke(newMessage);
+
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+
+            return (reader.Text());
+        }
         virtual IProcess* Process() override {
             return (nullptr);
         }
-		virtual string ProxyStubPath() const override
-		{
-			IPCMessage newMessage(BaseClass::Message(25));
-
-			Invoke(newMessage);
-
-			RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-			return (reader.Text());
-		}
+	virtual uint32_t Submit(const uint32_t, const Core::ProxyType<Core::JSON::IElement>&) override {
+            return (Core::ERROR_UNAVAILABLE);
+        }
+ 
 	};
 
     class StateControlProxy : public ProxyStub::UnknownProxyType<IStateControl> {
