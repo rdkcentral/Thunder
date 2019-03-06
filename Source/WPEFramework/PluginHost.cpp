@@ -5,6 +5,10 @@
 #include <dlfcn.h>    // for dladdr
 #endif
 
+#ifdef __LINUX__
+#include <execinfo.h>
+#endif
+
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 

@@ -146,6 +146,7 @@ target_link_libraries(${TARGET}
           CompileSettings::CompileSettings
         PRIVATE
           ${CMAKE_DL_LIBS}
+	  ${LIBEXECINFO_LIBRARY}
           LIBRT::LIBRT
           Threads::Threads
         )

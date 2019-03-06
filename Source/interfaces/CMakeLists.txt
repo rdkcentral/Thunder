@@ -3,6 +3,8 @@ set(TargetInterfaces ${NAMESPACE}Interfaces)
 
 add_library(${TargetMarshalling} SHARED
         ProxyStubs.cpp
+        ProxyStubs_Packager.cpp
+        ProxyStubs_TestController.cpp
         )
 
 add_library(${TargetInterfaces} SHARED
@@ -27,6 +29,7 @@ set(PUBLIC_HEADERS
         IKeyHandler.h
         IMemory.h
         INetflix.h
+        IPackager.h
         IPlayGiga.h
         IPower.h
         IProvisioning.h
@@ -41,6 +44,7 @@ set(PUBLIC_HEADERS
         IRtspClient.h
         IWebDriver.h
         IWebServer.h
+        ITestController.h
         Module.h
         )
 
