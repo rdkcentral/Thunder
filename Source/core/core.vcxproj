@@ -14,7 +14,7 @@
     <ProjectGuid>{52613581-6E99-4ECB-826D-8AD0BA812258}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>Core</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -130,6 +130,7 @@
     <ClInclude Include="ReadWriteLock.h" />
     <ClInclude Include="Rectangle.h" />
     <ClInclude Include="RequestResponse.h" />
+    <ClInclude Include="ResourceMonitor.h" />
     <ClInclude Include="Serialization.h" />
     <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Services.h" />
@@ -176,6 +177,7 @@
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="Portability.cpp" />
     <ClCompile Include="ProcessInfo.cpp" />
+    <ClCompile Include="ResourceMonitor.cpp" />
     <ClCompile Include="Serialization.cpp" />
     <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Services.cpp" />

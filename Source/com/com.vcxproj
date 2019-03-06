@@ -14,7 +14,7 @@
     <ProjectGuid>{1234F390-D87E-4E94-BD5D-22D4AC832F67}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>rpc</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

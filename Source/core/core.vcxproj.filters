@@ -85,6 +85,9 @@
     <ClCompile Include="SharedBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ResourceMonitor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ASN1.h">
@@ -280,6 +283,9 @@
       <Filter>Interface Files</Filter>
     </ClInclude>
     <ClInclude Include="SharedBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ResourceMonitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

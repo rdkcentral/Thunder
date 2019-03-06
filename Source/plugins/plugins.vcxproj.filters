@@ -4,9 +4,6 @@
     <ClCompile Include="Channel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Logging.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="MetaData.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -62,9 +59,6 @@
     </ClInclude>
     <ClInclude Include="IStateControl.h">
       <Filter>Interface Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Logging.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ISystemInfo.h">
       <Filter>Interface Files</Filter>
