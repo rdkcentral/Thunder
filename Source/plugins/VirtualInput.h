@@ -242,7 +242,10 @@ namespace PluginHost {
             COMPLETED = 3
         };
 
-        typedef Core::IDispatchType<uint32_t> Notifier;
+		struct INotifier {
+			virtual ~INotifier() {}
+			virtual void Dispatch(const actiontype action, const uint32_t code) = 0;
+		};
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
 
     private:
@@ -321,7 +324,7 @@ namespace PluginHost {
 		};
 	
 		typedef std::map<const string, KeyMap> TableMap;
-        typedef std::vector<Notifier*> NotifierList;
+        typedef std::vector<INotifier*> NotifierList;
         typedef std::map<uint32_t, NotifierList> NotifierMap;
         typedef std::map<const string, PostLookupEntries > PostLookupMap;
 
@@ -382,8 +385,8 @@ namespace PluginHost {
             }
         }
 
-        void Register(const uint32_t keyCode, Notifier* callback);
-        void Unregister(const uint32_t keyCode, const Notifier* callback);
+        void Register(INotifier* callback, const uint32_t keyCode = ~0);
+        void Unregister(const INotifier* callback, const uint32_t keyCode = ~0);
 
         // -------------------------------------------------------------------------------------------------------
         // Whenever a key is pressed or released, let this object know, it will take the proper arrangements and timings
@@ -447,7 +450,7 @@ namespace PluginHost {
         void ModifierKey(const actiontype type, const uint16_t modifiers);
         bool SendModifier(const actiontype type, const enumModifier mode);
         void AdministerAndSendKey(const actiontype type, const uint32_t code);
-        void DispatchRegisteredKey(uint32_t code);
+        void DispatchRegisteredKey(const actiontype type, uint32_t code);
 
         virtual void SendKey(const actiontype type, const uint32_t code) = 0;
 
@@ -471,6 +474,7 @@ namespace PluginHost {
         uint32_t _modifiers;
         std::map<const string, KeyMap> _mappingTables;
         KeyMap* _defaultMap;
+		NotifierList _notifierList;
         NotifierMap _notifierMap;
         PostLookupMap _postLookupTable;
         string _keyTable;

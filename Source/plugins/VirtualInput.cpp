@@ -194,58 +194,84 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
             _mappingTables.clear();
         }
 
-        void VirtualInput::Register(const uint32_t keyCode, Notifier* callback)
+        void VirtualInput::Register(INotifier* callback, const uint32_t keyCode)
         {
             // Register is only usefull with actuall callbacks !!
             ASSERT (callback != nullptr);
 
-            _lock.Lock();
+			if (keyCode == static_cast<uint32_t>(~0)) {
 
-            NotifierList& notifierList (_notifierMap[keyCode]);
+				_lock.Lock();
 
-            // Only register a callback once !!
-            ASSERT (std::find(notifierList.begin(), notifierList.end(), callback) == notifierList.end());
+				// Only register a callback once !!
+				ASSERT(std::find(_notifierList.begin(), _notifierList.end(), callback) == _notifierList.end());
 
-            notifierList.push_back(callback);
+				_notifierList.push_back(callback);
 
-            _lock.Unlock();
+				_lock.Unlock();
+
+			}
+			else {
+				_lock.Lock();
+
+				NotifierList& notifierList(_notifierMap[keyCode]);
+
+				// Only register a callback once !!
+				ASSERT(std::find(notifierList.begin(), notifierList.end(), callback) == notifierList.end());
+
+				notifierList.push_back(callback);
+
+				_lock.Unlock();
+			}
         }
 
-        void VirtualInput::Unregister(const uint32_t keyCode, const Notifier* callback)
+        void VirtualInput::Unregister(const INotifier* callback, const uint32_t keyCode)
         {
             // Unregister is only usefull with actuall callbacks !!
             ASSERT (callback != nullptr);
 
-            // Do not unregister something you did not register !!!
-            ASSERT (_notifierMap.empty() == false);
+			if (keyCode == static_cast<uint32_t>(~0)) {
 
-            _lock.Lock();
+				_lock.Lock();
 
-            NotifierMap::iterator it(_notifierMap.find(keyCode));
+				NotifierList::iterator position = std::find(_notifierList.begin(), _notifierList.end(), callback);
 
-            if (it != _notifierMap.end()) {
-                NotifierList& notifierList (it->second);
-                NotifierList::iterator position = std::find(notifierList.begin(), notifierList.end(), callback);
+				// Do not unregister something you did not register !!!
+				ASSERT(position != _notifierList.end());
 
-                if (position != notifierList.end()) {
-                    notifierList.erase(position);
-                }
-                else {
-                    // Do not unregister something you did not register !!!
-                    ASSERT (false);
-                }
+				if (position != _notifierList.end()) {
+					_notifierList.erase(position);
+				}
 
-                if (notifierList.empty() == true) {
-                    _notifierMap.erase(it);
-                }
- 
-            }
-            else {
-                // Do not unregister something you did not register !!!
-                ASSERT (false);
-            }
+				_lock.Unlock();
+			}
+			else {
 
-            _lock.Unlock();
+				_lock.Lock();
+
+				NotifierMap::iterator it(_notifierMap.find(keyCode));
+
+				// Do not unregister something you did not register !!!
+				ASSERT(it != _notifierMap.end());
+
+				if (it != _notifierMap.end()) {
+					NotifierList& notifierList(it->second);
+					NotifierList::iterator position = std::find(notifierList.begin(), notifierList.end(), callback);
+
+					// Do not unregister something you did not register !!!
+					ASSERT(position != notifierList.end());
+
+					if (position != notifierList.end()) {
+						notifierList.erase(position);
+
+						if (notifierList.empty() == true) {
+							_notifierMap.erase(it);
+						}
+					}
+				}
+
+				_lock.Unlock();
+			}
         }
 
         uint32_t VirtualInput::KeyEvent(const bool pressed, const uint32_t code, const string& table)
@@ -319,8 +345,6 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
                         if (sendModifiers != 0) {
                             ModifierKey(RELEASED, sendModifiers);
                         }
-
-                        DispatchRegisteredKey(sendCode);
                     }
 
                     SendKey(COMPLETED, sendCode);
@@ -369,6 +393,9 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
             if (trigger == true) {
                 SendKey(type, code);
             }
+
+			DispatchRegisteredKey(type, code);
+
         }
 
         bool VirtualInput::SendModifier(const actiontype type, const enumModifier mode)
@@ -431,24 +458,25 @@ ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
             }
         }
 
-        void VirtualInput::DispatchRegisteredKey(uint32_t code)
+        void VirtualInput::DispatchRegisteredKey(const actiontype type, uint32_t code)
         {
-            if (_notifierMap.empty() == false) {
+			_lock.Lock();
 
-                _lock.Lock();
+			for (INotifier* element : _notifierList) {
+				element->Dispatch(type, code);
+			}
 
-                NotifierMap::iterator it(_notifierMap.find(code));
+            NotifierMap::iterator it(_notifierMap.find(code));
 
-                if (it != _notifierMap.end()) {
-                    const NotifierList& notifierList = it->second;
-                    for (Notifier* element : notifierList) {
-                        element->Dispatch(code);
-                    }
+            if (it != _notifierMap.end()) {
+                const NotifierList& notifierList = it->second;
+                for (INotifier* element : notifierList) {
+                    element->Dispatch(type, code);
                 }
-
-                _lock.Unlock();
             }
-        }
+
+			_lock.Unlock();
+		}
 
 #if !defined(__WIN32__) && !defined(__APPLE__)
 
