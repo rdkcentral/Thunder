@@ -655,15 +655,6 @@ private:
     void Reconnect(void) const
      {
         if (_client->IsOpen() == false) {
-            // See if we have an environment variable set
-            string connector;
-            if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
-                connector = _T("/tmp/ocdm");
-            }
-
-            // Setup client again
-            // It should not be required to setup client again when this problem will be resolved: WPE-259
-            _client = Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(connector.c_str()), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()));
             _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
 
             ASSERT(_remote != nullptr);
