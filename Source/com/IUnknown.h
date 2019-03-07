@@ -111,7 +111,7 @@ namespace ProxyStub {
     public:
         UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const uint32_t interfaceId, const bool remoteRefCounted, Core::IUnknown* parent)
             : _remoteAddRef(remoteRefCounted ? REGISTERED : UNREGISTERED)
-            , _refCount(remoteRefCounted ? 1 : 0)
+            , _refCount(remoteRefCounted ? 2 : 0)
             , _interfaceId(interfaceId)
             , _implementation(implementation)
             , _channel(channel)
