@@ -43,12 +43,14 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         IBrowser::INotification* param0 = reader.Number<IBrowser::INotification*>();
         IBrowser::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -57,7 +59,7 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IBrowser::INotification proxy destroyed");
         }
     },
@@ -73,12 +75,14 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         IBrowser::INotification* param0 = reader.Number<IBrowser::INotification*>();
         IBrowser::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -87,7 +91,7 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IBrowser::INotification proxy destroyed");
         }
     },
@@ -114,13 +118,14 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IBrowser* implementation = input.Implementation<IBrowser>();
         ASSERT((implementation != nullptr) && "Null IBrowser implementation pointer");
         const string output = implementation->GetURL();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -130,13 +135,14 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IBrowser* implementation = input.Implementation<IBrowser>();
         ASSERT((implementation != nullptr) && "Null IBrowser implementation pointer");
         const uint32_t output = implementation->GetFPS();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -249,13 +255,14 @@ ProxyStub::MethodHandler BrowserMetadataStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IBrowser::IMetadata* implementation = input.Implementation<IBrowser::IMetadata>();
         ASSERT((implementation != nullptr) && "Null IBrowser::IMetadata implementation pointer");
         const string output = implementation->LocalCache();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -265,13 +272,14 @@ ProxyStub::MethodHandler BrowserMetadataStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IBrowser::IMetadata* implementation = input.Implementation<IBrowser::IMetadata>();
         ASSERT((implementation != nullptr) && "Null IBrowser::IMetadata implementation pointer");
         const string output = implementation->CookieStore();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -322,9 +330,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IBrowser::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IBrowser::INotification* param0) override
@@ -335,9 +343,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IBrowser::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void SetURL(const string& param0) override
@@ -349,8 +357,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     string GetURL() const override
@@ -388,8 +394,6 @@ public:
         writer.Boolean(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class BrowserProxy
 
@@ -419,8 +423,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void URLChanged(const string& param0) override
@@ -432,8 +434,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void Hidden(const bool param0) override
@@ -445,8 +445,6 @@ public:
         writer.Boolean(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void Closure() override
@@ -454,8 +452,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(3));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class BrowserNotificationProxy
 
@@ -506,8 +502,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(2));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class BrowserMetadataProxy
 

@@ -41,12 +41,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -55,15 +57,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
             const uint32_t output = implementation->Configure(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -79,13 +80,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
         const string param0 = reader.Text();
         const uint32_t param1 = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRtspClient* implementation = input.Implementation<IRtspClient>();
         ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
         const uint32_t output = implementation->Setup(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -100,13 +102,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
         const int32_t param0 = reader.Number<int32_t>();
         const uint32_t param1 = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRtspClient* implementation = input.Implementation<IRtspClient>();
         ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
         const uint32_t output = implementation->Play(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -116,13 +119,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRtspClient* implementation = input.Implementation<IRtspClient>();
         ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
         const uint32_t output = implementation->Teardown();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -153,13 +157,14 @@ ProxyStub::MethodHandler RtspClientStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IRtspClient* implementation = input.Implementation<IRtspClient>();
         ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
         const string output = implementation->Get(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -202,6 +207,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;
@@ -266,8 +273,6 @@ public:
         writer.Text(param1);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     string Get(const string& param0) const override

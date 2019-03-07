@@ -74,8 +74,6 @@ public:
         writer.Text(param1);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class PlayGigaProxy
 

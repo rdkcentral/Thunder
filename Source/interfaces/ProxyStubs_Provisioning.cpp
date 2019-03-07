@@ -38,12 +38,14 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
         IProvisioning::INotification* param0 = reader.Number<IProvisioning::INotification*>();
         IProvisioning::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IProvisioning::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IProvisioning::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IProvisioning::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IProvisioning::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -52,7 +54,7 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IProvisioning::INotification proxy destroyed");
         }
     },
@@ -68,12 +70,14 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
         IProvisioning::INotification* param0 = reader.Number<IProvisioning::INotification*>();
         IProvisioning::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IProvisioning::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IProvisioning::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IProvisioning::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IProvisioning::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -82,7 +86,7 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IProvisioning::INotification proxy destroyed");
         }
     },
@@ -145,9 +149,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IProvisioning::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IProvisioning::INotification* param0) override
@@ -158,9 +162,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IProvisioning::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 }; // class ProvisioningProxy
 
@@ -187,8 +191,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class ProvisioningNotificationProxy
 

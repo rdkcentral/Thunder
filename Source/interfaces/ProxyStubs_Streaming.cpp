@@ -45,12 +45,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         IStreaming::INotification* param0 = reader.Number<IStreaming::INotification*>();
         IStreaming::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStreaming::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStreaming::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -59,7 +61,7 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IStreaming::INotification proxy destroyed");
         }
     },
@@ -75,12 +77,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         IStreaming::INotification* param0 = reader.Number<IStreaming::INotification*>();
         IStreaming::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStreaming::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStreaming::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -89,7 +93,7 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IStreaming::INotification proxy destroyed");
         }
     },
@@ -105,12 +109,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -119,15 +125,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             const uint32_t output = implementation->Configure(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -178,13 +183,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IStreaming* implementation = input.Implementation<IStreaming>();
         ASSERT((implementation != nullptr) && "Null IStreaming implementation pointer");
         const string output = implementation->GetCurrentChannel();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -194,13 +200,14 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IStreaming* implementation = input.Implementation<IStreaming>();
         ASSERT((implementation != nullptr) && "Null IStreaming implementation pointer");
         const bool output = implementation->IsScanning();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -319,9 +326,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStreaming::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IStreaming::INotification* param0) override
@@ -332,9 +339,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStreaming::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     uint32_t Configure(PluginHost::IShell* param0) override
@@ -349,6 +356,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;
@@ -359,8 +368,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(3));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void StopScan() override
@@ -368,8 +375,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(4));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void SetCurrentChannel(const string& param0) override
@@ -381,8 +386,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     const string GetCurrentChannel() override
@@ -420,8 +423,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class StreamingProxy
 
@@ -450,8 +451,6 @@ public:
         writer.Number<const uint32_t>(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void CurrentChannelChanged(const string& param0) override
@@ -463,8 +462,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void TestNotification(const string& param0) override
@@ -476,8 +473,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class StreamingNotificationProxy
 

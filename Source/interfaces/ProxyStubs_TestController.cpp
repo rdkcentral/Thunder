@@ -62,13 +62,14 @@ ProxyStub::MethodHandler TestControllerStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController* implementation = input.Implementation<ITestController>();
         ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
         ITestController::ICategory::IIterator* output = implementation->Categories();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ICategory::IIterator*>(output);
     },
 
@@ -82,13 +83,14 @@ ProxyStub::MethodHandler TestControllerStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController* implementation = input.Implementation<ITestController>();
         ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
         ITestController::ICategory* output = implementation->Category(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ICategory*>(output);
     },
 
@@ -115,13 +117,14 @@ ProxyStub::MethodHandler TestControllerTestStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
         const string output = implementation->Execute(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -131,13 +134,14 @@ ProxyStub::MethodHandler TestControllerTestStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
         const string output = implementation->Description();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -147,13 +151,14 @@ ProxyStub::MethodHandler TestControllerTestStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
         const string output = implementation->Name();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -189,13 +194,14 @@ ProxyStub::MethodHandler TestControllerTestIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
         const bool output = implementation->IsValid();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -205,13 +211,14 @@ ProxyStub::MethodHandler TestControllerTestIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
         const bool output = implementation->Next();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -221,13 +228,14 @@ ProxyStub::MethodHandler TestControllerTestIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
         ITestController::ITest* output = implementation->Test();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ITest*>(output);
     },
 
@@ -254,13 +262,14 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
         const string output = implementation->Name();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -299,12 +308,14 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
         ITestController::ITest* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -313,7 +324,7 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: ITestController::ITest proxy destroyed");
         }
     },
@@ -329,12 +340,14 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
         ITestController::ITest* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -343,7 +356,7 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: ITestController::ITest proxy destroyed");
         }
     },
@@ -354,13 +367,14 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
         ITestController::ITest::IIterator* output = implementation->Tests();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ITest::IIterator*>(output);
     },
 
@@ -374,13 +388,14 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
         ITestController::ITest* output = implementation->Test(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ITest*>(output);
     },
 
@@ -416,13 +431,14 @@ ProxyStub::MethodHandler TestControllerCategoryIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
         const bool output = implementation->IsValid();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -432,13 +448,14 @@ ProxyStub::MethodHandler TestControllerCategoryIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
         const bool output = implementation->Next();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -448,13 +465,14 @@ ProxyStub::MethodHandler TestControllerCategoryIteratorStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
         ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
         ITestController::ICategory* output = implementation->Category();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<ITestController::ICategory*>(output);
     },
 
@@ -488,8 +506,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(0));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void TearDown() override
@@ -497,8 +513,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(1));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     ITestController::ICategory::IIterator* Categories() const override
@@ -614,8 +628,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(0));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     bool IsValid() const override
@@ -696,8 +708,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(1));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void TearDown() override
@@ -705,8 +715,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(2));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void Register(ITestController::ITest* param0) override
@@ -717,9 +725,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<ITestController::ITest*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(ITestController::ITest* param0) override
@@ -730,9 +738,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<ITestController::ITest*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     ITestController::ITest::IIterator* Tests() const override
@@ -788,8 +796,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(0));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     bool IsValid() const override

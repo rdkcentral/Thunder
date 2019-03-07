@@ -42,12 +42,14 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         IPackager::INotification* param0 = reader.Number<IPackager::INotification*>();
         IPackager::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::INotification proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -56,7 +58,7 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::INotification proxy destroyed");
         }
     },
@@ -92,12 +94,14 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -106,15 +110,14 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             const uint32_t output = implementation->Configure(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -131,13 +134,14 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         const string param1 = reader.Text();
         const string param2 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IPackager* implementation = input.Implementation<IPackager>();
         ASSERT((implementation != nullptr) && "Null IPackager implementation pointer");
         const uint32_t output = implementation->Install(param0, param1, param2);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -161,13 +165,14 @@ ProxyStub::MethodHandler PackagerInstallationInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IInstallationInfo* implementation = input.Implementation<IPackager::IInstallationInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IInstallationInfo implementation pointer");
         const IPackager::state output = implementation->State();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const IPackager::state>(output);
     },
 
@@ -177,13 +182,14 @@ ProxyStub::MethodHandler PackagerInstallationInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IInstallationInfo* implementation = input.Implementation<IPackager::IInstallationInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IInstallationInfo implementation pointer");
         const uint8_t output = implementation->Progress();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint8_t>(output);
     },
 
@@ -193,13 +199,14 @@ ProxyStub::MethodHandler PackagerInstallationInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IInstallationInfo* implementation = input.Implementation<IPackager::IInstallationInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IInstallationInfo implementation pointer");
         const uint32_t output = implementation->ErrorCode();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -209,13 +216,14 @@ ProxyStub::MethodHandler PackagerInstallationInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IPackager::IInstallationInfo* implementation = input.Implementation<IPackager::IInstallationInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IInstallationInfo implementation pointer");
         const uint32_t output = implementation->Abort();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -238,13 +246,14 @@ ProxyStub::MethodHandler PackagerPackageInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IPackageInfo* implementation = input.Implementation<IPackager::IPackageInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IPackageInfo implementation pointer");
         const string output = implementation->Name();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -254,13 +263,14 @@ ProxyStub::MethodHandler PackagerPackageInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IPackageInfo* implementation = input.Implementation<IPackager::IPackageInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IPackageInfo implementation pointer");
         const string output = implementation->Version();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -270,13 +280,14 @@ ProxyStub::MethodHandler PackagerPackageInfoStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPackager::IPackageInfo* implementation = input.Implementation<IPackager::IPackageInfo>();
         ASSERT((implementation != nullptr) && "Null IPackager::IPackageInfo implementation pointer");
         const string output = implementation->Architecture();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -303,7 +314,7 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
         IPackager::IInstallationInfo* param1 = reader.Number<IPackager::IInstallationInfo*>();
         IPackager::IPackageInfo* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IPackageInfo>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IPackageInfo>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::IPackageInfo proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IPackageInfo proxy");
@@ -311,12 +322,14 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
         }
         IPackager::IInstallationInfo* param1_proxy = nullptr;
         if (param1 != nullptr) {
-            param1_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IInstallationInfo>(channel, param1);
+            param1_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IInstallationInfo>(channel, param1, true);
             ASSERT((param1_proxy != nullptr) && "Failed to get instance of IPackager::IInstallationInfo proxy");
             if (param1_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IInstallationInfo proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if (((param0 == nullptr) || (param0_proxy != nullptr)) && ((param1 == nullptr) || (param1_proxy != nullptr))) {
             // call implementation
@@ -325,10 +338,10 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
             implementation->StateChange(param0_proxy, param1_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::IPackageInfo proxy destroyed");
         }
-        if ((param1_proxy != nullptr) && (param1_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param1_proxy != nullptr) && (RPC::Administrator::Instance().Release(param1_proxy, writer) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::IInstallationInfo proxy destroyed");
         }
     },
@@ -366,9 +379,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IPackager::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(const IPackager::INotification* param0) override
@@ -379,9 +392,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const IPackager::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     uint32_t Configure(PluginHost::IShell* param0) override
@@ -396,6 +409,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;
@@ -570,9 +585,9 @@ public:
         writer.Number<IPackager::IPackageInfo*>(param0);
         writer.Number<IPackager::IInstallationInfo*>(param1);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 }; // class PackagerNotificationProxy
 
