@@ -1152,6 +1152,7 @@ namespace Core {
             {
                 if (_parent.Source().IsOpen() == false) {
                     // Whatever s hapening, Flush what we were doing..
+                    _parent.Abort();
                     _factory.Flush();
                 }
 
