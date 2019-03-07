@@ -355,9 +355,9 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual string DsgccClientGet() const = 0;
+            // virtual string GetChannels() const = 0;
             //
-            string str = message->Parameters().Implementation<IDsgccClient>()->DsgccClientGet();
+            string str = message->Parameters().Implementation<IDsgccClient>()->GetChannels();
             RPC::Data::Frame::Writer output(message->Response().Writer());
             output.Text(str);
         },
@@ -1995,7 +1995,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        virtual string DsgccClientGet() const
+        virtual string GetChannels() const
         {
             IPCMessage newMessage(BaseClass::Message(2));
             Invoke(newMessage);
@@ -2004,6 +2004,7 @@ namespace ProxyStubs {
             string str = reader.Text();
             return str;
         }
+
     };
     class NetflixProxy : public ProxyStub::UnknownProxyType<INetflix> {
     public:
