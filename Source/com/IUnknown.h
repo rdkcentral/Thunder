@@ -149,6 +149,8 @@ namespace ProxyStub {
         {
             if (Core::InterlockedIncrement(_refCount) == 2) {
 
+                ASSERT (_remoteAddRef == UNREGISTERED);
+
                 registration value (UNREGISTERED);
 
                 // Seems we really would like to "preserve" this interface, so report it in use
@@ -172,7 +174,8 @@ namespace ProxyStub {
             }
             else if (newValue == 1) {
 
-                ASSERT (_remoteAddRef == REGISTERED);
+                // FIXME:
+                ASSERT (_remoteAddRef == REGISTERED || _remoteAddRef == PENDING_ADDREF);
 
                 // Request for destruction, do this on antoher thread, as this is an Proxy that has been addRefed on
                 // the other size, it needs to Release the AddRef on the other side and we do not want to issue 
@@ -203,7 +206,8 @@ namespace ProxyStub {
             _refCount = 1;
             return (_parent.Release());
         }
- 
+
+/*
         uint32_t RemoteRelease () {
 
             // We have reached "0", signal the other side..
@@ -220,6 +224,8 @@ namespace ProxyStub {
 
             return (result);
         }
+*/
+
         inline const Core::ProxyType<Core::IPCChannel>& Channel() const {
             return (_channel);
         }
@@ -369,6 +375,7 @@ namespace ProxyStub {
         inline void Complete (RPC::Data::Frame::Reader& reader) const {
             
             while (reader.HasData() == true) {
+                ASSERT(reader.Length() >= (sizeof(void*) + sizeof(uint32_t)));
                 void* impl = reader.Number<void*>();
                 uint32_t id = reader.Number<uint32_t>();
                 if ((id & 0x80000000) == 0) {
