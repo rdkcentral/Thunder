@@ -716,9 +716,7 @@ namespace ProxyStubs {
 
             Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Boolean());
+            return (Boolean(newMessage->Response()));
         }
         virtual string Accessor() const override
         {
