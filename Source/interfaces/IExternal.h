@@ -1,6 +1,8 @@
 #ifndef __IEXTERNAL_OBJECT_H
 #define __IEXTERNAL_OBJECT_H
 
+// @stubgen:skip
+
 // ---- Include system wide include files ----
 #include "Module.h"
 

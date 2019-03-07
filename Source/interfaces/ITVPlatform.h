@@ -1,6 +1,8 @@
 #ifndef ITVPLATFORM_H
 #define ITVPLATFORM_H
 
+// @stubgen:skip
+
 #include <inttypes.h>
 #include <string>
 #include <vector>

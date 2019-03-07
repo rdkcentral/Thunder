@@ -1,6 +1,8 @@
 #ifndef __INTERFACE_TIMESYNC_H
 #define __INTERFACE_TIMESYNC_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

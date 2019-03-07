@@ -1,6 +1,8 @@
 #ifndef __IKEYHANDLER_H__
 #define __IKEYHANDLER_H__
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

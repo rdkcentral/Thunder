@@ -1,6 +1,8 @@
 #ifndef __IDICTIONARY_H
 #define __IDICTIONARY_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

@@ -1,6 +1,8 @@
 #ifndef __ICOMMAND_H
 #define __ICOMMAND_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

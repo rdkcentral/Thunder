@@ -1,5 +1,7 @@
 #pragma once
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

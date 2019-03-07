@@ -1,6 +1,8 @@
 #ifndef __IVOICEHANDLER_H__
 #define __IVOICEHANDLER_H__
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// @stubgen:skip
+
 #ifndef CDMI_H_
 #define CDMI_H_
 
