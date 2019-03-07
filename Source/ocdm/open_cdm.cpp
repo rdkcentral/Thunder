@@ -645,6 +645,9 @@ private:
     void Reconnect(void) const
      {
         if (_client->IsOpen() == false) {
+            if (_remote != nullptr) {
+                _remote->Release();
+            }
             _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
 
             ASSERT(_remote != nullptr);
