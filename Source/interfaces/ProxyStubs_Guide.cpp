@@ -72,7 +72,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -297,8 +297,6 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
@@ -306,7 +304,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IGuide::INotification proxy destroyed");
         }
     },
@@ -329,8 +327,6 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
@@ -338,7 +334,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IGuide::INotification proxy destroyed");
         }
     },

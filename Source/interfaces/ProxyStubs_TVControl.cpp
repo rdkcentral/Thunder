@@ -122,8 +122,6 @@ ProxyStub::MethodHandler StreamStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IStream* implementation = input.Implementation<IStream>();
@@ -131,7 +129,7 @@ ProxyStub::MethodHandler StreamStubMethods[] = {
             implementation->Callback(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IStream::ICallback proxy destroyed");
         }
     },
@@ -269,15 +267,10 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         uint64_t param0 = reader.Number<uint64_t>();
         uint64_t param1 = reader.Number<uint64_t>();
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-        IStream::IControl* implementation = input.Implementation<IStream::IControl>();
+        // call implementation
+        const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
         ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
         implementation->TimeRange(param0, param1);
-
-        // write return value
-        writer.Number<uint64_t>(param0);
-        writer.Number<uint64_t>(param1);
     },
 
     // virtual IStream::IControl::IGeometry* Geometry() const = 0
@@ -335,8 +328,6 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IStream::IControl* implementation = input.Implementation<IStream::IControl>();
@@ -344,7 +335,7 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
             implementation->Callback(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IStream::IControl::ICallback proxy destroyed");
         }
     },
@@ -587,7 +578,7 @@ ProxyStub::MethodHandler PlayerStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -789,14 +780,12 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(4));
 
+        // write parameters
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-        writer.Number<const uint64_t>(param0);
-        writer.Number<const uint64_t>(param1);
+        writer.Number<uint64_t>(param0);
+        writer.Number<uint64_t>(param1);
 
-        if (Invoke(newMessage) == Core::ERROR_NONE) {
-            param0 = Number<uint64_t>(newMessage->Response());
-            param1 = Number<uint64_t>(newMessage->Response());
-        }
+        Invoke(newMessage);
     }
 
     IStream::IControl::IGeometry* Geometry() const override

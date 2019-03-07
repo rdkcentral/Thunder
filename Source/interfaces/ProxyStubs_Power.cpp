@@ -49,8 +49,6 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IPower* implementation = input.Implementation<IPower>();
@@ -58,7 +56,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPower::INotification proxy destroyed");
         }
     },
@@ -81,8 +79,6 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IPower* implementation = input.Implementation<IPower>();
@@ -90,7 +86,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPower::INotification proxy destroyed");
         }
     },

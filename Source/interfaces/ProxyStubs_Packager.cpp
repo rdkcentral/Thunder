@@ -49,8 +49,6 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IPackager* implementation = input.Implementation<IPackager>();
@@ -58,7 +56,7 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::INotification proxy destroyed");
         }
     },
@@ -117,7 +115,7 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -329,8 +327,6 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
             }
         }
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
         if (((param0 == nullptr) || (param0_proxy != nullptr)) && ((param1 == nullptr) || (param1_proxy != nullptr))) {
             // call implementation
             IPackager::INotification* implementation = input.Implementation<IPackager::INotification>();
@@ -338,10 +334,10 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
             implementation->StateChange(param0_proxy, param1_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(param0_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::IPackageInfo proxy destroyed");
         }
-        if ((param1_proxy != nullptr) && (RPC::Administrator::Instance().Release(param1_proxy, writer) != Core::ERROR_NONE)) {
+        if ((param1_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param1_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPackager::IInstallationInfo proxy destroyed");
         }
     },
