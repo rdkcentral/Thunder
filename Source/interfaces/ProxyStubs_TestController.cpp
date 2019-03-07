@@ -27,137 +27,137 @@ using namespace Exchange;
 // Methods:
 //  (0) virtual void Setup() = 0
 //  (1) virtual void TearDown() = 0
-//  (2) virtual ITestController::ICategory::IIterator * Categories() const = 0
-//  (3) virtual ITestController::ICategory * Category(const string &) const = 0
+//  (2) virtual ITestController::ICategory::IIterator* Categories() const = 0
+//  (3) virtual ITestController::ICategory* Category(const string&) const = 0
 //
 
 ProxyStub::MethodHandler TestControllerStubMethods[] = {
-  // virtual void Setup() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Setup() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController * implementation = input.Implementation<ITestController>();
-    ASSERT((implementation != nullptr) && "Null ITestController implementation pointer (ITestController::Setup() stub)");
-    implementation->Setup();
-  },
+        // call implementation
+        ITestController* implementation = input.Implementation<ITestController>();
+        ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
+        implementation->Setup();
+    },
 
-  // virtual void TearDown() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void TearDown() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController * implementation = input.Implementation<ITestController>();
-    ASSERT((implementation != nullptr) && "Null ITestController implementation pointer (ITestController::TearDown() stub)");
-    implementation->TearDown();
-  },
+        // call implementation
+        ITestController* implementation = input.Implementation<ITestController>();
+        ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
+        implementation->TearDown();
+    },
 
-  // virtual ITestController::ICategory::IIterator * Categories() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ICategory::IIterator* Categories() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController * implementation = input.Implementation<ITestController>();
-    ASSERT((implementation != nullptr) && "Null ITestController implementation pointer (ITestController::Categories() stub)");
-    ITestController::ICategory::IIterator * output = implementation->Categories();
+        // call implementation
+        const ITestController* implementation = input.Implementation<ITestController>();
+        ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
+        ITestController::ICategory::IIterator* output = implementation->Categories();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ICategory::IIterator *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ICategory::IIterator*>(output);
+    },
 
-  // virtual ITestController::ICategory * Category(const string &) const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ICategory* Category(const string&) const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // read parameters
-    RPC::Data::Frame::Reader reader(input.Reader());
-    const string param0 = reader.Text();
+        // read parameters
+        RPC::Data::Frame::Reader reader(input.Reader());
+        const string param0 = reader.Text();
 
-    // call implementation
-    const ITestController * implementation = input.Implementation<ITestController>();
-    ASSERT((implementation != nullptr) && "Null ITestController implementation pointer (ITestController::Category() stub)");
-    ITestController::ICategory * output = implementation->Category(param0);
+        // call implementation
+        const ITestController* implementation = input.Implementation<ITestController>();
+        ASSERT((implementation != nullptr) && "Null ITestController implementation pointer");
+        ITestController::ICategory* output = implementation->Category(param0);
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ICategory *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ICategory*>(output);
+    },
 
-  nullptr
+    nullptr
 }; // TestControllerStubMethods[]
 
 //
 // ITestController::ITest interface stub definitions
 //
 // Methods:
-//  (0) virtual string Execute(const string &) = 0
+//  (0) virtual string Execute(const string&) = 0
 //  (1) virtual string Description() const = 0
 //  (2) virtual string Name() const = 0
 //
 
 ProxyStub::MethodHandler TestControllerTestStubMethods[] = {
-  // virtual string Execute(const string &) = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual string Execute(const string&) = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // read parameters
-    RPC::Data::Frame::Reader reader(input.Reader());
-    const string param0 = reader.Text();
+        // read parameters
+        RPC::Data::Frame::Reader reader(input.Reader());
+        const string param0 = reader.Text();
 
-    // call implementation
-    ITestController::ITest * implementation = input.Implementation<ITestController::ITest>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer (ITestController::ITest::Execute() stub)");
-    const string output = implementation->Execute(param0);
+        // call implementation
+        ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
+        const string output = implementation->Execute(param0);
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Text(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Text(output);
+    },
 
-  // virtual string Description() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual string Description() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ITest * implementation = input.Implementation<ITestController::ITest>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer (ITestController::ITest::Description() stub)");
-    const string output = implementation->Description();
+        // call implementation
+        const ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
+        const string output = implementation->Description();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Text(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Text(output);
+    },
 
-  // virtual string Name() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual string Name() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ITest * implementation = input.Implementation<ITestController::ITest>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer (ITestController::ITest::Name() stub)");
-    const string output = implementation->Name();
+        // call implementation
+        const ITestController::ITest* implementation = input.Implementation<ITestController::ITest>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest implementation pointer");
+        const string output = implementation->Name();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Text(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Text(output);
+    },
 
-  nullptr
+    nullptr
 }; // TestControllerTestStubMethods[]
 
 //
@@ -167,71 +167,71 @@ ProxyStub::MethodHandler TestControllerTestStubMethods[] = {
 //  (0) virtual void Reset() = 0
 //  (1) virtual bool IsValid() const = 0
 //  (2) virtual bool Next() = 0
-//  (3) virtual ITestController::ITest * Test() const = 0
+//  (3) virtual ITestController::ITest* Test() const = 0
 //
 
 ProxyStub::MethodHandler TestControllerTestIteratorStubMethods[] = {
-  // virtual void Reset() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Reset() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ITest::IIterator * implementation = input.Implementation<ITestController::ITest::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer (ITestController::ITest::IIterator::Reset() stub)");
-    implementation->Reset();
-  },
+        // call implementation
+        ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
+        implementation->Reset();
+    },
 
-  // virtual bool IsValid() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual bool IsValid() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ITest::IIterator * implementation = input.Implementation<ITestController::ITest::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer (ITestController::ITest::IIterator::IsValid() stub)");
-    const bool output = implementation->IsValid();
+        // call implementation
+        const ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
+        const bool output = implementation->IsValid();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Boolean(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Boolean(output);
+    },
 
-  // virtual bool Next() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual bool Next() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ITest::IIterator * implementation = input.Implementation<ITestController::ITest::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer (ITestController::ITest::IIterator::Next() stub)");
-    const bool output = implementation->Next();
+        // call implementation
+        ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
+        const bool output = implementation->Next();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Boolean(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Boolean(output);
+    },
 
-  // virtual ITestController::ITest * Test() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ITest* Test() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ITest::IIterator * implementation = input.Implementation<ITestController::ITest::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer (ITestController::ITest::IIterator::Test() stub)");
-    ITestController::ITest * output = implementation->Test();
+        // call implementation
+        const ITestController::ITest::IIterator* implementation = input.Implementation<ITestController::ITest::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ITest::IIterator implementation pointer");
+        ITestController::ITest* output = implementation->Test();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ITest *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ITest*>(output);
+    },
 
-  nullptr
+    nullptr
 }; // TestControllerTestIteratorStubMethods[]
 
 //
@@ -241,154 +241,150 @@ ProxyStub::MethodHandler TestControllerTestIteratorStubMethods[] = {
 //  (0) virtual string Name() const = 0
 //  (1) virtual void Setup() = 0
 //  (2) virtual void TearDown() = 0
-//  (3) virtual void Register(ITestController::ITest *) = 0
-//  (4) virtual void Unregister(ITestController::ITest *) = 0
-//  (5) virtual ITestController::ITest::IIterator * Tests() const = 0
-//  (6) virtual ITestController::ITest * Test(const string &) const = 0
+//  (3) virtual void Register(ITestController::ITest*) = 0
+//  (4) virtual void Unregister(ITestController::ITest*) = 0
+//  (5) virtual ITestController::ITest::IIterator* Tests() const = 0
+//  (6) virtual ITestController::ITest* Test(const string&) const = 0
 //
 
 ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
-  // virtual string Name() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual string Name() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Name() stub)");
-    const string output = implementation->Name();
+        // call implementation
+        const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+        const string output = implementation->Name();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Text(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Text(output);
+    },
 
-  // virtual void Setup() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Setup() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Setup() stub)");
-    implementation->Setup();
-  },
+        // call implementation
+        ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+        implementation->Setup();
+    },
 
-  // virtual void TearDown() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void TearDown() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::TearDown() stub)");
-    implementation->TearDown();
-  },
+        // call implementation
+        ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+        implementation->TearDown();
+    },
 
-  // virtual void Register(ITestController::ITest *) = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Register(ITestController::ITest*) = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    bool proxy_failed = false;
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // read parameters
-    RPC::Data::Frame::Reader reader(input.Reader());
-    ITestController::ITest * param0 = reader.Number<ITestController::ITest *>();
-    ITestController::ITest * param0_proxy = nullptr;
-    if (param0 != nullptr) {
-      param0_proxy = RPC::Administrator::Instance().CreateProxy<ITestController::ITest>(channel, param0, true, false);
-      ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy (ITestController::ICategory::Register() stub)");
-      if (param0_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ITest proxy (ITestController::ICategory::Register() stub)");
-        proxy_failed = true;
-      }
-    }
+        // read parameters
+        RPC::Data::Frame::Reader reader(input.Reader());
+        ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
+        ITestController::ITest* param0_proxy = nullptr;
+        if (param0 != nullptr) {
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0);
+            ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
+            if (param0_proxy == nullptr) {
+                TRACE_L1("Failed to get instance of ITestController::ITest proxy");
+            }
+        }
 
-    if (!proxy_failed) {
-      // call implementation
-      ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-      ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Register() stub)");
-      implementation->Register(param0_proxy);
-    }
+        if ((param0 == nullptr) || (param0_proxy != nullptr)) {
+            // call implementation
+            ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+            ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+            implementation->Register(param0_proxy);
+        }
 
-    if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
-      TRACE_L1("ITestController::ITest::Release() failed (ITestController::ICategory::Register() stub)");
-    }
-  },
+        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+            TRACE_L1("Warning: ITestController::ITest proxy destroyed");
+        }
+    },
 
-  // virtual void Unregister(ITestController::ITest *) = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Unregister(ITestController::ITest*) = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    bool proxy_failed = false;
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // read parameters
-    RPC::Data::Frame::Reader reader(input.Reader());
-    ITestController::ITest * param0 = reader.Number<ITestController::ITest *>();
-    ITestController::ITest * param0_proxy = nullptr;
-    if (param0 != nullptr) {
-      param0_proxy = RPC::Administrator::Instance().CreateProxy<ITestController::ITest>(channel, param0, true, false);
-      ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy (ITestController::ICategory::Unregister() stub)");
-      if (param0_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ITest proxy (ITestController::ICategory::Unregister() stub)");
-        proxy_failed = true;
-      }
-    }
+        // read parameters
+        RPC::Data::Frame::Reader reader(input.Reader());
+        ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
+        ITestController::ITest* param0_proxy = nullptr;
+        if (param0 != nullptr) {
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0);
+            ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
+            if (param0_proxy == nullptr) {
+                TRACE_L1("Failed to get instance of ITestController::ITest proxy");
+            }
+        }
 
-    if (!proxy_failed) {
-      // call implementation
-      ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-      ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Unregister() stub)");
-      implementation->Unregister(param0_proxy);
-    }
+        if ((param0 == nullptr) || (param0_proxy != nullptr)) {
+            // call implementation
+            ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+            ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+            implementation->Unregister(param0_proxy);
+        }
 
-    if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
-      TRACE_L1("ITestController::ITest::Release() failed (ITestController::ICategory::Unregister() stub)");
-    }
-  },
+        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+            TRACE_L1("Warning: ITestController::ITest proxy destroyed");
+        }
+    },
 
-  // virtual ITestController::ITest::IIterator * Tests() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ITest::IIterator* Tests() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Tests() stub)");
-    ITestController::ITest::IIterator * output = implementation->Tests();
+        // call implementation
+        const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+        ITestController::ITest::IIterator* output = implementation->Tests();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ITest::IIterator *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ITest::IIterator*>(output);
+    },
 
-  // virtual ITestController::ITest * Test(const string &) const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ITest* Test(const string&) const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // read parameters
-    RPC::Data::Frame::Reader reader(input.Reader());
-    const string param0 = reader.Text();
+        // read parameters
+        RPC::Data::Frame::Reader reader(input.Reader());
+        const string param0 = reader.Text();
 
-    // call implementation
-    const ITestController::ICategory * implementation = input.Implementation<ITestController::ICategory>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer (ITestController::ICategory::Test() stub)");
-    ITestController::ITest * output = implementation->Test(param0);
+        // call implementation
+        const ITestController::ICategory* implementation = input.Implementation<ITestController::ICategory>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory implementation pointer");
+        ITestController::ITest* output = implementation->Test(param0);
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ITest *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ITest*>(output);
+    },
 
-  nullptr
+    nullptr
 }; // TestControllerCategoryStubMethods[]
 
 //
@@ -398,71 +394,71 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
 //  (0) virtual void Reset() = 0
 //  (1) virtual bool IsValid() const = 0
 //  (2) virtual bool Next() = 0
-//  (3) virtual ITestController::ICategory * Category() const = 0
+//  (3) virtual ITestController::ICategory* Category() const = 0
 //
 
 ProxyStub::MethodHandler TestControllerCategoryIteratorStubMethods[] = {
-  // virtual void Reset() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual void Reset() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ICategory::IIterator * implementation = input.Implementation<ITestController::ICategory::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer (ITestController::ICategory::IIterator::Reset() stub)");
-    implementation->Reset();
-  },
+        // call implementation
+        ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
+        implementation->Reset();
+    },
 
-  // virtual bool IsValid() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual bool IsValid() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ICategory::IIterator * implementation = input.Implementation<ITestController::ICategory::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer (ITestController::ICategory::IIterator::IsValid() stub)");
-    const bool output = implementation->IsValid();
+        // call implementation
+        const ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
+        const bool output = implementation->IsValid();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Boolean(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Boolean(output);
+    },
 
-  // virtual bool Next() = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual bool Next() = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    ITestController::ICategory::IIterator * implementation = input.Implementation<ITestController::ICategory::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer (ITestController::ICategory::IIterator::Next() stub)");
-    const bool output = implementation->Next();
+        // call implementation
+        ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
+        const bool output = implementation->Next();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Boolean(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Boolean(output);
+    },
 
-  // virtual ITestController::ICategory * Category() const = 0
-  //
-  [](Core::ProxyType<Core::IPCChannel> & channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage> & message) {
+    // virtual ITestController::ICategory* Category() const = 0
+    //
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
 
-    RPC::Data::Input & input(message->Parameters());
+        RPC::Data::Input& input(message->Parameters());
 
-    // call implementation
-    const ITestController::ICategory::IIterator * implementation = input.Implementation<ITestController::ICategory::IIterator>();
-    ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer (ITestController::ICategory::IIterator::Category() stub)");
-    ITestController::ICategory * output = implementation->Category();
+        // call implementation
+        const ITestController::ICategory::IIterator* implementation = input.Implementation<ITestController::ICategory::IIterator>();
+        ASSERT((implementation != nullptr) && "Null ITestController::ICategory::IIterator implementation pointer");
+        ITestController::ICategory* output = implementation->Category();
 
-    // write return value
-    RPC::Data::Frame::Writer writer(message->Response().Writer());
-    writer.Number<ITestController::ICategory *>(output);
-  },
+        // write return value
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+        writer.Number<ITestController::ICategory*>(output);
+    },
 
-  nullptr
+    nullptr
 }; // TestControllerCategoryIteratorStubMethods[]
 
 
@@ -476,136 +472,124 @@ ProxyStub::MethodHandler TestControllerCategoryIteratorStubMethods[] = {
 // Methods:
 //  (0) virtual void Setup() = 0
 //  (1) virtual void TearDown() = 0
-//  (2) virtual ITestController::ICategory::IIterator * Categories() const = 0
-//  (3) virtual ITestController::ICategory * Category(const string &) const = 0
+//  (2) virtual ITestController::ICategory::IIterator* Categories() const = 0
+//  (3) virtual ITestController::ICategory* Category(const string&) const = 0
 //
 
 class TestControllerProxy final : public ProxyStub::UnknownProxyType<ITestController> {
 public:
-  TestControllerProxy(Core::ProxyType<Core::IPCChannel> & channel, void * implementation, const bool otherSideInformed)
-      : BaseClass(channel, implementation, otherSideInformed)
-  {
-  }
-
-  void Setup() override
-  {
-    IPCMessage newMessage(BaseClass::Message(0));
-
-    Invoke(newMessage);
-  }
-
-  void TearDown() override
-  {
-    IPCMessage newMessage(BaseClass::Message(1));
-
-    Invoke(newMessage);
-  }
-
-  ITestController::ICategory::IIterator * Categories() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(2));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ICategory::IIterator * output = reader.Number<ITestController::ICategory::IIterator *>();
-    ITestController::ICategory::IIterator * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerProxy &>(*this).CreateProxy<ITestController::ICategory::IIterator>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ICategory::IIterator proxy (TestControllerProxy::Categories() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ICategory::IIterator proxy (ITestController::Categories() proxy stub)");
-      }
+    TestControllerProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        : BaseClass(channel, implementation, otherSideInformed)
+    {
     }
 
-    return output_proxy;
-  }
+    void Setup() override
+    {
+        IPCMessage newMessage(BaseClass::Message(0));
 
-  ITestController::ICategory * Category(const string & param0) const override
-  {
-    IPCMessage newMessage(BaseClass::Message(3));
+        Invoke(newMessage);
 
-    // write parameters
-    RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-    writer.Text(param0);
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ICategory * output = reader.Number<ITestController::ICategory *>();
-    ITestController::ICategory * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerProxy &>(*this).CreateProxy<ITestController::ICategory>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ICategory proxy (TestControllerProxy::Category() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ICategory proxy (ITestController::Category() proxy stub)");
-      }
+        Complete(newMessage->Response());
     }
 
-    return output_proxy;
-  }
+    void TearDown() override
+    {
+        IPCMessage newMessage(BaseClass::Message(1));
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    ITestController::ICategory::IIterator* Categories() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(2));
+
+        ITestController::ICategory::IIterator* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ICategory::IIterator*>(Interface(newMessage->Response(), ITestController::ICategory::IIterator::ID));
+        }
+
+        return output_proxy;
+    }
+
+    ITestController::ICategory* Category(const string& param0) const override
+    {
+        IPCMessage newMessage(BaseClass::Message(3));
+
+        // write parameters
+        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+        writer.Text(param0);
+
+        ITestController::ICategory* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(newMessage->Response(), ITestController::ICategory::ID));
+        }
+
+        return output_proxy;
+    }
 }; // class TestControllerProxy
 
 //
 // ITestController::ITest interface proxy definitions
 //
 // Methods:
-//  (0) virtual string Execute(const string &) = 0
+//  (0) virtual string Execute(const string&) = 0
 //  (1) virtual string Description() const = 0
 //  (2) virtual string Name() const = 0
 //
 
 class TestControllerTestProxy final : public ProxyStub::UnknownProxyType<ITestController::ITest> {
 public:
-  TestControllerTestProxy(Core::ProxyType<Core::IPCChannel> & channel, void * implementation, const bool otherSideInformed)
-      : BaseClass(channel, implementation, otherSideInformed)
-  {
-  }
+    TestControllerTestProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        : BaseClass(channel, implementation, otherSideInformed)
+    {
+    }
 
-  string Execute(const string & param0) override
-  {
-    IPCMessage newMessage(BaseClass::Message(0));
+    string Execute(const string& param0) override
+    {
+        IPCMessage newMessage(BaseClass::Message(0));
 
-    // write parameters
-    RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-    writer.Text(param0);
+        // write parameters
+        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+        writer.Text(param0);
 
-    Invoke(newMessage);
+        string output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Text(newMessage->Response());
+        }
 
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    string output = reader.Text();
+        return output;
+    }
 
-    return output;
-  }
+    string Description() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(1));
 
-  string Description() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(1));
+        string output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Text(newMessage->Response());
+        }
 
-    Invoke(newMessage);
+        return output;
+    }
 
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    string output = reader.Text();
+    string Name() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(2));
 
-    return output;
-  }
+        string output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Text(newMessage->Response());
+        }
 
-  string Name() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(2));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    string output = reader.Text();
-
-    return output;
-  }
+        return output;
+    }
 }; // class TestControllerTestProxy
 
 //
@@ -615,69 +599,63 @@ public:
 //  (0) virtual void Reset() = 0
 //  (1) virtual bool IsValid() const = 0
 //  (2) virtual bool Next() = 0
-//  (3) virtual ITestController::ITest * Test() const = 0
+//  (3) virtual ITestController::ITest* Test() const = 0
 //
 
 class TestControllerTestIteratorProxy final : public ProxyStub::UnknownProxyType<ITestController::ITest::IIterator> {
 public:
-  TestControllerTestIteratorProxy(Core::ProxyType<Core::IPCChannel> & channel, void * implementation, const bool otherSideInformed)
-      : BaseClass(channel, implementation, otherSideInformed)
-  {
-  }
-
-  void Reset() override
-  {
-    IPCMessage newMessage(BaseClass::Message(0));
-
-    Invoke(newMessage);
-  }
-
-  bool IsValid() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(1));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    bool output = reader.Boolean();
-
-    return output;
-  }
-
-  bool Next() override
-  {
-    IPCMessage newMessage(BaseClass::Message(2));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    bool output = reader.Boolean();
-
-    return output;
-  }
-
-  ITestController::ITest * Test() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(3));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ITest * output = reader.Number<ITestController::ITest *>();
-    ITestController::ITest * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerTestIteratorProxy &>(*this).CreateProxy<ITestController::ITest>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy (TestControllerTestIteratorProxy::Test() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ITest proxy (ITestController::ITest::IIterator::Test() proxy stub)");
-      }
+    TestControllerTestIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        : BaseClass(channel, implementation, otherSideInformed)
+    {
     }
 
-    return output_proxy;
-  }
+    void Reset() override
+    {
+        IPCMessage newMessage(BaseClass::Message(0));
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    bool IsValid() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(1));
+
+        bool output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Boolean(newMessage->Response());
+        }
+
+        return output;
+    }
+
+    bool Next() override
+    {
+        IPCMessage newMessage(BaseClass::Message(2));
+
+        bool output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Boolean(newMessage->Response());
+        }
+
+        return output;
+    }
+
+    ITestController::ITest* Test() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(3));
+
+        ITestController::ITest* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(newMessage->Response(), ITestController::ITest::ID));
+        }
+
+        return output_proxy;
+    }
 }; // class TestControllerTestIteratorProxy
 
 //
@@ -687,113 +665,105 @@ public:
 //  (0) virtual string Name() const = 0
 //  (1) virtual void Setup() = 0
 //  (2) virtual void TearDown() = 0
-//  (3) virtual void Register(ITestController::ITest *) = 0
-//  (4) virtual void Unregister(ITestController::ITest *) = 0
-//  (5) virtual ITestController::ITest::IIterator * Tests() const = 0
-//  (6) virtual ITestController::ITest * Test(const string &) const = 0
+//  (3) virtual void Register(ITestController::ITest*) = 0
+//  (4) virtual void Unregister(ITestController::ITest*) = 0
+//  (5) virtual ITestController::ITest::IIterator* Tests() const = 0
+//  (6) virtual ITestController::ITest* Test(const string&) const = 0
 //
 
 class TestControllerCategoryProxy final : public ProxyStub::UnknownProxyType<ITestController::ICategory> {
 public:
-  TestControllerCategoryProxy(Core::ProxyType<Core::IPCChannel> & channel, void * implementation, const bool otherSideInformed)
-      : BaseClass(channel, implementation, otherSideInformed)
-  {
-  }
-
-  string Name() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(0));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    string output = reader.Text();
-
-    return output;
-  }
-
-  void Setup() override
-  {
-    IPCMessage newMessage(BaseClass::Message(1));
-
-    Invoke(newMessage);
-  }
-
-  void TearDown() override
-  {
-    IPCMessage newMessage(BaseClass::Message(2));
-
-    Invoke(newMessage);
-  }
-
-  void Register(ITestController::ITest * param0) override
-  {
-    IPCMessage newMessage(BaseClass::Message(3));
-
-    // write parameters
-    RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-    writer.Number<ITestController::ITest *>(param0);
-
-    Invoke(newMessage);
-  }
-
-  void Unregister(ITestController::ITest * param0) override
-  {
-    IPCMessage newMessage(BaseClass::Message(4));
-
-    // write parameters
-    RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-    writer.Number<ITestController::ITest *>(param0);
-
-    Invoke(newMessage);
-  }
-
-  ITestController::ITest::IIterator * Tests() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(5));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ITest::IIterator * output = reader.Number<ITestController::ITest::IIterator *>();
-    ITestController::ITest::IIterator * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerCategoryProxy &>(*this).CreateProxy<ITestController::ITest::IIterator>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ITest::IIterator proxy (TestControllerCategoryProxy::Tests() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ITest::IIterator proxy (ITestController::ICategory::Tests() proxy stub)");
-      }
+    TestControllerCategoryProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        : BaseClass(channel, implementation, otherSideInformed)
+    {
     }
 
-    return output_proxy;
-  }
+    string Name() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(0));
 
-  ITestController::ITest * Test(const string & param0) const override
-  {
-    IPCMessage newMessage(BaseClass::Message(6));
+        string output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Text(newMessage->Response());
+        }
 
-    // write parameters
-    RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-    writer.Text(param0);
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ITest * output = reader.Number<ITestController::ITest *>();
-    ITestController::ITest * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerCategoryProxy &>(*this).CreateProxy<ITestController::ITest>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy (TestControllerCategoryProxy::Test() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ITest proxy (ITestController::ICategory::Test() proxy stub)");
-      }
+        return output;
     }
 
-    return output_proxy;
-  }
+    void Setup() override
+    {
+        IPCMessage newMessage(BaseClass::Message(1));
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    void TearDown() override
+    {
+        IPCMessage newMessage(BaseClass::Message(2));
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    void Register(ITestController::ITest* param0) override
+    {
+        IPCMessage newMessage(BaseClass::Message(3));
+
+        // write parameters
+        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+        writer.Number<ITestController::ITest*>(param0);
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    void Unregister(ITestController::ITest* param0) override
+    {
+        IPCMessage newMessage(BaseClass::Message(4));
+
+        // write parameters
+        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+        writer.Number<ITestController::ITest*>(param0);
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    ITestController::ITest::IIterator* Tests() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(5));
+
+        ITestController::ITest::IIterator* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ITest::IIterator*>(Interface(newMessage->Response(), ITestController::ITest::IIterator::ID));
+        }
+
+        return output_proxy;
+    }
+
+    ITestController::ITest* Test(const string& param0) const override
+    {
+        IPCMessage newMessage(BaseClass::Message(6));
+
+        // write parameters
+        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+        writer.Text(param0);
+
+        ITestController::ITest* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(newMessage->Response(), ITestController::ITest::ID));
+        }
+
+        return output_proxy;
+    }
 }; // class TestControllerCategoryProxy
 
 //
@@ -803,69 +773,63 @@ public:
 //  (0) virtual void Reset() = 0
 //  (1) virtual bool IsValid() const = 0
 //  (2) virtual bool Next() = 0
-//  (3) virtual ITestController::ICategory * Category() const = 0
+//  (3) virtual ITestController::ICategory* Category() const = 0
 //
 
 class TestControllerCategoryIteratorProxy final : public ProxyStub::UnknownProxyType<ITestController::ICategory::IIterator> {
 public:
-  TestControllerCategoryIteratorProxy(Core::ProxyType<Core::IPCChannel> & channel, void * implementation, const bool otherSideInformed)
-      : BaseClass(channel, implementation, otherSideInformed)
-  {
-  }
-
-  void Reset() override
-  {
-    IPCMessage newMessage(BaseClass::Message(0));
-
-    Invoke(newMessage);
-  }
-
-  bool IsValid() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(1));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    bool output = reader.Boolean();
-
-    return output;
-  }
-
-  bool Next() override
-  {
-    IPCMessage newMessage(BaseClass::Message(2));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    bool output = reader.Boolean();
-
-    return output;
-  }
-
-  ITestController::ICategory * Category() const override
-  {
-    IPCMessage newMessage(BaseClass::Message(3));
-
-    Invoke(newMessage);
-
-    // read return value
-    RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-    ITestController::ICategory * output = reader.Number<ITestController::ICategory *>();
-    ITestController::ICategory * output_proxy = nullptr;
-    if (output != nullptr) {
-      output_proxy = const_cast<TestControllerCategoryIteratorProxy &>(*this).CreateProxy<ITestController::ICategory>(output);
-      ASSERT((output_proxy != nullptr) && "Failed to get instance of ITestController::ICategory proxy (TestControllerCategoryIteratorProxy::Category() proxy stub)");
-      if (output_proxy == nullptr) {
-        TRACE_L1("Failed to get instance of ITestController::ICategory proxy (ITestController::ICategory::IIterator::Category() proxy stub)");
-      }
+    TestControllerCategoryIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        : BaseClass(channel, implementation, otherSideInformed)
+    {
     }
 
-    return output_proxy;
-  }
+    void Reset() override
+    {
+        IPCMessage newMessage(BaseClass::Message(0));
+
+        Invoke(newMessage);
+
+        Complete(newMessage->Response());
+    }
+
+    bool IsValid() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(1));
+
+        bool output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Boolean(newMessage->Response());
+        }
+
+        return output;
+    }
+
+    bool Next() override
+    {
+        IPCMessage newMessage(BaseClass::Message(2));
+
+        bool output{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output = Boolean(newMessage->Response());
+        }
+
+        return output;
+    }
+
+    ITestController::ICategory* Category() const override
+    {
+        IPCMessage newMessage(BaseClass::Message(3));
+
+        ITestController::ICategory* output_proxy{};
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return value
+            output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(newMessage->Response(), ITestController::ICategory::ID));
+        }
+
+        return output_proxy;
+    }
 }; // class TestControllerCategoryIteratorProxy
 
 
@@ -875,22 +839,22 @@ public:
 
 namespace {
 
-typedef ProxyStub::StubType<ITestController::ITest::IIterator, TestControllerTestIteratorStubMethods, ProxyStub::UnknownStub> TestControllerTestIteratorStub;
-typedef ProxyStub::StubType<ITestController::ICategory, TestControllerCategoryStubMethods, ProxyStub::UnknownStub> TestControllerCategoryStub;
-typedef ProxyStub::StubType<ITestController::ICategory::IIterator, TestControllerCategoryIteratorStubMethods, ProxyStub::UnknownStub> TestControllerCategoryIteratorStub;
-typedef ProxyStub::StubType<ITestController::ITest, TestControllerTestStubMethods, ProxyStub::UnknownStub> TestControllerTestStub;
-typedef ProxyStub::StubType<ITestController, TestControllerStubMethods, ProxyStub::UnknownStub> TestControllerStub;
+typedef ProxyStub::UnknownStubType<ITestController::ITest::IIterator, TestControllerTestIteratorStubMethods> TestControllerTestIteratorStub;
+typedef ProxyStub::UnknownStubType<ITestController::ICategory, TestControllerCategoryStubMethods> TestControllerCategoryStub;
+typedef ProxyStub::UnknownStubType<ITestController::ICategory::IIterator, TestControllerCategoryIteratorStubMethods> TestControllerCategoryIteratorStub;
+typedef ProxyStub::UnknownStubType<ITestController::ITest, TestControllerTestStubMethods> TestControllerTestStub;
+typedef ProxyStub::UnknownStubType<ITestController, TestControllerStubMethods> TestControllerStub;
 
 static class Instantiation {
 public:
-  Instantiation()
-  {
-    RPC::Administrator::Instance().Announce<ITestController::ITest::IIterator, TestControllerTestIteratorProxy, TestControllerTestIteratorStub>();
-    RPC::Administrator::Instance().Announce<ITestController::ICategory, TestControllerCategoryProxy, TestControllerCategoryStub>();
-    RPC::Administrator::Instance().Announce<ITestController::ICategory::IIterator, TestControllerCategoryIteratorProxy, TestControllerCategoryIteratorStub>();
-    RPC::Administrator::Instance().Announce<ITestController::ITest, TestControllerTestProxy, TestControllerTestStub>();
-    RPC::Administrator::Instance().Announce<ITestController, TestControllerProxy, TestControllerStub>();
-  }
+    Instantiation()
+    {
+        RPC::Administrator::Instance().Announce<ITestController::ITest::IIterator, TestControllerTestIteratorProxy, TestControllerTestIteratorStub>();
+        RPC::Administrator::Instance().Announce<ITestController::ICategory, TestControllerCategoryProxy, TestControllerCategoryStub>();
+        RPC::Administrator::Instance().Announce<ITestController::ICategory::IIterator, TestControllerCategoryIteratorProxy, TestControllerCategoryIteratorStub>();
+        RPC::Administrator::Instance().Announce<ITestController::ITest, TestControllerTestProxy, TestControllerTestStub>();
+        RPC::Administrator::Instance().Announce<ITestController, TestControllerProxy, TestControllerStub>();
+    }
 } ProxyStubRegistration;
 
 } // namespace

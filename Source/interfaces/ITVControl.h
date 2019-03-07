@@ -59,6 +59,7 @@ namespace Exchange {
             virtual int32_t Speed() const = 0;
             virtual void Position(const uint64_t absoluteTime) = 0;
             virtual uint64_t Position() const = 0;
+            // @stubgen:stub
             virtual void TimeRange(uint64_t& begin, uint64_t& end) const = 0;
             virtual IGeometry* Geometry() const = 0;
             virtual void Geometry(const IGeometry* settings) = 0;

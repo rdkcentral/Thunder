@@ -3,8 +3,23 @@ set(TargetInterfaces ${NAMESPACE}Interfaces)
 
 add_library(${TargetMarshalling} SHARED
         ProxyStubs.cpp
+        ProxyStubs_AVNClient.cpp
+        ProxyStubs_Browser.cpp
+        ProxyStubs_Composition.cpp
+        ProxyStubs_ContentDecryption.cpp
+        ProxyStubs_DsgccClient.cpp
+        ProxyStubs_Guide.cpp
+        ProxyStubs_Netflix.cpp
         ProxyStubs_Packager.cpp
+        ProxyStubs_PlayGiga.cpp
+        ProxyStubs_Provisioning.cpp
+        ProxyStubs_RPCLink.cpp
+        ProxyStubs_RtspClient.cpp
+        ProxyStubs_Streaming.cpp
         ProxyStubs_TestController.cpp
+        ProxyStubs_TVControl.cpp
+        ProxyStubs_WebDriver.cpp
+        ProxyStubs_WebServer.cpp
         )
 
 add_library(${TargetInterfaces} SHARED
