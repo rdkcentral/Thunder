@@ -57,7 +57,7 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().CreateProxy<RPC::IRemoteProcess>(channel, reader.Number<RPC::IRemoteProcess*>(), false, false);
+				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().ProxyInstance<RPC::IRemoteProcess>(channel, reader.Number<void*>());
 
 				implementation->Activated(proxy);
 
@@ -78,7 +78,7 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().CreateProxy<RPC::IRemoteProcess>(channel, reader.Number<RPC::IRemoteProcess*>(), false, false);
+				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().ProxyInstance<RPC::IRemoteProcess>(channel, reader.Number<void*>());
 
 				implementation->Deactivated(proxy);
 
@@ -132,17 +132,17 @@ namespace ProxyStub {
         nullptr
     };
 
-	typedef ProxyStub::StubType<RPC::IRemoteProcess, RemoteProcessStubMethods, ProxyStub::UnknownStub> RemoteProcessStub;
-	typedef ProxyStub::StubType<RPC::IRemoteProcess::INotification, RemoteProcessNotificationStubMethods, ProxyStub::UnknownStub> RemoteProcessNotificationStub;
-	typedef ProxyStub::StubType<Trace::ITraceController, TraceControllerStubMethods, ProxyStub::UnknownStub> TraceControllerStub;
-    typedef ProxyStub::StubType<Trace::ITraceIterator, TraceIteratorStubMethods, ProxyStub::UnknownStub> TraceIteratorStub;
+	typedef ProxyStub::UnknownStubType<RPC::IRemoteProcess, RemoteProcessStubMethods> RemoteProcessStub;
+	typedef ProxyStub::UnknownStubType<RPC::IRemoteProcess::INotification, RemoteProcessNotificationStubMethods> RemoteProcessNotificationStub;
+	typedef ProxyStub::UnknownStubType<Trace::ITraceController, TraceControllerStubMethods> TraceControllerStub;
+    typedef ProxyStub::UnknownStubType<Trace::ITraceIterator, TraceIteratorStubMethods> TraceIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
 	class RemoteProcessProxy : public UnknownProxyType<RPC::IRemoteProcess> {
 	public:
-		RemoteProcessProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		RemoteProcessProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 		}
@@ -157,7 +157,7 @@ namespace ProxyStub {
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+                        return (Number<uint32_t>(newMessage->Response()));
 		}
 		virtual RPC::IRemoteProcess::enumState State() const
 		{
@@ -165,7 +165,7 @@ namespace ProxyStub {
 
 			Invoke(newMessage);
 
-			return (newMessage->Response().Reader().Number<RPC::IRemoteProcess::enumState>());
+                        return (Number<RPC::IRemoteProcess::enumState>(newMessage->Response()));
 		}
 		virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 		{
@@ -179,21 +179,21 @@ namespace ProxyStub {
 
 			Invoke(newMessage);
 
-			RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-			return (CreateProxy(reader.Number<Core::IUnknown*>(), interfaceId));
+			return (Interface(newMessage->Response(), interfaceId));
 		}
 		virtual void Terminate()
 		{
 			IPCMessage newMessage(BaseClass::Message(3));
 
 			Invoke(newMessage);
+
+                        Complete(newMessage->Response());
 		}
 	};
 
 	class RemoteProcessNotificationProxy : public UnknownProxyType<RPC::IRemoteProcess::INotification> {
 	public:
-		RemoteProcessNotificationProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		RemoteProcessNotificationProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 		}
@@ -209,6 +209,8 @@ namespace ProxyStub {
 			writer.Number<RPC::IRemoteProcess*>(process);
 
 			Invoke(newMessage);
+
+                        Complete(newMessage->Response());
 		}
 		virtual void Deactivated(RPC::IRemoteProcess* process)
 		{
@@ -217,12 +219,14 @@ namespace ProxyStub {
 			writer.Number<RPC::IRemoteProcess*>(process);
 
 			Invoke(newMessage);
+
+                        Complete(newMessage->Response());
 		}
 	};
 
 	class TraceControllerProxy : public UnknownProxyType<Trace::ITraceController> {
     public:
-        TraceControllerProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        TraceControllerProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -237,15 +241,17 @@ namespace ProxyStub {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Boolean(enabled);
             writer.Text(module);
-			writer.Text(category);
+            writer.Text(category);
 
             Invoke(newMessage);
+
+            Complete(newMessage->Response());
         }
     };
 
     class TraceIteratorProxy : public UnknownProxyType<Trace::ITraceIterator> {
     public:
-        TraceIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        TraceIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -258,6 +264,7 @@ namespace ProxyStub {
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
+            Complete(newMessage->Response());
         }
         virtual bool Info(bool& enabled, string& module, string& category) const
         {
@@ -271,8 +278,10 @@ namespace ProxyStub {
                 result = reader.Boolean();
                 enabled = reader.Boolean();
                 module = reader.Text();
-				category = reader.Text();
-			}
+		category = reader.Text();
+
+                Complete(reader);
+            }
 
             return (result);
         }

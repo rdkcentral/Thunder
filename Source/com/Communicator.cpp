@@ -45,7 +45,7 @@ namespace RPC {
 				void* implementation = message->Response().Implementation();
 
 				if (implementation != nullptr) {
-					result = Administrator::Instance().CreateProxy(interfaceId, _channel, implementation, false, true);
+					result = Administrator::Instance().ProxyInstance(_channel, implementation, interfaceId, true, interfaceId);
 				}
             }
         }
