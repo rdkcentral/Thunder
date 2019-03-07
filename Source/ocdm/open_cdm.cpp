@@ -662,9 +662,6 @@ private:
             if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
                 connector = _T("/tmp/ocdm");
             }
-            // Setup client again
-            // It should not be required to setup client again when WPE-259 problem will be resolved
-            _client = Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(connector.c_str()), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()));
             _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
 
             ASSERT(_remote != nullptr);

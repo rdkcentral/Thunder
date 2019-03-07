@@ -125,6 +125,7 @@ namespace RPC {
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime)
 	{
         ASSERT(BaseClass::IsOpen() == false);
+        _announceEvent.ResetEvent();
 
         //do not set announce parameters, we do not know what side will offer the interface
 
@@ -140,6 +141,7 @@ namespace RPC {
 	uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 	{
         ASSERT(BaseClass::IsOpen() == false);
+        _announceEvent.ResetEvent();
 
 		_announceMessage->Parameters().Set(className, interfaceId, version);
 
@@ -155,6 +157,7 @@ namespace RPC {
     uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void * implementation)
     {
         ASSERT(BaseClass::IsOpen() == false);
+        _announceEvent.ResetEvent();
 
         _announceMessage->Parameters().Set(interfaceId, implementation, Data::Init::REQUEST);
 
