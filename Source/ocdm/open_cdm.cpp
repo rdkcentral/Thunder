@@ -639,17 +639,7 @@ private:
         , _interested(0)
         , _sessionKeys()
         , _sink(this) {
-
-        _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
-
-        ASSERT(_remote != nullptr);
-
-        if (_remote != nullptr) {
-            Register(&_sink);
-        }
-        else {  
-            _client.Release();
-        }
+        Reconnect();
     }
 
     void Reconnect(void) const
