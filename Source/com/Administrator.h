@@ -111,7 +111,7 @@ namespace RPC {
         template<typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl) {
 
-            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstance(channel, impl, ACTUALINTERFACE::ID, false, ACTUALINTERFACE::ID)));
+            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstance(channel, impl, ACTUALINTERFACE::ID, true, ACTUALINTERFACE::ID)));
         }
         template<typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted) {

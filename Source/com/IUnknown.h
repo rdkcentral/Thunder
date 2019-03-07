@@ -174,8 +174,7 @@ namespace ProxyStub {
             }
             else if (newValue == 1) {
 
-                // FIXME:
-                ASSERT (_remoteAddRef == REGISTERED || _remoteAddRef == PENDING_ADDREF);
+                ASSERT (_remoteAddRef == REGISTERED);
 
                 // Request for destruction, do this on antoher thread, as this is an Proxy that has been addRefed on
                 // the other size, it needs to Release the AddRef on the other side and we do not want to issue 
