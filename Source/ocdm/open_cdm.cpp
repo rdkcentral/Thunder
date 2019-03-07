@@ -645,6 +645,8 @@ private:
         ASSERT(_remote != nullptr);
 
         if (_remote != nullptr) {
+            auto callback = std::bind(&OpenCDMAccessor::ConnectionRevoked, this);
+            _client->Subscirbe(callback);
             Register(&_sink);
         }
         else {  
@@ -660,16 +662,15 @@ private:
             if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
                 connector = _T("/tmp/ocdm");
             }
-
-            // Setup client again
-            // It should not be required to setup client again when this problem will be resolved: WPE-259
-            _client = Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(connector.c_str()), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()));
             _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
 
             ASSERT(_remote != nullptr);
 
             if (_remote != nullptr) {
                 _remote->Register(&_sink);
+
+                auto callback = std::bind(&OpenCDMAccessor::ConnectionRevoked, this);
+                _client->Subscirbe(callback);
             }
             else {
                 _client.Release();
@@ -700,7 +701,6 @@ public:
         else {
             // Reconnect if server is down
             _singleton->Reconnect();
-
             _singleton->AddRef();
         }
 
@@ -715,6 +715,7 @@ public:
         }
 
         if( _client.IsValid() ) {
+            _client->Unsubscribe();
             _client.Release();
         }
 
@@ -776,6 +777,14 @@ public:
         } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
 
         return (result);
+    }
+
+    void ConnectionRevoked(void) const
+    {
+        TRACE_L1("Do something here");
+        //ToDo: Clean up connection _client before re-open it again
+        // Calling abort is not helping, on the end we hit this issue WPE-259
+        //_client->Abort();
     }
 
 public:

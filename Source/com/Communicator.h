@@ -1229,6 +1229,10 @@ namespace RPC {
 			return (Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId));
 		}
 
+        using OnRevoked = std::function<void(void)>;
+        void Subscirbe(const OnRevoked &callback);
+        void Unsubscribe();
+
 	private:
 		// Open and request an interface from the other side on the announce message (Any RPC client uses this)
         uint32_t Open(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version);
@@ -1275,6 +1279,8 @@ namespace RPC {
 		Core::Event _announceEvent;
 		Core::ProxyType<IHandler> _handler;
 		AnnounceHandler _announcements;
+		OnRevoked _observer;
+		mutable Core::CriticalSection _adminLock;
 	};
 }
 }
