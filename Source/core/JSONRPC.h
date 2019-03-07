@@ -172,7 +172,7 @@ namespace JSONRPC {
 		// For now the version is not used for exist determination, but who knows what will happen in the future.
 		// The interface is prepared.
 		inline uint32_t Exists(const string& methodName, const uint8_t version) const {
-			return(_handlers.find(methodName) != _handlers.end() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+			return(_handlers.find(methodName) != _handlers.end() ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
 		}
         uint32_t Validate (const Message& message) const {
             const string callsign (message.Callsign());
