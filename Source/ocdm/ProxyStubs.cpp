@@ -414,11 +414,15 @@ namespace WPEFramework {
             writer.Text(keySystem);
             writer.Text(mimeType);
  
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::OCDM_RESULT output = 1;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::OCDM_RESULT>();
+            }
+            return output;
         } 
         virtual OCDM::ISession* Session (
             const std::string sessionId) {
@@ -427,11 +431,15 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Text(sessionId);
  
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::ISession* output = nullptr;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>()));
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>());
+            }
+            return output;
         }
         virtual OCDM::ISession* Session (
             const uint8_t keyId[],
@@ -441,11 +449,15 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Buffer(keyIdLength, keyId);
  
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::ISession* output = nullptr;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>()));
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>());
+            }
+            return output;
         }
  
         //
@@ -471,16 +483,18 @@ namespace WPEFramework {
             writer.Buffer(CDMDataLength, CDMData);
             writer.Number(callback);
 
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::OCDM_RESULT output = 1;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::OCDM_RESULT>();
 
-            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT>();
-
-            sessionId = reader.Text(); 
-            session = CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>());
-
-            return (result);
+                sessionId = reader.Text();
+                session = CreateProxy<OCDM::ISession>(reader.Number<OCDM::ISession*>());
+            }
+            return output;
         }
         //
         // Set Server Certificate
@@ -494,11 +508,15 @@ namespace WPEFramework {
             writer.Text(keySystem);
             writer.Buffer(serverCertificateLength, serverCertificate);
 
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::OCDM_RESULT output = 1;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::OCDM_RESULT>();
+            }
+            return output;
         }
         //
         // Register for a KeyId change notification
@@ -632,11 +650,15 @@ namespace WPEFramework {
         virtual OCDM::OCDM_RESULT Load() override {
             IPCMessage newMessage(BaseClass::Message(0));
 
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::OCDM_RESULT output = 1;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::OCDM_RESULT>();
+            }
+            return output;
         }
         //
         // Process a key message response.
@@ -654,11 +676,15 @@ namespace WPEFramework {
         virtual OCDM::OCDM_RESULT Remove() override {
             IPCMessage newMessage(BaseClass::Message(2));
 
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            OCDM::OCDM_RESULT output = 1;
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<OCDM::OCDM_RESULT>());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::OCDM_RESULT>();
+            }
+            return output;
         }
         //
         // report the current status of the Session with respect to the KeyExchange.
@@ -666,12 +692,16 @@ namespace WPEFramework {
         virtual OCDM::ISession::KeyStatus Status() const {
 
             IPCMessage newMessage(BaseClass::Message(3));
- 
-            Invoke(newMessage);
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            uint32_t status = Invoke(newMessage);
+            OCDM::ISession::KeyStatus output = OCDM::ISession::KeyStatus::InternalError;
 
-            return (reader.Number<OCDM::ISession::KeyStatus>());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<OCDM::ISession::KeyStatus>();
+            }
+            return output;
         }
         //
         // Report the name to be used for the Shared Memory for exchanging the Encrypted fragements.
@@ -680,11 +710,15 @@ namespace WPEFramework {
 
             IPCMessage newMessage(BaseClass::Message(4));
  
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            std::string output = "";
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Text());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Text();
+            }
+            return output;
         }
         //
         // We are done with the Sesison, close it.
@@ -713,11 +747,15 @@ namespace WPEFramework {
 
             IPCMessage newMessage(BaseClass::Message(7));
  
-            Invoke(newMessage);
+            uint32_t status = Invoke(newMessage);
+            std::string output = "";
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Text());
+            if (status == Core::ERROR_NONE)
+            {
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Text();
+            }
+            return output;
         }
  
     };

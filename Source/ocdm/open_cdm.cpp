@@ -652,20 +652,44 @@ private:
         }
     }
 
+    void Reconnect(void) const
+     {
+        if (_client->IsOpen() == false) {
+            // See if we have an environment variable set
+            string connector;
+            if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
+                connector = _T("/tmp/ocdm");
+            }
+
+            // Setup client again
+            // It should not be required to setup client again when this problem will be resolved: WPE-259
+            _client = Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(connector.c_str()), Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()));
+            _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
+
+            ASSERT(_remote != nullptr);
+
+            if (_remote != nullptr) {
+                _remote->Register(&_sink);
+            }
+            else {
+                _client.Release();
+            }
+        }
+     }
+
 public:
     static OpenCDMAccessor* Instance () {
 
         _systemLock.Lock();
 
         if (_singleton == nullptr) {
-			// See if we have an environment variable set.
-			string connector;
-			if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
-				connector = _T("/tmp/ocdm");
-			}
+            // See if we have an environment variable set.
+            string connector;
+            if ((Core::SystemInfo::GetEnvironment(_T("OPEN_CDM_SERVER"), connector) == false) || (connector.empty() == true)) {
+                connector = _T("/tmp/ocdm");
+            }
 
-            OpenCDMAccessor* result = new OpenCDMAccessor (connector.c_str());
-
+            OpenCDMAccessor* result = new OpenCDMAccessor(connector.c_str());
             if (result->_remote != nullptr) {
                 _singleton = result;
             }
@@ -674,6 +698,9 @@ public:
             }
         } 
         else {
+            // Reconnect if server is down
+            _singleton->Reconnect();
+
             _singleton->AddRef();
         }
 
@@ -776,6 +803,10 @@ public:
     virtual OCDM::OCDM_RESULT IsTypeSupported(
         const std::string keySystem,
         const std::string mimeType) const override {
+        // Do reconnection here again if server is down.
+        // This is first call from WebKit when new session is started
+        // If ProxyStub return error for this call, there will be not next call from WebKit
+        Reconnect();
         return (_remote->IsTypeSupported(keySystem, mimeType));
     }
 
@@ -887,13 +918,13 @@ public:
 
 private:
     mutable uint32_t _refCount;
-    Core::ProxyType<RPC::CommunicatorClient> _client;
-    OCDM::IAccessorOCDM* _remote;
+    mutable Core::ProxyType<RPC::CommunicatorClient> _client;
+    mutable OCDM::IAccessorOCDM* _remote;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
     std::map<string, std::list<KeyId> > _sessionKeys;
-    WPEFramework::Core::Sink<Sink> _sink;
+    mutable WPEFramework::Core::Sink<Sink> _sink;
     static OpenCDMAccessor* _singleton;
 };
 
