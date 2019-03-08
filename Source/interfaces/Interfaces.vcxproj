@@ -93,9 +93,6 @@
     </BuildLog>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ProxyStubs.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="IBrowser.h" />
     <ClInclude Include="IButler.h" />
     <ClInclude Include="ICommand.h" />

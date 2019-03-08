@@ -149,6 +149,17 @@ namespace WPEFramework {
 
 				return (result);
 			}
+			void EnableCaching() {
+				uint8_t value(UNREGISTERED);
+
+				// Seems we really would like to "preserve" this interface, so report it in use
+				if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED | CACHING, std::memory_order_release, std::memory_order_relaxed) == false) {
+					value = REGISTERED;
+					if (_remoteAddRef.compare_exchange_weak(value, REGISTERED | CACHING, std::memory_order_release, std::memory_order_relaxed) == false) {
+						TRACE_L1("Could not turn on the caching flag... Whaaatt !!!, %d", _remoteAddRef.load());
+					}
+				}
+			}
 			// Adding a reference can only be in a cached way if we reach the "registered" level 
 			void AddReference() const
 			{
@@ -357,35 +368,25 @@ namespace WPEFramework {
 			//{
 			//	return (RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), implementation, id, true, id));
 			//}
-			template <typename RESULTOBJECT>
-			inline RESULTOBJECT Number(const RPC::Data::Output& response) const {
-				RPC::Data::Frame::Reader reader(response.Reader());
-				RESULTOBJECT result = reader.Number<RESULTOBJECT>();
-				Complete(reader);
-				return (result);
-			}
-			inline bool Boolean(const RPC::Data::Output& response) const {
-				RPC::Data::Frame::Reader reader(response.Reader());
-				bool result = reader.Boolean();
-				Complete(reader);
-				return (result);
-			}
-			inline string Text(const RPC::Data::Output& response) const {
-				RPC::Data::Frame::Reader reader(response.Reader());
-				string result = reader.Text();
-				Complete(reader);
-				return (result);
-			}
-			inline void* Interface(const RPC::Data::Output& response, const uint32_t interfaceId) const {
+			inline void* Interface(void* implementation, const uint32_t interfaceId) const {
 				void* result = nullptr;
-				RPC::Data::Frame::Reader reader(response.Reader());
 
 				// From what is returned, we need to create a proxy
-				ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), reader.Number<void*>(), interfaceId, true, interfaceId, false);
+				ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), implementation, interfaceId, true, interfaceId, false);
 				result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
 
 				return (result);
 			}
+			//inline void* Interface(const RPC::Data::Output& response, const uint32_t interfaceId) const {
+			//	void* result = nullptr;
+			//	RPC::Data::Frame::Reader reader(response.Reader());
+
+			//	// From what is returned, we need to create a proxy
+			//	ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), reader.Number<void*>(), interfaceId, true, interfaceId, false);
+			//	result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
+
+			//	return (result);
+			//}
 			inline void Complete(const RPC::Data::Output& response) const {
 				if (response.Length() > 0) {
 					RPC::Data::Frame::Reader reader(response.Reader());

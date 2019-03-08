@@ -160,7 +160,7 @@ namespace ProxyStub {
 			IPCMessage newMessage(BaseClass::Message(0));
 
 			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				id = Number<uint32_t>(newMessage->Response());
+				id = newMessage->Response().Reader().Number<uint32_t>();
 			}
 
             return (id);
@@ -172,7 +172,7 @@ namespace ProxyStub {
 			IPCMessage newMessage(BaseClass::Message(1));
 
 			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				result = Number<RPC::IRemoteProcess::enumState>(newMessage->Response());
+				result = newMessage->Response().Reader().Number<RPC::IRemoteProcess::enumState>();
 			}
 
             return (result);
@@ -189,7 +189,7 @@ namespace ProxyStub {
 			writer.Number(version);
 
 			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				result = Interface(newMessage->Response(), interfaceId);
+				result = Interface(newMessage->Response().Reader().Number<void*>(), interfaceId);
 			}
 			return (result);
 		}
