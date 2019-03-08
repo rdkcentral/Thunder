@@ -45,7 +45,9 @@ namespace RPC {
 				void* implementation = message->Response().Implementation();
 
 				if (implementation != nullptr) {
-					result = Administrator::Instance().ProxyInstance(_channel, implementation, interfaceId, true, interfaceId);
+					// From what is returned, we need to create a proxy
+					ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_channel, implementation, interfaceId, true, interfaceId, false);
+					result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
 				}
             }
         }

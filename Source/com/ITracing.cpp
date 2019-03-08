@@ -57,12 +57,13 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().ProxyInstance<RPC::IRemoteProcess>(channel, reader.Number<void*>());
+				ProxyStub::UnknownProxy* proxy = RPC::Administrator::Instance().ProxyInstance(channel, reader.Number<void*>(), RPC::IRemoteProcess::ID, false, RPC::IRemoteProcess::ID, true);
+				RPC::IRemoteProcess* param0_proxy = (proxy != nullptr ? proxy->QueryInterface< RPC::IRemoteProcess>() : nullptr);
 
-				implementation->Activated(proxy);
+				implementation->Activated(param0_proxy);
 
-				if (proxy != nullptr) {
-					proxy->Release();
+				if (param0_proxy != nullptr) {
+					RPC::Administrator::Instance().Release(proxy, message->Response());
 				}
 			}
 		},
@@ -78,12 +79,13 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().ProxyInstance<RPC::IRemoteProcess>(channel, reader.Number<void*>());
+				ProxyStub::UnknownProxy* proxy = RPC::Administrator::Instance().ProxyInstance(channel, reader.Number<void*>(), RPC::IRemoteProcess::ID, false, RPC::IRemoteProcess::ID, true);
+				RPC::IRemoteProcess* param0_proxy = (proxy != nullptr ? proxy->QueryInterface< RPC::IRemoteProcess>() : nullptr);
 
-				implementation->Deactivated(proxy);
+				implementation->Deactivated(param0_proxy);
 
-				if (proxy != nullptr) {
-					proxy->Release();
+				if (param0_proxy != nullptr) {
+					RPC::Administrator::Instance().Release(proxy, message->Response());
 				}
 			}
 		},
@@ -153,22 +155,31 @@ namespace ProxyStub {
 	public:
 		virtual uint32_t Id() const
 		{
+			uint32_t id = ~0;
+
 			IPCMessage newMessage(BaseClass::Message(0));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				id = Number<uint32_t>(newMessage->Response());
+			}
 
-                        return (Number<uint32_t>(newMessage->Response()));
+            return (id);
 		}
 		virtual RPC::IRemoteProcess::enumState State() const
 		{
+			RPC::IRemoteProcess::enumState result = CONSTRUCTED;
+
 			IPCMessage newMessage(BaseClass::Message(1));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				result = Number<RPC::IRemoteProcess::enumState>(newMessage->Response());
+			}
 
-                        return (Number<RPC::IRemoteProcess::enumState>(newMessage->Response()));
+            return (result);
 		}
 		virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 		{
+			void* result = nullptr;
 			IPCMessage newMessage(BaseClass::Message(2));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
@@ -177,17 +188,16 @@ namespace ProxyStub {
 			writer.Number(interfaceId);
 			writer.Number(version);
 
-			Invoke(newMessage);
-
-			return (Interface(newMessage->Response(), interfaceId));
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				result = Interface(newMessage->Response(), interfaceId);
+			}
+			return (result);
 		}
 		virtual void Terminate()
 		{
 			IPCMessage newMessage(BaseClass::Message(3));
 
 			Invoke(newMessage);
-
-                        Complete(newMessage->Response());
 		}
 	};
 
@@ -208,9 +218,9 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			Invoke(newMessage);
-
-                        Complete(newMessage->Response());
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				Complete(newMessage->Response());
+			}
 		}
 		virtual void Deactivated(RPC::IRemoteProcess* process)
 		{
@@ -218,9 +228,9 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			Invoke(newMessage);
-
-                        Complete(newMessage->Response());
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				Complete(newMessage->Response());
+			}
 		}
 	};
 
@@ -244,8 +254,6 @@ namespace ProxyStub {
             writer.Text(category);
 
             Invoke(newMessage);
-
-            Complete(newMessage->Response());
         }
     };
 
@@ -264,7 +272,6 @@ namespace ProxyStub {
         {
             IPCMessage newMessage(BaseClass::Message(0));
             Invoke(newMessage);
-            Complete(newMessage->Response());
         }
         virtual bool Info(bool& enabled, string& module, string& category) const
         {
@@ -278,9 +285,7 @@ namespace ProxyStub {
                 result = reader.Boolean();
                 enabled = reader.Boolean();
                 module = reader.Text();
-		category = reader.Text();
-
-                Complete(reader);
+				category = reader.Text();
             }
 
             return (result);
