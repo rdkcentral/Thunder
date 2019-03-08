@@ -49,12 +49,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -63,15 +65,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             const uint32_t output = implementation->StartParser(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -82,13 +83,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const string output = implementation->GetChannels();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -98,13 +100,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const string output = implementation->GetPrograms();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -118,13 +121,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const string output = implementation->GetCurrentProgram(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -138,13 +142,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const uint32_t param0 = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const string output = implementation->GetAudioLanguages(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -158,13 +163,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const uint32_t param0 = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const string output = implementation->GetSubtitleLanguages(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -179,13 +185,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         const string param0 = reader.Text();
         const string param1 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const bool output = implementation->SetParentalControlPin(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -200,13 +207,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         const string param0 = reader.Text();
         const bool param1 = reader.Boolean();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const bool output = implementation->SetParentalControl(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -216,13 +224,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const bool output = implementation->IsParentalControlled();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -238,13 +247,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         const bool param1 = reader.Boolean();
         const string param2 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const bool output = implementation->SetParentalLock(param0, param1, param2);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -258,13 +268,14 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IGuide* implementation = input.Implementation<IGuide>();
         ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
         const bool output = implementation->IsParentalLocked(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Boolean(output);
     },
 
@@ -279,7 +290,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         IGuide::INotification* param0 = reader.Number<IGuide::INotification*>();
         IGuide::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IGuide::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IGuide::INotification proxy");
@@ -293,7 +304,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IGuide::INotification proxy destroyed");
         }
     },
@@ -309,7 +320,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         IGuide::INotification* param0 = reader.Number<IGuide::INotification*>();
         IGuide::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IGuide::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IGuide::INotification proxy");
@@ -323,7 +334,7 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IGuide::INotification proxy destroyed");
         }
     },
@@ -457,6 +468,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;
@@ -632,9 +645,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IGuide::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IGuide::INotification* param0) override
@@ -645,9 +658,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IGuide::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 }; // class GuideProxy
 
@@ -674,8 +687,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(0));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void EmergencyAlert() override
@@ -683,8 +694,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(1));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void ParentalControlChanged() override
@@ -692,8 +701,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(2));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void ParentalLockChanged(const string& param0) override
@@ -705,8 +712,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void TestNotification(const string& param0) override
@@ -718,8 +723,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class GuideNotificationProxy
 

@@ -41,7 +41,7 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
         IRPCLink::INotification* param0 = reader.Number<IRPCLink::INotification*>();
         IRPCLink::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IRPCLink::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IRPCLink::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IRPCLink::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IRPCLink::INotification proxy");
@@ -55,7 +55,7 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IRPCLink::INotification proxy destroyed");
         }
     },
@@ -71,7 +71,7 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
         IRPCLink::INotification* param0 = reader.Number<IRPCLink::INotification*>();
         IRPCLink::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IRPCLink::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IRPCLink::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IRPCLink::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IRPCLink::INotification proxy");
@@ -85,7 +85,7 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IRPCLink::INotification proxy destroyed");
         }
     },
@@ -101,13 +101,14 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
         const uint32_t param0 = reader.Number<uint32_t>();
         const string param1 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRPCLink* implementation = input.Implementation<IRPCLink>();
         ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
         const uint32_t output = implementation->Start(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -117,13 +118,14 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRPCLink* implementation = input.Implementation<IRPCLink>();
         ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
         const uint32_t output = implementation->Stop();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -133,13 +135,14 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IRPCLink* implementation = input.Implementation<IRPCLink>();
         ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
         const uint32_t output = implementation->ForceCallback();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -205,9 +208,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IRPCLink::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IRPCLink::INotification* param0) override
@@ -218,9 +221,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IRPCLink::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     uint32_t Start(const uint32_t param0, const string& param1) override
@@ -292,8 +295,6 @@ public:
         writer.Text(param1);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class RPCLinkNotificationProxy
 

@@ -40,12 +40,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -54,15 +56,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
             const uint32_t output = implementation->Configure(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -73,13 +74,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IContentDecryption* implementation = input.Implementation<IContentDecryption>();
         ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
         const uint32_t output = implementation->Reset();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -89,13 +91,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
         ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
         RPC::IStringIterator* output = implementation->Systems();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<RPC::IStringIterator*>(output);
     },
 
@@ -109,13 +112,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
         ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
         RPC::IStringIterator* output = implementation->Designators(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<RPC::IStringIterator*>(output);
     },
 
@@ -129,13 +133,14 @@ ProxyStub::MethodHandler ContentDecryptionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
         ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
         RPC::IStringIterator* output = implementation->Sessions(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<RPC::IStringIterator*>(output);
     },
 
@@ -177,6 +182,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;

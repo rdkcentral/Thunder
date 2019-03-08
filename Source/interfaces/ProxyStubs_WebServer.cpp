@@ -67,13 +67,14 @@ ProxyStub::MethodHandler WebServerStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IWebServer* implementation = input.Implementation<IWebServer>();
         ASSERT((implementation != nullptr) && "Null IWebServer implementation pointer");
         const string output = implementation->Accessor();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -112,8 +113,6 @@ public:
         writer.Text(param2);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void RemoveProxy(const string& param0) override
@@ -125,8 +124,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     string Accessor() const override

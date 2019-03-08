@@ -49,7 +49,7 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         IComposition::INotification* param0 = reader.Number<IComposition::INotification*>();
         IComposition::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::INotification proxy");
@@ -63,7 +63,7 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IComposition::INotification proxy destroyed");
         }
     },
@@ -79,7 +79,7 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         IComposition::INotification* param0 = reader.Number<IComposition::INotification*>();
         IComposition::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::INotification proxy");
@@ -93,7 +93,7 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IComposition::INotification proxy destroyed");
         }
     },
@@ -108,13 +108,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const uint8_t param0 = reader.Number<uint8_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         IComposition::IClient* output = implementation->Client(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<IComposition::IClient*>(output);
     },
 
@@ -128,13 +129,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         IComposition::IClient* output = implementation->Client(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<IComposition::IClient*>(output);
     },
 
@@ -154,13 +156,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         param1.width = reader.Number<uint32_t>();
         param1.height = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         const uint32_t output = implementation->Geometry(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -174,13 +177,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         const IComposition::Rectangle output = implementation->Geometry(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         // (decompose IComposition::Rectangle)
         writer.Number<uint32_t>(output.x);
         writer.Number<uint32_t>(output.y);
@@ -198,13 +202,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const string param0 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         const uint32_t output = implementation->ToTop(param0);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -219,13 +224,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         const string param0 = reader.Text();
         const string param1 = reader.Text();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         const uint32_t output = implementation->PutBelow(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const uint32_t>(output);
     },
 
@@ -235,13 +241,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         RPC::IStringIterator* output = implementation->ClientsInZorder();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<RPC::IStringIterator*>(output);
     },
 
@@ -256,12 +263,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
             }
         }
+
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
 
         if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
@@ -270,15 +279,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
             const uint32_t output = implementation->Configure(param0_proxy);
 
             // write return value
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         }
         else {
             // return error code
-            message->Response().Writer().Number<uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
         }
     },
@@ -305,13 +313,14 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IComposition* implementation = input.Implementation<IComposition>();
         ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
         const IComposition::ScreenResolution output = implementation->Resolution();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const IComposition::ScreenResolution>(output);
     },
 
@@ -336,13 +345,14 @@ ProxyStub::MethodHandler CompositionClientStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IComposition::IClient* implementation = input.Implementation<IComposition::IClient>();
         ASSERT((implementation != nullptr) && "Null IComposition::IClient implementation pointer");
         const string output = implementation->Name();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Text(output);
     },
 
@@ -434,7 +444,7 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
         IComposition::IClient* param0 = reader.Number<IComposition::IClient*>();
         IComposition::IClient* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::IClient>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::IClient>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::IClient proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::IClient proxy");
@@ -448,7 +458,7 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
             implementation->Attached(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IComposition::IClient proxy destroyed");
         }
     },
@@ -464,7 +474,7 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
         IComposition::IClient* param0 = reader.Number<IComposition::IClient*>();
         IComposition::IClient* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::IClient>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IComposition::IClient>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::IClient proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::IClient proxy");
@@ -478,7 +488,7 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
             implementation->Detached(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IComposition::IClient proxy destroyed");
         }
     },
@@ -524,9 +534,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IComposition::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IComposition::INotification* param0) override
@@ -537,9 +547,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IComposition::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     IComposition::IClient* Client(const uint8_t param0) override
@@ -679,6 +689,8 @@ public:
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
             output = Number<uint32_t>(newMessage->Response());
+
+            Complete(newMessage->Response());
         }
 
         return output;
@@ -693,8 +705,6 @@ public:
         writer.Number<const IComposition::ScreenResolution>(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     IComposition::ScreenResolution Resolution() const override
@@ -747,8 +757,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(1));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void Opacity(const uint32_t param0) override
@@ -760,8 +768,6 @@ public:
         writer.Number<const uint32_t>(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void ChangedGeometry(const IComposition::Rectangle& param0) override
@@ -777,8 +783,6 @@ public:
         writer.Number<uint32_t>(param0.height);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void ChangedZOrder(const uint8_t param0) override
@@ -790,8 +794,6 @@ public:
         writer.Number<const uint8_t>(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class CompositionClientProxy
 
@@ -818,9 +820,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IComposition::IClient*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Detached(IComposition::IClient* param0) override
@@ -831,9 +833,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IComposition::IClient*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 }; // class CompositionNotificationProxy
 

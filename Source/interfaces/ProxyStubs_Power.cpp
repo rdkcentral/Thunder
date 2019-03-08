@@ -42,7 +42,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
         IPower::INotification* param0 = reader.Number<IPower::INotification*>();
         IPower::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPower::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPower::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPower::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPower::INotification proxy");
@@ -56,7 +56,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPower::INotification proxy destroyed");
         }
     },
@@ -72,7 +72,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
         IPower::INotification* param0 = reader.Number<IPower::INotification*>();
         IPower::INotification* param0_proxy = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPower::INotification>(channel, param0);
+            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPower::INotification>(channel, param0, true);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPower::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPower::INotification proxy");
@@ -86,7 +86,7 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (param0_proxy->Release() != Core::ERROR_NONE)) {
+        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
             TRACE_L1("Warning: IPower::INotification proxy destroyed");
         }
     },
@@ -97,13 +97,14 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
 
         RPC::Data::Input& input(message->Parameters());
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IPower* implementation = input.Implementation<IPower>();
         ASSERT((implementation != nullptr) && "Null IPower implementation pointer");
         const IPower::PCState output = implementation->GetState();
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const IPower::PCState>(output);
     },
 
@@ -118,13 +119,14 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
         const IPower::PCState param0 = reader.Number<IPower::PCState>();
         const uint32_t param1 = reader.Number<uint32_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         IPower* implementation = input.Implementation<IPower>();
         ASSERT((implementation != nullptr) && "Null IPower implementation pointer");
         const IPower::PCStatus output = implementation->SetState(param0, param1);
 
         // write return value
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
         writer.Number<const IPower::PCStatus>(output);
     },
 
@@ -218,9 +220,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IPower::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     void Unregister(IPower::INotification* param0) override
@@ -231,9 +233,9 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IPower::INotification*>(param0);
 
-        Invoke(newMessage);
-
-        Complete(newMessage->Response());
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            Complete(newMessage->Response());
+        }
     }
 
     IPower::PCState GetState() const override
@@ -272,8 +274,6 @@ public:
         IPCMessage newMessage(BaseClass::Message(4));
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 
     void Configure(const string& param0) override
@@ -285,8 +285,6 @@ public:
         writer.Text(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class PowerProxy
 
@@ -313,8 +311,6 @@ public:
         writer.Number<const IPower::PCState>(param0);
 
         Invoke(newMessage);
-
-        Complete(newMessage->Response());
     }
 }; // class PowerNotificationProxy
 
