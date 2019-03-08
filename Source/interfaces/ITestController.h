@@ -7,15 +7,15 @@ namespace Exchange {
 
 struct ITestController : virtual public Core::IUnknown {
 
-    enum { ID = ID_TESTCOMMAND };
+    enum { ID = ID_TESTCONTROLLER };
 
     struct ITest : virtual public Core::IUnknown {
 
-        enum { ID = ID_TEST };
+        enum { ID = ID_TESTCONTROLLER_TEST };
 
         struct IIterator : virtual public Core::IUnknown {
 
-            enum { ID = ID_TESTITERATOR };
+            enum { ID = ID_TESTCONTROLLER_TEST_ITERATOR };
 
             virtual void Reset() = 0;
             virtual bool IsValid() const = 0;
@@ -32,11 +32,11 @@ struct ITestController : virtual public Core::IUnknown {
 
     struct ICategory : virtual public Core::IUnknown {
 
-        enum { ID = ID_CATEGORY };
+        enum { ID = ID_TESTCONTROLLER_CATEGORY };
 
         struct IIterator : virtual public Core::IUnknown {
 
-            enum { ID = ID_CATEGORYITERATOR };
+            enum { ID = ID_TESTCONTROLLER_CATEGORY_ITERATOR };
 
             virtual void Reset() = 0;
             virtual bool IsValid() const = 0;
