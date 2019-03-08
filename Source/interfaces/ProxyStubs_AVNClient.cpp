@@ -118,9 +118,10 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
 
-            Complete(newMessage->Response());
+            Complete(reader);
         }
 
         return output;

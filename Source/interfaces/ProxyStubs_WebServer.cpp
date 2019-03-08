@@ -136,7 +136,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;

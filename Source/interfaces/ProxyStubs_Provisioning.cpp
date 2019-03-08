@@ -151,7 +151,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -165,7 +167,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 }; // class ProvisioningProxy

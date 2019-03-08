@@ -184,9 +184,10 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
 
-            Complete(newMessage->Response());
+            Complete(reader);
         }
 
         return output;
@@ -200,7 +201,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -214,7 +216,8 @@ public:
         RPC::IStringIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<RPC::IStringIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<RPC::IStringIterator*>();
         }
 
         return output_proxy;
@@ -232,7 +235,8 @@ public:
         RPC::IStringIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<RPC::IStringIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<RPC::IStringIterator*>();
         }
 
         return output_proxy;
@@ -250,7 +254,8 @@ public:
         RPC::IStringIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<RPC::IStringIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<RPC::IStringIterator*>();
         }
 
         return output_proxy;

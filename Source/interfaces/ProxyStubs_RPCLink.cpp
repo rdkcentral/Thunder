@@ -214,7 +214,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -228,7 +230,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -245,7 +249,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -259,7 +264,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -273,7 +279,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;

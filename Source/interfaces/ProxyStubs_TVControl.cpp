@@ -632,7 +632,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -646,7 +647,8 @@ public:
         IStream::streamtype output = static_cast<IStream::streamtype>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IStream::streamtype>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IStream::streamtype>();
         }
 
         return output;
@@ -660,7 +662,8 @@ public:
         IStream::drmtype output = static_cast<IStream::drmtype>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IStream::drmtype>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IStream::drmtype>();
         }
 
         return output;
@@ -674,7 +677,8 @@ public:
         IStream::IControl* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<IStream::IControl*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<IStream::IControl*>();
         }
 
         return output_proxy;
@@ -690,7 +694,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -702,7 +708,8 @@ public:
         IStream::state output = static_cast<IStream::state>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IStream::state>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IStream::state>();
         }
 
         return output;
@@ -720,7 +727,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -768,7 +776,8 @@ public:
         int32_t output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<int32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<int32_t>();
         }
 
         return output;
@@ -794,7 +803,8 @@ public:
         uint64_t output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint64_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint64_t>();
         }
 
         return output;
@@ -812,8 +822,9 @@ public:
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return values
-            param0 = newMessage->Response().Reader().Number<uint64_t>();
-            param1 = newMessage->Response().Reader().Number<uint64_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            param0 = reader.Number<uint64_t>();
+            param1 = reader.Number<uint64_t>();
         }
     }
 
@@ -825,7 +836,8 @@ public:
         IStream::IControl::IGeometry* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<IStream::IControl::IGeometry*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<IStream::IControl::IGeometry*>();
         }
 
         return output_proxy;
@@ -841,7 +853,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -855,7 +869,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 }; // class StreamControlProxy
@@ -886,7 +902,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -900,7 +917,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -914,7 +932,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -928,7 +947,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -942,7 +962,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -1043,7 +1064,8 @@ public:
         IStream* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<IStream*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<IStream*>();
         }
 
         return output_proxy;
@@ -1061,9 +1083,10 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
 
-            Complete(newMessage->Response());
+            Complete(reader);
         }
 
         return output;

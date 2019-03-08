@@ -546,7 +546,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -560,7 +562,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -576,7 +580,8 @@ public:
         IComposition::IClient* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<IComposition::IClient*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<IComposition::IClient*>();
         }
 
         return output_proxy;
@@ -594,7 +599,8 @@ public:
         IComposition::IClient* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<IComposition::IClient*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<IComposition::IClient*>();
         }
 
         return output_proxy;
@@ -617,7 +623,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -635,11 +642,12 @@ public:
         IComposition::Rectangle output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             // (decompose IComposition::Rectangle)
-            output.x = newMessage->Response().Reader().Number<uint32_t>();
-            output.y = newMessage->Response().Reader().Number<uint32_t>();
-            output.width = newMessage->Response().Reader().Number<uint32_t>();
-            output.height = newMessage->Response().Reader().Number<uint32_t>();
+            output.x = reader.Number<uint32_t>();
+            output.y = reader.Number<uint32_t>();
+            output.width = reader.Number<uint32_t>();
+            output.height = reader.Number<uint32_t>();
         }
 
         return output;
@@ -657,7 +665,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -676,7 +685,8 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
         }
 
         return output;
@@ -690,7 +700,8 @@ public:
         RPC::IStringIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<RPC::IStringIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<RPC::IStringIterator*>();
         }
 
         return output_proxy;
@@ -708,9 +719,10 @@ public:
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<uint32_t>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
 
-            Complete(newMessage->Response());
+            Complete(reader);
         }
 
         return output;
@@ -736,7 +748,8 @@ public:
         IComposition::ScreenResolution output = static_cast<IComposition::ScreenResolution>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IComposition::ScreenResolution>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IComposition::ScreenResolution>();
         }
 
         return output;
@@ -769,7 +782,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -849,7 +863,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -863,7 +879,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 }; // class CompositionNotificationProxy

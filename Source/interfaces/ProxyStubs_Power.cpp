@@ -226,7 +226,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -240,7 +242,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -252,7 +256,8 @@ public:
         IPower::PCState output = static_cast<IPower::PCState>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IPower::PCState>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IPower::PCState>();
         }
 
         return output;
@@ -271,7 +276,8 @@ public:
         IPower::PCStatus output = static_cast<IPower::PCStatus>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Number<IPower::PCStatus>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<IPower::PCStatus>();
         }
 
         return output;

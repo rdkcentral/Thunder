@@ -525,7 +525,8 @@ public:
         ITestController::ICategory::IIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory::IIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ICategory::IIterator*>();
         }
 
         return output_proxy;
@@ -543,7 +544,8 @@ public:
         ITestController::ICategory* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ICategory*>();
         }
 
         return output_proxy;
@@ -578,7 +580,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -592,7 +595,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -606,7 +610,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -646,7 +651,8 @@ public:
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Boolean();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Boolean();
         }
 
         return output;
@@ -660,7 +666,8 @@ public:
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Boolean();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Boolean();
         }
 
         return output;
@@ -674,7 +681,8 @@ public:
         ITestController::ITest* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ITest*>();
         }
 
         return output_proxy;
@@ -709,7 +717,8 @@ public:
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Text();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -741,7 +750,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -755,7 +766,9 @@ public:
 
         // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -767,7 +780,8 @@ public:
         ITestController::ITest::IIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest::IIterator*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ITest::IIterator*>();
         }
 
         return output_proxy;
@@ -785,7 +799,8 @@ public:
         ITestController::ITest* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ITest*>();
         }
 
         return output_proxy;
@@ -825,7 +840,8 @@ public:
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Boolean();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Boolean();
         }
 
         return output;
@@ -839,7 +855,8 @@ public:
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = newMessage->Response().Reader().Boolean();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Boolean();
         }
 
         return output;
@@ -853,7 +870,8 @@ public:
         ITestController::ICategory* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory*>();
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output_proxy = reader.Number<ITestController::ICategory*>();
         }
 
         return output_proxy;
