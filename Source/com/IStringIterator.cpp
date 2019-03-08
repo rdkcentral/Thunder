@@ -92,27 +92,34 @@ namespace ProxyStub {
 
 	public:
 	        virtual bool Next(string& result) override {
+                        bool valid = false;
+
 			IPCMessage newMessage(BaseClass::Message(0));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        bool valid = Boolean(newMessage->Response());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-                        if (valid == true) {
-                           result = Text(newMessage->Response());
+                            if (valid == true) {
+                               result = reader.Text();
+                           }
                         }
 
 			return (valid);
 		}
         	virtual bool Previous(string& result) override {
+                        bool valid = false;
 			IPCMessage newMessage(BaseClass::Message(1));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        bool valid = Boolean(newMessage->Response());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-                        if (valid == true) {
-                           result = Text(newMessage->Response());
+                            if (valid == true) {
+                               result = reader.Text();
+                           }
                         }
 
 			return (valid);
@@ -123,29 +130,36 @@ namespace ProxyStub {
 			writer.Number(position);
 
 			Invoke(newMessage);
-
-                        Complete(newMessage->Response());
 		}
         	virtual bool IsValid() const override {
+                        bool result = false;
 			IPCMessage newMessage(BaseClass::Message(3));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Boolean();
+                        }
 
-			return (Boolean(newMessage->Response()));
+			return (result);
 		}
         	virtual uint32_t Count() const override {
+                        uint32_t result = 0;
 			IPCMessage newMessage(BaseClass::Message(4));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Number<uint32_t>();
+                        }
 
-			return (Number<uint32_t>(newMessage->Response()));
+			return (result);
 		}
         	virtual string Current() const override {
+                        string result;
 			IPCMessage newMessage(BaseClass::Message(5));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Text();
+                        }
 
-			return (Text(newMessage->Response()));
+			return (result);
 		}
 	};
 

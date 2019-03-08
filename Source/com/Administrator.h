@@ -102,35 +102,27 @@ namespace RPC {
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl) {
             return (reinterpret_cast<ACTUALINTERFACE*>(ProxyFind(channel, impl, ACTUALINTERFACE::ID, ACTUALINTERFACE::ID)));
         }
-
         template<typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id) {
             return (reinterpret_cast<ACTUALINTERFACE*>(ProxyFind(channel, impl, id, ACTUALINTERFACE::ID)));
         }
-
-   //     template<typename ACTUALINTERFACE>
-   //     ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool piggyBack = false) {
-
-			//ProxyStub::UnknownProxy* instance = ProxyInstance(channel, impl, ACTUALINTERFACE::ID, true, ACTUALINTERFACE::ID, piggyBack);
-			//return (instance != nullptr ? reinterpret_cast<ACTUALINTERFACE*>(instance->QueryInterface(ACTUALINTERFACE::ID)) : nullptr);
-   //     }
         template<typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted) {
 
-			ProxyStub::UnknownProxy* instance = ProxyInstance(channel, impl, id, refCounted, ACTUALINTERFACE::ID, false);
-            return (instance != nullptr ? reinterpret_cast<ACTUALINTERFACE*>(instance->QueryInterface(ACTUALINTERFACE::ID)) : nullptr);
+            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstanceQuery(channel, impl, id, refCounted, ACTUALINTERFACE::ID, false)));
         }
-		ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
 
         void AddRef(void* impl, const uint32_t interfaceId);
         void Release(void* impl, const uint32_t interfaceId);
-		void Release(ProxyStub::UnknownProxy* proxy, Data::Output& response);
-		void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message);
+	void Release(ProxyStub::UnknownProxy* proxy, Data::Output& response);
+	void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message);
         void RegisterProxy(ProxyStub::UnknownProxy& proxy);
         void UnregisterProxy(ProxyStub::UnknownProxy& proxy);
 
     private:
-		void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
+	void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
+        void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.

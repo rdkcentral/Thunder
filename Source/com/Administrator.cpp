@@ -161,7 +161,7 @@ namespace RPC {
         return (result);
     }
 
-	ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
     {
 		ProxyStub::UnknownProxy* result = nullptr;
 
@@ -214,6 +214,15 @@ namespace RPC {
             _adminLock.Unlock();
         }
 
+        return (result);
+    }
+
+    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack) {
+        void* result = nullptr;
+        ProxyStub::UnknownProxy* proxyStub = ProxyInstance(channel, impl, id, refCounted, interfaceId, piggyBack);
+        if (proxyStub != nullptr) {
+            result = proxyStub->QueryInterface(interfaceId);
+        }
         return (result);
     }
 }
