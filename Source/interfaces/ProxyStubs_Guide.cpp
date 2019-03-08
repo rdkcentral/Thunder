@@ -48,8 +48,10 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -72,8 +74,8 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -289,8 +291,10 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IGuide::INotification* param0 = reader.Number<IGuide::INotification*>();
         IGuide::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IGuide::INotification::ID, false, IGuide::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IGuide::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IGuide::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IGuide::INotification proxy");
@@ -304,8 +308,8 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IGuide::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -319,8 +323,10 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IGuide::INotification* param0 = reader.Number<IGuide::INotification*>();
         IGuide::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IGuide::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IGuide::INotification::ID, false, IGuide::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IGuide::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IGuide::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IGuide::INotification proxy");
@@ -334,8 +340,8 @@ ProxyStub::MethodHandler GuideStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IGuide::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -464,10 +470,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<PluginHost::IShell*>(param0);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
 
             Complete(newMessage->Response());
         }
@@ -479,10 +486,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -492,10 +500,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -509,10 +518,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -526,10 +536,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint32_t>(param0);
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -543,10 +554,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint32_t>(param0);
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -561,10 +573,11 @@ public:
         writer.Text(param0);
         writer.Text(param1);
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -579,10 +592,11 @@ public:
         writer.Text(param0);
         writer.Boolean(param1);
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -592,10 +606,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(8));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -611,10 +626,11 @@ public:
         writer.Boolean(param1);
         writer.Text(param2);
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -628,10 +644,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -645,6 +662,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IGuide::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -658,6 +676,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IGuide::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -686,6 +705,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -693,6 +713,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -700,6 +721,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -711,6 +733,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -722,6 +745,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class GuideNotificationProxy

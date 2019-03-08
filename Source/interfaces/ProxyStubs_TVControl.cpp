@@ -114,8 +114,10 @@ ProxyStub::MethodHandler StreamStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IStream::ICallback* param0 = reader.Number<IStream::ICallback*>();
         IStream::ICallback* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStream::ICallback>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::ICallback::ID, false, IStream::ICallback::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::ICallback>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::ICallback proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStream::ICallback proxy");
@@ -129,8 +131,8 @@ ProxyStub::MethodHandler StreamStubMethods[] = {
             implementation->Callback(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IStream::ICallback proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -267,10 +269,16 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         uint64_t param0 = reader.Number<uint64_t>();
         uint64_t param1 = reader.Number<uint64_t>();
 
+        RPC::Data::Frame::Writer writer(message->Response().Writer());
+
         // call implementation
         const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
         ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
         implementation->TimeRange(param0, param1);
+
+        // write return values
+        writer.Number<uint64_t>(param0);
+        writer.Number<uint64_t>(param1);
     },
 
     // virtual IStream::IControl::IGeometry* Geometry() const = 0
@@ -300,6 +308,7 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const IStream::IControl::IGeometry* param0 = reader.Number<IStream::IControl::IGeometry*>();
         IStream::IControl::IGeometry* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy = RPC::Administrator::Instance().ProxyFind<IStream::IControl::IGeometry>(channel, const_cast<IStream::IControl::IGeometry*>(param0));
         }
@@ -320,8 +329,10 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IStream::IControl::ICallback* param0 = reader.Number<IStream::IControl::ICallback*>();
         IStream::IControl::ICallback* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStream::IControl::ICallback>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::IControl::ICallback::ID, false, IStream::IControl::ICallback::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::IControl::ICallback>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::IControl::ICallback proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStream::IControl::ICallback proxy");
@@ -335,8 +346,8 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
             implementation->Callback(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IStream::IControl::ICallback proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -554,8 +565,10 @@ ProxyStub::MethodHandler PlayerStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -578,8 +591,8 @@ ProxyStub::MethodHandler PlayerStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -615,10 +628,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -628,10 +642,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         IStream::streamtype output = static_cast<IStream::streamtype>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<IStream::streamtype>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<IStream::streamtype>();
         }
 
         return output;
@@ -641,10 +656,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         IStream::drmtype output = static_cast<IStream::drmtype>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<IStream::drmtype>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<IStream::drmtype>();
         }
 
         return output;
@@ -654,10 +670,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         IStream::IControl* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<IStream::IControl*>(Interface(newMessage->Response(), IStream::IControl::ID));
+            output_proxy = newMessage->Response().Reader().Number<IStream::IControl*>();
         }
 
         return output_proxy;
@@ -671,6 +688,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStream::ICallback*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -680,10 +698,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(5));
 
+        // invoke the method handler
         IStream::state output = static_cast<IStream::state>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<IStream::state>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<IStream::state>();
         }
 
         return output;
@@ -697,10 +716,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -736,6 +756,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const int32_t>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -743,10 +764,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         int32_t output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<int32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<int32_t>();
         }
 
         return output;
@@ -760,6 +782,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint64_t>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -767,10 +790,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         uint64_t output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint64_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint64_t>();
         }
 
         return output;
@@ -785,17 +809,23 @@ public:
         writer.Number<uint64_t>(param0);
         writer.Number<uint64_t>(param1);
 
-        Invoke(newMessage);
+        // invoke the method handler
+        if (Invoke(newMessage) == Core::ERROR_NONE) {
+            // read return values
+            param0 = newMessage->Response().Reader().Number<uint64_t>();
+            param1 = newMessage->Response().Reader().Number<uint64_t>();
+        }
     }
 
     IStream::IControl::IGeometry* Geometry() const override
     {
         IPCMessage newMessage(BaseClass::Message(5));
 
+        // invoke the method handler
         IStream::IControl::IGeometry* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<IStream::IControl::IGeometry*>(Interface(newMessage->Response(), IStream::IControl::IGeometry::ID));
+            output_proxy = newMessage->Response().Reader().Number<IStream::IControl::IGeometry*>();
         }
 
         return output_proxy;
@@ -809,6 +839,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const IStream::IControl::IGeometry*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -822,6 +853,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStream::IControl::ICallback*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -850,10 +882,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -863,10 +896,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -876,10 +910,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -889,10 +924,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -902,10 +938,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(4));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -934,6 +971,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint64_t>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class StreamControlCallbackProxy
@@ -961,6 +999,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint32_t>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -972,6 +1011,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const IStream::state>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class StreamCallbackProxy
@@ -999,10 +1039,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const IStream::streamtype>(param0);
 
+        // invoke the method handler
         IStream* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<IStream*>(Interface(newMessage->Response(), IStream::ID));
+            output_proxy = newMessage->Response().Reader().Number<IStream*>();
         }
 
         return output_proxy;
@@ -1016,10 +1057,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<PluginHost::IShell*>(param0);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
 
             Complete(newMessage->Response());
         }

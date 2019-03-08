@@ -307,8 +307,10 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
         ITestController::ITest* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, ITestController::ITest::ID, false, ITestController::ITest::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<ITestController::ITest>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");
@@ -322,8 +324,8 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: ITestController::ITest proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -337,8 +339,10 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         ITestController::ITest* param0 = reader.Number<ITestController::ITest*>();
         ITestController::ITest* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<ITestController::ITest>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, ITestController::ITest::ID, false, ITestController::ITest::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<ITestController::ITest>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");
@@ -352,8 +356,8 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: ITestController::ITest proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -501,6 +505,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -508,6 +513,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -515,10 +521,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         ITestController::ICategory::IIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ICategory::IIterator*>(Interface(newMessage->Response(), ITestController::ICategory::IIterator::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory::IIterator*>();
         }
 
         return output_proxy;
@@ -532,10 +539,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         ITestController::ICategory* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(newMessage->Response(), ITestController::ICategory::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory*>();
         }
 
         return output_proxy;
@@ -566,10 +574,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -579,10 +588,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -592,10 +602,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -623,6 +634,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -630,10 +642,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -643,10 +656,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -656,10 +670,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         ITestController::ITest* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(newMessage->Response(), ITestController::ITest::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest*>();
         }
 
         return output_proxy;
@@ -690,10 +705,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -703,6 +719,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -710,6 +727,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -721,6 +739,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<ITestController::ITest*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -734,6 +753,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<ITestController::ITest*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -743,10 +763,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(5));
 
+        // invoke the method handler
         ITestController::ITest::IIterator* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ITest::IIterator*>(Interface(newMessage->Response(), ITestController::ITest::IIterator::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest::IIterator*>();
         }
 
         return output_proxy;
@@ -760,10 +781,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         ITestController::ITest* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(newMessage->Response(), ITestController::ITest::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ITest*>();
         }
 
         return output_proxy;
@@ -791,6 +813,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -798,10 +821,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -811,10 +835,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            output = newMessage->Response().Reader().Boolean();
         }
 
         return output;
@@ -824,10 +849,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         ITestController::ICategory* output_proxy{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(newMessage->Response(), ITestController::ICategory::ID));
+            output_proxy = newMessage->Response().Reader().Number<ITestController::ICategory*>();
         }
 
         return output_proxy;

@@ -42,8 +42,10 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IBrowser::INotification* param0 = reader.Number<IBrowser::INotification*>();
         IBrowser::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IBrowser::INotification::ID, false, IBrowser::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IBrowser::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");
@@ -57,8 +59,8 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IBrowser::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -72,8 +74,10 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IBrowser::INotification* param0 = reader.Number<IBrowser::INotification*>();
         IBrowser::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IBrowser::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IBrowser::INotification::ID, false, IBrowser::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IBrowser::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");
@@ -87,8 +91,8 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IBrowser::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -326,6 +330,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IBrowser::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -339,6 +344,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IBrowser::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -352,6 +358,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -359,10 +366,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -372,10 +380,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(4));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -389,6 +398,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Boolean(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class BrowserProxy
@@ -418,6 +428,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -429,6 +440,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -440,6 +452,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Boolean(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -447,6 +460,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class BrowserNotificationProxy
@@ -471,10 +485,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -484,10 +499,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -497,6 +513,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class BrowserMetadataProxy

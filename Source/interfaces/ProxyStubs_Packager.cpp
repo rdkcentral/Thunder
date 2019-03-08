@@ -41,8 +41,10 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IPackager::INotification* param0 = reader.Number<IPackager::INotification*>();
         IPackager::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::INotification::ID, false, IPackager::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::INotification proxy");
@@ -56,8 +58,8 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IPackager::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -71,6 +73,7 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         const IPackager::INotification* param0 = reader.Number<IPackager::INotification*>();
         IPackager::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy = RPC::Administrator::Instance().ProxyFind<IPackager::INotification>(channel, const_cast<IPackager::INotification*>(param0));
         }
@@ -91,8 +94,10 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -115,8 +120,8 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -311,16 +316,20 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
         IPackager::IPackageInfo* param0 = reader.Number<IPackager::IPackageInfo*>();
         IPackager::IInstallationInfo* param1 = reader.Number<IPackager::IInstallationInfo*>();
         IPackager::IPackageInfo* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IPackageInfo>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::IPackageInfo::ID, false, IPackager::IPackageInfo::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::IPackageInfo>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::IPackageInfo proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IPackageInfo proxy");
             }
         }
         IPackager::IInstallationInfo* param1_proxy = nullptr;
+        ProxyStub::UnknownProxy* param1_proxy_inst = nullptr;
         if (param1 != nullptr) {
-            param1_proxy = RPC::Administrator::Instance().ProxyInstance<IPackager::IInstallationInfo>(channel, param1, true);
+            param1_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param1, IPackager::IInstallationInfo::ID, false, IPackager::IInstallationInfo::ID, true);
+            param1_proxy = (param1_proxy_inst != nullptr? param1_proxy_inst->QueryInterface<IPackager::IInstallationInfo>() : nullptr);
             ASSERT((param1_proxy != nullptr) && "Failed to get instance of IPackager::IInstallationInfo proxy");
             if (param1_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IInstallationInfo proxy");
@@ -334,11 +343,11 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
             implementation->StateChange(param0_proxy, param1_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IPackager::IPackageInfo proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
-        if ((param1_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param1_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IPackager::IInstallationInfo proxy destroyed");
+        if (param1_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param1_proxy_inst, message->Response());
         }
     },
 
@@ -375,6 +384,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IPackager::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -388,6 +398,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const IPackager::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }
@@ -401,10 +412,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<PluginHost::IShell*>(param0);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
 
             Complete(newMessage->Response());
         }
@@ -422,10 +434,11 @@ public:
         writer.Text(param1);
         writer.Text(param2);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -453,10 +466,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         IPackager::state output = static_cast<IPackager::state>(~0);
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<IPackager::state>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<IPackager::state>();
         }
 
         return output;
@@ -466,10 +480,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         uint8_t output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint8_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint8_t>();
         }
 
         return output;
@@ -479,10 +494,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -492,10 +508,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            output = newMessage->Response().Reader().Number<uint32_t>();
         }
 
         return output;
@@ -522,10 +539,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(0));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -535,10 +553,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(1));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -548,10 +567,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
@@ -581,6 +601,7 @@ public:
         writer.Number<IPackager::IPackageInfo*>(param0);
         writer.Number<IPackager::IInstallationInfo*>(param1);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             Complete(newMessage->Response());
         }

@@ -112,6 +112,7 @@ public:
         writer.Text(param1);
         writer.Text(param2);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -123,6 +124,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -130,10 +132,11 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            output = newMessage->Response().Reader().Text();
         }
 
         return output;
