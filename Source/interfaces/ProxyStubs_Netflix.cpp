@@ -42,8 +42,10 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         INetflix::INotification* param0 = reader.Number<INetflix::INotification*>();
         INetflix::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<INetflix::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, INetflix::INotification::ID, false, INetflix::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<INetflix::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of INetflix::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of INetflix::INotification proxy");
@@ -57,8 +59,8 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: INetflix::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -72,8 +74,10 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         INetflix::INotification* param0 = reader.Number<INetflix::INotification*>();
         INetflix::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<INetflix::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, INetflix::INotification::ID, false, INetflix::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<INetflix::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of INetflix::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of INetflix::INotification proxy");
@@ -87,8 +91,8 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: INetflix::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -232,8 +236,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<INetflix::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -245,8 +252,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<INetflix::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -254,10 +264,12 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(2));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -267,6 +279,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -278,6 +291,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -289,6 +303,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -300,6 +315,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Boolean(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class NetflixProxy
@@ -326,6 +342,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const INetflix::state>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class NetflixNotificationProxy

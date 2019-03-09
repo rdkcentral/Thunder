@@ -44,8 +44,10 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IStreaming::INotification* param0 = reader.Number<IStreaming::INotification*>();
         IStreaming::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStreaming::INotification::ID, false, IStreaming::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStreaming::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStreaming::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStreaming::INotification proxy");
@@ -59,8 +61,8 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             implementation->Register(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IStreaming::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -74,8 +76,10 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         IStreaming::INotification* param0 = reader.Number<IStreaming::INotification*>();
         IStreaming::INotification* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<IStreaming::INotification>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStreaming::INotification::ID, false, IStreaming::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStreaming::INotification>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStreaming::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStreaming::INotification proxy");
@@ -89,8 +93,8 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             implementation->Unregister(param0_proxy);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: IStreaming::INotification proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -104,8 +108,10 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
         RPC::Data::Frame::Reader reader(input.Reader());
         PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
         PluginHost::IShell* param0_proxy = nullptr;
+        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyInstance<PluginHost::IShell>(channel, param0, true);
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -128,8 +134,8 @@ ProxyStub::MethodHandler StreamingStubMethods[] = {
             writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
         }
 
-        if ((param0_proxy != nullptr) && (RPC::Administrator::Instance().Release(reinterpret_cast<ProxyStub::UnknownProxy*>(param0_proxy), message->Response()) != Core::ERROR_NONE)) {
-            TRACE_L1("Warning: PluginHost::IShell proxy destroyed");
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
         }
     },
 
@@ -322,8 +328,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStreaming::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -335,8 +344,11 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<IStreaming::INotification*>(param0);
 
+        // invoke the method handler
         if (Invoke(newMessage) == Core::ERROR_NONE) {
-            Complete(newMessage->Response());
+            // read return value
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            Complete(reader);
         }
     }
 
@@ -348,12 +360,14 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<PluginHost::IShell*>(param0);
 
+        // invoke the method handler
         uint32_t output{};
         if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
             // read return value
-            output = Number<uint32_t>(newMessage->Response());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Number<uint32_t>();
 
-            Complete(newMessage->Response());
+            Complete(reader);
         }
 
         return output;
@@ -363,6 +377,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(3));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -370,6 +385,7 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(4));
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -381,6 +397,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -388,10 +405,12 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(6));
 
+        // invoke the method handler
         string output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Text(newMessage->Response());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Text();
         }
 
         return output;
@@ -401,10 +420,12 @@ public:
     {
         IPCMessage newMessage(BaseClass::Message(7));
 
+        // invoke the method handler
         bool output{};
         if (Invoke(newMessage) == Core::ERROR_NONE) {
             // read return value
-            output = Boolean(newMessage->Response());
+            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+            output = reader.Boolean();
         }
 
         return output;
@@ -418,6 +439,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class StreamingProxy
@@ -446,6 +468,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Number<const uint32_t>(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -457,6 +480,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 
@@ -468,6 +492,7 @@ public:
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(param0);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class StreamingNotificationProxy

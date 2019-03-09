@@ -73,6 +73,7 @@ public:
         writer.Text(param0);
         writer.Text(param1);
 
+        // invoke the method handler
         Invoke(newMessage);
     }
 }; // class PlayGigaProxy
