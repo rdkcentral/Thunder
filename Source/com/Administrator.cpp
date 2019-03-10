@@ -65,17 +65,16 @@ namespace RPC {
 
 	void Administrator::Release(ProxyStub::UnknownProxy* proxy, Data::Output& response)
 	{
-		if (proxy->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
-			if (proxy->ShouldAddRefRemotely()) {
-				response.AddImplementation(proxy->Implementation(), proxy->InterfaceId());
-			}
-			else if (proxy->ShouldReleaseRemotely()) {
-				response.AddImplementation(proxy->Implementation(), proxy->InterfaceId() | 0x80000000);
-			}
-			else {
-				proxy->ClearCache();
-			}
+		if (proxy->ShouldAddRefRemotely()) {
+			response.AddImplementation(proxy->Implementation(), proxy->InterfaceId());
 		}
+		else if (proxy->ShouldReleaseRemotely()) {
+			response.AddImplementation(proxy->Implementation(), proxy->InterfaceId() | 0x80000000);
+		}
+		else {
+			proxy->ClearCache();
+		}
+		proxy->Release();
 	}
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
@@ -97,16 +96,26 @@ namespace RPC {
 
     void Administrator::RegisterProxy(ProxyStub::UnknownProxy& proxy)
     {
+		const Core::IPCChannel* channel = proxy.Channel().operator->();
+
         _adminLock.Lock ();
 
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
+        ChannelMap::iterator index(_channelProxyMap.find(channel));
 
-		ASSERT(index == _channelProxyMap.end());
+		if (index == _channelProxyMap.end()) {
+			auto slot = _channelProxyMap.emplace(std::piecewise_construct,
+				std::forward_as_tuple(channel),
+				std::forward_as_tuple());
+			slot.first->second.push_back(&proxy);
 
-        if (index != _channelProxyMap.end()) {
-            index->second.push_back(&proxy);
-			Core::InterlockedIncrement(proxy._refCount);
+		}
+		else {
+			ASSERT(std::find(index->second.begin(), index->second.end(), &proxy) == index->second.end());
+
+			index->second.push_back(&proxy);
         }
+
+		Core::InterlockedIncrement(proxy._refCount);
 
         _adminLock.Unlock ();
     }

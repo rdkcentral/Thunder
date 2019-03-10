@@ -279,13 +279,14 @@ namespace PluginHost {
 
 				void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
 
-				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+				// Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
 
-				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-				
-				if (result == nullptr) {
-						result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
-				}
+				// REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+				REQUESTEDINTERFACE * result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+
+				//if (result == nullptr) {
+				//		result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+				//}
 
 				return (result);
 			}

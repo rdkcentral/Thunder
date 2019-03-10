@@ -1180,8 +1180,6 @@ namespace WPEFramework {
                         SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
                     }
 
-                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
-
                     _adminLock.Unlock();
 
                     return result;

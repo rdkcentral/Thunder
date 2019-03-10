@@ -61,14 +61,12 @@ namespace WPEFramework {
 			}
 			virtual Core::IUnknown* Convert(void* incomingData) const
 			{
-				INTERFACE * result = dynamic_cast<INTERFACE*>(reinterpret_cast<Core::IUnknown*>(incomingData));
+				INTERFACE * result = reinterpret_cast<INTERFACE*>(incomingData);
 
-				if (result == nullptr) {
+				//if (result == nullptr) {
 
-					ASSERT(false);
-
-					result = reinterpret_cast<INTERFACE*>(incomingData);
-				}
+				//	result = reinterpret_cast<INTERFACE*>(incomingData);
+				//}
 
 				return (result);
 			}
@@ -112,7 +110,7 @@ namespace WPEFramework {
 		public:
 			UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const uint32_t interfaceId, const bool remoteRefCounted, Core::IUnknown* parent)
 				: _remoteAddRef(remoteRefCounted ? REGISTERED : UNREGISTERED)
-				, _refCount(remoteRefCounted ? 2 : 0)
+				, _refCount(remoteRefCounted ? 1 : 0)
 				, _interfaceId(interfaceId)
 				, _implementation(implementation)
 				, _channel(channel)
@@ -173,7 +171,6 @@ namespace WPEFramework {
 					// Seems we really would like to "preserve" this interface, so report it in use
 					if (_remoteAddRef.compare_exchange_weak(value, PENDING_ADDREF|CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
 						// INcrement for the registration..
-						Core::InterlockedIncrement(_refCount);
 						RPC::Administrator::Instance().RegisterProxy(const_cast<UnknownProxy&>(*this));
 					}
 				}
@@ -193,19 +190,20 @@ namespace WPEFramework {
 					if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
 						RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
 						RemoteRelease();
-						result = Core::ERROR_DESTRUCTION_SUCCEEDED;
 					}
+					result = Core::ERROR_DESTRUCTION_SUCCEEDED;
 				}
 				else if (newValue == 2) {
-					uint8_t value(PENDING_ADDREF | CACHING);
-					if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
-
+					uint8_t  value = REGISTERED | CACHING;
+					if (_remoteAddRef.compare_exchange_weak(value, PENDING_RELEASE | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
 						RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
 					}
-					value = REGISTERED | CACHING;
-					if (_remoteAddRef.compare_exchange_weak(value, PENDING_RELEASE | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
-						Core::InterlockedDecrement(_refCount);
-						RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
+					else {
+						value = (PENDING_ADDREF | CACHING);
+						if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
+
+							RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
+						}
 					}
 				}
 				return (result);
@@ -222,7 +220,7 @@ namespace WPEFramework {
 				uint8_t value(CACHING | REGISTERED);
 				if (_remoteAddRef.compare_exchange_weak(value, REGISTERED, std::memory_order_release, std::memory_order_relaxed) == false) {
 					value = CACHING | UNREGISTERED;
-					if (_remoteAddRef.compare_exchange_weak(value, REGISTERED, std::memory_order_release, std::memory_order_relaxed) == false) {
+					if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == false) {
 						TRACE_L1("Interesting, can not clear the CACHING FLAG. Current state: %d", _remoteAddRef.load());
 					}
 				}
