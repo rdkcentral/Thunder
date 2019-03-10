@@ -124,8 +124,8 @@ namespace PluginHost {
     {
         // Prefix length, no need to compare, that has already been doen, otherwise
         // this call would not be placed.
-        uint32_t prefixLength = _config.WebPrefix().length();
-        uint32_t webLength = _webURLPath.length();
+        uint32_t prefixLength = static_cast<uint32_t>(_config.WebPrefix().length());
+        uint32_t webLength = static_cast<uint32_t>(_webURLPath.length());
 
         return ((_webServerFilePath.empty() == false) && (segment.length() >= prefixLength + webLength) && ((webLength == 0) || (segment.compare(prefixLength + 1, webLength, _webURLPath) == 0)));
     }

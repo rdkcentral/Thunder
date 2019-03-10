@@ -910,7 +910,7 @@ int mbedtls_aes_crypt_cfb128(mbedtls_aes_context *ctx,
 							 const unsigned char *input,
 							 unsigned char *output) {
 	int c;
-	uint32_t n = *iv_off;
+	uint32_t n = static_cast<uint32_t>(*iv_off);
 
 	if (mode == MBEDTLS_AES_DECRYPT) {
 		while (length--) {
@@ -1019,7 +1019,7 @@ int mbedtls_aes_crypt_ofb(mbedtls_aes_context *ctx,
 						  unsigned char iv[16],
 						  const unsigned char *input,
 						  unsigned char *output) {
-	uint32_t cnt = 0, b_pos = *nc_off;
+	uint32_t cnt = 0, b_pos = static_cast<uint32_t>(*nc_off);
 
 	if (b_pos != 0)           /* complete any partial block   */
 	{

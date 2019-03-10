@@ -451,7 +451,17 @@ namespace Core {
                 _parameters = ::malloc(size);
                 _argc = parameters.Line(_parameters, size);
 
-                if (!CreateProcess(parameters.Command().c_str(), reinterpret_cast<char*>(_parameters), nullptr, nullptr, inheritance, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &_info)) {
+                if (CreateProcess(
+						parameters.Command().c_str(), 
+						reinterpret_cast<char*>(_parameters), 
+						nullptr, 
+						nullptr, 
+						inheritance,
+						0, // CREATE_NEW_CONSOLE,
+						nullptr, 
+						nullptr, 
+						&si, 
+						&_info) == 0) {
                     int status = GetLastError();
                     TRACE_L1("Failed to start a process, Error <%d>.", status);
                     error = (status == 2 ? Core::ERROR_UNAVAILABLE : Core::ERROR_GENERAL);

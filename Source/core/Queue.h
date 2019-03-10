@@ -271,7 +271,7 @@ namespace Core {
         }
         inline uint32_t Length() const
         {
-            return (m_Queue.size());
+            return (static_cast<uint32_t>(m_Queue.size()));
         }
 
     private:

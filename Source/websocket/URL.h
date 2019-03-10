@@ -127,7 +127,7 @@ namespace Core {
 			bool LoadKey(const TCHAR key[], Core::TextFragment& data, const bool caseSensitive) const
 			{
 				bool found = false;
-				const Core::TextFragment comparator(key, strlen(key));
+				const Core::TextFragment comparator(key, static_cast<uint32_t>(strlen(key)));
 				Core::TextSegmentIterator options(_data, false, '&');
 
 				while ((options.Next() == true) && (found == false))

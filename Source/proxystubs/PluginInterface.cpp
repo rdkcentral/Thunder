@@ -29,7 +29,7 @@ namespace ProxyStubs {
             ASSERT(implementation != nullptr);
 
             if (implementation != nullptr) {
-				ProxyStub::UnknownProxy* proxy;
+				ProxyStub::UnknownProxy* proxy = nullptr;
 				IShell* param0_proxy = reader.Number<IShell*>();
 
 				if (param0_proxy != nullptr) {
@@ -54,7 +54,7 @@ namespace ProxyStubs {
             // virtual void Deinitialize(PluginHost::IShell* shell) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IShell* param0_proxy = message->Parameters().Reader().Number<IShell*>();
 
 			if (param0_proxy != nullptr) {
@@ -251,7 +251,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IPlugin::INotification* param0_proxy = reader.Number<IPlugin::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -276,7 +276,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IPlugin::INotification* param0_proxy = reader.Number<IPlugin::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -400,7 +400,7 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(parameters.Reader());
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IShell* param0_proxy = reader.Number<IShell*>();
 
 			if (param0_proxy != nullptr) {
@@ -439,7 +439,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IStateControl::INotification* param0_proxy = reader.Number<IStateControl::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -462,7 +462,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			IStateControl::INotification* param0_proxy = reader.Number<IStateControl::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -510,7 +510,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			ISubSystem::INotification* param0_proxy = reader.Number<ISubSystem::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -533,7 +533,7 @@ namespace ProxyStubs {
             RPC::Data::Input& parameters(message->Parameters());
             RPC::Data::Frame::Reader reader(parameters.Reader());
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			ISubSystem::INotification* param0_proxy = reader.Number<ISubSystem::INotification*>();
 
 			if (param0_proxy != nullptr) {
@@ -565,7 +565,7 @@ namespace ProxyStubs {
 
             ISubSystem::subsystem eventType = reader.Number<ISubSystem::subsystem>();
 
-			ProxyStub::UnknownProxy* proxy;
+			ProxyStub::UnknownProxy* proxy = nullptr;
 			Core::IUnknown* param0_proxy = reader.Number<Core::IUnknown*>();
 
 			if (param0_proxy != nullptr) {
@@ -669,10 +669,11 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<IShell*>(service);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
-        }
+		}
         virtual string Information() const override
         {
 			string result;
@@ -913,18 +914,20 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<IPlugin::INotification*>(sink);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
-        }
+		}
         virtual void Unregister(IPlugin::INotification* sink) override
         {
             IPCMessage newMessage(BaseClass::Message(18));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number<IPlugin::INotification*>(sink);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
         virtual uint32_t Activate(const IShell::reason theReason) override
@@ -1093,19 +1096,21 @@ namespace ProxyStubs {
         virtual void Register(IStateControl::INotification* notification) override
         {
             IPCMessage newMessage(BaseClass::Message(3));
-RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-writer.Number<IStateControl::INotification*>(notification);
-if (Invoke(newMessage) == Core::ERROR_NONE) {
-	Complete(newMessage->Response());
-}
+			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+			writer.Number<IStateControl::INotification*>(notification);
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
+			}
 		}
 		virtual void Unregister(IStateControl::INotification* notification) override
 		{
 			IPCMessage newMessage(BaseClass::Message(4));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<IStateControl::INotification*>(notification);
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
 	};
@@ -1155,8 +1160,9 @@ if (Invoke(newMessage) == Core::ERROR_NONE) {
 			IPCMessage newMessage(BaseClass::Message(0));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<ISubSystem::INotification*>(notification);
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
 		virtual void Unregister(ISubSystem::INotification* notification) override
@@ -1164,8 +1170,9 @@ if (Invoke(newMessage) == Core::ERROR_NONE) {
 			IPCMessage newMessage(BaseClass::Message(1));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<ISubSystem::INotification*>(notification);
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
 		virtual string BuildTreeHash() const override
@@ -1183,8 +1190,9 @@ if (Invoke(newMessage) == Core::ERROR_NONE) {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<ISubSystem::subsystem>(type);
 			writer.Number<Core::IUnknown*>(information);
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
 		virtual const Core::IUnknown* Get(const subsystem type) const override

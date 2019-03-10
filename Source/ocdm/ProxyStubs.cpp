@@ -524,10 +524,11 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(callback);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
-        }
+		}
         //
         // Unregister for a KeyId change notification
         //
@@ -537,8 +538,9 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(callback);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
     };
@@ -727,10 +729,11 @@ namespace WPEFramework {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Number(callback);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
-        }
+		}
         //
         // Revoke the Session Callback for change notifications
         //

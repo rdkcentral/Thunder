@@ -178,7 +178,7 @@ namespace JSONRPC {
             const string callsign (message.Callsign());
             uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
             if (result != Core::ERROR_NONE) {
-                uint32_t length = _callsign.length();
+                uint32_t length = static_cast<uint32_t>(_callsign.length());
                 if (callsign.compare(0, length, _callsign) == 0) {
                     result = Core::ERROR_INVALID_SIGNATURE;
 

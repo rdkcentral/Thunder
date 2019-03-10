@@ -6,8 +6,8 @@
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
   "volatilepath": "D:/WPEFramework/artifacts/temp",
   "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
-  "systempath": "D:/WPEFrameworkPlugins/artifacts/Debug",
-  "proxystubpath": "D:/WPEFramework/artifacts/Debugproxystubs",
+  "systempath": "D:/WPEFramework/artifacts/Debug",
+  "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "plugins": [
@@ -25,10 +25,15 @@
       }
     },
     {
-      "callsign": "JSONRPCExamplePlugin",
-      "locator": "libjsonrpcexampleplugin.so",
-      "classname": "JSONRPCExamplePlugin",
-      "autostart": true
+      "callsign": "OutOfProcessPlugin",
+      "locator": "libOutOfProcessPlugin.so",
+      "classname": "OutOfProcessPlugin",
+      "autostart": true,
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "720"
+      }
     },
     {
       "callsign": "WebServer",
@@ -43,7 +48,7 @@
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -134,7 +139,7 @@
       "callsign": "Tracing",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": true
+      "autostart": false
     },
     {
       "autostart": false,

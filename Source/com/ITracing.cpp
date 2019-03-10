@@ -218,8 +218,9 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ( (Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0) ) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
 			}
 		}
 		virtual void Deactivated(RPC::IRemoteProcess* process)
@@ -228,8 +229,9 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			if (Invoke(newMessage) == Core::ERROR_NONE) {
-				Complete(newMessage->Response());
+			if ( (Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0) ) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader); 
 			}
 		}
 	};

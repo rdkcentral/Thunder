@@ -44,7 +44,7 @@
 #define B4000000 4000000
 #endif
 
-#ifdef WIN32
+#if defined WIN32 || defined _WINDOWS
 
 // W3 -- warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 #pragma warning(disable : 4290)
@@ -65,7 +65,7 @@
 #define __WIN32__
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
 
@@ -366,10 +366,8 @@ typedef DEPRECATED signed long long sint64;
 
 #if __SIZEOF_POINTER__ == 4
 typedef uint32_t uintptr_t;
-#elif __SIZEOF_POINTER__ == 8
-typedef unsigned long int uintptr_t;
-#else
-#warning "Seems like we are building for neither 32-bits nor 64-bits platform, uintptr_t won't be defined."
+#elif defined(__LINUX__)
+#pragma warning "Seems like we are building for neither 32-bits nor 64-bits platform, uintptr_t won't be defined."
 #endif
 
 #ifndef FALSE

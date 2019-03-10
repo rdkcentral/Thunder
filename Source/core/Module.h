@@ -5,8 +5,8 @@
 #define MODULE_NAME Core
 #endif
 
-#ifdef WIN32
-#ifdef __MODULE_CORE__
+#ifdef _WINDOWS
+#ifdef CORE_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT

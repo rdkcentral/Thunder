@@ -155,7 +155,7 @@ namespace WPEFramework {
 				request.Body(PluginHost::Factories::Instance().JSONRPC());
 			}
 			else if (request.Verb == Web::Request::HTTP_PUT) {
-				Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
+				Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
 				// Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
 				index.Next();
@@ -179,7 +179,7 @@ namespace WPEFramework {
 			TRACE(Trace::Information, (string(_T("Received request"))));
 
 			Core::ProxyType<Web::Response> result;
-			Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
+			Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
 			// Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
 			index.Next();

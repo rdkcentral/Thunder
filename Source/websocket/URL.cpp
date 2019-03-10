@@ -1562,7 +1562,7 @@ namespace Core {
         bool caseSensitive = true;
         Component result;
         const TCHAR* byteArray(urlStr.c_str());
-        int length = urlStr.length();
+        int length = static_cast<int>(urlStr.length());
 
         if (ExtractScheme(byteArray, length, result) == true) {
             // SchemeInfo information found! Set it!

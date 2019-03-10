@@ -359,15 +359,6 @@ namespace WPEFramework {
 			{
 				return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
 			}
-			//template <typename ACTUAL_INTERFACE>
-			//inline ACTUAL_INTERFACE* ProxyInstance(void* implementation)
-			//{
-			//	return (RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), implementation, ACTUAL_INTERFACE::ID, true, ACTUAL_INTERFACE::ID));
-			//}
-			//inline void* ProxyInstance(void* implementation, const uint32_t id)
-			//{
-			//	return (RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), implementation, id, true, id));
-			//}
 			inline void* Interface(void* implementation, const uint32_t interfaceId) const {
 				void* result = nullptr;
 
@@ -376,22 +367,6 @@ namespace WPEFramework {
 				result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
 
 				return (result);
-			}
-			//inline void* Interface(const RPC::Data::Output& response, const uint32_t interfaceId) const {
-			//	void* result = nullptr;
-			//	RPC::Data::Frame::Reader reader(response.Reader());
-
-			//	// From what is returned, we need to create a proxy
-			//	ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(), reader.Number<void*>(), interfaceId, true, interfaceId, false);
-			//	result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
-
-			//	return (result);
-			//}
-			inline void Complete(const RPC::Data::Output& response) const {
-				if (response.Length() > 0) {
-					RPC::Data::Frame::Reader reader(response.Reader());
-					Complete(reader);
-				}
 			}
 			inline void Complete(RPC::Data::Frame::Reader& reader) const {
 

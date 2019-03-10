@@ -307,7 +307,7 @@ namespace PluginHost {
         inline void GetMetaData(MetaData::Service& metaData) const
         {
             metaData = _config.Configuration();
-			metaData.Observers = _notifiers.size();
+			metaData.Observers = static_cast<uint32_t>(_notifiers.size());
             metaData.JSONState = this;
 
 #ifdef RUNTIME_STATISTICS

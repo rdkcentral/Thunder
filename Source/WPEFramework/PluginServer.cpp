@@ -457,7 +457,7 @@ uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyTy
 		}
 		else {
 			size_t length;
-			uint32_t offset = serviceHeader.length() + 1; /* skip the slash after */
+			uint32_t offset = static_cast<uint32_t>(serviceHeader.length()) + 1; /* skip the slash after */
 
 			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 
@@ -474,7 +474,7 @@ uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyTy
 		}
 		else {
 			size_t length;
-			uint32_t offset = JSONRPCHeader.length() + 1; /* skip the slash after */
+			uint32_t offset = static_cast<uint32_t>(JSONRPCHeader.length()) + 1; /* skip the slash after */
 
 			const string callSign(identifier.substr(offset, ((length = identifier.find_first_of('/', offset)) == string::npos ? string::npos : length - offset)));
 

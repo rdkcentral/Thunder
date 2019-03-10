@@ -475,7 +475,11 @@ namespace Core {
 #endif
 #ifdef __WIN32__
                 Handle fd = DuplicateHandle();
-                return ((fd > 0) ? ::_fdopen(reinterpret_cast<int>(fd),  (IsReadOnly() ? "r" : "r+")) : nullptr);
+#pragma warning( disable : 4311 )
+#pragma warning( disable : 4302 )
+				return ((fd > 0) ? ::_fdopen(reinterpret_cast<int>(fd),  (IsReadOnly() ? "r" : "r+")) : nullptr);
+#pragma warning( default : 4311 )
+#pragma warning( default : 4302 )
 #endif
             }
             else {
@@ -489,12 +493,12 @@ namespace Core {
         inline static uint32_t ExtensionOffset(const string& name)
         {
             int offset;
-            return (((offset = name.find_last_of('.')) == -1) ? 0 : offset + 1);
+            return (((offset = static_cast<int>(name.find_last_of('.'))) == -1) ? 0 : offset + 1);
         }
         inline static uint32_t FileNameOffset(const string& name)
         {
             int offset;
-            if ((offset = name.find_last_of('/')) != -1) {
+            if ((offset = static_cast<int>(name.find_last_of('/'))) != -1) {
                 // under linux/posix this is enough..
                 offset++;
             }
@@ -503,12 +507,12 @@ namespace Core {
             }
 #ifdef __WIN32__
             int intermediate;
-            if ((intermediate = name.find_last_of('\\')) != -1) {
+            if ((intermediate = static_cast<int>(name.find_last_of('\\'))) != -1) {
                 if (intermediate > offset) {
                     offset = intermediate + 1;
                 }
             }
-            if ((offset == 0) && ((intermediate = name.find_last_of(':')) != -1)) {
+            if ((offset == 0) && ((intermediate = static_cast<int>(name.find_last_of(':'))) != -1)) {
                 offset = intermediate + 1;
             }
 #endif

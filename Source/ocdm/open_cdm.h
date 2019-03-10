@@ -78,7 +78,7 @@ typedef enum {
 
 #ifdef _MSVC_LANG
 #undef EXTERNAL
-#ifdef __MODULE_CDMI__
+#ifdef OCDM_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
 #define EXTERNAL __declspec(dllimport)

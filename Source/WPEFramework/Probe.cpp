@@ -139,7 +139,7 @@ namespace WPEFramework {
 					string body(*(request->Body<Web::TextBody>()));
 					Destination newEntry;
 					newEntry._destination = sourceNode;
-					newEntry._requestTime = Core::NumberType<uint64_t>(body.c_str(), body.length()).Value();
+					newEntry._requestTime = Core::NumberType<uint64_t>(body.c_str(), static_cast<uint32_t>(body.length())).Value();
 					newEntry._incomingTime = incomingTime;
 					_destinations.push_back(newEntry);
 					TRACE(Discovery, (_T("Valid discovery request. Responding to"), sourceNode));
@@ -260,10 +260,10 @@ namespace WPEFramework {
                                 bool secure = ((response.ContentSignature.IsSet() == true) && (response.ContentSignature.Value().Type() == Crypto::HASH_SHA256));
 
                                 if (length == string::npos) {
-				    latency = Core::NumberType<uint64_t>(_answer->c_str(), _answer->length()).Value();
+				    latency = Core::NumberType<uint64_t>(_answer->c_str(), static_cast<uint32_t>(_answer->length())).Value();
                                 }
                                 else {
-				    latency = Core::NumberType<uint64_t>(_answer->c_str(), length).Value();
+				    latency = Core::NumberType<uint64_t>(_answer->c_str(), static_cast<uint32_t>(length)).Value();
                                     model = _answer->substr(length + 1, string::npos);
                                 }
 				latency = (stamp - latency);
