@@ -9,16 +9,16 @@ namespace Exchange {
         enum { ID = ID_PACKAGER };
 
         enum state {
-           IDLE,
-           DOWNLOADING,
-           DOWNLOADED,
-           DECRYPTING,
-           DECRYPTED,
-           VERIFYING,
-           VERIFIED,
-           INSTALLING,
-           INSTALLED
-       };
+            IDLE,
+            DOWNLOADING,
+            DOWNLOADED,
+            DECRYPTING,
+            DECRYPTED,
+            VERIFYING,
+            VERIFIED,
+            INSTALLING,
+            INSTALLED
+        };
 
         struct IInstallationInfo : virtual public Core::IUnknown {
             enum { ID = ID_PACKAGER_INSTALLATIONINFO };
@@ -35,16 +35,15 @@ namespace Exchange {
             virtual string Architecture() const = 0;
         };
 
-         struct INotification : virtual public Core::IUnknown {
-               enum { ID = ID_PACKAGER_NOTIFICATION };
-               virtual void StateChange(IPackageInfo* package, IInstallationInfo* install) = 0;
-         };
+        struct INotification : virtual public Core::IUnknown {
+            enum { ID = ID_PACKAGER_NOTIFICATION };
+            virtual void StateChange(IPackageInfo* package, IInstallationInfo* install) = 0;
+        };
 
-          virtual void Register(INotification* observer) = 0;
-          virtual void Unregister(const INotification* observer) = 0;
-          virtual uint32_t Configure(PluginHost::IShell* service) = 0;
-          virtual uint32_t Install(const string& name, const string& version, const string& arch) = 0;
+        virtual void Register(INotification* observer) = 0;
+        virtual void Unregister(const INotification* observer) = 0;
+        virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+        virtual uint32_t Install(const string& name, const string& version, const string& arch) = 0;
     };
 }
 }
-

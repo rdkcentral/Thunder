@@ -5,27 +5,35 @@
 
 // ---- Include local include files ----
 #include "Module.h"
-#include "Portability.h"
 #include "Number.h"
 #include "Optional.h"
+#include "Portability.h"
 #include "TextFragment.h"
 
 namespace WPEFramework {
-	namespace Core {
-		// ---- Referenced classes and types ----
+namespace Core {
+    // ---- Referenced classes and types ----
 
-		// ---- Helper types and constants ----
-#define ENUM_CONVERSION_HANDLER(ENUMERATE) template <> extern                                                                           \
-const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WPEFramework::Core::EnumerateType<ENUMERATE>::Table(const uint16_t);
+    // ---- Helper types and constants ----
+#define ENUM_CONVERSION_HANDLER(ENUMERATE) template <> \
+extern const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WPEFramework::Core::EnumerateType<ENUMERATE>::Table(const uint16_t);
 
-#define ENUM_CONVERSION_BEGIN(ENUMERATE) namespace Core { template <>							\
-const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) {				\
-	static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
+#define ENUM_CONVERSION_BEGIN(ENUMERATE)                                                            \
+    namespace Core {                                                                                \
+        template <>                                                                                 \
+        const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
+        {                                                                                           \
+            static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
 
-#define ENUM_CONVERSION_END(ENUMERATE)											\
-		{ static_cast<ENUMERATE>(~0), nullptr, 0 } };								\
-		return (index < ((sizeof(table)/sizeof(EnumerateType<ENUMERATE>))-1) ? &table[index] : nullptr);	\
-		} }													
+#define ENUM_CONVERSION_END(ENUMERATE)                                                                   \
+    {                                                                                                    \
+        static_cast<ENUMERATE>(~0), nullptr, 0                                                           \
+    }                                                                                                    \
+    }                                                                                                    \
+    ;                                                                                                    \
+    return (index < ((sizeof(table) / sizeof(EnumerateType<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
+    }                                                                                                    \
+    }
 
     // ---- Helper functions ----
 
@@ -56,8 +64,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
         {
             if (caseSensitive) {
                 operator=<true>(value);
-            }
-            else {
+            } else {
                 operator=<false>(value);
             }
         }
@@ -66,8 +73,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
         {
             if (caseSensitive) {
                 operator=<true>(value);
-            }
-            else {
+            } else {
                 operator=<false>(value);
             }
         }
@@ -105,8 +111,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
 
             if (pEntry == nullptr) {
                 m_Value = OptionalType<ENUMERATE>();
-            }
-            else {
+            } else {
                 m_Value = pEntry->value;
             }
 
@@ -120,8 +125,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
 
             if (pEntry == nullptr) {
                 m_Value = OptionalType<ENUMERATE>();
-            }
-            else {
+            } else {
                 m_Value = pEntry->value;
             }
             return (*this);
@@ -134,8 +138,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
 
             if (pEntry == nullptr) {
                 m_Value = OptionalType<ENUMERATE>();
-            }
-            else {
+            } else {
                 m_Value = pEntry->value;
             }
             return (*this);
@@ -147,15 +150,13 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
 
             if (caseSensitive == true) {
                 pEntry = Find<true>(value);
-            }
-            else {
+            } else {
                 pEntry = Find<false>(value);
             }
 
             if (pEntry == nullptr) {
                 m_Value = OptionalType<ENUMERATE>();
-            }
-            else {
+            } else {
                 m_Value = pEntry->value;
             }
             return (*this);
@@ -217,10 +218,10 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
     private:
         OptionalType<ENUMERATE> m_Value;
 
-		// Attach a table to this global parameter to get string conversions
-		static const EnumerateConversion<ENUMERATE>* Table(const uint16_t index);
+        // Attach a table to this global parameter to get string conversions
+        static const EnumerateConversion<ENUMERATE>* Table(const uint16_t index);
 
-		template <bool CASESENSITIVE>
+        template <bool CASESENSITIVE>
         const EnumerateConversion<ENUMERATE>* Find(const Core::TextFragment& value) const
         {
             const struct EnumerateConversion<ENUMERATE>* runner = Table(0);
@@ -229,8 +230,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
                 while ((runner->name != nullptr) && (value != Core::TextFragment(runner->name, 0, runner->length))) {
                     runner++;
                 }
-            }
-            else {
+            } else {
                 while ((runner->name != nullptr) && (value.EqualText(Core::TextFragment(runner->name, runner->length)) == false)) {
                     runner++;
                 }
@@ -248,8 +248,7 @@ const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint
                 while ((runner->name != nullptr) && (_tcscmp(runner->name, value) != 0)) {
                     runner++;
                 }
-            }
-            else {
+            } else {
                 while ((runner->name != nullptr) && (_tcsicmp(runner->name, value) != 0)) {
                     runner++;
                 }

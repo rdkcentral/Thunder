@@ -17,9 +17,9 @@
 namespace WPEFramework {
 namespace Trace {
 
-	string EXTERNAL Format(const TCHAR formatter[], ...);
-	void EXTERNAL Format(string& dst, const TCHAR format[], ...);
-	void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
+    string EXTERNAL Format(const TCHAR formatter[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], ...);
+    void EXTERNAL Format(string& dst, const TCHAR format[], va_list ap);
 
     class EXTERNAL Text {
     private:
@@ -31,20 +31,20 @@ namespace Trace {
         // Define them but do not implement them, compile error/link error.
         // -------------------------------------------------------------------
         Text(const Text& a_Copy) = delete;
-		Text& operator=(const Text& a_RHS) = delete;
+        Text& operator=(const Text& a_RHS) = delete;
 
     public:
         inline Text()
         {
         }
-		inline Text(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		inline Text(const std::string& text)
+        inline Text(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        inline Text(const std::string& text)
             : _text(Core::ToString(text.c_str()))
         {
         }
@@ -74,10 +74,10 @@ namespace Trace {
         {
             return (_text.c_str());
         }
-		inline uint16_t Length() const
-		{
-			return (static_cast<uint16_t>(_text.length()));
-		}
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
     private:
         std::string _text;
@@ -103,16 +103,18 @@ namespace Trace {
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		static const std::string _text;
+    private:
+        static const std::string _text;
     };
 
     class EXTERNAL Destructor {
@@ -135,17 +137,19 @@ namespace Trace {
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		static const std::string _text;
-	};
+    private:
+        static const std::string _text;
+    };
 
     class EXTERNAL CopyConstructor {
     private:
@@ -167,16 +171,18 @@ namespace Trace {
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		static const std::string _text;
+    private:
+        static const std::string _text;
     };
 
     class EXTERNAL AssignmentOperator {
@@ -199,16 +205,18 @@ namespace Trace {
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		static const std::string _text;
+    private:
+        static const std::string _text;
     };
 
     class EXTERNAL MethodEntry {
@@ -229,27 +237,30 @@ namespace Trace {
         MethodEntry(const wchar_t MethodName[])
             : _text("Entered Method: ")
         {
-			std::string secondPart; Core::ToString(MethodName, secondPart);
-			_text += secondPart;
+            std::string secondPart;
+            Core::ToString(MethodName, secondPart);
+            _text += secondPart;
         }
 #endif
-		MethodEntry(const char MethodName[])
-			: _text(std::string("Entered Method: ") + std::string(MethodName))
-		{
-		}
-		~MethodEntry()
+        MethodEntry(const char MethodName[])
+            : _text(std::string("Entered Method: ") + std::string(MethodName))
+        {
+        }
+        ~MethodEntry()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
+    private:
         std::string _text;
     };
 
@@ -266,34 +277,37 @@ namespace Trace {
         MethodExit(const MethodExit& a_Copy) = delete;
         MethodExit& operator=(const MethodExit& a_RHS) = delete;
 
-	public:
+    public:
 #ifndef __NO_WCHAR_SUPPORT__
-		MethodExit(const wchar_t MethodName[])
-			: _text("Exit Method: ")
-		{
-			std::string secondPart; Core::ToString(MethodName, secondPart);
-			_text += secondPart;
-		}
+        MethodExit(const wchar_t MethodName[])
+            : _text("Exit Method: ")
+        {
+            std::string secondPart;
+            Core::ToString(MethodName, secondPart);
+            _text += secondPart;
+        }
 #endif
-		MethodExit(const char MethodName[])
-			: _text(std::string("Exit Method: ") + std::string(MethodName))
-		{
-		}
-		~MethodExit()
-		{
-		}
+        MethodExit(const char MethodName[])
+            : _text(std::string("Exit Method: ") + std::string(MethodName))
+        {
+        }
+        ~MethodExit()
+        {
+        }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 
     class EXTERNAL Information {
     private:
@@ -309,30 +323,33 @@ namespace Trace {
         Information& operator=(const Information& a_RHS) = delete;
 
     public:
-		Information(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-        explicit Information(const string& text) : _text(Core::ToString(text))
-		{
+        Information(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Information(const string& text)
+            : _text(Core::ToString(text))
+        {
         }
         ~Information()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
     private:
-		std::string _text;
+        std::string _text;
     };
 
     class EXTERNAL Warning {
@@ -349,31 +366,34 @@ namespace Trace {
         Warning& operator=(const Warning& a_RHS) = delete;
 
     public:
-		Warning(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		explicit Warning(const string& text) : _text(Core::ToString(text))
-		{
-		}
+        Warning(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Warning(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
         ~Warning()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 
     class EXTERNAL Error {
     private:
@@ -389,31 +409,34 @@ namespace Trace {
         Error& operator=(const Error& a_RHS) = delete;
 
     public:
-		Error(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		explicit Error(const string& text) : _text(Core::ToString(text))
-		{
+        Error(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Error(const string& text)
+            : _text(Core::ToString(text))
+        {
         }
         ~Error()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 
     class EXTERNAL Fatal {
     private:
@@ -429,31 +452,34 @@ namespace Trace {
         Fatal& operator=(const Fatal& a_RHS) = delete;
 
     public:
-		Fatal(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		explicit Fatal(const string& text) : _text(Core::ToString(text))
-		{
+        Fatal(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Fatal(const string& text)
+            : _text(Core::ToString(text))
+        {
         }
         ~Fatal()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 
     class EXTERNAL Initialisation {
     private:
@@ -469,31 +495,34 @@ namespace Trace {
         Initialisation& operator=(const Initialisation& a_RHS) = delete;
 
     public:
-		Initialisation(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		explicit Initialisation(const string& text) : _text(Core::ToString(text))
-		{
-		}
+        Initialisation(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Initialisation(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
         ~Initialisation()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 
     class EXTERNAL Assert {
     private:
@@ -508,35 +537,38 @@ namespace Trace {
         Assert& operator=(const Assert& a_RHS) = delete;
 
     public:
-        Assert() : _text("Assertion: <<No description supplied>>")
+        Assert()
+            : _text("Assertion: <<No description supplied>>")
         {
         }
-		Assert(const TCHAR formatter[], ...)
-		{
-			va_list ap;
-			va_start(ap, formatter);
-			Format(_text, formatter, ap);
-			va_end(ap);
-		}
-		explicit Assert(const string& text)
-			: _text(std::string("Assertion: ") + (Core::ToString(text)))
-		{
-		}
+        Assert(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Assert(const string& text)
+            : _text(std::string("Assertion: ") + (Core::ToString(text)))
+        {
+        }
         ~Assert()
         {
         }
 
-	public:
-		inline const char* Data() const {
-			return (_text.c_str());
-		}
-		inline uint16_t Length() const {
-			return (static_cast<uint16_t>(_text.length()));
-		}
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
 
-	private:
-		std::string _text;
-	};
+    private:
+        std::string _text;
+    };
 }
 } // namespace Trace
 

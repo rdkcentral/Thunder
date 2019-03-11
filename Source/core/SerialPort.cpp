@@ -1,21 +1,21 @@
 #include "SerialPort.h"
 
-#include "Thread.h"
-#include "Sync.h"
 #include "Serialization.h"
 #include "Singleton.h"
+#include "Sync.h"
+#include "Thread.h"
 
 #include <errno.h>
 
 #ifdef __POSIX__
-#include <poll.h>
 #include <fcntl.h>
+#include <poll.h>
 #ifdef __APPLE__
 #include "NodeId.h"
 #define SOCKET signed int
 #define SOCKET_ERROR static_cast<signed int>(-1)
 #define INVALID_SOCKET static_cast<SOCKET>(-1)
-#define __ERRORRESULT__               errno
+#define __ERRORRESULT__ errno
 #endif
 
 #include <sys/ioctl.h>
@@ -33,12 +33,12 @@
 namespace WPEFramework {
 namespace Core {
 
-static constexpr uint32_t SLEEPSLOT_TIME   = 100;
+    static constexpr uint32_t SLEEPSLOT_TIME = 100;
 
-    //////////////////////////////////////////////////////////////////////
-    // SerialPort::SerialMonitor
-    //////////////////////////////////////////////////////////////////////
-    #ifdef __WIN32__
+//////////////////////////////////////////////////////////////////////
+// SerialPort::SerialMonitor
+//////////////////////////////////////////////////////////////////////
+#ifdef __WIN32__
     class SerialMonitor {
     private:
         class MonitorWorker : public Core::Thread {
@@ -52,7 +52,6 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 , _parent(parent)
             {
                 Thread::Init();
-
             }
             virtual ~MonitorWorker()
             {
@@ -130,9 +129,9 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             // Start waiting for characters to come in...
             port.Read(0);
 
-			Break();
-		
-			if (m_MonitoredPorts.size() == 1) {
+            Break();
+
+            if (m_MonitoredPorts.size() == 1) {
                 if (m_ThreadInstance == nullptr) {
                     m_ThreadInstance = new MonitorWorker(*this);
                 }
@@ -176,8 +175,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 if (port->IsOpen() == false) {
                     index = m_MonitoredPorts.erase(index);
                     port->Closed();
-                }
-                else {
+                } else {
                     if (port->IsOpen() == true) {
                         port->Opened();
                     }
@@ -189,9 +187,8 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
             if (filledSlot <= 1) {
                 m_ThreadInstance->Block();
-				delay = Core::infinite;
-            }
-            else {
+                delay = Core::infinite;
+            } else {
                 m_Admin.Unlock();
 
                 ::WaitForMultipleObjects(filledSlot, m_Slots, FALSE, Core::infinite);
@@ -217,8 +214,8 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                         }
 
                         if ((::WaitForSingleObject(port->m_WriteInfo.hEvent, 0) == WAIT_OBJECT_0) && (::GetOverlappedResult(port->Descriptor(), &(port->m_WriteInfo), &info, FALSE))) {
-							::ResetEvent(port->m_WriteInfo.hEvent);
-							port->Write(static_cast<uint16_t>(info));
+                            ::ResetEvent(port->m_WriteInfo.hEvent);
+                            port->Write(static_cast<uint16_t>(info));
                         }
                     }
 
@@ -273,12 +270,12 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 #endif
     {
 #ifdef __WIN32__
-		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
-		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
-		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
-		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+        ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+        m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
 #endif
-	}
+    }
     SerialPort::SerialPort(const string& port)
         : m_syncAdmin()
         , m_PortName(port)
@@ -301,12 +298,12 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 #endif
     {
 #ifdef __WIN32__
-		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
-		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
-		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
-		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+        ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+        m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
 #endif
-	}
+    }
     SerialPort::SerialPort(
         const string& port,
         const BaudRate baudRate,
@@ -337,10 +334,10 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 #endif
     {
 #ifdef __WIN32__
-		::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
-		::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
-		m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
-		m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
+        ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
+        m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
+        m_WriteInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
 #endif
         Configuration(port, baudRate, parity, dataBits, stopBits, flowControl, sendBufferSize, receiveBufferSize);
     }
@@ -355,9 +352,9 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 #ifdef __WIN32__
         ASSERT(m_Descriptor == INVALID_HANDLE_VALUE);
 #endif
-		if (m_SendBuffer != nullptr) {
-			::free(m_SendBuffer);
-		}
+        if (m_SendBuffer != nullptr) {
+            ::free(m_SendBuffer);
+        }
 
 #ifdef __WIN32__
         ::CloseHandle(m_ReadInfo.hEvent);
@@ -389,16 +386,14 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         cfsetospeed(&m_PortSettings, baudRate); // and out
         m_PortSettings.c_cflag |= CLOCAL;
 
-	if (flowControl == OFF) {
+        if (flowControl == OFF) {
             m_PortSettings.c_cflag &= ~CRTSCTS;
             m_PortSettings.c_iflag &= ~IXON;
-        }
-	else if (flowControl == SOFTWARE) {
-	    m_PortSettings.c_cflag &= ~CRTSCTS;
+        } else if (flowControl == SOFTWARE) {
+            m_PortSettings.c_cflag &= ~CRTSCTS;
             m_PortSettings.c_iflag |= IXON;
-        }
-	else if (flowControl == HARDWARE) {
-	    m_PortSettings.c_cflag |= CRTSCTS;
+        } else if (flowControl == HARDWARE) {
+            m_PortSettings.c_cflag |= CRTSCTS;
             m_PortSettings.c_iflag &= (~IXON);
         }
         if (m_Descriptor != -1) {
@@ -413,30 +408,28 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
         m_PortSettings.ByteSize = BITS_8;
         m_PortSettings.Parity = NONE;
         m_PortSettings.StopBits = BITS_1;
-			if (flowControl == OFF) {
-				m_PortSettings.fOutX = FALSE;
-				m_PortSettings.fInX  = FALSE;
-				m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
-				m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
-				m_PortSettings.fOutxCtsFlow = FALSE;
-				m_PortSettings.fOutxDsrFlow = FALSE;
-			}
-			else if (flowControl == SOFTWARE) {
-				m_PortSettings.fOutX = TRUE;
-				m_PortSettings.fInX = TRUE;
-				m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
-				m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
-				m_PortSettings.fOutxCtsFlow = FALSE;
-				m_PortSettings.fOutxDsrFlow = FALSE;
-			}
-			else if (flowControl == HARDWARE) {
-				m_PortSettings.fOutX = FALSE;
-				m_PortSettings.fInX = FALSE;
-				m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
-				m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
-				m_PortSettings.fOutxCtsFlow = TRUE;
-				m_PortSettings.fOutxDsrFlow = TRUE;
-			}
+        if (flowControl == OFF) {
+            m_PortSettings.fOutX = FALSE;
+            m_PortSettings.fInX = FALSE;
+            m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+            m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+            m_PortSettings.fOutxCtsFlow = FALSE;
+            m_PortSettings.fOutxDsrFlow = FALSE;
+        } else if (flowControl == SOFTWARE) {
+            m_PortSettings.fOutX = TRUE;
+            m_PortSettings.fInX = TRUE;
+            m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+            m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+            m_PortSettings.fOutxCtsFlow = FALSE;
+            m_PortSettings.fOutxDsrFlow = FALSE;
+        } else if (flowControl == HARDWARE) {
+            m_PortSettings.fOutX = FALSE;
+            m_PortSettings.fInX = FALSE;
+            m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
+            m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
+            m_PortSettings.fOutxCtsFlow = TRUE;
+            m_PortSettings.fOutxDsrFlow = TRUE;
+        }
         if (m_Descriptor != INVALID_HANDLE_VALUE) {
             ::SetCommState(m_Descriptor, &m_PortSettings);
         }
@@ -465,7 +458,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
         return (true);
     }
- 
+
     bool SerialPort::Configuration(
         const string& port,
         const BaudRate baudRate,
@@ -498,12 +491,10 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 if (flowControl == OFF) {
                     m_PortSettings.c_cflag &= ~CRTSCTS;
                     m_PortSettings.c_iflag &= ~IXON;
-                }
-                else if (flowControl == SOFTWARE) {
+                } else if (flowControl == SOFTWARE) {
                     m_PortSettings.c_cflag &= ~CRTSCTS;
                     m_PortSettings.c_iflag |= IXON;
-                }
-                else if (flowControl == HARDWARE) {
+                } else if (flowControl == HARDWARE) {
                     m_PortSettings.c_cflag |= CRTSCTS;
                     m_PortSettings.c_iflag &= (~IXON);
                 }
@@ -515,30 +506,28 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 m_PortSettings.ByteSize = dataBits;
                 m_PortSettings.Parity = parity;
                 m_PortSettings.StopBits = stopBits;
-				if (flowControl == OFF) {
-					m_PortSettings.fOutX = FALSE;
-					m_PortSettings.fInX = FALSE;
-					m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
-					m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
-					m_PortSettings.fOutxCtsFlow = FALSE;
-					m_PortSettings.fOutxDsrFlow = FALSE;
-				}
-				else if (flowControl == SOFTWARE) {
-					m_PortSettings.fOutX = TRUE;
-					m_PortSettings.fInX = TRUE;
-					m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
-					m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
-					m_PortSettings.fOutxCtsFlow = FALSE;
-					m_PortSettings.fOutxDsrFlow = FALSE;
-				}
-				else if (flowControl == HARDWARE) {
-					m_PortSettings.fOutX = FALSE;
-					m_PortSettings.fInX = FALSE;
-					m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
-					m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
-					m_PortSettings.fOutxCtsFlow = TRUE;
-					m_PortSettings.fOutxDsrFlow = TRUE;
-				}
+                if (flowControl == OFF) {
+                    m_PortSettings.fOutX = FALSE;
+                    m_PortSettings.fInX = FALSE;
+                    m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+                    m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+                    m_PortSettings.fOutxCtsFlow = FALSE;
+                    m_PortSettings.fOutxDsrFlow = FALSE;
+                } else if (flowControl == SOFTWARE) {
+                    m_PortSettings.fOutX = TRUE;
+                    m_PortSettings.fInX = TRUE;
+                    m_PortSettings.fDtrControl = DTR_CONTROL_DISABLE;
+                    m_PortSettings.fRtsControl = RTS_CONTROL_DISABLE;
+                    m_PortSettings.fOutxCtsFlow = FALSE;
+                    m_PortSettings.fOutxDsrFlow = FALSE;
+                } else if (flowControl == HARDWARE) {
+                    m_PortSettings.fOutX = FALSE;
+                    m_PortSettings.fInX = FALSE;
+                    m_PortSettings.fDtrControl = DTR_CONTROL_HANDSHAKE;
+                    m_PortSettings.fRtsControl = RTS_CONTROL_HANDSHAKE;
+                    m_PortSettings.fOutxCtsFlow = TRUE;
+                    m_PortSettings.fOutxDsrFlow = TRUE;
+                }
 #endif
 
                 ASSERT((m_SendBufferSize != 0) || (m_ReceiveBufferSize != 0));
@@ -570,7 +559,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             std::string convertedPortName;
             Core::ToString(m_PortName.c_str(), convertedPortName);
 
-            m_Descriptor = open(convertedPortName.c_str(), O_RDWR | O_NOCTTY );
+            m_Descriptor = open(convertedPortName.c_str(), O_RDWR | O_NOCTTY);
 
             result = errno;
 
@@ -585,8 +574,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                     close(m_Descriptor);
 
                     m_Descriptor = -1;
-                }
-                else {
+                } else {
 
                     if (m_SendBuffer != nullptr) {
                         tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings);
@@ -612,7 +600,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
                 OPEN_EXISTING, // creation : open_existing
                 FILE_FLAG_OVERLAPPED, // we want overlapped operation
                 0 // no templates file for COM port...
-                );
+            );
 
             result = GetLastError();
 
@@ -621,8 +609,7 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
 
                 if (::GetCommState(m_Descriptor, &currentSettings) == false) {
                     result = GetLastError();
-                }
-                else {
+                } else {
                     if (m_SendBuffer != nullptr) {
                         currentSettings.BaudRate = m_PortSettings.BaudRate;
                         currentSettings.Parity = m_PortSettings.Parity;
@@ -665,315 +652,308 @@ static constexpr uint32_t SLEEPSLOT_TIME   = 100;
             m_syncAdmin.Unlock();
 
             WaitForClosure(waitTime);
-        }
-        else {
+        } else {
 #endif
 
 #ifdef __WIN32__
-        if (m_Descriptor != INVALID_HANDLE_VALUE) {
+            if (m_Descriptor != INVALID_HANDLE_VALUE) {
 
-            m_State |= SerialPort::EXCEPTION;
-            m_State &= ~SerialPort::OPEN;
-            ::CloseHandle(m_Descriptor);
-            m_Descriptor = INVALID_HANDLE_VALUE;
-            g_SerialPortMonitor.Break();
+                m_State |= SerialPort::EXCEPTION;
+                m_State &= ~SerialPort::OPEN;
+                ::CloseHandle(m_Descriptor);
+                m_Descriptor = INVALID_HANDLE_VALUE;
+                g_SerialPortMonitor.Break();
 
-            m_syncAdmin.Unlock();
+                m_syncAdmin.Unlock();
 
-            WaitForClosure(waitTime);
-        }
-        else {
+                WaitForClosure(waitTime);
+            } else {
 #endif
 
-            m_syncAdmin.Unlock();
+                m_syncAdmin.Unlock();
+            }
+
+            return (OK);
         }
 
-        return (OK);
-    }
-
-    uint32_t SerialPort::WaitForClosure(const uint32_t time) const {
-    // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
+        uint32_t SerialPort::WaitForClosure(const uint32_t time) const
+        {
+            // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
 #ifdef __DEBUG__
-    uint32_t waiting = time; // Expect time in MS
-    uint32_t reportSlot = 0;
+            uint32_t waiting = time; // Expect time in MS
+            uint32_t reportSlot = 0;
 #else
     uint32_t waiting = (time == Core::infinite ? 20000 : time);
 #endif
 
-    // Right, a wait till connection is closed is requested..
-    while ( (waiting > 0) && (m_State != 0) ) {
-        // Make sure we aren't in the monitor thread waiting for close completion.
-        ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
+            // Right, a wait till connection is closed is requested..
+            while ((waiting > 0) && (m_State != 0)) {
+                // Make sure we aren't in the monitor thread waiting for close completion.
+                ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
 
-        uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+                uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
 
-        m_syncAdmin.Unlock();
+                m_syncAdmin.Unlock();
 
-        // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
-        SleepMs (sleepSlot);
+                // Right, lets sleep in slices of <= SLEEPSLOT_TIME ms
+                SleepMs(sleepSlot);
 
-        m_syncAdmin.Lock();
+                m_syncAdmin.Lock();
 
 #ifdef __DEBUG__
-        if ((++reportSlot  & 0x1F) == 0) {
-            TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State);
-        }
-        waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+                if ((++reportSlot & 0x1F) == 0) {
+                    TRACE_L1("Currently waiting for Socket Closure. Current State [0x%X]", m_State);
+                }
+                waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
 #else
         waiting -= sleepSlot;
 #endif
-    }
-    return (m_State == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
-}
+            }
+            return (m_State == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+        }
 
-    void SerialPort::Trigger()
-    {
-        m_syncAdmin.Lock();
+        void SerialPort::Trigger()
+        {
+            m_syncAdmin.Lock();
 
 #ifdef __WIN32__
-		if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION)) == SerialPort::OPEN) {
-			::SetEvent(m_WriteInfo.hEvent);
-		}
+            if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION)) == SerialPort::OPEN) {
+                ::SetEvent(m_WriteInfo.hEvent);
+            }
 #else
-		if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION | SerialPort::WRITESLOT)) == SerialPort::OPEN) {
-			m_State |= SerialPort::WRITESLOT;
-			ResourceMonitor::Instance().Break();
-		}
+    if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION | SerialPort::WRITESLOT)) == SerialPort::OPEN) {
+        m_State |= SerialPort::WRITESLOT;
+        ResourceMonitor::Instance().Break();
+    }
 #endif
 
-        m_syncAdmin.Unlock();
-    }
+            m_syncAdmin.Unlock();
+        }
 
 #ifndef __WIN32__
-    /* virtual */ uint16_t SerialPort::Events() {
-        uint16_t result = POLLIN;
-        if ((m_State & SerialPort::OPEN) == 0) {
-            result  = 0;
-            Closed();
-        }
-        else if ((m_State & (SerialPort::OPEN|SerialPort::READ|SerialPort::WRITE)) == SerialPort::OPEN) {
-            Opened();
-            Write();
-        }
-        else if ((m_State & SerialPort::WRITE) != 0) {
-            result |= POLLOUT;
-        }
-        return (result);
-    }
-
-    /* virtual */ void SerialPort::Handle(const uint16_t flags) {
-
-        bool breakIssued = ((m_State & SerialPort::WRITESLOT) != 0);
-
-        if ( ((flags != 0) || (breakIssued == true)) && ((m_State & SerialPort::OPEN) != 0) ) {
-
-            if ( ((flags & POLLOUT) != 0) || (breakIssued == true) ) {
+        /* virtual */ uint16_t SerialPort::Events()
+        {
+            uint16_t result = POLLIN;
+            if ((m_State & SerialPort::OPEN) == 0) {
+                result = 0;
+                Closed();
+            } else if ((m_State & (SerialPort::OPEN | SerialPort::READ | SerialPort::WRITE)) == SerialPort::OPEN) {
+                Opened();
                 Write();
+            } else if ((m_State & SerialPort::WRITE) != 0) {
+                result |= POLLOUT;
             }
-            if ((flags & POLLIN) != 0) {
-                Read();
-            }
+            return (result);
         }
-        Read();
-    }
+
+        /* virtual */ void SerialPort::Handle(const uint16_t flags)
+        {
+
+            bool breakIssued = ((m_State & SerialPort::WRITESLOT) != 0);
+
+            if (((flags != 0) || (breakIssued == true)) && ((m_State & SerialPort::OPEN) != 0)) {
+
+                if (((flags & POLLOUT) != 0) || (breakIssued == true)) {
+                    Write();
+                }
+                if ((flags & POLLIN) != 0) {
+                    Read();
+                }
+            }
+            Read();
+        }
 
 #else
-    void SerialPort::Write(const uint16_t writtenBytes)
-    {
-        m_syncAdmin.Lock();
+void SerialPort::Write(const uint16_t writtenBytes)
+{
+    m_syncAdmin.Lock();
 
-        m_State &= (~(SerialPort::WRITE));
+    m_State &= (~(SerialPort::WRITE));
 
-        ASSERT(((m_SendBytes == 0) && (m_SendOffset == 0)) || ((writtenBytes + m_SendOffset) <= m_SendBytes));
+    ASSERT(((m_SendBytes == 0) && (m_SendOffset == 0)) || ((writtenBytes + m_SendOffset) <= m_SendBytes));
 
-        if (m_SendBytes != 0) {
-            m_SendOffset += writtenBytes;
-        }
-
-        do {
-			if (m_SendOffset == m_SendBytes) {
-				m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
-				m_SendOffset = 0;
-			}
-
-            if (m_SendOffset < m_SendBytes) {
-                DWORD sendSize;
-
-                // Sockets are non blocking the Send buffer size is equal to the buffer size. We only send
-                // if the buffer free (SEND flag) is active, so the buffer should always fit.
-                if (::WriteFile(m_Descriptor,
-                        &m_SendBuffer[m_SendOffset],
-                        m_SendBytes - m_SendOffset,
-                        &sendSize, &m_WriteInfo)
-                    != FALSE) {
-                    m_SendOffset += static_cast<uint16_t>(sendSize);
-                }
-                else {
-                    uint32_t l_Result = ERRORRESULT;
-
-                    m_State |= (SerialPort::WRITE);
-
-                    if ((l_Result != ERROR_WOULDBLOCK) && (l_Result != ERROR_AGAIN)) {
-                        m_State |= SerialPort::EXCEPTION;
-
-                        StateChange();
-                    }
-                }
-            }
-        } while (((m_State & (SerialPort::WRITE | SerialPort::EXCEPTION)) == 0) && (m_SendBytes != 0));
-
-        m_syncAdmin.Unlock();
+    if (m_SendBytes != 0) {
+        m_SendOffset += writtenBytes;
     }
 
-    void SerialPort::Read(const uint16_t readBytes)
-    {
-        m_syncAdmin.Lock();
-
-        ASSERT((readBytes == 1) || (readBytes == 0));
-
-        if (readBytes == 1) {
-            m_ReceiveBuffer[m_ReadBytes++] = m_CharBuffer;
+    do {
+        if (m_SendOffset == m_SendBytes) {
+            m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
+            m_SendOffset = 0;
         }
 
-        m_State &= (~SerialPort::READ);
+        if (m_SendOffset < m_SendBytes) {
+            DWORD sendSize;
 
-        while ((m_State & (SerialPort::READ | SerialPort::EXCEPTION | SerialPort::OPEN)) == SerialPort::OPEN) {
-            DWORD readBytes;
-            uint32_t l_Size = static_cast<uint32_t>(~0);
+            // Sockets are non blocking the Send buffer size is equal to the buffer size. We only send
+            // if the buffer free (SEND flag) is active, so the buffer should always fit.
+            if (::WriteFile(m_Descriptor,
+                    &m_SendBuffer[m_SendOffset],
+                    m_SendBytes - m_SendOffset,
+                    &sendSize, &m_WriteInfo)
+                != FALSE) {
+                m_SendOffset += static_cast<uint16_t>(sendSize);
+            } else {
+                uint32_t l_Result = ERRORRESULT;
 
-            ASSERT(m_ReadBytes <= m_ReceiveBufferSize);
+                m_State |= (SerialPort::WRITE);
 
-            if (m_ReadBytes == m_ReceiveBufferSize) {
-                m_ReadBytes = 0;
-            }
-
-            // Read the actual data from the port.
-            if (ReadFile(m_Descriptor, &m_CharBuffer, 1, &readBytes, &m_ReadInfo) == 0) {
-                uint32_t reason = ERRORRESULT;
-
-                m_State |= SerialPort::READ;
-
-                if ((reason != ERROR_WOULDBLOCK) && (reason != ERROR_INPROGRESS)) {
+                if ((l_Result != ERROR_WOULDBLOCK) && (l_Result != ERROR_AGAIN)) {
                     m_State |= SerialPort::EXCEPTION;
+
                     StateChange();
                 }
             }
-            else if (readBytes == 0) {
-                // nothing to read wait on the next trigger..
-                m_State |= SerialPort::READ;
-            }
-            else {
-                ASSERT(readBytes == 1);
-                m_ReceiveBuffer[m_ReadBytes] = m_CharBuffer;
-                m_ReadBytes++;
-            }
+        }
+    } while (((m_State & (SerialPort::WRITE | SerialPort::EXCEPTION)) == 0) && (m_SendBytes != 0));
 
-            if (m_ReadBytes != 0) {
-                uint16_t handledBytes = ReceiveData(m_ReceiveBuffer, m_ReadBytes);
+    m_syncAdmin.Unlock();
+}
 
-                ASSERT(m_ReadBytes >= handledBytes);
+void SerialPort::Read(const uint16_t readBytes)
+{
+    m_syncAdmin.Lock();
 
-                m_ReadBytes -= handledBytes;
+    ASSERT((readBytes == 1) || (readBytes == 0));
 
-                if ((m_ReadBytes != 0) && (handledBytes != 0)) {
-                    // Oops not all data was consumed, Lets remove the read data
-                    ::memcpy(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
-                }
-            }
+    if (readBytes == 1) {
+        m_ReceiveBuffer[m_ReadBytes++] = m_CharBuffer;
+    }
+
+    m_State &= (~SerialPort::READ);
+
+    while ((m_State & (SerialPort::READ | SerialPort::EXCEPTION | SerialPort::OPEN)) == SerialPort::OPEN) {
+        DWORD readBytes;
+        uint32_t l_Size = static_cast<uint32_t>(~0);
+
+        ASSERT(m_ReadBytes <= m_ReceiveBufferSize);
+
+        if (m_ReadBytes == m_ReceiveBufferSize) {
+            m_ReadBytes = 0;
         }
 
-        m_syncAdmin.Unlock();
+        // Read the actual data from the port.
+        if (ReadFile(m_Descriptor, &m_CharBuffer, 1, &readBytes, &m_ReadInfo) == 0) {
+            uint32_t reason = ERRORRESULT;
+
+            m_State |= SerialPort::READ;
+
+            if ((reason != ERROR_WOULDBLOCK) && (reason != ERROR_INPROGRESS)) {
+                m_State |= SerialPort::EXCEPTION;
+                StateChange();
+            }
+        } else if (readBytes == 0) {
+            // nothing to read wait on the next trigger..
+            m_State |= SerialPort::READ;
+        } else {
+            ASSERT(readBytes == 1);
+            m_ReceiveBuffer[m_ReadBytes] = m_CharBuffer;
+            m_ReadBytes++;
+        }
+
+        if (m_ReadBytes != 0) {
+            uint16_t handledBytes = ReceiveData(m_ReceiveBuffer, m_ReadBytes);
+
+            ASSERT(m_ReadBytes >= handledBytes);
+
+            m_ReadBytes -= handledBytes;
+
+            if ((m_ReadBytes != 0) && (handledBytes != 0)) {
+                // Oops not all data was consumed, Lets remove the read data
+                ::memcpy(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
+            }
+        }
     }
+
+    m_syncAdmin.Unlock();
+}
 #endif
 
 #ifdef __POSIX__
-    void SerialPort::Write()
-    {
-        m_syncAdmin.Lock();
+        void SerialPort::Write()
+        {
+            m_syncAdmin.Lock();
 
-        m_State &= (~(SerialPort::WRITE|SerialPort::WRITESLOT));
+            m_State &= (~(SerialPort::WRITE | SerialPort::WRITESLOT));
 
-        do {
-            if (m_SendOffset == m_SendBytes) {
-                m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
-                m_SendOffset = 0;
-            }
-
-            if (m_SendOffset < m_SendBytes) {
-                uint32_t sendSize;
-
-                sendSize = write(m_Descriptor, reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
-                    m_SendBytes - m_SendOffset);
-
-                if (sendSize != static_cast<uint32_t>(-1)) {
-                    m_SendOffset += sendSize;
+            do {
+                if (m_SendOffset == m_SendBytes) {
+                    m_SendBytes = SendData(m_SendBuffer, m_SendBufferSize);
+                    m_SendOffset = 0;
                 }
-                else {
+
+                if (m_SendOffset < m_SendBytes) {
+                    uint32_t sendSize;
+
+                    sendSize = write(m_Descriptor, reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
+                        m_SendBytes - m_SendOffset);
+
+                    if (sendSize != static_cast<uint32_t>(-1)) {
+                        m_SendOffset += sendSize;
+                    } else {
+                        uint32_t l_Result = ERRORRESULT;
+
+                        if ((l_Result == ERROR_WOULDBLOCK) || (l_Result == ERROR_AGAIN)) {
+                            m_State |= (SerialPort::WRITE);
+                        } else {
+                            m_State |= SerialPort::EXCEPTION;
+
+                            StateChange();
+                        }
+                    }
+                }
+            } while (((m_State & (SerialPort::WRITE | SerialPort::EXCEPTION)) == 0) && (m_SendBytes != 0));
+
+            m_syncAdmin.Unlock();
+        }
+
+        void SerialPort::Read()
+        {
+            m_syncAdmin.Lock();
+
+            m_State &= (~SerialPort::READ);
+
+            while ((m_State & (SerialPort::READ | SerialPort::EXCEPTION | SerialPort::OPEN)) == SerialPort::OPEN) {
+                uint32_t l_Size;
+
+                ASSERT(m_ReadBytes <= m_ReceiveBufferSize);
+
+                if (m_ReadBytes == m_ReceiveBufferSize) {
+                    m_ReadBytes = 0;
+                }
+
+                // Read the actual data from the port.
+                l_Size = ::read(m_Descriptor, reinterpret_cast<char*>(&m_ReceiveBuffer[m_ReadBytes]), m_ReceiveBufferSize - m_ReadBytes);
+
+                if ((l_Size != static_cast<uint32_t>(~0)) && (l_Size != 0)) {
+                    m_ReadBytes += l_Size;
+
+                    if (m_ReadBytes != 0) {
+                        uint16_t handledBytes = ReceiveData(m_ReceiveBuffer, m_ReadBytes);
+
+                        ASSERT(m_ReadBytes >= handledBytes);
+
+                        m_ReadBytes -= handledBytes;
+
+                        if ((m_ReadBytes != 0) && (handledBytes != 0)) {
+                            // Oops not all data was consumed, Lets remove the read data
+                            ::memcpy(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
+                        }
+                    }
+                } else {
                     uint32_t l_Result = ERRORRESULT;
 
-                    if ((l_Result == ERROR_WOULDBLOCK) || (l_Result == ERROR_AGAIN)) {
-                        m_State |= (SerialPort::WRITE);
-                    }
-                    else {
-                        m_State |= SerialPort::EXCEPTION;
+                    m_State |= SerialPort::READ;
 
+                    if ((l_Result != ERROR_WOULDBLOCK) && (l_Result != ERROR_INPROGRESS) && (l_Result != 0)) {
+                        m_State |= SerialPort::EXCEPTION;
                         StateChange();
                     }
                 }
             }
-        } while (((m_State & (SerialPort::WRITE | SerialPort::EXCEPTION)) == 0) && (m_SendBytes != 0));
 
-        m_syncAdmin.Unlock();
-    }
-
-    void SerialPort::Read()
-    {
-        m_syncAdmin.Lock();
-
-        m_State &= (~SerialPort::READ);
-
-        while ((m_State & (SerialPort::READ | SerialPort::EXCEPTION | SerialPort::OPEN)) == SerialPort::OPEN) {
-            uint32_t l_Size;
-
-            ASSERT(m_ReadBytes <= m_ReceiveBufferSize);
-
-            if (m_ReadBytes == m_ReceiveBufferSize) {
-                m_ReadBytes = 0;
-            }
-
-            // Read the actual data from the port.
-            l_Size = ::read(m_Descriptor, reinterpret_cast<char*>(&m_ReceiveBuffer[m_ReadBytes]), m_ReceiveBufferSize - m_ReadBytes);
-
-            if ((l_Size != static_cast<uint32_t>(~0)) && (l_Size != 0)) {
-                m_ReadBytes += l_Size;
-
-                if (m_ReadBytes != 0) {
-                    uint16_t handledBytes = ReceiveData(m_ReceiveBuffer, m_ReadBytes);
-
-                    ASSERT(m_ReadBytes >= handledBytes);
-
-                    m_ReadBytes -= handledBytes;
-
-                    if ((m_ReadBytes != 0) && (handledBytes != 0)) {
-                        // Oops not all data was consumed, Lets remove the read data
-                        ::memcpy(m_ReceiveBuffer, &m_ReceiveBuffer[handledBytes], m_ReadBytes);
-                    }
-                }
-            }
-            else {
-                uint32_t l_Result = ERRORRESULT;
-
-                m_State |= SerialPort::READ;
-
-                if ((l_Result != ERROR_WOULDBLOCK) && (l_Result != ERROR_INPROGRESS) && (l_Result != 0)) {
-                    m_State |= SerialPort::EXCEPTION;
-                    StateChange();
-                }
-            }
+            m_syncAdmin.Unlock();
         }
-
-        m_syncAdmin.Unlock();
-    }
 #endif
-}
+    }
 } // namespace Solution::Core

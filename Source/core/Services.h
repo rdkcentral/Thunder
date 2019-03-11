@@ -3,12 +3,12 @@
 
 #include <list>
 
+#include "Library.h"
 #include "Module.h"
 #include "Portability.h"
-#include "Trace.h"
 #include "Sync.h"
-#include "Library.h"
 #include "TextFragment.h"
+#include "Trace.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -68,7 +68,6 @@ namespace Core {
             return (nullptr);
         }
 
-
     private:
         std::list<IServiceMetadata*> _services;
         mutable uint32_t _instanceCount;
@@ -102,48 +101,48 @@ namespace Core {
         {
             ServiceAdministrator::Instance().AddRef();
         }
-	template <typename ARG1, typename ARG2, typename ARG3>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3)
-		: ACTUALSERVICE(arg1, arg2, arg3)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-		: ACTUALSERVICE(arg1, arg2, arg3, arg4)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-		: ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
-		: ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
-		: ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
-	template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
-	Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
-		: ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-		, _referenceCount(0)
-	{
-		ServiceAdministrator::Instance().AddRef();
-	}
+        template <typename ARG1, typename ARG2, typename ARG3>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3)
+            : ACTUALSERVICE(arg1, arg2, arg3)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
+        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
+            : ACTUALSERVICE(arg1, arg2, arg3, arg4)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
+        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
+            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
+        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
+            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
+        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
+            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
+        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
+        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
+            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+            , _referenceCount(0)
+        {
+            ServiceAdministrator::Instance().AddRef();
+        }
 
     public:
         template <typename INTERFACE>
@@ -167,48 +166,48 @@ namespace Core {
 
             return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
         }
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3);
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4);
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5);
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6);
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
-	template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
-	static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
-	{
-		ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
+        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
+        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
+        {
+            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
 
-		return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-	}
+            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
+        }
         virtual ~Service()
         {
             ServiceAdministrator::Instance().Release();
@@ -387,29 +386,33 @@ namespace Core {
 #undef END_INTERFACE_MAP
 #endif
 
-#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                   \
-    void* QueryInterface(const uint32_t interfaceNumber) override {          \
-        if (interfaceNumber == Core::IUnknown::ID) {        \
-            AddRef();													   \
+#define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                     \
+    void* QueryInterface(const uint32_t interfaceNumber) override            \
+    {                                                                        \
+        if (interfaceNumber == Core::IUnknown::ID) {                         \
+            AddRef();                                                        \
             return (static_cast<void*>(static_cast<Core::IUnknown*>(this))); \
         }
 
 #define INTERFACE_ENTRY(TYPE)                                  \
-    else if (interfaceNumber == TYPE::ID) {                    \
-        AddRef();		                                       \
+    else if (interfaceNumber == TYPE::ID)                      \
+    {                                                          \
+        AddRef();                                              \
         return (static_cast<void*>(static_cast<TYPE*>(this))); \
     }
 
-#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)               \
-    else if (interfaceNumber == TYPE::ID) {                \
-        if (AGGREGATE != nullptr) {                        \
-            return (AGGREGATE->QueryInterface(TYPE::ID));  \
-        }                                                  \
-        return (nullptr);                                  \
+#define INTERFACE_AGGREGATE(TYPE, AGGREGATE)              \
+    else if (interfaceNumber == TYPE::ID)                 \
+    {                                                     \
+        if (AGGREGATE != nullptr) {                       \
+            return (AGGREGATE->QueryInterface(TYPE::ID)); \
+        }                                                 \
+        return (nullptr);                                 \
     }
 
-#define END_INTERFACE_MAP			return (nullptr); }
-
+#define END_INTERFACE_MAP \
+    return (nullptr);     \
+    }
 }
 } // namespace Core
 

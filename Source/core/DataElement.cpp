@@ -74,8 +74,7 @@ namespace Core {
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
             ::memcpy(buffer, &(Buffer()[offset]), size);
-        }
-        else {
+        } else {
             // If we want to read more than 4Gb ASSERT !!
             ASSERT(Size() - offset > 0xFFFFFFFF);
 
@@ -97,8 +96,7 @@ namespace Core {
         if ((offset + size) <= Size()) {
             // Nope, one plain copy !!!
             ::memcpy(&(Buffer()[offset]), buffer, size);
-        }
-        else {
+        } else {
             // If we want to write more than 4Gb ASSERT !!
             ASSERT(Size() - offset > 0xFFFFFFFF);
 
@@ -131,8 +129,7 @@ namespace Core {
                 copiedSize += (destination->Size() - destinationOffset);
                 destination = destination->m_Next;
                 destinationOffset = 0;
-            }
-            else {
+            } else {
                 // The source is the limiting factor, fill the source up..
                 ::memcpy(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(source->Size() - sourceOffset));
 

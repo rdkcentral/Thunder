@@ -16,7 +16,7 @@ namespace Exchange {
         virtual ~IBluetooth() {}
 
         struct IDevice : virtual public Core::IUnknown {
-            
+
             enum { ID = ID_BLUETOOTH_DEVICE };
 
             struct IIterator : virtual public Core::IUnknown {
@@ -31,11 +31,11 @@ namespace Exchange {
                 virtual IDevice* Current() = 0;
             };
 
-            virtual ~IDevice () {}
+            virtual ~IDevice() {}
 
             virtual string Address() const = 0;
             virtual string Name() const = 0;
-            virtual bool IsDiscovered () const = 0;
+            virtual bool IsDiscovered() const = 0;
             virtual bool IsPaired() const = 0;
             virtual bool IsConnected() const = 0;
             virtual uint32_t Pair() = 0;
@@ -50,7 +50,7 @@ namespace Exchange {
 
             virtual ~INotification() {}
 
-            virtual void Update (IDevice* device);
+            virtual void Update(IDevice* device);
         };
 
         virtual bool IsScanning() const = 0;
@@ -61,5 +61,5 @@ namespace Exchange {
         virtual IDevice* Device(const string&) = 0;
         virtual IDevice::IIterator* Devices() = 0;
     };
-
-} }
+}
+}

@@ -1,13 +1,12 @@
 #ifndef __ISHELL_H
 #define __ISHELL_H
 
-#include "Module.h"
 #include "IPlugin.h"
 #include "ISubSystem.h"
+#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
-
 
     struct EXTERNAL IShell
         : virtual public Core::IUnknown {
@@ -15,7 +14,7 @@ namespace PluginHost {
             ID = WPEFramework::RPC::ID_SHELL
         };
 
-        // This interface is only returned if the IShell is aceessed in the WPEFramework process. The interface can 
+        // This interface is only returned if the IShell is aceessed in the WPEFramework process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the WPEFramework process, it will return a nullptr.
         struct EXTERNAL IProcess {
@@ -80,7 +79,7 @@ namespace PluginHost {
             }
 
         public:
-            static Core::ProxyType<Core::IDispatchType<void> >
+            static Core::ProxyType<Core::IDispatchType<void>>
             Create(IShell* shell, IShell::state toState, IShell::reason why);
 
             virtual void Dispatch()
@@ -159,10 +158,10 @@ namespace PluginHost {
         //! DataPath: <config:datapath>/<plugin:classname>/
         virtual string DataPath() const = 0;
 
-	//! VolatilePath: <config:volatilepath>/<plugin:callsign>/
-	virtual string ProxyStubPath() const = 0;
+        //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
+        virtual string ProxyStubPath() const = 0;
 
-	//! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
+        //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
 
         virtual string HashKey() const = 0;
@@ -171,7 +170,7 @@ namespace PluginHost {
         //! Return whether the given version is supported by this IShell instance.
         virtual bool IsSupported(const uint8_t version) const = 0;
 
-        // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the 
+        // Get access to the SubSystems and their corrresponding information. Information can be set or get to see what the
         // status of the sub systems is.
         virtual ISubSystem* SubSystems() = 0;
 
@@ -202,7 +201,8 @@ namespace PluginHost {
         // This method will return a nullptr if it is NOT in the WPEFramework process.
         virtual IProcess* Process() = 0;
 
-        inline void Register(RPC::IRemoteProcess::INotification* sink) {
+        inline void Register(RPC::IRemoteProcess::INotification* sink)
+        {
             IProcess* handler(Process());
 
             // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
@@ -212,7 +212,8 @@ namespace PluginHost {
                 handler->Register(sink);
             }
         }
-        inline void Unregister(RPC::IRemoteProcess::INotification* sink) {
+        inline void Unregister(RPC::IRemoteProcess::INotification* sink)
+        {
             IProcess* handler(Process());
 
             // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
@@ -222,7 +223,8 @@ namespace PluginHost {
                 handler->Unregister(sink);
             }
         }
-        inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) {
+        inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid)
+        {
             IProcess* handler(Process());
 
             // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
@@ -234,62 +236,62 @@ namespace PluginHost {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
         {
-				void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
-			
-				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
-				
-				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-			
-				if (result == nullptr) {
-				
-					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
-					
-				}
-			
-				return (result);
-		}
+            void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
+
+            Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+
+            REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+
+            if (result == nullptr) {
+
+                result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+            }
+
+            return (result);
+        }
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
         {
             void* baseInterface(QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
 
             if (baseInterface != nullptr) {
-					Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
-					
-					REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-				
-					if (result == nullptr) {
-						result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
-				}
-				
-				return (result);
-			}
+                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+
+                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+
+                if (result == nullptr) {
+                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
+                }
+
+                return (result);
+            }
 
             return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator) {
+        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator)
+        {
             IProcess* handler(Process());
 
             // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
-                RPC::Object definition (locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
+                RPC::Object definition(locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
 
-				void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
 
-				// Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+                // Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
 
-				// REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-				REQUESTEDINTERFACE * result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+                // REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+                REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
 
-				//if (result == nullptr) {
-				//		result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
-				//}
+                //if (result == nullptr) {
+                //		result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+                //}
 
-				return (result);
-			}
+                return (result);
+            }
 
             return (nullptr);
         }
@@ -301,14 +303,13 @@ namespace PluginHost {
 
 namespace Core {
 
-	template <>
-	EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::state>*
-		EnumerateType<PluginHost::IShell::state>::Table(const uint16_t);
+    template <>
+    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::state>*
+    EnumerateType<PluginHost::IShell::state>::Table(const uint16_t);
 
-	template <>
-	EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::reason>*
-		EnumerateType<PluginHost::IShell::reason>::Table(const uint16_t);
-
+    template <>
+    EXTERNAL /* static */ const EnumerateConversion<PluginHost::IShell::reason>*
+    EnumerateType<PluginHost::IShell::reason>::Table(const uint16_t);
 
 } // namespace Core
 } // namespace WPEFramework

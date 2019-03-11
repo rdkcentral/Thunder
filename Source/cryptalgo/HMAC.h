@@ -4,8 +4,8 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "Hash.h"
+#include "Module.h"
 
 // ---- Referenced classes and types ----
 
@@ -35,8 +35,7 @@ namespace Crypto {
                 // Calculate the Hash over the key to use that i.s.o. the actual key.
                 hashKey.Input(reinterpret_cast<const uint8_t*>(key.c_str()), static_cast<uint16_t>(key.length()));
                 encryptionKey = hashKey.Result();
-            }
-            else {
+            } else {
                 keyLength = static_cast<uint8_t>(key.length());
 
                 // Use the key as is..

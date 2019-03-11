@@ -1,8 +1,8 @@
-#include <limits.h>
 #include "Thread.h"
 #include "Proxy.h"
-#include "Trace.h"
 #include "Serialization.h"
+#include "Trace.h"
+#include <limits.h>
 
 #ifdef __WIN32__
 #include <process.h>
@@ -39,7 +39,7 @@ namespace Core {
         m_hThreadInstance = ::CreateThread(nullptr,
             0,
             (LPTHREAD_START_ROUTINE)Thread::StartThread,
-            (LPVOID) this,
+            (LPVOID)this,
             0,
             &m_ThreadId);
 
@@ -49,31 +49,31 @@ namespace Core {
 #endif
 
 #ifdef __POSIX__
-        int err;
+            int err;
 
         pthread_attr_t attr;
 
         err = pthread_attr_init(&attr);
-        ASSERT (err == 0);
+        ASSERT(err == 0);
 
         if ((err == 0) && (stackSize != 0)) {
             size_t new_size = (stackSize < PTHREAD_STACK_MIN) ? PTHREAD_STACK_MIN : stackSize;
             err = pthread_attr_setstacksize(&attr, new_size);
-            ASSERT (err == 0);
+            ASSERT(err == 0);
         }
 
-            // If there is no thread, the "new" thread can also not free the destructor,
-            // then it is up to us.
-            if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) == -1))
+        // If there is no thread, the "new" thread can also not free the destructor,
+        // then it is up to us.
+        if ((err != 0) || (pthread_create(&m_hThreadInstance, &attr, (void* (*)(void*))Thread::StartThread, this) == -1))
 #endif
-            {
-                // Creation failed, O.K. We will signal the inactive state our selves.
-                m_sigExit.SetEvent();
-            }
+        {
+            // Creation failed, O.K. We will signal the inactive state our selves.
+            m_sigExit.SetEvent();
+        }
 
 #ifdef __POSIX__
         err = pthread_attr_destroy(&attr);
-        ASSERT (err == 0);
+        ASSERT(err == 0);
 
         m_ThreadId = (uint32_t)(size_t)m_hThreadInstance;
 #endif
@@ -92,7 +92,7 @@ namespace Core {
         Terminate();
     }
 
-	::ThreadId Thread::ThreadId()
+    ::ThreadId Thread::ThreadId()
     {
 #ifdef __WIN32__
         return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
@@ -344,14 +344,12 @@ namespace Core {
 
                 // O.K. Suspend this thread.
                 ::SuspendThread(m_hThreadInstance);
-            }
-            else if (m_enumState == SUSPENDED) {
+            } else if (m_enumState == SUSPENDED) {
                 m_enumState.SetState(m_enumSuspendedState);
 
                 // Done in the suspended state, resume.
                 ::ResumeThread(m_hThreadInstance);
-            }
-            else
+            } else
 #endif
             {
                 m_enumState.SetState(enumNewState);
@@ -384,13 +382,11 @@ namespace Core {
 
         __try {
             RaiseException(0x406D1388, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
-        }
-        __except (EXCEPTION_EXECUTE_HANDLER) {
+        } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
 #endif // __DEBUG__
 #endif // __WIN32__
     }
-
 
 #ifdef __DEBUG__
     int Thread::GetCallstack(void** buffer, int size)
@@ -398,6 +394,5 @@ namespace Core {
         return GetCallStack(m_hThreadInstance, buffer, size);
     }
 #endif // __DEBUG
-
 }
 } // namespace Core

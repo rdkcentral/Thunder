@@ -2,9 +2,9 @@
 #define __SERIALIZATION_H
 
 #include "Module.h"
+#include "Number.h"
 #include "Portability.h"
 #include "TextFragment.h"
-#include "Number.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -198,45 +198,42 @@ namespace Core {
         return (NumberType<int64_t>::Convert(newValue.c_str(), static_cast<uint32_t>(newValue.length()), object, BASE_UNKNOWN) == newValue.length());
     }
 
-	//------------------------------------------------------------------------
-	// Serialize: boolean
-	//------------------------------------------------------------------------
-	inline string ToString(const bool object, const bool uppercase = false)
-	{
-		return (uppercase ? (object ? _T("TRUE") : _T("FALSE")) : (object ? _T("true") : _T("false")));
-	}
+    //------------------------------------------------------------------------
+    // Serialize: boolean
+    //------------------------------------------------------------------------
+    inline string ToString(const bool object, const bool uppercase = false)
+    {
+        return (uppercase ? (object ? _T("TRUE") : _T("FALSE")) : (object ? _T("true") : _T("false")));
+    }
 
-	inline bool FromString(const string& newValue, bool& object)
-	{
-		if (newValue.length() == 1) {
-			TCHAR value = ::toupper(newValue[0]);
-			if ((value == '0') || (value == 'F')) {
-				object = false;
-				return (true);
-			}
-			else if ((value == '1') || (value == 'T')) {
-				object = true;
-				return (true);
-			}
-		}
-		else if (newValue.length() == 4) {
-			
-			if (_tcsnicmp(_T("TRUE"), newValue.c_str(), 4) == 0) {
-				object = true;
-				return (true);
-			}
-		}
-		else if (newValue.length() == 5) {
-			if (_tcsnicmp(_T("FALSE"), newValue.c_str(), 5) == 0) {
-				object = false;
-				return (true);
-			}
-		}
+    inline bool FromString(const string& newValue, bool& object)
+    {
+        if (newValue.length() == 1) {
+            TCHAR value = ::toupper(newValue[0]);
+            if ((value == '0') || (value == 'F')) {
+                object = false;
+                return (true);
+            } else if ((value == '1') || (value == 'T')) {
+                object = true;
+                return (true);
+            }
+        } else if (newValue.length() == 4) {
 
-		return (false);
-	}
+            if (_tcsnicmp(_T("TRUE"), newValue.c_str(), 4) == 0) {
+                object = true;
+                return (true);
+            }
+        } else if (newValue.length() == 5) {
+            if (_tcsnicmp(_T("FALSE"), newValue.c_str(), 5) == 0) {
+                object = false;
+                return (true);
+            }
+        }
 
-	//------------------------------------------------------------------------
+        return (false);
+    }
+
+    //------------------------------------------------------------------------
     // Serialize: Base64
     //------------------------------------------------------------------------
     void EXTERNAL ToString(const uint8_t object[], const uint16_t length, const bool padding, string& result);

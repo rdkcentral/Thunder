@@ -23,12 +23,12 @@ namespace PluginHost {
             TIME, // Time has been synchronized.
             PROVISIONING, // Provisioning information is available.
             DECRYPTION, // Decryption functionality is available.
-            WEBSOURCE, // Content exposed via a local web server is available. 
-            STREAMING, // Content can be streamed. 
+            WEBSOURCE, // Content exposed via a local web server is available.
+            STREAMING, // Content can be streamed.
             END_LIST,
 
             // Also define a "negative" value.
-	    NOT_PLATFORM = 0x80000000, // platform is NOT available.
+            NOT_PLATFORM = 0x80000000, // platform is NOT available.
             NOT_NETWORK, // Network connectivity has NOT been established.
             NOT_IDENTIFIER, // System identification has NOT been accomplished.
             NOT_GRAPHICS, // Graphics screen EGL is NOT available.
@@ -37,8 +37,8 @@ namespace PluginHost {
             NOT_TIME, // Time has been NOT synchronized.
             NOT_PROVISIONING, // Provisioning information is NOT available.
             NOT_DECRYPTION, // Decryption functionality is NOT available.
-            NOT_WEBSOURCE, // Content exposed via a local web server is NOT available. 
-            NOT_STREAMING // Content can NOT be streamed. 
+            NOT_WEBSOURCE, // Content exposed via a local web server is NOT available.
+            NOT_STREAMING // Content can NOT be streamed.
         };
 
         struct INotification
@@ -64,7 +64,7 @@ namespace PluginHost {
             };
 
             enum {
-                SUBSYSTEM = INTERNET 
+                SUBSYSTEM = INTERNET
             };
 
             enum network_type {

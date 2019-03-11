@@ -369,19 +369,19 @@ namespace Web {
         }
 
     public:
-		static const TCHAR* GET;
-		static const TCHAR* HEAD;
-		static const TCHAR* POST;
-		static const TCHAR* PUT;
-		static const TCHAR* DELETE;
-		static const TCHAR* OPTIONS;
-		static const TCHAR* TRACE;
-		static const TCHAR* CONNECT;
-		static const TCHAR* PATCH;
-		static const TCHAR* MSEARCH;
-		static const TCHAR* NOTIFY;
+        static const TCHAR* GET;
+        static const TCHAR* HEAD;
+        static const TCHAR* POST;
+        static const TCHAR* PUT;
+        static const TCHAR* DELETE;
+        static const TCHAR* OPTIONS;
+        static const TCHAR* TRACE;
+        static const TCHAR* CONNECT;
+        static const TCHAR* PATCH;
+        static const TCHAR* MSEARCH;
+        static const TCHAR* NOTIFY;
 
-		static const TCHAR* ToString(const type value);
+        static const TCHAR* ToString(const type value);
         static void ToString(const Request& realObject, string& text)
         {
             uint16_t fillCount = 0;
@@ -427,47 +427,50 @@ namespace Web {
         {
             Request::ToString(*this, text);
         }
-		static void FromString(Request& realObject, const string& text)
-		{
-			class DeserializerImpl : public Deserializer {
-			public:
-				DeserializerImpl(Web::Request& destination)
-					: Deserializer()
-					, _destination(destination)
-				{
-				}
-				virtual ~DeserializerImpl()
-				{
-				}
+        static void FromString(Request& realObject, const string& text)
+        {
+            class DeserializerImpl : public Deserializer {
+            public:
+                DeserializerImpl(Web::Request& destination)
+                    : Deserializer()
+                    , _destination(destination)
+                {
+                }
+                virtual ~DeserializerImpl()
+                {
+                }
 
-			public:
-				// The whole request object is deserialised..
-				virtual void Deserialized(Web::Request& element VARIABLE_IS_NOT_USED) {
-				}
+            public:
+                // The whole request object is deserialised..
+                virtual void Deserialized(Web::Request& element VARIABLE_IS_NOT_USED)
+                {
+                }
 
-				// We need a request object to be able to fill it with info
-				virtual Web::Request* Element() {
-					return (&_destination);
-				}
+                // We need a request object to be able to fill it with info
+                virtual Web::Request* Element()
+                {
+                    return (&_destination);
+                }
 
-				// We reached the body, link a proper body to the response..
-				virtual bool LinkBody(Web::Request& request) {
-					return (request.HasBody());
-				}
+                // We reached the body, link a proper body to the response..
+                virtual bool LinkBody(Web::Request& request)
+                {
+                    return (request.HasBody());
+                }
 
-			private:
-				Web::Request& _destination;
+            private:
+                Web::Request& _destination;
 
-			} deserializer(realObject);
+            } deserializer(realObject);
 
-			// Request an object to e serialized..
-			deserializer.Deserialize(reinterpret_cast<const uint8_t*>(text.c_str()), static_cast<uint16_t>(text.length()));
-		}
-		inline void FromString(const string& text)
-		{
-			Request::FromString(*this, text);
-		}
-		inline bool IsValid() const
+            // Request an object to e serialized..
+            deserializer.Deserialize(reinterpret_cast<const uint8_t*>(text.c_str()), static_cast<uint16_t>(text.length()));
+        }
+        inline void FromString(const string& text)
+        {
+            Request::FromString(*this, text);
+        }
+        inline bool IsValid() const
         {
             return (Verb != HTTP_UNKNOWN);
         }

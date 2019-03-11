@@ -51,7 +51,7 @@ namespace Broadcast {
         printf("\n\n");
     }
 
-    class __attribute__ ((visibility ("hidden"))) Tuner : public ITuner {
+    class __attribute__((visibility("hidden"))) Tuner : public ITuner {
     private:
         Tuner() = delete;
         Tuner(const Tuner&) = delete;
@@ -110,8 +110,9 @@ namespace Broadcast {
             }
 
         public:
-            static NexusInformation& Instance() {
-              return (_instance);
+            static NexusInformation& Instance()
+            {
+                return (_instance);
             }
             ~NexusInformation()
             {
@@ -316,8 +317,7 @@ namespace Broadcast {
 
                     if (_decoder == nullptr) {
                         TRACE_L1("Could not get a Simple Video Decoder index=%u", index);
-                    }
-                    else {
+                    } else {
 
                         NEXUS_VideoDecoderSettings settings;
                         NEXUS_SimpleVideoDecoderStartSettings program;
@@ -712,7 +712,8 @@ namespace Broadcast {
             _callback = nullptr;
         }
 
-        static ITuner* Create (const string& info) {
+        static ITuner* Create(const string& info)
+        {
             Tuner* result = nullptr;
 
             uint8_t index = Core::NumberType<uint8_t>(Core::TextFragment(info)).Value();
@@ -724,9 +725,9 @@ namespace Broadcast {
                 result = nullptr;
             }
             return (result);
- 
         }
-      public:
+
+    public:
         inline bool IsValid() const { return (_frontend != nullptr); }
 
         // Using these methods the state of the tuner can be viewed.
@@ -735,14 +736,16 @@ namespace Broadcast {
         // PREPARED:  The program that was requetsed to prepare fore, has been found in PAT/PMT, the needed information, like PIDS is loaded.
         //            If Priming is available, this means that the priming has started!
         // STREAMING: This means that the requested program is being streamed to decoder or file, depending on implementation/inpuy.
-        virtual state State() const override {
-            return(_state);
+        virtual state State() const override
+        {
+            return (_state);
         }
 
         // Currently locked on ID
         // This method return a unique number that will identify the locked on Transport stream. The ID will always
         // identify the uniquely locked on to Tune request. ID => 0 is reserved and means not locked on to anything.
-        virtual uint16_t Id() const override {
+        virtual uint16_t Id() const override
+        {
             return (_state == IDLE ? 0 : _settings.frequency / 1000000);
         }
 
@@ -841,14 +844,14 @@ namespace Broadcast {
                     }
 
                     TRACE_L1("Tuning to %u MHz mode=%d sym=%d Annex=%s spectrumMode=%s Inversion=%s",
-                            frequency, _settings.mode, _settings.symbolRate,
-                            _settings.annex == NEXUS_FrontendQamAnnex_eA ? "A" : "B",
-                            _settings.spectrumMode == NEXUS_FrontendQamSpectrumMode_eAuto
-                                ? "Auto"
-                                : "Manual",
-                            _settings.spectralInversion == NEXUS_FrontendQamSpectralInversion_eNormal
-                                ? "Normal"
-                                : "Inverted");
+                        frequency, _settings.mode, _settings.symbolRate,
+                        _settings.annex == NEXUS_FrontendQamAnnex_eA ? "A" : "B",
+                        _settings.spectrumMode == NEXUS_FrontendQamSpectrumMode_eAuto
+                            ? "Auto"
+                            : "Manual",
+                        _settings.spectralInversion == NEXUS_FrontendQamSpectralInversion_eNormal
+                            ? "Normal"
+                            : "Inverted");
 
                     NEXUS_Error rc = NEXUS_Frontend_TuneQam(_frontend, &_settings);
 
@@ -942,7 +945,6 @@ namespace Broadcast {
             return (Core::ERROR_NONE);
         }
 
-
     private:
         inline NEXUS_ParserBand& ParserBand() { return (_parserBand); }
         inline NEXUS_SimpleStcChannelHandle Channel() { return (_stcChannel); }
@@ -978,8 +980,8 @@ namespace Broadcast {
                 // Stop the time. We are tuned and have all info...
                 _lockDuration = Core::Time::Now().Ticks() - _lockDuration;
 
-                TRACE_L1 ("QAM locked, Status read. Locking took %d ms !!", \
-                   static_cast<uint32_t>(_lockDuration / Core::Time::TicksPerMillisecond));
+                TRACE_L1("QAM locked, Status read. Locking took %d ms !!",
+                    static_cast<uint32_t>(_lockDuration / Core::Time::TicksPerMillisecond));
 
                 EvaluateProgramId();
             }
@@ -992,7 +994,7 @@ namespace Broadcast {
             if ((_state == LOCKED) || (_state == PREPARED)) {
                 uint16_t identifier = _settings.frequency / 1000000;
 
-                bool updated ((_psiLoaded == NONE) && (ProgramTable::Instance().NITPid(identifier) != static_cast<uint16_t>(~0)));
+                bool updated((_psiLoaded == NONE) && (ProgramTable::Instance().NITPid(identifier) != static_cast<uint16_t>(~0)));
 
                 if (updated == true) {
                     _psiLoaded = PAT;
@@ -1083,70 +1085,69 @@ namespace Broadcast {
             _stcSettings.modeSettings.pcr.pidChannel = nullptr;
         }
 
-            // Link the Nexus C world to the C++ world.
-            static void LockCallback(void* context, int32_t param)
-            {
-                reinterpret_cast<Tuner*>(context)->LockCallback(param);
-            }
-            static void StatusCallback(void* context, int32_t param)
-            {
-                reinterpret_cast<Tuner*>(context)->StatusCallback(param);
-            }
+        // Link the Nexus C world to the C++ world.
+        static void LockCallback(void* context, int32_t param)
+        {
+            reinterpret_cast<Tuner*>(context)->LockCallback(param);
+        }
+        static void StatusCallback(void* context, int32_t param)
+        {
+            reinterpret_cast<Tuner*>(context)->StatusCallback(param);
+        }
 
-        private:
-            uint8_t _index;
-            Core::StateTrigger<state> _state;
-            uint64_t _lockDuration;
-            NEXUS_FrontendHandle _frontend;
-            NEXUS_ParserBand _parserBand;
-            NEXUS_SimpleStcChannelHandle _stcChannel;
-            NEXUS_SimpleStcChannelSettings _stcSettings;
-            NEXUS_PidChannelHandle _pidChannel;
-            Primer _videoDecoder;
-            Audio _audioDecoder;
-            Collector _collector;
-            uint32_t _programId;
-            uint32_t _connectId;
-            Sections _sections;
-            MPEG::PMT _program;
+    private:
+        uint8_t _index;
+        Core::StateTrigger<state> _state;
+        uint64_t _lockDuration;
+        NEXUS_FrontendHandle _frontend;
+        NEXUS_ParserBand _parserBand;
+        NEXUS_SimpleStcChannelHandle _stcChannel;
+        NEXUS_SimpleStcChannelSettings _stcSettings;
+        NEXUS_PidChannelHandle _pidChannel;
+        Primer _videoDecoder;
+        Audio _audioDecoder;
+        Collector _collector;
+        uint32_t _programId;
+        uint32_t _connectId;
+        Sections _sections;
+        MPEG::PMT _program;
 
 #ifdef NEXUS_SATELITE
-            NEXUS_FrontendSatelliteSettings _settings;
-            NEXUS_FrontendSatelliteStatus _status;
-            NEXUS_FrontendDiseqcSettings _diseq;
+        NEXUS_FrontendSatelliteSettings _settings;
+        NEXUS_FrontendSatelliteStatus _status;
+        NEXUS_FrontendDiseqcSettings _diseq;
 #else
-            NEXUS_FrontendQamSettings _settings;
-            NEXUS_FrontendQamStatus _status;
+        NEXUS_FrontendQamSettings _settings;
+        NEXUS_FrontendQamStatus _status;
 #endif
 
-            NEXUS_FrontendDeviceStatus _deviceStatus;
+        NEXUS_FrontendDeviceStatus _deviceStatus;
 
-            psi_state _psiLoaded;
-            TunerAdministrator::ICallback* _callback;
-        };
+        psi_state _psiLoaded;
+        TunerAdministrator::ICallback* _callback;
+    };
 
-        /* static */ Tuner::NexusInformation Tuner::NexusInformation::_instance;
+    /* static */ Tuner::NexusInformation Tuner::NexusInformation::_instance;
 
-        // The following methods will be called before any create is called. It allows for an initialization,
-        // if requires, and a deinitialization, if the Tuners will no longer be used.
-        /* static */ uint32_t ITuner::Initialize(const string& configuration)
-        {
-            Tuner::NexusInformation::Instance().Initialize(configuration);
-            return (Core::ERROR_NONE);
-        }
+    // The following methods will be called before any create is called. It allows for an initialization,
+    // if requires, and a deinitialization, if the Tuners will no longer be used.
+    /* static */ uint32_t ITuner::Initialize(const string& configuration)
+    {
+        Tuner::NexusInformation::Instance().Initialize(configuration);
+        return (Core::ERROR_NONE);
+    }
 
-        /* static */ uint32_t ITuner::Deinitialize()
-        {
-            Tuner::NexusInformation::Instance().Deinitialize();
-            return (Core::ERROR_NONE);
-        }
+    /* static */ uint32_t ITuner::Deinitialize()
+    {
+        Tuner::NexusInformation::Instance().Deinitialize();
+        return (Core::ERROR_NONE);
+    }
 
-        // Accessor to create a tuner.
-        /* static */ ITuner* ITuner::Create(const string& info)
-        {
-            return (Tuner::Create(info));
-        }
+    // Accessor to create a tuner.
+    /* static */ ITuner* ITuner::Create(const string& info)
+    {
+        return (Tuner::Create(info));
+    }
 
-    } // namespace Broadcast
+} // namespace Broadcast
 } // namespace WPEFramework
-

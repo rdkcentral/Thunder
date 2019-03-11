@@ -34,7 +34,7 @@ namespace Exchange {
         virtual const string GetCurrentChannel() = 0;
         virtual bool IsScanning() = 0;
 
-        virtual void Test(const string&) = 0;                 // XXX: Just for test
+        virtual void Test(const string&) = 0; // XXX: Just for test
     };
 }
 }

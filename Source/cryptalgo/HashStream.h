@@ -4,9 +4,9 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Module.h"
-#include "Hash.h"
 #include "HMAC.h"
+#include "Hash.h"
+#include "Module.h"
 
 // ---- Referenced classes and types ----
 
@@ -29,7 +29,7 @@ namespace Crypto {
     class HashStreamType {
         private :
             HashStreamType(const HashStreamType<HASHALGORITHM, TYPE>&);
-        HashStreamType<HASHALGORITHM, TYPE>&
+        HashStreamType<HASHALGORITHM, TYPE> &
         operator=(const HashStreamType<HASHALGORITHM, TYPE>&);
 
         public :

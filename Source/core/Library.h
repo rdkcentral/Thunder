@@ -39,11 +39,12 @@ namespace Core {
         {
             return (_error);
         }
-		inline const string& Name() const {
-			static const string emptyString;
+        inline const string& Name() const
+        {
+            static const string emptyString;
 
-			return (_refCountedHandle != nullptr ? _refCountedHandle->_name : emptyString);
-		}
+            return (_refCountedHandle != nullptr ? _refCountedHandle->_name : emptyString);
+        }
         void* LoadFunction(const TCHAR functionName[]);
 
     private:

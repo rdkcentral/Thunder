@@ -6,7 +6,7 @@
 namespace WPEFramework {
 
 namespace PluginHost {
-struct IShell;
+    struct IShell;
 }
 
 namespace Exchange {

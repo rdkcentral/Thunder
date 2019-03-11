@@ -493,8 +493,7 @@ namespace Core {
 
                 if ((terminated & 0x80) == 0) {
                     _receiver.push_back(character);
-                }
-                else {
+                } else {
                     uint8_t dropCharacters = terminated & 0x03;
 
                     while (dropCharacters != 0) {

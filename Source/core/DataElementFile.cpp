@@ -1,16 +1,16 @@
 #include "DataElementFile.h"
 
 #ifdef __LINUX__
+#include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #undef INVALID_HANDLE_VALUE
 #define INVALID_HANDLE_VALUE nullptr
 #endif
 
 #ifdef __WIN32__
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 namespace WPEFramework {
@@ -44,8 +44,7 @@ namespace Core {
 
         if ((type & CREATE) != 0) {
             m_File.Create();
-        }
-        else {
+        } else {
             m_File.Open((type & WRITABLE) == 0);
         }
 
@@ -53,8 +52,7 @@ namespace Core {
             if ((requestedSize != 0) && (requestedSize > m_File.Size())) {
                 m_File.SetSize(requestedSize);
                 OpenMemoryMappedFile(requestedSize);
-            }
-            else {
+            } else {
                 OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
             }
         }
@@ -75,8 +73,7 @@ namespace Core {
             if (m_MemoryMappedFile == nullptr) {
                 DWORD value = GetLastError();
                 m_File.Close();
-            }
-            else {
+            } else {
                 flags = ((m_Flags & READABLE) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & WRITABLE) != 0 ? FILE_MAP_WRITE : 0);
 
                 void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, mapSize));
@@ -135,8 +132,7 @@ namespace Core {
                     m_MemoryMappedFile = INVALID_HANDLE_VALUE;
 
                     UpdateCache(0, nullptr, 0, 0);
-                }
-                else {
+                } else {
                     // Seems we upgraded, set the caches
                     UpdateCache(0, static_cast<uint8_t*>(newBuffer), Size(), requestedSize);
                 }
@@ -144,12 +140,13 @@ namespace Core {
         }
     }
 
-	void DataElementFile::Sync() {
-		if ((m_Flags & SHAREABLE) != 0) {
-			m_File.SetSize(Size());
-			::FlushViewOfFile(Buffer(), static_cast<SIZE_T>(Size()));
-		}
-	}
+    void DataElementFile::Sync()
+    {
+        if ((m_Flags & SHAREABLE) != 0) {
+            m_File.SetSize(Size());
+            ::FlushViewOfFile(Buffer(), static_cast<SIZE_T>(Size()));
+        }
+    }
 
 #endif
 
@@ -167,8 +164,7 @@ namespace Core {
             if (m_MemoryMappedFile == MAP_FAILED) {
                 m_File.Close();
                 m_MemoryMappedFile = nullptr;
-            }
-            else {
+            } else {
                 // Seems like everything succeeded. Lets map it.
                 UpdateCache(0, static_cast<uint8_t*>(m_MemoryMappedFile), requiredSize, mapSize);
             }
@@ -210,31 +206,30 @@ namespace Core {
 
                 // Open the file in MM mode as one element.
                 m_MemoryMappedFile = mmap(nullptr, requestedSize, flags, ((m_Flags & SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
-            }
-            else {
+            } else {
 
                 // TODO: no need for memcpy, is possible?
                 m_MemoryMappedFile = mremap(m_MemoryMappedFile, AllocatedSize(), requestedSize, MREMAP_MAYMOVE);
             }
 
             if (m_MemoryMappedFile == MAP_FAILED) {
-                 
+
                 m_File.Close();
                 m_MemoryMappedFile = INVALID_HANDLE_VALUE;
 
                 UpdateCache(0, nullptr, 0, 0);
-            }
-            else {
+            } else {
                 // Seems we upgraded, set the caches
                 UpdateCache(0, static_cast<uint8_t*>(m_MemoryMappedFile), size, requestedSize);
             }
         }
     }
 
-    void DataElementFile::Sync() {
+    void DataElementFile::Sync()
+    {
         if ((m_Flags & SHAREABLE) != 0) {
             m_File.SetSize(Size());
-            msync(Buffer(), Size(), MS_INVALIDATE|MS_SYNC);
+            msync(Buffer(), Size(), MS_INVALIDATE | MS_SYNC);
         }
     }
 

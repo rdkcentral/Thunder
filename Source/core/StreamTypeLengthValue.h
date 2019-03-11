@@ -9,229 +9,254 @@ namespace WPEFramework {
 
 namespace Exchange {
 
-template <typename TYPE, typename LENGTH, const uint16_t BUFFERSIZE>
-struct TypeLengthValueType {
-    class Request {
-    private:
-        Request() = delete;
-        Request(const Request& copy) = delete;
-        Request& operator=(const Request& copy) = delete;
+    template <typename TYPE, typename LENGTH, const uint16_t BUFFERSIZE>
+    struct TypeLengthValueType {
+        class Request {
+        private:
+            Request() = delete;
+            Request(const Request& copy) = delete;
+            Request& operator=(const Request& copy) = delete;
 
-    protected:
-        inline Request(const uint8_t* value)
-            : _length(0)
-            , _offset(0)
-            , _value(value) {
-            ASSERT(value != nullptr);
-        }
-        inline Request(const TYPE& type, const uint8_t* value)
-            : _type(type)
-            , _length(0)
-            , _offset(0)
-            , _value(value) {
-            ASSERT(value != nullptr);
-        }
- 
-    public:
-        inline Request(const TYPE& type, const LENGTH& length, const uint8_t* value)
-            : _type(type)
-            , _length(length)
-            , _offset(0)
-            , _value(value) {
-            ASSERT((value != nullptr) || (length == 0));
-        }
-        inline ~Request() {
-        }
-
-    public:
-        inline void Reset () {
-            Offset(0);
-        }
-        inline const TYPE& Type() const {
-            return (_type);
-        }
-        inline const LENGTH& Length() const {
-            return (_length);
-        }
-        inline const uint8_t* Value() const {
-            return (_value);
-        }
-        inline uint16_t Serialize(uint8_t stream[], const uint16_t length) const {
-            uint16_t result = 0;
-
-            if (_offset < sizeof(TYPE)) {
-                result = Store(_type, stream, length, _offset);
-				_offset += result;
+        protected:
+            inline Request(const uint8_t* value)
+                : _length(0)
+                , _offset(0)
+                , _value(value)
+            {
+                ASSERT(value != nullptr);
             }
-            if ((_offset < (sizeof(TYPE) + sizeof(LENGTH))) && ((length - result) > 0)) {
-                uint16_t loaded = Store(_length, &(stream[result]), length-result, _offset - sizeof(TYPE));
-				result += loaded;
-				_offset += loaded;
+            inline Request(const TYPE& type, const uint8_t* value)
+                : _type(type)
+                , _length(0)
+                , _offset(0)
+                , _value(value)
+            {
+                ASSERT(value != nullptr);
             }
-            if ((length - result) > 0) {
-                uint16_t copyLength = std::min(static_cast<uint16_t>(_length - (_offset - (sizeof(TYPE) + sizeof(LENGTH)))), static_cast<uint16_t>(length - result));
 
+        public:
+            inline Request(const TYPE& type, const LENGTH& length, const uint8_t* value)
+                : _type(type)
+                , _length(length)
+                , _offset(0)
+                , _value(value)
+            {
+                ASSERT((value != nullptr) || (length == 0));
+            }
+            inline ~Request()
+            {
+            }
+
+        public:
+            inline void Reset()
+            {
+                Offset(0);
+            }
+            inline const TYPE& Type() const
+            {
+                return (_type);
+            }
+            inline const LENGTH& Length() const
+            {
+                return (_length);
+            }
+            inline const uint8_t* Value() const
+            {
+                return (_value);
+            }
+            inline uint16_t Serialize(uint8_t stream[], const uint16_t length) const
+            {
+                uint16_t result = 0;
+
+                if (_offset < sizeof(TYPE)) {
+                    result = Store(_type, stream, length, _offset);
+                    _offset += result;
+                }
+                if ((_offset < (sizeof(TYPE) + sizeof(LENGTH))) && ((length - result) > 0)) {
+                    uint16_t loaded = Store(_length, &(stream[result]), length - result, _offset - sizeof(TYPE));
+                    result += loaded;
+                    _offset += loaded;
+                }
+                if ((length - result) > 0) {
+                    uint16_t copyLength = std::min(static_cast<uint16_t>(_length - (_offset - (sizeof(TYPE) + sizeof(LENGTH)))), static_cast<uint16_t>(length - result));
+
+                    if (copyLength > 0) {
+                        ::memcpy(&(stream[result]), &(_value[_offset - (sizeof(TYPE) + sizeof(LENGTH))]), copyLength);
+                        _offset += copyLength;
+                        result += copyLength;
+                    }
+                }
+                return (result);
+
+                uint16_t copyLength = (_length - _offset > length ? length : _length - _offset);
                 if (copyLength > 0) {
-                    ::memcpy (&(stream[result]), &(_value[_offset - (sizeof(TYPE) + sizeof(LENGTH))]), copyLength);
+                    ::memcpy(stream, &(_value[_offset]), copyLength);
                     _offset += copyLength;
-                    result += copyLength;
                 }
-            }
-            return (result);
-            
-            uint16_t copyLength = (_length - _offset > length ?  length : _length - _offset);
-            if (copyLength > 0) {
-                ::memcpy (stream, &(_value[_offset]), copyLength);
-                _offset += copyLength;
+
+                return (copyLength);
             }
 
-            return (copyLength);
-        }
-
-    protected:
-        inline void Type (const TYPE type) {
-            _type = type;
-        }
-        inline void Length (const LENGTH length) {
-            _length = length;
-        }
-        inline LENGTH Offset() const {
-            return(_offset);
-        }
-        inline void Offset (const LENGTH offset) {
-            _offset = offset;
-        }
-
-    private:
-        template<typename FIELD>
-        uint8_t Store(const FIELD number, uint8_t stream[], const uint16_t length, const uint8_t offset) const {
-            uint8_t stored = 0;
-            uint8_t index = offset;
-            ASSERT (offset < sizeof(FIELD));
-            while ((index < sizeof(FIELD)) && (stored < length)) {
-                stream[index] = static_cast<uint8_t>(number >> (8 * (sizeof(TYPE) - 1 - index)));
-                index++;
-                stored++;
+        protected:
+            inline void Type(const TYPE type)
+            {
+                _type = type;
             }
-            return(stored);
-        }
-
-    private:
-        TYPE _type;
-        LENGTH _length;
-        mutable LENGTH _offset;
-        const uint8_t* _value;
-    };
-    class Response : public Request {
-    private:
-        Response () = delete;
-        Response(const Response& copy) = delete;
-        Response& operator=(const Response& copy) = delete;
-
-    public:
-        inline Response (const TYPE type) : Request(type, _value) {
-        }
-        inline ~Response() {
-        }
-
-    public:
-        bool Copy (const Request& buffer) {
-            bool result = false;
-            if (buffer.Type() == Request::Type()) {
-                LENGTH copyLength = std::min(buffer.Length(), static_cast<LENGTH>(BUFFERSIZE));
-                ::memcpy(_value, buffer.Value(), copyLength);
-                Request::Length(copyLength);
-                result = true;
+            inline void Length(const LENGTH length)
+            {
+                _length = length;
             }
- 
-           return (result);
-        }
+            inline LENGTH Offset() const
+            {
+                return (_offset);
+            }
+            inline void Offset(const LENGTH offset)
+            {
+                _offset = offset;
+            }
 
-    private:
-        uint8_t _value[BUFFERSIZE];
-    };
-    class Buffer : public Request {
-    private:
-        Buffer(const Buffer& copy) = delete;
-        Buffer& operator=(const Buffer& copy) = delete;
-
-    public:
-        inline Buffer() : Request(_value), _used (0) {
-        }
-        inline ~Buffer() {
-        }
-
-    public:
-        inline bool Next() {
-            bool result = false;
-
-            // Clear the current selected block, move on to the nex block, return true, if 
-            // we have a next block..
-            if ((Request::Offset() > (sizeof(TYPE) + sizeof(LENGTH))) && ((Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))) == Request::Length())) {
-                Request::Offset(0);
-                if (_used > 0) {
-                    uint16_t length = _used;
-                    _used = 0;
-                    ::memcpy(&(_value[0]), &(_value[Request::Length()]), length);
-                    result = Deserialize(_value, length);
+        private:
+            template <typename FIELD>
+            uint8_t Store(const FIELD number, uint8_t stream[], const uint16_t length, const uint8_t offset) const
+            {
+                uint8_t stored = 0;
+                uint8_t index = offset;
+                ASSERT(offset < sizeof(FIELD));
+                while ((index < sizeof(FIELD)) && (stored < length)) {
+                    stream[index] = static_cast<uint8_t>(number >> (8 * (sizeof(TYPE) - 1 - index)));
+                    index++;
+                    stored++;
                 }
+                return (stored);
             }
-            return (result);
-        }
-        inline bool Deserialize(const uint8_t stream[], const uint16_t length) {
-            uint16_t result = 0;
-            if (Request::Offset() < sizeof(TYPE)) {
-                LENGTH offset = Request::Offset();
-                TYPE current = (offset > 0 ? Request::Type() : 0);
-                uint8_t loaded = Load(current, &(stream[result]), length - result, offset);
-                result += loaded;
-                Request::Offset(offset + loaded);
-                Request::Type(current);
+
+        private:
+            TYPE _type;
+            LENGTH _length;
+            mutable LENGTH _offset;
+            const uint8_t* _value;
+        };
+        class Response : public Request {
+        private:
+            Response() = delete;
+            Response(const Response& copy) = delete;
+            Response& operator=(const Response& copy) = delete;
+
+        public:
+            inline Response(const TYPE type)
+                : Request(type, _value)
+            {
             }
-            if ((Request::Offset() < (sizeof(TYPE) + sizeof(LENGTH))) && ((length - result) > 0)) {
-                LENGTH offset = Request::Offset();
-                LENGTH current = (offset > sizeof(TYPE) ? Request::Length() : 0);
-                uint8_t loaded = Load(current, &(stream[result]), length - result, offset - sizeof(TYPE));
-                result += loaded;
-                Request::Offset(offset + loaded);
-                Request::Length(current);
+            inline ~Response()
+            {
             }
-            if ((length - result) > 0) {
-                uint16_t copyLength = std::min(static_cast<uint16_t>(Request::Length() - (Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)))), static_cast<uint16_t>(length - result));
-                if (copyLength > 0) {
-                    ::memcpy (&(_value[Request::Offset()-(sizeof(TYPE) + sizeof(LENGTH))]), &(stream[result]), copyLength);
-                    Request::Offset(Request::Offset() + copyLength);
-                    result += copyLength;
+
+        public:
+            bool Copy(const Request& buffer)
+            {
+                bool result = false;
+                if (buffer.Type() == Request::Type()) {
+                    LENGTH copyLength = std::min(buffer.Length(), static_cast<LENGTH>(BUFFERSIZE));
+                    ::memcpy(_value, buffer.Value(), copyLength);
+                    Request::Length(copyLength);
+                    result = true;
                 }
+
+                return (result);
             }
 
-            if (result < length) {
-                uint16_t copyLength = std::min(static_cast<uint16_t>((2 * BUFFERSIZE) - Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)) - _used), static_cast<uint16_t>(length - result));
-                ::memcpy(&(_value[Request::Offset()-(sizeof(TYPE) + sizeof(LENGTH)) + _used]), &(stream[result]), copyLength);
-                _used += copyLength;
-            }
-         
-            return ((Request::Offset() >= (sizeof(TYPE) + sizeof(LENGTH))) && ((Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))) == Request::Length()));
-        }
-        
-    private:
-        template<typename FIELD>
-        uint8_t Load(FIELD& number, const uint8_t stream[], const uint16_t length, const uint8_t offset) const {
-            uint8_t loaded = 0;
-            uint8_t index = offset;
-            ASSERT (offset < sizeof(FIELD));
-            while ((index < sizeof(FIELD)) && (loaded < length)) {
-                number |= (stream[loaded++] >> (8 * (sizeof(FIELD) - 1 - index)));
-                index++;
-            }
-            return(loaded);
-        }
+        private:
+            uint8_t _value[BUFFERSIZE];
+        };
+        class Buffer : public Request {
+        private:
+            Buffer(const Buffer& copy) = delete;
+            Buffer& operator=(const Buffer& copy) = delete;
 
-    private:
-        uint16_t _used;
-        uint8_t _value[2 * BUFFERSIZE];
+        public:
+            inline Buffer()
+                : Request(_value)
+                , _used(0)
+            {
+            }
+            inline ~Buffer()
+            {
+            }
+
+        public:
+            inline bool Next()
+            {
+                bool result = false;
+
+                // Clear the current selected block, move on to the nex block, return true, if
+                // we have a next block..
+                if ((Request::Offset() > (sizeof(TYPE) + sizeof(LENGTH))) && ((Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))) == Request::Length())) {
+                    Request::Offset(0);
+                    if (_used > 0) {
+                        uint16_t length = _used;
+                        _used = 0;
+                        ::memcpy(&(_value[0]), &(_value[Request::Length()]), length);
+                        result = Deserialize(_value, length);
+                    }
+                }
+                return (result);
+            }
+            inline bool Deserialize(const uint8_t stream[], const uint16_t length)
+            {
+                uint16_t result = 0;
+                if (Request::Offset() < sizeof(TYPE)) {
+                    LENGTH offset = Request::Offset();
+                    TYPE current = (offset > 0 ? Request::Type() : 0);
+                    uint8_t loaded = Load(current, &(stream[result]), length - result, offset);
+                    result += loaded;
+                    Request::Offset(offset + loaded);
+                    Request::Type(current);
+                }
+                if ((Request::Offset() < (sizeof(TYPE) + sizeof(LENGTH))) && ((length - result) > 0)) {
+                    LENGTH offset = Request::Offset();
+                    LENGTH current = (offset > sizeof(TYPE) ? Request::Length() : 0);
+                    uint8_t loaded = Load(current, &(stream[result]), length - result, offset - sizeof(TYPE));
+                    result += loaded;
+                    Request::Offset(offset + loaded);
+                    Request::Length(current);
+                }
+                if ((length - result) > 0) {
+                    uint16_t copyLength = std::min(static_cast<uint16_t>(Request::Length() - (Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)))), static_cast<uint16_t>(length - result));
+                    if (copyLength > 0) {
+                        ::memcpy(&(_value[Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))]), &(stream[result]), copyLength);
+                        Request::Offset(Request::Offset() + copyLength);
+                        result += copyLength;
+                    }
+                }
+
+                if (result < length) {
+                    uint16_t copyLength = std::min(static_cast<uint16_t>((2 * BUFFERSIZE) - Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)) - _used), static_cast<uint16_t>(length - result));
+                    ::memcpy(&(_value[Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH)) + _used]), &(stream[result]), copyLength);
+                    _used += copyLength;
+                }
+
+                return ((Request::Offset() >= (sizeof(TYPE) + sizeof(LENGTH))) && ((Request::Offset() - (sizeof(TYPE) + sizeof(LENGTH))) == Request::Length()));
+            }
+
+        private:
+            template <typename FIELD>
+            uint8_t Load(FIELD& number, const uint8_t stream[], const uint16_t length, const uint8_t offset) const
+            {
+                uint8_t loaded = 0;
+                uint8_t index = offset;
+                ASSERT(offset < sizeof(FIELD));
+                while ((index < sizeof(FIELD)) && (loaded < length)) {
+                    number |= (stream[loaded++] >> (8 * (sizeof(FIELD) - 1 - index)));
+                    index++;
+                }
+                return (loaded);
+            }
+
+        private:
+            uint16_t _used;
+            uint8_t _value[2 * BUFFERSIZE];
+        };
     };
-};
 
 } // namespace Exchange
 
@@ -282,9 +307,9 @@ namespace Core {
         using Response = typename DATAEXCHANGE::Response;
 
     public:
-	#ifdef __WIN32__ 
-	#pragma warning( disable : 4355 )
-	#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         template <typename... Args>
         MessageExchangeType(Args... args)
             : _channel(*this, args...)
@@ -292,12 +317,12 @@ namespace Core {
             , _reevaluate(false, true)
             , _waitCount(0)
             , _responses()
-      
+
         {
         }
-	#ifdef __WIN32__ 
-	#pragma warning( default : 4355 )
-	#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
         virtual ~MessageExchangeType()
         {
         }
@@ -338,13 +363,14 @@ namespace Core {
 
             return (OK);
         }
-        uint32_t Submit (const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime = Core::infinite) {
+        uint32_t Submit(const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime = Core::infinite)
+        {
             _responses.Lock();
 
             uint32_t result = ClaimSlot(request, allowedTime);
 
             if (_current == &request) {
-             
+
                 _responses.Unlock();
 
                 _channel.Trigger();
@@ -359,14 +385,15 @@ namespace Core {
 
             return (result);
         }
-        uint32_t Exchange (const typename DATAEXCHANGE::Request& request, typename DATAEXCHANGE::Response& response, const uint32_t allowedTime) {
+        uint32_t Exchange(const typename DATAEXCHANGE::Request& request, typename DATAEXCHANGE::Response& response, const uint32_t allowedTime)
+        {
 
             _responses.Lock();
 
             uint32_t result = ClaimSlot(request, allowedTime);
 
             if (_current == &request) {
-             
+
                 _responses.Load(response);
                 _responses.Unlock();
 
@@ -385,15 +412,19 @@ namespace Core {
             return (result);
         }
 
-        virtual void StateChange() {
+        virtual void StateChange()
+        {
         }
-        virtual void Send(const typename DATAEXCHANGE::Request& element) {
+        virtual void Send(const typename DATAEXCHANGE::Request& element)
+        {
         }
-        virtual void Received(const typename DATAEXCHANGE::Request& element) {
+        virtual void Received(const typename DATAEXCHANGE::Request& element)
+        {
         }
 
     private:
-        void Reevaluate() {
+        void Reevaluate()
+        {
             _reevaluate.SetEvent();
 
             while (_waitCount != 0) {
@@ -402,10 +433,11 @@ namespace Core {
 
             _reevaluate.ResetEvent();
         }
-        uint32_t ClaimSlot (const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime) {
+        uint32_t ClaimSlot(const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime)
+        {
             uint32_t result = Core::ERROR_NONE;
 
-            while ( (_current != nullptr) && (result == Core::ERROR_NONE) ) {
+            while ((_current != nullptr) && (result == Core::ERROR_NONE)) {
 
                 _waitCount++;
 
@@ -424,7 +456,8 @@ namespace Core {
 
             return (result);
         }
-        uint32_t CompletedSlot (const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime) {
+        uint32_t CompletedSlot(const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime)
+        {
             uint32_t result = Core::ERROR_NONE;
 
             if (_current == &request) {
@@ -440,11 +473,10 @@ namespace Core {
                 _responses.Lock();
             }
 
-            ASSERT (_current != &request);
+            ASSERT(_current != &request);
 
             return (result);
         }
-
 
         // Methods to extract and insert data into the socket buffers
         uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
@@ -453,7 +485,7 @@ namespace Core {
 
             _responses.Lock();
 
-            if ( (_current != nullptr) && (_current != reinterpret_cast<typename DATAEXCHANGE::Request*>(~0)) ) {
+            if ((_current != nullptr) && (_current != reinterpret_cast<typename DATAEXCHANGE::Request*>(~0))) {
                 result = _current->Serialize(dataFrame, maxSendSize);
 
                 if (result == 0) {
@@ -494,5 +526,6 @@ namespace Core {
     };
 
     template <typename SOURCE, typename TYPE, typename LENGTH, const uint32_t BUFFER_SIZE>
-    using StreamTypeLengthValueType = MessageExchangeType<SOURCE, Exchange::TypeLengthValueType<TYPE, LENGTH, BUFFER_SIZE> >;
-} }
+    using StreamTypeLengthValueType = MessageExchangeType<SOURCE, Exchange::TypeLengthValueType<TYPE, LENGTH, BUFFER_SIZE>>;
+}
+}

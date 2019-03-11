@@ -189,8 +189,7 @@ namespace Web {
             if (Core::File::IsOpen() == true) {
                 if (_opened == true) {
                     Core::File::Close();
-                }
-                else {
+                } else {
                     const_cast<FileBody*>(this)->Position(false, _startPosition);
                 }
             }
@@ -323,17 +322,17 @@ namespace Web {
         JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&);
 
     public:
-		#ifdef __WIN32__
-		#pragma warning( disable : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         JSONBodyType()
             : JSONOBJECT()
             , _deserializer(*this)
         {
         }
-		#ifdef __WIN32__
-		#pragma warning( default : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
         virtual ~JSONBodyType()
         {
         }

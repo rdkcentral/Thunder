@@ -23,14 +23,14 @@
 
 #include <sstream>
 
-#include "Module.h"
-#include "Sync.h"
-#include "StateTrigger.h"
-#include "Queue.h"
-#include "Time.h"
-#include "TextFragment.h"
 #include "IAction.h"
+#include "Module.h"
 #include "Proxy.h"
+#include "Queue.h"
+#include "StateTrigger.h"
+#include "Sync.h"
+#include "TextFragment.h"
+#include "Time.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -38,7 +38,7 @@ namespace Core {
     class ThreadLocalStorageType {
     private:
 #ifdef __POSIX__
-        static void destruct (void* value)
+        static void destruct(void* value)
         {
             printf("Destructor ThreadControlBlockInfo <0x%p>\n", value);
             if (value != nullptr) {
@@ -143,13 +143,16 @@ namespace Core {
 
         } thread_state;
 
-        static uint32_t DefaultStackSize () {
+        static uint32_t DefaultStackSize()
+        {
             return (_defaultStackSize);
         }
 
-        static void DefaultStackSize (const uint32_t defaultStackSize) {
+        static void DefaultStackSize(const uint32_t defaultStackSize)
+        {
             _defaultStackSize = defaultStackSize;
         }
+
     public:
         Thread(const uint32_t stackSize = Thread::DefaultStackSize(), const TCHAR* threadName = nullptr);
         virtual ~Thread();
@@ -175,9 +178,9 @@ namespace Core {
         inline ::ThreadId Id() const
         {
 #if defined(__WIN32__) || defined(__APPLE__)
-#pragma warning( disable : 4312 )
-			return (reinterpret_cast<::ThreadId>(m_ThreadId));
-#pragma warning( default : 4312 )
+#pragma warning(disable : 4312)
+            return (reinterpret_cast<::ThreadId>(m_ThreadId));
+#pragma warning(default : 4312)
 #else
             return (static_cast<::ThreadId>(m_ThreadId));
 #endif
@@ -199,7 +202,7 @@ namespace Core {
 #endif
 
 #ifdef __DEBUG__
-		int GetCallstack(void** buffer, int size);
+        int GetCallstack(void** buffer, int size);
 #endif
 
     protected:
@@ -319,8 +322,8 @@ namespace Core {
         ~Job()
         {
             if (_job.IsValid() == true) {
-		_job.Release();
-	    }
+                _job.Release();
+            }
         }
 
         Job& operator=(const Job& rhs)
@@ -353,7 +356,6 @@ namespace Core {
         ProxyType<IDispatch> _job;
     };
 
- 
     template <typename CONTEXT, const uint16_t THREADCOUNT, const uint32_t QUEUESIZE = 0x7FFFFFFF>
     class ThreadPoolType {
     private:
@@ -399,7 +401,7 @@ namespace Core {
             {
                 Run();
             }
- 
+
             ~ThreadUnitType()
             {
             }
@@ -416,17 +418,17 @@ namespace Core {
             {
                 return (_run);
             }
- 
+
             uint32_t Executing(const RUNCONTEXT& thisElement, const uint32_t waitTime) const
             {
                 uint32_t result = Core::ERROR_UNAVAILABLE;
 
                 if (thisElement == _executing) {
 
-		    TRACE_L1("Revoking object is currently running [%d].",  _run);
+                    TRACE_L1("Revoking object is currently running [%d].", _run);
 
                     // You can not wait on yourself to actually remove yourself. This will deadlock !!!
-                    ASSERT (Thread::Id() != Thread::ThreadId());
+                    ASSERT(Thread::Id() != Thread::ThreadId());
 
                     result = _signal.Lock(waitTime);
                 }
@@ -434,7 +436,7 @@ namespace Core {
                 return (result);
             }
 
-       private:
+        private:
             virtual uint32_t Worker()
             {
                 _signal.PulseEvent();
@@ -452,9 +454,9 @@ namespace Core {
                     _active = false;
                     _run++;
 
-                    // Yield the processor, just to make sure that the gap, between the comparison 
+                    // Yield the processor, just to make sure that the gap, between the comparison
                     // of the Executing(.....) ended up in the lock, before we pulse it :-)
-                    ::SleepMs(0); 
+                    ::SleepMs(0);
 
                     // Do not wait keep on processing !!!
                     return (0);
@@ -473,7 +475,7 @@ namespace Core {
         };
 
     public:
-       // -----------------------------------------------------------------------
+        // -----------------------------------------------------------------------
         // This object should not be copied or assigned. Prevent the copy
         // constructor and assignment constructor from being used. Compiler
         // generated assignment and copy methods will be blocked by the
@@ -492,7 +494,7 @@ namespace Core {
 
             for (uint32_t teller = 0; teller < THREADCOUNT; teller++) {
 
-                _units.emplace_back (_queue, stackSize, poolName);
+                _units.emplace_back(_queue, stackSize, poolName);
             }
         }
 
@@ -532,8 +534,7 @@ namespace Core {
         {
             if (QUEUESIZE == ~0) {
                 _queue.Post(data);
-            }
-            else {
+            } else {
                 _queue.Insert(data, waitTime);
             }
         }
@@ -548,9 +549,8 @@ namespace Core {
                 while ((count > 0) && ((result = _units[count - 1].Executing(data, waitTime)) == Core::ERROR_UNAVAILABLE)) {
                     --count;
                 }
-            }
-            else {
-	        TRACE_L1("Found the revoking object in the queue: %d", waitTime);
+            } else {
+                TRACE_L1("Found the revoking object in the queue: %d", waitTime);
             }
 
             return (result);
@@ -589,16 +589,16 @@ namespace Core {
         {
             return (_units[index]);
         }
-        ::ThreadId ThreadId(const uint8_t index) const {
+        ::ThreadId ThreadId(const uint8_t index) const
+        {
             return (index < THREADCOUNT ? _units[index].Id() : 0);
         }
 
     private:
         QueueType<CONTEXT> _queue;
-        std::vector< ThreadUnitType<CONTEXT> > _units;
+        std::vector<ThreadUnitType<CONTEXT>> _units;
     };
 
- 
     // template <typename CONTEXT, const uint16_t THREADCOUNT, const uint32_t QUEUESIZE>
     // CONTEXT typename ThreadPoolType<CONTEXT,THREADCOUNT,QUEUESIZE>::s_EmptyContext;
 }

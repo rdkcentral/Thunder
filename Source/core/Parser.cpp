@@ -9,8 +9,7 @@ namespace Core {
 
         if (*Data() == '\"') {
             endPoint = ForwardFind(_T("\""), offset + 1);
-        }
-        else {
+        } else {
             endPoint = ForwardFind(delimiters, offset);
         }
 
@@ -58,8 +57,7 @@ namespace Core {
         if (index == NUMBER_MAX_UNSIGNED(uint32_t)) {
             // oops there is no extension, BaseFileName == Filename
             m_BaseFileName = m_FileName;
-        }
-        else {
+        } else {
             m_BaseFileName = TextFragment(parser, 0, index);
             m_Extension = TextFragment(parser, index + 1, NUMBER_MAX_UNSIGNED(uint32_t));
         }

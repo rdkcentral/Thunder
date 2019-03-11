@@ -1,13 +1,13 @@
 #ifndef __IPCCONNECTOR_H_
 #define __IPCCONNECTOR_H_
 
+#include "Factory.h"
+#include "IAction.h"
+#include "Link.h"
 #include "Module.h"
 #include "Portability.h"
 #include "SocketPort.h"
-#include "Link.h"
 #include "TypeTraits.h"
-#include "Factory.h"
-#include "IAction.h"
 
 namespace WPEFramework {
 
@@ -41,14 +41,14 @@ namespace Core {
 
                 ASSERT(_current == nullptr);
 
-				// TODO: Make sure it is thread safe. The _current needs to
-				// be written as the last parameter so in case the 
-				// serialize gets triggered due to another read/write cycle,
-				// Serialize will not start processing until the current (and
-				// thius all other parameters) are set correctly.
+                // TODO: Make sure it is thread safe. The _current needs to
+                // be written as the last parameter so in case the
+                // serialize gets triggered due to another read/write cycle,
+                // Serialize will not start processing until the current (and
+                // thius all other parameters) are set correctly.
                 _length = element.Length();
                 _offset = 0;
-				_current = &element;
+                _current = &element;
 
                 ASSERT(_length <= 0x1FFFFFFF);
 
@@ -72,8 +72,7 @@ namespace Core {
 
                             if (value >= 0x80) {
                                 _offset++;
-                            }
-                            else {
+                            } else {
                                 _offset = 4;
                             }
                         }
@@ -87,8 +86,7 @@ namespace Core {
 
                         if (value >= 0x80) {
                             _offset++;
-                        }
-                        else {
+                        } else {
                             _offset = 8;
                         }
                     }
@@ -100,7 +98,7 @@ namespace Core {
                         result += handled;
                         _offset += handled;
 
-						ASSERT_VERBOSE ((_offset - 8) <= _length, "%d <= %d", (_offset - 8), _length);
+                        ASSERT_VERBOSE((_offset - 8) <= _length, "%d <= %d", (_offset - 8), _length);
 
                         if ((_offset - 8) == _length) {
                             const IMessage* ready = _current;
@@ -161,8 +159,7 @@ namespace Core {
 
                             if ((stream[result++] & 0x80) != 0) {
                                 _offset++;
-                            }
-                            else {
+                            } else {
                                 _offset = 4;
                             }
                         }
@@ -173,8 +170,7 @@ namespace Core {
 
                             if ((stream[result++] & 0x80) != 0) {
                                 _offset++;
-                            }
-                            else {
+                            } else {
                                 _offset = 8;
                             }
                         }
@@ -189,8 +185,8 @@ namespace Core {
 
                     if ((_offset - 8) < _length) {
 
-						// There could be multiple packages in this frame, do not read/handle more than what fits in the frame.
-						uint16_t handled ((maxLength - result) > static_cast<uint16_t>(_length - (_offset - 8)) ? static_cast<uint16_t>(_length - (_offset - 8)) : (maxLength - result));
+                        // There could be multiple packages in this frame, do not read/handle more than what fits in the frame.
+                        uint16_t handled((maxLength - result) > static_cast<uint16_t>(_length - (_offset - 8)) ? static_cast<uint16_t>(_length - (_offset - 8)) : (maxLength - result));
 
                         if (_current != nullptr) {
                             handled = _current->Deserialize(&stream[result], handled, _offset - 8);
@@ -232,7 +228,7 @@ namespace Core {
     };
 
     struct EXTERNAL IIPC {
-	inline IIPC() {}
+        inline IIPC() {}
         virtual ~IIPC();
 
         virtual uint32_t Label() const = 0;
@@ -241,7 +237,7 @@ namespace Core {
     };
 
     struct EXTERNAL IIPCServer {
-	inline IIPCServer() {}
+        inline IIPCServer() {}
         virtual ~IIPCServer();
 
         virtual uint32_t Id() const = 0;
@@ -533,7 +529,7 @@ namespace Core {
             {
                 return (_parent.Release());
             }
- 
+
         private:
             // -----------------------------------------------------
             // Check for Clear method on Object
@@ -638,10 +634,10 @@ namespace Core {
         typedef PARAMETERS ParameterType;
         typedef RESPONSE ResponseType;
 
-		#ifdef __WIN32__
-		#pragma warning( disable : 4355 )
-		#endif
-		IPCMessageType()
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+        IPCMessageType()
             : _parameters(*this)
             , _response(*this)
         {
@@ -651,11 +647,13 @@ namespace Core {
             , _response(*this)
         {
         }
-		#ifdef __WIN32__
-		#pragma warning( default : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
-		virtual ~IPCMessageType() {}
+        virtual ~IPCMessageType()
+        {
+        }
 
     public:
         static inline uint32_t Id()
@@ -789,7 +787,7 @@ namespace Core {
                 , _handlers()
             {
             }
-            inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory)
+            inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             {
                 ASSERT((_factory.IsValid() == false) && (factory.IsValid() == true));
 
@@ -797,7 +795,7 @@ namespace Core {
             }
 
         public:
-            IPCFactory(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory)
+            IPCFactory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
                 : _lock()
                 , _inbound()
                 , _outbound()
@@ -814,7 +812,7 @@ namespace Core {
                 // We expect what you register, to be unregistered before the IPCCHannel is closed !!!
                 ASSERT(_handlers.size() == 0);
 
-                std::map<uint32_t, ProxyType<IIPCServer> >::iterator index(_handlers.begin());
+                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
                 while (index != _handlers.end()) {
                     (*index).second.Release();
@@ -831,7 +829,7 @@ namespace Core {
 
                 ASSERT(_handlers.find(handler->Id()) == _handlers.end());
 
-                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer> >(handler->Id(), handler));
+                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(handler->Id(), handler));
 
                 _lock.Unlock();
             }
@@ -840,7 +838,7 @@ namespace Core {
             {
                 _lock.Lock();
 
-                std::map<uint32_t, ProxyType<IIPCServer> >::iterator index(_handlers.find(handler->Id()));
+                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(handler->Id()));
 
                 ASSERT(index != _handlers.end());
 
@@ -866,12 +864,10 @@ namespace Core {
                 if (identifier & 0x01) {
                     if ((_outbound.IsValid() == true) && (_outbound->Label() == searchIdentifier)) {
                         result = _outbound->IResponse();
-                    }
-                    else {
+                    } else {
                         TRACE_L1("Unexpected response message for ID [%d].\n", searchIdentifier);
                     }
-                }
-                else {
+                } else {
                     ASSERT(_inbound.IsValid() == false);
 
                     ProxyType<IIPC> rpcCall(_factory->Element(searchIdentifier));
@@ -879,8 +875,7 @@ namespace Core {
                     if (rpcCall.IsValid() == true) {
                         _inbound = rpcCall;
                         result = rpcCall->IParameters();
-                    }
-                    else {
+                    } else {
                         TRACE_L1("No RPC method definition for ID [%d].\n", searchIdentifier);
                     }
                 }
@@ -894,11 +889,11 @@ namespace Core {
             {
                 _lock.Lock();
 
-				TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
+                TRACE_L1("Flushing the IPC mechanims. %d", __LINE__);
 
-				_callback = nullptr;
-			
-				if (_outbound.IsValid() == true) {
+                _callback = nullptr;
+
+                if (_outbound.IsValid() == true) {
                     _outbound.Release();
                 }
                 if (_inbound.IsValid() == true) {
@@ -927,7 +922,7 @@ namespace Core {
                 // If this is *NOT* the outbound call, it is inbound and thus it must have been registered
                 else if (_inbound.IsValid() == true) {
 
-                    std::map<uint32_t, ProxyType<IIPCServer> >::iterator index(_handlers.find(_inbound->Label()));
+                    std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(_inbound->Label()));
 
                     if (index != _handlers.end()) {
                         procedure = (*index).second;
@@ -935,8 +930,7 @@ namespace Core {
                     }
 
                     _inbound.Release();
-                }
-                else {
+                } else {
                     ASSERT(false && "Received something that is neither an inbound nor on outbound!!!");
                 }
 
@@ -966,16 +960,15 @@ namespace Core {
 
                 if (_outbound.IsValid() == true) {
 
-					result = true;
+                    result = true;
 
-					if (_callback != nullptr) {
+                    if (_callback != nullptr) {
                         _callback->Dispatch(*_outbound);
                         _callback = nullptr;
                     }
 
                     _outbound.Release();
-                }
-                else {
+                } else {
                     ASSERT(_callback == nullptr);
                 }
 
@@ -989,8 +982,8 @@ namespace Core {
             Core::ProxyType<IIPC> _inbound;
             mutable Core::ProxyType<IIPC> _outbound;
             IDispatchType<IIPC>* _callback;
-            Core::ProxyType<FactoryType<IIPC, uint32_t> > _factory;
-            std::map<uint32_t, ProxyType<IIPCServer> > _handlers;
+            Core::ProxyType<FactoryType<IIPC, uint32_t>> _factory;
+            std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
         };
 
     protected:
@@ -998,17 +991,17 @@ namespace Core {
             : _administration()
         {
         }
-        inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory)
+        inline void Factory(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
         {
             _administration.Factory(factory);
         }
 
     public:
-        IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory)
+        IPCChannel(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory)
             : _administration(factory)
         {
         }
-		virtual ~IPCChannel();
+        virtual ~IPCChannel();
 
     public:
         inline void Register(const ProxyType<IIPCServer>& handler)
@@ -1114,7 +1107,6 @@ namespace Core {
             }
             ~IPCLink()
             {
-		
             }
 
         public:
@@ -1135,10 +1127,9 @@ namespace Core {
 
                 if (handler.IsValid() == true) {
                     _parent.CallProcedure(handler, inbound);
+                } else {
+                    TRACE_L1("No handler defined to handle the incoming frames. [%d]", message->Label());
                 }
-				else {
-					TRACE_L1("No handler defined to handle the incoming frames. [%d]", message->Label());
-				}
             }
 
             // Notification of a Response send.
@@ -1190,8 +1181,7 @@ namespace Core {
                     _administration.AbortOutbound();
 
                     result = Core::ERROR_TIMEDOUT;
-                }
-                else if (_administration.AbortOutbound() == true) {
+                } else if (_administration.AbortOutbound() == true) {
                     result = Core::ERROR_ASYNC_FAILED;
                 }
 
@@ -1208,9 +1198,9 @@ namespace Core {
         };
 
     public:
-		#ifdef __WIN32__ 
-		#pragma warning( disable : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         template <typename ARG1>
         IPCChannelType(ARG1 arg1)
             : IPCChannel()
@@ -1247,50 +1237,50 @@ namespace Core {
         {
         }
         template <typename ARG1>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory, ARG1 arg1)
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1)
             : IPCChannel(factory)
             , _link(this, &_administration, arg1)
             , _extension(this)
         {
         }
         template <typename ARG1, typename ARG2>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory, ARG1 arg1, ARG2 arg2)
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2)
             : IPCChannel(factory)
             , _link(this, &_administration, arg1, arg2)
             , _extension(this)
         {
         }
         template <typename ARG1, typename ARG2, typename ARG3>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3)
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3)
             : IPCChannel(factory)
             , _link(this, &_administration, arg1, arg2, arg3)
             , _extension(this)
         {
         }
         template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
             : IPCChannel(factory)
             , _link(this, &_administration, arg1, arg2, arg3, arg4)
             , _extension(this)
         {
         }
         template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t> >& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
+        IPCChannelType(Core::ProxyType<FactoryType<IIPC, uint32_t>>& factory, ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
             : IPCChannel(factory)
             , _link(this, &_administration, arg1, arg2, arg3, arg4, arg5)
             , _extension(this)
         {
         }
-		#ifdef __WIN32__ 
-		#pragma warning( default : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
         virtual ~IPCChannelType()
         {
         }
 
     public:
-       inline EXTENSION& Extension()
+        inline EXTENSION& Extension()
         {
             return (_extension);
         }
@@ -1349,8 +1339,7 @@ namespace Core {
 
             if (_administration.InProgress() == true) {
                 success = Core::ERROR_INPROGRESS;
-            }
-            else if (_link.IsOpen() == true) {
+            } else if (_link.IsOpen() == true) {
                 // We need to accept a CONST object to avoid an additional object creation
                 // proxy casted objects.
                 _administration.SetOutbound(command, completed);

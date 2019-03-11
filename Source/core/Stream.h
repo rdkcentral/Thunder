@@ -31,9 +31,10 @@ namespace Core {
         StreamType<BASESTREAM>& operator=(const StreamType<BASESTREAM>&);
 
     public:
-        template<typename... Args>
+        template <typename... Args>
         StreamType(Args... args)
-            : BASESTREAM(args...) {
+            : BASESTREAM(args...)
+        {
         }
         virtual ~StreamType()
         {

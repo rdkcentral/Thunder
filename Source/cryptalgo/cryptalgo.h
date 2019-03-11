@@ -4,9 +4,9 @@
 #include "Module.h"
 
 #include "AES.h"
+#include "HMAC.h"
 #include "Hash.h"
 #include "HashStream.h"
-#include "HMAC.h"
 #include "Random.h"
 
 #ifdef __WIN32__

@@ -5,8 +5,8 @@
 #define MODULE_NAME Interfaces
 #endif
 
-#include "../core/core.h"
 #include "../com/com.h"
+#include "../core/core.h"
 #include "../plugins/plugins.h"
 #include "Ids.h"
 

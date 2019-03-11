@@ -7,11 +7,10 @@ namespace WPEFramework {
 
 namespace Broadcast {
 
-namespace MPEG {
+    namespace MPEG {
 
-class Section;
-
-}
+        class Section;
+    }
 
     struct ISection {
         virtual ~ISection() {}
@@ -23,18 +22,20 @@ class Section;
         virtual void ChangePid(const uint16_t newpid, ISection* observer) = 0;
     };
 
-    template<typename LISTOBJECT>
+    template <typename LISTOBJECT>
     class IteratorType {
     public:
         IteratorType()
             : _position(0)
             , _index()
-            , _list() {
+            , _list()
+        {
         }
         IteratorType(const std::map<uint16_t, LISTOBJECT>& container)
             : _position(0)
             , _index()
-            , _list() {
+            , _list()
+        {
             typename std::map<uint16_t, LISTOBJECT>::const_iterator index(container.begin());
             while (index != container.end()) {
                 _list.emplace_back(index->second);
@@ -42,13 +43,16 @@ class Section;
             }
         }
         IteratorType(const IteratorType<LISTOBJECT>& copy)
-            : _list() {
+            : _list()
+        {
             operator=(copy);
         }
-        ~IteratorType() {
+        ~IteratorType()
+        {
         }
 
-        IteratorType<LISTOBJECT>& operator=(const IteratorType<LISTOBJECT>& rhs) {
+        IteratorType<LISTOBJECT>& operator=(const IteratorType<LISTOBJECT>& rhs)
+        {
             _position = rhs._position;
             _list.clear();
             typename std::list<LISTOBJECT>::const_iterator index(rhs._list.begin());
@@ -64,27 +68,30 @@ class Section;
         }
 
     public:
-        bool IsValid() const {
+        bool IsValid() const
+        {
             return ((_position != 0) && (_position <= _list.size()));
         }
-        void Reset() {
+        void Reset()
+        {
             _position = 0;
         }
-        bool Next() {
+        bool Next()
+        {
             if (_position == 0) {
                 _index = _list.begin();
                 _position++;
-            }
-            else if (_position <= _list.size()) {
+            } else if (_position <= _list.size()) {
                 _index++;
                 _position++;
             }
 
             return (_position <= _list.size());
         }
-        const LISTOBJECT& Current() const {
+        const LISTOBJECT& Current() const
+        {
 
-            ASSERT (IsValid() == true);
+            ASSERT(IsValid() == true);
 
             return (*_index);
         }
@@ -95,16 +102,16 @@ class Section;
         typename std::list<LISTOBJECT> _list;
     };
 
-    template<typename TYPE> 
-    TYPE ConvertBCD (const uint8_t buffer[], const uint8_t digits, const bool evenStart) {
+    template <typename TYPE>
+    TYPE ConvertBCD(const uint8_t buffer[], const uint8_t digits, const bool evenStart)
+    {
         TYPE value = 0;
-        for (uint8_t index = 0; index < digits; ) {
+        for (uint8_t index = 0; index < digits;) {
             value *= 10;
             if (evenStart == true) {
                 value += ((index & 0x01) ? (buffer[index / 2] & 0xF) : (buffer[index / 2] >> 4));
                 index++;
-            }
-            else {
+            } else {
                 index++;
                 value += ((index & 0x01) ? (buffer[index / 2] & 0xF) : (buffer[index / 2] >> 4));
             }
@@ -122,51 +129,51 @@ class Section;
         MODULATION_UNKNOWN = 0,
 
         // Satellite modulation types
-        HORIZONTAL_QPSK    = 1,
-        HORIZONTAL_8PSK    = 2,
-        HORIZONTAL_QAM16   = 3,
-        VERTICAL_QPSK      = 5,
-        VERTICAL_8PSK      = 6,
-        VERTICAL_QAM16     = 7,
-        LEFT_QPSK          = 9,
-        LEFT_8PSK          = 10,
-        LEFT_QAM16         = 11,
-        RIGHT_QPSK         = 13,
-        RIGHT_8PSK         = 14,
-        RIGHT_QAM16        = 15,
+        HORIZONTAL_QPSK = 1,
+        HORIZONTAL_8PSK = 2,
+        HORIZONTAL_QAM16 = 3,
+        VERTICAL_QPSK = 5,
+        VERTICAL_8PSK = 6,
+        VERTICAL_QAM16 = 7,
+        LEFT_QPSK = 9,
+        LEFT_8PSK = 10,
+        LEFT_QAM16 = 11,
+        RIGHT_QPSK = 13,
+        RIGHT_8PSK = 14,
+        RIGHT_QAM16 = 15,
 
         // Cable/Terestrial modulation types
-        QAM16              = 16,
-        QAM32              = 32,
-        QAM64              = 64,
-        QAM128             = 128,
-        QAM256             = 256,
-        QAM512             = 512,
-        QAM1024            = 1024,
-        QAM2048            = 2048,
-        QAM4096            = 4096
+        QAM16 = 16,
+        QAM32 = 32,
+        QAM64 = 64,
+        QAM128 = 128,
+        QAM256 = 256,
+        QAM512 = 512,
+        QAM1024 = 1024,
+        QAM2048 = 2048,
+        QAM4096 = 4096
     };
 
     enum fec {
-        FEC_INNER_UNKNOWN  = 0,
-        FEC_1_2            = 1,
-        FEC_2_3            = 2,
-        FEC_3_4            = 3,
-        FEC_5_6            = 4,
-        FEC_7_8            = 5,
-        FEC_8_9            = 6,
-        FEC_3_5            = 7,
-        FEC_4_5            = 8,
-        FEC_9_10           = 9,
-        FEC_2_5            = 10,
-        FEC_6_7            = 11,
-        FEC_INNER_NONE     = 15
+        FEC_INNER_UNKNOWN = 0,
+        FEC_1_2 = 1,
+        FEC_2_3 = 2,
+        FEC_3_4 = 3,
+        FEC_5_6 = 4,
+        FEC_7_8 = 5,
+        FEC_8_9 = 6,
+        FEC_3_5 = 7,
+        FEC_4_5 = 8,
+        FEC_9_10 = 9,
+        FEC_2_5 = 10,
+        FEC_6_7 = 11,
+        FEC_INNER_NONE = 15
     };
 
     enum fec_outer {
-        FEC_OUTER_UNKNOWN  = 0,
-        FEC_OUTER_NONE     = 1,
-        RS                 = 2
+        FEC_OUTER_UNKNOWN = 0,
+        FEC_OUTER_NONE = 1,
+        RS = 2
     };
 
     enum transmission {
@@ -211,23 +218,23 @@ class Section;
         };
 
         enum DTVStandard {
-            DVB   = 0x1000,
-            ATSC  = 0x2000,
-            ISDB  = 0x3000,
-            DAB   = 0x4000
+            DVB = 0x1000,
+            ATSC = 0x2000,
+            ISDB = 0x3000,
+            DAB = 0x4000
         };
 
         enum Modus {
-            Satellite     = 0x001,
-            Terrestrial   = 0x002,
-            Cable         = 0x003
+            Satellite = 0x001,
+            Terrestrial = 0x002,
+            Cable = 0x003
         };
 
         enum Annex {
             NoAnnex = 0x000, // NoAnnex -> S/T
-            A       = 0x400, // A       -> S2/T2
-            B       = 0x800,
-            C       = 0xC00
+            A = 0x400, // A       -> S2/T2
+            B = 0x800,
+            C = 0xC00
         };
 
         // The following methods will be called before any create is called. It allows for an initialization,
@@ -238,15 +245,15 @@ class Section;
         // Accessor to create a tuner.
         static ITuner* Create(const string& info);
 
-        // Currently locked on ID 
-        // This method return a unique number that will identify the locked on Transport stream. The ID will always 
+        // Currently locked on ID
+        // This method return a unique number that will identify the locked on Transport stream. The ID will always
         // identify the uniquely locked on to Tune request. ID => 0 is reserved and means not locked on to anything.
         virtual uint16_t Id() const = 0;
 
         // Using these methods the state of the tuner can be viewed.
         // IDLE:      Means there is no request, or the frequency requested (with other parameters) can not be locked.
         // LOCKED:    The stream has been locked, frequency, modulation, symbolrate and spectral inversion seem to be fine.
-        // PREPARED:  The program that was requetsed to prepare fore, has been found in PAT/PMT, the needed information, 
+        // PREPARED:  The program that was requetsed to prepare fore, has been found in PAT/PMT, the needed information,
         //            like PIDS is loaded. If Priming is available, this means that the priming has started!
         // STREAMING: This means that the requested program is being streamed to decoder or file, depending on implementation/inpuy.
         virtual state State() const = 0;

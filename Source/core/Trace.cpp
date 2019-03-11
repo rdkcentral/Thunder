@@ -1,8 +1,8 @@
 #include <sstream>
 
-#include "Trace.h"
-#include "TextFragment.h"
 #include "Sync.h"
+#include "TextFragment.h"
+#include "Trace.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -36,8 +36,7 @@ namespace Core {
             // Check for, and deal with, error.
             if (demangledName == nullptr) {
                 strncpy(_allocationName, name, _allocatedSize);
-            }
-            else {
+            } else {
                 _allocationName = demangledName;
             }
 
@@ -51,16 +50,13 @@ namespace Core {
                 if ((name[index] == 'c') && (name[index + 1] == 'l') && (name[index + 2] == 'a') && (name[index + 3] == 's') && (name[index + 4] == 's') && (name[index + 5] == ' ')) {
                     // we need to skip class :-)
                     index += 6;
-                }
-                else if ((name[index] == 's') && (name[index + 1] == 't') && (name[index + 2] == 'r') && (name[index + 3] == 'u') && (name[index + 4] == 'c') && (name[index + 5] == 't') && (name[index + 6] == ' ')) {
+                } else if ((name[index] == 's') && (name[index + 1] == 't') && (name[index + 2] == 'r') && (name[index + 3] == 'u') && (name[index + 4] == 'c') && (name[index + 5] == 't') && (name[index + 6] == ' ')) {
                     // We need to skip struct
                     index += 7;
-                }
-                else if ((name[index] == 'e') && (name[index + 1] == 'n') && (name[index + 2] == 'u') && (name[index + 3] == 'm') && (name[index + 4] == ' ')) {
+                } else if ((name[index] == 'e') && (name[index + 1] == 'n') && (name[index + 2] == 'u') && (name[index + 3] == 'm') && (name[index + 4] == ' ')) {
                     // We need to skip enum
                     index += 5;
-                }
-                else {
+                } else {
                     _allocationName[moveTo++] = name[index++];
                 }
             }

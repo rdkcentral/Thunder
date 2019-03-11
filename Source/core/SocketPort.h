@@ -6,10 +6,10 @@
 #define __SOCKETPORT_H
 
 #include "Module.h"
-#include "Portability.h"
 #include "NodeId.h"
-#include "StateTrigger.h"
+#include "Portability.h"
 #include "ResourceMonitor.h"
+#include "StateTrigger.h"
 
 #ifdef __WIN32__
 #include <winsock2.h>
@@ -21,15 +21,15 @@
 #define SOCKET_ERROR static_cast<signed int>(-1)
 #define INVALID_SOCKET static_cast<SOCKET>(-1)
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <poll.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #endif
 
 namespace WPEFramework {
 namespace Core {
-   class EXTERNAL SocketPort : public IResource {
-   private:
+    class EXTERNAL SocketPort : public IResource {
+    private:
         // -------------------------------------------------------------------------
         // This object should not be copied, assigned or created with a default
         // constructor. Prevent them from being used, generatoed by the compiler.
@@ -61,7 +61,6 @@ namespace Core {
             SEQUENCED
 
         } enumType;
-
 
     public:
         SocketPort(const enumType socketType,
@@ -136,10 +135,10 @@ namespace Core {
             return (m_LocalNode);
         }
         inline void LocalNode(const Core::NodeId& node)
-	{
-		m_LocalNode = node;
-	}
-	inline const NodeId& RemoteNode() const
+        {
+            m_LocalNode = node;
+        }
+        inline const NodeId& RemoteNode() const
         {
             return (m_RemoteNode);
         }
@@ -181,7 +180,8 @@ namespace Core {
         bool Leave(const NodeId& multicastAddress);
         bool Join(const NodeId& multicastAddress, const NodeId& source);
         bool Leave(const NodeId& multicastAddress, const NodeId& source);
-        inline uint32_t Open(const uint32_t waitTime) {
+        inline uint32_t Open(const uint32_t waitTime)
+        {
             return (Open(waitTime, emptyString));
         }
         uint32_t Open(const uint32_t waitTime, const string& specificInterface);
@@ -315,17 +315,20 @@ namespace Core {
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
 
-    public:
-        Handler(SocketListner& parent) :
-            SocketPort(SocketPort::LISTEN, Core::NodeId(), Core::NodeId(), 0, 0),
-            _parent(parent) {
-        }
-        Handler(SocketListner& parent, const NodeId& refLocalNode) :
-            SocketPort(SocketPort::LISTEN, refLocalNode, refLocalNode.AnyInterface(), 0, 0),
-            _parent(parent) {
-        }
-        ~Handler() {
-        }
+        public:
+            Handler(SocketListner& parent)
+                : SocketPort(SocketPort::LISTEN, Core::NodeId(), Core::NodeId(), 0, 0)
+                , _parent(parent)
+            {
+            }
+            Handler(SocketListner& parent, const NodeId& refLocalNode)
+                : SocketPort(SocketPort::LISTEN, refLocalNode, refLocalNode.AnyInterface(), 0, 0)
+                , _parent(parent)
+            {
+            }
+            ~Handler()
+            {
+            }
 
         public:
             inline void LocalNode(const Core::NodeId& localNode)
@@ -378,10 +381,12 @@ namespace Core {
             TRACE_L5("Constructor SocketListner <0x%X>", TRACE_POINTER(this));
         }
 
-public:
-    SocketListner(const NodeId& refLocalNode) : _socket(*this, refLocalNode) {
-        TRACE_L5("Constructor SocketListner <0x%X>", TRACE_POINTER(this));
-    }
+    public:
+        SocketListner(const NodeId& refLocalNode)
+            : _socket(*this, refLocalNode)
+        {
+            TRACE_L5("Constructor SocketListner <0x%X>", TRACE_POINTER(this));
+        }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
 #endif

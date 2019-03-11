@@ -2,8 +2,8 @@
 #define __MEASUREMENT_H
 
 #include "Module.h"
-#include "Portability.h"
 #include "Number.h"
+#include "Portability.h"
 
 namespace WPEFramework {
 namespace Core {

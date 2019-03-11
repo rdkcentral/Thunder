@@ -4,8 +4,8 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "ITraceMedia.h"
+#include "Module.h"
 
 // ---- Helper types and constants ----
 
@@ -16,9 +16,9 @@ namespace Trace {
     struct ITraceControl;
     struct ITrace;
 
-    #define TRACE_CYCLIC_BUFFER_ENVIRONMENT _T("TRACE_PATH")
-    #define TRACE_CYCLIC_BUFFER_SIZE ( (8 * 1024) - (sizeof (struct Core::CyclicBuffer::control)) ) /* 8Kb */
-    #define TRACE_CYCLIC_BUFFER_PREFIX _T("tracebuffer")
+#define TRACE_CYCLIC_BUFFER_ENVIRONMENT _T("TRACE_PATH")
+#define TRACE_CYCLIC_BUFFER_SIZE ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))) /* 8Kb */
+#define TRACE_CYCLIC_BUFFER_PREFIX _T("tracebuffer")
 
     // ---- Class Definition ----
     class EXTERNAL TraceUnit {
@@ -26,38 +26,38 @@ namespace Trace {
         class EnabledCategory : public Core::JSON::Container {
         private:
             EnabledCategory& operator=(const EnabledCategory&) = delete;
- 
-        public:
-	        EnabledCategory()
-		        : Core::JSON::Container()
-		        , Module()
-		        , Category()
-		        , Enabled(false)
-	        {
-		         Add(_T("module"), &Module);
-		         Add(_T("category"), &Category);
-		         Add(_T("enabled"), &Enabled);
-	        }
-	        EnabledCategory(const EnabledCategory& copy)
-		         : Core::JSON::Container()
-		         , Module(copy.Module)
-		         , Category(copy.Category)
-		         , Enabled(copy.Enabled)
-	        {
-		         Add(_T("module"), &Module);
-		         Add(_T("category"), &Category);
-		         Add(_T("enabled"), &Enabled);
-	        }
-	        virtual ~EnabledCategory()
-	        {
-	        }
 
-         public:
-	          Core::JSON::String Module;
-	          Core::JSON::String Category;
-	          Core::JSON::Boolean Enabled;
-         };
-			
+        public:
+            EnabledCategory()
+                : Core::JSON::Container()
+                , Module()
+                , Category()
+                , Enabled(false)
+            {
+                Add(_T("module"), &Module);
+                Add(_T("category"), &Category);
+                Add(_T("enabled"), &Enabled);
+            }
+            EnabledCategory(const EnabledCategory& copy)
+                : Core::JSON::Container()
+                , Module(copy.Module)
+                , Category(copy.Category)
+                , Enabled(copy.Enabled)
+            {
+                Add(_T("module"), &Module);
+                Add(_T("category"), &Category);
+                Add(_T("enabled"), &Enabled);
+            }
+            virtual ~EnabledCategory()
+            {
+            }
+
+        public:
+            Core::JSON::String Module;
+            Core::JSON::String Category;
+            Core::JSON::Boolean Enabled;
+        };
+
         typedef Core::JSON::ArrayType<EnabledCategory> EnabledCategories;
 
     public:
@@ -75,29 +75,30 @@ namespace Trace {
         TraceUnit(const TraceUnit&) = delete;
         TraceUnit& operator=(const TraceUnit&) = delete;
 
-		class EXTERNAL TraceBuffer : public Core::CyclicBuffer {
-		private:
-			TraceBuffer() = delete;
-			TraceBuffer(const TraceBuffer&) = delete;
-			TraceBuffer& operator= (const TraceBuffer&) = delete;
+        class EXTERNAL TraceBuffer : public Core::CyclicBuffer {
+        private:
+            TraceBuffer() = delete;
+            TraceBuffer(const TraceBuffer&) = delete;
+            TraceBuffer& operator=(const TraceBuffer&) = delete;
 
-		public:
-			TraceBuffer(const string& name);
-			~TraceBuffer();
+        public:
+            TraceBuffer(const string& name);
+            ~TraceBuffer();
 
-		public:
-			Core::DoorBell& DoorBell() {
-				return (_doorBell);
-			}
+        public:
+            Core::DoorBell& DoorBell()
+            {
+                return (_doorBell);
+            }
 
-			virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
+            virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
 
-		private:
-			virtual void DataAvailable() override;
+        private:
+            virtual void DataAvailable() override;
 
-		private:
-			Core::DoorBell _doorBell;
-		};
+        private:
+            Core::DoorBell _doorBell;
+        };
 
     protected:
         TraceUnit();
@@ -108,8 +109,8 @@ namespace Trace {
     public:
         static TraceUnit& Instance();
 
-        uint32_t Open (const string& pathName);
-        uint32_t Close ();
+        uint32_t Open(const string& pathName);
+        uint32_t Close();
 
         void Announce(ITraceControl& Category);
         void Revoke(ITraceControl& Category);
@@ -123,18 +124,22 @@ namespace Trace {
 
         void Trace(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* const information);
 
-	inline Core::DoorBell& TraceAnnouncement() {
-	    ASSERT(m_OutputChannel != nullptr);
-	    return (m_OutputChannel->DoorBell());
-	}
+        inline Core::DoorBell& TraceAnnouncement()
+        {
+            ASSERT(m_OutputChannel != nullptr);
+            return (m_OutputChannel->DoorBell());
+        }
 
-        inline Core::CyclicBuffer* CyclicBuffer () {
+        inline Core::CyclicBuffer* CyclicBuffer()
+        {
             return (m_OutputChannel);
         }
-        inline bool HasDirectOutput() const {
+        inline bool HasDirectOutput() const
+        {
             return (m_DirectOut);
         }
-        inline void DirectOutput(const bool enabled) {
+        inline void DirectOutput(const bool enabled)
+        {
             m_DirectOut = enabled;
         }
 

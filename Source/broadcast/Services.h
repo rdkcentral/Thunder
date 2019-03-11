@@ -2,8 +2,8 @@
 #define SERVICE_ADMINISTRATOR_H
 
 #include "Definitions.h"
-#include "SDT.h"
 #include "Descriptors.h"
+#include "SDT.h"
 #include "TunerAdministrator.h"
 
 namespace WPEFramework {
@@ -19,21 +19,27 @@ namespace Broadcast {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
-            Sink& operator= (const Sink&) = delete;
+            Sink& operator=(const Sink&) = delete;
 
         public:
-            Sink(Services& parent) : _parent (parent) {
+            Sink(Services& parent)
+                : _parent(parent)
+            {
             }
-            virtual ~Sink() {
+            virtual ~Sink()
+            {
             }
 
         public:
-            virtual void Activated(ITuner* tuner) override {
+            virtual void Activated(ITuner* tuner) override
+            {
             }
-            virtual void Deactivated(ITuner* tuner) override {
+            virtual void Deactivated(ITuner* tuner) override
+            {
                 _parent.Deactivated(tuner);
             }
-            virtual void StateChange(ITuner* tuner) override {
+            virtual void StateChange(ITuner* tuner) override
+            {
                 _parent.StateChange(tuner);
             }
 
@@ -45,53 +51,57 @@ namespace Broadcast {
         private:
             Parser() = delete;
             Parser(const Parser&) = delete;
-            Parser& operator= (const Parser&) = delete;
+            Parser& operator=(const Parser&) = delete;
 
         public:
-            Parser(Services& parent, ITuner* source, const bool scan) 
+            Parser(Services& parent, ITuner* source, const bool scan)
                 : _parent(parent)
                 , _source(source)
                 , _actual(Core::ProxyType<Core::DataStore>::Create(512))
-                , _others(Core::ProxyType<Core::DataStore>::Create(512)) {
+                , _others(Core::ProxyType<Core::DataStore>::Create(512))
+            {
                 if (scan == true) {
                     Scan(true);
                 }
             }
-            virtual ~Parser() {
+            virtual ~Parser()
+            {
                 Scan(false);
             }
-            inline bool operator== (const ITuner* rhs) const {
-                return(_source == rhs);
+            inline bool operator==(const ITuner* rhs) const
+            {
+                return (_source == rhs);
             }
-            inline bool operator!= (const ITuner* rhs) const {
-                return(!operator==(rhs));
+            inline bool operator!=(const ITuner* rhs) const
+            {
+                return (!operator==(rhs));
             }
 
         public:
-            void Scan(const bool scan) {
+            void Scan(const bool scan)
+            {
                 if (scan == true) {
                     // Start loading the SDT info
                     _source->Filter(0x11, DVB::SDT::ACTUAL, this);
                     _source->Filter(0x11, DVB::SDT::OTHER, this);
-                }
-                else {
+                } else {
                     _source->Filter(0x11, DVB::SDT::OTHER, nullptr);
                     _source->Filter(0x11, DVB::SDT::ACTUAL, nullptr);
                 }
             }
 
         private:
-            virtual void Handle(const MPEG::Section& section) override {
+            virtual void Handle(const MPEG::Section& section) override
+            {
 
-                ASSERT (section.IsValid());
+                ASSERT(section.IsValid());
 
                 if (section.TableId() == DVB::SDT::ACTUAL) {
                     _actual.AddSection(section);
                     if (_actual.IsValid() == true) {
                         _parent.Load(DVB::SDT(_actual));
                     }
-                }
-                else if (section.TableId() == DVB::SDT::OTHER) {
+                } else if (section.TableId() == DVB::SDT::OTHER) {
                     _others.AddSection(section);
                     if (_others.IsValid() == true) {
                         _parent.Load(DVB::SDT(_others));
@@ -111,31 +121,36 @@ namespace Broadcast {
     public:
         class Service {
         public:
-            Service () 
-                : _serviceId (~0)
+            Service()
+                : _serviceId(~0)
                 , _info(~0)
-                , _name() {
+                , _name()
+            {
             }
-            Service (const DVB::SDT::ServiceIterator& info)
-                : _serviceId (info.ServiceId())
+            Service(const DVB::SDT::ServiceIterator& info)
+                : _serviceId(info.ServiceId())
                 , _info((info.EIT_PF() ? 0x10 : 0x00) | (info.EIT_Schedule() ? 0x20 : 0x00) | (info.IsFreeToAir() ? 0x40 : 0x00) | info.RunningMode())
-                , _name(_T("Unknown")) {
-                MPEG::DescriptorIterator index (info.Descriptors());
+                , _name(_T("Unknown"))
+            {
+                MPEG::DescriptorIterator index(info.Descriptors());
 
                 if (index.Tag(DVB::Descriptors::Service::TAG) == true) {
                     DVB::Descriptors::Service nameDescriptor(index.Current());
                     _name = nameDescriptor.Name();
                 }
             }
-            Service (const Service& copy)
+            Service(const Service& copy)
                 : _serviceId(copy._serviceId)
                 , _info(copy._info)
-                , _name(copy._name){
+                , _name(copy._name)
+            {
             }
-            ~Service() {
+            ~Service()
+            {
             }
 
-            Service& operator= (const Service& rhs) {
+            Service& operator=(const Service& rhs)
+            {
                 _serviceId = rhs._serviceId;
                 _info = rhs._info;
                 _name = rhs._name;
@@ -144,36 +159,39 @@ namespace Broadcast {
             }
 
         public:
-            bool IsValid() const {
+            bool IsValid() const
+            {
                 return (_info != static_cast<uint8_t>(~0));
             }
-            const string& Name() const {
+            const string& Name() const
+            {
                 return (_name);
             }
-            inline uint16_t ServiceId() const {
+            inline uint16_t ServiceId() const
+            {
                 return (_serviceId);
             }
-            inline bool EIT_PF() const  
-            {  
-                return ((_info & 0x10) != 0);  
-            } 
-            inline bool EIT_Schedule() const  
-            {  
-                return ((_info & 0x20) != 0);  
-            } 
-            inline bool IsFreeToAir() const  
-            {  
-                return ((_info & 0x40) != 0);  
-            } 
-            inline DVB::SDT::running RunningMode() const  
-            {  
-                return (static_cast<DVB::SDT::running>(_info & 0x07));  
-            } 
+            inline bool EIT_PF() const
+            {
+                return ((_info & 0x10) != 0);
+            }
+            inline bool EIT_Schedule() const
+            {
+                return ((_info & 0x20) != 0);
+            }
+            inline bool IsFreeToAir() const
+            {
+                return ((_info & 0x40) != 0);
+            }
+            inline DVB::SDT::running RunningMode() const
+            {
+                return (static_cast<DVB::SDT::running>(_info & 0x07));
+            }
 
         private:
             uint16_t _serviceId;
             uint8_t _info;
-            string  _name;
+            string _name;
         };
 
         typedef IteratorType<Service> Iterator;
@@ -187,28 +205,32 @@ namespace Broadcast {
             , _scanners()
             , _sink(*this)
             , _scan(true)
-            , _services() {
+            , _services()
+        {
             TunerAdministrator::Instance().Register(&_sink);
         }
-        virtual ~Services() {
+        virtual ~Services()
+        {
             TunerAdministrator::Instance().Unregister(&_sink);
         }
 
     public:
-        void Scan(const bool scan) {
+        void Scan(const bool scan)
+        {
             _adminLock.Lock();
 
             if (_scan != scan) {
                 _scan = scan;
                 Scanners::iterator index(_scanners.begin());
                 while (index != _scanners.end()) {
-                   index->Scan(_scan); 
-                   index++;
+                    index->Scan(_scan);
+                    index++;
                 }
             }
             _adminLock.Unlock();
         }
-        Service Id(const uint16_t id) const {
+        Service Id(const uint16_t id) const
+        {
             Service result;
 
             _adminLock.Lock();
@@ -220,17 +242,19 @@ namespace Broadcast {
 
             return (result);
         }
-        Iterator List() const {
+        Iterator List() const
+        {
 
             _adminLock.Lock();
-            Iterator value (_services);
+            Iterator value(_services);
             _adminLock.Unlock();
 
             return (value);
         }
 
     private:
-        void Deactivated(ITuner* tuner) {
+        void Deactivated(ITuner* tuner)
+        {
             _adminLock.Lock();
 
             Scanners::iterator index = std::find(_scanners.begin(), _scanners.end(), tuner);
@@ -241,7 +265,8 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        void StateChange(ITuner* tuner) {
+        void StateChange(ITuner* tuner)
+        {
 
             _adminLock.Lock();
 
@@ -251,8 +276,7 @@ namespace Broadcast {
                 if (tuner->State() == ITuner::IDLE) {
                     _scanners.erase(index);
                 }
-            }
-            else {
+            } else {
                 if (tuner->State() != ITuner::IDLE) {
                     _scanners.emplace_back(*this, tuner, _scan);
                 }
@@ -260,7 +284,8 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        void Load(const DVB::SDT& table) {
+        void Load(const DVB::SDT& table)
+        {
             _adminLock.Lock();
 
             DVB::SDT::ServiceIterator index = table.Services();
@@ -268,7 +293,7 @@ namespace Broadcast {
             while (index.Next() == true) {
                 _services[index.ServiceId()] = Service(index);
             }
-            
+
             _adminLock.Unlock();
         }
 

@@ -12,8 +12,8 @@ namespace Plugin {
 
     SERVICE_REGISTRATION(OutOfProcessPlugin, 1, 0);
 
-	static Core::ProxyPoolType< OutOfProcessPlugin::Data > jsonDataFactory(2);
-    static Core::ProxyPoolType<Web::JSONBodyType<OutOfProcessPlugin::Data> > jsonBodyDataFactory(4);
+    static Core::ProxyPoolType<OutOfProcessPlugin::Data> jsonDataFactory(2);
+    static Core::ProxyPoolType<Web::JSONBodyType<OutOfProcessPlugin::Data>> jsonBodyDataFactory(4);
     static Core::ProxyPoolType<Web::TextBody> textFactory(4);
 
     static const char SampleData[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789=!";
@@ -37,9 +37,8 @@ namespace Plugin {
         config.FromString(_service->ConfigLine());
 
         if (config.OutOfProcess.Value() == true) {
-            _browser = _service->Instantiate<Exchange::IBrowser>(Core::infinite, _T("OutOfProcessImplementation"), static_cast<uint32_t>(~0), _pid, service->Locator());
-        }
-        else {
+            _browser = _service->Instantiate<Exchange::IBrowser>(5000, _T("OutOfProcessImplementation"), static_cast<uint32_t>(~0), _pid, service->Locator());
+        } else {
             _browser = Core::ServiceAdministrator::Instance().Instantiate<Exchange::IBrowser>(Core::Library(), _T("OutOfProcessImplementation"), static_cast<uint32_t>(~0));
         }
 
@@ -47,8 +46,7 @@ namespace Plugin {
             _service->Unregister(static_cast<RPC::IRemoteProcess::INotification*>(_notification));
             _service = nullptr;
             message = _T("OutOfProcessPlugin could not be instantiated.");
-        }
-        else {
+        } else {
             _browser->Register(_notification);
 
             PluginHost::IStateControl* stateControl(_browser->QueryInterface<PluginHost::IStateControl>());
@@ -88,7 +86,7 @@ namespace Plugin {
         // Stop processing of the browser:
         if (_browser->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {
 
-            ASSERT (_pid != 0);
+            ASSERT(_pid != 0);
             TRACE_L1("OutOfProcess Plugin is not properly destructed. PID: %d", _pid);
 
             RPC::IRemoteProcess* process(_service->RemoteProcess(_pid));
@@ -110,26 +108,27 @@ namespace Plugin {
         // No additional info to report.
         return (nullptr);
     }
-	/* virtual */ bool OutOfProcessPlugin::Attach(PluginHost::Channel& channel) {
-		if (_subscriber == nullptr) {
-			_subscriber = &channel;
-			return (true);
-		}
-		return (false);
-	}
+    /* virtual */ bool OutOfProcessPlugin::Attach(PluginHost::Channel& channel)
+    {
+        if (_subscriber == nullptr) {
+            _subscriber = &channel;
+            return (true);
+        }
+        return (false);
+    }
 
-	/* virtual */ void OutOfProcessPlugin::Detach(PluginHost::Channel& channel) {
-		if ((_subscriber != nullptr) && (_subscriber == &channel)) {
-			_subscriber = nullptr;
-		}
-	}
+    /* virtual */ void OutOfProcessPlugin::Detach(PluginHost::Channel& channel)
+    {
+        if ((_subscriber != nullptr) && (_subscriber == &channel)) {
+            _subscriber = nullptr;
+        }
+    }
 
     /* virtual */ void OutOfProcessPlugin::Inbound(Web::Request& request)
     {
         if (request.Verb == Web::Request::HTTP_PUT) {
             request.Body(jsonBodyDataFactory.Element());
-        }
-        else if (request.Verb == Web::Request::HTTP_POST) {
+        } else if (request.Verb == Web::Request::HTTP_POST) {
             request.Body(textFactory.Element());
         }
     }
@@ -148,22 +147,21 @@ namespace Plugin {
 
         if (_browser != nullptr) {
 
-			PluginHost::IStateControl* stateControl(_browser->QueryInterface<PluginHost::IStateControl>());
+            PluginHost::IStateControl* stateControl(_browser->QueryInterface<PluginHost::IStateControl>());
 
             ASSERT(stateControl != nullptr);
 
             if (request.Verb == Web::Request::HTTP_GET) {
-				PluginHost::IStateControl::state currentState = stateControl->State();
-                Core::ProxyType<Web::JSONBodyType<OutOfProcessPlugin::Data> > body(jsonBodyDataFactory.Element());
+                PluginHost::IStateControl::state currentState = stateControl->State();
+                Core::ProxyType<Web::JSONBodyType<OutOfProcessPlugin::Data>> body(jsonBodyDataFactory.Element());
                 body->URL = _browser->GetURL();
                 body->FPS = _browser->GetFPS();
                 body->Suspended = (currentState == PluginHost::IStateControl::SUSPENDED);
                 body->Hidden = _hidden;
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = "OK";
-                result->Body<Web::JSONBodyType<OutOfProcessPlugin::Data> >(body);
-            }
-            else if ((request.Verb == Web::Request::HTTP_POST) && (index.Next() == true) && (index.Next() == true)) {
+                result->Body<Web::JSONBodyType<OutOfProcessPlugin::Data>>(body);
+            } else if ((request.Verb == Web::Request::HTTP_POST) && (index.Next() == true) && (index.Next() == true)) {
                 result->ErrorCode = Web::STATUS_OK;
                 result->Message = "OK";
 
@@ -176,19 +174,18 @@ namespace Plugin {
                     _browser->Hide(true);
                 } else if (index.Remainder() == _T("Show")) {
                     _browser->Hide(false);
-				} else if (index.Remainder() == _T("Notify4K")) {
-					string message;
-					for (uint32_t teller = 0; teller < ((4 * 1024) + 64); teller++) {
-						message += SampleData[teller % 64];
-					}
-					_service->Notify(message);
-				}
-				else if ( (index.Remainder() == _T("JSONPop")) && (_subscriber != nullptr) ) {
-					Core::ProxyType<Data> info(jsonDataFactory.Element());
+                } else if (index.Remainder() == _T("Notify4K")) {
+                    string message;
+                    for (uint32_t teller = 0; teller < ((4 * 1024) + 64); teller++) {
+                        message += SampleData[teller % 64];
+                    }
+                    _service->Notify(message);
+                } else if ((index.Remainder() == _T("JSONPop")) && (_subscriber != nullptr)) {
+                    Core::ProxyType<Data> info(jsonDataFactory.Element());
 
-					info->URL = _T("ws://<My IP>/JSONPop");
-					_subscriber->Submit(Core::proxy_cast<Core::JSON::IElement>(info));
-				} else if ( (index.Remainder() == _T("URL")) && (request.HasBody() == true) && (request.Body<Web::TextBody>()->empty() == false) ) {
+                    info->URL = _T("ws://<My IP>/JSONPop");
+                    _subscriber->Submit(Core::proxy_cast<Core::JSON::IElement>(info));
+                } else if ((index.Remainder() == _T("URL")) && (request.HasBody() == true) && (request.Body<Web::TextBody>()->empty() == false)) {
                     _browser->SetURL(*(request.Body<Web::TextBody>()));
                 } else {
                     result->ErrorCode = Web::STATUS_BAD_REQUEST;
@@ -200,8 +197,6 @@ namespace Plugin {
 
         return result;
     }
-
-
 
     void OutOfProcessPlugin::LoadFinished(const string& URL)
     {
@@ -244,9 +239,9 @@ namespace Plugin {
         // on a seperate thread. Also make sure this call-stack can be unwound before we are totally destructed.
         if (_pid == process->Id()) {
 
-			ASSERT(_service != nullptr);
+            ASSERT(_service != nullptr);
 
-			PluginHost::WorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
+            PluginHost::WorkerPool::Instance().Submit(PluginHost::IShell::Job::Create(_service, PluginHost::IShell::DEACTIVATED, PluginHost::IShell::FAILURE));
         }
     }
 }

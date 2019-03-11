@@ -36,7 +36,7 @@ namespace Exchange {
             uint32_t x;
             uint32_t y;
             uint32_t width;
-            uint32_t height;    
+            uint32_t height;
         };
 
         struct IClient : virtual public Core::IUnknown {
@@ -75,18 +75,17 @@ namespace Exchange {
 
         // As the previous method is just to iterate over all clients, it is
         // expected that the next method is used to actually aquire a IClient.
-        virtual IClient*              Client(const string& callsign) = 0;
-        virtual uint32_t              Geometry(const string& callsign, const Rectangle& rectangle) = 0;
-        virtual Rectangle             Geometry(const string& callsign) const = 0;  //0,0,0,0 is rectangle could not be retrieved, callsign not known?
-        virtual uint32_t              ToTop(const string& callsign) = 0;
-        virtual uint32_t              PutBelow(const string& callsignRelativeTo, const string& callsignToReorder) = 0;
-        virtual RPC::IStringIterator* ClientsInZorder() const = 0; // order Top to Bottom  
-        virtual uint32_t              Configure(PluginHost::IShell* service) = 0;
+        virtual IClient* Client(const string& callsign) = 0;
+        virtual uint32_t Geometry(const string& callsign, const Rectangle& rectangle) = 0;
+        virtual Rectangle Geometry(const string& callsign) const = 0; //0,0,0,0 is rectangle could not be retrieved, callsign not known?
+        virtual uint32_t ToTop(const string& callsign) = 0;
+        virtual uint32_t PutBelow(const string& callsignRelativeTo, const string& callsignToReorder) = 0;
+        virtual RPC::IStringIterator* ClientsInZorder() const = 0; // order Top to Bottom
+        virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         // Set and get output resolution
         virtual void Resolution(const ScreenResolution) = 0;
         virtual ScreenResolution Resolution() const = 0;
-
     };
 }
 }

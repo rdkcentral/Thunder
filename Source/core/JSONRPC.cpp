@@ -4,8 +4,9 @@ namespace WPEFramework {
 
 namespace Core {
 
-namespace JSONRPC {
+    namespace JSONRPC {
 
-/* static */ constexpr TCHAR Message::DefaultVersion[];
-
-} } } // namespace WPEramework::Core::JSONRPC
+        /* static */ constexpr TCHAR Message::DefaultVersion[];
+    }
+}
+} // namespace WPEramework::Core::JSONRPC

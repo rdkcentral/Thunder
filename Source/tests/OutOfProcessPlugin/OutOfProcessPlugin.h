@@ -13,24 +13,23 @@ namespace Plugin {
         OutOfProcessPlugin(const OutOfProcessPlugin&);
         OutOfProcessPlugin& operator=(const OutOfProcessPlugin&);
 
-        class Notification : 
-			public Exchange::IBrowser::INotification,
-			public PluginHost::IStateControl::INotification,
-            public RPC::IRemoteProcess::INotification {
+        class Notification : public Exchange::IBrowser::INotification,
+                             public PluginHost::IStateControl::INotification,
+                             public RPC::IRemoteProcess::INotification {
         private:
             Notification();
             Notification(const Notification&);
             Notification& operator=(const Notification&);
 
         public:
-			explicit Notification(OutOfProcessPlugin* parent)
-				: _parent(*parent)
+            explicit Notification(OutOfProcessPlugin* parent)
+                : _parent(*parent)
             {
                 ASSERT(parent != nullptr);
             }
             ~Notification()
             {
-				TRACE_L1("WebServer::Notification destructed. Line: %d", __LINE__);
+                TRACE_L1("WebServer::Notification destructed. Line: %d", __LINE__);
             }
 
         public:
@@ -50,15 +49,16 @@ namespace Plugin {
             {
                 _parent.StateChange(value);
             }
-			virtual void Activated(RPC::IRemoteProcess* /* process */) 
-			{
-			}
-			virtual void Deactivated(RPC::IRemoteProcess* process)
+            virtual void Activated(RPC::IRemoteProcess* /* process */)
             {
-				_parent.Deactivated(process);
-			}
-			virtual void Closure() {
-			}
+            }
+            virtual void Deactivated(RPC::IRemoteProcess* process)
+            {
+                _parent.Deactivated(process);
+            }
+            virtual void Closure()
+            {
+            }
 
             BEGIN_INTERFACE_MAP(Notification)
             INTERFACE_ENTRY(Exchange::IBrowser::INotification)
@@ -135,10 +135,10 @@ namespace Plugin {
         };
 
     public:
-		#ifdef __WIN32__ 
-		#pragma warning( disable : 4355 )
-		#endif
-		OutOfProcessPlugin()
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+        OutOfProcessPlugin()
             : _adminLock()
             , _skipURL(0)
             , _webPath("")
@@ -147,25 +147,25 @@ namespace Plugin {
             , _memory(nullptr)
             , _notification(Core::Service<Notification>::Create<Notification>(this))
             , _state(PluginHost::IStateControl::UNINITIALIZED)
-			, _subscriber(nullptr)
+            , _subscriber(nullptr)
             , _hidden(false)
         {
         }
-		#ifdef __WIN32__ 
-		#pragma warning( default : 4355 )
-		#endif
-		virtual ~OutOfProcessPlugin()
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
+        virtual ~OutOfProcessPlugin()
         {
         }
 
     public:
         BEGIN_INTERFACE_MAP(OutOfProcessPlugin)
-			INTERFACE_ENTRY(IPlugin)
-			INTERFACE_ENTRY(IPluginExtended)
-	        INTERFACE_ENTRY(IWeb)
-		    INTERFACE_AGGREGATE(Exchange::IBrowser, _browser)
-			INTERFACE_AGGREGATE(PluginHost::IStateControl, _browser)
-			INTERFACE_AGGREGATE(Exchange::IMemory, _memory)
+        INTERFACE_ENTRY(IPlugin)
+        INTERFACE_ENTRY(IPluginExtended)
+        INTERFACE_ENTRY(IWeb)
+        INTERFACE_AGGREGATE(Exchange::IBrowser, _browser)
+        INTERFACE_AGGREGATE(PluginHost::IStateControl, _browser)
+        INTERFACE_AGGREGATE(Exchange::IMemory, _memory)
         END_INTERFACE_MAP
 
     public:
@@ -190,11 +190,11 @@ namespace Plugin {
         // to this plugin. This Metadata can be used by the MetData plugin to publish this information to the ouside world.
         virtual string Information() const;
 
-		// ================================== CALLED ON COMMUNICATION THREAD =====================================
-		// Whenever a Channel (WebSocket connection) is created to the plugin that will be reported via the Attach.
-		// Whenever the channel is closed, it is reported via the detach method.
-		virtual bool Attach(PluginHost::Channel& channel);
-		virtual void Detach(PluginHost::Channel& channel);
+        // ================================== CALLED ON COMMUNICATION THREAD =====================================
+        // Whenever a Channel (WebSocket connection) is created to the plugin that will be reported via the Attach.
+        // Whenever the channel is closed, it is reported via the detach method.
+        virtual bool Attach(PluginHost::Channel& channel);
+        virtual void Detach(PluginHost::Channel& channel);
 
         //  IWeb methods
         // -------------------------------------------------------------------------------------------------------
@@ -211,14 +211,14 @@ namespace Plugin {
     private:
         Core::CriticalSection _adminLock;
         uint8_t _skipURL;
-		uint32_t _pid;
+        uint32_t _pid;
         string _webPath;
         PluginHost::IShell* _service;
         Exchange::IBrowser* _browser;
         Exchange::IMemory* _memory;
         Notification* _notification;
         PluginHost::IStateControl::state _state;
-		PluginHost::Channel* _subscriber;
+        PluginHost::Channel* _subscriber;
         bool _hidden;
     };
 }

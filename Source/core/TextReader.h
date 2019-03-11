@@ -4,9 +4,9 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
+#include "DataElement.h"
 #include "Module.h"
 #include "TextFragment.h"
-#include "DataElement.h"
 
 namespace WPEFramework {
 namespace Core {

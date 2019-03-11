@@ -2,9 +2,9 @@
 #define NETWORKS_ADMINISTRATOR_H
 
 #include "Definitions.h"
+#include "Descriptors.h"
 #include "NIT.h"
 #include "ProgramTable.h"
-#include "Descriptors.h"
 #include "TunerAdministrator.h"
 
 namespace WPEFramework {
@@ -20,21 +20,27 @@ namespace Broadcast {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
-            Sink& operator= (const Sink&) = delete;
+            Sink& operator=(const Sink&) = delete;
 
         public:
-            Sink(Networks& parent) : _parent (parent) {
+            Sink(Networks& parent)
+                : _parent(parent)
+            {
             }
-            virtual ~Sink() {
+            virtual ~Sink()
+            {
             }
 
         public:
-            virtual void Activated(ITuner* tuner) override {
+            virtual void Activated(ITuner* tuner) override
+            {
             }
-            virtual void Deactivated(ITuner* tuner) override {
+            virtual void Deactivated(ITuner* tuner) override
+            {
                 _parent.Deactivated(tuner);
             }
-            virtual void StateChange(ITuner* tuner) override {
+            virtual void StateChange(ITuner* tuner) override
+            {
                 _parent.StateChange(tuner);
             }
 
@@ -46,54 +52,58 @@ namespace Broadcast {
         private:
             Parser() = delete;
             Parser(const Parser&) = delete;
-            Parser& operator= (const Parser&) = delete;
+            Parser& operator=(const Parser&) = delete;
 
         public:
-            Parser(Networks& parent, ITuner* source, const bool scan, const uint16_t pid) 
+            Parser(Networks& parent, ITuner* source, const bool scan, const uint16_t pid)
                 : _parent(parent)
                 , _source(source)
                 , _actual(Core::ProxyType<Core::DataStore>::Create(512))
                 , _others(Core::ProxyType<Core::DataStore>::Create(512))
-                , _pid(pid) {
+                , _pid(pid)
+            {
                 if (scan == true) {
                     Scan(true);
                 }
             }
-            virtual ~Parser() {
+            virtual ~Parser()
+            {
                 Scan(false);
             }
-            inline bool operator== (const ITuner* rhs) const {
-                return(_source == rhs);
+            inline bool operator==(const ITuner* rhs) const
+            {
+                return (_source == rhs);
             }
-            inline bool operator!= (const ITuner* rhs) const {
-                return(!operator==(rhs));
+            inline bool operator!=(const ITuner* rhs) const
+            {
+                return (!operator==(rhs));
             }
 
         public:
-            void Scan(const bool scan) {
+            void Scan(const bool scan)
+            {
                 if (scan == true) {
                     // Start loading the SDT info
                     _source->Filter(_pid, DVB::NIT::ACTUAL, this);
                     _source->Filter(_pid, DVB::NIT::OTHER, this);
-                }
-                else {
+                } else {
                     _source->Filter(_pid, DVB::NIT::OTHER, nullptr);
                     _source->Filter(_pid, DVB::NIT::ACTUAL, nullptr);
                 }
             }
 
         private:
-            virtual void Handle(const MPEG::Section& section) override {
+            virtual void Handle(const MPEG::Section& section) override
+            {
 
-                ASSERT (section.IsValid());
+                ASSERT(section.IsValid());
 
                 if (section.TableId() == DVB::NIT::ACTUAL) {
                     _actual.AddSection(section);
                     if (_actual.IsValid() == true) {
                         _parent.Load(DVB::NIT(_actual));
                     }
-                }
-                else if (section.TableId() == DVB::NIT::OTHER) {
+                } else if (section.TableId() == DVB::NIT::OTHER) {
                     _others.AddSection(section);
                     if (_others.IsValid() == true) {
                         _parent.Load(DVB::NIT(_others));
@@ -114,13 +124,14 @@ namespace Broadcast {
     public:
         class Network {
         public:
-            Network () 
+            Network()
                 : _originalNetworkId(~0)
                 , _transportStreamId(~0)
                 , _frequency(0)
                 , _modulation(0)
                 , _symbolRate(0)
-                , _name() {
+                , _name()
+            {
             }
             Network(const DVB::NIT::NetworkIterator& info)
                 : _originalNetworkId(info.OriginalNetworkId())
@@ -128,8 +139,9 @@ namespace Broadcast {
                 , _frequency(0)
                 , _modulation(0)
                 , _symbolRate(0)
-                , _name() {
-                MPEG::DescriptorIterator index (info.Descriptors());
+                , _name()
+            {
+                MPEG::DescriptorIterator index(info.Descriptors());
 
                 if (index.Tag(DVB::Descriptors::NetworkName::TAG) == true) {
                     DVB::Descriptors::NetworkName data(index.Current());
@@ -137,17 +149,16 @@ namespace Broadcast {
                 }
 
                 // Start searching from the beginning again !
-		index.Reset();
+                index.Reset();
 
                 if (index.Tag(DVB::Descriptors::SatelliteDeliverySystem::TAG) == true) {
                     DVB::Descriptors::SatelliteDeliverySystem data(index.Current());
                     _frequency = data.Frequency();
                     _symbolRate = data.SymbolRate();
                     _modulation = data.Modulation();
-                }
-                else {
+                } else {
                     // Start searching from the beginning again !
-		    index.Reset();
+                    index.Reset();
 
                     if (index.Tag(DVB::Descriptors::CableDeliverySystem::TAG) == true) {
                         DVB::Descriptors::CableDeliverySystem data(index.Current());
@@ -157,18 +168,21 @@ namespace Broadcast {
                     }
                 }
             }
-            Network (const Network& copy)
+            Network(const Network& copy)
                 : _originalNetworkId(copy._originalNetworkId)
                 , _transportStreamId(copy._transportStreamId)
                 , _frequency(copy._frequency)
                 , _modulation(copy._modulation)
                 , _symbolRate(copy._symbolRate)
-                , _name(copy._name) {
+                , _name(copy._name)
+            {
             }
-            ~Network() {
+            ~Network()
+            {
             }
 
-            Network& operator= (const Network& rhs) {
+            Network& operator=(const Network& rhs)
+            {
                 _originalNetworkId = rhs._originalNetworkId;
                 _transportStreamId = rhs._transportStreamId;
                 _frequency = rhs._frequency;
@@ -180,22 +194,28 @@ namespace Broadcast {
             }
 
         public:
-            bool IsValid() const {
+            bool IsValid() const
+            {
                 return (_frequency != 0);
             }
-            inline uint16_t OriginalNetworkId() const {
+            inline uint16_t OriginalNetworkId() const
+            {
                 return (_originalNetworkId);
             }
-            inline uint16_t TransportStreamId() const {
+            inline uint16_t TransportStreamId() const
+            {
                 return (_transportStreamId);
             }
-            inline uint16_t Frequency() const {
+            inline uint16_t Frequency() const
+            {
                 return (_frequency);
             }
-            inline uint16_t Modulation() const {
+            inline uint16_t Modulation() const
+            {
                 return (_modulation);
             }
-            inline uint16_t SymbolRate() const {
+            inline uint16_t SymbolRate() const
+            {
                 return (_symbolRate);
             }
 
@@ -219,28 +239,32 @@ namespace Broadcast {
             , _scanners()
             , _sink(*this)
             , _scan(true)
-            , _networks() {
+            , _networks()
+        {
             TunerAdministrator::Instance().Register(&_sink);
         }
-        virtual ~Networks() {
+        virtual ~Networks()
+        {
             TunerAdministrator::Instance().Unregister(&_sink);
         }
 
     public:
-        void Scan(const bool scan) {
+        void Scan(const bool scan)
+        {
             _adminLock.Lock();
 
             if (_scan != scan) {
                 _scan = scan;
                 Scanners::iterator index(_scanners.begin());
                 while (index != _scanners.end()) {
-                   index->Scan(_scan); 
-                   index++;
+                    index->Scan(_scan);
+                    index++;
                 }
             }
             _adminLock.Unlock();
         }
-        Network Id(const uint16_t id) const {
+        Network Id(const uint16_t id) const
+        {
             Network result;
 
             _adminLock.Lock();
@@ -252,17 +276,19 @@ namespace Broadcast {
 
             return (result);
         }
-        Iterator List() const {
+        Iterator List() const
+        {
 
             _adminLock.Lock();
-            Iterator value (_networks);
+            Iterator value(_networks);
             _adminLock.Unlock();
 
             return (value);
         }
 
     private:
-        void Deactivated(ITuner* tuner) {
+        void Deactivated(ITuner* tuner)
+        {
             _adminLock.Lock();
 
             Scanners::iterator index = std::find(_scanners.begin(), _scanners.end(), tuner);
@@ -273,7 +299,8 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        void StateChange(ITuner* tuner) {
+        void StateChange(ITuner* tuner)
+        {
 
             _adminLock.Lock();
 
@@ -283,8 +310,7 @@ namespace Broadcast {
                 if (tuner->State() == ITuner::IDLE) {
                     _scanners.erase(index);
                 }
-            }
-            else {
+            } else {
                 if (tuner->State() != ITuner::IDLE) {
                     uint16_t pid = ProgramTable::Instance().NITPid(tuner->Id());
                     if (pid != static_cast<uint16_t>(~0)) {
@@ -295,7 +321,8 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        void Load(const DVB::NIT& table) {
+        void Load(const DVB::NIT& table)
+        {
             _adminLock.Lock();
 
             DVB::NIT::NetworkIterator index = table.Networks();
@@ -306,8 +333,6 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-
-
 
     private:
         mutable Core::CriticalSection _adminLock;

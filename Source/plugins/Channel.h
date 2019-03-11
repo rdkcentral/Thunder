@@ -18,20 +18,25 @@ namespace PluginHost {
             Package& operator=(const Package&) = delete;
 
         public:
-            explicit Package(const Core::ProxyType<Core::JSON::IElement>& json) : _json (json)
+            explicit Package(const Core::ProxyType<Core::JSON::IElement>& json)
+                : _json(json)
             {
             }
-            explicit Package(const string& text) : _text(text)
+            explicit Package(const string& text)
+                : _text(text)
             {
             }
-            ~Package() {
+            ~Package()
+            {
             }
 
         public:
-            const string& Text() const {
+            const string& Text() const
+            {
                 return (_text);
             }
-            const Core::ProxyType<Core::JSON::IElement>& JSON() const {
+            const Core::ProxyType<Core::JSON::IElement>& JSON() const
+            {
                 return (_json);
             }
 
@@ -55,14 +60,16 @@ namespace PluginHost {
         public:
             inline void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
             {
-                ASSERT (entry.IsValid() == true);
+                ASSERT(entry.IsValid() == true);
 
                 _current = entry;
                 Core::JSON::IElement::Serializer::Submit(*entry);
             }
-            inline bool IsIdle() const {
+            inline bool IsIdle() const
+            {
                 return (_current.IsValid() == false);
             }
+
         private:
             virtual void Serialized(const Core::JSON::IElement& element)
             {
@@ -75,7 +82,7 @@ namespace PluginHost {
         private:
             Core::ProxyType<const Core::JSON::IElement> _current;
         };
- 
+
         class EXTERNAL DeserializerImpl : public Core::JSON::IElement::Deserializer {
         private:
             DeserializerImpl() = delete;
@@ -133,7 +140,7 @@ namespace PluginHost {
             JSON = 0x04,
             RAW = 0x08,
             TEXT = 0x10,
-			JSONRPC = 0x20
+            JSONRPC = 0x20
         };
 
     public:
@@ -151,8 +158,7 @@ namespace PluginHost {
 
                 if (forcedActivity == true) {
                     _state &= (~0x4000);
-                }
-                else {
+                } else {
                     // We can try to fire a ping/pong
                     _state |= 0x4000;
                     const_cast<BaseClass*>(static_cast<const BaseClass*>(this))->Ping();
@@ -256,66 +262,69 @@ namespace PluginHost {
 
             if (_sendQueue.size() != 0) {
 
-                switch(State()) {
-                    case JSON:
-					case JSONRPC:
-					{
-                        // Seems we are sending JSON structs
-                        size = _serializer.Serialize(dataFrame, maxSendSize);
+                switch (State()) {
+                case JSON:
+                case JSONRPC: {
+                    // Seems we are sending JSON structs
+                    size = _serializer.Serialize(dataFrame, maxSendSize);
 
-                        if (_serializer.IsIdle() == true) {
+                    if (_serializer.IsIdle() == true) {
 
-                            // See if there is more to do..
-                            _adminLock.Lock();
-                            _sendQueue.pop_front();
-							bool trigger (_sendQueue.size() > 0);
-							
-							if (trigger == true) {
-                                _serializer.Submit(_sendQueue.front().JSON());
-                            }
-                            _adminLock.Unlock();
+                        // See if there is more to do..
+                        _adminLock.Lock();
+                        _sendQueue.pop_front();
+                        bool trigger(_sendQueue.size() > 0);
 
-							if (trigger == true) {
-								BaseClass::Trigger();
-							}
+                        if (trigger == true) {
+                            _serializer.Submit(_sendQueue.front().JSON());
                         }
-						else {
-							ASSERT(size != 0);
-						}
+                        _adminLock.Unlock();
 
-                        break;
-                    }
-                    case TEXT:
-                    {
-                        // Seems we need to send plain strings...
-                        Package& data (_sendQueue.front());
-                        uint16_t neededBytes(static_cast<uint16_t>(data.Text().length() - _offset));
-
-                        if (neededBytes <= maxSendSize) {
-                            ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), neededBytes);
-                            size = neededBytes;
-                            _offset = 0;
-
-                            // See if there is more to do..
-                            _adminLock.Lock();
-                            _sendQueue.pop_front();
-                            _adminLock.Unlock();
-						}
-                        else {
-                            uint16_t addedBytes = maxSendSize - size;
-                            ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), addedBytes);
-                            _offset += addedBytes;
-                            size = addedBytes;
-		    	        }
-
+                        if (trigger == true) {
+                            BaseClass::Trigger();
+                        }
+                    } else {
                         ASSERT(size != 0);
-
-                        break;
                     }
-                    case CLOSED: break;
-                    case RAW:    ASSERT(false); break;
-                    case WEB:    ASSERT(false); break;
-                    default:     ASSERT(false); break;
+
+                    break;
+                }
+                case TEXT: {
+                    // Seems we need to send plain strings...
+                    Package& data(_sendQueue.front());
+                    uint16_t neededBytes(static_cast<uint16_t>(data.Text().length() - _offset));
+
+                    if (neededBytes <= maxSendSize) {
+                        ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), neededBytes);
+                        size = neededBytes;
+                        _offset = 0;
+
+                        // See if there is more to do..
+                        _adminLock.Lock();
+                        _sendQueue.pop_front();
+                        _adminLock.Unlock();
+                    } else {
+                        uint16_t addedBytes = maxSendSize - size;
+                        ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), addedBytes);
+                        _offset += addedBytes;
+                        size = addedBytes;
+                    }
+
+                    ASSERT(size != 0);
+
+                    break;
+                }
+                case CLOSED:
+                    break;
+                case RAW:
+                    ASSERT(false);
+                    break;
+                case WEB:
+                    ASSERT(false);
+                    break;
+                default:
+                    ASSERT(false);
+                    break;
                 }
             }
 
@@ -325,27 +334,32 @@ namespace PluginHost {
         {
             uint16_t handled = receivedSize;
 
-            switch(State()) {
-                case JSON:
-				case JSONRPC:
-                {
-                    handled = _deserializer.Deserialize(dataFrame, receivedSize);
-                    break;
-                }
-                case TEXT:
-                {
-                    _text += string(reinterpret_cast<const TCHAR*>(dataFrame), receivedSize);
+            switch (State()) {
+            case JSON:
+            case JSONRPC: {
+                handled = _deserializer.Deserialize(dataFrame, receivedSize);
+                break;
+            }
+            case TEXT: {
+                _text += string(reinterpret_cast<const TCHAR*>(dataFrame), receivedSize);
 
-                    if (BaseClass::IsCompleted() == true) {
-                        Received(_text);
-                        _text.clear();
-                    }
-                    break;
+                if (BaseClass::IsCompleted() == true) {
+                    Received(_text);
+                    _text.clear();
                 }
-                case CLOSED: break;
-                case RAW:    ASSERT(false); break;
-                case WEB:    ASSERT(false); break;
-                default:     ASSERT(false); break;
+                break;
+            }
+            case CLOSED:
+                break;
+            case RAW:
+                ASSERT(false);
+                break;
+            case WEB:
+                ASSERT(false);
+                break;
+            default:
+                ASSERT(false);
+                break;
             }
 
             return (handled);
@@ -370,7 +384,7 @@ namespace PluginHost {
         virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) = 0;
 
         // If it is a WebSocket, protocol TEXT, This is the feeding back virtual
-        virtual void Received (const string& text) = 0;
+        virtual void Received(const string& text) = 0;
 
         // Whenever there is a state change on the link, it is reported here.
         virtual void StateChange() = 0;

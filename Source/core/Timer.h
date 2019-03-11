@@ -5,9 +5,9 @@
 
 // ---- Include local include files ----
 #include "Module.h"
-#include "Time.h"
 #include "Sync.h"
 #include "Thread.h"
+#include "Time.h"
 
 // ---- Referenced classes and types ----
 
@@ -130,8 +130,8 @@ namespace Core {
 
             m_TimerThread.Block();
 
-			// Force kill on all pending stuff...
-			m_PendingQueue.clear();
+            // Force kill on all pending stuff...
+            m_PendingQueue.clear();
             m_Admin.Unlock();
 
             m_TimerThread.Wait(Thread::BLOCKED, Core::infinite);
@@ -207,12 +207,13 @@ namespace Core {
             return (m_NextTrigger);
         }
 
-	uint32_t Pending() const 
-	{
-	    return (m_PendingQueue.size());
-	}
+        uint32_t Pending() const
+        {
+            return (m_PendingQueue.size());
+        }
 
-        ::ThreadId ThreadId() const {
+        ::ThreadId ThreadId() const
+        {
             return (m_TimerThread.Id());
         }
 
@@ -234,12 +235,12 @@ namespace Core {
                 // Make sure we loose the current one before we do the call, that one might add ;-)
                 m_PendingQueue.pop_front();
 
-				m_Admin.Unlock();
-				
+                m_Admin.Unlock();
+
                 uint64_t reschedule = info.Content().Timed(info.ScheduleTime());
 
-				m_Admin.Lock();
-				
+                m_Admin.Lock();
+
                 if (reschedule != 0) {
                     ASSERT(reschedule > now);
 
@@ -251,16 +252,14 @@ namespace Core {
             // Calculate the delay...
             if (m_PendingQueue.empty() == true) {
                 m_NextTrigger = NUMBER_MAX_UNSIGNED(uint64_t);
-            }
-            else {
+            } else {
                 // Refresh the time, just to be on the safe side...
                 uint64_t delta = Time::Now().Ticks();
 
                 if (delta >= m_PendingQueue.front().ScheduleTime()) {
                     m_NextTrigger = delta;
                     delayTime = 0;
-                }
-                else {
+                } else {
                     // The windows counter is in 100ns intervals dus we mmoeten even delen door  1000 (us) * 10 ns = 10.000
                     // om de waarde in ms te krijgen.
                     m_NextTrigger = m_PendingQueue.front().ScheduleTime();
@@ -288,11 +287,9 @@ namespace Core {
 
                 // If we added the new time up front, retrigger the scheduler.
                 reevaluate = true;
-            }
-            else if (index == m_PendingQueue.end()) {
+            } else if (index == m_PendingQueue.end()) {
                 m_PendingQueue.push_back(infoBlock);
-            }
-            else {
+            } else {
                 m_PendingQueue.insert(index, infoBlock);
             }
 
@@ -308,8 +305,7 @@ namespace Core {
 
                     // Remove this... Found it, remove it.
                     index = m_PendingQueue.erase(index);
-                }
-                else {
+                } else {
 
                     ++index;
                 }
@@ -385,8 +381,7 @@ namespace Core {
 
             if (_delay == 0) {
                 nextDelay = _job.Expired();
-            }
-            else {
+            } else {
                 nextDelay = _delay;
                 _delay = 0;
             }

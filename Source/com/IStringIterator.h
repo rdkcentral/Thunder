@@ -24,45 +24,50 @@ namespace RPC {
     private:
         StringIterator() = delete;
         StringIterator(const StringIterator&) = delete;
-        StringIterator& operator= (const StringIterator&) = delete;
+        StringIterator& operator=(const StringIterator&) = delete;
 
     public:
         template <typename CONTAINER, typename PREDICATE>
-        StringIterator(const CONTAINER& container, PREDICATE predicate) 
+        StringIterator(const CONTAINER& container, PREDICATE predicate)
             : _container()
-            , _index(0) {
+            , _index(0)
+        {
             std::copy_if(container.begin(), container.end(), std::back_inserter(_container), predicate);
             _iterator = _container.begin();
         }
         template <typename CONTAINER>
-        StringIterator(const CONTAINER& container) 
+        StringIterator(const CONTAINER& container)
             : _container()
-            , _index(0) {
-            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const string& data) { return (true); } );
+            , _index(0)
+        {
+            std::copy_if(container.begin(), container.end(), std::back_inserter(_container), [](const string& data) { return (true); });
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
-        StringIterator(const std::map<KEY, VALUE>& container) 
+        StringIterator(const std::map<KEY, VALUE>& container)
             : _container()
-            , _index(0) {
-            typename std::map<KEY,VALUE>::const_iterator index (container.begin());
+            , _index(0)
+        {
+            typename std::map<KEY, VALUE>::const_iterator index(container.begin());
             while (index != container.end()) {
                 _container.push_back(index->first);
                 index++;
             }
             _iterator = _container.begin();
         }
-        StringIterator(IStringIterator* index) 
+        StringIterator(IStringIterator* index)
             : _container()
-            , _index(0) {
+            , _index(0)
+        {
             string result;
             while (index->Next(result) == true) {
                 _container.push_back(result);
             }
             _iterator = _container.begin();
         }
- 
-        ~StringIterator() {
+
+        ~StringIterator()
+        {
         }
 
     public:
@@ -75,19 +80,16 @@ namespace RPC {
             if (position == 0) {
                 _iterator = _container.begin();
                 _index = 0;
-            }
-            else if (position > Count()) {
+            } else if (position > Count()) {
                 _iterator = _container.end();
                 _index = Count() + 1;
-            }
-            else if ((position < _index) && ((_index - position) < position)) {
+            } else if ((position < _index) && ((_index - position) < position)) {
                 // Better that we walk back from where we are ;-)
                 while (_index != position) {
                     _index--;
                     _iterator--;
                 }
-            }
-            else {
+            } else {
                 _iterator = _container.begin();
                 _index = position;
 
@@ -147,7 +149,7 @@ namespace RPC {
         }
 
         BEGIN_INTERFACE_MAP(StringIterator)
-            INTERFACE_ENTRY(IStringIterator)
+        INTERFACE_ENTRY(IStringIterator)
         END_INTERFACE_MAP
 
     private:

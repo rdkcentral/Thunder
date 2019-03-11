@@ -6,18 +6,18 @@
 
 using namespace WPEFramework;
 
-static string GetEndPoint ()
+static string GetEndPoint()
 {
-        TCHAR* value = ::getenv(_T("PROVISION_PATH"));
+    TCHAR* value = ::getenv(_T("PROVISION_PATH"));
 
-	return (value == nullptr ? _T("/tmp/provision") : value);
+    return (value == nullptr ? _T("/tmp/provision") : value);
 }
 
 extern "C" {
 
 Core::IPCChannelClientType<Core::Void, false, true> _channel(Core::NodeId(GetEndPoint().c_str()), 2048);
-Core::ProxyType<IPC::Provisioning::DrmIdData> _drmId (Core::ProxyType<IPC::Provisioning::DrmIdData>::Create());
-Core::ProxyType<IPC::Provisioning::DeviceIdData> _deviceId (Core::ProxyType<IPC::Provisioning::DeviceIdData>::Create());
+Core::ProxyType<IPC::Provisioning::DrmIdData> _drmId(Core::ProxyType<IPC::Provisioning::DrmIdData>::Create());
+Core::ProxyType<IPC::Provisioning::DeviceIdData> _deviceId(Core::ProxyType<IPC::Provisioning::DeviceIdData>::Create());
 
 /*
  * GetDeviceId - function to obtain the unique Device ID
@@ -37,31 +37,26 @@ int GetDeviceId(unsigned short MaxIdLength, char Id[])
 {
     int result = -1;
 
-    if (_channel.Open (1000) == Core::ERROR_NONE) { // Wait for 1 Second.
+    if (_channel.Open(1000) == Core::ERROR_NONE) { // Wait for 1 Second.
 
-        Core::ProxyType<Core::IIPC> message (Core::proxy_cast<Core::IIPC>(_deviceId));
-        uint32_t error  = _channel.Invoke (message, Core::infinite);
+        Core::ProxyType<Core::IIPC> message(Core::proxy_cast<Core::IIPC>(_deviceId));
+        uint32_t error = _channel.Invoke(message, Core::infinite);
 
         result = -error;
 
-        if (error == Core::ERROR_NONE)
-        {
+        if (error == Core::ERROR_NONE) {
             result = _deviceId->Response().Length();
 
-            if (result <= MaxIdLength)
-            {
-                ::memcpy (Id, _deviceId->Response().Value(), result);
+            if (result <= MaxIdLength) {
+                ::memcpy(Id, _deviceId->Response().Value(), result);
                 printf("%s:%d [%s] Received deviceId '%s'.\n", __FILE__, __LINE__, __func__, string(Id, result).c_str());
-            }
-            else
-            {
+            } else {
                 printf("%s:%d [%s] Received deviceId '%s' is too long.\n", __FILE__, __LINE__, __func__,
-                       _deviceId->Response().Value());
+                    _deviceId->Response().Value());
                 result = -result;
             }
         }
-    }
-    else {
+    } else {
         printf("%s:%d [%s] Could not open link. error=%d\n", __FILE__, __LINE__, __func__, result);
     }
 
@@ -90,14 +85,14 @@ int GetDRMId(const char label[], const unsigned short MaxIdLength, char Id[])
 {
     int result = -1;
 
-    if (_channel.Open (1000) == Core::ERROR_NONE) { // Wait for 1 Second.
+    if (_channel.Open(1000) == Core::ERROR_NONE) { // Wait for 1 Second.
 
         _drmId->Clear();
         _drmId->Parameters() = string(label);
-        Core::ProxyType<Core::IIPC> message (Core::proxy_cast<Core::IIPC>(_drmId));
+        Core::ProxyType<Core::IIPC> message(Core::proxy_cast<Core::IIPC>(_drmId));
 
-        uint32_t error  = _channel.Invoke (message, Core::infinite);
-	result = -error;
+        uint32_t error = _channel.Invoke(message, Core::infinite);
+        result = -error;
 
         if (error == Core::ERROR_NONE) {
 
@@ -106,20 +101,17 @@ int GetDRMId(const char label[], const unsigned short MaxIdLength, char Id[])
 
             if (result > 0) {
                 printf("%s:%d [%s] Received Provision Info for '%s' with length [%d].\n", __FILE__, __LINE__, __func__, label, result);
-            }
-            else {
-                printf ("%s:%d [%s] Provisioning for %s too big. Length: %d - %d.\n", __FILE__, __LINE__, __func__, label, -result, MaxIdLength);
+            } else {
+                printf("%s:%d [%s] Provisioning for %s too big. Length: %d - %d.\n", __FILE__, __LINE__, __func__, label, -result, MaxIdLength);
             }
 
             // Security, we want to get ride of the data.
             _drmId->Response().Clear();
+        } else {
+            printf("%s:%d [%s] Failed to extract %s provisioning. Error code %d.\n", __FILE__, __LINE__, __func__, label, error);
         }
-        else {
-            printf ("%s:%d [%s] Failed to extract %s provisioning. Error code %d.\n", __FILE__, __LINE__, __func__, label, error);
-        }
-    }
-    else {
-        printf ("%s:%d [%s] Could not open the provisioning link for %s.\n", __FILE__, __LINE__, __func__, label);
+    } else {
+        printf("%s:%d [%s] Could not open the provisioning link for %s.\n", __FILE__, __LINE__, __func__, label);
     }
 
     _channel.Close(1000); // give it 1S again to close...

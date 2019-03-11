@@ -1,14 +1,14 @@
 #include <stdlib.h>
 
-#include "Portability.h"
-#include "SystemInfo.h"
-#include "Sync.h"
 #include "IPCConnector.h"
+#include "Portability.h"
+#include "Sync.h"
+#include "SystemInfo.h"
 
 #ifdef __LINUX__
-#include <signal.h>
-#include <execinfo.h>
 #include <atomic>
+#include <execinfo.h>
+#include <signal.h>
 #endif
 
 using namespace WPEFramework;
@@ -18,12 +18,13 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 #ifdef __APPLE__
 extern "C" {
 //@TODO @Pierre implement mremap and clock_gettime
-void* mremap(void *old_address, size_t old_size, size_t new_size, int flags) {
+void* mremap(void* old_address, size_t old_size, size_t new_size, int flags)
+{
     return (nullptr);
 }
-
 };
-int clock_gettime(int, struct timespec*){
+int clock_gettime(int, struct timespec*)
+{
     return 0;
 }
 #endif
@@ -31,11 +32,11 @@ int clock_gettime(int, struct timespec*){
 #ifdef __LINUX__
 
 static std::atomic<bool> g_lock(false);
-static pthread_t         g_targetThread;
-static void**            g_threadCallstackBuffer;
-static int               g_threadCallstackBufferSize;
-static int               g_threadCallstackBufferUsed;
-static Core::Event       g_callstackCompleted(true, true);
+static pthread_t g_targetThread;
+static void** g_threadCallstackBuffer;
+static int g_threadCallstackBufferSize;
+static int g_threadCallstackBufferUsed;
+static Core::Event g_callstackCompleted(true, true);
 
 static void* GetPCFromUContext(void* secret)
 {
@@ -74,8 +75,7 @@ static void OverrideStackTopWithPC(void** stack, int stackSize, void* secret)
             // Found first non-null entry.
             --i;
             break;
-        }
-        else if (ptr == nullptr) {
+        } else if (ptr == nullptr) {
             foundNull = true;
         }
     }
@@ -113,12 +113,12 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 #ifdef __LINUX__
     uint32_t result = 0;
 
-    if ( (threadId == 0) || (pthread_self() == threadId) ) {
+    if ((threadId == 0) || (pthread_self() == threadId)) {
         result = backtrace(addresses, bufferSize);
-    }
-    else {
-        while(std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire)) ; // spin until acquired
-    
+    } else {
+        while (std::atomic_exchange_explicit(&g_lock, true, std::memory_order_acquire))
+            ; // spin until acquired
+
         struct sigaction original;
         struct sigaction callstack;
         sigfillset(&callstack.sa_mask);
@@ -160,7 +160,7 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 {
     __debugbreak();
 
-	return (0);
+    return (0);
 }
 
 #endif // __LINUX__
@@ -196,8 +196,6 @@ void DumpCallStack(const ThreadId threadId)
 #endif
 #endif
 }
-
-
 }
 
 #ifdef __LINUX__
@@ -228,8 +226,7 @@ uint64_t htonll(const uint64_t& value)
         const uint32_t low_part = htonl(static_cast<uint32_t>(value & 0xFFFFFFFFLL));
 
         return (static_cast<uint64_t>(low_part) << 32) | high_part;
-    } 
-    else {
+    } else {
         return value;
     }
 }
@@ -245,18 +242,17 @@ uint64_t ntohll(const uint64_t& value)
         const uint32_t low_part = ntohl(static_cast<uint32_t>(value & 0xFFFFFFFFLL));
 
         return (static_cast<uint64_t>(low_part) << 32) | high_part;
-    } 
-    else {
+    } else {
         return value;
     }
 }
 #endif
 
 namespace WPEFramework {
-	namespace Core {
+namespace Core {
 
-		/* virtual */ IIPC::~IIPC() {}
-		/* virtual */ IIPCServer::~IIPCServer() {}
-		/* virtual */ IPCChannel::~IPCChannel() {}
-	}
+    /* virtual */ IIPC::~IIPC() {}
+    /* virtual */ IIPCServer::~IIPCServer() {}
+    /* virtual */ IPCChannel::~IPCChannel() {}
+}
 }

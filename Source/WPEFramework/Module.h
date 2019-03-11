@@ -6,10 +6,10 @@
 #endif
 
 #include "../core/core.h"
-#include "../tracing/tracing.h"
 #include "../cryptalgo/cryptalgo.h"
-#include "../websocket/websocket.h"
 #include "../plugins/plugins.h"
+#include "../tracing/tracing.h"
+#include "../websocket/websocket.h"
 
 #undef EXTERNAL
 #define EXTERNAL

@@ -36,8 +36,7 @@ namespace RPC {
             if (implementation != nullptr) {
                 implementation->AddRef();
             }
-        }
-        else {
+        } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
@@ -56,26 +55,23 @@ namespace RPC {
             if (implementation != nullptr) {
                 implementation->Release();
             }
-        }
-        else {
+        } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
 
-	void Administrator::Release(ProxyStub::UnknownProxy* proxy, Data::Output& response)
-	{
-		if (proxy->ShouldAddRefRemotely()) {
-			response.AddImplementation(proxy->Implementation(), proxy->InterfaceId());
-		}
-		else if (proxy->ShouldReleaseRemotely()) {
-			response.AddImplementation(proxy->Implementation(), proxy->InterfaceId() | 0x80000000);
-		}
-		else {
-			proxy->ClearCache();
-		}
-		proxy->Release();
-	}
+    void Administrator::Release(ProxyStub::UnknownProxy* proxy, Data::Output& response)
+    {
+        if (proxy->ShouldAddRefRemotely()) {
+            response.AddImplementation(proxy->Implementation(), proxy->InterfaceId());
+        } else if (proxy->ShouldReleaseRemotely()) {
+            response.AddImplementation(proxy->Implementation(), proxy->InterfaceId() | 0x80000000);
+        } else {
+            proxy->ClearCache();
+        }
+        proxy->Release();
+    }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
     {
@@ -87,8 +83,7 @@ namespace RPC {
         if (index != _stubs.end()) {
             uint32_t methodId(message->Parameters().MethodId());
             index->second->Handle(methodId, channel, message);
-        }
-        else {
+        } else {
             // Oops this is an unknown interface, Do not think this could happen.
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
@@ -96,28 +91,27 @@ namespace RPC {
 
     void Administrator::RegisterProxy(ProxyStub::UnknownProxy& proxy)
     {
-		const Core::IPCChannel* channel = proxy.Channel().operator->();
+        const Core::IPCChannel* channel = proxy.Channel().operator->();
 
-        _adminLock.Lock ();
+        _adminLock.Lock();
 
         ChannelMap::iterator index(_channelProxyMap.find(channel));
 
-		if (index == _channelProxyMap.end()) {
-			auto slot = _channelProxyMap.emplace(std::piecewise_construct,
-				std::forward_as_tuple(channel),
-				std::forward_as_tuple());
-			slot.first->second.push_back(&proxy);
+        if (index == _channelProxyMap.end()) {
+            auto slot = _channelProxyMap.emplace(std::piecewise_construct,
+                std::forward_as_tuple(channel),
+                std::forward_as_tuple());
+            slot.first->second.push_back(&proxy);
 
-		}
-		else {
-			ASSERT(std::find(index->second.begin(), index->second.end(), &proxy) == index->second.end());
+        } else {
+            ASSERT(std::find(index->second.begin(), index->second.end(), &proxy) == index->second.end());
 
-			index->second.push_back(&proxy);
+            index->second.push_back(&proxy);
         }
 
-		Core::InterlockedIncrement(proxy._refCount);
+        Core::InterlockedIncrement(proxy._refCount);
 
-        _adminLock.Unlock ();
+        _adminLock.Unlock();
     }
     void Administrator::UnregisterProxy(ProxyStub::UnknownProxy& proxy)
     {
@@ -132,16 +126,14 @@ namespace RPC {
             }
             if (entry != index->second.end()) {
                 index->second.erase(entry);
-				Core::InterlockedDecrement(proxy._refCount);
+                Core::InterlockedDecrement(proxy._refCount);
                 if (index->second.size() == 0) {
                     _channelProxyMap.erase(index);
                 }
-            }
-            else {
+            } else {
                 TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
             }
-        }
-        else {
+        } else {
             TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
         }
 
@@ -157,7 +149,7 @@ namespace RPC {
 
         if (index != _channelProxyMap.end()) {
             ProxyList::iterator entry(index->second.begin());
-            while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) { 
+            while ((entry != index->second.end()) && (((*entry)->InterfaceId() != id) || ((*entry)->Implementation() != impl))) {
                 entry++;
             }
             if (entry != index->second.end()) {
@@ -172,7 +164,7 @@ namespace RPC {
 
     ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
     {
-		ProxyStub::UnknownProxy* result = nullptr;
+        ProxyStub::UnknownProxy* result = nullptr;
 
         if (impl != nullptr) {
 
@@ -188,11 +180,11 @@ namespace RPC {
                 if (entry != index->second.end()) {
                     result = (*entry);
 
-					if (piggyBack == true) {
-						// Reference counting can be cached on this on object for now. This is a request 
-						// from an incoming interface of which the lifetime is guaranteed by the callee.
-						result->EnableCaching();
-					}
+                    if (piggyBack == true) {
+                        // Reference counting can be cached on this on object for now. This is a request
+                        // from an incoming interface of which the lifetime is guaranteed by the callee.
+                        result->EnableCaching();
+                    }
                 }
             }
 
@@ -203,19 +195,17 @@ namespace RPC {
 
                     result = index->second->CreateProxy(channel, impl, refCounted);
 
-                    ASSERT (result != nullptr);
+                    ASSERT(result != nullptr);
 
                     if (refCounted == true) {
                         // Register it as it is remotely registered :-)
                         _channelProxyMap[channel.operator->()].push_back(result);
+                    } else if (piggyBack == true) {
+                        // Reference counting can be cached on this on object for now. This is a request
+                        // from an incoming interface of which the lifetime is guaranteed by the callee.
+                        result->EnableCaching();
                     }
-					else if (piggyBack == true) {
-						// Reference counting can be cached on this on object for now. This is a request 
-						// from an incoming interface of which the lifetime is guaranteed by the callee.
-						result->EnableCaching();
-					}
-				}
-                else {
+                } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
             }
@@ -226,7 +216,8 @@ namespace RPC {
         return (result);
     }
 
-    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack) {
+    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
+    {
         void* result = nullptr;
         ProxyStub::UnknownProxy* proxyStub = ProxyInstance(channel, impl, id, refCounted, interfaceId, piggyBack);
         if (proxyStub != nullptr) {

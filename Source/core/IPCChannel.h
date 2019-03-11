@@ -1,15 +1,15 @@
 #ifndef __PROCESS_CHANNEL_H__
 #define __PROCESS_CHANNEL_H__
 
-#include "Module.h"
-#include "Portability.h"
 #include "IPCConnector.h"
-#include "SystemInfo.h"
-#include "Singleton.h"
-#include "TypeTraits.h"
+#include "Module.h"
 #include "Number.h"
+#include "Portability.h"
 #include "ProcessInfo.h"
+#include "Singleton.h"
+#include "SystemInfo.h"
 #include "Trace.h"
+#include "TypeTraits.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -23,41 +23,43 @@ namespace Core {
 
         typedef IPCChannelType<SocketPort, EXTENSION> BaseClass;
 
-public:
-	template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0 >
-	IPCChannelClientType (const NodeId& node, const uint32_t bufferSize)
-        : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
-        , _factory (ProxyType< FactoryType<IIPC, uint32_t> >::Create()) {
+    public:
+        template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0>
+        IPCChannelClientType(const NodeId& node, const uint32_t bufferSize)
+            : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
+            , _factory(ProxyType<FactoryType<IIPC, uint32_t>>::Create())
+        {
 
-    static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
-	TRACE_L1 ("Created an internal factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
+            static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
+            TRACE_L1("Created an internal factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
 
-	ASSERT (_factory.IsValid() == true);
-
-        IPCChannelType<SocketPort, EXTENSION>::Factory(_factory);
-    }
-	template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0 >
-	IPCChannelClientType (const NodeId& node, const uint32_t bufferSize, ProxyType< FactoryType<IIPC, uint32_t> >& factory)
-        : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
-        , _factory (factory) {
-
-		static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
-	    TRACE_L1 ("Created an external factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
-
-	    ASSERT (_factory.IsValid() == true);
+            ASSERT(_factory.IsValid() == true);
 
             IPCChannelType<SocketPort, EXTENSION>::Factory(_factory);
         }
-		template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0 >
-        IPCChannelClientType(const NodeId& node, const uint32_t bufferSize, ProxyType<FactoryType<IIPC, uint32_t> >& factory, SOCKET newSocket)
+        template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0>
+        IPCChannelClientType(const NodeId& node, const uint32_t bufferSize, ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+            : IPCChannelType<SocketPort, EXTENSION>((LISTENING ? SocketPort::LISTEN : SocketPort::STREAM), (LISTENING ? node : node.AnyInterface()), (LISTENING ? node.AnyInterface() : node), bufferSize, bufferSize)
+            , _factory(factory)
+        {
+
+            static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
+            TRACE_L1("Created an external factory communication channel, on %s as %s", node.QualifiedName().c_str(), (LISTENING == true ? _T("Server") : _T("Client")));
+
+            ASSERT(_factory.IsValid() == true);
+
+            IPCChannelType<SocketPort, EXTENSION>::Factory(_factory);
+        }
+        template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0>
+        IPCChannelClientType(const NodeId& node, const uint32_t bufferSize, ProxyType<FactoryType<IIPC, uint32_t>>& factory, SOCKET newSocket)
             : IPCChannelType<SocketPort, EXTENSION>(factory, SocketPort::STREAM, newSocket, node, bufferSize, bufferSize)
             , _factory(factory)
         {
             static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
 
-		TRACE_L1 (" A remote socket hooked up to an external factory communication channels as %s", (LISTENING == true ? _T("Server") : _T("Client")));
+            TRACE_L1(" A remote socket hooked up to an external factory communication channels as %s", (LISTENING == true ? _T("Server") : _T("Client")));
 
-	    ASSERT (_factory.IsValid() == true);
+            ASSERT(_factory.IsValid() == true);
 
             // We are ready to communicate over this socket.
             BaseClass::Source().Open(0);
@@ -96,7 +98,7 @@ public:
 
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
 
-			_factory->CreateFactory<ACTUALELEMENT>(initialSize);
+            _factory->CreateFactory<ACTUALELEMENT>(initialSize);
         }
         template <typename ACTUALELEMENT>
         inline void DestroyFactory()
@@ -107,7 +109,7 @@ public:
 
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
 
-			_factory->DestroyFactory<ACTUALELEMENT>();
+            _factory->DestroyFactory<ACTUALELEMENT>();
         }
 
     protected:
@@ -119,7 +121,7 @@ public:
             StateChange(TemplateIntToType<LISTENING>());
         }
 
-	private:
+    private:
         inline void StateChange(const TemplateIntToType<true>&)
         {
             if ((BaseClass::Source().HasError() == true) && (BaseClass::Source().IsListening() == false)) {
@@ -127,8 +129,7 @@ public:
                 TRACE_L1("Error on socket. Not much we can do except for closing up, Try to recover. (%d)", BaseClass::Source().State());
                 // In case on an error, not much more we can do then close up..
                 BaseClass::Source().Close(0);
-            }
-            else if ((BaseClass::Source().Type() == SocketPort::LISTEN) && (BaseClass::Source().IsForcedClosing() == false) && (BaseClass::Source().IsSuspended() == false)) {
+            } else if ((BaseClass::Source().Type() == SocketPort::LISTEN) && (BaseClass::Source().IsForcedClosing() == false) && (BaseClass::Source().IsSuspended() == false)) {
                 if (BaseClass::Source().IsListening() == true) {
                     // This potentially means, we have a new connection coming in, swap..
                     NodeId remoteHost = BaseClass::Source().Accept();
@@ -136,8 +137,7 @@ public:
                     if (remoteHost.IsValid() == true) {
                         TRACE_L1("Moving into a connected mode. (%d)", 0);
                     }
-                }
-                else {
+                } else {
                     // If we did not request the close, we can move back to Listening on this socket..
                     TRACE_L1("Moving into listening mode. (%d)", 0);
 
@@ -156,7 +156,7 @@ public:
         }
 
     private:
-        ProxyType<FactoryType<IIPC, uint32_t> > _factory;
+        ProxyType<FactoryType<IIPC, uint32_t>> _factory;
     };
 
     // Server connection for the IPC
@@ -172,14 +172,14 @@ public:
         IPCChannelServerType<EXTENSION, INTERNALFACTORY>& operator=(IPCChannelServerType<EXTENSION, INTERNALFACTORY>&);
 
         typedef IPCChannelServerType<EXTENSION, INTERNALFACTORY> ThisClass;
-        typedef std::map<EXTENSION*, ProxyType<Client> > ClientMap;
+        typedef std::map<EXTENSION*, ProxyType<Client>> ClientMap;
 
     public:
-		template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0 >
-		IPCChannelServerType(const NodeId& node, const uint32_t bufferSize)
+        template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0>
+        IPCChannelServerType(const NodeId& node, const uint32_t bufferSize)
             : SocketListner(node)
             , _adminLock()
-            , _factory(ProxyType<FactoryType<IIPC, uint32_t> >::Create())
+            , _factory(ProxyType<FactoryType<IIPC, uint32_t>>::Create())
             , _clients()
             , _connector()
             , _bufferSize(bufferSize)
@@ -189,42 +189,44 @@ public:
 
             static_assert(INTERNALFACTORY == true, "This constructor can only be called if you specify an INTERNAL factory");
 
-        if (node.IsValid() == true) {
-            if (node.Type() == NodeId::TYPE_DOMAIN) {
-                _connector = node.QualifiedName();
-            } else if (node.IsAnyInterface() == true) {
-                _connector = SystemInfo::Instance().GetHostName() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
-            } else {
-				_connector = node.HostAddress() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
-			}
+            if (node.IsValid() == true) {
+                if (node.Type() == NodeId::TYPE_DOMAIN) {
+                    _connector = node.QualifiedName();
+                } else if (node.IsAnyInterface() == true) {
+                    _connector = SystemInfo::Instance().GetHostName() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
+                } else {
+                    _connector = node.HostAddress() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
+                }
+            }
         }
-    }
-	template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0 >
-	IPCChannelServerType(const NodeId& node, const uint32_t bufferSize, ProxyType< FactoryType<IIPC, uint32_t> >& factory) :
-        SocketListner(node),
-        _adminLock(),
-        _factory(factory),
-        _clients(),
-        _connector(),
-        _bufferSize(bufferSize) {
+        template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == false> = 0>
+        IPCChannelServerType(const NodeId& node, const uint32_t bufferSize, ProxyType<FactoryType<IIPC, uint32_t>>& factory)
+            : SocketListner(node)
+            , _adminLock()
+            , _factory(factory)
+            , _clients()
+            , _connector()
+            , _bufferSize(bufferSize)
+        {
 
             ASSERT(node.IsValid() == true);
 
-			static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
+            static_assert(INTERNALFACTORY == false, "This constructor can only be called if you specify an EXTERNAL factory");
 
-        if (node.IsValid() == true) {
-            if (node.Type() == NodeId::TYPE_DOMAIN) {
-                _connector = node.QualifiedName();
-            } else if (node.IsAnyInterface() == true) {
-                _connector = SystemInfo::Instance().GetHostName() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
-            } else {
-                _connector = node.HostAddress() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
+            if (node.IsValid() == true) {
+                if (node.Type() == NodeId::TYPE_DOMAIN) {
+                    _connector = node.QualifiedName();
+                } else if (node.IsAnyInterface() == true) {
+                    _connector = SystemInfo::Instance().GetHostName() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
+                } else {
+                    _connector = node.HostAddress() + ':' + NumberType<uint16_t>(node.PortNumber()).Text();
+                }
             }
         }
-    }
- 
-    virtual ~IPCChannelServerType() {
-         TRACE_L1("Closing server in Process. %d", ProcessInfo().Id());
+
+        virtual ~IPCChannelServerType()
+        {
+            TRACE_L1("Closing server in Process. %d", ProcessInfo().Id());
 
             Close(infinite);
 
@@ -300,7 +302,7 @@ public:
         {
             _adminLock.Lock();
 
-            std::list<ProxyType<IIPCServer> >::iterator index(FindHandler(handler->Id()));
+            std::list<ProxyType<IIPCServer>>::iterator index(FindHandler(handler->Id()));
 
             ASSERT(index != _handlers.end());
 
@@ -336,7 +338,7 @@ public:
 
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
 
-			_factory->DestroyFactory<ACTUALELEMENT>();
+            _factory->DestroyFactory<ACTUALELEMENT>();
         }
 
         uint32_t Invoke(ProxyType<IIPC>& command, const uint32_t waitTime)
@@ -368,7 +370,7 @@ public:
     private:
         inline ProxyType<IIPC> InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
-            return (__InvokeAllowed<EXTENSION,INTERNALFACTORY>(client, command));
+            return (__InvokeAllowed<EXTENSION, INTERNALFACTORY>(client, command));
         }
 
         HAS_MEMBER(InvokeAllowed, hasInvokeAllowed);
@@ -376,14 +378,14 @@ public:
         typedef hasInvokeAllowed<EXTENSION, ProxyType<IIPC> (EXTENSION::*)(const ProxyType<IIPC>&) const> TraitInvokeAllowed;
 
         template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC> >::type
+        inline typename Core::TypeTraits::enable_if<IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client& client, const ProxyType<IIPC>& command) const
         {
             return (client.Extension().InvokeAllowed(command));
         }
 
         template <typename A, const bool B>
-        inline typename Core::TypeTraits::enable_if<!IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC> >::type
+        inline typename Core::TypeTraits::enable_if<!IPCChannelServerType<A, B>::TraitInvokeAllowed::value, ProxyType<IIPC>>::type
         __InvokeAllowed(const Client&, const ProxyType<IIPC>& command) const
         {
             return (command);
@@ -397,7 +399,7 @@ public:
                 if (cleaner->second->IsClosed() == true) {
 
                     // Make sure all handlers form the server are attached to the client...
-                    std::list<ProxyType<IIPCServer> >::iterator index(_handlers.begin());
+                    std::list<ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
                     while (index != _handlers.end()) {
                         cleaner->second->Unregister(*index);
@@ -406,8 +408,7 @@ public:
 
                     Removed(cleaner->second);
                     cleaner = _clients.erase(cleaner);
-                }
-                else {
+                } else {
                     cleaner++;
                 }
             }
@@ -444,8 +445,7 @@ public:
                     SleepMs(10);
 
                     _adminLock.Lock();
-                }
-                else {
+                } else {
                     _clients.erase(_clients.begin());
                 }
             }
@@ -463,10 +463,10 @@ public:
 
             ProxyType<Client> newLink(ProxyType<Client>::Create(remoteId, _bufferSize, _factory, newClient));
 
-            _clients.insert(std::pair<EXTENSION*, ProxyType<Client> >(&(newLink->Extension()), newLink));
+            _clients.insert(std::pair<EXTENSION*, ProxyType<Client>>(&(newLink->Extension()), newLink));
 
             // Make sure all handlers form the server are attached to the client...
-            std::list<ProxyType<IIPCServer> >::iterator index(_handlers.begin());
+            std::list<ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
             while (index != _handlers.end()) {
                 newLink->Register(*index);
@@ -498,15 +498,14 @@ public:
                         result = status;
                     }
                 }
-            }
-            else {
+            } else {
                 _adminLock.Unlock();
             }
             return (result);
         }
-        inline std::list<ProxyType<IIPCServer> >::iterator FindHandler(const uint32_t id)
+        inline std::list<ProxyType<IIPCServer>>::iterator FindHandler(const uint32_t id)
         {
-            std::list<ProxyType<IIPCServer> >::iterator result(_handlers.begin());
+            std::list<ProxyType<IIPCServer>>::iterator result(_handlers.begin());
 
             while ((result != _handlers.end()) && ((*result)->Id() != id)) {
                 ++result;
@@ -516,8 +515,8 @@ public:
 
     private:
         mutable CriticalSection _adminLock;
-        ProxyType<FactoryType<IIPC, uint32_t> > _factory;
-        std::list<ProxyType<IIPCServer> > _handlers;
+        ProxyType<FactoryType<IIPC, uint32_t>> _factory;
+        std::list<ProxyType<IIPCServer>> _handlers;
         ClientMap _clients;
         string _connector;
         const uint32_t _bufferSize;

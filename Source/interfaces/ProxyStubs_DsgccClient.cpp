@@ -11,192 +11,185 @@ namespace WPEFramework {
 
 namespace ProxyStubs {
 
-using namespace Exchange;
+    using namespace Exchange;
 
-// -----------------------------------------------------------------
-// STUB
-// -----------------------------------------------------------------
+    // -----------------------------------------------------------------
+    // STUB
+    // -----------------------------------------------------------------
 
-//
-// IDsgccClient interface stub definitions
-//
-// Methods:
-//  (0) virtual uint32_t Configure(PluginHost::IShell*) = 0
-//  (1) virtual void DsgccClientSet(const string&) = 0
-//  (2) virtual string DsgccClientGet() const = 0
-//
-
-ProxyStub::MethodHandler DsgccClientStubMethods[] = {
-    // virtual uint32_t Configure(PluginHost::IShell*) = 0
     //
-    [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+    // IDsgccClient interface stub definitions
+    //
+    // Methods:
+    //  (0) virtual uint32_t Configure(PluginHost::IShell*) = 0
+    //  (1) virtual void DsgccClientSet(const string&) = 0
+    //  (2) virtual string DsgccClientGet() const = 0
+    //
 
-        RPC::Data::Input& input(message->Parameters());
+    ProxyStub::MethodHandler DsgccClientStubMethods[] = {
+        // virtual uint32_t Configure(PluginHost::IShell*) = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
 
-        // read parameters
-        RPC::Data::Frame::Reader reader(input.Reader());
-        PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
-        PluginHost::IShell* param0_proxy = nullptr;
-        ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
-        if (param0 != nullptr) {
-            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+            // read parameters
+            RPC::Data::Frame::Reader reader(input.Reader());
+            PluginHost::IShell* param0 = reader.Number<PluginHost::IShell*>();
+            PluginHost::IShell* param0_proxy = nullptr;
+            ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
+            if (param0 != nullptr) {
+                param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
+                if (param0_proxy_inst != nullptr) {
+                    param0_proxy = param0_proxy_inst->QueryInterface<PluginHost::IShell>();
+                }
+
+                ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
+                if (param0_proxy == nullptr) {
+                    TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
+                }
+            }
+
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            if ((param0 == nullptr) || (param0_proxy != nullptr)) {
+                // call implementation
+                IDsgccClient* implementation = input.Implementation<IDsgccClient>();
+                ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
+                const uint32_t output = implementation->Configure(param0_proxy);
+
+                // write return value
+                writer.Number<const uint32_t>(output);
+            } else {
+                // return error code
+                writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
+            }
+
             if (param0_proxy_inst != nullptr) {
-                param0_proxy = param0_proxy_inst->QueryInterface<PluginHost::IShell>();
+                RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
             }
+        },
 
-            ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
-            if (param0_proxy == nullptr) {
-                TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
-            }
-        }
+        // virtual void DsgccClientSet(const string&) = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
 
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
+            // read parameters
+            RPC::Data::Frame::Reader reader(input.Reader());
+            const string param0 = reader.Text();
 
-        if ((param0 == nullptr) || (param0_proxy != nullptr)) {
             // call implementation
             IDsgccClient* implementation = input.Implementation<IDsgccClient>();
             ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
-            const uint32_t output = implementation->Configure(param0_proxy);
+            implementation->DsgccClientSet(param0);
+        },
+
+        // virtual string DsgccClientGet() const = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
+
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            // call implementation
+            const IDsgccClient* implementation = input.Implementation<IDsgccClient>();
+            ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
+            const string output = implementation->DsgccClientGet();
 
             // write return value
-            writer.Number<const uint32_t>(output);
-        }
-        else {
-            // return error code
-            writer.Number<const uint32_t>(Core::ERROR_RPC_CALL_FAILED);
-        }
+            writer.Text(output);
+        },
 
-        if (param0_proxy_inst != nullptr) {
-            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
-        }
-    },
+        nullptr
+    }; // DsgccClientStubMethods[]
 
-    // virtual void DsgccClientSet(const string&) = 0
+    // -----------------------------------------------------------------
+    // PROXY
+    // -----------------------------------------------------------------
+
     //
-    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-
-        RPC::Data::Input& input(message->Parameters());
-
-        // read parameters
-        RPC::Data::Frame::Reader reader(input.Reader());
-        const string param0 = reader.Text();
-
-        // call implementation
-        IDsgccClient* implementation = input.Implementation<IDsgccClient>();
-        ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
-        implementation->DsgccClientSet(param0);
-    },
-
-    // virtual string DsgccClientGet() const = 0
+    // IDsgccClient interface proxy definitions
     //
-    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+    // Methods:
+    //  (0) virtual uint32_t Configure(PluginHost::IShell*) = 0
+    //  (1) virtual void DsgccClientSet(const string&) = 0
+    //  (2) virtual string DsgccClientGet() const = 0
+    //
 
-        RPC::Data::Input& input(message->Parameters());
-
-        RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-        // call implementation
-        const IDsgccClient* implementation = input.Implementation<IDsgccClient>();
-        ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
-        const string output = implementation->DsgccClientGet();
-
-        // write return value
-        writer.Text(output);
-    },
-
-    nullptr
-}; // DsgccClientStubMethods[]
-
-
-// -----------------------------------------------------------------
-// PROXY
-// -----------------------------------------------------------------
-
-//
-// IDsgccClient interface proxy definitions
-//
-// Methods:
-//  (0) virtual uint32_t Configure(PluginHost::IShell*) = 0
-//  (1) virtual void DsgccClientSet(const string&) = 0
-//  (2) virtual string DsgccClientGet() const = 0
-//
-
-class DsgccClientProxy final : public ProxyStub::UnknownProxyType<IDsgccClient> {
-public:
-    DsgccClientProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
-        : BaseClass(channel, implementation, otherSideInformed)
-    {
-    }
-
-    uint32_t Configure(PluginHost::IShell* param0) override
-    {
-        IPCMessage newMessage(BaseClass::Message(0));
-
-        // write parameters
-        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-        writer.Number<PluginHost::IShell*>(param0);
-
-        // invoke the method handler
-        uint32_t output{};
-        if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
-            // read return value
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            output = reader.Number<uint32_t>();
-
-            Complete(reader);
+    class DsgccClientProxy final : public ProxyStub::UnknownProxyType<IDsgccClient> {
+    public:
+        DsgccClientProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+            : BaseClass(channel, implementation, otherSideInformed)
+        {
         }
 
-        return output;
-    }
+        uint32_t Configure(PluginHost::IShell* param0) override
+        {
+            IPCMessage newMessage(BaseClass::Message(0));
 
-    void DsgccClientSet(const string& param0) override
-    {
-        IPCMessage newMessage(BaseClass::Message(1));
+            // write parameters
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<PluginHost::IShell*>(param0);
 
-        // write parameters
-        RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-        writer.Text(param0);
+            // invoke the method handler
+            uint32_t output{};
+            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+                // read return value
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<uint32_t>();
 
-        // invoke the method handler
-        Invoke(newMessage);
-    }
+                Complete(reader);
+            }
 
-    string DsgccClientGet() const override
-    {
-        IPCMessage newMessage(BaseClass::Message(2));
-
-        // invoke the method handler
-        string output{};
-        if (Invoke(newMessage) == Core::ERROR_NONE) {
-            // read return value
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-            output = reader.Text();
+            return output;
         }
 
-        return output;
-    }
-}; // class DsgccClientProxy
+        void DsgccClientSet(const string& param0) override
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
 
+            // write parameters
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(param0);
 
-// -----------------------------------------------------------------
-// REGISTRATION
-// -----------------------------------------------------------------
+            // invoke the method handler
+            Invoke(newMessage);
+        }
 
-namespace {
+        string DsgccClientGet() const override
+        {
+            IPCMessage newMessage(BaseClass::Message(2));
 
-typedef ProxyStub::UnknownStubType<IDsgccClient, DsgccClientStubMethods> DsgccClientStub;
+            // invoke the method handler
+            string output{};
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                // read return value
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Text();
+            }
 
-static class Instantiation {
-public:
-    Instantiation()
-    {
-        RPC::Administrator::Instance().Announce<IDsgccClient, DsgccClientProxy, DsgccClientStub>();
-    }
-} ProxyStubRegistration;
+            return output;
+        }
+    }; // class DsgccClientProxy
 
-} // namespace
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
+
+    namespace {
+
+        typedef ProxyStub::UnknownStubType<IDsgccClient, DsgccClientStubMethods> DsgccClientStub;
+
+        static class Instantiation {
+        public:
+            Instantiation()
+            {
+                RPC::Administrator::Instance().Announce<IDsgccClient, DsgccClientProxy, DsgccClientStub>();
+            }
+        } ProxyStubRegistration;
+
+    } // namespace
 
 } // namespace WPEFramework
 
 } // namespace ProxyStubs
-

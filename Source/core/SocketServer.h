@@ -3,15 +3,15 @@
 
 #include "Module.h"
 #include "Portability.h"
-#include "SocketPort.h"
 #include "Proxy.h"
+#include "SocketPort.h"
 
 namespace WPEFramework {
 namespace Core {
     template <typename CLIENT>
     class SocketServerType {
     private:
-        typedef std::map<uint32_t, Core::ProxyType<CLIENT> > ClientMap;
+        typedef std::map<uint32_t, Core::ProxyType<CLIENT>> ClientMap;
 
     public:
         template <typename HANDLECLIENT>
@@ -70,8 +70,7 @@ namespace Core {
 
                 if (_atHead == true) {
                     _atHead = false;
-                }
-                else if (_iterator != _clients.end()) {
+                } else if (_iterator != _clients.end()) {
                     _iterator++;
                 }
 
@@ -95,7 +94,7 @@ namespace Core {
             typename std::list<HANDLECLIENT>::iterator _iterator;
         };
 
-        typedef IteratorType<ProxyType<CLIENT> > Iterator;
+        typedef IteratorType<ProxyType<CLIENT>> Iterator;
 
     private:
         template <typename HANDLECLIENT>
@@ -221,8 +220,7 @@ namespace Core {
                     if ((index->second->IsClosed() == true) || ((index->second->IsSuspended() == true) && (index->second->Close(100) == Core::ERROR_NONE))) {
                         // Step forward but remember where we were and delete that one....
                         index = _clients.erase(index);
-                    }
-                    else {
+                    } else {
                         index++;
                     }
                 }
@@ -245,7 +243,7 @@ namespace Core {
                     __Id<HANDLECLIENT>(*client, _nextClient);
 
                     // A new connection is available, open up a new client
-                    _clients.insert(std::pair<uint32_t, ProxyType<HANDLECLIENT> >(_nextClient++, client));
+                    _clients.insert(std::pair<uint32_t, ProxyType<HANDLECLIENT>>(_nextClient++, client));
 
                     _lock.Unlock();
                 }
@@ -275,7 +273,7 @@ namespace Core {
         private:
             uint32_t _nextClient;
             mutable Core::CriticalSection _lock;
-            std::map<uint32_t, ProxyType<HANDLECLIENT> > _clients;
+            std::map<uint32_t, ProxyType<HANDLECLIENT>> _clients;
             SocketServerType<CLIENT>& _parent;
         };
 
@@ -283,9 +281,9 @@ namespace Core {
         SocketServerType<CLIENT>& operator=(const SocketServerType<CLIENT>&) = delete;
 
     public:
-		#ifdef __WIN32__ 
-		#pragma warning( disable : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         SocketServerType()
             : _handler(this)
         {
@@ -293,11 +291,11 @@ namespace Core {
         SocketServerType(const NodeId& listeningNode)
             : _handler(listeningNode, this)
         {
-		}
-		#ifdef __WIN32__ 
-		#pragma warning( default : 4355 )
-		#endif
-		~SocketServerType()
+        }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
+        ~SocketServerType()
         {
         }
 

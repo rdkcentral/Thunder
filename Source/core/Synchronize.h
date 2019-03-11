@@ -1,8 +1,8 @@
 #ifndef __SYNCHRONIZE_H
 #define __SYNCHRONIZE_H
 
-#include "Portability.h"
 #include "Module.h"
+#include "Portability.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -69,7 +69,7 @@ namespace Core {
 
             _adminLock.Unlock();
         }
-        void Evaluate() 
+        void Evaluate()
         {
             _adminLock.Lock();
 
@@ -96,10 +96,12 @@ namespace Core {
 
             return (result);
         }
-        inline void Lock () {
+        inline void Lock()
+        {
             _adminLock.Lock();
         }
-        inline void Unlock () {
+        inline void Unlock()
+        {
             _adminLock.Unlock();
         }
 

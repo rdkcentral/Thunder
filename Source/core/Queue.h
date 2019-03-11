@@ -8,12 +8,12 @@
 #ifndef __QUEUE_H
 #define __QUEUE_H
 
-#include <queue>
 #include <algorithm>
+#include <queue>
 
 #include "Module.h"
-#include "Sync.h"
 #include "StateTrigger.h"
+#include "Sync.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -139,8 +139,7 @@ namespace Core {
 
                         // Determine the new state.
                         m_State.SetState(IsFull() ? LIMITED : ENTRIES);
-                    }
-                    else {
+                    } else {
                         // We are moving into a wait, release the lock.
                         m_Admin.Unlock();
 
@@ -187,8 +186,7 @@ namespace Core {
 
                         // Determine the new state.
                         m_State.SetState(IsEmpty() ? EMPTY : ENTRIES);
-                    }
-                    else {
+                    } else {
                         // We are moving into a wait, release the lock.
                         m_Admin.Unlock();
 

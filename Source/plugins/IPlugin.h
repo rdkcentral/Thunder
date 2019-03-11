@@ -155,7 +155,6 @@ namespace PluginHost {
         virtual string Inbound(const uint32_t ID, const string& value) = 0;
     };
 
- 
     struct IChannel
         : virtual public Core::IUnknown {
         enum {

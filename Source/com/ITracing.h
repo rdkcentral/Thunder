@@ -28,4 +28,3 @@ namespace Trace {
 }
 
 #endif // __PROXYSTUB_ITRACING_H
-

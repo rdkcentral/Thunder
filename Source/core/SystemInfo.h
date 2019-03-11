@@ -29,10 +29,10 @@ namespace Core {
         string Id(const uint8_t RawDeviceId[], const uint8_t KeyLength);
 
         // First byte of the RawDeviceId is the length of the DeviceId to follow.
-        const uint8_t * RawDeviceId() const;
+        const uint8_t* RawDeviceId() const;
 
         static bool GetEnvironment(const string& name, string& value);
-        static bool SetEnvironment(const string& name, const TCHAR * value, const bool forced = true);
+        static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);
 
 #ifdef __WIN32__
@@ -46,7 +46,7 @@ namespace Core {
 
         ~SystemInfo();
 
-		void SetTime(const Time& time);
+        void SetTime(const Time& time);
 
         inline const string& GetHostName() const
         {
@@ -88,7 +88,7 @@ namespace Core {
             return m_freegpuram;
         }
 
-	/*
+        /*
         * Pentium cycle counter
         */
 #if defined(__GNUC__) && defined(__i386__) && !defined(HAVE_TICK_COUNTER)
@@ -246,17 +246,17 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                         \
-    extern "C" {                                                                                  \
-    namespace WPEFramework {                                                                         \
-        namespace Core {                                                                      \
-            namespace System {                                                                    \
-                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);  \
-                const char* ModuleName() { return (MODULE_NAME); }                                \
-                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); }                        \
-            }                                                                                     \
-        }                                                                                         \
-    }                                                                                             \
+#define MODULE_NAME_DECLARATION(buildref)                                                                     \
+    extern "C" {                                                                                              \
+    namespace WPEFramework {                                                                                  \
+        namespace Core {                                                                                      \
+            namespace System {                                                                                \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
+                const char* ModuleName() { return (MODULE_NAME); }                                            \
+                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
+            }                                                                                                 \
+        }                                                                                                     \
+    }                                                                                                         \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

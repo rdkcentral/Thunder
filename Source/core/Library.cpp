@@ -31,8 +31,7 @@ namespace Core {
             _refCountedHandle->_referenceCount = 1;
             _refCountedHandle->_handle = handle;
             _refCountedHandle->_name = fileName;
-        }
-        else {
+        } else {
 #ifdef __LINUX__
             _error = dlerror();
             TRACE_L1("Failed to load library: %s, error %s", fileName, _error.c_str());
@@ -121,9 +120,8 @@ namespace Core {
 #ifdef __WIN32__
                 ::FreeLibrary(_refCountedHandle->_handle);
 #endif
-				TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
-            }
-            else {
+                TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());
+            } else {
                 Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
             }
         }

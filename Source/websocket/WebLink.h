@@ -47,8 +47,7 @@ namespace Web {
                     _lock.Unlock();
 
                     _parent.Trigger();
-                }
-                else {
+                } else {
                     _lock.Unlock();
                 }
             }
@@ -73,8 +72,7 @@ namespace Web {
                     _lock.Unlock();
 
                     _parent.Trigger();
-                }
-                else {
+                } else {
                     _lock.Unlock();
                 }
             }

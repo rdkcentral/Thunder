@@ -1,8 +1,8 @@
 #include "PluginServer.h"
 
 #ifndef __WIN32__
+#include <dlfcn.h> // for dladdr
 #include <syslog.h>
-#include <dlfcn.h>    // for dladdr
 #endif
 
 #ifdef __LINUX__
@@ -10,7 +10,6 @@
 #endif
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
-
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -111,8 +110,7 @@ namespace PluginHost {
     {
         if (_background) {
             syslog(LOG_NOTICE, "Signal received %d.", signo);
-        }
-        else {
+        } else {
             fprintf(stderr, "Signal received %d.\n", signo);
         }
 
@@ -134,8 +132,7 @@ namespace PluginHost {
 #ifndef __WIN32__
             if (_background) {
                 syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-            }
-            else
+            } else
 #endif
             {
                 fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
@@ -164,19 +161,16 @@ namespace PluginHost {
                     if ((file.FileName() != ".") && (file.FileName() != "..")) {
                         LoadPlugins(file.Name(), config);
                     }
-                }
-                else if (file.Open(true) == false) {
+                } else if (file.Open(true) == false) {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
-                }
-                else {
+                } else {
                     Plugin::Config pluginConfig;
                     pluginConfig.FromFile(file);
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
                         SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
-                    }
-                    else {
+                    } else {
                         if (pluginConfig.Callsign.Value().empty() == true) {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
@@ -189,8 +183,7 @@ namespace PluginHost {
 
                         if (index.IsValid() == true) {
                             SYSLOG(Logging::Startup, (_T("Plugin config file [%s] can not be reconfigured."), file.Name().c_str()));
-                        }
-                        else {
+                        } else {
                             config.Plugins.Add(pluginConfig);
                         }
                     }
@@ -199,78 +192,77 @@ namespace PluginHost {
         }
     }
 
-    #ifndef __WIN32__
-    void StartLoopbackInterface () {
+#ifndef __WIN32__
+    void StartLoopbackInterface()
+    {
         Core::AdapterIterator adapter;
         uint8_t retries = 8;
-        // Some interfaces take some time, to be available. Wait a certain amount 
+        // Some interfaces take some time, to be available. Wait a certain amount
         // of time in which the interface should come up.
-	do {
-             adapter = Core::AdapterIterator (_T("lo"));
+        do {
+            adapter = Core::AdapterIterator(_T("lo"));
 
-             if (adapter.IsValid() == false) {
-		Core::AdapterIterator::Flush();
-		SleepMs(500);
-	     }
+            if (adapter.IsValid() == false) {
+                Core::AdapterIterator::Flush();
+                SleepMs(500);
+            }
 
-        } while ( (retries-- != 0) && (adapter.IsValid() == false) );
- 	
-	if (adapter.IsValid() == false) {
+        } while ((retries-- != 0) && (adapter.IsValid() == false));
+
+        if (adapter.IsValid() == false) {
             SYSLOG(Logging::Startup, (_T("Interface [lo], not available")));
-        }
-        else {
+        } else {
 
             adapter.Up(true);
             adapter.Add(Core::IPNode(Core::NodeId("127.0.0.1"), 8));
 
-	    retries = 40;
+            retries = 40;
             Core::NodeId nodeId;
 
             // Last thing we need to wait for is the resolve of localhost to work.
-  	    do {
-		nodeId = Core::NodeId(_T("localhost"));                
+            do {
+                nodeId = Core::NodeId(_T("localhost"));
 
                 if (nodeId.IsValid() == false) {
-		    SleepMs(100);
-	        }
+                    SleepMs(100);
+                }
 
-            } while ( (retries-- != 0) && (nodeId.IsValid() == false) );
+            } while ((retries-- != 0) && (nodeId.IsValid() == false));
 
-	    if (retries != 0) {
+            if (retries != 0) {
                 SYSLOG(Logging::Startup, (string(_T("Interface [lo], fully functional"))));
-            }
-            else {
+            } else {
                 SYSLOG(Logging::Startup, (string(_T("Interface [lo], partly functional (no name resolving)"))));
-	    }
+            }
         }
     }
-	#endif
+#endif
 
-    static void PublishCallstack(const ::ThreadId threadId) {
-		#ifndef __WIN32__
+    static void PublishCallstack(const ::ThreadId threadId)
+    {
+#ifndef __WIN32__
         void* callstack[32];
-        uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof (void*)));
+        uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(void*)));
         char** symbols = backtrace_symbols(callstack, entries);
 
         for (uint32_t i = 0; i < entries; i++) {
             Dl_info info;
             if (dladdr(callstack[i], &info) && info.dli_sname) {
-                char *demangled = NULL;
+                char* demangled = NULL;
                 int status = -1;
                 if (info.dli_sname[0] == '_')
                     demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
                 fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
-                     status == 0 ? demangled :
-                     info.dli_sname == 0 ? symbols[i] : info.dli_sname,
-                     (char *)callstack[i] - (char *)info.dli_saddr);
+                    status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
+                    (char*)callstack[i] - (char*)info.dli_saddr);
                 free(demangled);
             } else {
                 fprintf(stdout, "%-3d %*p %s\n",
-                     i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
+                    i, int(2 + sizeof(void*) * 2), callstack[i], symbols[i]);
             }
         }
         free(symbols);
-		#endif
+#endif
     }
 
 #ifdef __WIN32__
@@ -293,8 +285,7 @@ namespace PluginHost {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
             CloseDown();
             exit(EXIT_FAILURE);
-        }
-        else if (options.RequestUsage()) {
+        } else if (options.RequestUsage()) {
 #ifndef __WIN32__
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
@@ -323,11 +314,10 @@ namespace PluginHost {
             // close(STDOUT_FILENO);
             // close(STDERR_FILENO);
             syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon starting");
-        }
-        else
+        } else
 #endif
 
-        Logging::SysLog(!_background);
+            Logging::SysLog(!_background);
 
         // Read the config file, to instantiate the proper plugins and for us to open up the right listening ear.
         Core::File configFile(string(options.configFile), false);
@@ -337,20 +327,18 @@ namespace PluginHost {
             serviceConfig.FromFile(configFile);
 
             configFile.Close();
-        }
-        else {
+        } else {
 #ifndef __WIN32__
             if (_background == true) {
                 syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Config file.");
-            }
-            else
+            } else
 #endif
             {
                 fprintf(stdout, "Config file [%s] could not be opened.\n", options.configFile);
             }
         }
 
-        if (serviceConfig.Process.IsSet () == true) {
+        if (serviceConfig.Process.IsSet() == true) {
 
             Core::ProcessInfo myself;
 
@@ -379,9 +367,9 @@ namespace PluginHost {
             }
         }
 
-		#ifndef __WIN32__
+#ifndef __WIN32__
         ::umask(serviceConfig.Process.Umask.Value());
-		#endif
+#endif
 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
@@ -407,17 +395,16 @@ namespace PluginHost {
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
 
-		#ifndef __WIN32__
+#ifndef __WIN32__
         // We need at least the loopback interface before we continue...
-        StartLoopbackInterface ();
-		#endif
+        StartLoopbackInterface();
+#endif
 
         // Before we do any translation of IP, make sure we have the right network info...
         if (serviceConfig.IPV6.Value() == false) {
             SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
             Core::NodeId::ClearIPV6Enabled();
         }
-
 
         // TIme to start loading the config of the plugins.
         string pluginPath(serviceConfig.Configs.Value());
@@ -447,8 +434,7 @@ namespace PluginHost {
 #ifndef __WIN32__
         if (_background == true) {
             g_QuitEvent.Lock(Core::infinite);
-        }
-        else
+        } else
 #endif
         {
 
@@ -515,7 +501,7 @@ namespace PluginHost {
 
                         if (id != nullptr) {
                             buffer[0] = static_cast<const ISubSystem::IIdentifier*>(id)
-                                ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
+                                            ->Identifier(sizeof(buffer) - 1, &(buffer[1]));
                         }
 
                         string identifier = Core::SystemInfo::Instance().Id(buffer, ~0);
@@ -523,46 +509,44 @@ namespace PluginHost {
                         printf("------------------------------------------------------------\n");
                         printf("State:\n");
                         printf("Platform:     %s\n",
-                               (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
+                            (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
                                                                                          : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
-                                                                                      : "Unavailable");
+                                                                                        : "Unavailable");
                         printf("Identifier:   %s\n",
-                               (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) ? "Available"
-                                                                                            : "Unavailable");
+                            (status->IsActive(PluginHost::ISubSystem::IDENTIFIER) == true) ? "Available"
+                                                                                           : "Unavailable");
                         printf("Internet  :   %s\n",
-                               (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) ? "Available"
-                                                                                          : "Unavailable");
+                            (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) ? "Available"
+                                                                                         : "Unavailable");
                         printf("Graphics:     %s\n",
-                               (status->IsActive(PluginHost::ISubSystem::GRAPHICS) == true) ? "Available"
-                                                                                          : "Unavailable");
+                            (status->IsActive(PluginHost::ISubSystem::GRAPHICS) == true) ? "Available"
+                                                                                         : "Unavailable");
                         printf("Location:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::LOCATION) == true) ? "Available"
-                                                                                       : "Unavailable");
+                                                                                         : "Unavailable");
                         printf("Time:         %s\n",
                             (status->IsActive(PluginHost::ISubSystem::TIME) == true) ? "Available"
-                                                                                   : "Unavailable");
+                                                                                     : "Unavailable");
                         printf("Provisioning: %s\n",
                             (status->IsActive(PluginHost::ISubSystem::PROVISIONING) == true) ? "Available"
-                                                                                           : "Unavailable");
+                                                                                             : "Unavailable");
                         printf("Decryption:   %s\n",
                             (status->IsActive(PluginHost::ISubSystem::DECRYPTION) == true) ? "Available"
-                                                                                         : "Unavailable");
+                                                                                           : "Unavailable");
                         printf("WebSource:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
-                                                                                        : "Unavailable");
+                                                                                          : "Unavailable");
 
                         printf("Streaming:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
-                                                                                        : "Unavailable");
+                                                                                          : "Unavailable");
 
                         printf("------------------------------------------------------------\n");
                         if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                             printf("Network Type: %s\n",
-                                (internet->NetworkType() == PluginHost::ISubSystem::IInternet::UNKNOWN ? "Unknown" :
-                                   (internet->NetworkType() == PluginHost::ISubSystem::IInternet::IPV6 ? "IPv6"
-                                                                                                      : "IPv4")));
+                                (internet->NetworkType() == PluginHost::ISubSystem::IInternet::UNKNOWN ? "Unknown" : (internet->NetworkType() == PluginHost::ISubSystem::IInternet::IPV6 ? "IPv6" : "IPv4")));
                             printf("Public IP:   %s\n", internet->PublicIPAddress().c_str());
                         }
 
@@ -580,8 +564,7 @@ namespace PluginHost {
 
                             if (lastSync != 0) {
                                 printf("Time sync:   %s\n", Core::Time(lastSync).ToRFC1123(false).c_str());
-                            }
-                            else {
+                            } else {
                                 printf("Time sync:   NOT SYNCHRONISED\n");
                             }
                         }
@@ -593,8 +576,7 @@ namespace PluginHost {
 
                         printf("------------------------------------------------------------\n");
                         status->Release();
-                    }
-                    else {
+                    } else {
                         printf("------------------------------------------------------------\n");
                         printf("SystemState: UNKNOWN\n");
                         printf("------------------------------------------------------------\n");

@@ -79,19 +79,16 @@ namespace Core {
                 if (position == 0) {
                     m_Iterator = m_Container->begin();
                     m_Index = 0;
-                }
-                else if (position > Count()) {
+                } else if (position > Count()) {
                     m_Iterator = m_Container->end();
                     m_Index = Count() + 1;
-                }
-                else if ((position < m_Index) && ((m_Index - position) < position)) {
+                } else if ((position < m_Index) && ((m_Index - position) < position)) {
                     // Better that we walk back from where we are ;-)
                     while (m_Index != position) {
                         m_Index--;
                         m_Iterator--;
                     }
-                }
-                else {
+                } else {
                     m_Iterator = m_Container->begin();
                     m_Index = position;
 
@@ -142,20 +139,20 @@ namespace Core {
             return (m_Container == nullptr ? 0 : static_cast<uint32_t>(m_Container->size()));
         }
 
-        inline ELEMENT& Current ()
+        inline ELEMENT& Current()
         {
             ASSERT(IsValid());
 
             return (*m_Iterator);
         }
 
-        inline const ELEMENT& Current () const
+        inline const ELEMENT& Current() const
         {
             ASSERT(IsValid());
 
             return (*m_Iterator);
         }
- 
+
         inline ELEMENT operator->()
         {
             ASSERT(IsValid());
@@ -260,19 +257,16 @@ namespace Core {
                 if (position == 0) {
                     m_Iterator = m_Container->begin();
                     m_Index = 0;
-                }
-                else if (position > Count()) {
+                } else if (position > Count()) {
                     m_Iterator = m_Container->end();
                     m_Index = Count() + 1;
-                }
-                else if ((position < m_Index) && ((m_Index - position) < position)) {
+                } else if ((position < m_Index) && ((m_Index - position) < position)) {
                     // Better that we walk back from where we are ;-)
                     while (m_Index != position) {
                         m_Index--;
                         m_Iterator--;
                     }
-                }
-                else {
+                } else {
                     m_Iterator = m_Container->begin();
                     m_Index = position;
 
@@ -325,19 +319,19 @@ namespace Core {
 
         inline KEY Key() const
         {
-			ASSERT(IsValid());
+            ASSERT(IsValid());
 
-			return (*m_Iterator).first;
+            return (*m_Iterator).first;
         }
 
-        inline ELEMENT& Current ()
+        inline ELEMENT& Current()
         {
             ASSERT(IsValid());
 
             return (*m_Iterator).second;
         }
 
-        inline const ELEMENT& Current () const
+        inline const ELEMENT& Current() const
         {
             ASSERT(IsValid());
 
@@ -431,8 +425,7 @@ namespace Core {
                 if (IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container() != nullptr) {
                     IteratorType<CONTAINER, ELEMENT, ITERATOR>::Container()->ReadLock();
                 }
-            }
-            else {
+            } else {
                 IteratorType<CONTAINER, ELEMENT, ITERATOR>::operator=(RHS);
             }
 

@@ -20,11 +20,11 @@ namespace Trace {
     };
 
     struct ITrace {
-		virtual const char* Category() const = 0;
-		virtual const char* Module() const = 0;
-		virtual const char* Data() const = 0;
-		virtual uint16_t Length() const = 0;
-	};
+        virtual const char* Category() const = 0;
+        virtual const char* Module() const = 0;
+        virtual const char* Data() const = 0;
+        virtual uint16_t Length() const = 0;
+    };
 }
 }
 
