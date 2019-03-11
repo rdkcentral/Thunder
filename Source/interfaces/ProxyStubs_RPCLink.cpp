@@ -43,7 +43,10 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IRPCLink::INotification::ID, false, IRPCLink::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IRPCLink::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IRPCLink::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IRPCLink::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IRPCLink::INotification proxy");
@@ -75,7 +78,10 @@ ProxyStub::MethodHandler RPCLinkStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IRPCLink::INotification::ID, false, IRPCLink::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IRPCLink::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IRPCLink::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IRPCLink::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IRPCLink::INotification proxy");

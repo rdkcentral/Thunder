@@ -40,7 +40,10 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IProvisioning::INotification::ID, false, IProvisioning::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IProvisioning::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IProvisioning::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IProvisioning::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IProvisioning::INotification proxy");
@@ -72,7 +75,10 @@ ProxyStub::MethodHandler ProvisioningStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IProvisioning::INotification::ID, false, IProvisioning::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IProvisioning::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IProvisioning::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IProvisioning::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IProvisioning::INotification proxy");

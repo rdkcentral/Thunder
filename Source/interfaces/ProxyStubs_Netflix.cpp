@@ -45,7 +45,10 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, INetflix::INotification::ID, false, INetflix::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<INetflix::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<INetflix::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of INetflix::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of INetflix::INotification proxy");
@@ -77,7 +80,10 @@ ProxyStub::MethodHandler NetflixStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, INetflix::INotification::ID, false, INetflix::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<INetflix::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<INetflix::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of INetflix::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of INetflix::INotification proxy");

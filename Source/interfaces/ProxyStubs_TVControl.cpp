@@ -117,7 +117,10 @@ ProxyStub::MethodHandler StreamStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::ICallback::ID, false, IStream::ICallback::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::ICallback>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IStream::ICallback>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::ICallback proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStream::ICallback proxy");
@@ -311,7 +314,10 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::IControl::IGeometry::ID, false, IStream::IControl::IGeometry::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::IControl::IGeometry>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IStream::IControl::IGeometry>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::IControl::IGeometry proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStream::IControl::IGeometry proxy");
@@ -343,7 +349,10 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::IControl::ICallback::ID, false, IStream::IControl::ICallback::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::IControl::ICallback>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IStream::IControl::ICallback>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::IControl::ICallback proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IStream::IControl::ICallback proxy");
@@ -579,7 +588,10 @@ ProxyStub::MethodHandler PlayerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<PluginHost::IShell>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");

@@ -44,7 +44,10 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::INotification::ID, false, IPackager::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IPackager::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::INotification proxy");
@@ -76,7 +79,10 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::INotification::ID, false, IPackager::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IPackager::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::INotification proxy");
@@ -108,7 +114,10 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<PluginHost::IShell>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -330,7 +339,10 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::IPackageInfo::ID, false, IPackager::IPackageInfo::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::IPackageInfo>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IPackager::IPackageInfo>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::IPackageInfo proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IPackageInfo proxy");
@@ -340,7 +352,10 @@ ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
         ProxyStub::UnknownProxy* param1_proxy_inst = nullptr;
         if (param1 != nullptr) {
             param1_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param1, IPackager::IInstallationInfo::ID, false, IPackager::IInstallationInfo::ID, true);
-            param1_proxy = (param1_proxy_inst != nullptr? param1_proxy_inst->QueryInterface<IPackager::IInstallationInfo>() : nullptr);
+            if (param1_proxy_inst != nullptr) {
+                param1_proxy = param1_proxy_inst->QueryInterface<IPackager::IInstallationInfo>();
+            }
+
             ASSERT((param1_proxy != nullptr) && "Failed to get instance of IPackager::IInstallationInfo proxy");
             if (param1_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPackager::IInstallationInfo proxy");
