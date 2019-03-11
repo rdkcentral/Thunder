@@ -393,7 +393,7 @@ namespace PluginHost {
         Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable(true);
         Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable(true);
 
-        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories);
+        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
 
         // Set the path for the out-of-process thingies
         Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, tracePath);

@@ -119,7 +119,8 @@ namespace PluginHost {
         }
 		template<typename JSONOBJECT>
 		uint32_t Notify(const string& event, const JSONOBJECT& parameters) {
-			return (Notify(event, static_cast<string>(parameters)));
+			string subject; parameters.ToString(subject);
+			return (Notify(event, subject));
 		}
 		uint32_t Notify(const string& event, const string& parameters) {
 			uint32_t result = Core::ERROR_UNKNOWN_KEY;

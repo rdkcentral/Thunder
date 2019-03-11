@@ -293,9 +293,10 @@ namespace JSONRPC {
         template <typename PARAMETERS, typename RESPONSE>
         uint32_t Invoke (const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound) {
 			Core::ProxyType<Core::JSONRPC::Message> response;
-            uint32_t result = Send(waitTime, method, parameters, response);
+			string subject; parameters.ToString(subject);
+            uint32_t result = Send(waitTime, method, subject, response);
             if (result == Core::ERROR_NONE) {
-				inbound = response->Result.Value();
+				inbound.FromString(response->Result.Value());
             }
             return (result);
         }
@@ -307,7 +308,8 @@ namespace JSONRPC {
 		template <typename PARAMETERS>
 		uint32_t Set(const uint32_t waitTime, const string& method, const PARAMETERS& sendObject) {
 			Core::ProxyType<Core::JSONRPC::Message> response;
-			uint32_t result = Send(waitTime, method, sendObject, response);
+			string subject; sendObject.ToString(subject);
+			uint32_t result = Send(waitTime, method, subject, response);
 			if ( (result == Core::ERROR_NONE) && (response->Error.IsSet() == true) ) {
 				result = response->Error.Code.Value();
 			}
@@ -323,7 +325,7 @@ namespace JSONRPC {
 				}
 				else if ((response->Result.IsSet() == true) && (response->Result.Value().empty() == false)) {
 					sendObject.Clear();
-					sendObject = response->Result.Value();
+					sendObject.FromString(response->Result.Value());
 				}
 			}
 			return (result);

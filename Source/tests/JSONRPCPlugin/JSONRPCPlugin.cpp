@@ -20,7 +20,7 @@ namespace WPEFramework {
 			, _job(Core::ProxyType<PeriodicSync>::Create(this))
 		{
 			// PluginHost::JSONRPC method to register a JSONRPC method invocation for the method "time".
-			Register<string, Core::JSON::String>(_T("time"), &JSONRPCPlugin::time, this);
+			Register<Core::JSON::String, Core::JSON::String>(_T("time"), &JSONRPCPlugin::time, this);
 			Register<Data::Parameters, Data::Response>(_T("extended"), &JSONRPCPlugin::extended, this);
 
 			// PluginHost::JSONRPC method to register a JSONRPC method invocation for the method "time".

@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 				// 3. [mandatory] Parameters to be send to the other side.
 				// 4. [mandatory] Response to be received from the other side.
 				Core::JSON::String result;
-				remoteObject.Invoke<string, Core::JSON::String>(1000, _T("time"), _T(""), result);
+				remoteObject.Invoke<Core::JSON::String, Core::JSON::String>(1000, _T("time"), _T(""), result);
 				printf("received time: %s\n", result.Value().c_str());
 				break;
 			}

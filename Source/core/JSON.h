@@ -538,13 +538,10 @@ namespace Core {
 
                 return (*this);
             }
-			NumberType<TYPE, SIGNED, BASETYPE>& operator=(const string& RHS)
+			void FromString(const string& RHS)
 			{
 				Deserialize(RHS);
-
-				return (*this);
 			}
-
             inline TYPE Default() const
             {
                 return _default;
@@ -557,11 +554,9 @@ namespace Core {
             {
                 return Value();
             }
-			inline operator string () const
+			inline void ToString (string& result) const
 			{
-				string result;
 				Serialize(result);
-				return (result);
 			}
 
             // IElement interface methods
@@ -681,11 +676,9 @@ namespace Core {
 
                 return (*this);
             }
-			EnumType<ENUMERATE>& operator=(const string& RHS)
+			void FromString(const string& RHS)
 			{
 				Deserialize(RHS);
-
-				return (*this);
 			}
 
             inline const ENUMERATE Default() const
@@ -700,11 +693,9 @@ namespace Core {
             {
                 return Value();
             }
-			inline operator string () const
+			inline void ToString (string& result) const
 			{
-				string result;
 				Serialize(result);
-				return (result);
 			}
 			const TCHAR* Data() const
             {
@@ -811,13 +802,10 @@ namespace Core {
 
                 return (*this);
             }
-			Boolean& operator=(const string& RHS)
+			void FromString(const string& RHS)
 			{
 				Deserialize(RHS);
-
-				return (*this);
 			}
-
             inline bool Value() const
             {
                 return (IsSet() ? (_value & ValueBit) != None : (_value & DefaultBit) != None);
@@ -830,11 +818,9 @@ namespace Core {
             {
                 return Value();
             }
-			inline operator string () const
+			inline void ToString (string& result) const
 			{
-				string result;
 				Serialize(result);
-				return (result);
 			}
 
             // IElement interface methods
@@ -945,7 +931,11 @@ namespace Core {
             {
             }
 
-            String& operator=(const string& RHS)
+			void FromString(const string& RHS) {
+				_value = RHS;
+				_scopeCount |= SetBit;
+			}
+			String& operator=(const string& RHS)
             {
                 Core::ToString(RHS.c_str(), _value);
                 _scopeCount |= SetBit;
@@ -1032,11 +1022,13 @@ namespace Core {
             {
                 return (_default);
             }
-            inline operator const string() const
+            inline void ToString(string& result) const
             {
-                string result = (((_scopeCount & SetBit) != 0) ? Core::ToString(_value.c_str()) : _default);
+                result = (((_scopeCount & SetBit) != 0) ? _value : _default);
 
-				return (UseQuotes() == true ? '"' + result + '"' : result);
+				if (UseQuotes() == true) {
+					result = '"' + result + '"';
+				}
             }
 
             // IElement interface methods
@@ -1326,17 +1318,6 @@ namespace Core {
                     index++;
                 }
             }
-			inline operator string () const
-			{
-				string result;
-				this->ToString(result);
-				return (result);
-			}
-			inline Container& operator= (const string& RHS)
-			{
-				this->FromString(RHS);
-				return (*this);
-			}
 
         private:
             // IElement interface methods (private)

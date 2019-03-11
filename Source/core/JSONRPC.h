@@ -199,12 +199,12 @@ namespace JSONRPC {
 				PARAMETER parameter;
 				uint32_t code;
 				if (inbound.empty() == false) {
-					parameter = inbound;
+					parameter.FromString(inbound);
 					code = setter(*objectPtr, parameter);
 				}
 				else {
 					code = getter(*objectPtr, parameter);
-					outbound = parameter;
+					parameter.ToString(outbound);
 				}
 				return (code);
 			};
@@ -229,9 +229,9 @@ namespace JSONRPC {
 			InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
 				INBOUND inbound;
 				OUTBOUND outbound;
-				inbound = parameters;
+				inbound.FromString(parameters);
 				uint32_t code = actualMethod(inbound, outbound);
-				result = outbound;
+				outbound.ToString(result);
 				return (code);
 			};
 			Register(methodName, implementation);

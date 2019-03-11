@@ -111,14 +111,15 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-		uint32_t exists(const string& designator, string& response) {
+		uint32_t exists(const Core::JSON::String& designator, Core::JSON::DecUInt32& response) {
 			Core::ProxyType<PluginHost::Server::Service> service;
-			string callsign = Core::JSONRPC::Message::Callsign(designator);
-			response = _T("22"); // ERROR_UNKNOWN_KEY
+			const string locator(designator.Value());
+			string callsign = Core::JSONRPC::Message::Callsign(locator);
+			response = Core::ERROR_UNKNOWN_KEY;
 
 			if (callsign.empty() == true) {
-				if (Exists(designator, Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
-					response = _T("0");
+				if (Exists(locator, Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
+					response = Core::ERROR_NONE;
 				}
 			}
 			else {
@@ -126,32 +127,29 @@ namespace Plugin {
 
 				if (result == Core::ERROR_NONE) {
 					if (service->State() != PluginHost::IShell::ACTIVATED) {
-						response = _T("2");
+						response = Core::ERROR_UNAVAILABLE;
 					}
 					else {
 						ASSERT(service.IsValid());
 						PluginHost::IDispatcher* plugin = service->Dispatcher();
 						if (plugin != nullptr) {
-							if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
-								response = _T("0");
+							if (plugin->Exists(Core::JSONRPC::Message::Method(locator), Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
+								response = Core::ERROR_NONE;
 							}
 						}
 
 					}
 				}
-				else if (result == Core::ERROR_INVALID_DESIGNATOR) {
-					response = _T("41");
-				}
-				else if (result == Core::ERROR_INVALID_SIGNATURE) {
-					response = _T("38");
+				else {
+					response = result;
 				}
 			}
 			return (Core::ERROR_NONE);
 		}
-		uint32_t activate(const string& designator, string& response) {
+		uint32_t activate(const Core::JSON::String& designator, Core::JSON::String& response) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
-            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+			if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
 
                 ASSERT (service.IsValid() == true);
 
@@ -163,10 +161,10 @@ namespace Plugin {
 
             return (Core::ERROR_NONE);
         }
-        uint32_t deactivate(const string& designator, string& response) {
+        uint32_t deactivate(const Core::JSON::String& designator, Core::JSON::String& response) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
-            if (_pluginServer->Services().FromIdentifier(designator, service) == Core::ERROR_NONE) {
+            if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
 
                 ASSERT (service.IsValid() == true);
 
@@ -254,9 +252,9 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
         {		
-			Register<string, string>(_T("exists"), &Controller::exists, this);
-			Register<string, string>(_T("activate"),   &Controller::activate,   this);
-            Register<string, string>(_T("deactivate"), &Controller::deactivate, this);
+			Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"), &Controller::exists, this);
+			Register<Core::JSON::String, Core::JSON::String>(_T("activate"),   &Controller::activate,   this);
+            Register<Core::JSON::String, Core::JSON::String>(_T("deactivate"), &Controller::deactivate, this);
         }
 
     public:
