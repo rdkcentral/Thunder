@@ -71,17 +71,28 @@ ProxyStub::MethodHandler PackagerStubMethods[] = {
 
         // read parameters
         RPC::Data::Frame::Reader reader(input.Reader());
-        const IPackager::INotification* param0 = reader.Number<IPackager::INotification*>();
+        IPackager::INotification* param0 = reader.Number<IPackager::INotification*>();
         IPackager::INotification* param0_proxy = nullptr;
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyFind<IPackager::INotification>(channel, const_cast<IPackager::INotification*>(param0));
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPackager::INotification::ID, false, IPackager::INotification::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPackager::INotification>() : nullptr);
+            ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPackager::INotification proxy");
+            if (param0_proxy == nullptr) {
+                TRACE_L1("Failed to get instance of IPackager::INotification proxy");
+            }
         }
 
-        // call implementation
-        IPackager* implementation = input.Implementation<IPackager>();
-        ASSERT((implementation != nullptr) && "Null IPackager implementation pointer");
-        implementation->Unregister(param0_proxy);
+        if ((param0 == nullptr) || (param0_proxy != nullptr)) {
+            // call implementation
+            IPackager* implementation = input.Implementation<IPackager>();
+            ASSERT((implementation != nullptr) && "Null IPackager implementation pointer");
+            implementation->Unregister(param0_proxy);
+        }
+
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
+        }
     },
 
     // virtual uint32_t Configure(PluginHost::IShell*) = 0

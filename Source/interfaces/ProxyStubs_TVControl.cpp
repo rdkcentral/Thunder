@@ -306,17 +306,28 @@ ProxyStub::MethodHandler StreamControlStubMethods[] = {
 
         // read parameters
         RPC::Data::Frame::Reader reader(input.Reader());
-        const IStream::IControl::IGeometry* param0 = reader.Number<IStream::IControl::IGeometry*>();
+        IStream::IControl::IGeometry* param0 = reader.Number<IStream::IControl::IGeometry*>();
         IStream::IControl::IGeometry* param0_proxy = nullptr;
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
-            param0_proxy = RPC::Administrator::Instance().ProxyFind<IStream::IControl::IGeometry>(channel, const_cast<IStream::IControl::IGeometry*>(param0));
+            param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IStream::IControl::IGeometry::ID, false, IStream::IControl::IGeometry::ID, true);
+            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IStream::IControl::IGeometry>() : nullptr);
+            ASSERT((param0_proxy != nullptr) && "Failed to get instance of IStream::IControl::IGeometry proxy");
+            if (param0_proxy == nullptr) {
+                TRACE_L1("Failed to get instance of IStream::IControl::IGeometry proxy");
+            }
         }
 
-        // call implementation
-        IStream::IControl* implementation = input.Implementation<IStream::IControl>();
-        ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
-        implementation->Geometry(param0_proxy);
+        if ((param0 == nullptr) || (param0_proxy != nullptr)) {
+            // call implementation
+            IStream::IControl* implementation = input.Implementation<IStream::IControl>();
+            ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
+            implementation->Geometry(param0_proxy);
+        }
+
+        if (param0_proxy_inst != nullptr) {
+            RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
+        }
     },
 
     // virtual void Callback(IStream::IControl::ICallback*) = 0
