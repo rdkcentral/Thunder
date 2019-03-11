@@ -371,8 +371,10 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char** argv)
 #endif
 {
+#ifdef __WIN32__
     // Give the debugger time to attach to this process..
-    SleepMs(20000);
+    Sleep(20000);
+#endif
 
     if (atexit(CloseDown) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
