@@ -319,6 +319,7 @@ public:
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
+        const std::string & keySystem,
         int32_t licenseType,
         const char* f_pwszInitDataType,
         const uint8_t* f_pbInitData,
