@@ -20,6 +20,7 @@ add_library(${TargetMarshalling} SHARED
         ProxyStubs_TVControl.cpp
         ProxyStubs_WebDriver.cpp
         ProxyStubs_WebServer.cpp
+        ProxyStubs_TestUtility.cpp
         )
 
 add_library(${TargetInterfaces} SHARED
@@ -60,6 +61,7 @@ set(PUBLIC_HEADERS
         IWebDriver.h
         IWebServer.h
         ITestController.h
+        ITestUtility.h
         Module.h
         )
 
