@@ -73,14 +73,14 @@ namespace ProxyStub {
 		nullptr
 	};
 
-	typedef ProxyStub::StubType<RPC::IStringIterator, StringIteratorStubMethods, ProxyStub::UnknownStub> StringIteratorStub;
+	typedef ProxyStub::UnknownStubType<RPC::IStringIterator, StringIteratorStubMethods> StringIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
 	class StringIteratorProxy : public UnknownProxyType<RPC::IStringIterator> {
 	public:
-		StringIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		StringIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 			TRACE_L1("Constructed StringIteratorProxy: %p", this);
@@ -92,33 +92,36 @@ namespace ProxyStub {
 
 	public:
 	        virtual bool Next(string& result) override {
+                        bool valid = false;
+
 			IPCMessage newMessage(BaseClass::Message(0));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-			bool valid = reader.Boolean();
-
-                        if (valid == true) {
-                           result = reader.Text();
+                            if (valid == true) {
+                               result = reader.Text();
+                           }
                         }
 
 			return (valid);
 		}
         	virtual bool Previous(string& result) override {
+                        bool valid = false;
 			IPCMessage newMessage(BaseClass::Message(1));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-			bool valid = reader.Boolean();
-
-                        if (valid == true) {
-                           result = reader.Text();
+                            if (valid == true) {
+                               result = reader.Text();
+                           }
                         }
-	
+
 			return (valid);
 		}
         	virtual void Reset(const uint32_t position) override {
@@ -129,25 +132,34 @@ namespace ProxyStub {
 			Invoke(newMessage);
 		}
         	virtual bool IsValid() const override {
+                        bool result = false;
 			IPCMessage newMessage(BaseClass::Message(3));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Boolean();
+                        }
 
-			return (newMessage->Response().Reader().Boolean());
+			return (result);
 		}
         	virtual uint32_t Count() const override {
+                        uint32_t result = 0;
 			IPCMessage newMessage(BaseClass::Message(4));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Number<uint32_t>();
+                        }
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+			return (result);
 		}
         	virtual string Current() const override {
+                        string result;
 			IPCMessage newMessage(BaseClass::Message(5));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    result = newMessage->Response().Reader().Text();
+                        }
 
-			return (newMessage->Response().Reader().Text());
+			return (result);
 		}
 	};
 

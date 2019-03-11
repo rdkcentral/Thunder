@@ -22,7 +22,7 @@ namespace ProxyStub {
     }
 
     /* virtual */ void UnknownStub::Handle(const uint16_t index,
-                                           Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED,
+                                           Core::ProxyType<Core::IPCChannel>& /* channel */,
                                            Core::ProxyType<RPC::InvokeMessage>& message)
     {
         Core::IUnknown* implementation(Convert(message->Parameters().Implementation<void*>()));

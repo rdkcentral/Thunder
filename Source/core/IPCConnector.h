@@ -340,7 +340,7 @@ namespace Core {
         public:
             inline uint32_t Length() const
             {
-                return (_data.length() * sizeof(TCHAR));
+                return (static_cast<uint32_t>(_data.length() * sizeof(TCHAR)));
             }
             inline operator string&()
             {
@@ -462,9 +462,9 @@ namespace Core {
                 uint16_t result = 0;
 
                 if (offset < (LENGTH * sizeof(TCHAR))) {
-                    result = (maxLength > (((LENGTH - 1) * sizeof(TCHAR)) - offset) ? (((LENGTH - 1) * sizeof(TCHAR)) - offset) : maxLength);
+                    result = (maxLength > static_cast<uint16_t>(((LENGTH - 1) * sizeof(TCHAR)) - offset) ? static_cast<uint16_t>(((LENGTH - 1) * sizeof(TCHAR)) - offset) : maxLength);
                     ::memcpy(&(reinterpret_cast<uint8_t*>(&_text)[offset]), stream, result);
-                    _length = ((offset + maxLength) / sizeof(TCHAR));
+                    _length = static_cast<uint16_t>((offset + maxLength) / sizeof(TCHAR));
                     _text[_length] = '\0';
                 }
                 return (result);
@@ -619,7 +619,7 @@ namespace Core {
                 uint16_t result = 0;
 
                 if (offset < sizeof(SUBJECT)) {
-                    result = ((maxLength > (sizeof(SUBJECT) - offset)) ? (sizeof(SUBJECT) - offset) : maxLength);
+                    result = (maxLength > static_cast<uint16_t>(sizeof(SUBJECT) - offset) ? static_cast<uint16_t>(sizeof(SUBJECT) - offset) : maxLength);
                     ::memcpy(&(reinterpret_cast<uint8_t*>(&_package)[offset]), stream, result);
                 }
                 return (result);

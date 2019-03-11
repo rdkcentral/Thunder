@@ -104,7 +104,7 @@ namespace WPEFramework {
 
 			if (((delta <= length) && ((_offset + length) >= 16))) {
 
-				uint32_t blockSize = (((length - _offset) / 16) * 16) + delta;
+				uint32_t blockSize = static_cast<uint32_t>(((length - _offset) / 16) * 16) + delta;
 				// First encrypt the whole blocks. No padding needed, yet 
 				result = mbedtls_aes_crypt_cfb128(&_context, MBEDTLS_AES_ENCRYPT, length, &_offset, _iv, input, output);
 				delta = length - blockSize;
@@ -135,7 +135,7 @@ namespace WPEFramework {
 
 			if ((delta <= length) && ((_offset + length) >= 16)) {
 
-				uint32_t blockSize = (((length - _offset) / 16) * 16) + delta;
+				uint32_t blockSize = static_cast<uint32_t>(((length - _offset) / 16) * 16) + delta;
 				// First encrypt the whole blocks. No padding needed, yet 
 				result = mbedtls_aes_crypt_ofb(&_context, blockSize, &_offset, _iv, input, output);
 				delta = length - blockSize;
@@ -276,7 +276,7 @@ namespace WPEFramework {
 
 			if ((delta <= length) && ((_offset + length) >= 16)) {
 
-				uint32_t blockSize = (((length - _offset) / 16) * 16) + delta;
+				uint32_t blockSize = static_cast<uint32_t>(((length - _offset) / 16) * 16) + delta;
 				// First encrypt the whole blocks. No padding needed, yet 
 				result = mbedtls_aes_crypt_cfb128(&_context, MBEDTLS_AES_DECRYPT, length, &_offset, _iv, input, output);
 				delta = length - blockSize;
@@ -307,7 +307,7 @@ namespace WPEFramework {
 
 			if ((delta <= length) && ((_offset + length) >= 16)) {
 
-				uint32_t blockSize = (((length - _offset) / 16) * 16) + delta;
+				uint32_t blockSize = static_cast<uint32_t>(((length - _offset) / 16) * 16) + delta;
 				// First encrypt the whole blocks. No padding needed, yet 
 				result = mbedtls_aes_crypt_ofb(&_context, blockSize, &_offset, _iv, input, output);
 				delta = length - blockSize;

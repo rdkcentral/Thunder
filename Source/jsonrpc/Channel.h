@@ -134,6 +134,9 @@ namespace JSONRPC {
 			}
 			return (result);
 		}
+		void Close() {
+			_channel.Close(Core::infinite);
+		}
 	private:
         uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound);
 
@@ -296,7 +299,36 @@ namespace JSONRPC {
             }
             return (result);
         }
-        uint32_t Invoke (const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response) {
+		template <typename PARAMETERS, typename... TYPES >
+		uint32_t Set(const uint32_t waitTime, const string& method, const TYPES&&... args) {
+			PARAMETERS sendObject(args...);
+			return (Set< PARAMETERS >(waitTime, method, sendObject));
+		}
+		template <typename PARAMETERS>
+		uint32_t Set(const uint32_t waitTime, const string& method, const PARAMETERS& sendObject) {
+			Core::ProxyType<Core::JSONRPC::Message> response;
+			uint32_t result = Send(waitTime, method, sendObject, response);
+			if ( (result == Core::ERROR_NONE) && (response->Error.IsSet() == true) ) {
+				result = response->Error.Code.Value();
+			}
+			return (result);
+		}
+		template <typename PARAMETERS>
+		uint32_t Get(const uint32_t waitTime, const string& method, PARAMETERS& sendObject) {
+			Core::ProxyType<Core::JSONRPC::Message> response;
+			uint32_t result = Send(waitTime, method, _T(""), response);
+			if (result == Core::ERROR_NONE) {
+				if (response->Error.IsSet() == true) {
+					result = response->Error.Code.Value();
+				}
+				else if ((response->Result.IsSet() == true) && (response->Result.Value().empty() == false)) {
+					sendObject.Clear();
+					sendObject = response->Result.Value();
+				}
+			}
+			return (result);
+		}
+		uint32_t Invoke (const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response) {
             return (Send(waitTime, method, parameters, response));
         }
 
@@ -319,7 +351,9 @@ namespace JSONRPC {
                 else {
                     message->Designator = method;
                 }
-                message->Parameters = parameters;
+				if (parameters.empty() == false) {
+					message->Parameters = parameters;
+				}
 
                 _adminLock.Lock();
                 

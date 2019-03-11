@@ -13,7 +13,7 @@
 
 #ifdef __WIN32__
 #undef EXTERNAL
-#ifdef __MODULE_PLUGINS__
+#ifdef PLUGINS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT

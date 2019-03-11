@@ -1,6 +1,8 @@
 #ifndef _IPNETWORK_H
 #define _IPNETWORK_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

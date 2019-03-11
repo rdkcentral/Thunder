@@ -38,7 +38,7 @@ namespace Web {
         virtual uint32_t Serialize() const override
         {
             _lastPosition = 0;
-            return (string::length() * sizeof(TCHAR));
+            return (static_cast<uint32_t>(string::length() * sizeof(TCHAR)));
         }
         virtual uint32_t Deserialize() override
         {
@@ -372,7 +372,7 @@ namespace Web {
                 _body.clear();
             }
 
-            return (_body.length() * sizeof(TCHAR));
+            return (static_cast<uint32_t>(_body.length() * sizeof(TCHAR)));
         }
         virtual uint32_t Deserialize() override
         {

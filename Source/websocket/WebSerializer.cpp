@@ -352,7 +352,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
             }
 
             if (filePresent == true) {
-                int position = fileToService.rfind('.', -1);
+                int position = static_cast<int>(fileToService.rfind('.', -1));
 
                 // See if we have an extension to go on..
                 if (position != -1) {
@@ -426,16 +426,16 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
             // See if there is a ';' in the line
             if ((index = text.find(';', 0)) != string::npos) {
                 // We need to split, we have more.
-                enumValue = Core::EnumerateType<MIMETypes>(Core::TextFragment(text, 0, index));
+                enumValue = Core::EnumerateType<MIMETypes>(Core::TextFragment(text, 0, static_cast<uint32_t>(index)));
 
                 // Check what is behind the colon
                 index = text.find_first_not_of(_T(" \t"), index + 1);
 
-                if ((index != string::npos) && (Core::TextFragment(text, index, text.length() - index) == __CHARACTER_SET)) {
-                    int start = index + sizeof(__CHARACTER_SET);
+                if ((index != string::npos) && (Core::TextFragment(text, static_cast<uint32_t>(index), static_cast<uint32_t>(text.length() - index)) == __CHARACTER_SET)) {
+                    int start = static_cast<int>(index + sizeof(__CHARACTER_SET));
 
                     // seems like we have character set defined
-                    Core::EnumerateType<CharacterTypes> myCharType(Core::TextFragment(text, start, text.length() - start));
+                    Core::EnumerateType<CharacterTypes> myCharType(Core::TextFragment(text, start, static_cast<uint32_t>(text.length() - start)));
 
                     if (myCharType.IsSet() == true) {
                         charType = myCharType.Value();
@@ -1309,7 +1309,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                             _zlibResult = ret;
                         }
 
-                        _current->_body->Deserialize(out, sizeof(out) - _zlib.avail_out);
+                        _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                     } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
                 }
@@ -1490,7 +1490,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                     _current->ST = buffer;
                     break;
                 case Request::M_X:
-                    _current->MX = Core::NumberType<uint32_t>(buffer.c_str(), buffer.length()).Value();
+                    _current->MX = Core::NumberType<uint32_t>(buffer.c_str(), static_cast<uint32_t>(buffer.length())).Value();
                     break;
                 case Request::CONTENT_SIGNATURE:
                     _current->ContentSignature = ToSignature(buffer);
@@ -1556,7 +1556,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 case Request::WEBSOCKET_VERSION: {
                     uint32_t number = 0;
 
-                    if (Core::Unsigned32::Convert(buffer.c_str(), buffer.size(), number, BASE_DECIMAL) > 0) {
+                    if (Core::Unsigned32::Convert(buffer.c_str(), static_cast<uint32_t>(buffer.size()), number, BASE_DECIMAL) > 0) {
                         _current->WebSocketVersion = number;
                     }
                     break;
@@ -1564,7 +1564,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 case Request::CONTENT_LENGTH: {
                     uint32_t number = 0;
 
-                    if (Core::Unsigned32::Convert(buffer.c_str(), buffer.size(), number, BASE_DECIMAL) > 0) {
+                    if (Core::Unsigned32::Convert(buffer.c_str(), static_cast<uint32_t>(buffer.size()), number, BASE_DECIMAL) > 0) {
                         _current->ContentLength = number;
                     }
                     break;
@@ -1706,7 +1706,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                             _zlibResult = ret;
                         }
 
-                        _current->_body->Deserialize(out, sizeof(out) - _zlib.avail_out);
+                        _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                     } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
                 }
@@ -1749,7 +1749,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 break;
             }
             case ERRORCODE: {
-                Core::NumberType<uint16_t, false, BASE_DECIMAL> translatedCode(buffer.c_str(), buffer.size(), BASE_DECIMAL);
+                Core::NumberType<uint16_t, false, BASE_DECIMAL> translatedCode(buffer.c_str(), static_cast<uint32_t>(buffer.size()), BASE_DECIMAL);
                 _current->ErrorCode = translatedCode;
                 _state = MESSAGE;
                 _parser.CollectLine();
@@ -1960,7 +1960,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 case Response::CONTENT_LENGTH: {
                     uint32_t number = 0;
 
-                    if (Core::Unsigned32::Convert(buffer.c_str(), buffer.size(), number, BASE_DECIMAL) > 0) {
+                    if (Core::Unsigned32::Convert(buffer.c_str(), static_cast<uint32_t>(buffer.size()), number, BASE_DECIMAL) > 0) {
                         _current->ContentLength = number;
                     }
                     break;
@@ -1968,7 +1968,7 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 case Response::ACCESS_CONTROL_MAX_AGE: {
                     uint32_t number = 0;
 
-                    if (Core::Unsigned32::Convert(buffer.c_str(), buffer.size(), number, BASE_DECIMAL) > 0) {
+                    if (Core::Unsigned32::Convert(buffer.c_str(), static_cast<uint32_t>(buffer.size()), number, BASE_DECIMAL) > 0) {
                         _current->AccessControlMaxAge = number;
                     }
                     break;

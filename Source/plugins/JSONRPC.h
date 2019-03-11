@@ -102,7 +102,11 @@ namespace PluginHost {
 		uint32_t Validate(const Core::JSONRPC::Message& inbound) const {
 			return (_handler.Validate(inbound));
 		}
-        template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+		template<typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+		void Property(const string& methodName, const GET_METHOD& getter, const SET_METHOD& setter, REALOBJECT* objectPtr) {
+			_handler.Property<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(methodName, getter, setter, objectPtr);
+		}
+		template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register (const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
             _handler.Register<INBOUND,OUTBOUND,METHOD,REALOBJECT>(methodName, method, objectPtr);
         }

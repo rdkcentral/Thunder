@@ -5,6 +5,7 @@
 
 #define WPEPLAYER_PROCESS_NODE_ID "/tmp/player"
 
+
 namespace WPEFramework {
 namespace Exchange {
 

@@ -25,7 +25,7 @@ namespace JSONRPC {
                 : Core::JSON::Container()
                 , Code(0)
                 , Text()
-                , Data() {
+                , Data(false) {
                 Add(_T("code"), &Code);
                 Add(_T("message"), &Text);
                 Add(_T("data"), &Data);
@@ -34,7 +34,7 @@ namespace JSONRPC {
                 : Core::JSON::Container()
                 , Code(0)
                 , Text()
-                , Data() {
+                , Data(false) {
                 Add(_T("code"), &Code);
                 Add(_T("message"), &Text);
                 Add(_T("data"), &Data);
@@ -90,7 +90,7 @@ namespace JSONRPC {
             , JSONRPC(DefaultVersion)
             , Id(~0)
             , Designator()
-            , Parameters()
+            , Parameters(false)
             , Result(false)
             , Error() {
             Add(_T("jsonrpc"), &JSONRPC);
@@ -178,7 +178,7 @@ namespace JSONRPC {
             const string callsign (message.Callsign());
             uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
             if (result != Core::ERROR_NONE) {
-                uint32_t length = _callsign.length();
+                uint32_t length = static_cast<uint32_t>(_callsign.length());
                 if (callsign.compare(0, length, _callsign) == 0) {
                     result = Core::ERROR_INVALID_SIGNATURE;
 
@@ -190,9 +190,29 @@ namespace JSONRPC {
             }
             return (result);
         }
-        template<typename INBOUND, typename OUTBOUND, typename METHOD>
+		template<typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+		void Property(const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr) {
+			std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+			std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+			ASSERT(objectPtr != nullptr);
+			InvokeFunction implementation = [objectPtr, getter, setter](const string& inbound, string& outbound) -> uint32_t {
+				PARAMETER parameter;
+				uint32_t code;
+				if (inbound.empty() == false) {
+					parameter = inbound;
+					code = setter(*objectPtr, parameter);
+				}
+				else {
+					code = getter(*objectPtr, parameter);
+					outbound = parameter;
+				}
+				return (code);
+			};
+			Register(methodName, implementation);
+		}
+		template<typename INBOUND, typename OUTBOUND, typename METHOD>
         void Register (const string& methodName, const METHOD& method) {
-            std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = method;
+            std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                                                INBOUND inbound; 
                                                OUTBOUND outbound;
@@ -205,7 +225,7 @@ namespace JSONRPC {
         }
 		template<typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
 		void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr) {
-			std::function<uint32_t(const INBOUND& parameters, OUTBOUND& result)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
+			std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
 			InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
 				INBOUND inbound;
 				OUTBOUND outbound;

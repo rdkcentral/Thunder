@@ -155,7 +155,7 @@ namespace WPEFramework {
 				request.Body(PluginHost::Factories::Instance().JSONRPC());
 			}
 			else if (request.Verb == Web::Request::HTTP_PUT) {
-				Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
+				Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
 				// Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
 				index.Next();
@@ -179,7 +179,7 @@ namespace WPEFramework {
 			TRACE(Trace::Information, (string(_T("Received request"))));
 
 			Core::ProxyType<Web::Response> result;
-			Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, request.Path.length() - _skipURL), false, '/');
+			Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
 			// Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
 			index.Next();
@@ -633,16 +633,20 @@ namespace WPEFramework {
 					if (result == Core::ERROR_NONE) {
 						ASSERT(service.IsValid());
 						PluginHost::IDispatcher* plugin = service->Dispatcher();
-						if (plugin != nullptr) {
+
+						if (plugin == nullptr) {
+							result = Core::ERROR_BAD_REQUEST;
+						}
+						else if (service->State() != PluginHost::IShell::ACTIVATED) {
+							result = Core::ERROR_UNAVAILABLE;
+						}
+						else {
 							Core::JSONRPC::Message forwarder;
 
 							forwarder.Id = inbound.Id;
 							forwarder.Parameters = inbound.Parameters;
 							forwarder.Designator = inbound.Method();
 							response = plugin->Invoke(channelId, forwarder);
-						}
-						else {
-							result = Core::ERROR_BAD_REQUEST;
 						}
 					}
 				}

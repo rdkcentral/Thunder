@@ -1028,7 +1028,7 @@ namespace Web {
                     _protocol = protocol;
 
                     _serializerImpl.Submit(_webSocketMessage);
-                    Trigger();
+					ACTUALLINK::Trigger();
                 }
 
                 _adminLock.Unlock();

@@ -138,19 +138,6 @@ namespace Core {
 #define HAVE_TICK_COUNTER
 #endif
 
-/* Visual C++, courtesy of Dirk Michaelis */
-#if _MSC_VER >= 1400 && (defined(_M_AMD64) || defined(_M_X64)) && !defined(HAVE_TICK_COUNTER)
-
-#include <intrin.h>
-#pragma intrinsic(__rdtsc)
-        inline uint64_t Ticks() const
-        {
-            return (__rdtsc);
-        }
-
-#define HAVE_TICK_COUNTER
-#endif
-
 /* gcc */
 #if defined(__GNUC__) && defined(__ia64__) && !defined(HAVE_TICK_COUNTER)
 
@@ -200,7 +187,7 @@ namespace Core {
 #define HAVE_TICK_COUNTER
 #endif
 
-#if defined(_MSC_VER) && defined(_M_IA64) && !defined(HAVE_TICK_COUNTER)
+#if defined(_MSC_VER) && !defined(HAVE_TICK_COUNTER)
         inline uint64_t Ticks() const
         {
             SYSTEMTIME systemTime;

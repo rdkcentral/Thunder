@@ -163,7 +163,7 @@ namespace Core {
 
         // First see if we are not empy.
         if (result.empty() == false) {
-            uint32_t length = result.length();
+            uint32_t length = static_cast<uint32_t>(result.length());
 
 #ifdef __WIN32__
             for (uint32_t teller = 0; teller < length; teller++) {

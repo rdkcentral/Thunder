@@ -147,6 +147,10 @@ namespace RPC {
             {
                 return (Frame::Reader(_data, 0));
             }
+            inline void AddImplementation(void* implementation, const uint32_t id) {
+                _data.SetNumber<void*>(_data.Size(), implementation);
+                _data.SetNumber<uint32_t>(_data.Size(), id);
+            }
             inline uint32_t Length() const
             {
                 return (static_cast<uint32_t>(_data.Size()));

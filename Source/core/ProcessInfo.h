@@ -91,7 +91,7 @@ namespace Core {
             }
             inline uint32_t Count() const
             {
-                return (_pids.size());
+                return (static_cast<uint32_t>(_pids.size()));
             }
 
         private:

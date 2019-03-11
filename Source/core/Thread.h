@@ -175,7 +175,9 @@ namespace Core {
         inline ::ThreadId Id() const
         {
 #if defined(__WIN32__) || defined(__APPLE__)
-            return (reinterpret_cast<::ThreadId>(m_ThreadId));
+#pragma warning( disable : 4312 )
+			return (reinterpret_cast<::ThreadId>(m_ThreadId));
+#pragma warning( default : 4312 )
 #else
             return (static_cast<::ThreadId>(m_ThreadId));
 #endif

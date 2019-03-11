@@ -125,12 +125,18 @@ namespace Plugin {
 				uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
 
 				if (result == Core::ERROR_NONE) {
-					ASSERT(service.IsValid());
-					PluginHost::IDispatcher* plugin = service->Dispatcher();
-					if (plugin != nullptr) {
-						if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
-							response = _T("0");
+					if (service->State() != PluginHost::IShell::ACTIVATED) {
+						response = _T("2");
+					}
+					else {
+						ASSERT(service.IsValid());
+						PluginHost::IDispatcher* plugin = service->Dispatcher();
+						if (plugin != nullptr) {
+							if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
+								response = _T("0");
+							}
 						}
+
 					}
 				}
 				else if (result == Core::ERROR_INVALID_DESIGNATOR) {

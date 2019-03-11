@@ -1180,8 +1180,6 @@ namespace WPEFramework {
                         SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
                     }
 
-                    ASSERT( index != _offeredInterfaces.end() ); // would be strange if no Interface was offered before
-
                     _adminLock.Unlock();
 
                     return result;
@@ -1689,7 +1687,7 @@ namespace WPEFramework {
                     }
                     else {
                         result = Core::ERROR_INVALID_SIGNATURE;
-                        uint32_t length = source.length();
+                        uint32_t length = static_cast<uint32_t>(source.length());
 
                         if ((callSign.length() == length) ||
                             ((callSign[length] == '.') && (index->second->HasVersionSupport(callSign.substr(length+1))))) {
@@ -2261,7 +2259,7 @@ namespace WPEFramework {
 							State(RAW, false);
 						}
 						if (Name().length() > (serviceHeader.length() + 1)) {
-							Properties(serviceHeader.length() + 1);
+							Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
 						}
 						// The state needs to be correct before we c
 						if (_service->Subscribe(*this) == false) {
@@ -2275,7 +2273,7 @@ namespace WPEFramework {
 					else {
 						const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
 						if (Name().length() > (JSONRPCHeader.length() + 1)) {
-							Properties(JSONRPCHeader.length() + 1);
+							Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
 						}
 						State(JSONRPC, false);
 

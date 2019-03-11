@@ -151,7 +151,7 @@ namespace Core {
         public:
             inline uint32_t Count() const
             {
-                return (_clients.size());
+                return (static_cast<uint32_t>(_clients.size()));
             }
             template <typename PACKAGE>
             uint32_t Submit(const uint32_t ID, PACKAGE package)

@@ -118,7 +118,7 @@ namespace RPC {
         }
         virtual bool Next(uint32_t& result) override
         {
-            uint32_t length = _container.size();
+            uint32_t length = static_cast<uint32_t>(_container.size());
 
             if (_index <= length) {
                 _index++;

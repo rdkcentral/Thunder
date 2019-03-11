@@ -11,7 +11,7 @@
 
 #ifdef __WIN32__
 #undef EXTERNAL
-#ifdef __MODULE_COM__
+#ifdef COM_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT

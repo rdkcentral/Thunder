@@ -227,7 +227,7 @@ namespace Core {
 
         uint16_t Deserialize(const std::string& buffer)
         {
-            return (Convert(buffer.data(), buffer.length(), m_Value, BASETYPE));
+            return (Convert(buffer.data(), static_cast<uint32_t>(buffer.length()), m_Value, BASETYPE));
         }
         inline TYPE& Value()
         {

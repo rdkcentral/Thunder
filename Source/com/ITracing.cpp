@@ -57,12 +57,13 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().CreateProxy<RPC::IRemoteProcess>(channel, reader.Number<RPC::IRemoteProcess*>(), false, false);
+				ProxyStub::UnknownProxy* proxy = RPC::Administrator::Instance().ProxyInstance(channel, reader.Number<void*>(), RPC::IRemoteProcess::ID, false, RPC::IRemoteProcess::ID, true);
+				RPC::IRemoteProcess* param0_proxy = (proxy != nullptr ? proxy->QueryInterface< RPC::IRemoteProcess>() : nullptr);
 
-				implementation->Activated(proxy);
+				implementation->Activated(param0_proxy);
 
-				if (proxy != nullptr) {
-					proxy->Release();
+				if (param0_proxy != nullptr) {
+					RPC::Administrator::Instance().Release(proxy, message->Response());
 				}
 			}
 		},
@@ -78,12 +79,13 @@ namespace ProxyStub {
 
 			if (implementation != nullptr) {
 
-				RPC::IRemoteProcess* proxy = RPC::Administrator::Instance().CreateProxy<RPC::IRemoteProcess>(channel, reader.Number<RPC::IRemoteProcess*>(), false, false);
+				ProxyStub::UnknownProxy* proxy = RPC::Administrator::Instance().ProxyInstance(channel, reader.Number<void*>(), RPC::IRemoteProcess::ID, false, RPC::IRemoteProcess::ID, true);
+				RPC::IRemoteProcess* param0_proxy = (proxy != nullptr ? proxy->QueryInterface< RPC::IRemoteProcess>() : nullptr);
 
-				implementation->Deactivated(proxy);
+				implementation->Deactivated(param0_proxy);
 
-				if (proxy != nullptr) {
-					proxy->Release();
+				if (param0_proxy != nullptr) {
+					RPC::Administrator::Instance().Release(proxy, message->Response());
 				}
 			}
 		},
@@ -132,17 +134,17 @@ namespace ProxyStub {
         nullptr
     };
 
-	typedef ProxyStub::StubType<RPC::IRemoteProcess, RemoteProcessStubMethods, ProxyStub::UnknownStub> RemoteProcessStub;
-	typedef ProxyStub::StubType<RPC::IRemoteProcess::INotification, RemoteProcessNotificationStubMethods, ProxyStub::UnknownStub> RemoteProcessNotificationStub;
-	typedef ProxyStub::StubType<Trace::ITraceController, TraceControllerStubMethods, ProxyStub::UnknownStub> TraceControllerStub;
-    typedef ProxyStub::StubType<Trace::ITraceIterator, TraceIteratorStubMethods, ProxyStub::UnknownStub> TraceIteratorStub;
+	typedef ProxyStub::UnknownStubType<RPC::IRemoteProcess, RemoteProcessStubMethods> RemoteProcessStub;
+	typedef ProxyStub::UnknownStubType<RPC::IRemoteProcess::INotification, RemoteProcessNotificationStubMethods> RemoteProcessNotificationStub;
+	typedef ProxyStub::UnknownStubType<Trace::ITraceController, TraceControllerStubMethods> TraceControllerStub;
+    typedef ProxyStub::UnknownStubType<Trace::ITraceIterator, TraceIteratorStubMethods> TraceIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
 	class RemoteProcessProxy : public UnknownProxyType<RPC::IRemoteProcess> {
 	public:
-		RemoteProcessProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		RemoteProcessProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 		}
@@ -153,22 +155,31 @@ namespace ProxyStub {
 	public:
 		virtual uint32_t Id() const
 		{
+			uint32_t id = ~0;
+
 			IPCMessage newMessage(BaseClass::Message(0));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				id = newMessage->Response().Reader().Number<uint32_t>();
+			}
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+            return (id);
 		}
 		virtual RPC::IRemoteProcess::enumState State() const
 		{
+			RPC::IRemoteProcess::enumState result = CONSTRUCTED;
+
 			IPCMessage newMessage(BaseClass::Message(1));
 
-			Invoke(newMessage);
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				result = newMessage->Response().Reader().Number<RPC::IRemoteProcess::enumState>();
+			}
 
-			return (newMessage->Response().Reader().Number<RPC::IRemoteProcess::enumState>());
+            return (result);
 		}
 		virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
 		{
+			void* result = nullptr;
 			IPCMessage newMessage(BaseClass::Message(2));
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
@@ -177,11 +188,10 @@ namespace ProxyStub {
 			writer.Number(interfaceId);
 			writer.Number(version);
 
-			Invoke(newMessage);
-
-			RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-			return (CreateProxy(reader.Number<Core::IUnknown*>(), interfaceId));
+			if (Invoke(newMessage) == Core::ERROR_NONE) {
+				result = Interface(newMessage->Response().Reader().Number<void*>(), interfaceId);
+			}
+			return (result);
 		}
 		virtual void Terminate()
 		{
@@ -193,7 +203,7 @@ namespace ProxyStub {
 
 	class RemoteProcessNotificationProxy : public UnknownProxyType<RPC::IRemoteProcess::INotification> {
 	public:
-		RemoteProcessNotificationProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		RemoteProcessNotificationProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 		}
@@ -208,7 +218,10 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			Invoke(newMessage);
+			if ( (Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0) ) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader);
+			}
 		}
 		virtual void Deactivated(RPC::IRemoteProcess* process)
 		{
@@ -216,13 +229,16 @@ namespace ProxyStub {
 			RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 			writer.Number<RPC::IRemoteProcess*>(process);
 
-			Invoke(newMessage);
+			if ( (Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0) ) {
+				RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+				Complete(reader); 
+			}
 		}
 	};
 
 	class TraceControllerProxy : public UnknownProxyType<Trace::ITraceController> {
     public:
-        TraceControllerProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        TraceControllerProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -237,7 +253,7 @@ namespace ProxyStub {
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
             writer.Boolean(enabled);
             writer.Text(module);
-			writer.Text(category);
+            writer.Text(category);
 
             Invoke(newMessage);
         }
@@ -245,7 +261,7 @@ namespace ProxyStub {
 
     class TraceIteratorProxy : public UnknownProxyType<Trace::ITraceIterator> {
     public:
-        TraceIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        TraceIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -272,7 +288,7 @@ namespace ProxyStub {
                 enabled = reader.Boolean();
                 module = reader.Text();
 				category = reader.Text();
-			}
+            }
 
             return (result);
         }

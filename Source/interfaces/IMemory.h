@@ -1,6 +1,8 @@
 #ifndef __IMEMORY_H
 #define __IMEMORY_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

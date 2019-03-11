@@ -73,14 +73,14 @@ namespace ProxyStub {
 		nullptr
 	};
 
-	typedef ProxyStub::StubType<RPC::IValueIterator, ValueIteratorStubMethods, ProxyStub::UnknownStub> ValueIteratorStub;
+	typedef ProxyStub::UnknownStubType<RPC::IValueIterator, ValueIteratorStubMethods> ValueIteratorStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
 	class ValueIteratorProxy : public UnknownProxyType<RPC::IValueIterator> {
 	public:
-		ValueIteratorProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+		ValueIteratorProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
 			: BaseClass(channel, implementation, otherSideInformed)
 		{
 			TRACE_L1("Constructed ValueIteratorProxy: %p", this);
@@ -92,31 +92,33 @@ namespace ProxyStub {
 
 	public:
 	        virtual bool Next(uint32_t& result) override {
+                        bool valid = false;
 			IPCMessage newMessage(BaseClass::Message(0));
 
-			Invoke(newMessage);
+                        if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-			bool valid = reader.Boolean();
-
-                        if (valid == true) {
-                           result = reader.Number<uint32_t>();
+                            if (valid == true) {
+                               result = reader.Number<uint32_t>();
+                           }
                         }
 
 			return (valid);
 		}
         	virtual bool Previous(uint32_t& result) override {
+                        bool valid = false;
 			IPCMessage newMessage(BaseClass::Message(1));
 
-			Invoke(newMessage);
+                        if (Invoke(newMessage) == Core::ERROR_NONE) {
 
-                        RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                            RPC::Data::Frame::Reader reader = newMessage->Response().Reader();
+                            valid = reader.Boolean();
 
-			bool valid = reader.Boolean();
-
-                        if (valid == true) {
-                           result = reader.Number<uint32_t>();
+                            if (valid == true) {
+                               result = reader.Number<uint32_t>();
+                           }
                         }
 	
 			return (valid);
@@ -129,25 +131,33 @@ namespace ProxyStub {
 			Invoke(newMessage);
 		}
         	virtual bool IsValid() const override {
+			bool valid = false;
 			IPCMessage newMessage(BaseClass::Message(3));
 
-			Invoke(newMessage);
-
-			return (newMessage->Response().Reader().Boolean());
+                        if (Invoke(newMessage) == Core::ERROR_NONE) {
+			    valid = newMessage->Response().Reader().Boolean();
+                        }
+                        return (valid);
 		}
         	virtual uint32_t Count() const override {
-			IPCMessage newMessage(BaseClass::Message(4));
+                        uint32_t result = 0;
+                        IPCMessage newMessage(BaseClass::Message(4));
 
-			Invoke(newMessage);
+                        if (Invoke(newMessage) == Core::ERROR_NONE) {
+                            result = newMessage->Response().Reader().Number<uint32_t>();
+                        }
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+                        return (result);
 		}
         	virtual uint32_t Current() const override {
-			IPCMessage newMessage(BaseClass::Message(5));
+                        uint32_t result = ~0;
+                        IPCMessage newMessage(BaseClass::Message(5));
 
-			Invoke(newMessage);
+                        if (Invoke(newMessage) == Core::ERROR_NONE) {
+                            result = newMessage->Response().Reader().Number<uint32_t>();
+                        }
 
-			return (newMessage->Response().Reader().Number<uint32_t>());
+                        return (result);
 		}
 	};
 
