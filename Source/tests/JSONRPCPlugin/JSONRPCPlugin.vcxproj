@@ -31,6 +31,7 @@
   <ItemGroup>
     <ClInclude Include="JSONRPCPlugin.h" />
     <ClInclude Include="Module.h" />
+    <ClInclude Include="Data.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

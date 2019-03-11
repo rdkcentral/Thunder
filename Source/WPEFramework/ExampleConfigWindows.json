@@ -28,12 +28,18 @@
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
         "sleep": "720"
       }
+    },
+    {
+      "callsign": "JSONRPCPlugin",
+      "locator": "libJSONRPCPlugin.so",
+      "classname": "JSONRPCPlugin",
+      "autostart": true
     },
     {
       "callsign": "WebServer",
