@@ -52,31 +52,6 @@ public:
         return _realSession->SessionIdExt();
     }
 
-    uint16_t PlaylevelCompressedVideo() const
-    {
-        return _realSession->PlaylevelCompressedVideo();
-    }
-
-    uint16_t PlaylevelUncompressedVideo() const
-    {
-        return _realSession->PlaylevelUncompressedVideo();
-    }
-
-    uint16_t PlaylevelAnalogVideo() const
-    {
-        return _realSession->PlaylevelAnalogVideo();
-    }
-
-    uint16_t PlaylevelCompressedAudio() const
-    {
-        return _realSession->PlaylevelCompressedAudio();
-    }
-
-    uint16_t PlaylevelUncompressedAudio() const
-    {
-        return _realSession->PlaylevelUncompressedAudio();
-    }
-
     OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength)
     {
         return _realSession->SetDrmHeader(drmHeader, drmHeaderLength);
@@ -86,7 +61,6 @@ public:
     {
         return _realSession->GetChallengeDataExt(challenge, challengeSize, isLDL);
     }
-
 
     OCDM::OCDM_RESULT CancelChallengeDataExt()
     {
@@ -222,41 +196,6 @@ OpenCDMError opencdm_destruct_session_ext(OpenCDMSession * opencdmSession)
     }
 
     return (result);
-}
-
-uint16_t opencdm_session_get_playlevel_compressed_video(OpenCDMSession * mOpenCDMSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return sessionExt->PlaylevelCompressedVideo();
-}
-
-uint16_t opencdm_session_get_playlevel_uncompressed_video(OpenCDMSession * mOpenCDMSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return sessionExt->PlaylevelUncompressedVideo();
-}
-
-uint16_t opencdm_session_get_playlevel_analog_video(OpenCDMSession * mOpenCDMSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return sessionExt->PlaylevelAnalogVideo();
-}
-
-uint16_t opencdm_session_get_playlevel_compressed_audio(OpenCDMSession * mOpenCDMSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return sessionExt->PlaylevelCompressedAudio();
-}
-
-uint16_t opencdm_session_get_playlevel_uncompressed_audio(OpenCDMSession * mOpenCDMSession)
-{
-    ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return sessionExt->PlaylevelUncompressedAudio();
 }
 
 OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderSize)

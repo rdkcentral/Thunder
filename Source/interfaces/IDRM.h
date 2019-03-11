@@ -292,12 +292,6 @@ public:
 
     virtual uint32_t GetSessionIdExt(void) const = 0;
 
-    virtual uint16_t PlaylevelCompressedVideo() const = 0;
-    virtual uint16_t PlaylevelUncompressedVideo() const = 0;
-    virtual uint16_t PlaylevelAnalogVideo() const = 0;
-    virtual uint16_t PlaylevelCompressedAudio() const = 0;
-    virtual uint16_t PlaylevelUncompressedAudio() const = 0;
-
     virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 
     virtual CDMi_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;

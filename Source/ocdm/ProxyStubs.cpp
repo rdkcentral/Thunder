@@ -769,49 +769,14 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
             response.Text(message->Parameters().Implementation<OCDM::ISessionExt>()->BufferIdExt());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint16_t PlaylevelCompressedVideo() const = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelCompressedVideo());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint16_t PlaylevelUncompressedVideo() const = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelUncompressedVideo());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint16_t PlaylevelAnalogVideo() const = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelAnalogVideo());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint16_t PlaylevelCompressedAudio() const = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelCompressedAudio());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint16_t PlaylevelUncompressedAudio() const = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Number(message->Parameters().Implementation<OCDM::ISessionExt>()->PlaylevelUncompressedAudio());
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -1609,61 +1574,6 @@ public:
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             return (reader.Text());
-        }
-
-        virtual uint16_t PlaylevelCompressedVideo() const override {
-
-            IPCMessage newMessage(BaseClass::Message(2));
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint16_t>());
-        }
-
-        virtual uint16_t PlaylevelUncompressedVideo() const override {
-
-            IPCMessage newMessage(BaseClass::Message(3));
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint16_t>());
-        }
-
-        virtual uint16_t PlaylevelAnalogVideo() const override {
-
-            IPCMessage newMessage(BaseClass::Message(4));
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint16_t>());
-        }
-
-        virtual uint16_t PlaylevelCompressedAudio() const override {
-
-            IPCMessage newMessage(BaseClass::Message(5));
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint16_t>());
-        }
-
-        virtual uint16_t PlaylevelUncompressedAudio() const override {
-
-            IPCMessage newMessage(BaseClass::Message(6));
-
-            Invoke(newMessage);
-
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint16_t>());
         }
 
         virtual OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) override {
