@@ -82,15 +82,15 @@ public:
         return _realSession->SetDrmHeader(drmHeader, drmHeaderLength);
     }
 
-    OCDM::OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL)
+    OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL)
     {
-        return _realSession->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
+        return _realSession->GetChallengeDataExt(challenge, challengeSize, isLDL);
     }
 
 
-    OCDM::OCDM_RESULT CancelChallengeDataNetflix()
+    OCDM::OCDM_RESULT CancelChallengeDataExt()
     {
-        return _realSession->CancelChallengeDataNetflix();
+        return _realSession->CancelChallengeDataExt();
     }
 
     OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId)
@@ -118,8 +118,8 @@ struct OpenCDMSystemExt* opencdm_create_system_ext(struct OpenCDMAccessor * syst
     ASSERT(system != nullptr);
 
     OpenCDMAccessor* accessor = system;
-    accessor->CreateSystemNetflix(keySystem);
-    accessor->InitSystemNetflix(keySystem);
+    accessor->CreateSystemExt(keySystem);
+    accessor->InitSystemExt(keySystem);
 
     OpenCDMSystemExt * output = new OpenCDMSystemExt;
     output->m_accessor = accessor;
@@ -270,14 +270,14 @@ OpenCDMError opencdm_session_get_challenge_data(struct OpenCDMSession * mOpenCDM
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
 
-    return (OpenCDMError)sessionExt->GetChallengeDataNetflix(challenge, *challengeSize, isLDL);
+    return (OpenCDMError)sessionExt->GetChallengeDataExt(challenge, *challengeSize, isLDL);
 }
 
 OpenCDMError opencdm_session_cancel_challenge_data(struct OpenCDMSession * mOpenCDMSession)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
 
-    return (OpenCDMError)sessionExt->CancelChallengeDataNetflix();
+    return (OpenCDMError)sessionExt->CancelChallengeDataExt();
 }
 
 OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDMSession, const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId)
@@ -356,7 +356,7 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
     if (system != nullptr) {
         OpenCDMAccessor * accessor = system->m_accessor;
         std::string keySystem = system->m_keySystem;
-        result = (OpenCDMError)accessor->TeardownSystemNetflix(keySystem);
+        result = (OpenCDMError)accessor->TeardownSystemExt(keySystem);
     }
     return (result);
 }

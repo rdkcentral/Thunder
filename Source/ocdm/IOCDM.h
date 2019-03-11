@@ -125,9 +125,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
         virtual OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 
-        virtual OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
+        virtual OCDM_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
 
-        virtual OCDM_RESULT CancelChallengeDataNetflix() = 0;
+        virtual OCDM_RESULT CancelChallengeDataExt() = 0;
 
         virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) = 0;
 
@@ -241,11 +241,11 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
                 const uint8_t serverResponse[],
                 uint32_t serverResponseLength) = 0;
 
-        virtual OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) = 0;
+        virtual OCDM_RESULT CreateSystemExt(const std::string & keySystem) = 0;
 
-        virtual OCDM_RESULT InitSystemNetflix(const std::string & keySystem) = 0;
+        virtual OCDM_RESULT InitSystemExt(const std::string & keySystem) = 0;
 
-        virtual OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) = 0;
+        virtual OCDM_RESULT TeardownSystemExt(const std::string & keySystem) = 0;
 
         virtual OCDM_RESULT DeleteKeyStore(const std::string & keySystem) = 0;
 

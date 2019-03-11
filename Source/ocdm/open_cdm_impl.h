@@ -455,16 +455,16 @@ public:
         return _remoteExt->CommitSecureStop(keySystem, sessionID, sessionIDLength, serverResponse, serverResponseLength);
     }
 
-    virtual OCDM::OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) override {
-        return _remoteExt->CreateSystemNetflix(keySystem);
+    virtual OCDM::OCDM_RESULT CreateSystemExt(const std::string & keySystem) override {
+        return _remoteExt->CreateSystemExt(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT InitSystemNetflix(const std::string & keySystem) override {
-        return _remoteExt->InitSystemNetflix(keySystem);
+    virtual OCDM::OCDM_RESULT InitSystemExt(const std::string & keySystem) override {
+        return _remoteExt->InitSystemExt(keySystem);
     }
 
-    virtual OCDM::OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) override {
-        return _remoteExt->TeardownSystemNetflix(keySystem);
+    virtual OCDM::OCDM_RESULT TeardownSystemExt(const std::string & keySystem) override {
+        return _remoteExt->TeardownSystemExt(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT DeleteKeyStore(const std::string & keySystem) override {

@@ -385,7 +385,7 @@ namespace WPEFramework {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) = 0;
+            // virtual OCDM_RESULT CreateSystemExt(const std::string & keySystem) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -393,11 +393,11 @@ namespace WPEFramework {
             std::string keySystem = parameters.Text();
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->CreateSystemNetflix(keySystem));
+            response.Number(accessor->CreateSystemExt(keySystem));
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT InitSystemNetflix(const std::string & keySystem) = 0;
+            // virtual OCDM_RESULT InitSystemExt(const std::string & keySystem) = 0;
             //
 
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
@@ -406,11 +406,11 @@ namespace WPEFramework {
             std::string keySystem = parameters.Text();
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->InitSystemNetflix(keySystem));
+            response.Number(accessor->InitSystemExt(keySystem));
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) = 0;
+            // virtual OCDM_RESULT TeardownSystemExt(const std::string & keySystem) = 0;
             //
 
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
@@ -419,7 +419,7 @@ namespace WPEFramework {
             std::string keySystem = parameters.Text();
 
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
-            response.Number(accessor->TeardownSystemNetflix(keySystem));
+            response.Number(accessor->TeardownSystemExt(keySystem));
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -830,7 +830,7 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL) = 0;
+            // virtual OCDM_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL) = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -842,7 +842,7 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
 
             uint8_t* challenge = const_cast<uint8_t*>(buffer);
 
-            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->GetChallengeDataNetflix(challenge, challengeSize, isLDL);
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->GetChallengeDataExt(challenge, challengeSize, isLDL);
 
             response.Buffer(challengeSize, challenge);
             response.Number(challengeSize);
@@ -850,12 +850,12 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // virtual OCDM_RESULT CancelChallengeDataNetflix() = 0;
+            // virtual OCDM_RESULT CancelChallengeDataExt() = 0;
             //
             RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->CancelChallengeDataNetflix();
+            OCDM::OCDM_RESULT result = message->Parameters().Implementation<OCDM::ISessionExt>()->CancelChallengeDataExt();
 
             response.Number(result);
         },
@@ -1255,7 +1255,7 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT CreateSystemNetflix(const std::string & keySystem) override
+        virtual OCDM::OCDM_RESULT CreateSystemExt(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(10));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -1267,7 +1267,7 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT InitSystemNetflix(const std::string & keySystem) override
+        virtual OCDM::OCDM_RESULT InitSystemExt(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(11));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -1280,7 +1280,7 @@ public:
             return reader.Number<OCDM::OCDM_RESULT>();
         }
 
-        virtual OCDM::OCDM_RESULT TeardownSystemNetflix(const std::string & keySystem) override
+        virtual OCDM::OCDM_RESULT TeardownSystemExt(const std::string & keySystem) override
         {
             IPCMessage newMessage(BaseClass::Message(12));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
@@ -1679,7 +1679,7 @@ public:
             return result;
         }
 
-        virtual OCDM::OCDM_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) override {
+        virtual OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) override {
             IPCMessage newMessage(BaseClass::Message(8));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
@@ -1696,7 +1696,7 @@ public:
             return result;
         }
 
-        virtual OCDM::OCDM_RESULT CancelChallengeDataNetflix() override {
+        virtual OCDM::OCDM_RESULT CancelChallengeDataExt() override {
             IPCMessage newMessage(BaseClass::Message(9));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 

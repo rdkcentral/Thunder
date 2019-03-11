@@ -300,9 +300,9 @@ public:
 
     virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 
-    virtual CDMi_RESULT GetChallengeDataNetflix(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
+    virtual CDMi_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
 
-    virtual CDMi_RESULT CancelChallengeDataNetflix()  = 0;;
+    virtual CDMi_RESULT CancelChallengeDataExt()  = 0;;
 
     virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) = 0;
 
@@ -387,11 +387,11 @@ public:
             uint32_t serverResponseLength) = 0;
 
     // TODO: rename to something like "SetStoreDirs"
-    virtual CDMi_RESULT CreateSystemNetflix() = 0;
+    virtual CDMi_RESULT CreateSystemExt() = 0;
 
-    virtual CDMi_RESULT InitSystemNetflix() = 0;
+    virtual CDMi_RESULT InitSystemExt() = 0;
 
-    virtual CDMi_RESULT TeardownSystemNetflix() = 0;
+    virtual CDMi_RESULT TeardownSystemExt() = 0;
 
     virtual CDMi_RESULT DeleteKeyStore() = 0;
 
