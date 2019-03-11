@@ -29,7 +29,6 @@
     <ClCompile Include="Module.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Data1.h" />
     <ClInclude Include="JSONRPCPlugin.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="Data.h" />
