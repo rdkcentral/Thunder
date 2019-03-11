@@ -44,7 +44,10 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPower::INotification::ID, false, IPower::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPower::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IPower::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPower::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPower::INotification proxy");
@@ -76,7 +79,10 @@ ProxyStub::MethodHandler PowerStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IPower::INotification::ID, false, IPower::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IPower::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IPower::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IPower::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IPower::INotification proxy");

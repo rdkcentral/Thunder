@@ -45,7 +45,10 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IBrowser::INotification::ID, false, IBrowser::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IBrowser::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IBrowser::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");
@@ -77,7 +80,10 @@ ProxyStub::MethodHandler BrowserStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IBrowser::INotification::ID, false, IBrowser::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IBrowser::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IBrowser::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IBrowser::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IBrowser::INotification proxy");

@@ -310,7 +310,10 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, ITestController::ITest::ID, false, ITestController::ITest::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<ITestController::ITest>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<ITestController::ITest>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");
@@ -342,7 +345,10 @@ ProxyStub::MethodHandler TestControllerCategoryStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, ITestController::ITest::ID, false, ITestController::ITest::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<ITestController::ITest>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<ITestController::ITest>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of ITestController::ITest proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of ITestController::ITest proxy");

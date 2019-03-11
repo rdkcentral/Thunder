@@ -51,7 +51,10 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IComposition::INotification::ID, false, IComposition::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IComposition::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IComposition::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::INotification proxy");
@@ -83,7 +86,10 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IComposition::INotification::ID, false, IComposition::INotification::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IComposition::INotification>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IComposition::INotification>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::INotification proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::INotification proxy");
@@ -269,7 +275,10 @@ ProxyStub::MethodHandler CompositionStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, PluginHost::IShell::ID, false, PluginHost::IShell::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<PluginHost::IShell>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<PluginHost::IShell>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of PluginHost::IShell proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of PluginHost::IShell proxy");
@@ -452,7 +461,10 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IComposition::IClient::ID, false, IComposition::IClient::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IComposition::IClient>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IComposition::IClient>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::IClient proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::IClient proxy");
@@ -484,7 +496,10 @@ ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
         ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
         if (param0 != nullptr) {
             param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IComposition::IClient::ID, false, IComposition::IClient::ID, true);
-            param0_proxy = (param0_proxy_inst != nullptr? param0_proxy_inst->QueryInterface<IComposition::IClient>() : nullptr);
+            if (param0_proxy_inst != nullptr) {
+                param0_proxy = param0_proxy_inst->QueryInterface<IComposition::IClient>();
+            }
+
             ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::IClient proxy");
             if (param0_proxy == nullptr) {
                 TRACE_L1("Failed to get instance of IComposition::IClient proxy");
