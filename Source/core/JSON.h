@@ -545,15 +545,15 @@ namespace Core {
 				return (*this);
 			}
 
-            inline const TYPE Default() const
+            inline TYPE Default() const
             {
                 return _default;
             }
-            inline const TYPE Value() const
+            inline TYPE Value() const
             {
                 return (_set == true ? _value.Value() : _default);
             }
-            inline operator const TYPE() const
+            inline operator TYPE() const
             {
                 return Value();
             }
@@ -1034,7 +1034,9 @@ namespace Core {
             }
             inline operator const string() const
             {
-                return (((_scopeCount & SetBit) != 0) ? Core::ToString(_value.c_str()) : _default);
+                string result = (((_scopeCount & SetBit) != 0) ? Core::ToString(_value.c_str()) : _default);
+
+				return (UseQuotes() == true ? '"' + result + '"' : result);
             }
 
             // IElement interface methods
@@ -1044,7 +1046,7 @@ namespace Core {
             }
             virtual void Clear() override
             {
-                _scopeCount &= QuotedSerializeBit;
+                _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
 
         private:
@@ -1335,7 +1337,6 @@ namespace Core {
 				this->FromString(RHS);
 				return (*this);
 			}
-
 
         private:
             // IElement interface methods (private)

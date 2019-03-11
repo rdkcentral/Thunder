@@ -633,16 +633,20 @@ namespace WPEFramework {
 					if (result == Core::ERROR_NONE) {
 						ASSERT(service.IsValid());
 						PluginHost::IDispatcher* plugin = service->Dispatcher();
-						if (plugin != nullptr) {
+
+						if (plugin == nullptr) {
+							result = Core::ERROR_BAD_REQUEST;
+						}
+						else if (service->State() != PluginHost::IShell::ACTIVATED) {
+							result = Core::ERROR_UNAVAILABLE;
+						}
+						else {
 							Core::JSONRPC::Message forwarder;
 
 							forwarder.Id = inbound.Id;
 							forwarder.Parameters = inbound.Parameters;
 							forwarder.Designator = inbound.Method();
 							response = plugin->Invoke(channelId, forwarder);
-						}
-						else {
-							result = Core::ERROR_BAD_REQUEST;
 						}
 					}
 				}

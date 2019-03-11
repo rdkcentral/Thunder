@@ -25,6 +25,11 @@ namespace JSONRPC {
 
             typedef std::map<const string, Channel* > CallsignMap;
 
+			static Administrator& Instance() {
+				static Administrator& _instance = Core::SingletonType< Administrator >::Instance();
+				return (_instance);
+			}
+
         public:
             Administrator()
                 : _adminLock()
@@ -35,10 +40,10 @@ namespace JSONRPC {
 
         public:
             static Core::ProxyType<Channel> Instance(const Core::NodeId& remoteNode, const string& callsign) {
-                return (_administrator.InstanceImpl(remoteNode, callsign));
+                return (Instance().InstanceImpl(remoteNode, callsign));
             }
             static uint32_t Release (ChannelProxy* object) {
-                return (_administrator.ReleaseImpl(object));
+                return (Instance().ReleaseImpl(object));
             }
 
         private:
@@ -95,11 +100,12 @@ namespace JSONRPC {
         private:
             Core::CriticalSection _adminLock;
             CallsignMap _callsignMap;
-            static Administrator _administrator;
         };
 
     public:
         ~ChannelProxy() {
+			// Guess we need to close
+			Channel::Close();
         }
 
         static Core::ProxyType<Channel> Instance(const Core::NodeId& remoteNode, const string& callsign) {
@@ -122,8 +128,6 @@ namespace JSONRPC {
     private:
         Core::CriticalSection _adminLock;
     };
-
-    /* static */ ChannelProxy::Administrator ChannelProxy::Administrator::_administrator;
 
     /* static */ Core::ProxyType<Channel> Channel::Instance(const Core::NodeId& remoteNode, const string& callsign) {
         return (ChannelProxy::Instance(remoteNode, callsign));

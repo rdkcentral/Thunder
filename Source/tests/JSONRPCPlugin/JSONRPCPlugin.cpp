@@ -2,6 +2,15 @@
 
 namespace WPEFramework {
 
+	ENUM_CONVERSION_BEGIN(Data::Response::state)
+
+		{ Data::Response::ACTIVE,	_TXT("Activate")   },
+		{ Data::Response::INACTIVE,	_TXT("Inactivate") },
+		{ Data::Response::IDLE,		_TXT("Idle")       },
+		{ Data::Response::FAILURE,	_TXT("Failure")    },
+
+	ENUM_CONVERSION_END(Data::Response::state)
+
 	namespace Plugin {
 
 		SERVICE_REGISTRATION(JSONRPCPlugin, 1, 0);
@@ -11,7 +20,12 @@ namespace WPEFramework {
 			, _job(Core::ProxyType<PeriodicSync>::Create(this))
 		{
 			// PluginHost::JSONRPC method to register a JSONRPC method invocation for the method "time".
-			Register<string, string>(_T("time"), &JSONRPCPlugin::time, this);
+			Register<string, Core::JSON::String>(_T("time"), &JSONRPCPlugin::time, this);
+			Register<Data::Parameters, Data::Response>(_T("extended"), &JSONRPCPlugin::extended, this);
+
+			// PluginHost::JSONRPC method to register a JSONRPC method invocation for the method "time".
+			Property<Data::Geometry>(_T("geometry"), &JSONRPCPlugin::get_geometry, &JSONRPCPlugin::set_geometry, this);
+			Property<Core::JSON::String>(_T("data"), &JSONRPCPlugin::get_data, &JSONRPCPlugin::set_data, this);
 		}
 
 		/* virtual */ JSONRPCPlugin::~JSONRPCPlugin()
