@@ -159,6 +159,7 @@ namespace JSONRPC {
             } else {
                 (*index)->Closed();
             }
+            index++;
         }
         _adminLock.Unlock();
     }

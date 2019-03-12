@@ -669,7 +669,7 @@ namespace RPC {
 
                 std::map<uint32_t, Communicator::RemoteProcess*>::iterator index(_processes.find(pid));
 
-                if (index != _processes.end()) {
+                if ((index != _processes.end()) && (index->second->HasChannel() == true)) {
 
                     std::list<ProxyStub::UnknownProxy*> deadProxies;
                     RPC::Administrator::Instance().DeleteChannel(index->second->Channel(), deadProxies);
