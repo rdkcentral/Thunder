@@ -83,10 +83,7 @@ namespace JSONRPC {
             }
             virtual void StateChange() override
             {
-                if (IsOpen())
-                    printf(_T("[6] Open         : OK\n"));
-                else
-                    printf(_T("[6] Closed       : %s\n"), (IsSuspended() ? _T("SUSPENDED") : _T("OK")));
+                _parent.StateChange();
             }
             virtual bool IsIdle() const
             {
@@ -145,6 +142,7 @@ namespace JSONRPC {
         }
 
     protected:
+        void StateChange();
         bool Open(const uint32_t waitTime)
         {
             bool result = true;
@@ -197,6 +195,10 @@ namespace JSONRPC {
             void Signal(const Core::ProxyType<Core::JSONRPC::Message>& response)
             {
                 _response = response;
+                _signal.SetEvent();
+            }
+            void Abort()
+            {
                 _signal.SetEvent();
             }
             bool WaitForResponse(const uint32_t waitTime)
@@ -374,7 +376,24 @@ namespace JSONRPC {
 
     private:
         friend class Channel;
+        void Opened()
+        {
+            // Nice to know :-)
+        }
+        void Closed()
+        {
+            // Abort any in progress RPC command:
+            _adminLock.Lock();
 
+            // See if we issued anything, if so abort it..
+            while (_pendingQueue.size() != 0) {
+
+                _pendingQueue.begin()->second.Abort();
+                _pendingQueue.erase(_pendingQueue.begin());
+            }
+
+            _adminLock.Unlock();
+        }
         uint32_t Send(const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response)
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
@@ -414,7 +433,12 @@ namespace JSONRPC {
 
                     if (slot.WaitForResponse(waitTime) == true) {
                         response = slot.Response();
-                        result = Core::ERROR_NONE;
+
+						// See if we have a response, maybe it was just the connection
+						// that closed?
+                        if (response.IsValid() == true) {
+                            result = Core::ERROR_NONE;
+                        }
                     }
 
                     _adminLock.Lock();
@@ -429,7 +453,6 @@ namespace JSONRPC {
         }
         uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
         {
-
             uint32_t result = Core::ERROR_INVALID_SIGNATURE;
 
             ASSERT(inbound.IsValid() == true);

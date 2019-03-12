@@ -149,6 +149,19 @@ namespace JSONRPC {
         return (ChannelProxy::Instance(remoteNode, callsign));
     }
 
+    void Channel::StateChange()
+    {
+        _adminLock.Lock();
+        std::list<Client*>::iterator index(_observers.begin());
+        while (index != _observers.end()) {
+            if (_channel.IsOpen() == true) {
+                (*index)->Opened();
+            } else {
+                (*index)->Closed();
+            }
+        }
+        _adminLock.Unlock();
+    }
     uint32_t Channel::Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
     {
         uint32_t result = Core::ERROR_UNAVAILABLE;
