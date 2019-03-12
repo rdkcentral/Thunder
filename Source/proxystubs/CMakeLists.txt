@@ -1,6 +1,5 @@
 set(TARGET ${NAMESPACE}ProxyStubs)
-
-find_package(ZLIB)
+string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 add_library(${TARGET} SHARED
         PluginInterface.cpp
@@ -30,10 +29,10 @@ set_target_properties(${TARGET} PROPERTIES
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
-        ARCHIVE DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # static lib
-        LIBRARY DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # shared lib
+        ARCHIVE DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # static lib
+        LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
-        FRAMEWORK DESTINATION bin/wpeframework/proxystubs COMPONENT libs    # for mac
+        FRAMEWORK DESTINATION bin/${NAMESPACE_LIB}/proxystubs COMPONENT libs    # for mac
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/proxystubs COMPONENT devel   # headers for mac (note the different component -> different package)
         INCLUDES DESTINATION include/${NAMESPACE}/proxystubs      # headers
 )

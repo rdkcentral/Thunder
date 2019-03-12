@@ -128,5 +128,3 @@ endif()
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
         DESTINATION include/${NAMESPACE})
-
-include(GenericConfig.cmake)

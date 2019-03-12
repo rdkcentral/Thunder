@@ -364,4 +364,4 @@ namespace PluginHost {
         static Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCMessageFactory;
     };
 }
-} // Namespace WPEFramework::PluginHost
+} // namespace WPEFramework::PluginHost

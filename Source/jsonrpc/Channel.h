@@ -477,4 +477,4 @@ namespace JSONRPC {
         PendingMap _pendingQueue;
     };
 }
-} // Namepsace WPEFramework::JSONRPC
+} // namespace WPEFramework::JSONRPC

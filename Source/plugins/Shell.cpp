@@ -11,11 +11,11 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
     { PluginHost::IShell::PRECONDITION, _TXT("Precondition") },
     { PluginHost::IShell::DESTROYED, _TXT("Destroyed") },
 
-    ENUM_CONVERSION_END(PluginHost::IShell::state)
+ENUM_CONVERSION_END(PluginHost::IShell::state)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
+ENUM_CONVERSION_BEGIN(PluginHost::IShell::reason)
 
-            { PluginHost::IShell::REQUESTED, _TXT("Requested") },
+    { PluginHost::IShell::REQUESTED, _TXT("Requested") },
     { PluginHost::IShell::AUTOMATIC, _TXT("Automatic") },
     { PluginHost::IShell::FAILURE, _TXT("Failure") },
     { PluginHost::IShell::MEMORY_EXCEEDED, _TXT("MemoryExceeded") },
@@ -23,9 +23,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
     { PluginHost::IShell::SHUTDOWN, _TXT("Shutdown") },
     { PluginHost::IShell::CONDITIONS, _TXT("Conditions") },
 
-    ENUM_CONVERSION_END(PluginHost::IShell::reason)
+ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
-        namespace PluginHost
+namespace PluginHost
 {
 
     /* static */ const TCHAR* IShell::ToString(const state value)
@@ -166,7 +166,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::IShell::state)
         } else {
             IProcess* handler(Process());
 
-            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {

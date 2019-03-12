@@ -2,7 +2,7 @@
 #define __MODULE_PROTOCOLS_H__
 
 #ifndef MODULE_NAME
-#define MODULE_NAME WPEFramework_Protocols
+#define MODULE_NAME Protocols
 #endif
 
 #include "../com/Ids.h"

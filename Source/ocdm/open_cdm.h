@@ -22,7 +22,7 @@
 // DRM systems (PlayReady/WideVine/ClearKey).
 // The implementation behind this class/interface exists in two flavors.
 // 1) Fraunhofers adapted reference implementation, based on SUNRPC
-// 2) Metrologicals WPEFrameworks, based on the WPEFramework RPC mechanism.
+// 2) Metrologicals framework, based on their proprietary RPC mechanism.
 //
 // The second option exists because during testing the reference/adapted implementation of Frauenhofer
 // it was observed:
@@ -37,7 +37,7 @@
 //   most deplyments with the WPEWebkit.
 // - Common Vulnerabilities and Exposures (CVE's) have been reported with the SUNRPC that have not been resolved
 //   on most platforms where the solution is deployed.
-// - The WPEFramework RPC mechanism allows for a configurable in or out of process deplyment of the OpenCDMi
+// - The Metrological RPC mechanism allows for a configurable in or out of process deplyment of the OpenCDMi
 //   deployment without rebuilding.
 //
 // So due to performance and security exploits it was decided to offer a second implementation of the OpenCDMi

@@ -61,3 +61,6 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
 )
+
+include(GenericConfig.cmake)
+

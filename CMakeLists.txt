@@ -24,7 +24,7 @@ include(CmakeHelperFunctions)
 find_package(ExecInfo)
 
 set(PLATFORM "PC_UNIX" CACHE STRING
-        "Defines on what platform WPEFramework will run")
+        "Defines on what platform the application will run")
 
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 option(BUILD_TESTS "Build tests (requires gtest)" OFF)

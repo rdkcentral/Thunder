@@ -10,7 +10,7 @@ namespace PluginHost {
     struct ISubSystem
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_SUBSYSTEM
+            ID = RPC::ID_SUBSYSTEM
         };
 
         enum subsystem {
@@ -45,7 +45,7 @@ namespace PluginHost {
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_SUBSYSTEM_NOTIFICATION
+                ID = RPC::ID_SUBSYSTEM_NOTIFICATION
             };
 
             virtual ~INotification()
@@ -60,7 +60,7 @@ namespace PluginHost {
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_SUBSYSTEM_INTERNET
+                ID = RPC::ID_SUBSYSTEM_INTERNET
             };
 
             enum {
@@ -85,7 +85,7 @@ namespace PluginHost {
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_SUBSYSTEM_LOCATION
+                ID = RPC::ID_SUBSYSTEM_LOCATION
             };
 
             enum {
@@ -103,7 +103,7 @@ namespace PluginHost {
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_SUBSYSTEM_IDENTIFIER
+                ID = RPC::ID_SUBSYSTEM_IDENTIFIER
             };
 
             enum {
@@ -118,7 +118,7 @@ namespace PluginHost {
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_SUBSYSTEM_TIME
+                ID = RPC::ID_SUBSYSTEM_TIME
             };
 
             enum {

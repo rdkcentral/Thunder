@@ -89,7 +89,7 @@ private:
 
             _busy = true;
 
-            if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+            if (RequestProduce(Core::infinite) == Core::ERROR_NONE) {
 
                 SetIV(static_cast<uint8_t>(ivDataLength), ivData);
                 SetSubSampleData(0, nullptr);
@@ -100,7 +100,7 @@ private:
                 Produced();
 
                 // Now we should wait till it is decrypted, that happens if the Producer, can run again.
-                if (RequestProduce(WPEFramework::Core::infinite) == WPEFramework::Core::ERROR_NONE) {
+                if (RequestProduce(Core::infinite) == Core::ERROR_NONE) {
 
                     // For nowe we just copy the clear data..
                     Read(encryptedDataLength, encryptedData);
@@ -401,7 +401,7 @@ public:
 
         ASSERT(IsValid() == true);
 
-        _state.WaitState(SESSION_MESSAGE | SESSION_READY, WPEFramework::Core::infinite);
+        _state.WaitState(SESSION_MESSAGE | SESSION_READY, Core::infinite);
 
         if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
             challenge = _message;
@@ -427,7 +427,7 @@ public:
 
         if (OpenCDMSession::Load() == 0) {
 
-            _state.WaitState(SESSION_UPDATE, WPEFramework::Core::infinite);
+            _state.WaitState(SESSION_UPDATE, Core::infinite);
 
             if (_key == OCDM::ISession::Usable) {
                 ret = 0;
@@ -446,7 +446,7 @@ public:
 
         OpenCDMSession::Update(pbResponse, cbResponse);
 
-        _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE, WPEFramework::Core::infinite);
+        _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE, Core::infinite);
         if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
             response = "message:" + _message;
         }
@@ -461,7 +461,7 @@ public:
 
         if (OpenCDMSession::Remove() == 0) {
 
-            _state.WaitState(SESSION_UPDATE, WPEFramework::Core::infinite);
+            _state.WaitState(SESSION_UPDATE, Core::infinite);
 
             if (_key == OCDM::ISession::StatusPending) {
                 ret = 0;
@@ -530,8 +530,8 @@ private:
     }
 
 private:
-    WPEFramework::Core::Sink<Sink> _sink;
-    WPEFramework::Core::StateTrigger<sessionState> _state;
+    Core::Sink<Sink> _sink;
+    Core::StateTrigger<sessionState> _state;
     std::string _message;
     std::string _URL;
     std::string _error;
@@ -971,7 +971,7 @@ private:
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
     std::map<string, std::list<KeyId>> _sessionKeys;
-    mutable WPEFramework::Core::Sink<Sink> _sink;
+    mutable Core::Sink<Sink> _sink;
     static OpenCDMAccessor* _singleton;
 };
 

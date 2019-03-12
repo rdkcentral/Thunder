@@ -1,5 +1,6 @@
 set(TargetMarshalling ${NAMESPACE}Marshallings)
 set(TargetInterfaces ${NAMESPACE}Interfaces)
+string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 add_library(${TargetMarshalling} SHARED
         ProxyStubs.cpp
@@ -126,7 +127,7 @@ install(
 
 install(
         TARGETS ${TargetMarshalling} EXPORT ${TargetMarshalling}Targets  # for downstream dependencies
-        LIBRARY DESTINATION lib/wpeframework/proxystubs COMPONENT libs      # shared lib
+        LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
 )
 
 InstallPackageConfig(

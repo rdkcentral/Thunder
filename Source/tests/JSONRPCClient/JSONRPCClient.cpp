@@ -15,7 +15,8 @@ ENUM_CONVERSION_BEGIN(Data::Response::state)
     { Data::Response::IDLE, _TXT("Idle") },
     { Data::Response::FAILURE, _TXT("Failure") },
 
-    ENUM_CONVERSION_END(Data::Response::state)
+ENUM_CONVERSION_END(Data::Response::state)
+
 }
 
 bool ParseOptions(int argc, char** argv, Core::NodeId& jsonrpcChannel)
@@ -87,17 +88,17 @@ int main(int argc, char** argv)
 
         ParseOptions(argc, argv, jsonrpcChannel);
 
-        // The JSONRPC Client library is expecting the THUNDER_ACCESS environment variable to be set and pointing to the
-        // WPEFramework, this can be a domain socket (use at least 1 sleash in it, or a TCP address.
+        // The JSONRPC Client library is expecting the THUNDER_ACCESS environment variable to be set and pointing
+        // to the JSONRPC Server, this can be a domain socket (use at least 1 sleash in it, or a TCP address.
         Core::SystemInfo::SetEnvironment(_T("THUNDER_ACCESS"), (_T("127.0.0.1:80")));
 
         // This is not mandatory, just an easy way to use the VisualStudio environment to Start 2 projects at once, 1 project
-        // being the WPEFramework running the plaugins and the other one this client. However, give the sevrver a bit of time
-        // to bring up Plugin JSONRPCPlugin, before we hook up to it. If one starts this APp, after the WPEFramework is
-        // up and running this is not nessecary.
+        // being the JSONRPC Server running the plugins and the other one this client. However, give the sevrver a bit of time
+        // to bring up Plugin JSONRPCPlugin, before we hook up to it. If one starts this App, after the Server is up and running 
+        // this is not nessecary.
         SleepMs(2000);
 
-        // Create a remoteObject.  This is the way we can communicate with the WPEFramework.
+        // Create a remoteObject.  This is the way we can communicate with the Server.
         // The parameters:
         // 1. [mandatory] This is the designator of the module we will connect to.
         // 2. [optional]  This is the designator used for the code we have on my side.
@@ -185,7 +186,7 @@ int main(int argc, char** argv)
                 break;
             }
             case 'R': {
-                // We have a handler, called Handlers::clock to handle the events coming from the WPEFramework.
+                // We have a handler, called Handlers::clock to handle the events coming from the Server.
                 // If we register this handler, it will also automatically be register this handler on the server side.
                 // The parameters:
                 // 1. [mandatory] Time to wait for the round trip to complete to the server to register.

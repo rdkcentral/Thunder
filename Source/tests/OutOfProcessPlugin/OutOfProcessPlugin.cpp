@@ -57,7 +57,7 @@ namespace Plugin {
             stateControl->Register(_notification);
             stateControl->Release();
 
-            _memory = WPEFramework::OutOfProcessPlugin::MemoryObserver(_pid);
+            _memory = OutOfProcessPlugin::MemoryObserver(_pid);
             ASSERT(_memory != nullptr);
         }
 

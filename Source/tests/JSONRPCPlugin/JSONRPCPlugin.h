@@ -47,7 +47,7 @@ namespace Plugin {
             {
                 _nextSlot = (time * 1000);
             }
-            // This method is called by the WPEFramework ThreadPool at the scheduled time.
+            // This method is called by the main process ThreadPool at the scheduled time.
             // After the parent has been called to send out a-synchronous notifications, it
             // will schedule itself again, to be triggered after the set period.
             virtual void Dispatch() override

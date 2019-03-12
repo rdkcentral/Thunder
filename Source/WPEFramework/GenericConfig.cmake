@@ -1,14 +1,17 @@
+# Library installation section
+string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
+
 set(PORT 80 CACHE STRING "The port for the webinterface")
 set(BINDING "0.0.0.0" CACHE STRING "The binding interface")
 set(IDLE_TIME 180 CACHE STRING "Idle time")
 set(PERSISTENT_PATH "/root" CACHE STRING "Persistent path")
 set(DATA_PATH "/usr/share/${NAMESPACE}" CACHE STRING "Data path")
-set(SYSTEM_PATH "/usr/lib/wpeframework/plugins" CACHE STRING "System path")
+set(SYSTEM_PATH "/usr/lib/${NAMESPACE_LIB}/plugins" CACHE STRING "System path")
 set(WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
 set(WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
-set(PROXYSTUB_PATH "/usr/lib/wpeframework/proxystubs" CACHE STRING "Proxy stub path")
-set(CONFIG_INSTALL_PATH "/etc/wpeframework" CACHE STRING "Install location of the wpeframework configuration")
-set(IPV6_SUPPORT false CACHE STRING "Controls if wpeframework should support ipv6")
+set(PROXYSTUB_PATH "/usr/lib/${NAMESPACE_LIB}/proxystubs" CACHE STRING "Proxy stub path")
+set(CONFIG_INSTALL_PATH "/etc/${NAMESPACE}" CACHE STRING "Install location of the configuration")
+set(IPV6_SUPPORT false CACHE STRING "Controls if should application supports ipv6")
 set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
 set(POLICY 0 CACHE STRING "NA")
 set(OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
@@ -138,6 +141,6 @@ json_write("${CMAKE_BINARY_DIR}/Config.json" ${CONFIG})
 
 install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/WPEFramework/
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/
         RENAME config.json
         COMPONENT ${MODULE_NAME})

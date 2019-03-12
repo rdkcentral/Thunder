@@ -735,6 +735,6 @@ namespace Core {
 
 } // namespace Core
 
-} // WPEFramework
+} // namespace WPEFramework
 
 #endif // KeyHandler

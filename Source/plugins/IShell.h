@@ -11,12 +11,12 @@ namespace PluginHost {
     struct EXTERNAL IShell
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_SHELL
+            ID = RPC::ID_SHELL
         };
 
-        // This interface is only returned if the IShell is aceessed in the WPEFramework process. The interface can
+        // This interface is only returned if the IShell is accessed in the main process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
-        // If this interface is requested outside of the WPEFramework process, it will return a nullptr.
+        // If this interface is requested outside of the main process, it will return a nullptr.
         struct EXTERNAL IProcess {
             virtual ~IProcess() {}
             virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
@@ -193,19 +193,19 @@ namespace PluginHost {
         virtual uint32_t Deactivate(const reason) = 0;
         virtual reason Reason() const = 0;
 
-        // Method to access, in the WPEFramework space, the channel factory to submit JSON objects to be send.
-        // This method will return a error if it is NOT in the WPEFramework process.
+        // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
+        // This method will return a error if it is NOT in the main process.
         virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
-        // Method to access, in the WPEFramework space, a COM factory to instantiate objects out-of-process.
-        // This method will return a nullptr if it is NOT in the WPEFramework process.
+        // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
+        // This method will return a nullptr if it is NOT in the main process.
         virtual IProcess* Process() = 0;
 
         inline void Register(RPC::IRemoteProcess::INotification* sink)
         {
             IProcess* handler(Process());
 
-            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
@@ -216,7 +216,7 @@ namespace PluginHost {
         {
             IProcess* handler(Process());
 
-            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
@@ -227,7 +227,7 @@ namespace PluginHost {
         {
             IProcess* handler(Process());
 
-            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             return (handler == nullptr ? nullptr : handler->RemoteProcess(pid));
@@ -273,7 +273,7 @@ namespace PluginHost {
         {
             IProcess* handler(Process());
 
-            // This method can only be used in the WPEFramework process. Only this process, can instantiate a new process
+            // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {

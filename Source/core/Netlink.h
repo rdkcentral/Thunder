@@ -402,7 +402,7 @@ namespace Core {
         PendingList _pending;
     };
 }
-} // Namespace WPEFramework::Core
+} // namespace WPEFramework::Core
 
 #endif // __WIN32__
 

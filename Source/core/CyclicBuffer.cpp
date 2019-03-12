@@ -482,4 +482,4 @@ namespace Core {
         return cursor.Size();
     }
 }
-} // WPEFramework::Core
+} // namespace WPEFramework::Core
