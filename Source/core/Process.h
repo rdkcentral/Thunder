@@ -288,8 +288,8 @@ namespace Core {
         inline bool IsActive() const
         {
 #ifdef __WIN32__
-            DWORD exitCode = 0;
-            if ((_info.hProcess != 0) && (_exitCode != static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
+            DWORD exitCode = _exitCode;
+            if ((_info.hProcess != 0) && (_exitCode == static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
             } else {
                 _exitCode = static_cast<uint32_t>(exitCode);
