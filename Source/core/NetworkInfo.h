@@ -3,6 +3,7 @@
 #define __NETWORKINFO_H
 
 #include "Module.h"
+#include "Portability.h"
 #include "Netlink.h"
 #include "NodeId.h"
 #include "Portability.h"
