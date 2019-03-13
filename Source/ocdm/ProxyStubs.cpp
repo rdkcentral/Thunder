@@ -7,31 +7,32 @@ namespace WPEFramework {
 // -------------------------------------------------------------------------------------------
 // STUB
 // -------------------------------------------------------------------------------------------
-    //
-    // OCDM::IAccessorOCDM interface stub definitions (interface/ICDM.h)
-    //
-    ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual bool IsTypeSupported(
-            //     const std::string keySystem,
-            //     const std::string mimeType) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            std::string keySystem = parameters.Text();
-            std::string mimeType = parameters.Text();
+//
+// OCDM::IAccessorOCDM interface stub definitions (interface/ICDM.h)
+//
+ProxyStub::MethodHandler AccesorOCDMStubMethods[] = {
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        //
+        // virtual bool IsTypeSupported(
+        //     const std::string keySystem,
+        //     const std::string mimeType) = 0;
+        //
+        RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+        RPC::Data::Frame::Writer response(message->Response().Writer());
 
-            response.Boolean(message->Parameters().Implementation<OCDM::IAccessorOCDM>()->IsTypeSupported(keySystem, mimeType));
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // static OCDM::ISession* Session(
-            //     const std::string sessionId) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
+        std::string keySystem = parameters.Text();
+        std::string mimeType = parameters.Text();
+
+        response.Boolean(message->Parameters().Implementation<OCDM::IAccessorOCDM>()->IsTypeSupported(keySystem, mimeType));
+    },
+    [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+        //
+        // static OCDM::ISession* Session(
+        //     const std::string sessionId) = 0;
+        //
+        RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+        RPC::Data::Frame::Writer response(message->Response().Writer());
 
         std::string sessionId = parameters.Text();
 
@@ -148,6 +149,7 @@ namespace WPEFramework {
         if (param0_proxy != nullptr) {
             proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, OCDM::IAccessorOCDM::INotification::ID, false, OCDM::IAccessorOCDM::INotification::ID, true);
             param0_proxy = (proxy != nullptr ? proxy->QueryInterface<OCDM::IAccessorOCDM::INotification>() : nullptr);
+
             ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
         }
 
@@ -176,6 +178,7 @@ namespace WPEFramework {
         }
 
         message->Parameters().Implementation<OCDM::IAccessorOCDM>()->Unregister(param0_proxy);
+
         if (param0_proxy != nullptr) {
             RPC::Administrator::Instance().Release(proxy, message->Response());
         }
@@ -213,27 +216,30 @@ namespace WPEFramework {
             uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
             parameters.UnlockBuffer(drmHeaderLength);
 
-            OCDM::ISession::ICallback* implementation = parameters.Number<OCDM::ISession::ICallback*>();
-            OCDM::ISession::ICallback* proxy = nullptr;
-
-            if (implementation != nullptr) {
-                proxy = RPC::Administrator::Instance().CreateProxy<OCDM::ISession::ICallback>(channel,
-                    implementation,
-                    true, false);
-
-                ASSERT((proxy != nullptr) && "Failed to create proxy");
-            }
-
             string sessionId;
+
+            ProxyStub::UnknownProxy* proxy = nullptr;
+            OCDM::ISession::ICallback* param0_proxy = parameters.Number<OCDM::ISession::ICallback*>();
+
+            if (param0_proxy != nullptr) {
+                proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, OCDM::ISession::ICallback::ID, false, OCDM::ISession::ICallback::ID, true);
+                param0_proxy = (proxy != nullptr ? proxy->QueryInterface<OCDM::ISession::ICallback>() : nullptr);
+
+                ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
+            }
 
             OCDM::ISessionExt* session = nullptr;
             OCDM::IAccessorOCDMExt* accessor =  message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
 
-            OCDM::OCDM_RESULT result = accessor->CreateSessionExt(drmHeader, drmHeaderLength, proxy, sessionId, session);
+            OCDM::OCDM_RESULT result = accessor->CreateSessionExt(drmHeader, drmHeaderLength, param0_proxy, sessionId, session);
 
             response.Number<OCDM::OCDM_RESULT>(result);
             response.Text(sessionId);
             response.Number<OCDM::ISessionExt*>(session);
+
+            if (param0_proxy != nullptr) {
+                RPC::Administrator::Instance().Release(proxy, message->Response());
+            }
         },
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -499,52 +505,6 @@ namespace WPEFramework {
         },
     };
 
-    //
-    // OCDM::IAccessorOCDM::INotification interface stub definitions (interface/ICDM.h)
-    //
-    ProxyStub::MethodHandler AccesorOCDMNotificationStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Create (
-            //     const std::string& sessionId) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-
-            std::string sessionId = parameters.Text();
-
-            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Create(sessionId);
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Destroy (
-            //     const std::string& sessionId) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-
-            std::string sessionId = parameters.Text();
-
-            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Destroy(sessionId);
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // static void KeyChange(
-            //     const string& sessionId, const uint8 keyId[], const uint8_t length) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-
-            const uint8_t* keyData;
-            std::string sessionId = parameters.Text();
-            uint8_t keyDataLength = parameters.LockBuffer<uint8_t>(keyData);
-            parameters.UnlockBuffer(keyDataLength);
-            OCDM::ISession::KeyStatus status = parameters.Number<OCDM::ISession::KeyStatus>();
-
-            message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->KeyChange(sessionId, keyData, keyDataLength, status);
-
-
-        },
-        nullptr
-    };
-
 //
 // OCDM::IAccessorOCDM::INotification interface stub definitions (interface/ICDM.h)
 //
@@ -568,6 +528,7 @@ ProxyStub::MethodHandler AccesorOCDMNotificationStubMethods[] = {
         RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
 
         std::string sessionId = parameters.Text();
+
         message->Parameters().Implementation<OCDM::IAccessorOCDM::INotification>()->Destroy(sessionId);
     },
     [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
@@ -648,6 +609,7 @@ ProxyStub::MethodHandler CallbackStubMethods[] = {
 // OCDM::ISession interface stub definitions (interface/ICDM.h)
 //
 ProxyStub::MethodHandler SessionStubMethods[] = {
+
     [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
         //
         // Loads the data stored for the specified session into the cdm object
@@ -872,11 +834,11 @@ ProxyStub::MethodHandler SessionStubMethods[] = {
     };
 
 typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM, AccesorOCDMStubMethods> AccessorOCDMStub;
-typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDMExt, AccesorOCDMExtStubMethods, ProxyStub::UnknownStub> AccessorOCDMExtStub;
+typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDMExt, AccesorOCDMExtStubMethods> AccessorOCDMExtStub;
 typedef ProxyStub::UnknownStubType<OCDM::IAccessorOCDM::INotification, AccesorOCDMNotificationStubMethods> AccessorOCDMNotificationStub;
 typedef ProxyStub::UnknownStubType<OCDM::ISession::ICallback, CallbackStubMethods> CallbackStub;
 typedef ProxyStub::UnknownStubType<OCDM::ISession, SessionStubMethods> SessionStub;
-typedef ProxyStub::UnknownStubType<OCDM::ISessionExt, SessionExtStubMethods, ProxyStub::UnknownStub> SessionExtStub;
+typedef ProxyStub::UnknownStubType<OCDM::ISessionExt, SessionExtStubMethods> SessionExtStub;
 
 
 // -------------------------------------------------------------------------------------------
@@ -899,7 +861,6 @@ public:
         const std::string mimeType) const override
     {
 
-        OCDM::OCDM_RESULT result = ~0;
         IPCMessage newMessage(BaseClass::Message(0));
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(keySystem);
@@ -942,6 +903,7 @@ public:
 
         return (result);
     }
+
     //
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM::OCDM_RESULT CreateSession(
@@ -957,7 +919,7 @@ public:
         OCDM::ISession*& session) override
     {
 
-        OCDM::OCDM_RESULT result = ~0;
+        OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
         IPCMessage newMessage(BaseClass::Message(3));
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(keySystem);
@@ -972,8 +934,8 @@ public:
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
             result = reader.Number<OCDM::OCDM_RESULT>();
-            sessionId = reader.Text();
 
+            sessionId = reader.Text();
             session = reinterpret_cast<OCDM::ISession*>(Interface(reader.Number<void*>(), OCDM::ISession::ID));
 
             Complete(reader);
@@ -989,7 +951,7 @@ public:
         const uint16_t serverCertificateLength) override
     {
 
-        OCDM::OCDM_RESULT result = ~0;
+        OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
         IPCMessage newMessage(BaseClass::Message(4));
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
         writer.Text(keySystem);
@@ -1035,7 +997,7 @@ public:
 
     class AccessorOCDMExtProxy : public ProxyStub::UnknownProxyType<OCDM::IAccessorOCDMExt> {
     public:
-        AccessorOCDMExtProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+        AccessorOCDMExtProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
             const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
@@ -1068,19 +1030,21 @@ public:
             IPCMessage newMessage(BaseClass::Message(1));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
+            OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
             writer.Buffer(drmHeaderLength, drmHeader);
-
             writer.Number(callback);
 
-            Invoke(newMessage);
+            if (Invoke(newMessage) == ERROR_NONE) {
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
 
-            OCDM::OCDM_RESULT result = reader.Number<OCDM::OCDM_RESULT>();
-            sessionId = reader.Text();
+                result = reader.Number<OCDM::OCDM_RESULT>();
+                sessionId = reader.Text();
 
-            OCDM::ISessionExt* otherSidePtr = reader.Number<OCDM::ISessionExt*>();
-            session = CreateProxy<OCDM::ISessionExt>(otherSidePtr);
+                session = reinterpret_cast<OCDM::ISessionExt*>(Interface(reader.Number<void*>(), OCDM::ISessionExt::ID));
+
+                Complete(reader);
+            }
 
             return result;
         }
@@ -1437,7 +1401,7 @@ public:
     //
     virtual OCDM::OCDM_RESULT Load() override
     {
-        OCDM::OCDM_RESULT result = ~0;
+        OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
         IPCMessage newMessage(BaseClass::Message(0));
 
         if (Invoke(newMessage) == Core::ERROR_NONE) {
@@ -1462,7 +1426,7 @@ public:
     //
     virtual OCDM::OCDM_RESULT Remove() override
     {
-        OCDM::OCDM_RESULT result = ~0;
+        OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
         IPCMessage newMessage(BaseClass::Message(2));
 
         if (Invoke(newMessage) == Core::ERROR_NONE) {
@@ -1524,7 +1488,7 @@ public:
         if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
             RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
             Complete(reader);
-       }
+        }
     }
     //
     // Revoke the Session Callback for change notifications
@@ -1545,7 +1509,7 @@ public:
 
     class SessionExtProxy : public ProxyStub::UnknownProxyType<OCDM::ISessionExt> {
     public:
-        SessionExtProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
+        SessionExtProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
             const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
