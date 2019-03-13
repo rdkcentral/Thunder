@@ -15,6 +15,7 @@ private:
     DataExchange() = delete;
     DataExchange(const DataExchange&) = delete;
     DataExchange& operator=(const DataExchange&) = delete;
+
 private:
     struct Administration {
         uint32_t Status;
@@ -32,15 +33,14 @@ public:
     {
     }
     DataExchange(const string& name, const uint32_t bufferSize)
-        : WPEFramework::Core::SharedBuffer(name.c_str(), bufferSize, sizeof(Administration))
+        : WPEFramework::Core::SharedBuffer(name.c_str(), bufferSize,
+              sizeof(Administration))
     {
         Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());
         // Clear the administration space before using it.
         ::memset(admin, 0, sizeof(Administration));
     }
-    ~DataExchange()
-    {
-    }
+    ~DataExchange() {}
 
 public:
     inline void Status(uint32_t status)
@@ -49,28 +49,35 @@ public:
     }
     inline uint32_t Status() const
     {
-        return (reinterpret_cast<const Administration*>(AdministrationBuffer())->Status);
+        return (reinterpret_cast<const Administration*>(AdministrationBuffer())
+                    ->Status);
     }
-    inline void InitWithLast15(bool initWithLast15) {
+    inline void InitWithLast15(bool initWithLast15)
+    {
         reinterpret_cast<Administration*>(AdministrationBuffer())->InitWithLast15 = initWithLast15;
     }
-    inline bool InitWithLast15() const {
-        return(reinterpret_cast<const Administration*>(AdministrationBuffer())->InitWithLast15);
+    inline bool InitWithLast15() const
+    {
+        return (reinterpret_cast<const Administration*>(AdministrationBuffer())
+                    ->InitWithLast15);
     }
     void SetIV(const uint8_t ivDataLength, const uint8_t ivData[])
     {
         Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());
         ASSERT(ivDataLength <= sizeof(Administration::IV));
-        admin->IVLength = (ivDataLength > sizeof(Administration::IV) ? sizeof(Administration::IV) : ivDataLength);
+        admin->IVLength = (ivDataLength > sizeof(Administration::IV) ? sizeof(Administration::IV)
+                                                                     : ivDataLength);
         ::memcpy(admin->IV, ivData, admin->IVLength);
         if (admin->IVLength < sizeof(Administration::IV)) {
-            ::memset(&(admin->IV[admin->IVLength]), 0, (sizeof(Administration::IV) - admin->IVLength));
+            ::memset(&(admin->IV[admin->IVLength]), 0,
+                (sizeof(Administration::IV) - admin->IVLength));
         }
     }
     void SetSubSampleData(const uint16_t length, const uint8_t* data)
     {
         Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());
-        admin->SubLength = (length > sizeof(Administration::Sub) ? sizeof(Administration::Sub) : length);
+        admin->SubLength = (length > sizeof(Administration::Sub) ? sizeof(Administration::Sub)
+                                                                 : length);
         if (data != nullptr) {
             ::memcpy(admin->Sub, data, admin->SubLength);
         }

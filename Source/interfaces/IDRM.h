@@ -165,17 +165,17 @@ namespace CDMi {
 #define MEDIA_KEY_STATUS_KEY_STATUS_MAX KEY_STATUS_PENDING
 
 typedef enum {
-    CDMi_SUCCESS                  = 0,
-    CDMi_S_FALSE                  = 1,
-    CDMi_KEYSYSTEM_NOT_SUPPORTED  = 0x80000002,
-    CDMi_INVALID_SESSION          = 0x80000003,
-    CDMi_INVALID_DECRYPT_BUFFER   = 0x80000004,
-    CDMi_OUT_OF_MEMORY            = 0x80000005,
-    CDMi_FAIL                     = 0x80004005,
-    CDMi_INVALID_ARG              = 0x80070057,
-    CDMi_SERVER_INTERNAL_ERROR    = 0x8004C600,
-    CDMi_SERVER_INVALID_MESSAGE   = 0x8004C601,
-    CDMi_SERVER_SERVICE_SPECIFIC  = 0x8004C604,
+    CDMi_SUCCESS = 0,
+    CDMi_S_FALSE = 1,
+    CDMi_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
+    CDMi_INVALID_SESSION = 0x80000003,
+    CDMi_INVALID_DECRYPT_BUFFER = 0x80000004,
+    CDMi_OUT_OF_MEMORY = 0x80000005,
+    CDMi_FAIL = 0x80004005,
+    CDMi_INVALID_ARG = 0x80070057,
+    CDMi_SERVER_INTERNAL_ERROR = 0x8004C600,
+    CDMi_SERVER_INVALID_MESSAGE = 0x8004C601,
+    CDMi_SERVER_SERVICE_SPECIFIC = 0x8004C604,
 } CDMi_RESULT;
 
 typedef enum {
@@ -273,7 +273,8 @@ public:
         uint8_t** f_ppbOpaqueClearContent,
         const uint8_t keyIdLength,
         const uint8_t* keyId,
-        bool initWithLast15) = 0;
+        bool initWithLast15)
+        = 0;
 
     virtual CDMi_RESULT ReleaseClearContent(
         const uint8_t* f_pbSessionKey,
@@ -284,8 +285,7 @@ public:
 };
 
 // IMediaKeySession defines the MediaKeySession interface.
-class IMediaKeySessionExt
-{
+class IMediaKeySessionExt {
 public:
     IMediaKeySessionExt(void) {}
     virtual ~IMediaKeySessionExt(void) {}
@@ -294,11 +294,12 @@ public:
 
     virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
 
-    virtual CDMi_RESULT GetChallengeDataExt(uint8_t * challenge, uint32_t & challengeSize, uint32_t isLDL) = 0;
+    virtual CDMi_RESULT GetChallengeDataExt(uint8_t* challenge, uint32_t& challengeSize, uint32_t isLDL) = 0;
 
-    virtual CDMi_RESULT CancelChallengeDataExt()  = 0;;
+    virtual CDMi_RESULT CancelChallengeDataExt() = 0;
+    ;
 
-    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId) = 0;
+    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t* secureStopId) = 0;
 
     virtual CDMi_RESULT InitDecryptContextByKid() = 0;
 
@@ -313,7 +314,7 @@ public:
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
-        const std::string & keySystem,
+        const std::string& keySystem,
         int32_t licenseType,
         const char* f_pwszInitDataType,
         const uint8_t* f_pbInitData,
@@ -336,8 +337,7 @@ public:
 };
 
 // IMediaKeySession defines the MediaKeySessionExt interface.
-class IMediaKeysExt
-{
+class IMediaKeysExt {
 public:
     IMediaKeysExt(void) {}
     virtual ~IMediaKeysExt(void) {}
@@ -345,13 +345,15 @@ public:
     virtual time_t GetDrmSystemTime() const = 0;
 
     virtual CDMi_RESULT CreateMediaKeySessionExt(
-            const uint8_t drmHeader[],
-            uint32_t drmHeaderLength,
-            IMediaKeySessionExt** session) = 0;
+        const uint8_t drmHeader[],
+        uint32_t drmHeaderLength,
+        IMediaKeySessionExt** session)
+        = 0;
 
     // Destroy a MediaKeySession instance.
     virtual CDMi_RESULT DestroyMediaKeySessionExt(
-            IMediaKeySession *f_piMediaKeySession) = 0;
+        IMediaKeySession* f_piMediaKeySession)
+        = 0;
 
     virtual std::string GetVersionExt() const = 0;
 
@@ -364,21 +366,24 @@ public:
     virtual uint32_t ResetSecureStops() = 0;
 
     virtual CDMi_RESULT GetSecureStopIds(
-            uint8_t ids[],
-            uint8_t idSize,
-            uint32_t & count) = 0;
+        uint8_t ids[],
+        uint8_t idSize,
+        uint32_t& count)
+        = 0;
 
     virtual CDMi_RESULT GetSecureStop(
-            const uint8_t sessionID[],
-            uint32_t sessionIDLength,
-            uint8_t * rawData,
-            uint16_t & rawSize) = 0;
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        uint8_t* rawData,
+        uint16_t& rawSize)
+        = 0;
 
     virtual CDMi_RESULT CommitSecureStop(
-            const uint8_t sessionID[],
-            uint32_t sessionIDLength,
-            const uint8_t serverResponse[],
-            uint32_t serverResponseLength) = 0;
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        const uint8_t serverResponse[],
+        uint32_t serverResponseLength)
+        = 0;
 
     // TODO: rename to something like "SetStoreDirs"
     virtual CDMi_RESULT CreateSystemExt() = 0;
@@ -392,12 +397,14 @@ public:
     virtual CDMi_RESULT DeleteSecureStore() = 0;
 
     virtual CDMi_RESULT GetKeyStoreHash(
-            uint8_t secureStoreHash[],
-            uint32_t secureStoreHashLength) = 0;
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
+        = 0;
 
     virtual CDMi_RESULT GetSecureStoreHash(
-            uint8_t secureStoreHash[],
-            uint32_t secureStoreHashLength) = 0;
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
+        = 0;
 };
 
 struct ISystemFactory {

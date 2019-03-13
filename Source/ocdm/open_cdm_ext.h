@@ -34,9 +34,12 @@ struct OpenCDMSystemExt;
  *
  * \param system Original OCDMAccessor (representing OCDM system).
  * \param keySystem Name of DRM system (e.g. "com.netflix.playready").
- * \return An instance of \ref OpenCDMSystemExt, or NULL if key system doesn't support extended functionality.
+ * \return An instance of \ref OpenCDMSystemExt, or NULL if key system doesn't
+ * support extended functionality.
  */
-struct OpenCDMSystemExt * opencdm_create_system_ext(struct OpenCDMAccessor * system, const char keySystem[]);
+struct OpenCDMSystemExt*
+opencdm_create_system_ext(struct OpenCDMAccessor* system,
+    const char keySystem[]);
 
 /**
  * Desctructs Extended OCDM system.
@@ -48,10 +51,13 @@ OpenCDMError opencdm_destruct_system_ext(struct OpenCDMSystemExt* system);
 /**
  * Returns maximum number of concurrent LDLs (limited duration licenses).
  * \param system Extended OCDM system handle.
- * \param system ldlLimit Output parameter that will contain number of allowed concurrent LDLs.
+ * \param system ldlLimit Output parameter that will contain number of allowed
+ * concurrent LDLs.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_get_ldl_session_limit(struct OpenCDMSystemExt* system, uint32_t * ldlLimit);
+OpenCDMError
+opencdm_system_ext_get_ldl_session_limit(struct OpenCDMSystemExt* system,
+    uint32_t* ldlLimit);
 
 /**
  * Check Secure Stop is enabled or not.
@@ -66,7 +72,9 @@ bool opencdm_system_ext_is_secure_stop_enabled(struct OpenCDMSystemExt* system);
  * \param use Whether to enable Secure Stop (1: true, 0: false).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* system, uint32_t use);
+OpenCDMError
+opencdm_system_ext_enable_secure_stop(struct OpenCDMSystemExt* system,
+    uint32_t use);
 
 /**
  * Reset Secure stop.
@@ -81,7 +89,10 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystemExt* system);
  * \param count number of valid stop Ids
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystemExt* system, uint8_t Ids[], uint8_t idSize, uint32_t * count);
+OpenCDMError
+opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystemExt* system,
+    uint8_t Ids[], uint8_t idSize,
+    uint32_t* count);
 
 /**
  * Get a secure stop.
@@ -92,7 +103,11 @@ OpenCDMError opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystemExt* sys
  * \param rawSize secure stop info length (in bytes).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_get_secure_stop(struct OpenCDMSystemExt* system, const uint8_t sessionID[], uint32_t sessionIDLength, uint8_t rawData[], uint16_t * rawSize);
+OpenCDMError opencdm_system_ext_get_secure_stop(struct OpenCDMSystemExt* system,
+    const uint8_t sessionID[],
+    uint32_t sessionIDLength,
+    uint8_t rawData[],
+    uint16_t* rawSize);
 
 /**
  * Commits a secure stop.
@@ -103,25 +118,34 @@ OpenCDMError opencdm_system_ext_get_secure_stop(struct OpenCDMSystemExt* system,
  * \param serverResponseLength Server response length (in bytes).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_system_ext_commit_secure_stop(struct OpenCDMSystemExt* system, const uint8_t sessionID[], uint32_t sessionIDLength, const uint8_t serverResponse[], uint32_t serverResponseLength);
+OpenCDMError opencdm_system_ext_commit_secure_stop(
+    struct OpenCDMSystemExt* system, const uint8_t sessionID[],
+    uint32_t sessionIDLength, const uint8_t serverResponse[],
+    uint32_t serverResponseLength);
 
 /**
  * Gets Secure key hash.
  * \param system Extended OCDM system handle.
  * \param keyStoreHash Buffer that will contain key store hash.
- * \param keyStoreHashLength Size of keyStoreHash (make sure is at least 64 bytes).
+ * \param keyStoreHashLength Size of keyStoreHash (make sure is at least 64
+ * bytes).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_get_key_store_hash_ext(struct OpenCDMSystemExt* system, uint8_t keyStoreHash[], uint32_t keyStoreHashLength);
+OpenCDMError opencdm_get_key_store_hash_ext(struct OpenCDMSystemExt* system,
+    uint8_t keyStoreHash[],
+    uint32_t keyStoreHashLength);
 
 /**
  * Gets Secure Store hash.
  * \param system Extended OCDM system handle.
  * \param secureStoreHash Buffer that will contain secure store hash.
- * \param secureStoreHashLength Size of secureStoreHash (make sure is at least 64 bytes).
+ * \param secureStoreHashLength Size of secureStoreHash (make sure is at least
+ * 64 bytes).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system, uint8_t secureStoreHash[], uint32_t secureStoreHashLength);
+OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystemExt* system,
+    uint8_t secureStoreHash[],
+    uint32_t secureStoreHashLength);
 
 /**
  * Deletes key store.
@@ -144,27 +168,40 @@ OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystemExt* system);
  * \param drmHeaderSize Size of buffer containing DRM header (in bytes).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_set_drm_header(struct OpenCDMSession * opencdmSession, const uint8_t drmHeader[], uint32_t drmHeaderSize);
+OpenCDMError
+opencdm_session_set_drm_header(struct OpenCDMSession* opencdmSession,
+    const uint8_t drmHeader[],
+    uint32_t drmHeaderSize);
 
 /**
  * Gets challenge data for session.
- * Use this function in two steps: first set \ref challenge to NULL and pass a valid pointer to \ref challengeSize. This will
- * give you the minimum buffer size. Secondly, allocate \ref challengeSize bytes and pass via \ref challenge while also passing
- * allocated number of bytes in unsigned integer pointed to by \ref challengeSize.
+ * Use this function in two steps: first set \ref challenge to NULL and pass a
+ * valid pointer to \ref challengeSize. This will
+ * give you the minimum buffer size. Secondly, allocate \ref challengeSize bytes
+ * and pass via \ref challenge while also passing
+ * allocated number of bytes in unsigned integer pointed to by \ref
+ * challengeSize.
  * \param opencdmSession OCDM Session.
- * \param challenge Output buffer that will contain the challenge data, or NULL during the first pass to get required buffer size.
- * \param challengeSize Pointer to unsigned int that will either receive the required buffer size, or allocated number of bytes in \ref challenge.
- * \param isLDL Whether we want a Limited Duration License of not (1: yes, 0: no).
+ * \param challenge Output buffer that will contain the challenge data, or NULL
+ * during the first pass to get required buffer size.
+ * \param challengeSize Pointer to unsigned int that will either receive the
+ * required buffer size, or allocated number of bytes in \ref challenge.
+ * \param isLDL Whether we want a Limited Duration License of not (1: yes, 0:
+ * no).
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_get_challenge_data(struct OpenCDMSession * mOpenCDMSession, uint8_t * challenge, uint32_t * challengeSize, uint32_t isLDL);
+OpenCDMError
+opencdm_session_get_challenge_data(struct OpenCDMSession* mOpenCDMSession,
+    uint8_t* challenge, uint32_t* challengeSize,
+    uint32_t isLDL);
 
 /**
  * Cancel Challenge data in progress
  * \param opencdmSession OCDM Session.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_cancel_challenge_data(struct OpenCDMSession * mOpenCDMSession);
+OpenCDMError
+opencdm_session_cancel_challenge_data(struct OpenCDMSession* mOpenCDMSession);
 
 /**
  * Stores challenge data for session.
@@ -174,16 +211,20 @@ OpenCDMError opencdm_session_cancel_challenge_data(struct OpenCDMSession * mOpen
  * \param secureStopId Secure stop ID.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_store_license_data(struct OpenCDMSession * mOpenCDMSession, const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t * secureStopId);
+OpenCDMError opencdm_session_store_license_data(
+    struct OpenCDMSession* mOpenCDMSession, const uint8_t licenseData[],
+    uint32_t licenseDataSize, uint8_t* secureStopId);
 
 /**
  * Initializes the decryption context of a session via (unused Key ID).
- * Some applications (e.g. Netflix) require to call this function for some DRM systems (e.g. PlayReady 2.0).
+ * Some applications (e.g. Netflix) require to call this function for some DRM
+systems (e.g. PlayReady 2.0).
  :75
 * \param opencdmSession OCDM Session.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_init_decrypt_context_by_kid(struct OpenCDMSession * mOpenCDMSession);
+OpenCDMError opencdm_session_init_decrypt_context_by_kid(
+    struct OpenCDMSession* mOpenCDMSession);
 
 /**
  * Tear down the drm system
@@ -194,11 +235,13 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system);
 
 /**
  * Deinitializes the decryption context of a session via (unused Key ID).
- * Some applications (e.g. Netflix) require to call this function for some DRM systems (e.g. PlayReady 2.0).
+ * Some applications (e.g. Netflix) require to call this function for some DRM
+ * systems (e.g. PlayReady 2.0).
  * \param opencdmSession OCDM Session.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_clean_decrypt_context(struct OpenCDMSession * mOpenCDMSession);
+OpenCDMError
+opencdm_session_clean_decrypt_context(struct OpenCDMSession* mOpenCDMSession);
 #ifdef __cplusplus
 } // extern "C"
 #endif
