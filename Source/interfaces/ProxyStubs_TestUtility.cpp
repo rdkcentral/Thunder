@@ -2,9 +2,9 @@
 // generated automatically from "ITestUtility.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::ITestUtility
-//   - class ::WPEFramework::Exchange::ITestUtility::ICommand
-//   - class ::WPEFramework::Exchange::ITestUtility::ICommand::IIterator
+//   - class ITestUtility
+//   - class ITestUtility::ICommand
+//   - class ITestUtility::ICommand::IIterator
 //
 
 #include "ITestUtility.h"
@@ -451,6 +451,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

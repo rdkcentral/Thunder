@@ -2,8 +2,8 @@
 // generated automatically from "IPower.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IPower
-//   - class ::WPEFramework::Exchange::IPower::INotification
+//   - class IPower
+//   - class IPower::INotification
 //
 
 #include "IPower.h"
@@ -349,6 +349,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

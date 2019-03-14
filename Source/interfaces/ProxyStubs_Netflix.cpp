@@ -2,8 +2,8 @@
 // generated automatically from "INetflix.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::INetflix
-//   - class ::WPEFramework::Exchange::INetflix::INotification
+//   - class INetflix
+//   - class INetflix::INotification
 //
 
 #include "INetflix.h"
@@ -364,6 +364,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

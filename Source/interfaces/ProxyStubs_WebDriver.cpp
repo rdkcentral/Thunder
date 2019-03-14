@@ -2,7 +2,7 @@
 // generated automatically from "IWebDriver.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IWebDriver
+//   - class IWebDriver
 //
 
 #include "IWebDriver.h"
@@ -128,6 +128,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

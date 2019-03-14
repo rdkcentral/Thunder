@@ -2,7 +2,7 @@
 // generated automatically from "IAVNClient.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IAVNClient
+//   - class IAVNClient
 //
 
 #include "IAVNClient.h"
@@ -157,6 +157,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

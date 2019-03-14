@@ -2,7 +2,7 @@
 // generated automatically from "IContentDecryption.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IContentDecryption
+//   - class IContentDecryption
 //
 
 #include "IContentDecryption.h"
@@ -276,6 +276,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

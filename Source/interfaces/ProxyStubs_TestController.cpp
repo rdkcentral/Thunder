@@ -2,11 +2,11 @@
 // generated automatically from "ITestController.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::ITestController
-//   - class ::WPEFramework::Exchange::ITestController::ITest
-//   - class ::WPEFramework::Exchange::ITestController::ITest::IIterator
-//   - class ::WPEFramework::Exchange::ITestController::ICategory
-//   - class ::WPEFramework::Exchange::ITestController::ICategory::IIterator
+//   - class ITestController
+//   - class ITestController::ITest
+//   - class ITestController::ITest::IIterator
+//   - class ITestController::ICategory
+//   - class ITestController::ICategory::IIterator
 //
 
 #include "ITestController.h"
@@ -887,6 +887,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

@@ -2,8 +2,8 @@
 // generated automatically from "IStreaming.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IStreaming
-//   - class ::WPEFramework::Exchange::IStreaming::INotification
+//   - class IStreaming
+//   - class IStreaming::INotification
 //
 
 #include "IStreaming.h"
@@ -512,6 +512,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

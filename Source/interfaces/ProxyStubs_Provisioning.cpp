@@ -2,8 +2,8 @@
 // generated automatically from "IProvisioning.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IProvisioning
-//   - class ::WPEFramework::Exchange::IProvisioning::INotification
+//   - class IProvisioning
+//   - class IProvisioning::INotification
 //
 
 #include "IProvisioning.h"
@@ -223,6 +223,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

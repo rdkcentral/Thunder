@@ -2,12 +2,12 @@
 // generated automatically from "ITVControl.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IStream
-//   - class ::WPEFramework::Exchange::IStream::IControl
-//   - class ::WPEFramework::Exchange::IStream::IControl::IGeometry
-//   - class ::WPEFramework::Exchange::IStream::IControl::ICallback
-//   - class ::WPEFramework::Exchange::IStream::ICallback
-//   - class ::WPEFramework::Exchange::IPlayer
+//   - class IStream
+//   - class IStream::IControl
+//   - class IStream::IControl::IGeometry
+//   - class IStream::IControl::ICallback
+//   - class IStream::ICallback
+//   - class IPlayer
 //
 
 #include "ITVControl.h"
@@ -1117,6 +1117,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

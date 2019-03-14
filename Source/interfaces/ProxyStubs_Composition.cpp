@@ -2,9 +2,9 @@
 // generated automatically from "IComposition.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IComposition
-//   - class ::WPEFramework::Exchange::IComposition::IClient
-//   - class ::WPEFramework::Exchange::IComposition::INotification
+//   - class IComposition
+//   - class IComposition::IClient
+//   - class IComposition::INotification
 //
 
 #include "IComposition.h"
@@ -902,6 +902,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}
