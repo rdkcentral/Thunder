@@ -674,7 +674,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream::IControl*>();
+                output_proxy = reinterpret_cast<IStream::IControl*>(Interface(reader.Number<void*>(), IStream::IControl::ID));
             }
 
             return output_proxy;
@@ -833,7 +833,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream::IControl::IGeometry*>();
+                output_proxy = reinterpret_cast<IStream::IControl::IGeometry*>(Interface(reader.Number<void*>(), IStream::IControl::IGeometry::ID));
             }
 
             return output_proxy;
@@ -1061,7 +1061,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream*>();
+                output_proxy = reinterpret_cast<IStream*>(Interface(reader.Number<void*>(), IStream::ID));
             }
 
             return output_proxy;

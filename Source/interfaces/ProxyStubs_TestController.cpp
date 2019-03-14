@@ -509,7 +509,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ICategory::IIterator*>();
+                output_proxy = reinterpret_cast<ITestController::ICategory::IIterator*>(Interface(reader.Number<void*>(), ITestController::ICategory::IIterator::ID));
             }
 
             return output_proxy;
@@ -528,7 +528,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ICategory*>();
+                output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(reader.Number<void*>(), ITestController::ICategory::ID));
             }
 
             return output_proxy;
@@ -665,7 +665,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ITest*>();
+                output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(reader.Number<void*>(), ITestController::ITest::ID));
             }
 
             return output_proxy;
@@ -764,7 +764,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ITest::IIterator*>();
+                output_proxy = reinterpret_cast<ITestController::ITest::IIterator*>(Interface(reader.Number<void*>(), ITestController::ITest::IIterator::ID));
             }
 
             return output_proxy;
@@ -783,7 +783,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ITest*>();
+                output_proxy = reinterpret_cast<ITestController::ITest*>(Interface(reader.Number<void*>(), ITestController::ITest::ID));
             }
 
             return output_proxy;
@@ -854,7 +854,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<ITestController::ICategory*>();
+                output_proxy = reinterpret_cast<ITestController::ICategory*>(Interface(reader.Number<void*>(), ITestController::ICategory::ID));
             }
 
             return output_proxy;
