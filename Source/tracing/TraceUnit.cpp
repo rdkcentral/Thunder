@@ -212,10 +212,25 @@ namespace Trace {
             const char* thisModule = (*index)->Module();
             const char* thisCategory = (*index)->Category();
 
-            if (((*module == '\0') || (::strcmp(module, thisModule) == 0)) && ((*category == '\0') || (::strcmp(category, thisCategory) == 0))) {
+            if ((module != nullptr) && (category != nullptr)) {
+                if ((::strcmp(module, thisModule) == 0) && (::strcmp(category, thisCategory) == 0)) {
+                    modifications++;
+                    (*index)->Enabled(enable);
+                }
+            }
+            else if ((module != nullptr) && (category == nullptr)) {
+                if ((::strcmp(module, thisModule) == 0)) {
+                    //Disable/Enable traces for selected module
+                    modifications++;
+                    (*index)->Enabled(enable);
+                }
+            }
+            else {
+                //Disable/Enable traces for all modules
                 modifications++;
                 (*index)->Enabled(enable);
             }
+
             index++;
         }
 
