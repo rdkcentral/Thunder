@@ -256,7 +256,7 @@ OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system, const cha
  *         also needs to be destructed using \ref opencdm_session_destruct.
  * REPLACING: void* acquire_session(const uint8_t* keyId, const uint8_t keyLength, const uint32_t waitTime);
  */
-struct OpenCDMSession* opencdm_get_session(struct OpenCDmAccessor* system, const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
+struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system, const uint8_t keyId[], const uint8_t length, const uint32_t waitTime);
 
 /**
  * \brief Sets server certificate.
