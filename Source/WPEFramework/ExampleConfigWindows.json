@@ -1,13 +1,13 @@
 {
-  "port": 9999,
-  "interface": "WiFi",
+  "port": 80,
+  "binding": "0.0.0.0",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Windows/WPEFrameworkPlugins/artifacts/Persistent",
-  "volatilepath": "D:/Windows/WPEFrameworkPlugins/artifacts/Volatile",
-  "datapath": "D:/Windows/WPEFrameworkPlugins/artifacts/Data",
-  "systempath": "D:/Windows/WPEFrameworkPlugins/artifacts/Debug",
-  "proxystubpath": "D:/Windows/WPEFramework/artifacts/Debugproxystubs",
+  "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
+  "volatilepath": "D:/WPEFramework/artifacts/temp",
+  "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "systempath": "D:/WPEFramework/artifacts/Debug",
+  "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "plugins": [
@@ -25,6 +25,23 @@
       }
     },
     {
+      "callsign": "OutOfProcessPlugin",
+      "locator": "libOutOfProcessPlugin.so",
+      "classname": "OutOfProcessPlugin",
+      "autostart": true,
+      "configuration": {
+        "outofprocess": true,
+        "url": "http://netflix.com/tv",
+        "sleep": "720"
+      }
+    },
+    {
+      "callsign": "JSONRPCPlugin",
+      "locator": "libJSONRPCPlugin.so",
+      "classname": "JSONRPCPlugin",
+      "autostart": true
+    },
+    {
       "callsign": "WebServer",
       "locator": "libwebserver.so",
       "classname": "WebServer",
@@ -37,7 +54,7 @@
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -128,7 +145,7 @@
       "callsign": "Tracing",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": true
+      "autostart": false
     },
     {
       "autostart": false,

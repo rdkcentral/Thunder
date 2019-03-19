@@ -188,8 +188,7 @@ namespace Core {
 
                 if ((result == nullptr) || (data <= (sizeof(char*) * commandCount))) {
                     commandCount = 0;
-                }
-                else {
+                } else {
                     // Alright, create and fill the arrays.
                     char** indexer = reinterpret_cast<char**>(result);
                     char* destination = reinterpret_cast<char*>(&(static_cast<uint8_t*>(result)[(sizeof(char*) * commandCount)]));
@@ -289,26 +288,23 @@ namespace Core {
         inline bool IsActive() const
         {
 #ifdef __WIN32__
-            DWORD exitCode = 0;
-            if ((_info.hProcess != 0) && (_exitCode != static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
+            DWORD exitCode = _exitCode;
+            if ((_info.hProcess != 0) && (_exitCode == static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
-            }
-            else {
+            } else {
                 _exitCode = static_cast<uint32_t>(exitCode);
             }
 #else
             if ((_PID == 0) || (_exitCode != static_cast<uint32_t>(~0))) {
                 return (false);
-            }
-            else if (::kill(_PID, 0) == 0) {
+            } else if (::kill(_PID, 0) == 0) {
                 int status;
                 int result = waitpid(_PID, &status, WNOHANG);
 
                 if (result == static_cast<int>(_PID)) {
                     if (WIFEXITED(status) == true) {
                         _exitCode = (WEXITSTATUS(status) & 0xFF);
-                    }
-                    else {
+                    } else {
                         // Turn on highest bit to signal a SIGKILL was received.
                         _exitCode = 0x80000000;
                     }
@@ -441,8 +437,7 @@ namespace Core {
                         _stdin = stdinfd[1];
                         si.dwFlags |= STARTF_USESTDHANDLES;
                         inheritance = TRUE;
-                    }
-                    else {
+                    } else {
                         _stdin = 0;
                     }
                 }
@@ -451,14 +446,24 @@ namespace Core {
                 _parameters = ::malloc(size);
                 _argc = parameters.Line(_parameters, size);
 
-                if (!CreateProcess(parameters.Command().c_str(), reinterpret_cast<char*>(_parameters), nullptr, nullptr, inheritance, CREATE_NEW_CONSOLE, nullptr, nullptr, &si, &_info)) {
+                if (CreateProcess(
+                        parameters.Command().c_str(),
+                        reinterpret_cast<char*>(_parameters),
+                        nullptr,
+                        nullptr,
+                        inheritance,
+                        0, // CREATE_NEW_CONSOLE,
+                        nullptr,
+                        nullptr,
+                        &si,
+                        &_info)
+                    == 0) {
                     int status = GetLastError();
                     TRACE_L1("Failed to start a process, Error <%d>.", status);
                     error = (status == 2 ? Core::ERROR_UNAVAILABLE : Core::ERROR_GENERAL);
+                } else {
+                    *pid = _info.dwProcessId;
                 }
-				else {
-					*pid = _info.dwProcessId;
-				}
 
                 if (_stdin == 0) {
                     //* check descriptors if they need to be closed
@@ -530,11 +535,10 @@ namespace Core {
                         // TRACE_L1("Failed to start process: %s.", explain_execvp(*actualParameters, actualParameters));
                         int result = errno;
                         TRACE_L1("Failed to start process: %d - %d.", getpid(), result);
-			// No glory, so lets quit our selves, avoid the _atexit handlers they should not be there yet...
-			_exit(result);
+                        // No glory, so lets quit our selves, avoid the _atexit handlers they should not be there yet...
+                        _exit(result);
                     }
-                }
-                else if (static_cast<int>(_PID) != -1) {
+                } else if (static_cast<int>(_PID) != -1) {
                     /* Parent process... */
                     if (_stdin == -1) {
                         close(stdinfd[0]);
@@ -549,7 +553,7 @@ namespace Core {
                         _stderr = stderrfd[0];
                     }
                 }
-				_PID = *pid;
+                _PID = *pid;
                 if (_stdin == 0) {
                     //* check descriptors if they need to be closed
                     if (stdinfd[0] != -1) {
@@ -594,8 +598,7 @@ namespace Core {
             while ((IsActive() == true) && (timeLeft > 0)) {
                 if (timeLeft == Core::infinite) {
                     SleepMs(500);
-                }
-                else {
+                } else {
                     uint32_t sleepTime = (timeLeft > 500 ? 500 : timeLeft);
 
                     SleepMs(sleepTime);
@@ -604,7 +607,7 @@ namespace Core {
                 }
             }
 
-            return ((IsActive() == false) ? Core::ERROR_NONE: Core::ERROR_TIMEDOUT);
+            return ((IsActive() == false) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #endif
         }
 
@@ -614,18 +617,18 @@ namespace Core {
         }
 
         Process(uint32_t pid)
-           : _argc(0)
-           , _parameters(nullptr)
-           , _exitCode(static_cast<uint32_t>(~0))
+            : _argc(0)
+            , _parameters(nullptr)
+            , _exitCode(static_cast<uint32_t>(~0))
 #ifndef __WIN32__
-           , _stdin(0)
-           , _stdout(0)
-           , _stderr(0)
-           , _PID(pid)
+            , _stdin(0)
+            , _stdout(0)
+            , _stderr(0)
+            , _PID(pid)
 #else
-           , _stdin(nullptr)
-           , _stdout(nullptr)
-           , _stderr(nullptr)
+            , _stdin(nullptr)
+            , _stdout(nullptr)
+            , _stderr(nullptr)
 #endif
         {
 #ifdef __WIN32__

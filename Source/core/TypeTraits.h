@@ -5,7 +5,7 @@
 
 namespace WPEFramework {
 
-template<bool PARAMETER>
+template <bool PARAMETER>
 using EnableIfParameter = typename std::enable_if<PARAMETER, int>::type;
 
 namespace Core {
@@ -101,7 +101,6 @@ namespace Core {
         static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
     }
 
-
 #define HAS_TEMPLATE_MEMBER(func, parameter, name)                  \
     template <typename T, typename Sign>                            \
     struct name {                                                   \
@@ -110,7 +109,7 @@ namespace Core {
         template <typename U, U>                                    \
         struct type_check;                                          \
         template <typename _1>                                      \
-        static yes& chk(type_check<Sign, &_1::func<parameter> >*);  \
+        static yes& chk(type_check<Sign, &_1::func<parameter>>*);   \
         template <typename>                                         \
         static no& chk(...);                                        \
         static bool const value = sizeof(chk<T>(0)) == sizeof(yes); \
@@ -125,7 +124,6 @@ namespace Core {
         struct enable_if<false, T> {
         };
     }
-
 }
 } // namespace Core::TypeTraits
 

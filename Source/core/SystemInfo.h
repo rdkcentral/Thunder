@@ -29,10 +29,10 @@ namespace Core {
         string Id(const uint8_t RawDeviceId[], const uint8_t KeyLength);
 
         // First byte of the RawDeviceId is the length of the DeviceId to follow.
-        const uint8_t * RawDeviceId() const;
+        const uint8_t* RawDeviceId() const;
 
         static bool GetEnvironment(const string& name, string& value);
-        static bool SetEnvironment(const string& name, const TCHAR * value, const bool forced = true);
+        static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);
 
 #ifdef __WIN32__
@@ -46,7 +46,7 @@ namespace Core {
 
         ~SystemInfo();
 
-		void SetTime(const Time& time);
+        void SetTime(const Time& time);
 
         inline const string& GetHostName() const
         {
@@ -88,7 +88,7 @@ namespace Core {
             return m_freegpuram;
         }
 
-	/*
+        /*
         * Pentium cycle counter
         */
 #if defined(__GNUC__) && defined(__i386__) && !defined(HAVE_TICK_COUNTER)
@@ -133,19 +133,6 @@ namespace Core {
             asm volatile("rdtsc"
                          : "=a"(a), "=d"(d));
             return ((uint64_t)a) | (((uint64_t)d) << 32);
-        }
-
-#define HAVE_TICK_COUNTER
-#endif
-
-/* Visual C++, courtesy of Dirk Michaelis */
-#if _MSC_VER >= 1400 && (defined(_M_AMD64) || defined(_M_X64)) && !defined(HAVE_TICK_COUNTER)
-
-#include <intrin.h>
-#pragma intrinsic(__rdtsc)
-        inline uint64_t Ticks() const
-        {
-            return (__rdtsc);
         }
 
 #define HAVE_TICK_COUNTER
@@ -200,7 +187,7 @@ namespace Core {
 #define HAVE_TICK_COUNTER
 #endif
 
-#if defined(_MSC_VER) && defined(_M_IA64) && !defined(HAVE_TICK_COUNTER)
+#if defined(_MSC_VER) && !defined(HAVE_TICK_COUNTER)
         inline uint64_t Ticks() const
         {
             SYSTEMTIME systemTime;
@@ -259,17 +246,17 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                         \
-    extern "C" {                                                                                  \
-    namespace WPEFramework {                                                                         \
-        namespace Core {                                                                      \
-            namespace System {                                                                    \
-                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);  \
-                const char* ModuleName() { return (MODULE_NAME); }                                \
-                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); }                        \
-            }                                                                                     \
-        }                                                                                         \
-    }                                                                                             \
+#define MODULE_NAME_DECLARATION(buildref)                                                                     \
+    extern "C" {                                                                                              \
+    namespace WPEFramework {                                                                                  \
+        namespace Core {                                                                                      \
+            namespace System {                                                                                \
+                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
+                const char* ModuleName() { return (MODULE_NAME); }                                            \
+                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
+            }                                                                                                 \
+        }                                                                                                     \
+    }                                                                                                         \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

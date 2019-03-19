@@ -4,9 +4,9 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Portability.h"
 #include "DataElement.h"
 #include "FileSystem.h"
+#include "Portability.h"
 
 // ---- Referenced classes and types ----
 #ifdef __LINUX__
@@ -40,7 +40,8 @@ namespace Core {
         virtual ~DataElementFile();
 
     public:
-        inline const string& Name() const {
+        inline const string& Name() const
+        {
             return (m_File.Name());
         }
         inline bool IsValid() const

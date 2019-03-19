@@ -3,15 +3,15 @@
 
 #include "Module.h"
 
+#include "Channel.h"
 #include "Configuration.h"
 #include "IPlugin.h"
 #include "IShell.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"
-#include "IRPCIterator.h"
+#include "JSONRPC.h"
 #include "Request.h"
 #include "Service.h"
-#include "Channel.h"
 #include "VirtualInput.h"
 
 #ifdef __WIN32__

@@ -7,9 +7,9 @@
 
 #ifdef __UNIX__
 #include <errno.h>
-#include <sys/types.h>
 #include <poll.h>
 #include <stdarg.h>
+#include <sys/types.h>
 #endif
 #include "Portability.h"
 #include "ResourceMonitor.h"
@@ -130,7 +130,7 @@ namespace Core {
             const FlowControl flowControl,
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
- 
+
         virtual ~SerialPort();
 
     public:
@@ -160,10 +160,10 @@ namespace Core {
             m_ReadBytes = 0;
             m_SendOffset = 0;
             m_SendBytes = 0;
-            #ifndef __WIN32__ 
+#ifndef __WIN32__
             tcflush(m_Descriptor, TCIOFLUSH);
-            #endif
-      
+#endif
+
             m_syncAdmin.Unlock();
         }
         inline const string& LocalId() const
@@ -200,41 +200,45 @@ namespace Core {
             const uint16_t sendBufferSize,
             const uint16_t receiveBufferSize);
 
-        void SetBaudRate(const BaudRate baudrate) {
-            #ifdef __WIN32__
+        void SetBaudRate(const BaudRate baudrate)
+        {
+#ifdef __WIN32__
             m_PortSettings.BaudRate = baudrate;
             if (m_Descriptor != INVALID_HANDLE_VALUE) {
                 // TODO implementa on the fly changes..
                 ASSERT(false);
             }
-            #else
+#else
             cfsetospeed(&m_PortSettings, baudrate);
-	    cfsetispeed(&m_PortSettings, baudrate);
+            cfsetispeed(&m_PortSettings, baudrate);
             if (m_Descriptor != -1) {
-                
-	        if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
-		    TRACE_L1("Error setting a new speed: %d", -errno);
+
+                if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
+                    TRACE_L1("Error setting a new speed: %d", -errno);
                 }
             }
-            #endif
+#endif
         }
-        void SendBreak() {
-            #ifdef __WIN32__
-			// TODO: Implement a windows variant..
+        void SendBreak()
+        {
+#ifdef __WIN32__
+            // TODO: Implement a windows variant..
             ASSERT(false);
-            #else
-	    if (m_Descriptor != -1) {
+#else
+            if (m_Descriptor != -1) {
                 tcsendbreak(m_Descriptor, 0);
             }
-            #endif
+#endif
         }
 
     private:
-        void Opened() {
-            m_State = SerialPort::OPEN|SerialPort::READ|SerialPort::WRITE;
+        void Opened()
+        {
+            m_State = SerialPort::OPEN | SerialPort::READ | SerialPort::WRITE;
             StateChange();
         }
-        void Closed() {
+        void Closed()
+        {
             StateChange();
             m_State = 0;
         }

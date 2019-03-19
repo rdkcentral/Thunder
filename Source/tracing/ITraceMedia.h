@@ -1,8 +1,8 @@
 #ifndef __ITRACEMEDIA_H
 #define __ITRACEMEDIA_H
 
-#include "Module.h"
 #include "ITraceControl.h"
+#include "Module.h"
 
 namespace WPEFramework {
 namespace Trace {

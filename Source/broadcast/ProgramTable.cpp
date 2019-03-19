@@ -6,7 +6,8 @@ namespace Broadcast {
 
     /* static */ Core::ProxyPoolType<Core::DataStore> ProgramTable::_storeFactory(2);
 
-    /* static */ ProgramTable& ProgramTable::Instance() {
+    /* static */ ProgramTable& ProgramTable::Instance()
+    {
         static ProgramTable _instance;
         return (_instance);
     }
@@ -29,8 +30,7 @@ namespace Broadcast {
                         if (index.ProgramNumber() == 0) {
                             // ProgramNumber == 0 is reserved for the NIT pid
                             _parent._nitPids[_keyId] = index.Pid();
-                        }
-                        else {
+                        } else {
                             _entries.push_back(index.Pid() | (index.ProgramNumber() << 16));
                             TRACE_L1("ProgramNumber: %d on PID: %d", index.ProgramNumber(), index.Pid());
                         }

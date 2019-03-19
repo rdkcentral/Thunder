@@ -156,13 +156,11 @@ namespace Core {
                 result += base64_chars[((object[index] & 0xFC) >> 2)];
                 lastStuff = ((object[index] & 0x03) << 4);
                 state = 1;
-            }
-            else if (state == 1) {
+            } else if (state == 1) {
                 result += base64_chars[(((object[index] & 0xF0) >> 4) | lastStuff)];
                 lastStuff = ((object[index] & 0x0F) << 2);
                 state = 2;
-            }
-            else if (state == 2) {
+            } else if (state == 2) {
                 result += base64_chars[(((object[index] & 0xC0) >> 6) | lastStuff)];
                 result += base64_chars[(object[index] & 0x3F)];
                 state = 0;
@@ -176,8 +174,7 @@ namespace Core {
             if (padding == true) {
                 if (state == 1) {
                     result += _T("==");
-                }
-                else {
+                } else {
                     result += _T("=");
                 }
             }
@@ -197,41 +194,32 @@ namespace Core {
 
             if ((current >= 'A') && (current <= 'Z')) {
                 converted = (current - 'A');
-            }
-            else if ((current >= 'a') && (current <= 'z')) {
+            } else if ((current >= 'a') && (current <= 'z')) {
                 converted = (current - 'a' + 26);
-            }
-            else if ((current >= '0') && (current <= '9')) {
+            } else if ((current >= '0') && (current <= '9')) {
                 converted = (current - '0' + 52);
-            }
-            else if (current == '+') {
+            } else if (current == '+') {
                 converted = 62;
-            }
-            else if (current == '/') {
+            } else if (current == '/') {
                 converted = 63;
-            }
-            else if ((ignoreList != nullptr) && (::strchr(ignoreList, current) != nullptr)) {
+            } else if ((ignoreList != nullptr) && (::strchr(ignoreList, current) != nullptr)) {
                 continue;
-            }
-            else {
+            } else {
                 break;
             }
 
             if (state == 0) {
                 lastStuff = converted << 2;
                 state = 1;
-            }
-            else if (state == 1) {
+            } else if (state == 1) {
                 object[filler++] = (((converted & 0x30) >> 4) | lastStuff);
                 lastStuff = ((converted & 0x0F) << 4);
                 state = 2;
-            }
-            else if (state == 2) {
+            } else if (state == 2) {
                 object[filler++] = (((converted & 0x3C) >> 2) | lastStuff);
                 lastStuff = ((converted & 0x03) << 6);
                 state = 3;
-            }
-            else if (state == 3) {
+            } else if (state == 3) {
                 object[filler++] = ((converted & 0x3F) | lastStuff);
                 state = 0;
             }

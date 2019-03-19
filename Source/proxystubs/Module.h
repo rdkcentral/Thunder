@@ -5,13 +5,13 @@
 #define MODULE_NAME ProxyStubs
 #endif
 
-#include "../core/core.h"
 #include "../com/com.h"
+#include "../core/core.h"
 #include "../plugins/plugins.h"
 
 #ifdef __WIN32__
 #undef EXTERNAL
-#ifdef __MODULE_PROXYSTUBS__
+#ifdef PROXYSTUBS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT
@@ -21,4 +21,3 @@
 #endif
 
 #endif // __MODULE_PROXYSTUB_H
-

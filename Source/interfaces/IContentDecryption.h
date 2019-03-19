@@ -19,7 +19,7 @@ namespace Exchange {
         virtual RPC::IStringIterator* Designators(const string& keySystem) const = 0;
         virtual RPC::IStringIterator* Sessions(const string& keySystem) const = 0;
     };
-
-} }
+}
+}
 
 #endif // _CONTENT_DECRYPTION_H

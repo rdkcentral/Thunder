@@ -17,10 +17,9 @@ namespace Core {
 
     void ServiceAdministrator::Register(IServiceMetadata* service)
     {
-        std::list<IServiceMetadata*>::iterator index = std::find(_services.begin(), _services.end(), service);
-
         // Only register a service once !!!
-        ASSERT(index == _services.end());
+        ASSERT(std::find(_services.begin(), _services.end(), service) == _services.end());
+
         _services.push_back(service);
     }
 

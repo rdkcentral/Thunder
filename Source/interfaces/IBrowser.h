@@ -23,7 +23,7 @@ namespace Exchange {
             virtual void Closure() = 0;
         };
 
-        struct IMetadata : virtual public Core::IUnknown { 
+        struct IMetadata : virtual public Core::IUnknown {
             enum { ID = ID_BROWSER_METADATA };
 
             virtual ~IMetadata() {}

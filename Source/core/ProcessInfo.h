@@ -3,36 +3,36 @@
 
 #include <list>
 
+#include "IIterator.h"
 #include "Module.h"
 #include "Portability.h"
-#include "IIterator.h"
 
 namespace WPEFramework {
 namespace Core {
     class EXTERNAL ProcessInfo {
     public:
 #ifdef __WIN32__
-		enum scheduler {
-			BATCH,
-			IDLE,
-			FIFO,
-			ROUNDROBIN,
-			OTHER
-		};
+        enum scheduler {
+            BATCH,
+            IDLE,
+            FIFO,
+            ROUNDROBIN,
+            OTHER
+        };
 #else
-		// There are platforms/kernels being used that do not support all 
-                // scheduling types, like Horizon. Define a dummy value here..
-                #ifndef SCHED_IDLE
-                #define SCHED_IDLE 0x80000001
-                #endif
+// There are platforms/kernels being used that do not support all
+// scheduling types, like Horizon. Define a dummy value here..
+#ifndef SCHED_IDLE
+#define SCHED_IDLE 0x80000001
+#endif
 
-		enum scheduler {
-			BATCH = SCHED_BATCH,
-			FIFO = SCHED_FIFO,
-			ROUNDROBIN = SCHED_RR,
-			OTHER = SCHED_OTHER,
-			IDLE = SCHED_IDLE
-		};
+        enum scheduler {
+            BATCH = SCHED_BATCH,
+            FIFO = SCHED_FIFO,
+            ROUNDROBIN = SCHED_RR,
+            OTHER = SCHED_OTHER,
+            IDLE = SCHED_IDLE
+        };
 #endif
 
         class EXTERNAL Iterator {
@@ -91,7 +91,7 @@ namespace Core {
             }
             inline uint32_t Count() const
             {
-                return (_pids.size());
+                return (static_cast<uint32_t>(_pids.size()));
             }
 
         private:
@@ -123,66 +123,72 @@ namespace Core {
             return (Iterator(_pid));
         }
 
-		inline int8_t Priority() const {
+        inline int8_t Priority() const
+        {
 #ifdef __WIN32__
-			return (0);
+            return (0);
 #else
-			errno = 0;
-			int result = getpriority(PRIO_PROCESS, _pid);
+            errno = 0;
+            int result = getpriority(PRIO_PROCESS, _pid);
 
-			return (errno != 0 ? 0 : static_cast<int8_t>(result));
+            return (errno != 0 ? 0 : static_cast<int8_t>(result));
 #endif
-		}
-		inline void Priority(const int8_t priority) {
+        }
+        inline void Priority(const int8_t priority)
+        {
 #ifndef __WIN32__
-			if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
-				TRACE_L1("Failed to set priority. Error: %d", errno);
-			}
+            if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
+                TRACE_L1("Failed to set priority. Error: %d", errno);
+            }
 #endif
-		}
-		inline scheduler Policy() const {
+        }
+        inline scheduler Policy() const
+        {
 #ifdef __WIN32__
-			return (OTHER);
+            return (OTHER);
 #else
-			errno = 0;
-			int result = getpriority(PRIO_PROCESS, _pid);
+            errno = 0;
+            int result = getpriority(PRIO_PROCESS, _pid);
 
-			return (errno != 0 ? OTHER : static_cast<scheduler>(result));
+            return (errno != 0 ? OTHER : static_cast<scheduler>(result));
 #endif
-		}
-		inline void Policy(const scheduler priority) {
+        }
+        inline void Policy(const scheduler priority)
+        {
 #ifndef __WIN32__
-			if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
-				TRACE_L1("Failed to set priority. Error: %d", errno);
-			}
+            if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
+                TRACE_L1("Failed to set priority. Error: %d", errno);
+            }
 #endif
-		}
-		inline int8_t OOMAdjust() const {
+        }
+        inline int8_t OOMAdjust() const
+        {
 #ifdef __WIN32__
-			return (0);
+            return (0);
 #else
-			int8_t result = 0;
-			FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
+            int8_t result = 0;
+            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("r"));
 
-			if (fp) {
-				int number;
-				fscanf(fp, "%d", &number);
-				fclose(fp);
-				result = static_cast<uint8_t>(number);
-			}
-			return (result);
+            if (fp) {
+                int number;
+                fscanf(fp, "%d", &number);
+                fclose(fp);
+                result = static_cast<uint8_t>(number);
+            }
+            return (result);
 #endif
-		}
-		inline void OOMAdjust(const int8_t adjust) {
+        }
+        inline void OOMAdjust(const int8_t adjust)
+        {
 #ifndef __WIN32__
-			FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
+            FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
 
-			if (fp) {
-				fprintf(fp, "%d", adjust);
-				fclose(fp);
-			}
+            if (fp) {
+                fprintf(fp, "%d", adjust);
+                fclose(fp);
+            }
 #endif
-		}
+        }
 
         inline bool IsActive() const
         {
@@ -205,8 +211,8 @@ namespace Core {
         uint32_t Group(const string& groupName);
         string Group() const;
 
-        // Setting, or getting, the user can onl be done for the 
-        // current process, hence why they are static. 
+        // Setting, or getting, the user can onl be done for the
+        // current process, hence why they are static.
         static uint32_t User(const string& userName);
         static string User();
 

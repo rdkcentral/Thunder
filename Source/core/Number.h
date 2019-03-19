@@ -3,8 +3,8 @@
 
 #include "Module.h"
 #include "Portability.h"
-#include "TypeTraits.h"
 #include "TextFragment.h"
+#include "TypeTraits.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -158,11 +158,9 @@ namespace Core {
         {
             if (BASETYPE == BASE_HEXADECIMAL) {
                 return ((sizeof(TYPE) * 2) + (SIGNED == true ? 1 : 0) + 2 /* Number prefix 0x */ + 1 /* Closing null char */);
-            }
-            else if (BASETYPE == BASE_OCTAL) {
+            } else if (BASETYPE == BASE_OCTAL) {
                 return ((sizeof(TYPE) * 4) + (SIGNED == true ? 1 : 0) + 1 /* Number prefix 0 */ + 1 /* Closing null char */);
-            }
-            else {
+            } else {
                 return ((sizeof(TYPE) * 3) + (SIGNED == true ? 1 : 0) + 1 /* Closing null char */);
             }
         }
@@ -227,7 +225,7 @@ namespace Core {
 
         uint16_t Deserialize(const std::string& buffer)
         {
-            return (Convert(buffer.data(), buffer.length(), m_Value, BASETYPE));
+            return (Convert(buffer.data(), static_cast<uint32_t>(buffer.length()), m_Value, BASETYPE));
         }
         inline TYPE& Value()
         {
@@ -372,8 +370,7 @@ namespace Core {
                 uint8_t newDigit = (Value % Divider);
                 if (newDigit < 10) {
                     *Location-- = static_cast<wchar_t>(newDigit + '0');
-                }
-                else {
+                } else {
                     *Location-- = static_cast<wchar_t>(newDigit - 10 + 'A');
                 }
                 Value = Value / Divider;
@@ -409,8 +406,7 @@ namespace Core {
                 uint8_t newDigit = (Value % Divider);
                 if (newDigit < 10) {
                     *Location-- = static_cast<wchar_t>(newDigit + '0');
-                }
-                else {
+                } else {
                     *Location-- = static_cast<wchar_t>(newDigit - 10 + 'A');
                 }
                 Value = Value / Divider;
@@ -456,19 +452,16 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                }
-                else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
-                }
-                else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
+                } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
                     // Is it a sign change ???
                     if (*Text == '-') {
                         Sign = true;
                         Max = NUMBER_MIN_SIGNED(NUMBER);
                     }
-                }
-                else {
+                } else {
                     if (Base == BASE_UNKNOWN) {
                         Base = BASE_DECIMAL;
                     }
@@ -479,67 +472,55 @@ namespace Core {
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = (*Text - '0');
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
+                    } else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
                         if (Sign) {
                             int8_t Digit = ('0' - *Text);
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = (*Text - '0');
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
+                    } else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
                         if (Sign) {
                             int8_t Digit = static_cast<int8_t>('A' - toupper(*Text) - 10);
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = static_cast<int8_t>(toupper(*Text) - 'A' + 10);
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         Success = false;
                     }
                 }
@@ -578,15 +559,12 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                }
-                else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
-                }
-                else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
+                } else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
                     // Skip all shit and other white spaces
-                }
-                else {
+                } else {
                     if (Base == BASE_UNKNOWN) {
                         Base = BASE_DECIMAL;
                     }
@@ -596,32 +574,26 @@ namespace Core {
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
+                    } else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
                         uint8_t Digit = (*Text - '0');
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
+                    } else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
                         uint8_t Digit = static_cast<uint8_t>(toupper(*Text) - 'A' + 10);
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else {
+                    } else {
                         Success = false;
                     }
                 }
@@ -660,19 +632,16 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                }
-                else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
-                }
-                else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
+                } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
                     // Is it a sign change ???
                     if (*Text == '-') {
                         Sign = true;
                         Max = NUMBER_MIN_SIGNED(NUMBER);
                     }
-                }
-                else {
+                } else {
                     if (Base == BASE_UNKNOWN) {
                         Base = BASE_DECIMAL;
                     }
@@ -683,67 +652,55 @@ namespace Core {
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = (*Text - '0');
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
+                    } else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
                         if (Sign) {
                             int8_t Digit = ('0' - *Text);
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = (*Text - '0');
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
+                    } else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
                         if (Sign) {
                             int8_t Digit = static_cast<int8_t>('A' - toupper(*Text) - 10);
 
                             if ((Value >= (Max / Base)) && (Digit >= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
-                        }
-                        else {
+                        } else {
                             int8_t Digit = static_cast<int8_t>(toupper(*Text) - 'A' + 10);
 
                             if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                                 Value = (Value * Base) + Digit;
-                            }
-                            else {
+                            } else {
                                 Success = false;
                             }
                         }
-                    }
-                    else {
+                    } else {
                         Success = false;
                     }
                 }
@@ -782,15 +739,12 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                }
-                else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
-                }
-                else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
+                } else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
                     // Skip all shit and other white spaces
-                }
-                else {
+                } else {
                     if (Base == BASE_UNKNOWN) {
                         Base = BASE_DECIMAL;
                     }
@@ -800,32 +754,26 @@ namespace Core {
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
+                    } else if ((*Text >= '8') && (*Text <= '9') && (Base != BASE_OCTAL)) {
                         uint8_t Digit = (*Text - '0');
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
+                    } else if ((toupper(*Text) >= 'A') && (toupper(*Text) <= 'F') && (Base == BASE_HEXADECIMAL)) {
                         uint8_t Digit = static_cast<uint8_t>(toupper(*Text) - 'A' + 10);
 
                         if ((Value <= (Max / Base)) && (Digit <= (Max - (Value * Base)))) {
                             Value = (Value * static_cast<uint8_t>(Base)) + Digit;
-                        }
-                        else {
+                        } else {
                             Success = false;
                         }
-                    }
-                    else {
+                    } else {
                         Success = false;
                     }
                 }

@@ -60,11 +60,11 @@ namespace Core {
     // ===========================================================================
 
     class EXTERNAL CriticalSection {
-	private:
-		CriticalSection(const CriticalSection&) = delete;
-		CriticalSection& operator= (const CriticalSection&) = delete;
+    private:
+        CriticalSection(const CriticalSection&) = delete;
+        CriticalSection& operator=(const CriticalSection&) = delete;
 
-	public: // Methods
+    public: // Methods
         CriticalSection();
         ~CriticalSection();
 
@@ -128,12 +128,12 @@ namespace Core {
     // ===========================================================================
 
     class EXTERNAL BinairySemaphore {
-	private:
-		BinairySemaphore() = delete;
-		BinairySemaphore(const BinairySemaphore&) = delete;
-		BinairySemaphore& operator= (const BinairySemaphore&) = delete;
+    private:
+        BinairySemaphore() = delete;
+        BinairySemaphore(const BinairySemaphore&) = delete;
+        BinairySemaphore& operator=(const BinairySemaphore&) = delete;
 
-	public: // Methods
+    public: // Methods
         BinairySemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
         BinairySemaphore(bool blLocked);
         ~BinairySemaphore();
@@ -169,12 +169,12 @@ namespace Core {
     // ===========================================================================
 
     class EXTERNAL CountingSemaphore {
-	private:
-		CountingSemaphore() = delete;
-		CountingSemaphore(const CountingSemaphore&) = delete;
-		CountingSemaphore& operator= (const CountingSemaphore&) = delete;
+    private:
+        CountingSemaphore() = delete;
+        CountingSemaphore(const CountingSemaphore&) = delete;
+        CountingSemaphore& operator=(const CountingSemaphore&) = delete;
 
-	public: // Methods
+    public: // Methods
         CountingSemaphore(unsigned int nInitialCount, unsigned int nMaxCount);
         ~CountingSemaphore();
 
@@ -214,12 +214,12 @@ namespace Core {
     // ===========================================================================
 
     class EXTERNAL Event {
-	private:
-		Event() = delete;
-		Event(const Event&) = delete;
-		Event& operator= (const Event&) = delete;
+    private:
+        Event() = delete;
+        Event(const Event&) = delete;
+        Event& operator=(const Event&) = delete;
 
-	public: // Methods
+    public: // Methods
         Event(bool blSet, bool blManualReset);
         ~Event();
 
@@ -254,33 +254,33 @@ namespace Core {
 #endif
     };
 
-	// ===========================================================================
-	// class DoorBell
-	// ===========================================================================
-        // MF2018, note: usage of this class is currently not supported when the system time can make large jumps. Do not use SharedBuffer class when
-        //         the Time subsystem is not yet available.
-	class EXTERNAL DoorBell {
-	private:
-		DoorBell() = delete;
-		DoorBell(const DoorBell&) = delete;
-		DoorBell& operator= (const DoorBell&) = delete;
+    // ===========================================================================
+    // class DoorBell
+    // ===========================================================================
+    // MF2018, note: usage of this class is currently not supported when the system time can make large jumps. Do not use SharedBuffer class when
+    //         the Time subsystem is not yet available.
+    class EXTERNAL DoorBell {
+    private:
+        DoorBell() = delete;
+        DoorBell(const DoorBell&) = delete;
+        DoorBell& operator=(const DoorBell&) = delete;
 
-	public:
-		DoorBell(const TCHAR sourceName[]);
-		~DoorBell();
+    public:
+        DoorBell(const TCHAR sourceName[]);
+        ~DoorBell();
 
-	public:
-		void Ring();
-		uint32_t Wait(const uint32_t waitTime) const;
-		void Acknowledge();
+    public:
+        void Ring();
+        uint32_t Wait(const uint32_t waitTime) const;
+        void Acknowledge();
 
-	private:
+    private:
 #ifdef __WIN32__
-		HANDLE _doorBell;
+        HANDLE _doorBell;
 #else
-		sem_t* _doorBell;
+        sem_t* _doorBell;
 #endif
-	};
+    };
 
     template <typename SYNCOBJECT>
     class SafeSyncType {

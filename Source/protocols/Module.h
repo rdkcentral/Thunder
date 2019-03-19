@@ -2,13 +2,13 @@
 #define __MODULE_PROTOCOLS_H__
 
 #ifndef MODULE_NAME
-#define MODULE_NAME WPEFramework_Protocols
+#define MODULE_NAME Protocols
 #endif
 
-#include "../core/core.h"
-#include "../tracing/tracing.h"
-#include "../cryptalgo/cryptalgo.h"
 #include "../com/Ids.h"
+#include "../core/core.h"
+#include "../cryptalgo/cryptalgo.h"
+#include "../tracing/tracing.h"
 
 #ifdef __WIN32__
 #include "../websocket/windows/include/zlib.h"

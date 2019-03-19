@@ -2,8 +2,8 @@
 #define __WEBRESPONSE_H
 
 #include "Module.h"
-#include "WebRequest.h"
 #include "URL.h"
+#include "WebRequest.h"
 
 namespace WPEFramework {
 namespace Web {
@@ -318,46 +318,49 @@ namespace Web {
         {
             Response::ToString(*this, text);
         }
-		static void FromString(Response& realObject, const string& text)
-		{
-			class DeserializerImpl : public Deserializer {
-			public:
-				DeserializerImpl(Web::Response& destination)
-					: Deserializer()
-					, _destination(destination)
-				{
-				}
-				virtual ~DeserializerImpl()
-				{
-				}
+        static void FromString(Response& realObject, const string& text)
+        {
+            class DeserializerImpl : public Deserializer {
+            public:
+                DeserializerImpl(Web::Response& destination)
+                    : Deserializer()
+                    , _destination(destination)
+                {
+                }
+                virtual ~DeserializerImpl()
+                {
+                }
 
-			public:
-				// The whole request object is deserialised..
-				virtual void Deserialized(Web::Response& element VARIABLE_IS_NOT_USED) {
-				}
+            public:
+                // The whole request object is deserialised..
+                virtual void Deserialized(Web::Response& element VARIABLE_IS_NOT_USED)
+                {
+                }
 
-				// We need a request object to be able to fill it with info
-				virtual Web::Response* Element() {
-					return (&_destination);
-				}
+                // We need a request object to be able to fill it with info
+                virtual Web::Response* Element()
+                {
+                    return (&_destination);
+                }
 
-				// We reached the body, link a proper body to the response..
-				virtual bool LinkBody(Web::Response& request) {
-					return (request.HasBody());
-				}
+                // We reached the body, link a proper body to the response..
+                virtual bool LinkBody(Web::Response& request)
+                {
+                    return (request.HasBody());
+                }
 
-			private:
-				Web::Response& _destination;
+            private:
+                Web::Response& _destination;
 
-			} deserializer(realObject);
+            } deserializer(realObject);
 
-			// Request an object to e serialized..
-			deserializer.Deserialize(reinterpret_cast<const uint8_t*>(text.c_str()), static_cast<uint16_t>(text.length()));
-		}
-		inline void FromString(const string& text)
-		{
-			Response::FromString(*this, text);
-		}
+            // Request an object to e serialized..
+            deserializer.Deserialize(reinterpret_cast<const uint8_t*>(text.c_str()), static_cast<uint16_t>(text.length()));
+        }
+        inline void FromString(const string& text)
+        {
+            Response::FromString(*this, text);
+        }
         inline bool IsValid() const
         {
             return (ErrorCode != static_cast<uint16_t>(~0));

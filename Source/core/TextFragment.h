@@ -25,8 +25,7 @@ namespace Core {
                     ASSERT(offset <= copy.m_Length);
 
                     m_Length = copy.m_Length - offset;
-                }
-                else {
+                } else {
                     ASSERT((length + offset) <= copy.m_Length);
                     m_Length = length;
                 }
@@ -68,8 +67,7 @@ namespace Core {
                 if (offset > m_Length) {
                     m_Begin += m_Length;
                     m_Length = 0;
-                }
-                else {
+                } else {
                     m_Begin += offset;
                     m_Length -= offset;
                 }
@@ -80,8 +78,7 @@ namespace Core {
                 if (offset > m_Begin) {
                     m_Length += m_Begin;
                     m_Begin = 0;
-                }
-                else {
+                } else {
                     m_Begin -= offset;
                     m_Length += offset;
                 }
@@ -261,52 +258,60 @@ namespace Core {
             return (find_first_not_of(offset, delimiter));
         }
 
-        inline void TrimBegin(const TCHAR delimiter[]) {
+        inline void TrimBegin(const TCHAR delimiter[])
+        {
             uint32_t index = 0;
 
             if (m_Start == nullptr) {
-                while ((index < m_Index.Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr)) index++;
-            }
-            else {
-                while ((index < m_Index.Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr)) index++;
+                while ((index < m_Index.Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr))
+                    index++;
+            } else {
+                while ((index < m_Index.Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr))
+                    index++;
             }
             m_Index.SetIndexInfo(m_Index.Begin() + index, m_Index.Length() - index);
         }
-        inline void TrimEnd(const TCHAR delimiter[]) {
+        inline void TrimEnd(const TCHAR delimiter[])
+        {
             uint32_t index = Length() - 1;
 
             if (index > 0) {
                 if (m_Start == nullptr) {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr)) --index;
-                }
-                else {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr)) --index;
+                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr))
+                        --index;
+                } else {
+                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr))
+                        --index;
                 }
                 m_Index.SetIndexInfo(m_Index.Begin(), (index < Length() ? (index + 1) : 0));
             }
         }
-        inline uint32_t ReverseFind(const TCHAR delimiter[], const uint32_t offset = ~0) {
-            uint32_t index = (offset == static_cast<uint32_t>(~0) ? Length()-1 : offset);
+        inline uint32_t ReverseFind(const TCHAR delimiter[], const uint32_t offset = ~0)
+        {
+            uint32_t index = (offset == static_cast<uint32_t>(~0) ? Length() - 1 : offset);
 
             if (index > 0) {
                 if (m_Start == nullptr) {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) == nullptr)) --index;
-                }
-                else {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) == nullptr)) --index;
+                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) == nullptr))
+                        --index;
+                } else {
+                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) == nullptr))
+                        --index;
                 }
             }
             return (index);
         }
-        inline uint32_t ReverseSkip(const TCHAR delimiter[], const uint32_t offset = ~0) {
-            uint32_t index = (offset == static_cast<uint32_t>(~0) ? Length()-1 : offset);
+        inline uint32_t ReverseSkip(const TCHAR delimiter[], const uint32_t offset = ~0)
+        {
+            uint32_t index = (offset == static_cast<uint32_t>(~0) ? Length() - 1 : offset);
 
             if (index > 0) {
                 if (m_Start == nullptr) {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr)) --index ;
-                }
-                else {
-                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr)) --index ;
+                    while ((index < Length()) && (_tcschr(delimiter, m_Buffer[m_Index.Begin() + index]) != nullptr))
+                        --index;
+                } else {
+                    while ((index < Length()) && (_tcschr(delimiter, m_Start[m_Index.Begin() + index]) != nullptr))
+                        --index;
                 }
             }
             return (index);
@@ -336,8 +341,7 @@ namespace Core {
             if (offset < m_Index.Length()) {
                 if (m_Start == nullptr) {
                     equal = (_tcschr(characters, m_Buffer[m_Index.Begin() + offset]) != nullptr);
-                }
-                else {
+                } else {
                     equal = (_tcschr(characters, m_Start[m_Index.Begin() + offset]) != nullptr);
                 }
             }
@@ -353,16 +357,13 @@ namespace Core {
                 if (m_Start != nullptr) {
                     if (RHS.m_Start == nullptr) {
                         equal = (RHS.m_Buffer.compare(RHS.m_Index.Begin(), RHS.m_Index.Length(), &(m_Start[m_Index.Begin()]), m_Index.Length()) == 0);
-                    }
-                    else {
+                    } else {
                         equal = (_tcsncmp(&(RHS.m_Start[RHS.m_Index.Begin()]), &(m_Start[m_Index.Begin()]), RHS.m_Index.Length()) == 0);
                     }
-                }
-                else {
+                } else {
                     if (RHS.m_Start == nullptr) {
                         equal = (m_Buffer.compare(m_Index.Begin(), m_Index.Length(), RHS.m_Buffer, RHS.m_Index.Begin(), RHS.m_Index.Length()) == 0);
-                    }
-                    else {
+                    } else {
                         equal = (m_Buffer.compare(m_Index.Begin(), m_Index.Length(), &(RHS.m_Start[RHS.m_Index.Begin()]), RHS.m_Index.Length()) == 0);
                     }
                 }
@@ -379,16 +380,13 @@ namespace Core {
                 if (m_Start != nullptr) {
                     if (RHS.m_Start == nullptr) {
                         equal = (_tcsnicmp(&(RHS.m_Buffer[RHS.m_Index.Begin()]), &(m_Start[m_Index.Begin()]), m_Index.Length()) == 0);
-                    }
-                    else {
+                    } else {
                         equal = (_tcsnicmp(&(RHS.m_Start[RHS.m_Index.Begin()]), &(m_Start[m_Index.Begin()]), m_Index.Length()) == 0);
                     }
-                }
-                else {
+                } else {
                     if (RHS.m_Start == nullptr) {
                         equal = (_tcsnicmp(&(RHS.m_Buffer[RHS.m_Index.Begin()]), &(m_Buffer[m_Index.Begin()]), m_Index.Length()) == 0);
-                    }
-                    else {
+                    } else {
                         equal = (_tcsnicmp(&(RHS.m_Start[RHS.m_Index.Begin()]), &(m_Buffer[m_Index.Begin()]), m_Index.Length()) == 0);
                     }
                 }
@@ -410,12 +408,11 @@ namespace Core {
                     if (entry != nullptr) {
                         index = static_cast<uint32_t>(entry - start);
 
-                        if (index >  m_Index.Length()) {
+                        if (index > m_Index.Length()) {
                             index = m_Index.Length();
                         }
                     }
-                }
-                else {
+                } else {
                     uint32_t found = static_cast<uint32_t>(m_Buffer.find_first_of(delimiter, m_Index.Begin() + offset));
 
                     if (found <= m_Index.End()) {
@@ -443,8 +440,7 @@ namespace Core {
                     }
 
                     index = m_Index.Length() - length;
-                }
-                else {
+                } else {
                     uint32_t found = static_cast<uint32_t>(m_Buffer.find_first_of(delimiter, m_Index.Begin() + offset));
 
                     if (found <= m_Index.End()) {
@@ -472,8 +468,7 @@ namespace Core {
                     }
 
                     index = m_Index.Length() - length;
-                }
-                else {
+                } else {
                     uint32_t found = static_cast<uint32_t>(m_Buffer.find_first_not_of(delimiter, m_Index.Begin() + offset));
 
                     if (found <= m_Index.End()) {
@@ -501,8 +496,7 @@ namespace Core {
                     if (count != 0) {
                         index = count - 1;
                     }
-                }
-                else {
+                } else {
                     uint32_t found = static_cast<uint32_t>(m_Buffer.find_last_not_of(delimiter, m_Index.End()));
 
                     if ((found >= (m_Index.Begin() + offset)) && (found != m_Index.End())) {
@@ -595,14 +589,13 @@ namespace Core {
                     valid = true;
 
                     _current = TextFragment(_source, start, _index - start);
-                }
-                else {
+                } else {
                     start = _index + 1;
                 }
             }
-			if (valid == false) {
-				_index = start;
-			}
+            if (valid == false) {
+                _index = start;
+            }
 
             return (valid);
         }

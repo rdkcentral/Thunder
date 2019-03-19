@@ -16,14 +16,14 @@ namespace ProxyStub {
 
     /* virtual */ Core::IUnknown* UnknownStub::Convert(void* incomingData) const
     {
-		Core::IUnknown* result = reinterpret_cast<Core::IUnknown*>(incomingData);
+        Core::IUnknown* result = reinterpret_cast<Core::IUnknown*>(incomingData);
 
         return (result);
     }
 
     /* virtual */ void UnknownStub::Handle(const uint16_t index,
-                                           Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED,
-                                           Core::ProxyType<RPC::InvokeMessage>& message)
+        Core::ProxyType<Core::IPCChannel>& /* channel */,
+        Core::ProxyType<RPC::InvokeMessage>& message)
     {
         Core::IUnknown* implementation(Convert(message->Parameters().Implementation<void*>()));
 

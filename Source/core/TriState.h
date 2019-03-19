@@ -28,12 +28,10 @@ namespace Core {
                 // Its a single character flag, t/T or f/F
                 if (toupper(text[0]) == 'F') {
                     m_State = False;
-                }
-                else if (toupper(text[0]) == 'T') {
+                } else if (toupper(text[0]) == 'T') {
                     m_State = True;
                 }
-            }
-            else if ((length == 4) || (toupper(text[4]) == '\0')) {
+            } else if ((length == 4) || (toupper(text[4]) == '\0')) {
                 uint8_t index = 0;
                 TCHAR value[] = _T("TRUE\0");
 
@@ -44,8 +42,7 @@ namespace Core {
                 if (index == 4) {
                     m_State = True;
                 }
-            }
-            else if ((length == 5) || (toupper(text[5]) == '\0')) {
+            } else if ((length == 5) || (toupper(text[5]) == '\0')) {
                 uint8_t index = 0;
                 TCHAR value[] = _T("FALSE\0");
 

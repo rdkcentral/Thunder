@@ -5,9 +5,8 @@
 #define MODULE_NAME Process
 #endif
 
-#include "../core/core.h"
 #include "../com/com.h"
-#include "../plugins/plugins.h"
+#include "../core/core.h"
 
 #ifdef EXTERNAL
 #undef EXTERNAL

@@ -1,5 +1,5 @@
-#include <time.h>
 #include "Time.h"
+#include <time.h>
 
 namespace WPEFramework {
 namespace Core {
@@ -78,14 +78,12 @@ namespace Core {
             if (((index + 3) < maxLength) && (::isdigit(entry[index + 2]) != 0) && (::isdigit(entry[index + 3]) != 0)) {
                 year = static_cast<uint16_t>(((entry[index] - '0') * 1000) + ((entry[index + 1] - '0') * 100) + ((entry[index + 2] - '0') * 10) + (entry[index + 3] - '0'));
                 index += 4;
-            }
-            else {
+            } else {
                 year = static_cast<uint16_t>((entry[index] - '0') * 10) + (entry[index + 1] - '0');
 
                 if (year < 70) {
                     year += 2000;
-                }
-                else {
+                } else {
                     year += 1900;
                 }
                 index += 2;
@@ -113,8 +111,7 @@ namespace Core {
                 // hh:mm:ss
                 hours = static_cast<uint8_t>((hours * 10) + (entry[index + 1] - '0'));
                 index += 2;
-            }
-            else {
+            } else {
                 // h:mm:ss
                 index++;
             }
@@ -126,8 +123,7 @@ namespace Core {
                     // :mm:ss
                     minutes = static_cast<uint8_t>((minutes * 10) + (entry[index + 2] - '0'));
                     index += 3;
-                }
-                else {
+                } else {
                     // :m:ss ?
                     index += 2;
                 }
@@ -140,8 +136,7 @@ namespace Core {
                             // :ss
                             seconds = static_cast<uint8_t>((seconds * 10) + (entry[index + 2] - '0'));
                             index += 3;
-                        }
-                        else {
+                        } else {
                             // :s
                             index += 2;
                         }
@@ -155,24 +150,22 @@ namespace Core {
 
     const TCHAR* Time::WeekDayName() const
     {
-        static const TCHAR _weekDayNames[] = 
-            _T("Sun\0Mon\0Tue\0Wed\0Thu\0Fri\0Sat\0???\0");
+        static const TCHAR _weekDayNames[] = _T("Sun\0Mon\0Tue\0Wed\0Thu\0Fri\0Sat\0???\0");
 
         uint8_t weekDay = DayOfWeek();
-  
-        ASSERT (weekDay <= 6);
+
+        ASSERT(weekDay <= 6);
 
         return (weekDay <= 6 ? &(_weekDayNames[weekDay * 4]) : &(_weekDayNames[7 * 4]));
     }
-       
+
     const TCHAR* Time::MonthName() const
     {
-        static const TCHAR _monthNames[] = 
-            _T("???\0Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0");
+        static const TCHAR _monthNames[] = _T("???\0Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0");
 
         uint8_t month = Month();
-  
-        ASSERT (month >= 1 && month <= 12);
+
+        ASSERT(month >= 1 && month <= 12);
 
         return (month >= 1 && month <= 12 ? &(_monthNames[month * 4]) : &(_monthNames[0 * 4]));
     }
@@ -212,8 +205,7 @@ namespace Core {
                     if (::isdigit(buffer[index + 1]) != 0) {
                         day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
                         index += 2;
-                    }
-                    else {
+                    } else {
                         index++;
                     }
 
@@ -257,8 +249,7 @@ namespace Core {
                 // dd
                 day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
                 index += 2;
-            }
-            else {
+            } else {
                 // d
                 index++;
             }
@@ -334,8 +325,7 @@ namespace Core {
             if (::isdigit(buffer[index + 1]) != 0) {
                 day = static_cast<uint8_t>((day * 10) + (buffer[index + 1] - '0'));
                 index += 2;
-            }
-            else {
+            } else {
                 index++;
             }
 
@@ -415,7 +405,7 @@ namespace Core {
 
 #endif
 
-// Invariant for both Linux and Windows: internal time stored is always according to local time specification, so GMT / UTC if local time  is false, local time otherwise.
+    // Invariant for both Linux and Windows: internal time stored is always according to local time specification, so GMT / UTC if local time  is false, local time otherwise.
 
 #ifdef __WIN32__
 
@@ -446,8 +436,7 @@ namespace Core {
         fileTime.dwHighDateTime = result.HighPart;
 
         ::FileTimeToSystemTime(&fileTime, &_time);
-        if (IsLocalTime())
-        {
+        if (IsLocalTime()) {
             SYSTEMTIME convertedTime;
             SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             _time = convertedTime;
@@ -465,15 +454,12 @@ namespace Core {
     uint64_t Time::Ticks() const
     {
         // Contains a 64-bit value representing the number of 100-nanosecond intervals since January 1, 1601 (UTC).
-        FILETIME fileTime {};
-        if (IsLocalTime())
-        {
+        FILETIME fileTime{};
+        if (IsLocalTime()) {
             SYSTEMTIME convertedTime;
             TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
             ::SystemTimeToFileTime(&convertedTime, &fileTime);
-        }
-        else
-        {
+        } else {
             ::SystemTimeToFileTime(&_time, &fileTime);
         }
         _ULARGE_INTEGER result;
@@ -503,8 +489,7 @@ namespace Core {
         convertedTime.tm_min = _time.wMinute;
         convertedTime.tm_sec = _time.wSecond;
         convertedTime.tm_wday = _time.wDayOfWeek;
-        if (_time.wDayOfWeek == WORD(~0))
-        {
+        if (_time.wDayOfWeek == WORD(~0)) {
             convertedTime.tm_wday = DayOfWeek();
         }
         convertedTime.tm_yday = DayOfYear();
@@ -553,26 +538,21 @@ namespace Core {
 
         const TCHAR* zone = (localTime == false ? _T("GMT") : _T(""));
 
-        if (localTime != IsLocalTime())
-        {
+        if (localTime != IsLocalTime()) {
             SYSTEMTIME convertedTime;
-            if (IsLocalTime())
-            {
+            if (IsLocalTime()) {
                 TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
-            }
-            else
-            {
+            } else {
                 SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
             }
             Time converted(convertedTime, localTime);
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
-        }
-        else
+        } else
 #pragma warning(disable : 4996)
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(),
-                      Hours(), Minutes(), Seconds(), zone);
+                Hours(), Minutes(), Seconds(), zone);
 #pragma warning(default : 4996)
 
         return (string(buffer));
@@ -594,8 +574,7 @@ namespace Core {
     {
         if (localTime) {
             localtime_r(&time.tv_sec, &_time);
-        }
-        else {
+        } else {
             gmtime_r(&time.tv_sec, &_time);
         }
 
@@ -646,7 +625,8 @@ namespace Core {
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
     {
-        struct tm source {};
+        struct tm source {
+        };
 
         source.tm_year = year - 1900;
         source.tm_mon = month - 1;
@@ -663,8 +643,7 @@ namespace Core {
 
         if (localTime) {
             localtime_r(&flatTime, &_time);
-        }
-        else {
+        } else {
             gmtime_r(&flatTime, &_time);
         }
 
@@ -731,8 +710,7 @@ namespace Core {
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), converted.WeekDayName(),
                 converted.Day(), converted.MonthName(), converted.Year(),
                 converted.Hours(), converted.Minutes(), converted.Seconds(), zone);
-        }
-        else {
+        } else {
             _stprintf(buffer, _T("%s, %02d %s %04d %02d:%02d:%02d %s"), WeekDayName(), Day(), MonthName(), Year(), Hours(),
                 Minutes(), Seconds(), zone);
         }
@@ -791,18 +769,16 @@ namespace Core {
         return (seconds);
     }
 
-int32_t Time::DifferenceFromGMTSeconds() const
-{
+    int32_t Time::DifferenceFromGMTSeconds() const
+    {
 #ifdef __WIN32__
-    TIME_ZONE_INFORMATION timeZoneInfo;
-    GetTimeZoneInformation(&timeZoneInfo);
+        TIME_ZONE_INFORMATION timeZoneInfo;
+        GetTimeZoneInformation(&timeZoneInfo);
 
-    return static_cast<int32_t>(-timeZoneInfo.Bias * 60);
+        return static_cast<int32_t>(-timeZoneInfo.Bias * 60);
 #else
-    return static_cast<int32_t>(Handle().tm_gmtoff);
+        return static_cast<int32_t>(Handle().tm_gmtoff);
 #endif
-
-}
-
+    }
 }
 } // namespace Core

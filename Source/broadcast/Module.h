@@ -2,7 +2,7 @@
 #define __MODULE_BROADCAST_H
 
 #ifndef MODULE_NAME
-#define MODULE_NAME Broadcast 
+#define MODULE_NAME Broadcast
 #endif
 
 #include "../core/core.h"

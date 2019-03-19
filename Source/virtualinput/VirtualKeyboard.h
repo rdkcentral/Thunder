@@ -9,7 +9,7 @@ extern "C" {
 
 #ifdef _MSVC_LANG
 #undef EXTERNAL
-#ifdef __MODULE_VIRTUALINPUT__
+#ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
 #define EXTERNAL __declspec(dllimport)

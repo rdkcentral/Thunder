@@ -104,10 +104,11 @@ namespace Broadcast {
 
             return (updated);
         }
-        uint16_t NITPid(const uint16_t keyId) const {
+        uint16_t NITPid(const uint16_t keyId) const
+        {
             uint16_t result(~0);
 
-            NITPids::const_iterator index (_nitPids.find(keyId));
+            NITPids::const_iterator index(_nitPids.find(keyId));
 
             if (index != _nitPids.end()) {
                 result = index->second;
@@ -135,7 +136,7 @@ namespace Broadcast {
                 if (index->second != entry) {
                     added = true;
                     index->second = entry;
-                } 
+                }
             } else {
                 _programs.emplace(std::piecewise_construct, std::forward_as_tuple(key),
                     std::forward_as_tuple(data.Extension(), data.Data()));

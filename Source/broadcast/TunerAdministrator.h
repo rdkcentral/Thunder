@@ -32,16 +32,20 @@ namespace Broadcast {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
-            Sink& operator= (const Sink&) = delete;
+            Sink& operator=(const Sink&) = delete;
 
         public:
-            Sink(TunerAdministrator& parent) : _parent (parent) {
+            Sink(TunerAdministrator& parent)
+                : _parent(parent)
+            {
             }
-            virtual ~Sink() {
+            virtual ~Sink()
+            {
             }
 
         public:
-            virtual void StateChange(ITuner* tuner) override {
+            virtual void StateChange(ITuner* tuner) override
+            {
                 _parent.StateChange(tuner);
             }
 
@@ -56,7 +60,7 @@ namespace Broadcast {
             , _tuners()
         {
         }
- 
+
         typedef std::list<INotification*> Observers;
         typedef std::list<ITuner*> Tuners;
 
@@ -73,7 +77,7 @@ namespace Broadcast {
 
             _observers.push_back(observer);
 
-            Tuners::iterator index (_tuners.begin());
+            Tuners::iterator index(_tuners.begin());
             while (index != _tuners.end()) {
                 observer->Activated(*index);
                 observer->StateChange(*index);
@@ -94,8 +98,9 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        ICallback* Announce(ITuner* tuner) {
-             _adminLock.Lock();
+        ICallback* Announce(ITuner* tuner)
+        {
+            _adminLock.Lock();
 
             ASSERT(std::find(_tuners.begin(), _tuners.end(), tuner) == _tuners.end());
 
@@ -112,12 +117,13 @@ namespace Broadcast {
 
             return (&_sink);
         }
-        void Revoke(ITuner* tuner) {
-             _adminLock.Lock();
+        void Revoke(ITuner* tuner)
+        {
+            _adminLock.Lock();
 
-            Tuners::iterator entry (std::find(_tuners.begin(), _tuners.end(), tuner));
+            Tuners::iterator entry(std::find(_tuners.begin(), _tuners.end(), tuner));
 
-            ASSERT (entry != _tuners.end());
+            ASSERT(entry != _tuners.end());
 
             if (entry != _tuners.end()) {
 
@@ -135,10 +141,11 @@ namespace Broadcast {
         }
 
     private:
-        void StateChange(ITuner* tuner) {
-             _adminLock.Lock();
+        void StateChange(ITuner* tuner)
+        {
+            _adminLock.Lock();
 
-            ASSERT (std::find(_tuners.begin(), _tuners.end(), tuner) != _tuners.end());
+            ASSERT(std::find(_tuners.begin(), _tuners.end(), tuner) != _tuners.end());
 
             Observers::iterator index(_observers.begin());
 
@@ -149,7 +156,6 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        
 
     private:
         Core::CriticalSection _adminLock;

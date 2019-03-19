@@ -22,7 +22,7 @@ namespace Exchange {
         };
 
         virtual ~IGuide() {}
-                            
+
         virtual uint32_t StartParser(PluginHost::IShell*) = 0;
         virtual const string GetChannels() = 0;
         virtual const string GetPrograms() = 0;

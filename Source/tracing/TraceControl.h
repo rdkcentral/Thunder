@@ -4,33 +4,33 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
+#include "ITraceControl.h"
 #include "Module.h"
 #include "TraceUnit.h"
-#include "ITraceControl.h"
 
 // ---- Referenced classes and types ----
 
 // ---- Helper types and constants ----
-#define TRACE(CATEGORY, PARAMETERS)                                                                              \
+#define TRACE(CATEGORY, PARAMETERS)                                                    \
     if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
-        CATEGORY __data__ PARAMETERS;                                                                            \
+        CATEGORY __data__ PARAMETERS;                                                  \
         Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                                           \
-            __FILE__,                                                                                            \
-            __LINE__,                                                                                            \
-            typeid(*this).name(),                                                                                \
-            &__message__);                                                                                       \
+        Trace::TraceUnit::Instance().Trace(                                            \
+            __FILE__,                                                                  \
+            __LINE__,                                                                  \
+            typeid(*this).name(),                                                      \
+            &__message__);                                                             \
     }
 
-#define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                                                       \
+#define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                             \
     if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
-        CATEGORY __data__ PARAMETERS;                                                                            \
+        CATEGORY __data__ PARAMETERS;                                                  \
         Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                                           \
-            __FILE__,                                                                                            \
-            __LINE__,                                                                                            \
-            "<<Global>>",                                                                                        \
-            &__message__);                                                                                       \
+        Trace::TraceUnit::Instance().Trace(                                            \
+            __FILE__,                                                                  \
+            __LINE__,                                                                  \
+            "<<Global>>",                                                              \
+            &__message__);                                                             \
     }
 
 // ---- Helper functions ----
@@ -173,10 +173,10 @@ namespace Trace {
         {
             return (_traceInfo.Data());
         }
-		virtual uint16_t Length() const
-		{
-			return (_traceInfo.Length());
-		}
+        virtual uint16_t Length() const
+        {
+            return (_traceInfo.Length());
+        }
 
     private:
         CATEGORY& _traceInfo;

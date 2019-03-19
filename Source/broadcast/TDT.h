@@ -18,91 +18,104 @@
 
 namespace WPEFramework {
 namespace Broadcast {
-namespace DVB {
-  
-    class EXTERNAL TDT {
-    private:
-        TDT& operator=(const TDT& rhs) = delete;
+    namespace DVB {
 
-    public:
-        static const uint16_t ID = 0x70;
+        class EXTERNAL TDT {
+        private:
+            TDT& operator=(const TDT& rhs) = delete;
 
-    public:
-        TDT() : _time() {
-        }
-        TDT(const MPEG::Section& data) : _time() {
-            if (data.IsValid() == true) {
-                const Core::DataElement info(data.Data());
+        public:
+            static const uint16_t ID = 0x70;
 
-                // EXAMPLE: 93/10/13 12:45:00 is coded as "0xC079 124500".
-                uint16_t MJD = (info[0] << 8) | info[1];
-                uint32_t J, C, Y, M;
-
-                J = MJD + 2400001 + 68569;
-                C = 4 * J / 146097;
-                J = J - (146097 * C + 3) / 4;
-                Y = 4000 * (J + 1) / 1461001;
-                J = J - 1461 * Y / 4 + 31;
-                M = 80 * J / 2447;
-
-               uint8_t day = static_cast<uint8_t>(J - 2447 * M / 80);
-               J = M / 11;
-               uint8_t month = static_cast<uint8_t>(M + 2 - (12 * J));
-               uint16_t year = static_cast<uint16_t>(100 * (C - 49) + Y + J);
-               uint8_t uren = ((info[2] >> 4) * 10) + (info[2] & 0xF);
-               uint8_t minuten = ((info[3] >> 4) * 10) + (info[3] & 0xF);
-               uint8_t seconden = ((info[4] >> 4) * 10) + (info[4] & 0xF);
-
-               printf ("Loadeded: %d-%d-%d %d:%d.%d\n", day, month, year, uren, minuten, seconden);
-               _time = Core::Time(year, month, day, uren, minuten, seconden, 0, false);
+        public:
+            TDT()
+                : _time()
+            {
             }
-        }
-        TDT(const TDT& copy) : _time(copy._time) {
-        }
-        ~TDT() {}
+            TDT(const MPEG::Section& data)
+                : _time()
+            {
+                if (data.IsValid() == true) {
+                    const Core::DataElement info(data.Data());
 
-    public:
-        inline bool IsValid() const
-        {
-            return (_time.IsValid());
-        }
-        inline const Core::Time& Time() const { return (_time); }
+                    // EXAMPLE: 93/10/13 12:45:00 is coded as "0xC079 124500".
+                    uint16_t MJD = (info[0] << 8) | info[1];
+                    uint32_t J, C, Y, M;
 
-    private:
-        Core::Time _time;
-    };
+                    J = MJD + 2400001 + 68569;
+                    C = 4 * J / 146097;
+                    J = J - (146097 * C + 3) / 4;
+                    Y = 4000 * (J + 1) / 1461001;
+                    J = J - 1461 * Y / 4 + 31;
+                    M = 80 * J / 2447;
 
-    class EXTERNAL TOT : public TDT {
-    private:
-        TOT& operator=(const TOT& rhs) = delete;
+                    uint8_t day = static_cast<uint8_t>(J - 2447 * M / 80);
+                    J = M / 11;
+                    uint8_t month = static_cast<uint8_t>(M + 2 - (12 * J));
+                    uint16_t year = static_cast<uint16_t>(100 * (C - 49) + Y + J);
+                    uint8_t uren = ((info[2] >> 4) * 10) + (info[2] & 0xF);
+                    uint8_t minuten = ((info[3] >> 4) * 10) + (info[3] & 0xF);
+                    uint8_t seconden = ((info[4] >> 4) * 10) + (info[4] & 0xF);
 
-    public:
-        static const uint16_t ID = 0x73;
+                    printf("Loadeded: %d-%d-%d %d:%d.%d\n", day, month, year, uren, minuten, seconden);
+                    _time = Core::Time(year, month, day, uren, minuten, seconden, 0, false);
+                }
+            }
+            TDT(const TDT& copy)
+                : _time(copy._time)
+            {
+            }
+            ~TDT() {}
 
-    public:
-        TOT() : TDT(), _data() {
-        }
-        TOT(const MPEG::Section& data) : TDT(data), _data(data.Data()) {
-        }
-        TOT(const TOT& copy) : TDT(copy), _data(copy._data) {
-        }
-        ~TOT() {}
+        public:
+            inline bool IsValid() const
+            {
+                return (_time.IsValid());
+            }
+            inline const Core::Time& Time() const { return (_time); }
 
-    public:
-        MPEG::DescriptorIterator Descriptors() const
-        {
-            uint16_t size(((_data[6] & 0xF) << 8) | _data[7]);
-            return (MPEG::DescriptorIterator(Core::DataElement(_data, 8, size)));
-        }
-        
-    private:
-        Core::DataElement _data;
-    };
+        private:
+            Core::Time _time;
+        };
 
+        class EXTERNAL TOT : public TDT {
+        private:
+            TOT& operator=(const TOT& rhs) = delete;
 
-} // namespace DVB 
+        public:
+            static const uint16_t ID = 0x73;
+
+        public:
+            TOT()
+                : TDT()
+                , _data()
+            {
+            }
+            TOT(const MPEG::Section& data)
+                : TDT(data)
+                , _data(data.Data())
+            {
+            }
+            TOT(const TOT& copy)
+                : TDT(copy)
+                , _data(copy._data)
+            {
+            }
+            ~TOT() {}
+
+        public:
+            MPEG::DescriptorIterator Descriptors() const
+            {
+                uint16_t size(((_data[6] & 0xF) << 8) | _data[7]);
+                return (MPEG::DescriptorIterator(Core::DataElement(_data, 8, size)));
+            }
+
+        private:
+            Core::DataElement _data;
+        };
+
+    } // namespace DVB
 } // namespace Broadcast
 } // namespace WPEFramework
 
 #endif // DVB_TDT_TABLE_H
-

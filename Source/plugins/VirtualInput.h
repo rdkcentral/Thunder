@@ -163,7 +163,7 @@ namespace PluginHost {
             ~KeyMap()
             {
 
-                std::map<uint16_t, int16_t > removedKeys;
+                std::map<uint16_t, int16_t> removedKeys;
 
                 while (_keyMap.size() > 0) {
 
@@ -171,7 +171,6 @@ namespace PluginHost {
                     removedKeys[_keyMap.begin()->second.Code]--;
 
                     _keyMap.erase(_keyMap.begin());
-
                 }
 
                 ChangeIterator removed(removedKeys);
@@ -242,88 +241,99 @@ namespace PluginHost {
             COMPLETED = 3
         };
 
-        typedef Core::IDispatchType<uint32_t> Notifier;
+        struct INotifier {
+            virtual ~INotifier() {}
+            virtual void Dispatch(const actiontype action, const uint32_t code) = 0;
+        };
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
 
     private:
-		class PostLookupTable : public Core::JSON::Container {
-		private:
-			PostLookupTable(const PostLookupTable&) = delete;
-			PostLookupTable& operator= (const PostLookupTable&) = delete;
+        class PostLookupTable : public Core::JSON::Container {
+        private:
+            PostLookupTable(const PostLookupTable&) = delete;
+            PostLookupTable& operator=(const PostLookupTable&) = delete;
 
-		public:
-			class Conversion : public Core::JSON::Container {
-			private:
-				Conversion& operator= (const Conversion&) = delete;
+        public:
+            class Conversion : public Core::JSON::Container {
+            private:
+                Conversion& operator=(const Conversion&) = delete;
 
-			public:
-				class KeyCode : public Core::JSON::Container {
-				private:
-					KeyCode& operator= (const KeyCode&) = delete;
+            public:
+                class KeyCode : public Core::JSON::Container {
+                private:
+                    KeyCode& operator=(const KeyCode&) = delete;
 
-				public:
-					KeyCode()
-						: Core::JSON::Container()
-						, Code()
-						, Mods() {
-						Add(_T("code"), &Code);
-						Add(_T("mods"), &Mods);
-					}
-					KeyCode(const KeyCode& copy)
-						: Core::JSON::Container()
-						, Code()
-						, Mods() {
-						Add(_T("code"), &Code);
-						Add(_T("mods"), &Mods);
-					}
-					virtual ~KeyCode() {
-					}
-				public:
-					Core::JSON::DecUInt16 Code;
-					Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier> > Mods;
-				};
+                public:
+                    KeyCode()
+                        : Core::JSON::Container()
+                        , Code()
+                        , Mods()
+                    {
+                        Add(_T("code"), &Code);
+                        Add(_T("mods"), &Mods);
+                    }
+                    KeyCode(const KeyCode& copy)
+                        : Core::JSON::Container()
+                        , Code()
+                        , Mods()
+                    {
+                        Add(_T("code"), &Code);
+                        Add(_T("mods"), &Mods);
+                    }
+                    virtual ~KeyCode()
+                    {
+                    }
 
-			public:
-				Conversion()
-					: Core::JSON::Container()
-					, In()
-					, Out() {
-					Add(_T("in"), &In);
-					Add(_T("out"), &Out);
-				}
-				Conversion(const Conversion& copy)
-					: Core::JSON::Container()
-					, In()
-					, Out() {
-					Add(_T("in"), &In);
-					Add(_T("out"), &Out);
-				}
-				virtual ~Conversion() {
-				}
+                public:
+                    Core::JSON::DecUInt16 Code;
+                    Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier>> Mods;
+                };
 
-			public:
-				KeyCode In;
-				KeyCode Out;
-			};
+            public:
+                Conversion()
+                    : Core::JSON::Container()
+                    , In()
+                    , Out()
+                {
+                    Add(_T("in"), &In);
+                    Add(_T("out"), &Out);
+                }
+                Conversion(const Conversion& copy)
+                    : Core::JSON::Container()
+                    , In()
+                    , Out()
+                {
+                    Add(_T("in"), &In);
+                    Add(_T("out"), &Out);
+                }
+                virtual ~Conversion()
+                {
+                }
 
+            public:
+                KeyCode In;
+                KeyCode Out;
+            };
 
-		public:
-			PostLookupTable()
-				: Core::JSON::Container()
-				, Conversions() {
-				Add(_T("conversion"), &Conversions);
-			}
-			~PostLookupTable() {
-			}
+        public:
+            PostLookupTable()
+                : Core::JSON::Container()
+                , Conversions()
+            {
+                Add(_T("conversion"), &Conversions);
+            }
+            ~PostLookupTable()
+            {
+            }
 
-		public:
-			Core::JSON::ArrayType<Conversion> Conversions;
-		};
-	
-		typedef std::map<const string, KeyMap> TableMap;
-        typedef std::vector<Notifier*> NotifierList;
+        public:
+            Core::JSON::ArrayType<Conversion> Conversions;
+        };
+
+        typedef std::map<const string, KeyMap> TableMap;
+        typedef std::vector<INotifier*> NotifierList;
         typedef std::map<uint32_t, NotifierList> NotifierMap;
-        typedef std::map<const string, PostLookupEntries > PostLookupMap;
+        typedef std::map<const string, PostLookupEntries> PostLookupMap;
 
     public:
         VirtualInput();
@@ -348,8 +358,7 @@ namespace PluginHost {
             if (table.empty() == true) {
 
                 _defaultMap = nullptr;
-            }
-            else {
+            } else {
                 TableMap::iterator index(_mappingTables.find(table));
 
                 ASSERT(index != _mappingTables.end());
@@ -382,8 +391,8 @@ namespace PluginHost {
             }
         }
 
-        void Register(const uint32_t keyCode, Notifier* callback);
-        void Unregister(const uint32_t keyCode, const Notifier* callback);
+        void Register(INotifier* callback, const uint32_t keyCode = ~0);
+        void Unregister(const INotifier* callback, const uint32_t keyCode = ~0);
 
         // -------------------------------------------------------------------------------------------------------
         // Whenever a key is pressed or released, let this object know, it will take the proper arrangements and timings
@@ -391,34 +400,34 @@ namespace PluginHost {
         // in this plugin. No need to signal this.
         uint32_t KeyEvent(const bool pressed, const uint32_t code, const string& tablename);
 
-        typedef Core::IteratorMapType<const std::map<uint16_t,int16_t>, uint16_t, int16_t, std::map<uint16_t,int16_t>::const_iterator> ChangeIterator;
+        typedef Core::IteratorMapType<const std::map<uint16_t, int16_t>, uint16_t, int16_t, std::map<uint16_t, int16_t>::const_iterator> ChangeIterator;
 
-        void PostLookup(const string& linkName, const string& tableName) {
+        void PostLookup(const string& linkName, const string& tableName)
+        {
             Core::File data(tableName);
             if (data.Open(true) == true) {
                 PostLookupTable info;
                 info.FromFile(data);
-                Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index (info.Conversions.Elements());
+                Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
                 _lock.Lock();
 
                 PostLookupMap::iterator postMap(_postLookupTable.find(linkName));
                 if (postMap != _postLookupTable.end()) {
                     postMap->second.clear();
-                }
-                else {
+                } else {
                     auto newElement = _postLookupTable.emplace(std::piecewise_construct,
-                                                                 std::make_tuple(linkName),
-                                                                 std::make_tuple());
-                    postMap = newElement.first; 
+                        std::make_tuple(linkName),
+                        std::make_tuple());
+                    postMap = newElement.first;
                 }
                 while (index.Next() == true) {
-                    if ( (index.Current().In.IsSet() == true) && (index.Current().Out.IsSet() == true) ) {
+                    if ((index.Current().In.IsSet() == true) && (index.Current().Out.IsSet() == true)) {
                         uint32_t from = index.Current().In.Code.Value();
                         uint32_t to = index.Current().Out.Code.Value();
 
                         from |= (Modifiers(index.Current().In.Mods) << 16);
-                        to   |= (Modifiers(index.Current().In.Mods) << 16);
+                        to |= (Modifiers(index.Current().In.Mods) << 16);
 
                         postMap->second.insert(std::pair<const uint32_t, const uint32_t>(from, to));
                     }
@@ -433,12 +442,13 @@ namespace PluginHost {
                 _lock.Unlock();
             }
         }
-        inline const PostLookupEntries* FindPostLookup(const string& linkName) const {
-            PostLookupMap::const_iterator linkMap (_postLookupTable.find(linkName));
+        inline const PostLookupEntries* FindPostLookup(const string& linkName) const
+        {
+            PostLookupMap::const_iterator linkMap(_postLookupTable.find(linkName));
 
             return (linkMap != _postLookupTable.end() ? &(linkMap->second) : nullptr);
         }
- 
+
     private:
         virtual void MapChanges(ChangeIterator& updated) = 0;
         virtual void LookupChanges(const string&) = 0;
@@ -447,16 +457,17 @@ namespace PluginHost {
         void ModifierKey(const actiontype type, const uint16_t modifiers);
         bool SendModifier(const actiontype type, const enumModifier mode);
         void AdministerAndSendKey(const actiontype type, const uint32_t code);
-        void DispatchRegisteredKey(uint32_t code);
+        void DispatchRegisteredKey(const actiontype type, uint32_t code);
 
         virtual void SendKey(const actiontype type, const uint32_t code) = 0;
 
-        inline uint16_t Modifiers(const Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier> > & modifiers) const {
+        inline uint16_t Modifiers(const Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier>>& modifiers) const
+        {
             uint16_t result = 0;
-            Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier> >::ConstIterator index (modifiers.Elements());
+            Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier>>::ConstIterator index(modifiers.Elements());
 
             while (index.Next() == true) {
-                KeyMap::modifier element (index.Current());
+                KeyMap::modifier element(index.Current());
                 result |= element;
             }
 
@@ -464,13 +475,14 @@ namespace PluginHost {
         }
 
     protected:
-       Core::CriticalSection _lock;
+        Core::CriticalSection _lock;
 
     private:
         RepeatKeyTimer _repeatKey;
         uint32_t _modifiers;
         std::map<const string, KeyMap> _mappingTables;
         KeyMap* _defaultMap;
+        NotifierList _notifierList;
         NotifierMap _notifierMap;
         PostLookupMap _postLookupTable;
         string _keyTable;
@@ -514,7 +526,7 @@ namespace PluginHost {
         };
 
         typedef Core::IPCMessageType<0, KeyData, Core::Void> KeyMessage;
-        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20> > NameMessage;
+        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20>> NameMessage;
 
         IPCKeyboardInput(const IPCKeyboardInput&) = delete;
         IPCKeyboardInput& operator=(const IPCKeyboardInput&) = delete;
@@ -526,7 +538,7 @@ namespace PluginHost {
             KeyboardLink& operator=(const KeyboardLink&) = delete;
 
         public:
-            KeyboardLink(Core::IPCChannelType<Core::SocketPort, KeyboardLink>* )
+            KeyboardLink(Core::IPCChannelType<Core::SocketPort, KeyboardLink>*)
                 : _enabled(false)
                 , _name()
                 , _parent(nullptr)
@@ -550,19 +562,16 @@ namespace PluginHost {
                 if (_enabled == true) {
                     if (_postLookup == nullptr) {
                         result = element;
-                    }
-                    else {
-                        KeyMessage& copy (static_cast<KeyMessage&>(*element));
+                    } else {
+                        KeyMessage& copy(static_cast<KeyMessage&>(*element));
 
                         ASSERT(dynamic_cast<KeyMessage*>(&(*element)) != nullptr);
 
                         // See if we need to convert this keycode..
-                        PostLookupEntries::const_iterator index (_postLookup->find(copy.Parameters().Code));
+                        PostLookupEntries::const_iterator index(_postLookup->find(copy.Parameters().Code));
                         if (index == _postLookup->end()) {
                             result = element;
-                        }
-                        else {
-
+                        } else {
 
                             _replacement->Parameters().Action = copy.Parameters().Action;
                             _replacement->Parameters().Code = index->second;
@@ -576,12 +585,14 @@ namespace PluginHost {
             {
                 return (_name);
             }
-            inline void Parent(IPCKeyboardInput& parent) {
+            inline void Parent(IPCKeyboardInput& parent)
+            {
                 // We assume it will only be set, if the client reports it self in, once !
-                ASSERT (_parent == nullptr);
+                ASSERT(_parent == nullptr);
                 _parent = &parent;
             }
-            inline void Reload() {
+            inline void Reload()
+            {
                 _postLookup = _parent->FindPostLookup(_name);
             }
 
@@ -641,7 +652,6 @@ namespace PluginHost {
         virtual void MapChanges(ChangeIterator& updated);
         virtual void LookupChanges(const string&);
 
-
     private:
         virtual void SendKey(const actiontype type, const uint32_t code);
 
@@ -662,15 +672,16 @@ namespace PluginHost {
         {
         }
 
-      enum type {
-        DEVICE,
-        VIRTUAL
-      };
+        enum type {
+            DEVICE,
+            VIRTUAL
+        };
+
     public:
         void Initialize(const type t, const string& locator)
         {
             ASSERT(_inputHandler == nullptr);
-#if  defined(__WIN32__) || defined(__APPLE__)
+#if defined(__WIN32__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
             _inputHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
@@ -678,8 +689,7 @@ namespace PluginHost {
             if (t == VIRTUAL) {
                 _inputHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
-            }
-            else {
+            } else {
                 if (Core::File(locator, false).Exists() == true) {
                     TRACE_L1("Creating a /dev/input device for key communication. %d", 0);
 
@@ -719,12 +729,12 @@ namespace PluginHost {
 
 namespace Core {
 
-	template <>
-	EXTERNAL /* static */ const EnumerateConversion<PluginHost::VirtualInput::KeyMap::modifier>*
-		EnumerateType<PluginHost::VirtualInput::KeyMap::modifier>::Table(const uint16_t);
+    template <>
+    EXTERNAL /* static */ const EnumerateConversion<PluginHost::VirtualInput::KeyMap::modifier>*
+    EnumerateType<PluginHost::VirtualInput::KeyMap::modifier>::Table(const uint16_t);
 
 } // namespace Core
 
-} // WPEFramework
+} // namespace WPEFramework
 
 #endif // KeyHandler

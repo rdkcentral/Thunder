@@ -5,8 +5,8 @@
 #include <atomic>
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "DataElementFile.h"
+#include "Module.h"
 
 #ifndef __WIN32__
 #include <semaphore.h>
@@ -37,43 +37,43 @@ namespace Core {
     protected:
         class Cursor {
         public:
-        	Cursor(CyclicBuffer& parent, uint32_t tail, uint32_t requiredSize)
-        		: _Parent(parent)
-				, _Tail(tail)
-        		, _Size(requiredSize)
-        		, _Offset(0)
-			{
-        	}
+            Cursor(CyclicBuffer& parent, uint32_t tail, uint32_t requiredSize)
+                : _Parent(parent)
+                , _Tail(tail)
+                , _Size(requiredSize)
+                , _Offset(0)
+            {
+            }
 
-        	template <typename ArgType>
-        	void Peek(ArgType& buffer) const
-        	{
-        		uint32_t startIndex = _Tail & _Parent._administration->_tailIndexMask;
-        		startIndex += _Offset;
-        		startIndex %= _Parent._maxSize;
+            template <typename ArgType>
+            void Peek(ArgType& buffer) const
+            {
+                uint32_t startIndex = _Tail & _Parent._administration->_tailIndexMask;
+                startIndex += _Offset;
+                startIndex %= _Parent._maxSize;
 
-        		uint8_t * bytePtr = reinterpret_cast<uint8_t *>(&buffer);
+                uint8_t* bytePtr = reinterpret_cast<uint8_t*>(&buffer);
 
-        		for (uint32_t i = 0; i < sizeof(buffer); i++) {
-        			uint32_t index = (startIndex + i) % _Parent._maxSize;
-        			bytePtr[i] = _Parent._realBuffer[index];
-        		}
-        	}
+                for (uint32_t i = 0; i < sizeof(buffer); i++) {
+                    uint32_t index = (startIndex + i) % _Parent._maxSize;
+                    bytePtr[i] = _Parent._realBuffer[index];
+                }
+            }
 
-        	uint32_t Size() const
-        	{
-        		return _Size;
-        	}
+            uint32_t Size() const
+            {
+                return _Size;
+            }
 
-        	uint32_t Offset() const
-        	{
-        	    return _Offset;
-        	}
+            uint32_t Offset() const
+            {
+                return _Offset;
+            }
 
-        	void Forward(uint32_t byteCount)
-        	{
-        		_Offset += byteCount;
-        	}
+            void Forward(uint32_t byteCount)
+            {
+                _Offset += byteCount;
+            }
 
             uint32_t GetCompleteTail(uint32_t offset) const
             {
@@ -93,27 +93,27 @@ namespace Core {
             }
 
         private:
-        	uint32_t GetCurrentTail() const
-        	{
-        		return GetCompleteTail(_Offset);
-        	}
+            uint32_t GetCurrentTail() const
+            {
+                return GetCompleteTail(_Offset);
+            }
 
-        	uint32_t GetRemainingRequired() const
-        	{
-        		return (_Size - _Offset);
-        	}
+            uint32_t GetRemainingRequired() const
+            {
+                return (_Size - _Offset);
+            }
 
-        	CyclicBuffer& _Parent;
-        	uint32_t _Tail;
+            CyclicBuffer& _Parent;
+            uint32_t _Tail;
 
-        	uint32_t _Size;
-        	uint32_t _Offset;
+            uint32_t _Size;
+            uint32_t _Offset;
         };
 
         inline uint32_t Used(uint32_t head, uint32_t tail) const
         {
-        	uint32_t output = (head >= tail ? head - tail : _maxSize - (tail - head));
-        	return output;
+            uint32_t output = (head >= tail ? head - tail : _maxSize - (tail - head));
+            return output;
         }
 
         inline uint32_t Free(uint32_t head, uint32_t tail) const
@@ -123,10 +123,10 @@ namespace Core {
         }
 
     public:
-		inline void Flush()
-		{
-			std::atomic_store_explicit(&(_administration->_tail), (std::atomic_load(&(_administration->_head))), std::memory_order_relaxed);
-		}
+        inline void Flush()
+        {
+            std::atomic_store_explicit(&(_administration->_tail), (std::atomic_load(&(_administration->_head))), std::memory_order_relaxed);
+        }
         inline bool Overwritten() const
         {
             bool overwritten((std::atomic_load(&(_administration->_state)) & OVERWRITTEN) == OVERWRITTEN);
@@ -213,15 +213,15 @@ namespace Core {
         //    readers seeing incomplete data.
         uint32_t Reserve(const uint32_t length);
 
-	virtual void DataAvailable();
+        virtual void DataAvailable();
 
     private:
         // If the write occures, this method is called to determine the amount of spaces
         // that should be cleared out. The returned number of bytes must be equal to, or
         // larger than the minimumBytesToOverwrite. This method allows for skipping frames
         // if they are prefixed by a size, for example.
-		virtual uint32_t GetOverwriteSize(Cursor& cursor);
-		virtual uint32_t GetReadSize(Cursor& cursor);
+        virtual uint32_t GetOverwriteSize(Cursor& cursor);
+        virtual uint32_t GetReadSize(Cursor& cursor);
 
         // Makes sure "required" is available. If not, tail is moved in a smart way.
         void AssureFreeSpace(const uint32_t required);
@@ -248,7 +248,7 @@ namespace Core {
 #ifdef __WIN32__
         HANDLE _mutex;
         HANDLE _signal;
-		HANDLE _event;
+        HANDLE _event;
 #endif
 
     public:
@@ -273,9 +273,9 @@ namespace Core {
             uint32_t _reserved; // How much reserved in total.
             uint32_t _reservedWritten; // How much has already been written.
 #ifndef __WIN32__
-			std::atomic<pid_t> _reservedPID; // What process made the reservation.
+            std::atomic<pid_t> _reservedPID; // What process made the reservation.
 #else
-			std::atomic<DWORD> _reservedPID; // What process made the reservation.
+            std::atomic<DWORD> _reservedPID; // What process made the reservation.
 #endif
 
         } * _administration;

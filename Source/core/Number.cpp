@@ -13,11 +13,9 @@ namespace Core {
     {
         if (isdigit(element)) {
             return (element - '0');
-        }
-        else if ((element >= 'a') && (element <= 'f')) {
+        } else if ((element >= 'a') && (element <= 'f')) {
             return (element - 'a' + 10);
-        }
-        else if ((element >= 'A') && (element <= 'F')) {
+        } else if ((element >= 'A') && (element <= 'F')) {
             return (element - 'A' + 10);
         }
         return (0);
@@ -26,17 +24,13 @@ namespace Core {
     {
         if (isdigit(element)) {
             return (element - '0' + 52);
-        }
-        else if ((element >= 'a') && (element <= 'z')) {
+        } else if ((element >= 'a') && (element <= 'z')) {
             return (element - 'a' + 26);
-        }
-        else if ((element >= 'A') && (element <= 'Z')) {
+        } else if ((element >= 'A') && (element <= 'Z')) {
             return (element - 'A');
-        }
-        else if (element == '+') {
+        } else if (element == '+') {
             return (62);
-        }
-        else if (element == '/') {
+        } else if (element == '/') {
             return (63);
         }
         return (0);
@@ -53,8 +47,7 @@ namespace Core {
     {
         if (element < 10) {
             return (static_cast<TCHAR>(element + '0'));
-        }
-        else if (element < 36) {
+        } else if (element < 36) {
             return static_cast<TCHAR>((element - 10) + 'A');
         }
         return (0);

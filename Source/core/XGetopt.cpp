@@ -30,9 +30,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 // if you are not using precompiled headers then include these lines:
 #ifdef __WIN32__
-#include <windows.h>
 #include <stdio.h>
 #include <tchar.h>
+#include <windows.h>
 #endif
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -205,12 +205,10 @@ static int getopt(int argc, TCHAR* argv[], TCHAR* optstring)
         if (*next != _T('\0')) {
             optarg = next;
             next = nullptr;
-        }
-        else if (optind < argc) {
+        } else if (optind < argc) {
             optarg = argv[optind];
             optind++;
-        }
-        else {
+        } else {
             return _T('?');
         }
     }

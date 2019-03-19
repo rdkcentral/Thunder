@@ -3,7 +3,7 @@
 
 #ifdef __APPLE__
 #if !defined(SOL_IP)
-#define SOL_IP IPPROTO_IP  /* SOL_IP is not defined on OSX Lion */
+#define SOL_IP IPPROTO_IP /* SOL_IP is not defined on OSX Lion */
 #endif /* TARGET_DARWIN && !SOL_IP */
 #define CBR_110 110
 #define CBR_300 300
@@ -44,7 +44,7 @@
 #define B4000000 4000000
 #endif
 
-#ifdef WIN32
+#if defined WIN32 || defined _WINDOWS
 
 // W3 -- warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
 #pragma warning(disable : 4290)
@@ -65,12 +65,12 @@
 #define __WIN32__
 #endif
 
-#ifdef _WIN32
+#ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
 
 #ifdef _WIN64
-#define  __SIZEOF_POINTER__ 8
+#define __SIZEOF_POINTER__ 8
 #endif
 
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
@@ -81,15 +81,15 @@
 #define NOMCX
 #define NOIME
 //#include <SDKDDKVer.h>
-#include <windows.h>
 #include <TCHAR.h>
-#include <string>
-#include <memory.h>
-#include <assert.h>
-#include <algorithm>
 #include <WinSock2.h>
+#include <algorithm>
+#include <assert.h>
+#include <memory.h>
+#include <string>
+#include <windows.h>
 
-#define AF_NETLINK    16
+#define AF_NETLINK 16
 
 inline void SleepS(unsigned int a_Time)
 {
@@ -183,39 +183,37 @@ typedef std::string string;
 
 #ifdef __LINUX__
 
-#include <typeinfo>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <string>
-#include <string.h>
-#include <strings.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <stdint.h>
-#include <math.h>
-#include <termios.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <pthread.h>
-#include <signal.h>
-#include <dirent.h>
-#include <fnmatch.h>
-#include <dlfcn.h>
 #include <algorithm>
-#include <getopt.h>
-#include <errno.h>
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <assert.h>
-#include <sys/wait.h>
-#include <sys/ioctl.h>
-#include <sched.h>
-#include <sys/time.h>
-#include <sys/resource.h>
 #include <cxxabi.h>
+#include <dirent.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <fnmatch.h>
+#include <getopt.h>
+#include <math.h>
 #include <poll.h>
-
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <string>
+#include <strings.h>
+#include <sys/ioctl.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <termios.h>
+#include <typeinfo>
+#include <unistd.h>
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -227,15 +225,14 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
-extern "C" void* mremap(void *old_address, size_t old_size, size_t new_size, int flags);
+extern "C" void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
 #else
-#include <linux/types.h>
 #include <linux/input.h>
+#include <linux/types.h>
 #include <linux/uinput.h>
 #include <sys/signalfd.h>
 #endif
-
 
 #define ONESTOPBIT 0
 #define TWOSTOPBITS CSTOPB
@@ -323,7 +320,7 @@ inline void SleepS(unsigned int a_Time)
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define LITTLE_ENDIAN_PLATFORM 1
-#elif  __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #define BIG_ENDIAN_PLATFORM 1
 #else
 #pragma message "Unknown endianess"
@@ -332,7 +329,7 @@ inline void SleepS(unsigned int a_Time)
 #endif
 
 #ifdef __GNUC__
-#define DEPRECATED __attribute__ ((deprecated))
+#define DEPRECATED __attribute__((deprecated))
 #elif defined(_MSC_VER)
 #define DEPRECATED __declspec(deprecated)
 #else
@@ -366,10 +363,8 @@ typedef DEPRECATED signed long long sint64;
 
 #if __SIZEOF_POINTER__ == 4
 typedef uint32_t uintptr_t;
-#elif __SIZEOF_POINTER__ == 8
-typedef unsigned long int uintptr_t;
-#else
-#warning "Seems like we are building for neither 32-bits nor 64-bits platform, uintptr_t won't be defined."
+#elif defined(__LINUX__)
+#pragma warning "Seems like we are building for neither 32-bits nor 64-bits platform, uintptr_t won't be defined."
 #endif
 
 #ifndef FALSE
@@ -387,7 +382,7 @@ typedef unsigned long int uintptr_t;
 #ifdef __WIN32__
 #define SYSTEM_SYNC_HANDLE HANDLE
 #else
-#define SYSTEM_SYNC_HANDLE void *
+#define SYSTEM_SYNC_HANDLE void*
 #endif
 
 #ifndef __WIN32__
@@ -407,12 +402,12 @@ extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 uint64_t htonll(const uint64_t& value);
 uint64_t ntohll(const uint64_t& value);
 #endif
-
 }
 
 // ---- Helper types and constants ----
-#define _TXT(THETEXT) _T(THETEXT) \
-                      , (sizeof(THETEXT) / sizeof(TCHAR)) - 1
+#define _TXT(THETEXT) \
+    _T(THETEXT)       \
+    , (sizeof(THETEXT) / sizeof(TCHAR)) - 1
 
 #define NUMBER_MAX_BITS(TYPE) (sizeof(TYPE) << 3)
 #define NUMBER_MIN_UNSIGNED(TYPE) (static_cast<TYPE>(0))
@@ -484,7 +479,6 @@ typedef HANDLE ThreadId;
 extern "C" {
 
 extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
-
 }
 
 uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t bufferSize);
@@ -498,16 +492,18 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 namespace WPEFramework {
 namespace Core {
 
-    inline uint8_t* PointerAlign (uint8_t* pointer) {
-        uintptr_t addr  = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1);   // Round up to align-byte boundary
-        return reinterpret_cast<uint8_t *>(addr);
+    inline uint8_t* PointerAlign(uint8_t* pointer)
+    {
+        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+        return reinterpret_cast<uint8_t*>(addr);
     }
 
-    inline const uint8_t* PointerAlign (const uint8_t* pointer) {
-        uintptr_t addr  = reinterpret_cast<uintptr_t>(pointer);
-        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1);   // Round up to align-byte boundary
-        return reinterpret_cast<const uint8_t *>(addr);
+    inline const uint8_t* PointerAlign(const uint8_t* pointer)
+    {
+        uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);
+        addr = (addr + (sizeof(void*) - 1)) & ~(sizeof(void*) - 1); // Round up to align-byte boundary
+        return reinterpret_cast<const uint8_t*>(addr);
     }
 
 #ifdef _UNICODE
@@ -560,20 +556,20 @@ namespace Core {
         }
     };
 
-	struct EXTERNAL IReferenceCounted {
-		virtual ~IReferenceCounted() {};
-		virtual void AddRef() const = 0;
-		virtual uint32_t Release() const = 0;
-	};
+    struct EXTERNAL IReferenceCounted {
+        virtual ~IReferenceCounted(){};
+        virtual void AddRef() const = 0;
+        virtual uint32_t Release() const = 0;
+    };
 
     struct EXTERNAL IUnknown {
         enum { ID = 0x00000000 };
 
         virtual ~IUnknown(){};
 
-		virtual void AddRef() const = 0;
-		virtual uint32_t Release() const = 0;
-		virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
+        virtual void AddRef() const = 0;
+        virtual uint32_t Release() const = 0;
+        virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterface()
@@ -581,40 +577,39 @@ namespace Core {
             void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-				Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
+                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
 
-				REQUESTEDINTERFACE * result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
+                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
 
-				if (result == nullptr) {
+                if (result == nullptr) {
 
-					result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
+                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
+                }
 
-				}
-
-				return (result);
+                return (result);
             }
 
             return (nullptr);
         }
 
-      template <typename REQUESTEDINTERFACE>
-      const REQUESTEDINTERFACE* QueryInterface() const
-      {
-          const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
+        template <typename REQUESTEDINTERFACE>
+        const REQUESTEDINTERFACE* QueryInterface() const
+        {
+            const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
-		  if (baseInterface != nullptr) {
-			  const Core::IUnknown* iuptr = reinterpret_cast<const Core::IUnknown*>(baseInterface);
-				  
-			  const REQUESTEDINTERFACE* result = dynamic_cast<const REQUESTEDINTERFACE*>(iuptr);
-			  
-			  if (result == nullptr) {
-					  result = reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface);
-			  }
-			  return (result);
-          }
+            if (baseInterface != nullptr) {
+                const Core::IUnknown* iuptr = reinterpret_cast<const Core::IUnknown*>(baseInterface);
 
-          return (nullptr);
-      }
+                const REQUESTEDINTERFACE* result = dynamic_cast<const REQUESTEDINTERFACE*>(iuptr);
+
+                if (result == nullptr) {
+                    result = reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface);
+                }
+                return (result);
+            }
+
+            return (nullptr);
+        }
     };
 
     const uint32_t ERROR_NONE = 0;
@@ -646,7 +641,7 @@ namespace Core {
     const uint32_t ERROR_UNREACHABLE_NETWORK = 26;
     const uint32_t ERROR_REQUEST_SUBMITTED = 27;
     const uint32_t ERROR_UNKNOWN_TABLE = 28;
-    const uint32_t ERROR_UNKNOWN_KEY_PASSED = 29;
+    const uint32_t ERROR_DUPLICATE_KEY = 29;
     const uint32_t ERROR_BAD_REQUEST = 30;
     const uint32_t ERROR_PENDING_CONDITIONS = 31;
     const uint32_t ERROR_SURFACE_UNAVAILABLE = 32;
@@ -658,6 +653,7 @@ namespace Core {
     const uint32_t ERROR_INVALID_SIGNATURE = 38;
     const uint32_t ERROR_READ_ERROR = 39;
     const uint32_t ERROR_WRITE_ERROR = 40;
+    const uint32_t ERROR_INVALID_DESIGNATOR = 41;
 }
 }
 

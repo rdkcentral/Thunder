@@ -4,8 +4,8 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "ITraceMedia.h"
+#include "Module.h"
 
 // ---- Referenced classes and types ----
 
@@ -43,7 +43,7 @@ namespace Trace {
                 uint16_t actualByteCount = _loaded > maxSendSize ? maxSendSize : _loaded;
                 memcpy(dataFrame, _traceBuffer, actualByteCount);
                 _loaded = 0;
-                
+
                 return (actualByteCount);
             }
             virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
@@ -60,11 +60,10 @@ namespace Trace {
             // TODO: lock to keep this consistent
             char _traceBuffer[1500];
             uint16_t _loaded;
-            
+
             // TODO: create message here, not in parent
 
         private:
-        
             TraceMedia& _parent;
         };
 

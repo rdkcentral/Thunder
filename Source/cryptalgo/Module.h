@@ -10,7 +10,7 @@
 #undef EXTERNAL
 
 #ifdef __WIN32__
-#ifdef __MODULE_CRYPTALGO__
+#ifdef CRYPTALGO_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT
@@ -20,4 +20,3 @@
 #endif
 
 #endif // __MODULE_CRYPTALGO_H
-

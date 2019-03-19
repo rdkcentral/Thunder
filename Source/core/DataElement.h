@@ -6,8 +6,8 @@
 
 // ---- Include local include files ----
 #include "Portability.h"
-#include "Serialization.h"
 #include "Proxy.h"
+#include "Serialization.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -34,45 +34,52 @@ namespace Core {
     class DataStore {
     private:
         DataStore(const DataStore&) = delete;
-        DataStore& operator= (const DataStore&) = delete;
+        DataStore& operator=(const DataStore&) = delete;
 
     public:
         DataStore(const uint32_t size = 1024)
             : _size(size)
-            , _buffer(reinterpret_cast<uint8_t*>(::malloc(size))) {
+            , _buffer(reinterpret_cast<uint8_t*>(::malloc(size)))
+        {
             ASSERT(_buffer != nullptr);
             if (_buffer == nullptr) {
                 _size = 0;
             }
         }
-        virtual ~DataStore() {
+        virtual ~DataStore()
+        {
             if (_buffer != nullptr) {
                 ::free(_buffer);
             }
         }
 
     public:
-        inline void Copy(const uint8_t data[], const uint16_t length, const uint16_t offset = 0) {
-            ASSERT (offset < _size);
+        inline void Copy(const uint8_t data[], const uint16_t length, const uint16_t offset = 0)
+        {
+            ASSERT(offset < _size);
             if (offset < _size) {
-                ASSERT (static_cast<uint32_t>(offset + length) <= _size);
+                ASSERT(static_cast<uint32_t>(offset + length) <= _size);
 
-                uint32_t count (static_cast<uint32_t>(offset + length) <= _size ? length : _size - offset);
+                uint32_t count(static_cast<uint32_t>(offset + length) <= _size ? length : _size - offset);
 
-                ::memcpy (&(_buffer[offset]), data, count);
+                ::memcpy(&(_buffer[offset]), data, count);
             }
         }
-        inline uint8_t* Buffer() {
-            return(_buffer);
+        inline uint8_t* Buffer()
+        {
+            return (_buffer);
         }
-        inline const uint8_t* Buffer() const {
-            return(_buffer);
+        inline const uint8_t* Buffer() const
+        {
+            return (_buffer);
         }
-        inline uint32_t Size() const {
-            return(_size);
+        inline uint32_t Size() const
+        {
+            return (_size);
         }
-        inline void Size(const uint32_t size) {
-            if (size >  _size) {
+        inline void Size(const uint32_t size)
+        {
+            if (size > _size) {
                 uint8_t* newBuffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, size));
                 if (newBuffer != nullptr) {
                     _buffer = newBuffer;
@@ -196,12 +203,13 @@ namespace Core {
             m_MaxSize = 0;
         }
         template <typename TYPE>
-        inline void Align() {
+        inline void Align()
+        {
             if (m_Buffer != nullptr) {
-                size_t size (static_cast<size_t>(m_MaxSize));
+                size_t size(static_cast<size_t>(m_MaxSize));
                 void* newPointer = m_Buffer;
                 if (std::align(sizeof(TYPE), sizeof(TYPE), newPointer, size)) {
-                    uint8_t adjust (static_cast<uint8_t>(m_MaxSize - size));
+                    uint8_t adjust(static_cast<uint8_t>(m_MaxSize - size));
                     m_Buffer = reinterpret_cast<uint8_t*>(newPointer);
                     m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
                     m_MaxSize -= adjust;
@@ -267,8 +275,7 @@ namespace Core {
             ASSERT((size == NUMBER_MAX_UNSIGNED(uint64_t)) || ((offset + size) < m_Size));
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(m_Size - offset));
-            }
-            else {
+            } else {
                 ::memset(&m_Buffer[offset], value, static_cast<size_t>(size));
             }
         }
@@ -316,8 +323,7 @@ namespace Core {
                     m_Size = offset + RHS.m_Size;
                     copied = true;
                 }
-            }
-            else {
+            } else {
                 ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
 
                 if (m_Size < (offset + RHS.m_Size)) {
@@ -350,8 +356,7 @@ namespace Core {
                 // If we can not find the first character, we will not find anything at all..
                 if (entry == nullptr) {
                     index = m_Size;
-                }
-                else {
+                } else {
                     index += (entry - &(m_Buffer[index]));
                     found = (::memcmp(&(entry[1]), &(pattern[1]), size - 1) == 0);
 
@@ -499,8 +504,7 @@ namespace Core {
                     buffer++;
                     result = (result << bitsleft) | ((*buffer >> (8 - bitsleft)) & 0xFF);
                 }
-            }
-            else {
+            } else {
                 // Oops all information was contained in the first byte.
                 result = result >> (8 - (bitIndex % 8) - count);
             }
@@ -598,8 +602,7 @@ namespace Core {
                     /* BEFORE */ (Buffer[0] & (0xFF << Rest)) |
                     /* NUMBER */ (Number << (Rest - count)) |
                     /* AFTER  */ (Buffer[0] & (0xFF >> (8 - Rest + count))));
-            }
-            else {
+            } else {
                 unsigned int BitCount = count - Rest;
 
                 // Start with the BEFORE...
@@ -640,12 +643,10 @@ namespace Core {
             if (size == NUMBER_MAX_UNSIGNED(uint64_t)) {
                 // Reset the size to the maxSize...
                 m_Size = m_MaxSize - m_Offset;
-            }
-            else if ((size + m_Offset) < m_MaxSize) {
+            } else if ((size + m_Offset) < m_MaxSize) {
                 // It fits the allocated buffer, accept and reduce..
                 m_Size = size;
-            }
-            else {
+            } else {
                 Reallocation(size + m_Offset);
             }
 
@@ -662,10 +663,10 @@ namespace Core {
                 // We need to "extend" the buffer, this is only possible if we control
                 // the buffer lifetime..
                 // Create a new buffer
-        m_Storage->Size(static_cast<uint32_t>(size));
-        m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
-        m_Size = size;
-        m_MaxSize = m_Storage->Size();
+                m_Storage->Size(static_cast<uint32_t>(size));
+                m_Buffer = &(m_Storage->Buffer()[static_cast<uint32_t>(m_Offset)]);
+                m_Size = size;
+                m_MaxSize = m_Storage->Size();
             }
         }
 
@@ -778,8 +779,7 @@ namespace Core {
 
             if (sizeof(TYPENAME) == 1) {
                 result = static_cast<TYPENAME>(m_Buffer[offset]);
-            }
-            else {
+            } else {
                 // Use the SetBuffer of this class, that can go over boundaries...
                 LinkedDataElement::GetBuffer(offset, sizeof(TYPENAME), static_cast<uint8_t*>(&result));
             }
@@ -796,8 +796,7 @@ namespace Core {
 
             if (sizeof(TYPENAME) == 1) {
                 m_Buffer[offset] = number;
-            }
-            else {
+            } else {
                 // Use the SetBuffer of this class, that can go over boundaries...
                 LinkedDataElement::SetBuffer(offset, sizeof(TYPENAME), static_cast<const uint8_t*>(&number));
             }

@@ -251,15 +251,14 @@ namespace Core {
             return (result);
         }
 
-		bool Link(const string& symlinkName)
-		{
+        bool Link(const string& symlinkName)
+        {
 #ifdef __WIN32__
-			return (::CreateSymbolicLink(symlinkName.c_str(), _name.c_str(), (IsDirectory() ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0)) != FALSE);
+            return (::CreateSymbolicLink(symlinkName.c_str(), _name.c_str(), (IsDirectory() ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0)) != FALSE);
 #else
-			return (symlink(_name.c_str(), symlinkName.c_str()) >= 0);
+            return (symlink(_name.c_str(), symlinkName.c_str()) >= 0);
 #endif
-
-		}
+        }
 
         bool Create()
         {
@@ -372,8 +371,7 @@ namespace Core {
 
             if (value == -1) {
                 return (0);
-            }
-            else {
+            } else {
                 return (static_cast<uint32_t>(value));
             }
 #endif
@@ -395,8 +393,7 @@ namespace Core {
 
             if (value == -1) {
                 return (0);
-            }
-            else {
+            } else {
                 return (static_cast<uint32_t>(value));
             }
 #endif
@@ -475,10 +472,13 @@ namespace Core {
 #endif
 #ifdef __WIN32__
                 Handle fd = DuplicateHandle();
-                return ((fd > 0) ? ::_fdopen(reinterpret_cast<int>(fd),  (IsReadOnly() ? "r" : "r+")) : nullptr);
+#pragma warning(disable : 4311)
+#pragma warning(disable : 4302)
+                return ((fd > 0) ? ::_fdopen(reinterpret_cast<int>(fd), (IsReadOnly() ? "r" : "r+")) : nullptr);
+#pragma warning(default : 4311)
+#pragma warning(default : 4302)
 #endif
-            }
-            else {
+            } else {
                 return nullptr;
             }
         }
@@ -489,26 +489,25 @@ namespace Core {
         inline static uint32_t ExtensionOffset(const string& name)
         {
             int offset;
-            return (((offset = name.find_last_of('.')) == -1) ? 0 : offset + 1);
+            return (((offset = static_cast<int>(name.find_last_of('.'))) == -1) ? 0 : offset + 1);
         }
         inline static uint32_t FileNameOffset(const string& name)
         {
             int offset;
-            if ((offset = name.find_last_of('/')) != -1) {
+            if ((offset = static_cast<int>(name.find_last_of('/'))) != -1) {
                 // under linux/posix this is enough..
                 offset++;
-            }
-            else {
+            } else {
                 offset = 0;
             }
 #ifdef __WIN32__
             int intermediate;
-            if ((intermediate = name.find_last_of('\\')) != -1) {
+            if ((intermediate = static_cast<int>(name.find_last_of('\\'))) != -1) {
                 if (intermediate > offset) {
                     offset = intermediate + 1;
                 }
             }
-            if ((offset == 0) && ((intermediate = name.find_last_of(':')) != -1)) {
+            if ((offset == 0) && ((intermediate = static_cast<int>(name.find_last_of(':'))) != -1)) {
                 offset = intermediate + 1;
             }
 #endif
@@ -538,7 +537,7 @@ namespace Core {
     public:
         static string Normalize(const string& input);
 
-		bool Create();
+        bool Create();
         bool CreatePath();
 
         Directory& operator=(const TCHAR location[])
@@ -573,8 +572,7 @@ namespace Core {
 
                 if (_entry != nullptr) {
                     valid = (fnmatch(_filter.c_str(), _entry->d_name, FNM_CASEFOLD) == 0);
-                }
-                else {
+                } else {
                     // We are at the end..
                     if (_dirFD != nullptr) {
                         closedir(_dirFD);
@@ -586,13 +584,16 @@ namespace Core {
 
             return (valid);
         }
-        inline string Current() const {
+        inline string Current() const
+        {
             return (_name + _entry->d_name);
         }
-        inline string Name() const {
+        inline string Name() const
+        {
             return (_entry->d_name);
         }
-        inline bool IsDirectory() const {
+        inline bool IsDirectory() const
+        {
             return ((_entry->d_type & DT_DIR) != 0);
         }
 #endif
@@ -615,8 +616,7 @@ namespace Core {
         {
             if (_dirFD == INVALID_HANDLE_VALUE) {
                 _dirFD = ::FindFirstFile((_name + _filter).c_str(), &_data);
-            }
-            else if (::FindNextFile(_dirFD, &_data) == FALSE) {
+            } else if (::FindNextFile(_dirFD, &_data) == FALSE) {
                 // We are at the end
                 noMoreFiles = true;
             }
@@ -627,11 +627,13 @@ namespace Core {
         {
             return (_name + _data.cFileName);
         }
-        inline string Name() const {
+        inline string Name() const
+        {
             return (_data.cFileName);
         }
-        inline bool IsDirectory() const {
-            return ( (_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
+        inline bool IsDirectory() const
+        {
+            return ((_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY);
         }
 #endif
 

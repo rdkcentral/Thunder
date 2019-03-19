@@ -1,12 +1,12 @@
 #pragma once
 
-#include "Ids.h"
-#include "Messages.h"
-#include "IUnknown.h"
-#include "ITracing.h"
-#include "IStringIterator.h"
 #include "Administrator.h"
 #include "Communicator.h"
+#include "IStringIterator.h"
+#include "ITracing.h"
+#include "IUnknown.h"
+#include "Ids.h"
+#include "Messages.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "com.lib")

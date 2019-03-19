@@ -2,7 +2,6 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
 #endif
@@ -17,7 +16,7 @@ namespace PluginHost {
         , _flags(0)
     {
         ASSERT(callback != nullptr);
-   }
+    }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
 #endif
@@ -81,8 +80,7 @@ namespace PluginHost {
 
             callee->Updated();
             callee->Release();
-        }
-        else {
+        } else {
             _adminLock.Unlock();
         }
     }

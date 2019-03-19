@@ -3,8 +3,8 @@
 
 #include "Module.h"
 
-#include "Sync.h"
 #include "StateTrigger.h"
+#include "Sync.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -44,8 +44,7 @@ namespace Core {
                     m_State.SetState(READERS);
                     m_Readers++;
                     aquired = true;
-                }
-                else if (m_State == READERS) {
+                } else if (m_State == READERS) {
                     m_Readers++;
                     aquired = true;
                 }

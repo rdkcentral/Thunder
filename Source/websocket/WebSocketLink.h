@@ -2,9 +2,9 @@
 #define __WEBSOCKETLINK_H
 
 #include "Module.h"
+#include "WebLink.h"
 #include "WebRequest.h"
 #include "WebResponse.h"
-#include "WebLink.h"
 
 namespace WPEFramework {
 namespace Web {
@@ -253,8 +253,7 @@ namespace Web {
 
                     if (_parent._webSocketMessage == realItem) {
                         _parent.UpgradeCompleted();
-                    }
-                    else {
+                    } else {
                         _parent.Serialized(Core::proxy_cast<OUTBOUND>(realItem));
                     }
 
@@ -265,8 +264,7 @@ namespace Web {
                         _adminLock.Unlock();
 
                         _parent.Trigger();
-                    }
-                    else {
+                    } else {
                         _adminLock.Unlock();
                     }
 
@@ -347,9 +345,9 @@ namespace Web {
             HandlerType<ACTUALLINK>& operator=(const HandlerType<ACTUALLINK>&) = delete;
 
         public:
-			#ifdef __WIN32__ 
-			#pragma warning( disable : 4355 )
-			#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
             template <typename Arg1>
             HandlerType(ParentClass& parent, const bool binary, const bool masking, const uint8_t queueSize, Arg1 arg1)
                 : ACTUALLINK(arg1)
@@ -588,9 +586,9 @@ namespace Web {
                 , _pingFireTime(0)
             {
             }
-			#ifdef __WIN32__ 
-			#pragma warning( default : 4355 )
-			#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
             virtual ~HandlerType()
             {
@@ -621,7 +619,8 @@ namespace Web {
             {
                 return ((_state & WEBSOCKET) != 0);
             }
-            inline bool IsCompleted () const {
+            inline bool IsCompleted() const
+            {
                 return (_handler.ReceiveInProgress() == false);
             }
             inline const string& Path() const
@@ -695,8 +694,7 @@ namespace Web {
                     _adminLock.Unlock();
 
                     ACTUALLINK::Trigger();
-                }
-                else {
+                } else {
                     _adminLock.Unlock();
                 }
             }
@@ -738,8 +736,7 @@ namespace Web {
 
                         result = _handler.Encoder(dataFrame, (maxSendSize - 4), result);
                     }
-                }
-                else {
+                } else {
                     result = _serializerImpl.Serialize(dataFrame, maxSendSize);
                 }
 
@@ -771,16 +768,15 @@ namespace Web {
 
                         if (tooSmall == false) {
                             if ((_handler.FrameType() & 0xF0) != 0) {
-								
-								TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
+
+                                TRACE_L1("Oops we received uncomprehensable data on the web socket 0x%X", _handler.FrameType());
 
                                 // Oops we got an error, Change link state !!
                                 // ACTUALLINK::Close(0);
 
                                 // Nothing we can do with this shit..
                                 result = receivedSize;
-                            }
-                            else if ((_handler.FrameType() & 0x08) != 0) {
+                            } else if ((_handler.FrameType() & 0x08) != 0) {
                                 // Build the associated message with this..
                                 // _commandData += dataFrame
 
@@ -791,22 +787,18 @@ namespace Web {
                                         // Send a PONG
                                         _handler.Pong();
                                         ACTUALLINK::Trigger();
-                                    }
-                                    else if (_handler.FrameType() == WebSocket::Protocol::CLOSE) {
+                                    } else if (_handler.FrameType() == WebSocket::Protocol::CLOSE) {
                                         // Send a close response
                                         _handler.Close();
                                         ACTUALLINK::Trigger();
-                                    }
-                                    else if (_handler.FrameType() == WebSocket::Protocol::PONG) {
+                                    } else if (_handler.FrameType() == WebSocket::Protocol::PONG) {
                                         if (_pingFireTime != 0) {
                                             TRACE_L1("Ping acknowledged by a pong in %d (uS)", static_cast<uint32_t>(static_cast<uint64_t>(Core::Time::Now().Ticks() - _pingFireTime)));
                                             _pingFireTime = 0;
-                                        }
-                                        else {
+                                        } else {
                                             TRACE_L1("Pong received but nu ping requested ??? [%d] ", __LINE__);
                                         }
-                                    }
-                                    else {
+                                    } else {
                                         // Unknown control command, log an error.
                                         TRACE_L1("WebSocket unknown command received (%d)", _handler.FrameType());
                                     }
@@ -815,16 +807,14 @@ namespace Web {
                                 }
 
                                 result += headerSize; // actualDataSize
-                            }
-                            else {
+                            } else {
                                 _parent.ReceiveData(&(dataFrame[result + headerSize]), actualDataSize);
 
                                 result += (headerSize + actualDataSize);
                             }
                         }
                     }
-                }
-                else {
+                } else {
                     result = _deserialiserImpl.Deserialize(dataFrame, receivedSize);
                 }
 
@@ -869,8 +859,7 @@ namespace Web {
 
                 if ((IsSuspended() == true) && (_serializerImpl.IsIdle() == true) && (_deserialiserImpl.IsIdle() == true) && (_parent.IsIdle() == true)) {
                     result = ACTUALLINK::Close(waitTime);
-                }
-                else
+                } else
                     while (waitTime > 0) {
                         uint32_t sleepTime = (waitTime > 100 ? 100 : waitTime);
 
@@ -930,15 +919,13 @@ namespace Web {
                     if ((_state & WEBSERVER) == 0) {
                         _webSocketMessage->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
                         _webSocketMessage->Message = _T("State of the link can not be upgraded.");
-                    }
-                    else {
+                    } else {
                         _state = static_cast<EnumlinkState>((_state & 0xF0) | UPGRADING);
                         _protocol = element->WebSocketProtocol.Value();
                         _path = element->Path;
                         if (element->Query.IsSet() == true) {
                             _query = element->Query.Value();
-                        }
-                        else {
+                        } else {
                             _query.clear();
                         }
 
@@ -952,8 +939,7 @@ namespace Web {
                             _path.clear();
                             _query.clear();
                             _protocol.clear();
-                        }
-                        else {
+                        } else {
                             _webSocketMessage->Connection = Web::Response::CONNECTION_UPGRADE;
                             _webSocketMessage->Upgrade = Web::Response::UPGRADE_WEBSOCKET;
                             _webSocketMessage->WebSocketAccept = _handler.ResponseKey(element->WebSocketKey.Value());
@@ -969,8 +955,7 @@ namespace Web {
                     _adminLock.Unlock();
 
                     ACTUALLINK::Trigger();
-                }
-                else {
+                } else {
                     _parent.Received(element);
                 }
             }
@@ -1028,7 +1013,7 @@ namespace Web {
                     _protocol = protocol;
 
                     _serializerImpl.Submit(_webSocketMessage);
-                    Trigger();
+                    ACTUALLINK::Trigger();
                 }
 
                 _adminLock.Unlock();
@@ -1053,8 +1038,7 @@ namespace Web {
                     _parent.StateChange();
 
                     _adminLock.Unlock();
-                }
-                else {
+                } else {
                     _parent.Received(element);
                 }
             }
@@ -1199,7 +1183,7 @@ namespace Web {
         {
             return (_channel.IsWebSocket());
         }
-        inline bool IsCompleted () const
+        inline bool IsCompleted() const
         {
             return (_channel.IsCompleted());
         }
@@ -1436,10 +1420,10 @@ namespace Web {
         WebSocketClientType<LINK>& operator=(const WebSocketClientType<LINK>& RHS) = delete;
 
     public:
-		#ifdef __WIN32__ 
-		#pragma warning( disable : 4355 )
-		#endif
-		WebSocketClientType(const string& path, const string& protocol, const string& query, const string& origin, const bool binary, const bool masking)
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+        WebSocketClientType(const string& path, const string& protocol, const string& query, const string& origin, const bool binary, const bool masking)
             : _channel(*this, path, protocol, query, origin, binary, masking)
         {
         }
@@ -1478,10 +1462,10 @@ namespace Web {
             : _channel(*this, path, protocol, query, origin, binary, masking, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-		#ifdef __WIN32__ 
-		#pragma warning( default : 4355 )
-		#endif
-		virtual ~WebSocketClientType()
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
+        virtual ~WebSocketClientType()
         {
         }
 
@@ -1514,7 +1498,7 @@ namespace Web {
         {
             return (_channel.IsSuspended());
         }
-        inline bool IsCompleted () const
+        inline bool IsCompleted() const
         {
             return (_channel.IsCompleted());
         }
@@ -1752,7 +1736,7 @@ namespace Web {
         {
             return (_channel.IsSuspended());
         }
-        inline bool IsCompleted () const
+        inline bool IsCompleted() const
         {
             return (_channel.IsCompleted());
         }

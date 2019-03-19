@@ -6,7 +6,6 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-
     class SystemInfo : public PluginHost::ISubSystem {
     private:
         SystemInfo() = delete;
@@ -53,9 +52,10 @@ namespace PluginHost {
                 return result;
             }
 
-          inline string Identifier() const {
-              return (_identifier != nullptr) ? Core::SystemInfo::Instance().Id(_identifier, ~0) : string();
-          }
+            inline string Identifier() const
+            {
+                return (_identifier != nullptr) ? Core::SystemInfo::Instance().Id(_identifier, ~0) : string();
+            }
 
         private:
             uint8_t* _identifier;
@@ -85,13 +85,12 @@ namespace PluginHost {
             inline bool Set(const string& ip)
             {
                 bool result(false);
-                if (_ipAddress != ip){
+                if (_ipAddress != ip) {
                     _ipAddress = ip;
 
                     result = true;
                 }
                 return result;
-
             }
 
         private:
@@ -125,13 +124,13 @@ namespace PluginHost {
 
             bool Set(const PluginHost::ISubSystem::ILocation* info);
             inline bool Set(const string& timeZone,
-                            const string& country,
-                            const string& region,
-                            const string& city)
+                const string& country,
+                const string& region,
+                const string& city)
             {
                 bool result(false);
 
-                if (_timeZone != timeZone || _country != country ||_region != region || _city != city) {
+                if (_timeZone != timeZone || _country != country || _region != region || _city != city) {
 
                     _timeZone = timeZone;
                     _country = country;
@@ -202,7 +201,7 @@ namespace PluginHost {
         // Event methods
         virtual void Set(const subsystem type, Core::IUnknown* information) override
         {
-            bool sendUpdate (IsActive(type) == false);
+            bool sendUpdate(IsActive(type) == false);
 
             switch (type) {
             case PLATFORM: {
@@ -233,15 +232,14 @@ namespace PluginHost {
                     if (_identifier != nullptr) {
                         _identifier->Release();
                     }
-            
+
                     _identifier = Core::Service<Id>::Create<Id>();
                     const uint8_t* id(Core::SystemInfo::Instance().RawDeviceId());
                     _identifier->Set(id[0], &id[1]);
 
                     _adminLock.Unlock();
-                }
-                else {
-                    Id *id = Core::Service<Id>::Create<Id>();
+                } else {
+                    Id* id = Core::Service<Id>::Create<Id>();
                     sendUpdate = id->Set(info) || sendUpdate;
 
                     info->Release();
@@ -254,7 +252,6 @@ namespace PluginHost {
 
                     _identifier = id;
                     _adminLock.Unlock();
-
                 }
 
                 SYSLOG(Logging::Startup, (_T("EVENT: Identifier: %s"), _identifier->Identifier().c_str()));
@@ -276,20 +273,19 @@ namespace PluginHost {
                         _internet->Release();
                     }
 
-                     _internet = Core::Service<Internet>::Create<Internet>();
+                    _internet = Core::Service<Internet>::Create<Internet>();
                     _internet->Set(_T("127.0.0.1"));
                     _adminLock.Unlock();
 
-                }
-                else {
-                    Internet* internet= Core::Service<Internet>::Create<Internet>();
+                } else {
+                    Internet* internet = Core::Service<Internet>::Create<Internet>();
                     sendUpdate = internet->Set(info) || sendUpdate;
 
                     info->Release();
 
                     _adminLock.Lock();
 
-                    if (_internet!= nullptr) {
+                    if (_internet != nullptr) {
                         _internet->Release();
                     }
 
@@ -318,9 +314,8 @@ namespace PluginHost {
                     _location = Core::Service<Location>::Create<Location>();
 
                     _adminLock.Unlock();
-                }
-                else {
-                    Location *location = Core::Service<Location>::Create<Location>();
+                } else {
+                    Location* location = Core::Service<Location>::Create<Location>();
                     sendUpdate = location->Set(info) || sendUpdate;
 
                     info->Release();
@@ -333,15 +328,10 @@ namespace PluginHost {
 
                     _location = location;
                     _adminLock.Unlock();
+                }
 
-               }
+                SYSLOG(Logging::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"), _location->TimeZone().c_str(), _location->Country().c_str(), _location->Region().c_str(), _location->City().c_str()));
 
-               SYSLOG(Logging::Startup, (_T("EVENT: TimeZone: %s, Country: %s, Region: %s, City: %s"),
-                   _location->TimeZone().c_str(),
-                   _location->Country().c_str(),
-                   _location->Region().c_str(),
-                   _location->City().c_str()));
- 
                 break;
             }
             case NOT_LOCATION: {
@@ -364,9 +354,8 @@ namespace PluginHost {
                     _time->Set(Core::Time::Now().Ticks());
 
                     _adminLock.Unlock();
-                }
-                else {
-                    Time *time = Core::Service<Time>::Create<Time>();
+                } else {
+                    Time* time = Core::Service<Time>::Create<Time>();
                     sendUpdate = time->Set(info) || sendUpdate;
 
                     info->Release();
@@ -381,8 +370,7 @@ namespace PluginHost {
                     _adminLock.Unlock();
                 }
 
-                SYSLOG(Logging::Startup, (_T("EVENT: Time: %s"),
-                    Core::Time(_time->TimeSync()).ToRFC1123(false).c_str()));
+                SYSLOG(Logging::Startup, (_T("EVENT: Time: %s"), Core::Time(_time->TimeSync()).ToRFC1123(false).c_str()));
                 break;
             }
             case NOT_TIME: {
@@ -451,8 +439,7 @@ namespace PluginHost {
 
                 if (type > END_LIST) {
                     _flags &= ~(1 << (type & 0xFF));
-                }
-                else {
+                } else {
                     _flags |= (1 << type);
                 }
 
@@ -470,51 +457,50 @@ namespace PluginHost {
             if ((type < END_LIST) && (IsActive(type) == true)) {
 
                 switch (type) {
-                    case NETWORK: {
-                        /* No information to get yet */
-                        break;
-                    }
-                    case IDENTIFIER: {
-                        result = _identifier;
-                        break;
-                    }
-                    case INTERNET: {
-                        result = _internet;
-                        break;
-                    }
-                    case LOCATION: {
-                        result = _location;
-                        break;
-                    }
-                    case TIME: {
-                        result = _time;
-                        break;
-                    }
-                    case PROVISIONING: {
-                        /* No information to get yet */
-                        break;
-                    }
-                    case DECRYPTION: {
-                        /* No information to get yet */
-                        break;
-                    }
-                    case GRAPHICS: {
-                        /* No information to get yet */
-                        break;
-                    }
-                    case WEBSOURCE: {
-                        /* No information to get yet */
-                        break;
-                    }
-                    default: {
-                        ASSERT(false && "Unknown Event");
-                    }
+                case NETWORK: {
+                    /* No information to get yet */
+                    break;
+                }
+                case IDENTIFIER: {
+                    result = _identifier;
+                    break;
+                }
+                case INTERNET: {
+                    result = _internet;
+                    break;
+                }
+                case LOCATION: {
+                    result = _location;
+                    break;
+                }
+                case TIME: {
+                    result = _time;
+                    break;
+                }
+                case PROVISIONING: {
+                    /* No information to get yet */
+                    break;
+                }
+                case DECRYPTION: {
+                    /* No information to get yet */
+                    break;
+                }
+                case GRAPHICS: {
+                    /* No information to get yet */
+                    break;
+                }
+                case WEBSOURCE: {
+                    /* No information to get yet */
+                    break;
+                }
+                default: {
+                    ASSERT(false && "Unknown Event");
+                }
                 }
 
-                if(result != nullptr){
+                if (result != nullptr) {
                     result->AddRef();
                 }
-
             }
 
             _adminLock.Unlock();
@@ -525,7 +511,8 @@ namespace PluginHost {
         {
             return (((type < END_LIST) && ((_flags & (1 << type)) != 0)) || ((type > END_LIST) && ((_flags & (1 << (type & 0xFF))) == 0)));
         };
-        inline uint32_t Value () const {
+        inline uint32_t Value() const
+        {
             return (_flags);
         }
 
@@ -534,7 +521,6 @@ namespace PluginHost {
         END_INTERFACE_MAP
 
     private:
-
         typedef Core::IteratorType<std::list<PluginHost::ISubSystem::INotification*>, PluginHost::ISubSystem::INotification*> ClientIterator;
 
         void RecursiveList(ClientIterator& index);

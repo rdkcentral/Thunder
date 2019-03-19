@@ -1,12 +1,12 @@
 #ifndef __WEBBRIDGESUPPORT_SERVICE__
 #define __WEBBRIDGESUPPORT_SERVICE__
 
-#include "Module.h"
-#include "IPlugin.h"
-#include "IShell.h"
 #include "Channel.h"
 #include "Configuration.h"
+#include "IPlugin.h"
+#include "IShell.h"
 #include "MetaData.h"
+#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -34,13 +34,18 @@ namespace PluginHost {
         {
             return (_fileBodyFactory.Element());
         }
+        inline Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC()
+        {
+            return (_jsonRPCFactory.Element());
+        }
 
     private:
-	friend class Core::SingletonType<Factories>;
+        friend class Core::SingletonType<Factories>;
 
-	Core::ProxyPoolType<Web::Request> _requestFactory;
+        Core::ProxyPoolType<Web::Request> _requestFactory;
         Core::ProxyPoolType<Web::Response> _responseFactory;
         Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
+        Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
     };
 
     struct EXTERNAL WorkerPool {
@@ -51,8 +56,8 @@ namespace PluginHost {
         virtual ~WorkerPool() = default;
 
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch >& job) = 0;
-        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch >& job, const uint32_t waitTime = Core::infinite) = 0;
+        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
         virtual void GetMetaData(MetaData::Server& metaData) const = 0;
     };
 
@@ -82,6 +87,10 @@ namespace PluginHost {
             }
 
         public:
+            inline bool IsSupported(const uint8_t number) const
+            {
+                return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
+            }
             inline void Configuration(const string& value)
             {
                 _config.Configuration = value;
@@ -123,7 +132,7 @@ namespace PluginHost {
             {
                 return (_volatilePath);
             }
- 
+
             // DataPath is a path, to a location (read-only to be used to store
             // This path is build up from: DataPath / className /
             inline const string& DataPath() const
@@ -131,10 +140,10 @@ namespace PluginHost {
                 return (_dataPath);
             }
 
-			inline const string& ProxyStubPath() const
-			{
-				return (_baseConfig.ProxyStubPath());
-			}
+            inline const string& ProxyStubPath() const
+            {
+                return (_baseConfig.ProxyStubPath());
+            }
 
             inline void Update(const Plugin::Config& config)
             {
@@ -144,16 +153,31 @@ namespace PluginHost {
                 _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
                 _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
                 _dataPath = _baseConfig.DataPath() + config.ClassName.Value() + '/';
-				_volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
+                _volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
 
-				// Volatile means that the path could not have been created, create it for now.
+                // Volatile means that the path could not have been created, create it for now.
                 Core::Directory(_volatilePath.c_str()).CreatePath();
 
                 if (_baseConfig.Accessor().PortNumber() == 80) {
                     _accessor = string(_T("http://")) + _baseConfig.Accessor().HostAddress() + _webPrefix;
-                }
-                else {
+                } else {
                     _accessor = string(_T("http://")) + _baseConfig.Accessor().HostAddress() + ':' + Core::NumberType<uint16_t>(_baseConfig.Accessor().PortNumber()).Text() + _webPrefix;
+                }
+
+                _versions.clear();
+
+                // Extract the version list from the config
+                Core::JSON::ArrayType<Core::JSON::DecUInt8> versions;
+                versions.FromString(config.Versions.Value());
+                Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
+
+                while (index.Next() == true) {
+                    _versions.push_back(index.Current().Value());
+                }
+
+                // If no versions are give, lets assume this is version 1, and we support it :-)
+                if (_versions.empty() == true) {
+                    _versions.push_back(1);
                 }
             }
 
@@ -164,8 +188,9 @@ namespace PluginHost {
             string _webPrefix;
             string _persistentPath;
             string _volatilePath;
-			string _dataPath;
+            string _dataPath;
             string _accessor;
+            std::list<uint8_t> _versions;
         };
 
     public:
@@ -189,11 +214,15 @@ namespace PluginHost {
         bool IsWebServerRequest(const string& segment) const;
         void Notification(const string& message);
 
-        virtual string Version () const
+        virtual string Version() const
         {
             return (_config.Information().Version());
         }
-        virtual string Model () const
+        virtual string Versions() const
+        {
+            return (_config.Configuration().Versions.Value());
+        }
+        virtual string Model() const
         {
             return (_config.Information().Model());
         }
@@ -237,11 +266,11 @@ namespace PluginHost {
         {
             return (_config.DataPath());
         }
-		virtual string ProxyStubPath() const
-		{
-			return (_config.ProxyStubPath());
-		}
-		virtual string HashKey() const
+        virtual string ProxyStubPath() const
+        {
+            return (_config.ProxyStubPath());
+        }
+        virtual string HashKey() const
         {
             return (_config.Information().HashKey());
         }
@@ -252,6 +281,10 @@ namespace PluginHost {
         virtual bool AutoStart() const
         {
             return (_config.Configuration().AutoStart.Value());
+        }
+        virtual bool IsSupported(const uint8_t number) const
+        {
+            return (_config.IsSupported(number));
         }
         inline const Plugin::Config& Configuration() const
         {
@@ -276,7 +309,7 @@ namespace PluginHost {
         inline void GetMetaData(MetaData::Service& metaData) const
         {
             metaData = _config.Configuration();
-			metaData.Observers = _notifiers.size();
+            metaData.Observers = static_cast<uint32_t>(_notifiers.size());
             metaData.JSONState = this;
 
 #ifdef RUNTIME_STATISTICS
@@ -284,7 +317,7 @@ namespace PluginHost {
             metaData.ProcessedObjects = _processedObjects;
 #endif
         }
- 
+
         // As a service, the plugin could act like a WebService. The Webservice hosts files from a location over the
         // HTTP protocol. This service is hosting files at:
         // http://<bridge host ip>:<bridge port>/Service/<Callsign>/<PostFixURL>/....
@@ -301,8 +334,7 @@ namespace PluginHost {
 
             if (fileRootPath.empty() == true) {
                 _webServerFilePath = _config.DataPath() + postFixURL + '/';
-            }
-            else {
+            } else {
                 // File path needs to end in a slash to indicate it is a directory and not a file.
                 ASSERT(fileRootPath[fileRootPath.length() - 1] == '/');
 
@@ -369,7 +401,6 @@ namespace PluginHost {
             return (result);
         }
 
-
     protected:
         inline void Lock() const
         {
@@ -399,14 +430,14 @@ namespace PluginHost {
                 }
             }
 
-			_notifierLock.Unlock();
+            _notifierLock.Unlock();
 
             return (result);
         }
         inline void Unsubscribe(Channel& channel)
         {
 
-			_notifierLock.Lock();
+            _notifierLock.Lock();
 
             std::list<Channel*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), &channel));
 
@@ -414,7 +445,7 @@ namespace PluginHost {
                 _notifiers.erase(index);
             }
 
-			_notifierLock.Unlock();
+            _notifierLock.Unlock();
         }
 
 #ifdef RUNTIME_STATISTICS
@@ -431,7 +462,7 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
-		Core::CriticalSection _notifierLock;
+        Core::CriticalSection _notifierLock;
 
 #ifdef RUNTIME_STATISTICS
         uint32_t _processedRequests;

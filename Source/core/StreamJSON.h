@@ -1,9 +1,9 @@
 #ifndef __STREAMJSON__
 #define __STREAMJSON__
 
+#include "JSON.h"
 #include "Module.h"
 #include "Portability.h"
-#include "JSON.h"
 #include "StreamText.h"
 
 namespace WPEFramework {
@@ -237,9 +237,9 @@ namespace Core {
         StreamJSONType<SOURCE, ALLOCATOR>& operator=(const StreamJSONType<SOURCE, ALLOCATOR>&);
 
     public:
-		#ifdef __WIN32__
-		#pragma warning(disable : 4355)
-		#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         template <typename Arg1>
         StreamJSONType(uint8_t slotSize, Arg1 arg1)
             : _channel(*this, arg1)
@@ -380,9 +380,9 @@ namespace Core {
             , _deserializer(*this, allocator)
         {
         }
-		#ifdef __WIN32__
-		#pragma warning(default : 4355)
-		#endif
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
         virtual ~StreamJSONType()
         {
@@ -417,11 +417,11 @@ namespace Core {
         {
             return (_channel.IsOpen());
         }
-		inline bool IsClosed() const
-		{
-			return (_channel.IsClosed());
-		}
-		inline bool IsSuspended() const
+        inline bool IsClosed() const
+        {
+            return (_channel.IsClosed());
+        }
+        inline bool IsSuspended() const
         {
             return (_channel.IsSuspended());
         }

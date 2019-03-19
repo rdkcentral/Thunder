@@ -9,7 +9,7 @@
 namespace WPEFramework {
 namespace Trace {
     struct ITraceIterator : virtual public Core::IUnknown {
-        enum { ID = WPEFramework::RPC::ID_TRACEITERATOR };
+        enum { ID = RPC::ID_TRACEITERATOR };
 
         virtual ~ITraceIterator(){};
 
@@ -18,7 +18,7 @@ namespace Trace {
     };
 
     struct ITraceController : virtual public Core::IUnknown {
-        enum { ID = WPEFramework::RPC::ID_TRACECONTROLLER };
+        enum { ID = RPC::ID_TRACECONTROLLER };
 
         virtual ~ITraceController(){};
 
@@ -28,4 +28,3 @@ namespace Trace {
 }
 
 #endif // __PROXYSTUB_ITRACING_H
-

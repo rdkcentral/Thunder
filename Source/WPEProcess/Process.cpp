@@ -27,15 +27,19 @@ namespace Process {
             Minion& operator=(const Minion&) = delete;
 
         public:
-            Minion(InvokeServer& parent) : _parent(parent) {
+            Minion(InvokeServer& parent)
+                : _parent(parent)
+            {
             }
-            virtual ~Minion() {
+            virtual ~Minion()
+            {
                 Stop();
                 Wait(Core::Thread::STOPPED, Core::infinite);
             }
 
         public:
-            virtual uint32_t Worker() override {
+            virtual uint32_t Worker() override
+            {
                 _parent.ProcessProcedures();
                 Block();
                 return (Core::infinite);
@@ -52,9 +56,13 @@ namespace Process {
             InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
 
         public:
-            InvokeHandlerImplementation (MessageQueue* queue, std::atomic<uint8_t>* runningFree) : _handleQueue(*queue), _runningFree(*runningFree) {
+            InvokeHandlerImplementation(MessageQueue* queue, std::atomic<uint8_t>* runningFree)
+                : _handleQueue(*queue)
+                , _runningFree(*runningFree)
+            {
             }
-            virtual ~InvokeHandlerImplementation() {
+            virtual ~InvokeHandlerImplementation()
+            {
             }
 
         public:
@@ -85,9 +93,12 @@ namespace Process {
             AnnounceHandlerImplementation& operator=(const AnnounceHandlerImplementation&) = delete;
 
         public:
-            AnnounceHandlerImplementation(MessageQueue* queue) : _handleQueue(*queue) {
+            AnnounceHandlerImplementation(MessageQueue* queue)
+                : _handleQueue(*queue)
+            {
             }
-            virtual ~AnnounceHandlerImplementation() {
+            virtual ~AnnounceHandlerImplementation()
+            {
             }
 
         public:
@@ -117,12 +128,12 @@ namespace Process {
             , _announcements(nullptr)
             , _minions()
         {
-           for (uint8_t index = 1; index < threads; index++) {
-               _minions.emplace_back(*this);
-           }
-           if (threads > 1) {
-               SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads-1));
-           }
+            for (uint8_t index = 1; index < threads; index++) {
+                _minions.emplace_back(*this);
+            }
+            if (threads > 1) {
+                SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
+            }
         }
         ~InvokeServer()
         {
@@ -130,39 +141,42 @@ namespace Process {
             _minions.clear();
         }
 
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override {
+        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override
+        {
             return (_invokeHandler);
         }
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override {
+        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override
+        {
             return (_announceHandler);
         }
-        virtual void AnnounceHandler(Core::IPCServerType<RPC::AnnounceMessage>* handler) override {
+        virtual void AnnounceHandler(Core::IPCServerType<RPC::AnnounceMessage>* handler) override
+        {
 
             // Concurrency aspect is out of scope as the implementation of this interface is currently limited
             // to the RPC::COmmunicator and RPC::CommunicatorClient. Both of these implementations will first
             // set this callback before any communication is happeing (Open happens after this)
             // Also the announce handler will not be removed until the line is closed and the server (or client)
             // is destructed!!!
-            ASSERT ((handler == nullptr) ^ (_announcements == nullptr));
+            ASSERT((handler == nullptr) ^ (_announcements == nullptr));
 
             _announcements = handler;
         }
-        void ProcessProcedures() {
+        void ProcessProcedures()
+        {
             Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
             Info newRequest;
 
             while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
                 _runningFree--;
                 if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
-                    Core::ProxyType<RPC::InvokeMessage> message (Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
+                    Core::ProxyType<RPC::InvokeMessage> message(Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
 
                     _handler.Invoke(newRequest.channel, message);
-                }
-                else {
-                    ASSERT (newRequest.message->Label() == RPC::AnnounceMessage::Id());
-                    ASSERT (_announcements != nullptr);
+                } else {
+                    ASSERT(newRequest.message->Label() == RPC::AnnounceMessage::Id());
+                    ASSERT(_announcements != nullptr);
 
-                    Core::ProxyType<RPC::AnnounceMessage> message (Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
+                    Core::ProxyType<RPC::AnnounceMessage> message(Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
 
                     _announcements->Procedure(*(newRequest.channel), message);
                 }
@@ -176,13 +190,13 @@ namespace Process {
 
             _handleQueue.Disable();
         }
- 
+
     private:
         MessageQueue _handleQueue;
         std::atomic<uint8_t> _runningFree;
         RPC::Administrator& _handler;
-        Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> > _invokeHandler;
-        Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> > _announceHandler;
+        Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage>> _invokeHandler;
+        Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage>> _announceHandler;
         Core::IPCServerType<RPC::AnnounceMessage>* _announcements;
         std::list<Minion> _minions;
     };
@@ -371,15 +385,16 @@ int _tmain(int argc, _TCHAR* argv[])
 int main(int argc, char** argv)
 #endif
 {
+#ifdef __WIN32__
     // Give the debugger time to attach to this process..
-    // Sleep(20000);
+    Sleep(20000);
+#endif
 
     if (atexit(CloseDown) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
         CloseDown();
         exit(EXIT_FAILURE);
-    }
-    else {
+    } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
     }
 
@@ -414,8 +429,7 @@ int main(int argc, char** argv)
         for (uint8_t teller = 0; teller < argc; teller++) {
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
-    }
-    else {
+    } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
         // Time to open up the LOG tracings as specified by the caller.
@@ -456,18 +470,17 @@ int main(int argc, char** argv)
                         }
                     }
                 }
-				TRACE_L1("Interface Aquired. %p.", base);
+                TRACE_L1("Interface Aquired. %p.", base);
 
-				uint32_t result;
+                uint32_t result;
 
-				// We have something to report back, do so...
-				if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
+                // We have something to report back, do so...
+                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
 
-					_server->Close(Core::infinite);
-				}
-                else {
+                    _server->Close(Core::infinite);
+                } else {
                     TRACE_L1("Could not open the connection, error (%d)", result);
                 }
             }

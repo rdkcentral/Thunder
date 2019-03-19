@@ -1,6 +1,8 @@
 #ifndef __ISWITCHBOARD_H
 #define __ISWITCHBOARD_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {

@@ -1,51 +1,50 @@
-#include "Number.h"
 #include "SystemInfo.h"
-#include "Trace.h"
-#include "Serialization.h"
-#include "NodeId.h"
 #include "FileSystem.h"
 #include "NetworkInfo.h"
+#include "NodeId.h"
+#include "Number.h"
+#include "Serialization.h"
 #include "Sync.h"
+#include "Trace.h"
 
 #include <cstdio>
 #include <ctime>
 
 #ifdef __APPLE__
-#include <sys/sysctl.h>
 #import <mach/host_info.h>
 #import <mach/mach_host.h>
+#include <sys/sysctl.h>
 #elif defined(__LINUX__)
-#include <sys/sysinfo.h>
-#include <cstdint>
 #include <cinttypes>
+#include <cstdint>
+#include <sys/sysinfo.h>
 #endif
 
 #if defined(PLATFORM_RPI)
 #include <bcm_host.h>
 
-
 namespace {
 
-    class BCMHostInit {
-        public:    
+class BCMHostInit {
+public:
+    BCMHostInit(const BCMHostInit&) = delete;
+    BCMHostInit& operator=(const BCMHostInit&) = delete;
 
-        BCMHostInit(const BCMHostInit&) = delete;
-        BCMHostInit& operator=(const BCMHostInit&) = delete;
+    BCMHostInit()
+    {
+        bcm_host_init();
+    }
 
-        BCMHostInit() {
-            bcm_host_init();
-        }
+    ~BCMHostInit()
+    {
+        bcm_host_deinit();
+    }
 
-        ~BCMHostInit() {
-            bcm_host_deinit();
-        }
-
-        static void DoBCMHostInit() {
-            static BCMHostInit bcmhostinit;
-        }
-
-    };
-
+    static void DoBCMHostInit()
+    {
+        static BCMHostInit bcmhostinit;
+    }
+};
 }
 
 #endif
@@ -53,110 +52,109 @@ namespace {
 namespace WPEFramework {
 namespace Core {
 
-/* static */ SystemInfo SystemInfo::_systemInfo;
+    /* static */ SystemInfo SystemInfo::_systemInfo;
 
-static string ConstructUniqueId(
-    const TCHAR DeviceId[], 
-    const uint8_t DeviceIdLength,
-    const TCHAR SystemPrefix[], 
-    const uint8_t SystemPrefixLength,
-    const uint8_t KeyLength)
-{
+    static string ConstructUniqueId(
+        const TCHAR DeviceId[],
+        const uint8_t DeviceIdLength,
+        const TCHAR SystemPrefix[],
+        const uint8_t SystemPrefixLength,
+        const uint8_t KeyLength)
+    {
 #ifdef __WIN32__
-    TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
+        TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
 #else
-    TCHAR buffer[KeyLength + 1];
-    buffer[0] = '\0';
+        TCHAR buffer[KeyLength + 1];
+        buffer[0] = '\0';
 #endif
 
-    if (KeyLength == UINT8_MAX) {
-        ::memcpy(buffer, SystemPrefix, SystemPrefixLength);
-
-        ::memcpy(&buffer[SystemPrefixLength], DeviceId, DeviceIdLength);
-
-        buffer[DeviceIdLength + SystemPrefixLength] = '\0';
-    }
-    else {
-        ASSERT(KeyLength > SystemPrefixLength);
-
-        if (KeyLength > SystemPrefixLength) {
+        if (KeyLength == UINT8_MAX) {
             ::memcpy(buffer, SystemPrefix, SystemPrefixLength);
 
-            if (KeyLength < (DeviceIdLength + SystemPrefixLength)) {
-                TRACE_L1("Losing uniqueness because the id is truncated from %d to the first %d chars of your given id!",
+            ::memcpy(&buffer[SystemPrefixLength], DeviceId, DeviceIdLength);
+
+            buffer[DeviceIdLength + SystemPrefixLength] = '\0';
+        } else {
+            ASSERT(KeyLength > SystemPrefixLength);
+
+            if (KeyLength > SystemPrefixLength) {
+                ::memcpy(buffer, SystemPrefix, SystemPrefixLength);
+
+                if (KeyLength < (DeviceIdLength + SystemPrefixLength)) {
+                    TRACE_L1("Losing uniqueness because the id is truncated from %d to the first %d chars of your given id!",
                         DeviceIdLength, (KeyLength - SystemPrefixLength))
-                ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
-            }
-            else {
-                if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
-                    ::memset(&buffer[SystemPrefixLength], '0', KeyLength - (DeviceIdLength + SystemPrefixLength));
+                    ::memcpy(&buffer[SystemPrefixLength], DeviceId, KeyLength - SystemPrefixLength);
+                } else {
+                    if (KeyLength > (DeviceIdLength + SystemPrefixLength)) {
+                        ::memset(&buffer[SystemPrefixLength], '0', KeyLength - (DeviceIdLength + SystemPrefixLength));
+                    }
+
+                    ::memcpy(&buffer[SystemPrefixLength + (KeyLength - (DeviceIdLength + SystemPrefixLength))],
+                        DeviceId, DeviceIdLength);
                 }
 
-                ::memcpy(&buffer[SystemPrefixLength + (KeyLength - (DeviceIdLength + SystemPrefixLength))],
-                DeviceId, DeviceIdLength);
+                buffer[KeyLength] = '\0';
+            } else {
+                buffer[0] = '\0';
             }
+        }
 
-            buffer[KeyLength] = '\0';
-        }
-        else {
-            buffer[0] = '\0';
-        }
+        return (buffer);
     }
 
-    return (buffer);
-}
+    static string ConstructHostname()
+    {
+        TCHAR buffer[128];
 
-static string ConstructHostname()
-{
-    TCHAR buffer[128];
+        gethostname(buffer, sizeof(buffer) - 1);
 
-    gethostname(buffer, sizeof(buffer) - 1);
-
-    return (buffer);
-}
+        return (buffer);
+    }
 
 #ifdef SYSTEM_PREFIX
-static const TCHAR _systemPrefix[] = _T(EXPAND_AND_QUOTE(SYSTEM_PREFIX));
+    static const TCHAR _systemPrefix[] = _T(EXPAND_AND_QUOTE(SYSTEM_PREFIX));
 #else
-static const TCHAR _systemPrefix[] = _T("WPE");
+    static const TCHAR _systemPrefix[] = _T("WPE");
 #endif
 
-// Use MAC address and let the framework handle the OTP ID.
-const uint8_t* SystemInfo::RawDeviceId() const
-{
-    static uint8_t* MACAddress = nullptr;
-    static uint8_t MACAddressBuffer[7];
+    // Use MAC address and let the framework handle the OTP ID.
+    const uint8_t* SystemInfo::RawDeviceId() const
+    {
+        static uint8_t* MACAddress = nullptr;
+        static uint8_t MACAddressBuffer[7];
 
-    if (MACAddress == nullptr) {
-        bool valid = false;
-        Core::AdapterIterator adapters;
+        if (MACAddress == nullptr) {
+            bool valid = false;
+            Core::AdapterIterator adapters;
 
-        while ( (adapters.Next() == true) && (valid == false) ) {
-            uint8_t check = 1;
-            adapters.MACAddress(&MACAddressBuffer[1], 6);
-            while ( (check <= 4) && (MACAddressBuffer[check] == 0) ) { check++; } 
-            valid = (check <= 4);
+            while ((adapters.Next() == true) && (valid == false)) {
+                uint8_t check = 1;
+                adapters.MACAddress(&MACAddressBuffer[1], 6);
+                while ((check <= 4) && (MACAddressBuffer[check] == 0)) {
+                    check++;
+                }
+                valid = (check <= 4);
+            }
+
+            MACAddressBuffer[0] = 6;
+
+            MACAddress = &MACAddressBuffer[0];
         }
 
-        MACAddressBuffer[0] = 6;
-
-        MACAddress = &MACAddressBuffer[0];
+        return MACAddress;
     }
 
-    return MACAddress;
-}
+    string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
+    {
+        string id;
 
-string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
-{
-    string id;
+        ToString(&RawDeviceId[1], RawDeviceId[0], false, id);
 
-    ToString(&RawDeviceId[1], RawDeviceId[0], false, id);
+        return (ConstructUniqueId(id.c_str(), static_cast<uint8_t>(id.size()),
+            _systemPrefix, sizeof(_systemPrefix) - 1,
+            KeyLength));
+    }
 
-    return (ConstructUniqueId(id.c_str(), static_cast<uint8_t>(id.size()),
-                              _systemPrefix, sizeof(_systemPrefix) - 1,
-                              KeyLength));
-}
-  
 #if defined(PLATFORM_RPI)
     static std::string vcgencmd_request(const char request[])
     {
@@ -230,8 +228,8 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         uint64_t totalSystemTime = 0, totalUserTime = 0, totalIdleTime = 0;
         uint64_t tempTotalSystemTime = 0, tempTotalUserTime = 0, temoTotalIdleTime = 0;
 
-        kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &processorCount, (processor_info_array_t *)&cpuLoad, &processorMsgCount);
-        if(err == KERN_SUCCESS) {
+        kern_return_t err = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &processorCount, (processor_info_array_t*)&cpuLoad, &processorMsgCount);
+        if (err == KERN_SUCCESS) {
             for (natural_t i = 0; i < processorCount; i++) {
                 tempTotalSystemTime += cpuLoad[i].cpu_ticks[CPU_STATE_SYSTEM];
                 tempTotalUserTime += cpuLoad[i].cpu_ticks[CPU_STATE_USER] + cpuLoad[i].cpu_ticks[CPU_STATE_NICE];
@@ -248,7 +246,7 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         m_prevCpuUserTicks = tempTotalUserTime;
         m_prevCpuIdleTicks = temoTotalIdleTime;
 
-        m_cpuload =  ((totalSystemTime + totalUserTime) * 100)/ (totalSystemTime + totalUserTime + totalIdleTime);
+        m_cpuload = ((totalSystemTime + totalUserTime) * 100) / (totalSystemTime + totalUserTime + totalIdleTime);
 #elif defined(__LINUX__)
 
         static double previousTickCount, previousIdleTime;
@@ -323,8 +321,7 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         if (unit.compare("M") == 0) {
             // Multiply with MB = 1024*1024.
             SystemInfo::m_totalgpuram *= 1048576;
-        }
-        else if (unit.compare("K") == 0) {
+        } else if (unit.compare("K") == 0) {
             // Multiply with KB = 1024.
             SystemInfo::m_totalgpuram *= 1024;
         }
@@ -364,13 +361,11 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         if (unit.compare("M") == 0) {
             // Multiply with MB = 1024*1024.
             SystemInfo::m_freegpuram *= 1048576;
-        }
-        else if (unit.compare("K") == 0) {
+        } else if (unit.compare("K") == 0) {
             // Multiply with KB = 1024.
             SystemInfo::m_freegpuram *= 1024;
         }
 #endif
-
     }
 
 #if defined(__LINUX__) && !defined(__APPLE__)
@@ -390,10 +385,10 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
     {
         --y1;
         --y2;
-        return (y2/4 - y1/4) - (y2/100 - y1/100) + (y2/400 - y1/400);
+        return (y2 / 4 - y1 / 4) - (y2 / 100 - y1 / 100) + (y2 / 400 - y1 / 400);
     }
 
-    static time_t mktimegm(const struct tm *tm)
+    static time_t mktimegm(const struct tm* tm)
     {
         int year;
         time_t days;
@@ -428,7 +423,6 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         size_t length;
         length = sizeof(m_totalram);
 
-
         mib[0] = CTL_HW;
         mib[1] = HW_MEMSIZE;
         sysctl(mib, 2, &m_totalram, &length, nullptr, 0);
@@ -438,11 +432,10 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         length = sizeof(time);
         sysctl(mib, 2, &time, &length, nullptr, 0);
 
-        m_uptime =  (Core::Time::Now().Ticks() - Core::Time(time).Ticks()) / (Core::Time::TicksPerMillisecond * 1000);
+        m_uptime = (Core::Time::Now().Ticks() - Core::Time(time).Ticks()) / (Core::Time::TicksPerMillisecond * 1000);
 
         mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
-        if (host_statistics (mach_host_self (), HOST_VM_INFO, (host_info_t) &vmstat, &count) != KERN_SUCCESS)
-        {
+        if (host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vmstat, &count) != KERN_SUCCESS) {
             TRACE_L1("vm_stat call failed [%d]", __LINE__);
         }
         m_freeram = vmstat.free_count * 4096;
@@ -462,19 +455,18 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         ::SetSystemTime(&(time.Handle()));
 
 #elif defined(__APPLE__)
-    ASSERT("Time not set");
+        ASSERT("Time not set");
 #else
 
         struct tm setTime;
 
-        ::memcpy(&setTime, &(time.Handle()), sizeof (setTime));
+        ::memcpy(&setTime, &(time.Handle()), sizeof(setTime));
 
         time_t value = mktimegm(&setTime);
 
-        if(stime(&value) != 0 ){
+        if (stime(&value) != 0) {
             TRACE_L1("Failed to set system time [%d]", errno);
-        }
-        else {
+        } else {
             TRACE_L1("System time updated [%d]", errno);
         }
 #endif
@@ -485,21 +477,20 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
 #ifdef __LINUX__
         TCHAR* text = ::getenv(name.c_str());
 
-        if(text != nullptr) {
+        if (text != nullptr) {
             value = text;
-        }
-        else {
+        } else {
             value.clear();
         }
 
         return (text != nullptr);
 #else
-            TCHAR buffer[1024];
-            DWORD bytes = GetEnvironmentVariable(name.c_str(), buffer, sizeof(buffer));
+        TCHAR buffer[1024];
+        DWORD bytes = GetEnvironmentVariable(name.c_str(), buffer, sizeof(buffer));
 
-            value = string(buffer, bytes);
+        value = string(buffer, bytes);
 
-            return (bytes > 0);
+        return (bytes > 0);
 #endif
     }
 
@@ -509,8 +500,7 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
         if ((forced == true) || (::getenv(name.c_str()) == nullptr)) {
             if (value != nullptr) {
                 return (::setenv(name.c_str(), value, 1) == 0);
-            }
-            else {
+            } else {
                 return (::unsetenv(name.c_str()));
             }
         }
@@ -536,8 +526,7 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
     }
 #endif
 
- 
-   namespace System {
+    namespace System {
 
         extern "C" {
 
@@ -552,31 +541,29 @@ string SystemInfo::Id(const uint8_t RawDeviceId[], const uint8_t KeyLength)
 
 #else
 
-                pid_t pid;
+            pid_t pid;
 
-                if ((pid = fork()) == 0) {
-                    execlp("/sbin/reboot", "/sbin/reboot", nullptr);
-                    exit(1); // This should never be reached.
+            if ((pid = fork()) == 0) {
+                execlp("/sbin/reboot", "/sbin/reboot", nullptr);
+                exit(1); // This should never be reached.
+            } else if (pid != -1) {
+                int32_t status;
+                waitpid(pid, &status, 0);
+                if (WIFEXITED(status) == false) {
+                    // reboot process did not exit sanely
+                    result = Core::ERROR_UNAVAILABLE;
                 }
-                else if (pid != -1) {
-                    int32_t status;
-                    waitpid(pid, &status, 0);
-                    if (WIFEXITED(status) == false) {
-                        // reboot process did not exit sanely
-                        result = Core::ERROR_UNAVAILABLE;
-                    }
-                    if (WEXITSTATUS(status) != 0) {
-                        // reboot process exited with error;
-                        // most likely the user lacks the required privileges
-                        result = Core::ERROR_PRIVILIGED_REQUEST;
-                    }
-                    else {
-                        // The init system is now shutting down the system. It will signals all
-                        // programs to terminate by sending SIGTERM, followed by SIGKILL to
-                        // programs that didn't terminate gracefully.
-                        result = Core::ERROR_NONE;
-                    }
+                if (WEXITSTATUS(status) != 0) {
+                    // reboot process exited with error;
+                    // most likely the user lacks the required privileges
+                    result = Core::ERROR_PRIVILIGED_REQUEST;
+                } else {
+                    // The init system is now shutting down the system. It will signals all
+                    // programs to terminate by sending SIGTERM, followed by SIGKILL to
+                    // programs that didn't terminate gracefully.
+                    result = Core::ERROR_NONE;
                 }
+            }
 #endif
 
             return (result);

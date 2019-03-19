@@ -34,29 +34,32 @@
 // Represents a substring for URL parsing.
 namespace WPEFramework {
 
-    ENUM_CONVERSION_BEGIN(URL::SchemeType)
+ENUM_CONVERSION_BEGIN(URL::SchemeType)
 
-        { URL::SCHEME_FILE, _TXT("file") },
-        { URL::SCHEMA_MAIL, _TXT("mailto") },
-        { URL::SCHEME_HTTP, _TXT("http") },
-        { URL::SCHEME_HTTPS, _TXT("https") },
-        { URL::SCHEME_FTP, _TXT("ftp") },
-        { URL::SCHEME_TELNET, _TXT("telnet") },
-        { URL::SCHEME_GOPHER, _TXT("gopher") },
-        { URL::SCHEME_LDAP, _TXT("ldap") },
-        { URL::SCHEME_RTSP, _TXT("rtsp") },
-        { URL::SCHEME_RTP, _TXT("rtp") },
-        { URL::SCHEME_RTCP, _TXT("rtcp") },
-        { URL::SCHEME_RTP_UDP, _TXT("rtpudp") },
-        { URL::SCHEME_RTP_TCP, _TXT("rtptcp") },
-        { URL::SCHEME_WS, _TXT("ws") },
-        { URL::SCHEME_WSS, _TXT("wss") },
-        { URL::SCHEME_UNKNOWN, _TXT("????"), },
+    { URL::SCHEME_FILE, _TXT("file") },
+    { URL::SCHEMA_MAIL, _TXT("mailto") },
+    { URL::SCHEME_HTTP, _TXT("http") },
+    { URL::SCHEME_HTTPS, _TXT("https") },
+    { URL::SCHEME_FTP, _TXT("ftp") },
+    { URL::SCHEME_TELNET, _TXT("telnet") },
+    { URL::SCHEME_GOPHER, _TXT("gopher") },
+    { URL::SCHEME_LDAP, _TXT("ldap") },
+    { URL::SCHEME_RTSP, _TXT("rtsp") },
+    { URL::SCHEME_RTP, _TXT("rtp") },
+    { URL::SCHEME_RTCP, _TXT("rtcp") },
+    { URL::SCHEME_RTP_UDP, _TXT("rtpudp") },
+    { URL::SCHEME_RTP_TCP, _TXT("rtptcp") },
+    { URL::SCHEME_WS, _TXT("ws") },
+    { URL::SCHEME_WSS, _TXT("wss") },
+    {
+        URL::SCHEME_UNKNOWN,
+        _TXT("????"),
+    },
 
     ENUM_CONVERSION_END(URL::SchemeType)
 
-
-namespace Core {
+        namespace Core
+{
     struct Component {
         Component()
             : _begin(0)
@@ -590,8 +593,7 @@ namespace Core {
 
         if (end_auth == spec_len) { // No beginning of path found.
             full_path = Component();
-        }
-        else { // Everything starting from the slash to the end is the path.
+        } else { // Everything starting from the slash to the end is the path.
             full_path = Component(end_auth, spec_len - end_auth);
         }
 
@@ -619,8 +621,7 @@ namespace Core {
             username = Component(user._begin, colon_offset);
             password.SetRange(user._begin + colon_offset + 1,
                 user._begin + user._len);
-        }
-        else {
+        } else {
             // No separator, treat everything as the username
             username = user;
             password = Component();
@@ -668,8 +669,7 @@ namespace Core {
                 hostname.reset();
             }
             port_num.SetRange(colon + 1, serverinfo.end());
-        }
-        else {
+        } else {
             // No port: <hostname>
             hostname = serverinfo;
             port_num.reset();
@@ -711,8 +711,7 @@ namespace Core {
             Component tempItem;
             tempItem.SetRange(i + 1, auth._begin + auth._len);
             ParseServerInfo(spec, tempItem, hostname, port_num);
-        }
-        else {
+        } else {
             // No user info, everything is server info.
             username.reset();
             password.reset();
@@ -770,8 +769,7 @@ namespace Core {
         if (ref_separator >= 0) {
             file_end = query_end = ref_separator;
             ref.SetRange(ref_separator + 1, path_end);
-        }
-        else {
+        } else {
             file_end = query_end = path_end;
             ref.reset();
         }
@@ -781,16 +779,14 @@ namespace Core {
         if (query_separator >= 0) {
             file_end = query_separator;
             query.SetRange(query_separator + 1, query_end);
-        }
-        else {
+        } else {
             query.reset();
         }
 
         // File path: treat an empty file path as no file path.
         if (file_end != path._begin) {
             filepath.SetRange(path._begin, file_end);
-        }
-        else {
+        } else {
             filepath.reset();
         }
     }
@@ -833,8 +829,7 @@ namespace Core {
         int after_scheme;
         if (DoExtractScheme(spec, spec_len, parsed.scheme)) {
             after_scheme = parsed.scheme.end() + 1; // Skip past the colon.
-        }
-        else {
+        } else {
             // Say there's no scheme when there is a colon. We could also say that
             // everything is the scheme. Both would produce an invalid URL, but this way
             // seems less wrong in more cases.
@@ -880,12 +875,10 @@ namespace Core {
             // much for these non-standard URLs).
             if (parsed.scheme.end() == spec_len - 1) {
                 parsed.path.reset();
-            }
-            else {
+            } else {
                 parsed.path.SetRange(parsed.scheme.end() + 1, spec_len);
             }
-        }
-        else {
+        } else {
             // No scheme found, just path.
             parsed.scheme.reset();
             parsed.path.SetRange(begin, spec_len);
@@ -930,8 +923,7 @@ namespace Core {
                 path_begin = parsed.scheme.end() + 1;
                 path_end = spec_len;
             }
-        }
-        else {
+        } else {
             // No scheme found, just path.
             parsed.scheme.reset();
             path_begin = begin;
@@ -951,8 +943,7 @@ namespace Core {
         // -1, rather than having a length of 0
         if (path_begin == path_end) {
             parsed.path.reset();
-        }
-        else {
+        } else {
             parsed.path.SetRange(path_begin, path_end);
         }
     }
@@ -1284,8 +1275,7 @@ namespace Core {
             int host_len = spec_len - after_slashes;
             if (host_len) {
                 parsed.host = Component(after_slashes, host_len);
-            }
-            else {
+            } else {
                 parsed.host.reset();
             }
             parsed.path.reset();
@@ -1313,8 +1303,7 @@ namespace Core {
         int host_len = next_slash - after_slashes;
         if (host_len) {
             parsed.host.SetRange(after_slashes, next_slash);
-        }
-        else {
+        } else {
             parsed.host.reset();
         }
         if (next_slash < spec_len) {
@@ -1322,8 +1311,7 @@ namespace Core {
             tempItem.SetRange(next_slash, spec_len);
             ParsePathInternal(spec, tempItem,
                 parsed.path, parsed.query, parsed.ref);
-        }
-        else {
+        } else {
             parsed.path.reset();
         }
     }
@@ -1383,21 +1371,18 @@ namespace Core {
             // Windows path, don't try to extract the scheme (for example, "c:\foo").
             parsed.scheme.reset();
             after_scheme = after_slashes;
-        }
-        else if (DoesBeginUNCPath(spec, begin, spec_len, false)) {
+        } else if (DoesBeginUNCPath(spec, begin, spec_len, false)) {
             // Windows UNC path: don't try to extract the scheme, but keep the slashes.
             parsed.scheme.reset();
             after_scheme = begin;
-        }
-        else
+        } else
 #endif
         {
             if (ExtractScheme(&spec[begin], spec_len - begin, parsed.scheme)) {
                 // Offset the results since we gave ExtractScheme a substring.
                 parsed.scheme._begin += begin;
                 after_scheme = parsed.scheme.end() + 1;
-            }
-            else {
+            } else {
                 // No scheme found, remember that.
                 parsed.scheme.reset();
                 after_scheme = begin;
@@ -1509,11 +1494,11 @@ namespace Core {
         { URL::SCHEME_RTCP, _TXT("rtcp"), 554, ParseStandardURL, URL::CreateStandardURL },
         { URL::SCHEME_RTP_UDP, _TXT("rtpudp"), 554, ParseStandardURL, URL::CreateStandardURL },
         { URL::SCHEME_RTP_TCP, _TXT("rtptcp"), 554, ParseStandardURL, URL::CreateStandardURL },
-		{ URL::SCHEME_NTP, _TXT("ntp"), 123, ParseStandardURL, URL::CreateStandardURL },
-		{ URL::SCHEME_UNKNOWN, _TXT(""), 0, ParseStandardURL, URL::CreateStandardURL }
+        { URL::SCHEME_NTP, _TXT("ntp"), 123, ParseStandardURL, URL::CreateStandardURL },
+        { URL::SCHEME_UNKNOWN, _TXT(""), 0, ParseStandardURL, URL::CreateStandardURL }
     };
 
-            TextFragment URL::Text() const
+    TextFragment URL::Text() const
     {
         TextFragment result;
 
@@ -1539,8 +1524,7 @@ namespace Core {
             if (g_SchemeOverview[index].m_Scheme == type) {
                 m_SchemeInfo = &(g_SchemeOverview[index]);
                 m_Scheme = Core::TextFragment(g_SchemeOverview[index].m_Schemestring, g_SchemeOverview[index].m_SchemeLength);
-            }
-            else {
+            } else {
                 ++index;
             }
         }
@@ -1562,7 +1546,7 @@ namespace Core {
         bool caseSensitive = true;
         Component result;
         const TCHAR* byteArray(urlStr.c_str());
-        int length = urlStr.length();
+        int length = static_cast<int>(urlStr.length());
 
         if (ExtractScheme(byteArray, length, result) == true) {
             // SchemeInfo information found! Set it!
@@ -1580,8 +1564,7 @@ namespace Core {
             if (index == (sizeof(g_SchemeOverview) / sizeof(SchemeInfo))) {
                 m_SchemeInfo = nullptr;
                 ParseStandardURL(byteArray, length, parseInfo);
-            }
-            else {
+            } else {
                 m_SchemeInfo = &(g_SchemeOverview[index]);
                 g_SchemeOverview[index].m_ParseFunction(byteArray, length, parseInfo);
                 m_Port = OptionalType<unsigned short>(g_SchemeOverview[index].m_Port);
@@ -1611,7 +1594,7 @@ namespace Core {
         }
     }
 
-    static inline uint32_t CopyFragment(TCHAR* destination, const int maxLength, int index, const TextFragment& data)
+    static inline uint32_t CopyFragment(TCHAR * destination, const int maxLength, int index, const TextFragment& data)
     {
         const int count = (data.Length() > static_cast<unsigned int>(maxLength) ? maxLength : data.Length());
 
@@ -1728,12 +1711,10 @@ namespace Core {
             if ((isalnum(current) != 0) || (current == '-') || (current == '_') || (current == '.') || (current == '~')) {
                 *destination++ = current;
                 dstLength--;
-            }
-            else if (current == ' ') {
+            } else if (current == ' ') {
                 *destination++ = '+';
                 dstLength--;
-            }
-            else {
+            } else {
                 *destination++ = '%';
                 *destination++ = hex[(current >> 4) & 0x0F];
                 *destination++ = hex[(current & 0x0F)];
@@ -1765,12 +1746,10 @@ namespace Core {
                     source += 2;
                     srcLength -= 3;
                 }
-            }
-            else if (current == '+') {
+            } else if (current == '+') {
                 *destination++ = ' ';
                 srcLength--;
-            }
-            else {
+            } else {
                 *destination++ = current;
                 srcLength--;
             }

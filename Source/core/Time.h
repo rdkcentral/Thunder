@@ -8,10 +8,8 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL Time {
     private:
-
-
     public:
-    static constexpr uint32_t TicksPerMillisecond = 1000;
+        static constexpr uint32_t TicksPerMillisecond = 1000;
 
 #ifdef __POSIX__
         Time(const struct timeval& info);
@@ -69,9 +67,7 @@ namespace Core {
         {
             if (_time.tm_zone == nullptr)
                 return false;
-            uint32_t value = (static_cast<uint8_t>(_time.tm_zone[0]) << 16) | 
-                           (static_cast<uint8_t>(_time.tm_zone[1]) << 8) | 
-                           (static_cast<uint8_t>(_time.tm_zone[2]) << 0);
+            uint32_t value = (static_cast<uint8_t>(_time.tm_zone[0]) << 16) | (static_cast<uint8_t>(_time.tm_zone[1]) << 8) | (static_cast<uint8_t>(_time.tm_zone[2]) << 0);
             return (value != (('G' << 16) | ('M' << 8) | ('T'))) && (value != (('U' << 16) | ('T' << 8) | ('C')));
         }
 #endif
@@ -108,12 +104,10 @@ namespace Core {
                 if (::isspace(buffer[3]) != 0) {
                     // Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format [18]
                     return (FromANSI(buffer, localTime));
-                }
-                else if (buffer[3] == ',') {
+                } else if (buffer[3] == ',') {
                     // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
                     return (FromRFC1123(buffer));
-                }
-                else {
+                } else {
                     // Sunday, 06-Nov-94 08:49:37 GMT ; RFC 850, obsoleted by RFC 1036
                     return (FromRFC1036(buffer));
                 }
@@ -127,8 +121,8 @@ namespace Core {
             text = ToRFC1123(localTime);
         }
         bool FromString(const string& text);
-        const TCHAR * WeekDayName() const;
-        const TCHAR * MonthName() const;
+        const TCHAR* WeekDayName() const;
+        const TCHAR* MonthName() const;
 
         inline uint32_t MilliSeconds() const
         {
@@ -191,7 +185,7 @@ namespace Core {
         uint16_t DayOfYear() const;
         uint64_t NTPTime() const;
 
-    int32_t DifferenceFromGMTSeconds() const;
+        int32_t DifferenceFromGMTSeconds() const;
 
         // Time in microseconds!
         uint64_t Ticks() const;
@@ -266,13 +260,15 @@ namespace Core {
         }
 
 #ifdef __WIN32__
-		inline const SYSTEMTIME& Handle() const {
-			return (_time);
-		}
+        inline const SYSTEMTIME& Handle() const
+        {
+            return (_time);
+        }
 #else
-		inline const struct tm& Handle() const {
-			return (_time);
-		}
+        inline const struct tm& Handle() const
+        {
+            return (_time);
+        }
 #endif
 
     private:

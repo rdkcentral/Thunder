@@ -21,14 +21,14 @@ namespace PluginHost {
         : public virtual Core::IUnknown {
 
         enum {
-            ID = WPEFramework::RPC::ID_PLUGIN
+            ID = RPC::ID_PLUGIN
         };
 
         struct INotification
             : virtual public Core::IUnknown {
 
             enum {
-                ID = WPEFramework::RPC::ID_PLUGIN_NOTIFICATION
+                ID = RPC::ID_PLUGIN_NOTIFICATION
             };
 
             virtual ~INotification()
@@ -79,7 +79,7 @@ namespace PluginHost {
         : public IPlugin {
 
         enum {
-            ID = WPEFramework::RPC::ID_PLUGINEXTENDED
+            ID = RPC::ID_PLUGINEXTENDED
         };
 
         virtual ~IPluginExtended()
@@ -98,7 +98,7 @@ namespace PluginHost {
     struct IWeb
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_WEB,
+            ID = RPC::ID_WEB,
         };
 
         //! @{
@@ -121,7 +121,7 @@ namespace PluginHost {
     struct IWebSocket
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_WEBSOCKET
+            ID = RPC::ID_WEBSOCKET
         };
 
         //! @{
@@ -136,7 +136,7 @@ namespace PluginHost {
         //! @{
         //! ==================================== CALLED ON THREADPOOL THREAD ======================================
         //! Once the passed object from the previous method is filled (completed), this method allows it to be handled
-        //! and to form an answer on the incoming JSON messagev(if needed).
+        //! and to form an answer on the incoming JSON message(if needed).
         //! @}
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const uint32_t ID, const Core::JSON::IElement& element) = 0;
     };
@@ -144,7 +144,7 @@ namespace PluginHost {
     struct ITextSocket
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_TEXTSOCKET
+            ID = RPC::ID_TEXTSOCKET
         };
 
         //! @{
@@ -155,11 +155,10 @@ namespace PluginHost {
         virtual string Inbound(const uint32_t ID, const string& value) = 0;
     };
 
- 
     struct IChannel
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_CHANNEL
+            ID = RPC::ID_CHANNEL
         };
 
         //! @{
@@ -180,7 +179,7 @@ namespace PluginHost {
     struct ISecurity
         : virtual public Core::IUnknown {
         enum {
-            ID = WPEFramework::RPC::ID_SECURITY
+            ID = RPC::ID_SECURITY
         };
 
         //! Allow a request to be checked before it is offered for processing.

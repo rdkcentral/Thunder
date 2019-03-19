@@ -5,15 +5,15 @@
 #define MODULE_NAME Plugins
 #endif
 
+#include "../com/com.h"
 #include "../core/core.h"
 #include "../cryptalgo/cryptalgo.h"
-#include "../websocket/websocket.h"
 #include "../tracing/tracing.h"
-#include "../com/com.h"
+#include "../websocket/websocket.h"
 
 #ifdef __WIN32__
 #undef EXTERNAL
-#ifdef __MODULE_PLUGINS__
+#ifdef PLUGINS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT

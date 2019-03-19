@@ -122,24 +122,24 @@
 #define SHA512_F3(x) (ROTR(x, 1) ^ ROTR(x, 8) ^ SHFR(x, 7))
 #define SHA512_F4(x) (ROTR(x, 19) ^ ROTR(x, 61) ^ SHFR(x, 6))
 
-#define UNPACK32(x, str)                   \
-    {                                      \
+#define UNPACK32(x, str)                     \
+    {                                        \
         *((str) + 3) = (uint8_t)((x));       \
         *((str) + 2) = (uint8_t)((x) >> 8);  \
         *((str) + 1) = (uint8_t)((x) >> 16); \
         *((str) + 0) = (uint8_t)((x) >> 24); \
     }
 
-#define PACK32(str, x)                        \
-    {                                         \
+#define PACK32(str, x)                          \
+    {                                           \
         *(x) = ((uint32_t) * ((str) + 3))       \
             | ((uint32_t) * ((str) + 2) << 8)   \
             | ((uint32_t) * ((str) + 1) << 16)  \
             | ((uint32_t) * ((str) + 0) << 24); \
     }
 
-#define UNPACK64(x, str)                   \
-    {                                      \
+#define UNPACK64(x, str)                     \
+    {                                        \
         *((str) + 7) = (uint8_t)((x));       \
         *((str) + 6) = (uint8_t)((x) >> 8);  \
         *((str) + 5) = (uint8_t)((x) >> 16); \
@@ -150,8 +150,8 @@
         *((str) + 0) = (uint8_t)((x) >> 56); \
     }
 
-#define PACK64(str, x)                        \
-    {                                         \
+#define PACK64(str, x)                          \
+    {                                           \
         *(x) = ((uint64_t) * ((str) + 7))       \
             | ((uint64_t) * ((str) + 6) << 8)   \
             | ((uint64_t) * ((str) + 5) << 16)  \
@@ -434,8 +434,7 @@ namespace Crypto {
             ProcessMessageBlock();
 
             _messageIndex = 0;
-        }
-        else {
+        } else {
             _messageBlock[_messageIndex++] = 0x80;
         }
 
@@ -671,8 +670,7 @@ namespace Crypto {
                 MD5_Update(&_context, source, 512);
                 source += 512;
                 sizeToHandle -= 512;
-            }
-            else {
+            } else {
                 MD5_Update(&_context, source, sizeToHandle);
                 sizeToHandle = 0;
             }
@@ -1089,8 +1087,7 @@ namespace Crypto {
         int i;
 #endif
 
-        block_nb = (1 + ((SHA256_BLOCK_SIZE - 9)
-                            < (_context.len % SHA256_BLOCK_SIZE)));
+        block_nb = (1 + ((SHA256_BLOCK_SIZE - 9) < (_context.len % SHA256_BLOCK_SIZE)));
 
         len_b = (_context.tot_len + _context.len) << 3;
         pm_len = block_nb << 6;
@@ -1127,8 +1124,7 @@ namespace Crypto {
                 sha256_update(&_context, source, SHA256_BLOCK_SIZE);
                 source += SHA256_BLOCK_SIZE;
                 sizeToHandle -= SHA256_BLOCK_SIZE;
-            }
-            else {
+            } else {
                 sha256_update(&_context, source, sizeToHandle);
                 sizeToHandle = 0;
             }
@@ -1259,8 +1255,7 @@ namespace Crypto {
         int i;
 #endif
 
-        block_nb = (1 + ((SHA224_BLOCK_SIZE - 9)
-                            < (_context.len % SHA224_BLOCK_SIZE)));
+        block_nb = (1 + ((SHA224_BLOCK_SIZE - 9) < (_context.len % SHA224_BLOCK_SIZE)));
 
         len_b = (_context.tot_len + _context.len) << 3;
         pm_len = block_nb << 6;
@@ -1296,8 +1291,7 @@ namespace Crypto {
                 sha224_update(&_context, source, SHA224_BLOCK_SIZE);
                 source += SHA224_BLOCK_SIZE;
                 sizeToHandle -= SHA224_BLOCK_SIZE;
-            }
-            else {
+            } else {
                 sha224_update(&_context, source, sizeToHandle);
                 sizeToHandle = 0;
             }
@@ -1595,8 +1589,7 @@ namespace Crypto {
         int i;
 #endif
 
-        block_nb = 1 + ((SHA512_BLOCK_SIZE - 17)
-                           < (_context.len % SHA512_BLOCK_SIZE));
+        block_nb = 1 + ((SHA512_BLOCK_SIZE - 17) < (_context.len % SHA512_BLOCK_SIZE));
 
         len_b = (_context.tot_len + _context.len) << 3;
         pm_len = block_nb << 7;
@@ -1633,8 +1626,7 @@ namespace Crypto {
                 sha512_update(&_context, source, SHA512_BLOCK_SIZE);
                 source += SHA512_BLOCK_SIZE;
                 sizeToHandle -= SHA512_BLOCK_SIZE;
-            }
-            else {
+            } else {
                 sha512_update(&_context, source, sizeToHandle);
                 sizeToHandle = 0;
             }
@@ -1766,8 +1758,7 @@ namespace Crypto {
         int i;
 #endif
 
-        block_nb = (1 + ((SHA384_BLOCK_SIZE - 17)
-                            < (_context.len % SHA384_BLOCK_SIZE)));
+        block_nb = (1 + ((SHA384_BLOCK_SIZE - 17) < (_context.len % SHA384_BLOCK_SIZE)));
 
         len_b = (_context.tot_len + _context.len) << 3;
         pm_len = block_nb << 7;
@@ -1802,8 +1793,7 @@ namespace Crypto {
                 sha384_update(&_context, source, SHA384_BLOCK_SIZE);
                 source += SHA384_BLOCK_SIZE;
                 sizeToHandle -= SHA384_BLOCK_SIZE;
-            }
-            else {
+            } else {
                 sha384_update(&_context, source, sizeToHandle);
                 sizeToHandle = 0;
             }

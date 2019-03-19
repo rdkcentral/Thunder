@@ -1,8 +1,8 @@
 #ifndef XGETOPT_H
 #define XGETOPT_H
 
-#include "Portability.h"
 #include "Module.h"
+#include "Portability.h"
 
 namespace WPEFramework {
 namespace Core {

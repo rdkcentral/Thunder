@@ -1,7 +1,7 @@
 include(config)
 
-option(LIBWPEFRAMEWORK
-        "Include the libWPEFramework library." ON)
+option(CORE
+        "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
 option(BROADCAST
@@ -24,14 +24,16 @@ option(PROCESS
         "Include WPEProcess executable." ON)
 option(PROXY_STUB
         "Include proxy/stubs." ON)
-option(PLUGINS_LIB
+option(PLUGINS
         "Include plugins library." ON)
-option(INTERFACES_LIB
+option(INTERFACES
         "Include interfaces library." ON)
 option(EXECUTABLE
-        "Include WPEFramework executable." ON)
+        "Include the hosting executable." ON)
 option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
+option(JSONRPC
+        "Include JSONRPC C++ utility library for external applications." ON)
 option(TEST_APPS
         "Include test applications." OFF)
 option(UNIT_TESTS
@@ -40,26 +42,11 @@ option(TEST_MEASUREMENTS
         "Include code coverage measurments." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
-
-set(PORT 80 CACHE STRING "The port for the webinterface")
-set(BINDING "0.0.0.0" CACHE STRING "The binding interface")
-set(IDLE_TIME 180 CACHE STRING "Idle time")
-set(PERSISTENT_PATH "/root" CACHE STRING "Persistent path")
-set(DATA_PATH "/usr/share/WPEFramework" CACHE STRING "Data path")
-set(SYSTEM_PATH "/usr/lib/wpeframework/plugins" CACHE STRING "System path")
-set(WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
-set(WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
-set(PROXYSTUB_PATH "/usr/lib/wpeframework/proxystubs" CACHE STRING "Proxy stub path")
-set(CONFIG_INSTALL_PATH "/etc/wpeframework" CACHE STRING "Install location of the wpeframework configuration")
-set(IPV6_SUPPORT false CACHE STRING "Controls if wpeframework should support ipv6")
-set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
-set(POLICY 0 CACHE STRING "NA")
-set(OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
-set(STACKSIZE 0 CACHE STRING "Default stack size per thread")
-
+option(BUILD_TYPE
+        "How do you want to build it, Production, Release or Debug" Production)
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
-        "List of events assumed to be provided by other wpeframework plugins.")
+        "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
 
@@ -69,7 +56,7 @@ if(TEST_MEASUREMENTS)
     set(CMAKE_EXE_LINKER_FLAGS -lgcov)
 endif ()
 
-if(LIBWPEFRAMEWORK)
+if(CORE)
     add_subdirectory(core)
 endif()
 
@@ -79,10 +66,6 @@ endif()
 
 if(BROADCAST)
     add_subdirectory(broadcast)
-endif()
-
-if(VIRTUALINPUT)
-    add_subdirectory(virtualinput)
 endif()
 
 if(PROVISIONPROXY)
@@ -123,11 +106,11 @@ if(PROXY_STUB)
     add_subdirectory(proxystubs)
 endif()
 
-if(PLUGINS_LIB)
+if(PLUGINS)
     add_subdirectory(plugins)
 endif()
 
-if(INTERFACES_LIB)
+if(INTERFACES)
     add_subdirectory(interfaces)
 endif()
 
@@ -135,7 +118,13 @@ if(EXECUTABLE)
     add_subdirectory(WPEFramework)
 endif()
 
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
-        DESTINATION include/WPEFramework)
+if(VIRTUALINPUT)
+    add_subdirectory(virtualinput)
+endif()
 
-include(GenericConfig.cmake)
+if(JSONRPC)
+    add_subdirectory(jsonrpc)
+endif()
+
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake
+        DESTINATION include/${NAMESPACE})

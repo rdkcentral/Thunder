@@ -4,8 +4,8 @@
 #include <memory> // align
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "DataElementFile.h"
+#include "Module.h"
 
 #ifndef __WIN32__
 #include <semaphore.h>
@@ -20,12 +20,12 @@ namespace WPEFramework {
 namespace Core {
     // Rationale:
     // This class allows to share data over process boundaries. This is a simple version of the
-    // CyclicBuffer. 
-    // The rationale behind this buffer is to share buffer space (SharedMemory file) between two 
+    // CyclicBuffer.
+    // The rationale behind this buffer is to share buffer space (SharedMemory file) between two
     // porocesses. One process produces data, the othere process consumes it. The signalling
     // between the two processes is based on a semaphore (binairy semaphore) The Producer creates
-    // the SharedBuffer object, indicting it has the Producer role. It will automatically own 
-    // the producer lock. If the producer has placed the data in the buffer and would like the 
+    // the SharedBuffer object, indicting it has the Producer role. It will automatically own
+    // the producer lock. If the producer has placed the data in the buffer and would like the
     // consumer to handle it, it signals this by releasing/unlocking the semaphore.
     // The producer has to call the constructor with the administrationSize parameter, and specify an
     // administration area.
@@ -36,7 +36,7 @@ namespace Core {
     // The consumer construct should be done with
     // TODO use resize from base class
     //
-    // MF2018, note: usage of this class is currently not supported when the system time can make large 
+    // MF2018, note: usage of this class is currently not supported when the system time can make large
     //               jumps. Do not use SharedBuffer class when the Time subsystem is not yet available.
     //
     class EXTERNAL SharedBuffer : public DataElementFile {
@@ -50,11 +50,11 @@ namespace Core {
         private:
             Semaphore() = delete;
             Semaphore(const Semaphore&) = delete;
-            Semaphore& operator= (const Semaphore&) = delete;
+            Semaphore& operator=(const Semaphore&) = delete;
 
         public:
 #ifdef __WIN32__
-			Semaphore(const TCHAR name[]);
+            Semaphore(const TCHAR name[]);
 #else
             Semaphore(sem_t* storage);
             //Semaphore(sem_t* storage, bool initialize) {
@@ -85,18 +85,19 @@ namespace Core {
         };
 
     public:
-		virtual ~SharedBuffer();
+        virtual ~SharedBuffer();
 
         // This is the consumer constructor. It should always take place, after, the producer
         // construct. The producer will create the Administration area, and the shared buffer,
         // default size.
-        SharedBuffer (const TCHAR name[]);
+        SharedBuffer(const TCHAR name[]);
 
-        // This is the Producer constructor. It sets up all the information and locks the 
+        // This is the Producer constructor. It sets up all the information and locks the
         // Semaphore by default.
-        SharedBuffer (const TCHAR name[], const uint32_t bufferSize, const uint16_t administrationSize);
+        SharedBuffer(const TCHAR name[], const uint32_t bufferSize, const uint16_t administrationSize);
 
-        inline uint32_t RequestProduce(const uint32_t waitTime) {
+        inline uint32_t RequestProduce(const uint32_t waitTime)
+        {
             // fprintf(stderr, "Entering RequestProduce: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
             uint32_t output = _producer.Lock(waitTime);
@@ -105,10 +106,11 @@ namespace Core {
 
             return output;
         }
-        inline uint32_t Produced() {
+        inline uint32_t Produced()
+        {
             // fprintf(stderr, "Entering Produced: %d %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked(), static_cast<const uint32_t>(Size()));
 
-            _administration->_bytesWritten = static_cast<const uint32_t>(Size()); 
+            _administration->_bytesWritten = static_cast<const uint32_t>(Size());
 
             uint32_t output = _consumer.Unlock();
 
@@ -117,7 +119,8 @@ namespace Core {
             return output;
         }
 
-        uint32_t RequestConsume(const uint32_t waitTime) {
+        uint32_t RequestConsume(const uint32_t waitTime)
+        {
             // fprintf(stderr, "Entering RequestConsumer: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
             uint32_t result = _consumer.Lock(waitTime);
@@ -130,12 +133,13 @@ namespace Core {
             return result;
         }
 
-        uint32_t Consumed() {
+        uint32_t Consumed()
+        {
             // fprintf(stderr, "Entering Consumed: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
 
-            _administration->_bytesWritten = static_cast<const uint32_t>(Size()); 
+            _administration->_bytesWritten = static_cast<const uint32_t>(Size());
 
-            // _administration->_bytesWritten = Size(); 
+            // _administration->_bytesWritten = Size();
             uint32_t output = _producer.Unlock();
 
             // fprintf(stderr, "Leaving Consumed: %d %d\n", (int)_producer.IsLocked(), (int)_consumer.IsLocked());
@@ -143,20 +147,23 @@ namespace Core {
             return output;
         }
 
-        uint8_t* AdministrationBuffer() {
+        uint8_t* AdministrationBuffer()
+        {
             return _customerAdministration;
         }
 
-        const uint8_t* AdministrationBuffer() const {
+        const uint8_t* AdministrationBuffer() const
+        {
             return _customerAdministration;
         }
 
-        uint32_t BytesWritten() const {
-            return(_administration->_bytesWritten);
+        uint32_t BytesWritten() const
+        {
+            return (_administration->_bytesWritten);
         }
 
     private:
-        DataElementFile  _administrationBuffer;
+        DataElementFile _administrationBuffer;
         Administration* _administration;
         Semaphore _producer;
         Semaphore _consumer;
@@ -166,4 +173,3 @@ namespace Core {
 } // namespace WPEFramework::Core
 
 #endif // __SHARED_BUFFER_H
-

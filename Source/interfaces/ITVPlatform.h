@@ -1,6 +1,8 @@
 #ifndef ITVPLATFORM_H
 #define ITVPLATFORM_H
 
+// @stubgen:skip
+
 #include <inttypes.h>
 #include <string>
 #include <vector>
@@ -101,13 +103,16 @@ private:
     SystemTVPlatformType<IMPLEMENTATION>& operator=(const SystemTVPlatformType<IMPLEMENTATION>&) = delete;
 
 public:
-    SystemTVPlatformType () {
+    SystemTVPlatformType()
+    {
     }
-    virtual ~SystemTVPlatformType () {
+    virtual ~SystemTVPlatformType()
+    {
     }
 
 public:
-    virtual ITVPlatform* GetInstance() {
+    virtual ITVPlatform* GetInstance()
+    {
         return (&_instance);
     }
 
@@ -121,7 +126,7 @@ private:
 extern "C" {
 #endif
 
-TVPlatform::ISystemTVPlatform*  GetSystemTVPlatform();
+TVPlatform::ISystemTVPlatform* GetSystemTVPlatform();
 
 #ifdef __cplusplus
 }

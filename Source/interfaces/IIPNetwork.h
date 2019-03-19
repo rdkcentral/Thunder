@@ -1,6 +1,8 @@
 #ifndef _IPNETWORK_H
 #define _IPNETWORK_H
 
+// @stubgen:skip
+
 #include "Module.h"
 
 namespace WPEFramework {
@@ -19,12 +21,11 @@ namespace Exchange {
             virtual string Server() const = 0;
         };
 
-
-        virtual uint32_t AddAddress    (const string& interfaceName) = 0;
-        virtual uint32_t AddAddress    (const string& interfaceName, const string& IPAddress, const string& gateway, const string& broadcast, const uint8_t netmask) = 0;
-        virtual uint32_t RemoveAddress (const string& interfaceName, const string& IPAddress, const string& gateway, const string& broadcast) = 0;
-        virtual uint32_t AddDNS        (IDNSServers* dnsServers) = 0;
-        virtual uint32_t RemoveDNS     (IDNSServers* dnsServers) = 0;
+        virtual uint32_t AddAddress(const string& interfaceName) = 0;
+        virtual uint32_t AddAddress(const string& interfaceName, const string& IPAddress, const string& gateway, const string& broadcast, const uint8_t netmask) = 0;
+        virtual uint32_t RemoveAddress(const string& interfaceName, const string& IPAddress, const string& gateway, const string& broadcast) = 0;
+        virtual uint32_t AddDNS(IDNSServers* dnsServers) = 0;
+        virtual uint32_t RemoveDNS(IDNSServers* dnsServers) = 0;
     };
 }
 }

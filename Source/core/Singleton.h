@@ -128,8 +128,7 @@ namespace Core {
                 }
 
                 g_AdminLock.Unlock();
-            }
-            else {
+            } else {
                 // You can not do a retrieval of a singleton with arguments !!!!
                 ASSERT(false);
             }
@@ -152,8 +151,7 @@ namespace Core {
                 }
 
                 g_AdminLock.Unlock();
-            }
-            else {
+            } else {
                 // You can not do a retrieval of a singleton with arguments !!!!
                 ASSERT(false);
             }

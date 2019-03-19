@@ -1,8 +1,8 @@
 #ifndef __WEBBRIDGESUPPORT_METADATA_H
 #define __WEBBRIDGESUPPORT_METADATA_H
 
-#include "Module.h"
 #include "Configuration.h"
+#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -139,7 +139,8 @@ namespace PluginHost {
             Server();
             ~Server();
 
-            inline void Clear() {
+            inline void Clear()
+            {
                 ThreadPoolRuns.Clear();
             }
 
@@ -164,12 +165,13 @@ namespace PluginHost {
         public:
             void Add(const PluginHost::ISubSystem::subsystem name, const bool available);
 
-            void Clear() {
-		SubSystemContainer::iterator index (_subSystems.begin());
+            void Clear()
+            {
+                SubSystemContainer::iterator index(_subSystems.begin());
                 while (index != _subSystems.end()) {
 
                     Core::JSON::Container::Remove(index->first.c_str());
-                    
+
                     index++;
                 }
                 _subSystems.clear();
@@ -183,7 +185,8 @@ namespace PluginHost {
         MetaData();
         ~MetaData();
 
-	inline void Clear() {
+        inline void Clear()
+        {
             SubSystems.Clear();
             Plugins.Clear();
             Channels.Clear();

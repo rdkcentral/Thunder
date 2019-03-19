@@ -15,18 +15,17 @@
 //
 // ===========================================================================
 
-
 #include "Sync.h"
-#include "Trace.h"
 #include "ProcessInfo.h"
+#include "Trace.h"
 
 #ifdef CRITICAL_SECTION_LOCK_LOG
 #include "Thread.h"
 #endif
 
 #if defined(__LINUX__) && !defined(__APPLE__)
-#include <time.h>
 #include <asm/errno.h>
+#include <time.h>
 #include <unistd.h>
 #endif
 
@@ -133,12 +132,10 @@ namespace Core {
         if (pthread_mutexattr_init(&structAttributes) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
-        }
-        else if (pthread_mutexattr_settype(&structAttributes, PTHREAD_MUTEX_RECURSIVE) != 0) {
+        } else if (pthread_mutexattr_settype(&structAttributes, PTHREAD_MUTEX_RECURSIVE) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
-        }
-        else if (pthread_mutex_init(&m_syncMutex, &structAttributes) != 0) {
+        } else if (pthread_mutex_init(&m_syncMutex, &structAttributes) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
@@ -185,8 +182,7 @@ namespace Core {
             if (result == ETIMEDOUT && ((result = pthread_mutex_lock(&m_syncMutex)) != 0)) {
                 TRACE_L1("After detection, continued to wait. Wait failed with error: <%d>", result);
             }
-        }
-        else {
+        } else {
             _UsedStackEntries = backtrace(_LockingStack, _AllocatedStackEntries);
 
             // Remove top two frames because we are not interested in Lock+TryLock.
@@ -346,9 +342,9 @@ namespace Core {
 #ifdef __WIN32__
         return (::WaitForSingleObjectEx(m_syncMutex, Core::infinite, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
 #else
-		int nResult = Core::ERROR_NONE;
+        int nResult = Core::ERROR_NONE;
 
-		// See if we can check the state.
+        // See if we can check the state.
         pthread_mutex_lock(&m_syncAdminLock);
 
         // We are not busy Setting the flag, so we can check it.
@@ -391,8 +387,7 @@ namespace Core {
         uint32_t nResult = Core::ERROR_NONE;
         if (nTime == Core::infinite) {
             return (Lock());
-        }
-        else {
+        } else {
 
             // See if we can check the state.
             pthread_mutex_lock(&m_syncAdminLock);
@@ -416,8 +411,7 @@ namespace Core {
                         // Som/ething went wrong, so assume...
                         TRACE_L5("Timed out waiting for event <%d>.", nTime);
                         nResult = Core::ERROR_TIMEDOUT;
-                    }
-                    else if (nResult != 0) {
+                    } else if (nResult != 0) {
                         // Something went wrong, so assume...
                         TRACE_L5("Waiting on semaphore failed. Error code <%d>", nResult);
                         nResult = Core::ERROR_GENERAL;
@@ -867,8 +861,7 @@ namespace Core {
 #else
         if (nTime == Core::infinite) {
             return (Lock());
-        }
-        else {
+        } else {
             int nResult = Core::ERROR_NONE;
 
             // See if we can check the state.
@@ -931,8 +924,7 @@ namespace Core {
 #ifdef __WIN32__
         if (m_blManualReset) {
             ::SetEvent(m_syncEvent);
-        }
-        else {
+        } else {
             ::PulseEvent(m_syncEvent);
         }
 #endif
@@ -1037,117 +1029,114 @@ namespace Core {
 #endif
 #endif
 
-		DoorBell::DoorBell(const TCHAR sourceName[]) {
+    DoorBell::DoorBell(const TCHAR sourceName[])
+    {
 #ifdef __WIN32__
-			_doorBell = ::CreateEvent(nullptr, TRUE, FALSE, sourceName);
+        _doorBell = ::CreateEvent(nullptr, TRUE, FALSE, sourceName);
 #else
-			_doorBell = sem_open(sourceName, O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, 0); /* Initial value is 0. */
+        _doorBell = sem_open(sourceName, O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP, 0); /* Initial value is 0. */
 
-			if (_doorBell == nullptr) {
-				TRACE_L1("Failed to create DoorBell, error %d", errno);
+        if (_doorBell == nullptr) {
+            TRACE_L1("Failed to create DoorBell, error %d", errno);
 
-				ASSERT(false);
-			}
+            ASSERT(false);
+        }
 #endif
-		}
-		DoorBell::~DoorBell() {
+    }
+    DoorBell::~DoorBell()
+    {
 #ifdef __WIN32__
-			if (_doorBell != nullptr)
-			{
-				::CloseHandle(_doorBell);
-			}
+        if (_doorBell != nullptr) {
+            ::CloseHandle(_doorBell);
+        }
 #else
-			if (_doorBell != nullptr)
-			{
-				sem_close(_doorBell);
-			}
+        if (_doorBell != nullptr) {
+            sem_close(_doorBell);
+        }
 #endif
-		}
+    }
 
-		void DoorBell::Ring() {
+    void DoorBell::Ring()
+    {
 #ifdef __WIN32__
-			if (_doorBell != nullptr)
-			{
-				BOOL result = ::SetEvent(_doorBell);
+        if (_doorBell != nullptr) {
+            BOOL result = ::SetEvent(_doorBell);
 
-				ASSERT(result != FALSE);
-			}
+            ASSERT(result != FALSE);
+        }
 #else
-			if (_doorBell != nullptr)
-			{
-				VARIABLE_IS_NOT_USED int result = sem_post(_doorBell);
+        if (_doorBell != nullptr) {
+            VARIABLE_IS_NOT_USED int result = sem_post(_doorBell);
 
-				ASSERT((result == 0) || (errno == EOVERFLOW));
-			}
+            ASSERT((result == 0) || (errno == EOVERFLOW));
+        }
 #endif
-		}
+    }
 
-		uint32_t DoorBell::Wait(const uint32_t waitTime) const {
+    uint32_t DoorBell::Wait(const uint32_t waitTime) const
+    {
 
-			uint32_t result = Core::ERROR_GENERAL;
-            if (_doorBell != nullptr) {
+        uint32_t result = Core::ERROR_GENERAL;
+        if (_doorBell != nullptr) {
 #ifdef __WIN32__
-                return (::WaitForSingleObjectEx(_doorBell, waitTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+            return (::WaitForSingleObjectEx(_doorBell, waitTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #elif defined(__APPLE__)
 
-                uint32_t timeLeft = waitTime;
-                int semResult;
-                while(((semResult = sem_trywait(_doorBell)) != 0) && timeLeft > 0) {
-                    ::SleepMs(100);
-                    if (timeLeft != Core::infinite) {
-                        timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
-                    }
+            uint32_t timeLeft = waitTime;
+            int semResult;
+            while (((semResult = sem_trywait(_doorBell)) != 0) && timeLeft > 0) {
+                ::SleepMs(100);
+                if (timeLeft != Core::infinite) {
+                    timeLeft -= (timeLeft > 100 ? 100 : timeLeft);
                 }
-
-                if (semResult == 0) {
-
-                    // We have seen it, signal, cause there might be other  interested in this lock.
-		    VARIABLE_IS_NOT_USED int result = sem_post(_doorBell);
-
-		    ASSERT((result == 0) || (errno == EOVERFLOW));
-                }
-                result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
-#else
-
-                struct timespec structTime;
-
-                clock_gettime(CLOCK_REALTIME, &structTime);
-                structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-                structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-                structTime.tv_nsec = structTime.tv_nsec % 1000000000;
-
-                // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
-                //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
-                if (sem_timedwait(_doorBell, &structTime) == 0) {
-                    // We have seen it, signal, cause there might be other  interested in this lock.
-                    sem_post(_doorBell);
-                    result = Core::ERROR_NONE;
-                }
-                else if ( (errno == EINTR) || (errno == ETIMEDOUT) ) {
-                    result = Core::ERROR_TIMEDOUT;
-                }
-                else {
-                    ASSERT(false);
-                }
-#endif
             }
-			return (result);
-		}
-		void DoorBell::Acknowledge() {
-#ifdef __WIN32__
-			if (_doorBell != nullptr)
-			{
-				BOOL result = ::ResetEvent(_doorBell);
 
-				ASSERT(result != FALSE);
-			}
+            if (semResult == 0) {
+
+                // We have seen it, signal, cause there might be other  interested in this lock.
+                VARIABLE_IS_NOT_USED int result = sem_post(_doorBell);
+
+                ASSERT((result == 0) || (errno == EOVERFLOW));
+            }
+            result = semResult == 0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT;
 #else
-			if (_doorBell != nullptr)
-			{
-				while (sem_trywait(_doorBell) == 0) /* intentionally left empty */;
-			}
-#endif
-		}
 
+            struct timespec structTime;
+
+            clock_gettime(CLOCK_REALTIME, &structTime);
+            structTime.tv_nsec += ((waitTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+            structTime.tv_sec += (waitTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+            structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+
+            // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
+            //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
+            if (sem_timedwait(_doorBell, &structTime) == 0) {
+                // We have seen it, signal, cause there might be other  interested in this lock.
+                sem_post(_doorBell);
+                result = Core::ERROR_NONE;
+            } else if ((errno == EINTR) || (errno == ETIMEDOUT)) {
+                result = Core::ERROR_TIMEDOUT;
+            } else {
+                ASSERT(false);
+            }
+#endif
+        }
+        return (result);
+    }
+    void DoorBell::Acknowledge()
+    {
+#ifdef __WIN32__
+        if (_doorBell != nullptr) {
+            BOOL result = ::ResetEvent(_doorBell);
+
+            ASSERT(result != FALSE);
+        }
+#else
+        if (_doorBell != nullptr) {
+            while (sem_trywait(_doorBell) == 0) /* intentionally left empty */
+                ;
+        }
+#endif
+    }
 }
 } // namespace Solution::Core

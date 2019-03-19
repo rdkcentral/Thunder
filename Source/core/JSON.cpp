@@ -268,7 +268,7 @@ namespace Core {
                     IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
                     int character = (elementList == nullptr ? '{' : '[');
                     // See if we find an opening bracket in this part
-                    while ((result < maxLength) && (stream[result] != character) && (stream[result] != ',') && (stream[result] != ']')&& (stream[result] != '}')) {
+                    while ((result < maxLength) && (stream[result] != character) && (stream[result] != ',') && (stream[result] != ']') && (stream[result] != '}')) {
                         result++;
                     }
 
@@ -287,7 +287,7 @@ namespace Core {
                                 _state = STATE_LABEL;
                             } else {
                                 elementList->AddElement();
-    
+
                                 // Check if the new element is a container..
                                 if (elementList->Element()->Type() == PARSE_CONTAINER) {
                                     current = elementList->Element()->ElementIterator();

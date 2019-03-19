@@ -14,9 +14,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
 
     ENUM_CONVERSION_END(PluginHost::MetaData::Channel::state)
 
-    ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Service::state)
+        ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Service::state)
 
-    { PluginHost::MetaData::Service::DEACTIVATED, _TXT("deactivated") },
+            { PluginHost::MetaData::Service::DEACTIVATED, _TXT("deactivated") },
     { PluginHost::MetaData::Service::DEACTIVATION, _TXT("deactivation") },
     { PluginHost::MetaData::Service::ACTIVATED, _TXT("activated") },
     { PluginHost::MetaData::Service::ACTIVATION, _TXT("activation") },
@@ -26,9 +26,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
 
     ENUM_CONVERSION_END(PluginHost::MetaData::Service::state)
 
-    ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
+        ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::IInternet::network_type)
 
-    { PluginHost::ISubSystem::IInternet::UNKNOWN, _TXT("Unknown") },
+            { PluginHost::ISubSystem::IInternet::UNKNOWN, _TXT("Unknown") },
     { PluginHost::ISubSystem::IInternet::IPV4, _TXT("IPv4") },
     { PluginHost::ISubSystem::IInternet::IPV6, _TXT("IPv6") },
 
@@ -227,7 +227,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         : Core::JSON::Container()
         , _subSystems(copy._subSystems)
     {
-        Iterator index (_subSystems.begin());
+        Iterator index(_subSystems.begin());
 
         while (index != _subSystems.end()) {
             Core::JSON::Container::Add(index->first.c_str(), &(index->second));
@@ -242,7 +242,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         const string name(Core::EnumerateType<PluginHost::ISubSystem::subsystem>(type).Data());
 
         // Create an element for this service with its callsign
-        std::pair<Iterator, bool> index (_subSystems.insert(std::pair<string, Core::JSON::Boolean>(name, Core::JSON::Boolean())));
+        std::pair<Iterator, bool> index(_subSystems.insert(std::pair<string, Core::JSON::Boolean>(name, Core::JSON::Boolean())));
 
         // Store the override config in the JSON String created in the map
         Core::JSON::Container::Add(index.first->first.c_str(), &(index.first->second));

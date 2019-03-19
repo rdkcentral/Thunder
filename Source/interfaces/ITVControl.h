@@ -20,7 +20,7 @@ namespace Exchange {
 
         enum streamtype {
             Stubbed = 0,
-            DVB 
+            DVB
         };
 
         enum drmtype {
@@ -38,7 +38,8 @@ namespace Exchange {
 
                 virtual ~IGeometry() {}
 
-                virtual uint32_t X() const = 0;;
+                virtual uint32_t X() const = 0;
+                ;
                 virtual uint32_t Y() const = 0;
                 virtual uint32_t Z() const = 0;
                 virtual uint32_t Width() const = 0;
@@ -53,7 +54,7 @@ namespace Exchange {
                 virtual void TimeUpdate(uint64_t position) = 0;
             };
 
-            virtual ~IControl() {};
+            virtual ~IControl(){};
 
             virtual void Speed(const int32_t request) = 0;
             virtual int32_t Speed() const = 0;
@@ -65,7 +66,7 @@ namespace Exchange {
             virtual void Callback(IControl::ICallback* callback) = 0;
         };
 
-        struct ICallback : virtual public Core::IUnknown  {
+        struct ICallback : virtual public Core::IUnknown {
             enum { ID = 0x00000017 };
 
             virtual ~ICallback() {}
@@ -95,22 +96,23 @@ namespace Exchange {
 } // namespace Exchange
 
 namespace Player {
-namespace Implementation {
+    namespace Implementation {
 
-    struct Rectangle {
-        uint32_t X;
-        uint32_t Y;
-        uint32_t Width;
-        uint32_t Height;
-    };
+        struct Rectangle {
+            uint32_t X;
+            uint32_t Y;
+            uint32_t Width;
+            uint32_t Height;
+        };
 
-    struct ICallback {
-        virtual ~ICallback() {}
+        struct ICallback {
+            virtual ~ICallback() {}
 
-        virtual void TimeUpdate(uint64_t position) = 0;
-        virtual void DRM(uint32_t state) = 0;
-        virtual void StateChange(Exchange::IStream::state newState) = 0;
-    };
-} } // // namespace Player::Implementation
+            virtual void TimeUpdate(uint64_t position) = 0;
+            virtual void DRM(uint32_t state) = 0;
+            virtual void StateChange(Exchange::IStream::state newState) = 0;
+        };
+    }
+} // // namespace Player::Implementation
 } // namespace WPEFramework
 #endif //_ITVCONTROL_H

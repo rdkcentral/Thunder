@@ -4,9 +4,10 @@
 
 #include "Module.h"
 #include "Portability.h"
-#include "NodeId.h"
-#include "SocketPort.h"
 #include "Netlink.h"
+#include "NodeId.h"
+#include "Portability.h"
+#include "SocketPort.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -16,26 +17,26 @@ namespace Core {
             : _adapter(static_cast<uint16_t>(~0))
             , _index(static_cast<uint16_t>(~0))
 #ifdef __WIN32__
-			, _section1(0)
-			, _section2(0)
-			, _section3(0)
+            , _section1(0)
+            , _section2(0)
+            , _section3(0)
 #else
-			, _count(0)
+            , _count(0)
 #endif
-		{
+        {
         }
         IPV4AddressIterator(const uint16_t adapter);
         inline IPV4AddressIterator(const IPV4AddressIterator& copy)
             : _adapter(copy._adapter)
             , _index(copy._index)
 #ifdef __WIN32__
-			, _section1(copy._section1)
-			, _section2(copy._section2)
-			, _section3(copy._section3)
+            , _section1(copy._section1)
+            , _section2(copy._section2)
+            , _section3(copy._section3)
 #else
-			, _count(copy._count)
+            , _count(copy._count)
 #endif
-		{
+        {
         }
         inline ~IPV4AddressIterator()
         {
@@ -46,13 +47,13 @@ namespace Core {
             _adapter = RHS._adapter;
             _index = RHS._index;
 #ifdef __WIN32__
-			_section1 = RHS._section1;
-			_section2 = RHS._section2;
-			_section3 = RHS._section3;
+            _section1 = RHS._section1;
+            _section2 = RHS._section2;
+            _section3 = RHS._section3;
 #else
-			_count = RHS._count;
+            _count = RHS._count;
 #endif
-			return (*this);
+            return (*this);
         }
 
     public:
@@ -68,8 +69,7 @@ namespace Core {
         {
             if (_index == static_cast<uint16_t>(~0)) {
                 _index = 0;
-            }
-            else if (_index < Count()) {
+            } else if (_index < Count()) {
                 _index++;
             }
 
@@ -78,23 +78,23 @@ namespace Core {
         inline uint16_t Count() const
         {
 #ifdef __WIN32__
-			return (_section3);
+            return (_section3);
 #else
-			return (_count);
+            return (_count);
 #endif
         }
-		IPNode Address() const;
+        IPNode Address() const;
 
     private:
         uint16_t _adapter;
         uint16_t _index;
-		#ifdef __WIN32__
-		uint16_t _section1;
-		uint16_t _section2;
-		uint16_t _section3;
-		#else	
-		uint16_t _count;
-		#endif
+#ifdef __WIN32__
+        uint16_t _section1;
+        uint16_t _section2;
+        uint16_t _section3;
+#else
+        uint16_t _count;
+#endif
     };
 
     class EXTERNAL IPV6AddressIterator {
@@ -103,26 +103,26 @@ namespace Core {
             : _adapter(static_cast<uint16_t>(~0))
             , _index(static_cast<uint16_t>(~0))
 #ifdef __WIN32__
-			, _section1(0)
-			, _section2(0)
-			, _section3(0)
+            , _section1(0)
+            , _section2(0)
+            , _section3(0)
 #else
-			, _count(0)
+            , _count(0)
 #endif
-		{
+        {
         }
         IPV6AddressIterator(const uint16_t adapter);
         inline IPV6AddressIterator(const IPV6AddressIterator& copy)
             : _adapter(copy._adapter)
             , _index(copy._index)
 #ifdef __WIN32__
-			, _section1(copy._section1)
-			, _section2(copy._section2)
-			, _section3(copy._section3)
+            , _section1(copy._section1)
+            , _section2(copy._section2)
+            , _section3(copy._section3)
 #else
-			, _count(copy._count)
+            , _count(copy._count)
 #endif
-		{
+        {
         }
         inline ~IPV6AddressIterator()
         {
@@ -133,13 +133,13 @@ namespace Core {
             _adapter = RHS._adapter;
             _index = RHS._index;
 #ifdef __WIN32__
-			_section1 = RHS._section1;
-			_section2 = RHS._section2;
-			_section3 = RHS._section3;
+            _section1 = RHS._section1;
+            _section2 = RHS._section2;
+            _section3 = RHS._section3;
 #else
-			_count = RHS._count;
+            _count = RHS._count;
 #endif
-			return (*this);
+            return (*this);
         }
 
     public:
@@ -155,8 +155,7 @@ namespace Core {
         {
             if (_index == static_cast<uint16_t>(~0)) {
                 _index = 0;
-            }
-            else if (_index < Count()) {
+            } else if (_index < Count()) {
                 _index++;
             }
 
@@ -165,24 +164,24 @@ namespace Core {
         inline uint16_t Count() const
         {
 #ifdef __WIN32__
-			return (_section3);
+            return (_section3);
 #else
-			return (_count);
+            return (_count);
 #endif
-		}
+        }
         IPNode Address() const;
 
     private:
         uint16_t _adapter;
         uint16_t _index;
-		#ifdef __WIN32__
-		uint16_t _section1;
-		uint16_t _section2;
-		uint16_t _section3;
-		#else	
-		uint16_t _count;
-		#endif
-	};
+#ifdef __WIN32__
+        uint16_t _section1;
+        uint16_t _section2;
+        uint16_t _section3;
+#else
+        uint16_t _count;
+#endif
+    };
 
     class EXTERNAL AdapterIterator {
     public:
@@ -231,8 +230,7 @@ namespace Core {
         {
             if (_index == static_cast<uint16_t>(~0)) {
                 _index = 0;
-            }
-            else if (_index < Count()) {
+            } else if (_index < Count()) {
                 _index++;
             }
 
@@ -270,7 +268,7 @@ namespace Core {
     private:
         AdapterObserver() = delete;
         AdapterObserver(const AdapterObserver&) = delete;
-        AdapterObserver& operator= (const AdapterObserver&) = delete;
+        AdapterObserver& operator=(const AdapterObserver&) = delete;
 
     public:
         struct INotification {
@@ -279,26 +277,28 @@ namespace Core {
             virtual void Event(const string&) = 0;
         };
 
- 
 #ifndef __WIN32__
     private:
         class EXTERNAL Observer : public SocketDatagram {
         private:
             Observer() = delete;
             Observer(const Observer&) = delete;
-            Observer& operator= (const Observer&) = delete;
+            Observer& operator=(const Observer&) = delete;
 
             class Message : public Netlink {
             private:
                 Message() = delete;
                 Message(const Message&) = delete;
-                Message& operator= (const Message&) = delete;
+                Message& operator=(const Message&) = delete;
 
             public:
-                Message(INotification* callback) : _callback(callback) {
+                Message(INotification* callback)
+                    : _callback(callback)
+                {
                     ASSERT(callback != nullptr);
                 }
-                virtual ~Message() {
+                virtual ~Message()
+                {
                 }
 
             public:
@@ -318,7 +318,7 @@ namespace Core {
             virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override;
             virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override;
             virtual void StateChange() override;
- 
+
         private:
             Message _parser;
         };
@@ -329,29 +329,29 @@ namespace Core {
         ~AdapterObserver();
 
     public:
-        inline uint32_t Open() {
-			#ifdef __WIN32__
+        inline uint32_t Open()
+        {
+#ifdef __WIN32__
             return (Core::ERROR_NONE);
-			#else
-			return (_link.Open(Core::infinite));
-			#endif
-		}
-        inline uint32_t Close() {
-			#ifdef __WIN32__
-			return (Core::ERROR_NONE);
-			#else
-			return (_link.Close(Core::infinite));
-			#endif
+#else
+            return (_link.Open(Core::infinite));
+#endif
+        }
+        inline uint32_t Close()
+        {
+#ifdef __WIN32__
+            return (Core::ERROR_NONE);
+#else
+            return (_link.Close(Core::infinite));
+#endif
         }
 
     private:
- #ifdef __WIN32__
+#ifdef __WIN32__
         ;
 #else
         Observer _link;
 #endif
-	       
-    
     };
 }
 }

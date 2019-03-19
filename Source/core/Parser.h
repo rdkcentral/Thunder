@@ -4,11 +4,11 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Portability.h"
-#include "Number.h"
 #include "Enumerate.h"
-#include "Optional.h"
 #include "KeyValue.h"
+#include "Number.h"
+#include "Optional.h"
+#include "Portability.h"
 #include "Range.h"
 
 namespace WPEFramework {
@@ -122,8 +122,7 @@ namespace Core {
                 while (((_state & SKIP_WHITESPACE) != 0) && (current < maxLength)) {
                     if ((stream[current] == ' ') || (stream[current] == '\t')) {
                         current++;
-                    }
-                    else {
+                    } else {
                         _state &= (~SKIP_WHITESPACE);
                     }
                 }
@@ -136,40 +135,32 @@ namespace Core {
                         _byteCounter = 0;
                         _state &= (~ESCAPED);
                         _buffer += character;
-                    }
-                    else if (character == '\\') {
+                    } else if (character == '\\') {
                         _byteCounter = 0;
                         _state |= ESCAPED;
                         _buffer += character;
-                    }
-                    else if (character == '\"') {
+                    } else if (character == '\"') {
                         _byteCounter = 0;
 
                         if ((_state & QUOTED) == QUOTED) {
                             _state &= (~QUOTED);
-                        }
-                        else if (_buffer.size() == 0) {
+                        } else if (_buffer.size() == 0) {
                             _state |= (QUOTED);
-                        }
-                        else {
+                        } else {
                             _buffer += character;
                         }
-                    }
-                    else if ((_state & QUOTED) == QUOTED) {
+                    } else if ((_state & QUOTED) == QUOTED) {
                         _buffer += character;
-                    }
-                    else if ((stream[current] == ' ') || (stream[current] == '\t')) {
+                    } else if ((stream[current] == ' ') || (stream[current] == '\t')) {
                         if ((_state & WORD_CAPTURE) == WORD_CAPTURE) {
                             _parent.Parse(_buffer);
                             _buffer.clear();
                             _state |= SKIP_WHITESPACE;
-                        }
-                        else {
+                        } else {
                             _buffer += character;
                             _byteCounter++;
                         }
-                    }
-                    else if (((_state & SPLITCHAR) == SPLITCHAR) && (stream[current] == _splitChar)) {
+                    } else if (((_state & SPLITCHAR) == SPLITCHAR) && (stream[current] == _splitChar)) {
                         _buffer += character;
                         _byteCounter = 0;
 
@@ -178,8 +169,7 @@ namespace Core {
                             _buffer.clear();
                             _state |= SKIP_WHITESPACE;
                         }
-                    }
-                    else {
+                    } else {
                         int8_t terminated = _terminator.IsTerminated(character);
 
                         if ((terminated & 0x80) == 0x80) {
@@ -193,14 +183,12 @@ namespace Core {
                             _state |= SKIP_WHITESPACE;
 
                             _parent.EndOfLine();
-                        }
-                        else {
+                        } else {
                             _buffer += character;
 
                             if ((terminated & 0x40) != 0) {
                                 _byteCounter++;
-                            }
-                            else {
+                            } else {
                                 _byteCounter = 0;
                             }
                         }
@@ -320,7 +308,7 @@ namespace Core {
         }
 
         template <const TCHAR DIVIDER, const bool CASESENSITIVE>
-        void ReadKeyValuePair(OptionalType<TextKeyValueType<CASESENSITIVE, TextFragment> >& result, const TCHAR delimiters[])
+        void ReadKeyValuePair(OptionalType<TextKeyValueType<CASESENSITIVE, TextFragment>>& result, const TCHAR delimiters[])
         {
             uint32_t readBytes = ForwardSkip(_T("\t "));
             uint32_t marker = readBytes;
@@ -360,7 +348,7 @@ namespace Core {
         }
 
         template <const TCHAR DIVIDER, typename NUMBER, const bool SIGNED, const bool BEGININC, const bool ENDINC>
-        void ReadRange(OptionalType<RangeType<NUMBER, BEGININC, ENDINC> >& result, const NumberBase type = BASE_DECIMAL)
+        void ReadRange(OptionalType<RangeType<NUMBER, BEGININC, ENDINC>>& result, const NumberBase type = BASE_DECIMAL)
         {
             NUMBER minimum;
             NUMBER maximum;
@@ -400,8 +388,7 @@ namespace Core {
 
             if (index >= Length()) {
                 Forward(Length());
-            }
-            else {
+            } else {
                 Forward(ForwardSkip(characters, index));
             }
         }

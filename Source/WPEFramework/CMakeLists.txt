@@ -26,6 +26,7 @@ endif()
 target_link_libraries(${TARGET}
         PRIVATE
           ${CMAKE_DL_LIBS}
+	  ${LIBEXECINFO_LIBRARY}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
@@ -60,3 +61,6 @@ install(
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
         FRAMEWORK DESTINATION bin COMPONENT libs    # for mac
 )
+
+include(GenericConfig.cmake)
+

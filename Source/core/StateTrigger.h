@@ -167,8 +167,8 @@ namespace Core {
 
     template <class enumerate>
     StateTrigger<enumerate>&
-        StateTrigger<enumerate>::
-        operator=(enumerate a_State)
+    StateTrigger<enumerate>::
+    operator=(enumerate a_State)
     {
         SetState(a_State);
 
@@ -177,16 +177,16 @@ namespace Core {
 
     template <class enumerate>
     bool
-        StateTrigger<enumerate>::
-        operator==(enumerate a_State) const
+    StateTrigger<enumerate>::
+    operator==(enumerate a_State) const
     {
         return (a_State == m_State);
     }
 
     template <class enumerate>
     bool
-        StateTrigger<enumerate>::
-        operator!=(enumerate a_State) const
+    StateTrigger<enumerate>::
+    operator!=(enumerate a_State) const
     {
         return (a_State != m_State);
     }

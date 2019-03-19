@@ -147,6 +147,11 @@ namespace RPC {
             {
                 return (Frame::Reader(_data, 0));
             }
+            inline void AddImplementation(void* implementation, const uint32_t id)
+            {
+                _data.SetNumber<void*>(_data.Size(), implementation);
+                _data.SetNumber<uint32_t>(_data.Size(), id);
+            }
             inline uint32_t Length() const
             {
                 return (static_cast<uint32_t>(_data.Size()));
@@ -169,13 +174,13 @@ namespace RPC {
             Init(const Init&) = delete;
             Init& operator=(const Init&) = delete;
 
-		public:
-			enum type {
-				AQUIRE  = 0,
-				OFFER   = 1,
-				REVOKE  = 2,
-				REQUEST = 3
-			};
+        public:
+            enum type {
+                AQUIRE = 0,
+                OFFER = 1,
+                REVOKE = 2,
+                REQUEST = 3
+            };
 
         public:
             Init()
@@ -194,41 +199,45 @@ namespace RPC {
             {
             }
 
-		public:
-			bool IsOffer() const {
-				return (_className[0] == '\0') && (_className[1] == OFFER);
-			}
-			bool IsRevoke() const {
-				return (_className[0] == '\0') && (_className[1] == REVOKE);
-			}
-			bool IsRequested() const {
-				return (_className[0] == '\0') && (_className[1] == REQUEST);
-			}
-			bool IsAquire() const {
-				return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
-			}
+        public:
+            bool IsOffer() const
+            {
+                return (_className[0] == '\0') && (_className[1] == OFFER);
+            }
+            bool IsRevoke() const
+            {
+                return (_className[0] == '\0') && (_className[1] == REVOKE);
+            }
+            bool IsRequested() const
+            {
+                return (_className[0] == '\0') && (_className[1] == REQUEST);
+            }
+            bool IsAquire() const
+            {
+                return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
+            }
             void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
             {
-				ASSERT(whatKind != AQUIRE);
+                ASSERT(whatKind != AQUIRE);
 
-				_exchangeId = Core::ProcessInfo().Id();
-				_implementation = implementation;
+                _exchangeId = Core::ProcessInfo().Id();
+                _implementation = implementation;
                 _interfaceId = interfaceId;
-				_versionId = 0;
-				_className[0] = '\0';
-				_className[1] = whatKind;
+                _versionId = 0;
+                _className[0] = '\0';
+                _className[1] = whatKind;
             }
-			void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-			{
-				_exchangeId = Core::ProcessInfo().Id();
-				_implementation = nullptr;
-				_interfaceId = interfaceId;
-				_versionId = versionId;
-				_className[1] = AQUIRE;
-				const std::string converted (Core::ToString(className));
-				::strncpy(_className, converted.c_str(), sizeof(_className));
-			}
-			void* Implementation()
+            void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            {
+                _exchangeId = Core::ProcessInfo().Id();
+                _implementation = nullptr;
+                _interfaceId = interfaceId;
+                _versionId = versionId;
+                _className[1] = AQUIRE;
+                const std::string converted(Core::ToString(className));
+                ::strncpy(_className, converted.c_str(), sizeof(_className));
+            }
+            void* Implementation()
             {
                 return (_implementation);
             }
@@ -240,91 +249,93 @@ namespace RPC {
             {
                 return (_exchangeId);
             }
-			uint32_t VersionId() const
-			{
-				return (_versionId);
-			}
-			const string ClassName() const
-			{
-				return (Core::ToString(std::string(_className)));
-			}
+            uint32_t VersionId() const
+            {
+                return (_versionId);
+            }
+            const string ClassName() const
+            {
+                return (Core::ToString(std::string(_className)));
+            }
 
         private:
             void* _implementation;
             uint32_t _interfaceId;
             uint32_t _exchangeId;
-			uint32_t _versionId;
-			char _className[64];
+            uint32_t _versionId;
+            char _className[64];
         };
 
-		class Setup {
-		private:
-			Setup(const Setup&) = delete;
-			Setup& operator=(const Setup&) = delete;
+        class Setup {
+        private:
+            Setup(const Setup&) = delete;
+            Setup& operator=(const Setup&) = delete;
 
-		public:
-			Setup()
-				: _data()
-			{
-			}
-			~Setup()
-			{
-			}
+        public:
+            Setup()
+                : _data()
+            {
+            }
+            ~Setup()
+            {
+            }
 
-		public:
-			inline void Clear()
-			{
-				_data.Clear();
-			}
-			void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
-			{
-				_data.SetNumber<void*>(0, implementation);
-				uint16_t length = _data.SetText(4, proxyStubPath);
-				_data.SetText(4 + length, traceCategories);
-			}
-			string ProxyStubPath() const
-			{
-				string value;
+        public:
+            inline void Clear()
+            {
+                _data.Clear();
+            }
+            void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
+            {
+                _data.SetNumber<void*>(0, implementation);
+                uint16_t length = _data.SetText(4, proxyStubPath);
+                _data.SetText(4 + length, traceCategories);
+            }
+            string ProxyStubPath() const
+            {
+                string value;
 
-				_data.GetText(4, value);
+                _data.GetText(4, value);
 
-				return(value);
-			}
-			string TraceCategories() const
-			{
-				string value;
+                return (value);
+            }
+            string TraceCategories() const
+            {
+                string value;
 
-				_data.GetText(4 + _data.GetText(4, value), value);
+                _data.GetText(4 + _data.GetText(4, value), value);
 
-				return(value);
-			}
-			void* Implementation() const {
-				void* result = nullptr;
-				_data.GetNumber<void*>(0, result);
-				return (result);
-			}
-			void Implementation(void* implementation) {
-				_data.SetNumber<void*>(0, implementation);
-			}
-			uint32_t Length() const
-			{
-				return (_data.Size());
-			}
-			uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
-			{
-				return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
-			}
-			uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
-			{
-				return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
-			}
+                return (value);
+            }
+            void* Implementation() const
+            {
+                void* result = nullptr;
+                _data.GetNumber<void*>(0, result);
+                return (result);
+            }
+            void Implementation(void* implementation)
+            {
+                _data.SetNumber<void*>(0, implementation);
+            }
+            uint32_t Length() const
+            {
+                return (_data.Size());
+            }
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, const uint32_t offset) const
+            {
+                return (_data.Serialize(static_cast<uint16_t>(offset), stream, maxLength));
+            }
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, const uint32_t offset)
+            {
+                return (_data.Deserialize(static_cast<uint16_t>(offset), stream, maxLength));
+            }
 
-		private:
-			Frame _data;
-		};
-	}
+        private:
+            Frame _data;
+        };
+    }
 
-    typedef Core::IPCMessageType<1, Data::Init, Data::Setup > AnnounceMessage;
+    typedef Core::IPCMessageType<1, Data::Init, Data::Setup> AnnounceMessage;
     typedef Core::IPCMessageType<2, Data::Input, Data::Output> InvokeMessage;
 }
 }

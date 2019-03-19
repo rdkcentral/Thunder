@@ -49,8 +49,7 @@ namespace Core {
         if (GetFileAttributesEx(_name.c_str(), infoLevelId, &data) == FALSE) {
             _attributes = 0;
             _size = 0;
-        }
-        else {
+        } else {
             _size = data.nFileSizeHigh;
             _size = ((_size << 32) | data.nFileSizeLow);
             _creation = Core::Time(data.ftCreationTime);
@@ -80,8 +79,7 @@ namespace Core {
             _attributes |= (access(_name.c_str(), W_OK) == 0 ? 0 : FILE_READONLY);
             _attributes |= (_name[0] == '.' ? FILE_HIDDEN : 0);
             _attributes |= ((data.st_mode & (S_IFCHR | S_IFBLK)) != 0 ? FILE_DEVICE : 0);
-        }
-        else {
+        } else {
             _attributes = 0;
         }
 #endif
@@ -163,7 +161,7 @@ namespace Core {
 
         // First see if we are not empy.
         if (result.empty() == false) {
-            uint32_t length = result.length();
+            uint32_t length = static_cast<uint32_t>(result.length());
 
 #ifdef __WIN32__
             for (uint32_t teller = 0; teller < length; teller++) {
@@ -231,8 +229,7 @@ namespace Core {
                         return false;
                     }
 #endif
-                }
-                else if ((sb.st_mode & File::FILE_DIRECTORY) != File::FILE_DIRECTORY) {
+                } else if ((sb.st_mode & File::FILE_DIRECTORY) != File::FILE_DIRECTORY) {
                     /* not a directory */
                     return false;
                 }
@@ -251,8 +248,7 @@ namespace Core {
                 return false;
             }
 #endif
-        }
-        else if ((sb.st_mode & File::FILE_DIRECTORY) != File::FILE_DIRECTORY) {
+        } else if ((sb.st_mode & File::FILE_DIRECTORY) != File::FILE_DIRECTORY) {
             /* not a directory */
             return false;
         }

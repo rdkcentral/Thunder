@@ -49,7 +49,7 @@ namespace Web {
             return (baseEncodedKey);
         }
 
-/*  %x0 denotes a continuation frame
+        /*  %x0 denotes a continuation frame
  *  %x1 denotes a text frame
  *  %x2 denotes a binary frame
  *  %x3-7 are reserved for further non-control frames
@@ -71,16 +71,15 @@ namespace Web {
                         // No masking, so just move and insert the header up front..
                         ::memmove(&dataFrame[2], &(dataFrame[4]), usedSize);
                     }
-                }
-                else {
-		    uint32_t value;
+                } else {
+                    uint32_t value;
                     // Generate a new mask value
                     uint8_t maskKey[4];
                     Crypto::Random(value);
-		    maskKey[0] = value & 0xFF;
-		    maskKey[1] = (value >> 8) & 0xFF;
-		    maskKey[2] = (value >> 16) & 0xFF;
-		    maskKey[3] = (value >> 24) & 0xFF;
+                    maskKey[0] = value & 0xFF;
+                    maskKey[1] = (value >> 8) & 0xFF;
+                    maskKey[2] = (value >> 16) & 0xFF;
+                    maskKey[3] = (value >> 24) & 0xFF;
 
                     // Mask and insert the bytes on the right spots
                     uint8_t* source = &dataFrame[usedSize - 1 + 4];
@@ -100,8 +99,7 @@ namespace Web {
 
                 if (usedSize <= 125) {
                     dataFrame[1] = ((_setFlags & MASKING_FRAME) | usedSize);
-                }
-                else {
+                } else {
                     // We only allows uin1t 16 so no need to go beyond two bytes..
                     dataFrame[1] = ((_setFlags & MASKING_FRAME) | 126);
                     dataFrame[2] = (usedSize >> 8);
@@ -112,8 +110,7 @@ namespace Web {
                     // Seems like not all available space is used, so I guess we are ready..
                     dataFrame[0] = FINISHING_FRAME | (SendInProgress() == true ? CONTINUATION_FRAME : TYPE_FRAME & _setFlags);
                     _progressInfo &= (~0x40);
-                }
-                else {
+                } else {
                     // There is more to come, this is just part of a bigger picture
                     dataFrame[0] = (SendInProgress() == true ? CONTINUATION_FRAME : TYPE_FRAME & _setFlags);
                     _progressInfo |= (0x40);
@@ -162,25 +159,21 @@ namespace Web {
                     while (_pendingReceiveBytes != 0) {
                         *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
                         source++;
-			_progressInfo = ((_progressInfo + 1) & 0x03) | (_progressInfo & 0xFC);
+                        _progressInfo = ((_progressInfo + 1) & 0x03) | (_progressInfo & 0xFC);
                         _pendingReceiveBytes--;
                     }
-                }
-                else {
+                } else {
                     if (_pendingReceiveBytes > receivedSize) {
                         _pendingReceiveBytes -= receivedSize;
-                    }
-                    else {
+                    } else {
                         receivedSize = _pendingReceiveBytes;
                         _pendingReceiveBytes = 0;
                     }
                 }
-            }
-            else if (receivedSize < 2) {
+            } else if (receivedSize < 2) {
                 // This is a way too small frame..
                 receivedSize = 0;
-            }
-            else {
+            } else {
                 // This seems to be a new frame, check it out !!!
                 uint32_t bytesToMove = (dataFrame[1] & 0x7F);
 
@@ -191,8 +184,7 @@ namespace Web {
                     // Frame too small to identify the content yet !!
                     receivedSize = 0;
                     actualHeader = 0;
-                }
-                else {
+                } else {
                     _frameType = static_cast<frameType>(dataFrame[0] & TYPE_FRAME);
 
                     // Continuation frame is only allowed if a receive is in progress...
@@ -203,8 +195,7 @@ namespace Web {
                             // If this is a continuation, check if this is maybe the last frame...
                             _progressInfo &= ((dataFrame[0] & FINISHING_FRAME) == 0 ? 0xFF : 0x7F);
                         }
-                    }
-                    else if ((dataFrame[0] & FINISHING_FRAME) == 0) {
+                    } else if ((dataFrame[0] & FINISHING_FRAME) == 0) {
                         // Seems we will be in progess from now on.
                         _progressInfo |= 0x80;
                     }
@@ -225,8 +216,7 @@ namespace Web {
                     if ((_frameType & 0xF8) == 0) {
                         if (bytesToMove == 126) {
                             bytesToMove = ((dataFrame[2] << 8) + dataFrame[3]);
-                        }
-                        else if (bytesToMove == 127) {
+                        } else if (bytesToMove == 127) {
                             bytesToMove = ((dataFrame[2] << 24) + (dataFrame[3] << 16) + (dataFrame[4] << 8) + dataFrame[5]);
                         }
 

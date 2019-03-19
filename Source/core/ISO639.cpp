@@ -547,16 +547,13 @@ namespace Core {
                     if ((entry->CharacterCode2[0] != '\0') && (::memcmp(buffer, entry->CharacterCode2, sizeof(TCHAR) * 2) == 0)) {
                         // It's equal, we got it
                         m_SelectedLanguage = entry;
-                    }
-                    else {
+                    } else {
                         m_Index++;
                     }
-                }
-                else if (::memcmp(buffer, entry->CharacterCode3, sizeof(TCHAR) * 3) == 0) {
+                } else if (::memcmp(buffer, entry->CharacterCode3, sizeof(TCHAR) * 3) == 0) {
                     // It's equal, we got it
                     m_SelectedLanguage = entry;
-                }
-                else {
+                } else {
                     m_Index++;
                 }
             }

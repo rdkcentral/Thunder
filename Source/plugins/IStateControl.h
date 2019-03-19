@@ -12,7 +12,7 @@ namespace PluginHost {
         : virtual public Core::IUnknown {
 
         enum {
-            ID = WPEFramework::RPC::ID_STATECONTROL
+            ID = RPC::ID_STATECONTROL
         };
 
         enum command {
@@ -30,7 +30,7 @@ namespace PluginHost {
         struct INotification
             : virtual public Core::IUnknown {
             enum {
-                ID = WPEFramework::RPC::ID_STATECONTROL_NOTIFICATION
+                ID = RPC::ID_STATECONTROL_NOTIFICATION
             };
 
             virtual ~INotification()

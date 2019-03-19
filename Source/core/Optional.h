@@ -53,7 +53,7 @@ namespace Core {
 
         inline bool operator==(const OptionalType<TYPE>& value) const
         {
-            return ((value.m_Set == m_Set)&& operator==(value.m_Value));
+            return ((value.m_Set == m_Set) && operator==(value.m_Value));
         }
 
         inline bool operator!=(const TYPE& value) const

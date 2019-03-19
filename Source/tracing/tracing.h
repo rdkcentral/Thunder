@@ -2,11 +2,11 @@
 
 #include "ITraceControl.h"
 #include "ITraceMedia.h"
-#include "TraceUnit.h"
+#include "Logging.h"
 #include "TraceCategories.h"
 #include "TraceControl.h"
 #include "TraceMedia.h"
-#include "Logging.h"
+#include "TraceUnit.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "tracing.lib")

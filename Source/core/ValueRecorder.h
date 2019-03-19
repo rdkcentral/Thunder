@@ -4,11 +4,11 @@
 // ---- Include system wide include files ----
 
 // ---- Include local include files ----
-#include "Module.h"
 #include "FileSystem.h"
+#include "Module.h"
+#include "Number.h"
 #include "Time.h"
 #include "TypeTraits.h"
-#include "Number.h"
 
 // ---- Referenced classes and types ----
 
@@ -120,8 +120,7 @@ namespace Core {
                     _start._time = time;
                     _start._value = value;
                     _start._id = _currentId;
-                }
-                else {
+                } else {
                     _currentId++;
 
                     // Calculate the Absolute delta in "milliSeconds"
@@ -165,8 +164,7 @@ namespace Core {
 
                     if (negative) {
                         _currentDelta -= static_cast<uint32_t>(delta);
-                    }
-                    else {
+                    } else {
                         _currentDelta += static_cast<uint32_t>(delta);
                     }
 
@@ -181,8 +179,7 @@ namespace Core {
 
                 if (negative) {
                     _currentValue -= static_cast<STOREVALUE>(delta);
-                }
-                else {
+                } else {
                     _currentValue += static_cast<STOREVALUE>(delta);
                 }
             }
@@ -206,8 +203,7 @@ namespace Core {
 
                 if (negative) {
                     _currentValue += static_cast<STOREVALUE>(delta);
-                }
-                else {
+                } else {
                     _currentValue -= static_cast<STOREVALUE>(delta);
                 }
 
@@ -215,20 +211,17 @@ namespace Core {
                     // We reached the beginning..
                     _index = 0;
                     _currentDelta = 0;
-                }
-                else {
+                } else {
                     uint32_t handled = BackwardElement(time, negative, delta);
 
                     // Adjust the time
                     if (time == true) {
                         if (negative) {
                             _currentDelta += static_cast<uint32_t>(delta);
-                        }
-                        else {
+                        } else {
                             _currentDelta -= static_cast<uint32_t>(delta);
                         }
-                    }
-                    else {
+                    } else {
                         _index += handled;
                     }
                 }
@@ -252,8 +245,7 @@ namespace Core {
                     if (id < _start._id) {
                         copy._currentId--;
                     }
-                }
-                else {
+                } else {
                     copy._currentId = _currentId;
                     copy._currentTime = _currentTime;
                     copy._currentValue = _currentValue;
@@ -272,8 +264,7 @@ namespace Core {
 
                 if (file.Size() <= (2 * sizeof(Absolute))) {
                     ClearData();
-                }
-                else {
+                } else {
                     LoadScalar<uint32_t>(file, _start._id);
                     LoadScalar<STOREVALUE>(file, _start._value);
                     LoadScalar<uint64_t>(file, _start._time);
@@ -286,8 +277,7 @@ namespace Core {
 
                     if (file.Read(_storage, dataSize) != dataSize) {
                         ClearData();
-                    }
-                    else if (id < end._id) {
+                    } else if (id < end._id) {
                         _currentId = _start._id;
                         _currentValue = _start._value;
                         _currentTime = _start._time;
@@ -297,8 +287,7 @@ namespace Core {
                         if (id < _start._id) {
                             _currentId--;
                         }
-                    }
-                    else {
+                    } else {
                         _currentId = end._id;
                         _currentValue = end._value;
                         _currentTime = end._time;
@@ -510,8 +499,7 @@ namespace Core {
                 if (_fileId == static_cast<uint32_t>(~0)) {
                     _fileId = 0;
                     startPoint = 1;
-                }
-                else {
+                } else {
                     typename BaseRecorder::Absolute end;
                     number = _fileId;
                     file = _storageName + "." + number.Text();
@@ -686,14 +674,11 @@ namespace Core {
             {
                 if (BaseRecorder::Id() < BaseRecorder::Start()._id) {
                     BaseRecorder::Set(BaseRecorder::Start());
-                }
-                else if (BaseRecorder::Id() < (_end._id - 1)) {
+                } else if (BaseRecorder::Id() < (_end._id - 1)) {
                     BaseRecorder::StepForward();
-                }
-                else if (BaseRecorder::Id() == (_end._id - 1)) {
+                } else if (BaseRecorder::Id() == (_end._id - 1)) {
                     BaseRecorder::Set(_end);
-                }
-                else if (BaseRecorder::Id() == _end._id) {
+                } else if (BaseRecorder::Id() == _end._id) {
                     typename BaseRecorder::Absolute point = _end;
                     point._id++;
 
@@ -708,8 +693,7 @@ namespace Core {
                         if ((file.Exists() == true) && (file.Open(true) == true)) {
                             BaseRecorder::Load(file, _end, BaseRecorder::Id());
                         }
-                    }
-                    else if (_currentSet.IsValid() == true) {
+                    } else if (_currentSet.IsValid() == true) {
                         _end._id = _currentSet->Id();
                         _end._time = _currentSet->Time();
                         _end._value = _currentSet->Value();
@@ -723,11 +707,9 @@ namespace Core {
             {
                 if (BaseRecorder::Id() > _end._id) {
                     BaseRecorder::Set(_end);
-                }
-                else if (BaseRecorder::Id() >= (BaseRecorder::Start()._id + 1)) {
+                } else if (BaseRecorder::Id() >= (BaseRecorder::Start()._id + 1)) {
                     BaseRecorder::StepBack();
-                }
-                else if (BaseRecorder::Id() == BaseRecorder::Start()._id) {
+                } else if (BaseRecorder::Id() == BaseRecorder::Start()._id) {
                     typename BaseRecorder::Absolute point = BaseRecorder::Start();
                     point._id--;
 

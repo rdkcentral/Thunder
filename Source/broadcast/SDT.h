@@ -18,168 +18,167 @@
 
 namespace WPEFramework {
 namespace Broadcast {
-namespace DVB {
+    namespace DVB {
 
-    class EXTERNAL SDT {
-    public:
-        static const uint16_t ACTUAL = 0x42;
-        static const uint16_t OTHER  = 0x46;
-
-    public:
-        enum running {
-            Undefined     = 0,
-            NotRunning    = 1,
-            AboutToStart  = 2,
-            Pausing       = 3,
-            Running       = 4
-        };
-
-    public:
-        class ServiceIterator {
+        class EXTERNAL SDT {
         public:
-            ServiceIterator()
-                : _info()
-                , _offset(~0)
-            {
-            }
-            ServiceIterator(const Core::DataElement& data)
-                : _info(data)
-                , _offset(~0)
-            {
-            }
-            ServiceIterator(const ServiceIterator& copy)
-                : _info(copy._info)
-                , _offset(copy._offset)
-            {
-            }
-            ~ServiceIterator() {}
+            static const uint16_t ACTUAL = 0x42;
+            static const uint16_t OTHER = 0x46;
 
-            ServiceIterator& operator=(const ServiceIterator& RHS)
-            {
-                _info = RHS._info;
-                _offset = RHS._offset;
+        public:
+            enum running {
+                Undefined = 0,
+                NotRunning = 1,
+                AboutToStart = 2,
+                Pausing = 3,
+                Running = 4
+            };
 
+        public:
+            class ServiceIterator {
+            public:
+                ServiceIterator()
+                    : _info()
+                    , _offset(~0)
+                {
+                }
+                ServiceIterator(const Core::DataElement& data)
+                    : _info(data)
+                    , _offset(~0)
+                {
+                }
+                ServiceIterator(const ServiceIterator& copy)
+                    : _info(copy._info)
+                    , _offset(copy._offset)
+                {
+                }
+                ~ServiceIterator() {}
+
+                ServiceIterator& operator=(const ServiceIterator& RHS)
+                {
+                    _info = RHS._info;
+                    _offset = RHS._offset;
+
+                    return (*this);
+                }
+
+            public:
+                inline bool IsValid() const { return (_offset < _info.Size()); }
+                inline void Reset() { _offset = ~0; }
+                inline bool Next()
+                {
+                    if (_offset == static_cast<uint16_t>(~0)) {
+                        _offset = 0;
+                    } else if (_offset < _info.Size()) {
+                        _offset += (DescriptorSize() + 5);
+                    }
+
+                    return (IsValid());
+                }
+                inline bool EIT_PF() const
+                {
+                    return ((_info[_offset + 2] & 0x01) != 0);
+                }
+                inline bool EIT_Schedule() const
+                {
+                    return ((_info[_offset + 2] & 0x02) != 0);
+                }
+                inline bool IsFreeToAir() const
+                {
+                    return ((_info[_offset + 3] & 0x10) != 0);
+                }
+                inline running RunningMode() const
+                {
+                    return (static_cast<running>((_info[_offset + 3] & 0xE0) >> 5));
+                }
+                inline uint16_t ServiceId() const
+                {
+                    return ((_info[_offset + 0] << 8) | _info[_offset + 1]);
+                }
+                inline MPEG::DescriptorIterator Descriptors() const
+                {
+                    return (MPEG::DescriptorIterator(
+                        Core::DataElement(_info, _offset + 5, DescriptorSize())));
+                }
+                inline uint8_t Services() const
+                {
+                    uint8_t count = 0;
+                    uint16_t offset = 0;
+                    while (offset < _info.Size()) {
+                        offset += (((_info[offset + 3] << 8) | _info[offset + 4]) & 0x0FFF) + 5;
+                        count++;
+                    }
+                    return (count);
+                }
+
+            private:
+                inline uint16_t DescriptorSize() const
+                {
+                    return ((_info[_offset + 3] << 8) | _info[_offset + 4]) & 0x0FFF;
+                }
+
+            private:
+                Core::DataElement _info;
+                uint16_t _offset;
+            };
+
+        public:
+            SDT()
+                : _data()
+                , _transportStreamId(~0)
+            {
+            }
+            SDT(const MPEG::Table& data)
+                : _data(data.Data())
+                , _transportStreamId(data.Extension())
+            {
+            }
+            SDT(const uint16_t transportStreamId, const Core::DataElement& data)
+                : _data(data)
+                , _transportStreamId(transportStreamId)
+            {
+            }
+            SDT(const SDT& copy)
+                : _data(copy._data)
+                , _transportStreamId(copy._transportStreamId)
+            {
+            }
+            ~SDT() {}
+
+            SDT& operator=(const SDT& rhs)
+            {
+                _data = rhs._data;
+                _transportStreamId = rhs._transportStreamId;
                 return (*this);
             }
+            bool operator==(const SDT& rhs) const
+            {
+                return ((_transportStreamId == rhs._transportStreamId) && (_data == rhs._data));
+            }
+            bool operator!=(const SDT& rhs) const { return (!operator==(rhs)); }
 
         public:
-            inline bool IsValid() const { return (_offset < _info.Size()); }
-            inline void Reset() { _offset = ~0; }
-            inline bool Next()
+            inline bool IsValid() const
             {
-                if (_offset == static_cast<uint16_t>(~0)) {
-                    _offset = 0;
-                } else if (_offset < _info.Size()) {
-                    _offset += (DescriptorSize() + 5);
-                }
-
-                return (IsValid());
+                return ((_transportStreamId != static_cast<uint16_t>(~0)) && (_data.Size() >= 2));
             }
-            inline bool EIT_PF() const 
-            { 
-                return ((_info[_offset + 2] & 0x01) != 0); 
-            }
-            inline bool EIT_Schedule() const 
-            { 
-                return ((_info[_offset + 2] & 0x02) != 0); 
-            }
-            inline bool IsFreeToAir() const 
-            { 
-                return ((_info[_offset + 3] & 0x10) != 0); 
-            }
-            inline running RunningMode() const 
-            { 
-                return (static_cast<running>((_info[_offset + 3] & 0xE0) >> 5)); 
-            }
-            inline uint16_t ServiceId() const
+            inline uint16_t TransportStreamId() const { return (_transportStreamId); }
+            uint16_t OriginalNetworkId() const
             {
-                return ((_info[_offset + 0] << 8) | _info[_offset + 1]);
+                return (_data.GetNumber<uint16_t, Core::ENDIAN_BIG>(0) & 0x1FFF);
             }
-            inline MPEG::DescriptorIterator Descriptors() const
+            ServiceIterator Services() const
             {
-                return (MPEG::DescriptorIterator(
-                    Core::DataElement(_info, _offset + 5, DescriptorSize())));
-            }
-            inline uint8_t Services() const
-            {
-                uint8_t count = 0;
-                uint16_t offset = 0;
-                while (offset < _info.Size()) {
-                    offset += (((_info[offset + 3] << 8) | _info[offset + 4]) & 0x0FFF) + 5;
-                    count++;
-                }
-                return (count);
+                return (ServiceIterator(Core::DataElement(_data, 3, _data.Size() - 3)));
             }
 
         private:
-            inline uint16_t DescriptorSize() const
-            {
-                return ((_info[_offset + 3] << 8) | _info[_offset + 4]) & 0x0FFF;
-            }
-
-        private:
-            Core::DataElement _info;
-            uint16_t _offset;
+            Core::DataElement _data;
+            uint16_t _transportStreamId;
         };
 
-    public:
-        SDT()
-            : _data()
-            , _transportStreamId(~0)
-        {
-        }
-        SDT(const MPEG::Table& data)
-            : _data(data.Data())
-            , _transportStreamId(data.Extension())
-        {
-        }
-        SDT(const uint16_t transportStreamId, const Core::DataElement& data)
-            : _data(data)
-            , _transportStreamId(transportStreamId)
-        {
-        }
-        SDT(const SDT& copy)
-            : _data(copy._data)
-            , _transportStreamId(copy._transportStreamId)
-        {
-        }
-        ~SDT() {}
-
-        SDT& operator=(const SDT& rhs)
-        {
-            _data = rhs._data;
-            _transportStreamId = rhs._transportStreamId;
-            return (*this);
-        }
-        bool operator==(const SDT& rhs) const
-        {
-            return ((_transportStreamId == rhs._transportStreamId) && (_data == rhs._data));
-        }
-        bool operator!=(const SDT& rhs) const { return (!operator==(rhs)); }
-
-    public:
-        inline bool IsValid() const
-        {
-            return ((_transportStreamId != static_cast<uint16_t>(~0)) && (_data.Size() >= 2));
-        }
-        inline uint16_t TransportStreamId() const { return (_transportStreamId); }
-        uint16_t OriginalNetworkId() const
-        {
-            return (_data.GetNumber<uint16_t, Core::ENDIAN_BIG>(0) & 0x1FFF);
-        }
-        ServiceIterator Services() const
-        {
-            return (ServiceIterator(Core::DataElement(_data, 3, _data.Size() - 3)));
-        }
-
-    private:
-        Core::DataElement _data;
-        uint16_t _transportStreamId;
-    };
-
-} // namespace DVB 
+    } // namespace DVB
 } // namespace Broadcast
 } // namespace WPEFramework
 
 #endif // DVB_SDT_TABLE_H
-

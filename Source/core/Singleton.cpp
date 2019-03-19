@@ -1,5 +1,5 @@
-#include "Portability.h"
 #include "Singleton.h"
+#include "Portability.h"
 
 namespace WPEFramework {
 namespace Core {

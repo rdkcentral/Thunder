@@ -1,8 +1,8 @@
 #ifndef __IMEDIA_H
 #define __IMEDIA_H
 
-#include "Portability.h"
 #include "Module.h"
+#include "Portability.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -100,9 +100,9 @@ namespace Core {
         Media<SOURCE> operator=(const Media<SOURCE>&) = delete;
 
     public:
-		#ifdef __WIN32__ 
-		#pragma warning( disable : 4355 )
-		#endif
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         Media()
             : IMedia()
             , _channel(*this)
@@ -200,10 +200,10 @@ namespace Core {
             , _adminLock()
         {
         }
-		#ifdef __WIN32__ 
-		#pragma warning( default : 4355 )
-		#endif
-		virtual ~Media()
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
+        virtual ~Media()
         {
         }
 
@@ -241,8 +241,7 @@ namespace Core {
                     // give up our slice, we wait for action..
                     SleepMs(10);
                 }
-            }
-            else {
+            } else {
                 _adminLock.Unlock();
             }
 

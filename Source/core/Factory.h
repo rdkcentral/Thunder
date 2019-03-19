@@ -97,8 +97,7 @@ namespace Core {
             {
                 if (_start == true) {
                     _start = false;
-                }
-                else if (_index != _map.end()) {
+                } else if (_index != _map.end()) {
                     _index++;
                 }
 

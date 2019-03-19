@@ -1,17 +1,17 @@
-#include "TraceUnit.h"
 #include "TraceMedia.h"
 #include "TraceControl.h"
+#include "TraceUnit.h"
 
 namespace WPEFramework {
 namespace Trace {
-// Allow runtime enabling of the reaces, using the same channel as the trace information is send over:
-// This is done, using a simple protocol:
-// <Type:1><Sequence:4><Command:1><Data:N>
-//
-// The first byte of the UDP message determines the type of message:
-// [T] => Trace line
-// [C] => Command
-// [R] => Response
+    // Allow runtime enabling of the reaces, using the same channel as the trace information is send over:
+    // This is done, using a simple protocol:
+    // <Type:1><Sequence:4><Command:1><Data:N>
+    //
+    // The first byte of the UDP message determines the type of message:
+    // [T] => Trace line
+    // [C] => Command
+    // [R] => Response
 
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
@@ -62,11 +62,11 @@ namespace Trace {
         result = &(result[cleanClassName.Length()]);
         *result++ = '\0';
 
-		uint16_t length = static_cast<uint16_t>(result - m_Output._traceBuffer);
-		uint16_t bufferRemaining = sizeof(m_Output._traceBuffer) - length;
-		uint16_t copiedBytes = (bufferRemaining > information->Length()) ? information->Length() : bufferRemaining;
+        uint16_t length = static_cast<uint16_t>(result - m_Output._traceBuffer);
+        uint16_t bufferRemaining = sizeof(m_Output._traceBuffer) - length;
+        uint16_t copiedBytes = (bufferRemaining > information->Length()) ? information->Length() : bufferRemaining;
 
-		memcpy(result, information->Data(), copiedBytes);
+        memcpy(result, information->Data(), copiedBytes);
 
         m_Output._loaded = length + copiedBytes;
 
