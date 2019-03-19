@@ -1,5 +1,7 @@
 set(TARGET ocdm)
 
+option(CDMI_ADAPTER_IMPLEMENTATION "Defines which implementation is used." "None")
+
 add_library(${TARGET} SHARED
         open_cdm.cpp
         ProxyStubs.cpp
@@ -9,6 +11,7 @@ set(PUBLIC_HEADERS
         DataExchange.h
         IOCDM.h
         open_cdm.h
+        adapter/open_cdm_adapter.h
         Module.h
         )
 
@@ -19,7 +22,13 @@ target_link_libraries(${TARGET}
 
 target_include_directories( ${TARGET}
         PUBLIC
-          $<INSTALL_INTERFACE:include/opencdm> 
+          $<INSTALL_INTERFACE:include/opencdm>
+        )
+
+target_include_directories( ${TARGET}
+        PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/adapter>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
         )
 
 if (PROTOCOLS)
@@ -34,6 +43,38 @@ else()
               ${NAMESPACE}COM::${NAMESPACE}COM
             )
 endif ()
+
+target_sources(${TARGET} PRIVATE adapter/${CDMI_ADAPTER_IMPLEMENTATION}/open_cdm_adapter.cpp)
+
+find_package(GSTREAMER REQUIRED)
+find_package(GSTREAMER_BASE REQUIRED)
+
+target_link_libraries(${TARGET}
+        PRIVATE
+        ${GSTREAMER_LIBRARIES}
+        ${GSTREAMER_BASE_LIBRARIES}
+        )
+
+target_include_directories( ${TARGET}
+        PRIVATE
+        ${GSTREAMER_INCLUDES}
+        ${GSTREAMER_BASE_INCLUDES}
+        )
+
+if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
+    find_package(NEXUS REQUIRED)
+
+    target_link_libraries(${TARGET}
+            PRIVATE
+            -lb_secbuf
+            -lbrcmsvpmeta
+            )
+
+    target_include_directories( ${TARGET}
+            PRIVATE
+            ${LIBNEXUS_INCLUDE}
+            )
+endif()
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
