@@ -14,7 +14,7 @@ namespace Exchange {
 
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
         virtual void DsgccClientSet(const string& str) = 0;
-        virtual string DsgccClientGet() const = 0;
+        virtual string GetChannels() const = 0;
     };
 }
 }
