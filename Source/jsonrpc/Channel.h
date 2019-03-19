@@ -221,6 +221,7 @@ namespace JSONRPC {
             return (result);
         }
 
+		static constexpr uint32_t DefaultWaitTime = 10000;
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
 
@@ -324,6 +325,26 @@ namespace JSONRPC {
 
             _handler.Unregister(eventName);
         }
+
+		// Opaque JSON structure methods.
+		// These methods have a performance impact. Dedicated JSONRPC structs are preferred!!
+		// ===================================================================================
+        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Invoke<Core::JSON::VariantContainer, Core::JSON::VariantContainer>(waitTime, method, parameters, response));
+		}
+        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Set<Core::JSON::VariantContainer>(waitTime, method, object));
+        }
+        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Get<Core::JSON::VariantContainer>(waitTime, method, object));
+        }
+
+		// Specific JSONRPC methods.
+		// Preferred methods to use. Less memory footprint, less processing power and type checking applied.
+		// =====================================================================================================
         template <typename PARAMETERS, typename RESPONSE>
         uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
         {

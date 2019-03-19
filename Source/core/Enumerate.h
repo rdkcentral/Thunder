@@ -187,7 +187,7 @@ extern const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WP
             const EnumerateConversion<ENUMERATE>* runner = nullptr;
 
             if (IsSet()) {
-                runner = Find(m_Value.Value());
+                runner = Find(static_cast<uint32_t>(m_Value.Value()));
             }
 
             return ((runner == nullptr) ? _T("") : runner->name);

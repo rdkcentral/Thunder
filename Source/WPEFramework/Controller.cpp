@@ -583,7 +583,6 @@ namespace Plugin {
     }
     /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
     {
-
         Core::ProxyType<Core::JSONRPC::Message> response;
         uint32_t result = Validate(inbound);
 

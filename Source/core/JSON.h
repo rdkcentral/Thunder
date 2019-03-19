@@ -1042,7 +1042,19 @@ namespace Core {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
 
-        private:
+        protected:
+            inline bool IsQuoted() const
+            {
+                return ((_scopeCount & QuoteFoundBit) != 0);
+            }
+            inline void SetQuoted(const bool enable)
+            {
+                if (enable == true) {
+                    _scopeCount |= QuotedSerializeBit;
+                } else {
+                    _scopeCount &= (~QuotedSerializeBit);
+                }
+            }
             // IElement interface methods (private)
             virtual ParserType Type() const override
             {
@@ -1192,7 +1204,7 @@ namespace Core {
             Container(const Container& copy) = delete;
             Container& operator=(const Container& RHS) = delete;
 
-            typedef std::pair<const char*, IElement*> JSONLabelValue;
+            typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
             typedef std::list<JSONLabelValue> JSONElementList;
 
             class Iterator : public ILabelIterator {
@@ -1209,8 +1221,9 @@ namespace Core {
                 Iterator& operator=(const Iterator& RHS);
 
             public:
-                Iterator(JSONElementList& container)
-                    : _container(container)
+                Iterator(Container& parent, JSONElementList& container)
+                    : _parent(parent)
+                    , _container(container)
                     , _iterator(container.begin())
                     , _state(AT_BEGINNING)
                 {
@@ -1236,7 +1249,7 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
-                virtual const char* Label() const
+                virtual const TCHAR* Label() const
                 {
                     ASSERT(_state == AT_ELEMENT);
 
@@ -1251,24 +1264,31 @@ namespace Core {
                 }
                 virtual bool Find(const char label[])
                 {
-                    JSONElementList::iterator index = _container.begin();
+                    _iterator = _container.begin();
 
-                    while ((index != _container.end()) && (strcmp(label, index->first) != 0)) {
-                        index++;
+                    while ((_iterator != _container.end()) && (strcmp(label, _iterator->first) != 0)) {
+                        _iterator++;
                     }
 
-                    _iterator = index;
-
-                    if (index != _container.end()) {
+                    if (_iterator != _container.end()) {
                         _state = AT_ELEMENT;
-                    } else {
+                    } else if (_parent.Request(label) == false) {
                         _state = AT_END;
+                    } else {
+                        _iterator = _container.begin();
+
+                        while ((_iterator != _container.end()) && (strcmp(label, _iterator->first) != 0)) {
+                            _iterator++;
+                        }
+
+                        _state = (_iterator != _container.end() ? AT_ELEMENT : AT_END);
                     }
 
                     return (_state == AT_ELEMENT);
                 }
 
             private:
+                Container& _parent;
                 JSONElementList& _container;
                 JSONElementList::iterator _iterator;
                 State _state;
@@ -1277,7 +1297,7 @@ namespace Core {
         public:
             Container()
                 : _data()
-                , _iterator(_data)
+                , _iterator(*this, _data)
             {
             }
             virtual ~Container()
@@ -1287,7 +1307,6 @@ namespace Core {
         public:
             bool HasLabel(const string& label) const
             {
-
                 JSONElementList::const_iterator index(_data.begin());
 
                 while ((index != _data.end()) && (index->first != label)) {
@@ -1319,6 +1338,22 @@ namespace Core {
                     index++;
                 }
             }
+            void Add(const TCHAR label[], IElement* element)
+            {
+                _data.push_back(JSONLabelValue(label, element));
+            }
+            void Remove(const TCHAR label[])
+            {
+                JSONElementList::iterator index(_data.begin());
+
+                while ((index != _data.end()) && (index->first != label)) {
+                    index++;
+                }
+
+                if (index != _data.end()) {
+                    _data.erase(index);
+                }
+            }
 
         private:
             // IElement interface methods (private)
@@ -1340,29 +1375,400 @@ namespace Core {
 
                 return (&_iterator);
             }
-
-        public:
-            void Add(const TCHAR label[], IElement* element)
+            virtual bool Request(const TCHAR label[])
             {
-                _data.push_back(JSONLabelValue(label, element));
-            }
-
-            void Remove(const TCHAR label[])
-            {
-                JSONElementList::iterator index(_data.begin());
-
-                while ((index != _data.end()) && (index->first != label)) {
-                    index++;
-                }
-
-                if (index != _data.end()) {
-                    _data.erase(index);
-                }
+                return (false);
             }
 
         private:
             JSONElementList _data;
             Container::Iterator _iterator;
+        };
+        class EXTERNAL Variant : public JSON::String {
+        public:
+            enum class type {
+                EMPTY,
+                BOOLEAN,
+                NUMBER,
+                STRING
+            };
+
+        public:
+            Variant()
+                : JSON::String(false)
+                , _type(type::EMPTY)
+            {
+                String::operator=("null");
+            }
+            Variant(const int32_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<int32_t, true, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const int64_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<int64_t, true, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const uint32_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<uint32_t, false, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const uint64_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const bool value)
+                : JSON::String(false)
+                , _type(type::BOOLEAN)
+            {
+                String::operator=(value ? _T("true") : _T("false"));
+            }
+            Variant(const string& text)
+                : JSON::String(true)
+                , _type(type::STRING)
+            {
+                String::operator=(text);
+            }
+            Variant(const Variant& copy)
+                : JSON::String(copy)
+                , _type(copy._type)
+            {
+            }
+            virtual ~Variant()
+            {
+            }
+            Variant& operator=(const Variant& RHS)
+            {
+                JSON::String::operator=(RHS);
+                _type = RHS._type;
+
+                return (*this);
+            }
+
+        public:
+            type Content() const
+            {
+                return _type;
+            }
+            bool Boolean() const
+            {
+                bool result = false;
+                if (_type == type::BOOLEAN) {
+                    result = (Value() == "true");
+                }
+                return result;
+            }
+            int64_t Number() const
+            {
+                int64_t result = 0;
+                if (_type == type::NUMBER) {
+                    result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
+                }
+                return result;
+            }
+            const TCHAR* String() const
+            {
+                const TCHAR* result = nullptr;
+
+                if (_type == type::STRING) {
+                    result = Value().c_str();
+                }
+                return result;
+            }
+            void Boolean(const bool value)
+            {
+                _type = type::BOOLEAN;
+                String::SetQuoted(false);
+                String::operator=(value ? _T("true") : _T("false"));
+            }
+            template <typename TYPE>
+            void Number(const TYPE value)
+            {
+                _type = type::NUMBER;
+                String::SetQuoted(false);
+                String::operator=(Core::NumberType<TYPE>(value).Text());
+            }
+            void String(const TCHAR* value)
+            {
+                _type = type::STRING;
+                String::SetQuoted(true);
+                String::operator=(value);
+            }
+
+        private:
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t result = String::Deserialize(stream, maxLength, offset);
+
+                _type = type::STRING;
+
+                // If we are complete, try to guess what it was that we received...
+                if (offset == 0) {
+                    bool quoted = IsQuoted();
+                    SetQuoted(quoted);
+                    // If it is not quoted, it can be a boolean or a number...
+                    if (quoted == false) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
+                            _type = type::BOOLEAN;
+                        } else {
+                            _type = type::NUMBER;
+                        }
+                    }
+                }
+                return (result);
+            }
+
+        private:
+            type _type;
+        };
+
+        class EXTERNAL VariantContainer : public Container {
+        private:
+            typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
+
+		public:
+            class Iterator {
+            public:
+                Iterator()
+                    : _container(nullptr)
+                    , _index()
+                    , _start(true)
+                {
+                }
+                Iterator(const Elements& container)
+                    : _container(&container)
+                    , _index(_container->begin())
+                    , _start(true)
+                {
+                }
+                Iterator(const Iterator& copy)
+                    : _container(copy._container)
+                    , _index()
+                    , _start(true)
+                {
+                    if (_container != nullptr) {
+                        _index = _container->begin();
+                    }
+                }
+                ~Iterator()
+                {
+                }
+
+                Iterator& operator=(const Iterator& rhs)
+                {
+                    _container = rhs._container;
+                    _index = rhs._index;
+                    _start = rhs._start;
+
+                    return (*this);
+                }
+
+            public:
+                bool IsValid() const
+                {
+                    return ((_container != nullptr) && (_start == false) && (_index != _container->end()));
+                }
+                void Reset()
+                {
+                    if (_container != nullptr) {
+                        _start = true;
+                        _index = _container->begin();
+                    }
+                }
+                bool Next()
+                {
+                    if (_container != nullptr) {
+                        if (_start == true) {
+                            _start = false;
+                        } else if (_index != _container->end()) {
+                            _index++;
+                        }
+                        return (_index != _container->end());
+                    }
+
+                    return (false);
+                }
+                const TCHAR* Label() const
+                {
+                    return (_index->first.c_str());
+                }
+                const JSON::Variant& Current() const
+                {
+                    return (_index->second);
+                }
+
+            private:
+                const Elements* _container;
+                Elements::const_iterator _index;
+                bool _start;
+            };
+
+        public:
+            VariantContainer()
+                : Container()
+                , _elements()
+            {
+            }
+            explicit VariantContainer(const VariantContainer& copy)
+                : Container()
+                , _elements(copy._elements)
+            {
+                Elements::iterator index(_elements.begin());
+
+                while (index != _elements.end()) {
+                    if (copy.HasLabel(index->first.c_str()))
+                        Container::Add(index->first.c_str(), &(index->second));
+                    index++;
+                }
+            }
+            VariantContainer(const Elements& values)
+                : Container()
+            {
+                Elements::const_iterator index(values.begin());
+
+                while (index != values.end()) {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(index->first),
+                        std::forward_as_tuple(index->second));
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    index++;
+                }
+            }
+            virtual ~VariantContainer()
+            {
+            }
+
+        public:
+            VariantContainer& operator=(const VariantContainer& rhs)
+            {
+                // combine the labels
+                Elements::iterator index(_elements.begin());
+
+                // First copy all existing ones over, if the rhs does not have a value, remove the entry.
+                while (index != _elements.end()) {
+                    // Check if the rhs, has these..
+                    Elements::const_iterator rhs_index(rhs.Find(index->first.c_str()));
+
+                    if (rhs_index != rhs._elements.end()) {
+                        // This is a valid element, copy the value..
+                        index->second = rhs_index->second;
+                        index++;
+                    } else {
+                        // This element does not exist on the other side..
+                        Container::Remove(index->first.c_str());
+                        index = _elements.erase(index);
+                    }
+                }
+
+                Elements::const_iterator rhs_index(rhs._elements.begin());
+
+                // Now add the ones we are missing from the RHS
+                while (rhs_index != rhs._elements.end()) {
+                    if (Find(rhs_index->first.c_str()) == _elements.end()) {
+                        _elements.emplace_back(std::piecewise_construct,
+                            std::forward_as_tuple(rhs_index->first),
+                            std::forward_as_tuple(rhs_index->second));
+                        Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    }
+                    rhs_index++;
+                }
+
+                return (*this);
+            }
+            void Set(const TCHAR fieldName[], const JSON::Variant& value)
+            {
+                Elements::iterator index(Find(fieldName));
+                if (index != _elements.end()) {
+                    index->second = value;
+                } else {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(fieldName),
+                        std::forward_as_tuple(value));
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                }
+            }
+            Variant Get(const TCHAR fieldName[]) const
+            {
+                JSON::Variant result;
+
+                Elements::const_iterator index(Find(fieldName));
+
+                if (index != _elements.end()) {
+                    result = index->second;
+                }
+
+                return (result);
+            }
+            JSON::Variant& operator[](const TCHAR fieldName[])
+            {
+                Elements::iterator index(Find(fieldName));
+
+                if (index == _elements.end()) {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(fieldName),
+                        std::forward_as_tuple());
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    index = _elements.end();
+                    index--;
+                }
+
+                return (index->second);
+            }
+            const JSON::Variant& operator[](const TCHAR fieldName[]) const
+            {
+                static const JSON::Variant emptyVariant;
+
+                Elements::const_iterator index(Find(fieldName));
+
+                return (index == _elements.end() ? emptyVariant : index->second);
+            }
+            bool HasLabel(const TCHAR labelName[]) const
+            {
+                return (Find(labelName) != _elements.end());
+            }
+			Iterator Variants() const {
+                return (Iterator(_elements));
+			}
+
+        private:
+            Elements::iterator Find(const TCHAR fieldName[])
+            {
+                Elements::iterator index(_elements.begin());
+                while ((index != _elements.end()) && (index->first != fieldName)) {
+                    index++;
+                }
+                return (index);
+            }
+            Elements::const_iterator Find(const TCHAR fieldName[]) const
+            {
+                Elements::const_iterator index(_elements.begin());
+                while ((index != _elements.end()) && (index->first != fieldName)) {
+                    index++;
+                }
+                return (index);
+            }
+            virtual bool Request(const TCHAR label[])
+            {
+                // Whetever comes in and has no counter part, we need to create a Variant for it, so
+                // it can be filled.
+                _elements.emplace_back(std::piecewise_construct,
+                    std::forward_as_tuple(label),
+                    std::forward_as_tuple());
+
+                Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+
+                return (true);
+            }
+
+        private:
+            Elements _elements;
         };
 
         template <typename ELEMENTSELECTOR>
@@ -1984,5 +2390,8 @@ namespace Core {
     } // namespace JSON
 } // namespace Core
 } // namespace WPEFramework
+
+using JsonObject = typename WPEFramework::Core::JSON::VariantContainer;
+using JsonValue = typename WPEFramework::Core::JSON::Variant;
 
 #endif // __JSON_H
