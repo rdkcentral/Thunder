@@ -2,7 +2,7 @@
 // generated automatically from "IPlayGiga.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IPlayGiga
+//   - class IPlayGiga
 //
 
 #include "IPlayGiga.h"
@@ -94,6 +94,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

@@ -2,8 +2,8 @@
 // generated automatically from "IGuide.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IGuide
-//   - class ::WPEFramework::Exchange::IGuide::INotification
+//   - class IGuide
+//   - class IGuide::INotification
 //
 
 #include "IGuide.h"
@@ -774,6 +774,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

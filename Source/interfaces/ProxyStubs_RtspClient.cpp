@@ -2,7 +2,7 @@
 // generated automatically from "IRtspClient.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IRtspClient
+//   - class IRtspClient
 //
 
 #include "IRtspClient.h"
@@ -319,6 +319,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

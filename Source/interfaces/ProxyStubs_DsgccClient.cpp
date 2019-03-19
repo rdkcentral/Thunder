@@ -2,7 +2,7 @@
 // generated automatically from "IDsgccClient.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IDsgccClient
+//   - class IDsgccClient
 //
 
 #include "IDsgccClient.h"
@@ -190,6 +190,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

@@ -2,7 +2,7 @@
 // generated automatically from "IContentDecryption.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IContentDecryption
+//   - class IContentDecryption
 //
 
 #include "IContentDecryption.h"
@@ -213,7 +213,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<RPC::IStringIterator*>();
+                output_proxy = reinterpret_cast<RPC::IStringIterator*>(Interface(reader.Number<void*>(), RPC::IStringIterator::ID));
             }
 
             return output_proxy;
@@ -232,7 +232,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<RPC::IStringIterator*>();
+                output_proxy = reinterpret_cast<RPC::IStringIterator*>(Interface(reader.Number<void*>(), RPC::IStringIterator::ID));
             }
 
             return output_proxy;
@@ -251,7 +251,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<RPC::IStringIterator*>();
+                output_proxy = reinterpret_cast<RPC::IStringIterator*>(Interface(reader.Number<void*>(), RPC::IStringIterator::ID));
             }
 
             return output_proxy;
@@ -276,6 +276,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

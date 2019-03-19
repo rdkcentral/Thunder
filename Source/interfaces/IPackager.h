@@ -38,12 +38,14 @@ namespace Exchange {
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_PACKAGER_NOTIFICATION };
             virtual void StateChange(IPackageInfo* package, IInstallationInfo* install) = 0;
+            virtual void RepositorySynchronize(uint32_t status) = 0;
         };
 
         virtual void Register(INotification* observer) = 0;
         virtual void Unregister(const INotification* observer) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
         virtual uint32_t Install(const string& name, const string& version, const string& arch) = 0;
+        virtual uint32_t SynchronizeRepository() = 0;
     };
 }
 }

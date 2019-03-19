@@ -2,8 +2,8 @@
 // generated automatically from "IRPCLink.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IRPCLink
-//   - class ::WPEFramework::Exchange::IRPCLink::INotification
+//   - class IRPCLink
+//   - class IRPCLink::INotification
 //
 
 #include "IRPCLink.h"
@@ -334,6 +334,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

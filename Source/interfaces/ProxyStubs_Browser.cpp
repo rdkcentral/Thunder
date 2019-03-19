@@ -2,9 +2,9 @@
 // generated automatically from "IBrowser.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IBrowser
-//   - class ::WPEFramework::Exchange::IBrowser::INotification
-//   - class ::WPEFramework::Exchange::IBrowser::IMetadata
+//   - class IBrowser
+//   - class IBrowser::INotification
+//   - class IBrowser::IMetadata
 //
 
 #include "IBrowser.h"
@@ -540,6 +540,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

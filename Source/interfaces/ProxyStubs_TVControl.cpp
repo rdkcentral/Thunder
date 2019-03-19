@@ -2,12 +2,12 @@
 // generated automatically from "ITVControl.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IStream
-//   - class ::WPEFramework::Exchange::IStream::IControl
-//   - class ::WPEFramework::Exchange::IStream::IControl::IGeometry
-//   - class ::WPEFramework::Exchange::IStream::IControl::ICallback
-//   - class ::WPEFramework::Exchange::IStream::ICallback
-//   - class ::WPEFramework::Exchange::IPlayer
+//   - class IStream
+//   - class IStream::IControl
+//   - class IStream::IControl::IGeometry
+//   - class IStream::IControl::ICallback
+//   - class IStream::ICallback
+//   - class IPlayer
 //
 
 #include "ITVControl.h"
@@ -674,7 +674,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream::IControl*>();
+                output_proxy = reinterpret_cast<IStream::IControl*>(Interface(reader.Number<void*>(), IStream::IControl::ID));
             }
 
             return output_proxy;
@@ -833,7 +833,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream::IControl::IGeometry*>();
+                output_proxy = reinterpret_cast<IStream::IControl::IGeometry*>(Interface(reader.Number<void*>(), IStream::IControl::IGeometry::ID));
             }
 
             return output_proxy;
@@ -1061,7 +1061,7 @@ namespace ProxyStubs {
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                output_proxy = reader.Number<IStream*>();
+                output_proxy = reinterpret_cast<IStream*>(Interface(reader.Number<void*>(), IStream::ID));
             }
 
             return output_proxy;
@@ -1117,6 +1117,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

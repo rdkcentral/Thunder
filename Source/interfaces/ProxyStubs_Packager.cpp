@@ -2,10 +2,10 @@
 // generated automatically from "IPackager.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IPackager
-//   - class ::WPEFramework::Exchange::IPackager::IInstallationInfo
-//   - class ::WPEFramework::Exchange::IPackager::IPackageInfo
-//   - class ::WPEFramework::Exchange::IPackager::INotification
+//   - class IPackager
+//   - class IPackager::IInstallationInfo
+//   - class IPackager::IPackageInfo
+//   - class IPackager::INotification
 //
 
 #include "IPackager.h"
@@ -28,6 +28,7 @@ namespace ProxyStubs {
     //  (1) virtual void Unregister(const IPackager::INotification*) = 0
     //  (2) virtual uint32_t Configure(PluginHost::IShell*) = 0
     //  (3) virtual uint32_t Install(const string&, const string&, const string&) = 0
+    //  (4) virtual uint32_t SynchronizeRepository() = 0
     //
 
     ProxyStub::MethodHandler PackagerStubMethods[] = {
@@ -158,6 +159,22 @@ namespace ProxyStubs {
             IPackager* implementation = input.Implementation<IPackager>();
             ASSERT((implementation != nullptr) && "Null IPackager implementation pointer");
             const uint32_t output = implementation->Install(param0, param1, param2);
+
+            // write return value
+            writer.Number<const uint32_t>(output);
+        },
+
+        // virtual uint32_t SynchronizeRepository() = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
+
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+
+            // call implementation
+            IPackager* implementation = input.Implementation<IPackager>();
+            ASSERT((implementation != nullptr) && "Null IPackager implementation pointer");
+            const uint32_t output = implementation->SynchronizeRepository();
 
             // write return value
             writer.Number<const uint32_t>(output);
@@ -310,6 +327,7 @@ namespace ProxyStubs {
     //
     // Methods:
     //  (0) virtual void StateChange(IPackager::IPackageInfo*, IPackager::IInstallationInfo*) = 0
+    //  (1) virtual void RepositorySynchronize(uint32_t) = 0
     //
 
     ProxyStub::MethodHandler PackagerNotificationStubMethods[] = {
@@ -364,6 +382,21 @@ namespace ProxyStubs {
             }
         },
 
+        // virtual void RepositorySynchronize(uint32_t) = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
+
+            // read parameters
+            RPC::Data::Frame::Reader reader(input.Reader());
+            const uint32_t param0 = reader.Number<uint32_t>();
+
+            // call implementation
+            IPackager::INotification* implementation = input.Implementation<IPackager::INotification>();
+            ASSERT((implementation != nullptr) && "Null IPackager::INotification implementation pointer");
+            implementation->RepositorySynchronize(param0);
+        },
+
         nullptr
     }; // PackagerNotificationStubMethods[]
 
@@ -379,6 +412,7 @@ namespace ProxyStubs {
     //  (1) virtual void Unregister(const IPackager::INotification*) = 0
     //  (2) virtual uint32_t Configure(PluginHost::IShell*) = 0
     //  (3) virtual uint32_t Install(const string&, const string&, const string&) = 0
+    //  (4) virtual uint32_t SynchronizeRepository() = 0
     //
 
     class PackagerProxy final : public ProxyStub::UnknownProxyType<IPackager> {
@@ -450,6 +484,21 @@ namespace ProxyStubs {
             writer.Text(param0);
             writer.Text(param1);
             writer.Text(param2);
+
+            // invoke the method handler
+            uint32_t output{};
+            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+                // read return value
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<uint32_t>();
+            }
+
+            return output;
+        }
+
+        uint32_t SynchronizeRepository() override
+        {
+            IPCMessage newMessage(BaseClass::Message(4));
 
             // invoke the method handler
             uint32_t output{};
@@ -608,6 +657,7 @@ namespace ProxyStubs {
     //
     // Methods:
     //  (0) virtual void StateChange(IPackager::IPackageInfo*, IPackager::IInstallationInfo*) = 0
+    //  (1) virtual void RepositorySynchronize(uint32_t) = 0
     //
 
     class PackagerNotificationProxy final : public ProxyStub::UnknownProxyType<IPackager::INotification> {
@@ -632,6 +682,18 @@ namespace ProxyStubs {
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
                 Complete(reader);
             }
+        }
+
+        void RepositorySynchronize(uint32_t param0) override
+        {
+            IPCMessage newMessage(BaseClass::Message(1));
+
+            // write parameters
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<const uint32_t>(param0);
+
+            // invoke the method handler
+            Invoke(newMessage);
         }
     }; // class PackagerNotificationProxy
 
@@ -659,6 +721,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}

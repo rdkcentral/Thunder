@@ -2,7 +2,7 @@
 // generated automatically from "IWebServer.h"
 //
 // implements RPC proxy stubs for:
-//   - class ::WPEFramework::Exchange::IWebServer
+//   - class IWebServer
 //
 
 #include "IWebServer.h"
@@ -158,6 +158,6 @@ namespace ProxyStubs {
 
     } // namespace
 
-} // namespace WPEFramework
-
 } // namespace ProxyStubs
+
+}
