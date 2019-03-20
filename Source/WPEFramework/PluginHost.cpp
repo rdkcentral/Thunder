@@ -1,4 +1,5 @@
 #include "PluginServer.h"
+#include "Portability.h"
 
 #ifndef __WIN32__
 #include <dlfcn.h> // for dladdr
@@ -116,6 +117,12 @@ namespace PluginHost {
 
         if (signo == SIGTERM) {
             g_QuitEvent.SetEvent();
+        }
+        else if (signo == SIGSEGV) {
+            DumpCallStack();
+            // now invoke the default segfault handler
+            signal(signo, SIG_DFL);
+            kill(getpid(), signo);
         }
     }
 #endif
@@ -301,11 +308,13 @@ namespace PluginHost {
         else {
             struct sigaction sa;
             memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
             sa.sa_handler = ExitDaemonHandler;
             sa.sa_flags = 0; // not SA_RESTART!;
 
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, nullptr);
         }
 
         if (_background == true) {
