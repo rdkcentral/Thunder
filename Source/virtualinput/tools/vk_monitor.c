@@ -25,7 +25,7 @@ static void KeyEvent(enum actiontype type, unsigned int code)
 void printUsage()
 {
     printf("vk_monitor connector\n");
-    printf("For example: vk_monitor /tmp/keyhandler \n") ;
+    printf("For example: vk_monitor test /tmp/keyhandler \n") ;
     printf("To stop monitoring hit ctrl-c\n") ;
 }
 

@@ -6,7 +6,7 @@ add_executable(vk_monitor vk_monitor.c)
 
 target_link_libraries(vk_monitor
         PRIVATE
-        WPEFramework::WPEFrameworkVirtualInput)
+            ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput)
 
 
 install(
