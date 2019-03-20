@@ -234,9 +234,7 @@ namespace ProxyStub {
             if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                 RPC::Administrator::Instance().UnregisterProxy(*this);
             }
-
-            /// Next Release should destruct this. We are to be destructed!!!
-            _refCount = 1;
+            
             return (_parent.Release());
         }
         void RemoteRelease() const
