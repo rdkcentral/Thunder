@@ -1,6 +1,9 @@
 
 #include "open_cdm_adapter.h"
 
+#include <gst/gst.h>
+#include <gst/base/gstbytereader.h>
+
 #include <b_secbuf.h>
 #include <gst_brcm_svp_meta.h>
 #include <assert.h>
@@ -33,27 +36,13 @@ inline bool mappedBuffer(GstBuffer *buffer, bool writable, uint8_t **data, uint3
 static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
 {
     brcm_svp_meta_data_t* svpMeta = reinterpret_cast<brcm_svp_meta_data_t*> (g_malloc0(sizeof(brcm_svp_meta_data_t)));
-    //assert(svpMeta);
+    assert(svpMeta);
 
     svpMeta->sub_type = GST_META_BRCM_SVP_TYPE_1;
     svpMeta->u.u1.secbuf_ptr = reinterpret_cast<unsigned>(opaqueData);
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
-/**
- * \brief Performs decryption.
- *
- * This method accepts encrypted data and will typically decrypt it out-of-process (for security reasons). The actual data copying is performed
- * using a memory-mapped file (for performance reasons). If the DRM system allows access to decrypted data (i.e. decrypting is not
- * performed in a TEE), the decryption is performed in-place.
- * \param session \ref OpenCDMSession instance.
- * \param encrypted Buffer containing encrypted data. If applicable, decrypted data will be stored here after this call returns.
- * \param encryptedLength Length of encrypted data buffer (in bytes).
- * \param IV Initial vector (IV) used during decryption.
- * \param IVLength Length of IV buffer (in bytes).
- * \return Zero on success, non-zero on error.
- * REPLACING: uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
- */
 OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength) {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
@@ -122,7 +111,5 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
 
         addSVPMetaData(static_cast<GstBuffer*>(buffer), reinterpret_cast<uint8_t*>(opaqueData));
     }
-
     return (result);
 }
-

@@ -4,10 +4,6 @@
 
 #include "open_cdm.h"
 
-#include <gst/gst.h>
-#include <gst/base/gstbytereader.h>
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

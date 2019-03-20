@@ -1,20 +1,9 @@
 
 #include "open_cdm_adapter.h"
 
-/**
- * \brief Performs decryption.
- *
- * This method accepts encrypted data and will typically decrypt it out-of-process (for security reasons). The actual data copying is performed
- * using a memory-mapped file (for performance reasons). If the DRM system allows access to decrypted data (i.e. decrypting is not
- * performed in a TEE), the decryption is performed in-place.
- * \param session \ref OpenCDMSession instance.
- * \param encrypted Buffer containing encrypted data. If applicable, decrypted data will be stored here after this call returns.
- * \param encryptedLength Length of encrypted data buffer (in bytes).
- * \param IV Initial vector (IV) used during decryption.
- * \param IVLength Length of IV buffer (in bytes).
- * \return Zero on success, non-zero on error.
- * REPLACING: uint32_t decrypt(void* session, uint8_t*, const uint32_t, const uint8_t*, const uint16_t);
- */
+#include <gst/gst.h>
+#include <gst/base/gstbytereader.h>
+
 OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength) {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
@@ -30,7 +19,6 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
 
         uint8_t *mappedSubSample = nullptr;
         uint32_t mappedSubSampleSize;
-
         if (subSample != nullptr && mappedBuffer(reinterpret_cast<GstBuffer*>(subSample), true, &mappedSubSample, &mappedSubSampleSize) == false) {
 
             printf("Invalid subsample buffer.\n");
@@ -53,7 +41,6 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
             uint8_t* encryptedData = reinterpret_cast<uint8_t*> (malloc(totalEncrypted));
 
             uint32_t index = 0;
-
             for (unsigned int position = 0; position < subSampleCount; position++) {
 
                 gst_byte_reader_get_uint16_be(reader, &inClear);
@@ -81,12 +68,10 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
 
             gst_byte_reader_free(reader);
             free(encryptedData);
-
         } else {
 
             result = opencdm_session_decrypt(session, mappedData, mappedDataSize, IV, IVLength);
         }
     }
-
     return (result);
 }
