@@ -251,6 +251,7 @@ namespace Core {
 
             while ((steps != 0) && (current != _clients.end())) {
                 --steps;
+                ++current;
             }
 
             if (current != _clients.end()) {
@@ -272,6 +273,7 @@ namespace Core {
 
             while ((steps != 0) && (current != _clients.end())) {
                 --steps;
+                ++current;
             }
 
             if (current != _clients.end()) {
