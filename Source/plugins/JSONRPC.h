@@ -122,10 +122,10 @@ namespace PluginHost {
         {
             _handler.Register<INBOUND, OUTBOUND, METHOD, REALOBJECT>(methodName, method, objectPtr);
         }
-        template <typename METHOD, typename REALOBJECT>
-        void Register(const string& methodName, const METHOD& method, REALOBJECT objectPtr)
+        template <typename INBOUND, typename OUTBOUND, typename METHOD>
+        void Register(const string& methodName, const METHOD& method)
         {
-            _handler.Register<METHOD, REALOBJECT>(methodName, method, objectPtr);
+            _handler.Register<INBOUND, OUTBOUND, METHOD>(methodName, method);
         }
         void Unregister(const string& methodName)
         {

@@ -305,7 +305,7 @@ namespace Core {
                 std::function<uint32_t(const INBOUND&)> actualMethod = method;
                 InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
-                    inbound = parameters;
+                    inbound.FromString(parameters);
                     return (actualMethod(inbound));
                 };
                 Register(methodName, implementation);
@@ -329,7 +329,7 @@ namespace Core {
                 InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
                     OUTBOUND outbound;
-                    inbound = parameters;
+                    inbound.FromString(parameters);
                     uint32_t code = actualMethod(inbound, outbound);
                     outbound.ToString(result);
                     return (code);
