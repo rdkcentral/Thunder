@@ -229,30 +229,21 @@ namespace Core {
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void Register(const string& methodName, const METHOD& method)
             {
-                std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
-                    INBOUND inbound;
-                    OUTBOUND outbound;
-                    inbound = parameters;
-                    uint32_t code = actualMethod(inbound, outbound);
-                    result = outbound;
-                    return (code);
-                };
-                Register(methodName, implementation);
+                __Register__<INBOUND, OUTBOUND, METHOD>(
+                    ::TemplateIntToType<Core::TypeTraits::is_same<INBOUND, Void>::value>(),
+                    ::TemplateIntToType<Core::TypeTraits::is_same<OUTBOUND, Void>::value>(),
+                    methodName,
+                    method);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
             void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
-                    INBOUND inbound;
-                    OUTBOUND outbound;
-                    inbound.FromString(parameters);
-                    uint32_t code = actualMethod(inbound, outbound);
-                    outbound.ToString(result);
-                    return (code);
-                };
-                Register(methodName, implementation);
+                __Register__<INBOUND, OUTBOUND, METHOD>(
+                    ::TemplateIntToType<Core::TypeTraits::is_same<INBOUND, Void>::value>(), 
+					::TemplateIntToType<Core::TypeTraits::is_same<OUTBOUND, Void>::value>(),
+					methodName, 
+					method,
+					objectPtr);
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
@@ -297,6 +288,99 @@ namespace Core {
             bool HasVersionSupport(const string& number) const
             {
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (std::find(_versions.begin(), _versions.end(), static_cast<uint8_t>(atoi(number.c_str()))) != _versions.end());
+            }
+
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void __Register__(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t()> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    return (actualMethod());
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void __Register__(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(const INBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    INBOUND inbound;
+                    inbound = parameters;
+                    return (actualMethod(inbound));
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void __Register__(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(OUTBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    OUTBOUND outbound;
+                    uint32_t code = actualMethod(outbound);
+                    outbound.ToString(result);
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD>
+            void __Register__(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    INBOUND inbound;
+                    OUTBOUND outbound;
+                    inbound = parameters;
+                    uint32_t code = actualMethod(inbound, outbound);
+                    outbound.ToString(result);
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+            void __Register__(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t()> actualMethod = std::bind(method, objectPtr);
+                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
+                    return (actualMethod());
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+            void __Register__(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    INBOUND inbound;
+                    inbound.FromString(parameters);
+                    return (actualMethod(inbound));
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+            void __Register__(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    OUTBOUND outbound;
+                    uint32_t code = actualMethod(outbound);
+                    outbound.ToString(result);
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
+            void __Register__(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
+                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                    INBOUND inbound;
+                    OUTBOUND outbound;
+                    inbound.FromString(parameters);
+                    uint32_t code = actualMethod(inbound, outbound);
+                    outbound.ToString(result);
+                    return (code);
+                };
+                Register(methodName, implementation);
             }
 
         private:
