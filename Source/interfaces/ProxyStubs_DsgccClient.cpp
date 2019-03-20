@@ -84,7 +84,7 @@ namespace ProxyStubs {
             implementation->DsgccClientSet(param0);
         },
 
-        // virtual string DsgccClientGet() const = 0
+        // virtual string GetChannels() const = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -94,7 +94,7 @@ namespace ProxyStubs {
             // call implementation
             const IDsgccClient* implementation = input.Implementation<IDsgccClient>();
             ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
-            const string output = implementation->DsgccClientGet();
+            const string output = implementation->GetChannels();
 
             // write return value
             writer.Text(output);
@@ -113,7 +113,7 @@ namespace ProxyStubs {
     // Methods:
     //  (0) virtual uint32_t Configure(PluginHost::IShell*) = 0
     //  (1) virtual void DsgccClientSet(const string&) = 0
-    //  (2) virtual string DsgccClientGet() const = 0
+    //  (2) virtual string GetChannels() const = 0
     //
 
     class DsgccClientProxy final : public ProxyStub::UnknownProxyType<IDsgccClient> {
@@ -156,7 +156,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        string DsgccClientGet() const override
+        string GetChannels() const override
         {
             IPCMessage newMessage(BaseClass::Message(2));
 
