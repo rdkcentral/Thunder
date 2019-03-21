@@ -10,7 +10,7 @@ set(SYSTEM_PATH "${CMAKE_INSTALL_PREFIX}/lib/${NAMESPACE_LIB}/plugins" CACHE STR
 set(WEBSERVER_PATH "/boot/www" CACHE STRING "Root path for the HTTP server")
 set(WEBSERVER_PORT 8080 CACHE STRING "Port for the HTTP server")
 set(PROXYSTUB_PATH "${CMAKE_INSTALL_PREFIX}/lib/${NAMESPACE_LIB}/proxystubs" CACHE STRING "Proxy stub path")
-set(CONFIG_INSTALL_PATH "/etc/${NAMESPACE}" CACHE STRING "Install location of the configuration")
+set(CONFIG_INSTALL_PATH "${CMAKE_INSTALL_SYSCONFDIR}/${NAMESPACE}" CACHE STRING "Install location of the configuration")
 set(IPV6_SUPPORT false CACHE STRING "Controls if should application supports ipv6")
 set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
 set(POLICY 0 CACHE STRING "NA")
@@ -139,8 +139,11 @@ map_append(${CONFIG} plugins ${PLUGIN_CONTROLLER})
 
 json_write("${CMAKE_BINARY_DIR}/Config.json" ${CONFIG})
 
+# Make sure WPEFRAMEWORK_CONFIG_FILE is inline with the install() below
+target_compile_definitions(${TARGET} PRIVATE -DWPEFRAMEWORK_CONFIG_FILE="${CONFIG_INSTALL_PATH}/config.json")
+
 install(
         FILES ${CMAKE_BINARY_DIR}/Config.json
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/../etc/${NAMESPACE}/
+        DESTINATION "${CONFIG_INSTALL_PATH}"
         RENAME config.json
         COMPONENT ${MODULE_NAME})
