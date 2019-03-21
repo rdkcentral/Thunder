@@ -361,11 +361,7 @@ typedef DEPRECATED signed short sint16;
 typedef DEPRECATED signed int sint32;
 typedef DEPRECATED signed long long sint64;
 
-#if __SIZEOF_POINTER__ == 4
-typedef uint32_t uintptr_t;
-#elif defined(__LINUX__)
-#pragma warning "Seems like we are building for neither 32-bits nor 64-bits platform, uintptr_t won't be defined."
-#endif
+#include <cstdint>
 
 #ifndef FALSE
 #define FALSE (0)
