@@ -4,44 +4,31 @@
 #include <gst/gst.h>
 #include <gst/base/gstbytereader.h>
 
-inline bool mappedBuffer(GstBuffer *buffer, bool writable, uint8_t **data, uint32_t *size)
-{
-    GstMapInfo map;
-
-    if (!gst_buffer_map (buffer, &map, writable ? GST_MAP_WRITE : GST_MAP_READ)) {
-        return false;
-    }
-
-    *data = reinterpret_cast<uint8_t* >(map.data);
-    *size = static_cast<uint32_t >(map.size);
-    gst_buffer_unmap (buffer, &map);
-
-    return true;
-}
-
 OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength) {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
 
-        uint8_t *mappedData = nullptr;
-        uint32_t mappedDataSize;
-        if (mappedBuffer(reinterpret_cast<GstBuffer*>(buffer), true, &mappedData, &mappedDataSize) == false) {
-
+        GstMapInfo dataMap;
+        GstBuffer* dataBuffer = reinterpret_cast<GstBuffer*>(buffer);
+        if (gst_buffer_map(dataBuffer, &dataMap, GST_MAP_WRITE) == false) {
             printf("Invalid buffer.\n");
             return (ERROR_INVALID_DECRYPT_BUFFER);
         }
 
-        uint8_t *mappedSubSample = nullptr;
-        uint32_t mappedSubSampleSize;
-        if (subSample != nullptr && mappedBuffer(reinterpret_cast<GstBuffer*>(subSample), true, &mappedSubSample, &mappedSubSampleSize) == false) {
+        uint8_t *mappedData = reinterpret_cast<uint8_t* >(dataMap.data);
+        uint32_t mappedDataSize = static_cast<uint32_t >(dataMap.size);
 
-            printf("Invalid subsample buffer.\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
-        }
-
-        if (mappedSubSample) {
-
+        if (subSample != nullptr) {
+            GstMapInfo sampleMap;
+            GstBuffer* subSampleBuffer = reinterpret_cast<GstBuffer*>(subSample);
+            if (gst_buffer_map(subSampleBuffer, &sampleMap, GST_MAP_WRITE) == false) {
+                printf("Invalid subsample buffer.\n");
+                gst_buffer_unmap(dataBuffer, &dataMap);
+                return (ERROR_INVALID_DECRYPT_BUFFER);
+            }
+            uint8_t *mappedSubSample = reinterpret_cast<uint8_t* >(sampleMap.data);
+            uint32_t mappedSubSampleSize = static_cast<uint32_t >(sampleMap.size);
             GstByteReader* reader = gst_byte_reader_new(mappedSubSample, mappedSubSampleSize);
             uint16_t inClear = 0;
             uint32_t inEncrypted = 0;
@@ -52,8 +39,8 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
                 gst_byte_reader_get_uint32_be(reader, &inEncrypted);
                 totalEncrypted += inEncrypted;
             }
-
             uint8_t* encryptedData = reinterpret_cast<uint8_t*> (malloc(totalEncrypted));
+            uint8_t* encryptedDataIter = encryptedData;
 
             uint32_t index = 0;
             for (unsigned int position = 0; position < subSampleCount; position++) {
@@ -61,14 +48,13 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
                 gst_byte_reader_get_uint16_be(reader, &inClear);
                 gst_byte_reader_get_uint32_be(reader, &inEncrypted);
 
-                memcpy(encryptedData, mappedData + index + inClear, inEncrypted);
+                memcpy(encryptedDataIter, mappedData + index + inClear, inEncrypted);
                 index += inClear + inEncrypted;
-                encryptedData += inEncrypted;
+                encryptedDataIter += inEncrypted;
             }
             gst_byte_reader_set_pos(reader, 0);
 
             result = opencdm_session_decrypt(session, encryptedData, totalEncrypted, IV, IVLength);
-
             // Re-build sub-sample data.
             index = 0;
             unsigned total = 0;
@@ -83,10 +69,13 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
 
             gst_byte_reader_free(reader);
             free(encryptedData);
+            gst_buffer_unmap(subSampleBuffer, &sampleMap);
         } else {
-
             result = opencdm_session_decrypt(session, mappedData, mappedDataSize, IV, IVLength);
         }
+
+        gst_buffer_unmap(dataBuffer, &dataMap);
     }
+
     return (result);
 }
