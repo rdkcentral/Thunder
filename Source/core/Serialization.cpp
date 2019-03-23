@@ -224,6 +224,11 @@ namespace Core {
                 state = 0;
             }
         }
+
+        if ((state != 0) && (filler < length)) {
+            object[filler++] = lastStuff;
+        
+		}
         length = filler;
 
         return (index);

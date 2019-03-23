@@ -56,9 +56,9 @@ ENUM_CONVERSION_BEGIN(URL::SchemeType)
         _TXT("????"),
     },
 
-    ENUM_CONVERSION_END(URL::SchemeType)
+ENUM_CONVERSION_END(URL::SchemeType)
 
-        namespace Core
+namespace Core
 {
     struct Component {
         Component()
@@ -1762,6 +1762,102 @@ ENUM_CONVERSION_BEGIN(URL::SchemeType)
         }
 
         return (destinationLength - dstLength);
+    }
+
+    /* static */ uint16_t URL::Base64Encode(const uint8_t* source, const uint16_t sourceLength, TCHAR* destination, const uint16_t destinationLength, const bool padding)
+    {
+        static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                            "abcdefghijklmnopqrstuvwxyz"
+                                            "0123456789-_";
+
+        uint8_t state = 0;
+        uint16_t index = 0;
+        uint8_t lastStuff = 0;
+        uint16_t result = 0;
+
+        while ((result < destinationLength) && (index < sourceLength)) {
+            if (state == 0) {
+                destination[result++] = base64_chars[((source[index] & 0xFC) >> 2)];
+                lastStuff = ((source[index] & 0x03) << 4);
+                state = 1;
+            } else if (state == 1) {
+                destination[result++] = base64_chars[(((source[index] & 0xF0) >> 4) | lastStuff)];
+                lastStuff = ((source[index] & 0x0F) << 2);
+                state = 2;
+            } else if (state == 2) {
+                destination[result++] = base64_chars[(((source[index] & 0xC0) >> 6) | lastStuff)];
+                if (result < destinationLength) {
+					destination[result++] = base64_chars[(source[index] & 0x3F)];
+				}
+                state = 0;
+            }
+            index++;
+        }
+
+        if ((state != 0) && (result < destinationLength)) {
+            destination[result++] = base64_chars[lastStuff];
+
+            if (padding == true) {
+                if (result < destinationLength) {
+                    destination[result++] = '.';
+				}
+                if ((state == 2) && (result < destinationLength)) {
+                    destination[result++] = '.';
+                }
+            }
+        }
+
+		return (result);
+	}
+    /* static */ uint16_t URL::Base64Decode(const TCHAR* source, const uint16_t sourceLength, uint8_t* destination, const uint16_t destinationLength, const TCHAR* ignoreList)
+    {
+        uint8_t state = 0;
+        uint16_t index = 0;
+        uint16_t filler = 0;
+        uint8_t lastStuff = 0;
+
+        while ((index < sourceLength) && (filler < destinationLength)) {
+            uint8_t converted;
+            TCHAR current = source[index++];
+
+            if ((current >= 'A') && (current <= 'Z')) {
+                converted = (current - 'A');
+            } else if ((current >= 'a') && (current <= 'z')) {
+                converted = (current - 'a' + 26);
+            } else if ((current >= '0') && (current <= '9')) {
+                converted = (current - '0' + 52);
+            } else if (current == '-') {
+                converted = 62;
+            } else if (current == '_') {
+                converted = 63;
+            } else if ((ignoreList != nullptr) && (::strchr(ignoreList, current) != nullptr)) {
+                continue;
+            } else {
+                break;
+            }
+
+            if (state == 0) {
+                lastStuff = converted << 2;
+                state = 1;
+            } else if (state == 1) {
+                destination[filler++] = (((converted & 0x30) >> 4) | lastStuff);
+                lastStuff = ((converted & 0x0F) << 4);
+                state = 2;
+            } else if (state == 2) {
+                destination[filler++] = (((converted & 0x3C) >> 2) | lastStuff);
+                lastStuff = ((converted & 0x03) << 6);
+                state = 3;
+            } else if (state == 3) {
+                destination[filler++] = ((converted & 0x3F) | lastStuff);
+                state = 0;
+            }
+        }
+
+        if ((state != 0) && (filler < destinationLength)) {
+            destination[filler++] = lastStuff;
+        }
+
+        return (filler);
     }
 }
 } // namespace Core

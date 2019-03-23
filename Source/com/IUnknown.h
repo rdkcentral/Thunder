@@ -63,11 +63,6 @@ namespace ProxyStub {
         {
             INTERFACE* result = reinterpret_cast<INTERFACE*>(incomingData);
 
-            //if (result == nullptr) {
-
-            //	result = reinterpret_cast<INTERFACE*>(incomingData);
-            //}
-
             return (result);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
@@ -234,7 +229,7 @@ namespace ProxyStub {
             if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                 RPC::Administrator::Instance().UnregisterProxy(*this);
             }
-            
+
             return (_parent.Release());
         }
         void RemoteRelease() const

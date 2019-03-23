@@ -379,6 +379,8 @@ namespace Core {
         }
         static uint16_t Encode(const TCHAR* source, const uint16_t sourceLength, TCHAR* destination, const uint16_t destinationLength);
         static uint16_t Decode(const TCHAR* source, const uint16_t sourceLength, TCHAR* destination, const uint16_t destinationLength);
+        static uint16_t Base64Encode(const uint8_t* source, const uint16_t sourceLength, TCHAR* destination, const uint16_t destinationLength, const bool padding = false);
+        static uint16_t Base64Decode(const TCHAR* source, const uint16_t sourceLength, uint8_t* destination, const uint16_t destinationLength, const TCHAR* ignoreList = nullptr);
 
     private:
         void Parse(const string& urlStr);

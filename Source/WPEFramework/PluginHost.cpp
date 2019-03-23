@@ -55,8 +55,8 @@ namespace PluginHost {
 
     class SecurityOptions : public ISecurity {
     private:
-        SecurityOptions(const SecurityOptions&);
-        SecurityOptions& operator=(const SecurityOptions&);
+        SecurityOptions(const SecurityOptions&) = delete;
+        SecurityOptions& operator=(const SecurityOptions&) = delete;
 
     public:
         SecurityOptions()

@@ -22,12 +22,14 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="JSONWebToken.cpp" />
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="URL.cpp" />
     <ClCompile Include="WebSerializer.cpp" />
     <ClCompile Include="WebSocketLink.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="JSONWebToken.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="URL.h" />
     <ClInclude Include="WebLink.h" />
