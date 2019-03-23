@@ -2,7 +2,7 @@
 #define DESCRIPTORS_H
 
 #include "Definitions.h"
-#include "Descriptors.h"
+#include "MPEGDescriptor.h"
 
 namespace WPEFramework {
 namespace Broadcast {
