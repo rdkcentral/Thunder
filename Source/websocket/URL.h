@@ -212,7 +212,7 @@ namespace Core {
         {
             Parse(m_Maintainer);
         }
-        URL(const TextFragment& text)
+        URL(const Core::TextFragment& text)
             : m_SchemeInfo(nullptr)
             , m_Scheme()
             , m_Username()
@@ -267,82 +267,82 @@ namespace Core {
             return (m_SchemeInfo != nullptr);
         }
 
-        inline const OptionalType<TextFragment>& Scheme() const
+        inline const Core::OptionalType<Core::TextFragment>& Scheme() const
         {
             return (m_Scheme);
         }
 
-        inline const OptionalType<TextFragment>& UserName() const
+        inline const Core::OptionalType<Core::TextFragment>& UserName() const
         {
             return (m_Username);
         }
 
-        inline const OptionalType<TextFragment>& Password() const
+        inline const Core::OptionalType<Core::TextFragment>& Password() const
         {
             return (m_Password);
         }
 
-        inline const OptionalType<TextFragment>& Host() const
+        inline const Core::OptionalType<Core::TextFragment>& Host() const
         {
             return (m_Host);
         }
 
-        inline const OptionalType<unsigned short>& Port() const
+        inline const Core::OptionalType<unsigned short>& Port() const
         {
             return (m_Port);
         }
 
-        inline const OptionalType<TextFragment>& Path() const
+        inline const Core::OptionalType<Core::TextFragment>& Path() const
         {
             return (m_Path);
         }
 
-        inline const OptionalType<TextFragment>& Query() const
+        inline const Core::OptionalType<Core::TextFragment>& Query() const
         {
             return (m_Query);
         }
 
-        inline const OptionalType<TextFragment>& Ref() const
+        inline const Core::OptionalType<Core::TextFragment>& Ref() const
         {
             return (m_Ref);
         }
 
-        inline void UserName(const OptionalType<TextFragment>& value)
+        inline void UserName(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Username = value;
         }
 
-        inline void Password(const OptionalType<TextFragment>& value)
+        inline void Password(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Password = value;
         }
 
-        inline void Host(const OptionalType<TextFragment>& value)
+        inline void Host(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Host = value;
         }
 
-        inline void Port(const OptionalType<unsigned short> port)
+        inline void Port(const Core::OptionalType<unsigned short> port)
         {
             m_Port = port;
         }
 
-        inline void Path(const OptionalType<TextFragment>& value)
+        inline void Path(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Path = value;
         }
 
-        inline void Query(const OptionalType<TextFragment>& value)
+        inline void Query(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Query = value;
         }
 
-        inline void Ref(const OptionalType<TextFragment>& value)
+        inline void Ref(const Core::OptionalType<Core::TextFragment>& value)
         {
             m_Ref = value;
         }
 
-        TextFragment Text() const;
+        Core::TextFragment Text() const;
 
         static void CreateStandardURL(TCHAR url[], int url_len, const URL& info)
         {
@@ -384,7 +384,7 @@ namespace Core {
 
     private:
         void Parse(const string& urlStr);
-        void SetComponent(const string& urlStr, const unsigned int begin, const unsigned int end, OptionalType<TextFragment>& SetInfo);
+        void SetComponent(const string& urlStr, const unsigned int begin, const unsigned int end, Core::OptionalType<Core::TextFragment>& SetInfo);
         void SetScheme(const SchemeType type);
 
         // StandardURL is for when the scheme is known to be one that has an
@@ -407,14 +407,14 @@ namespace Core {
 
     private:
         const void* m_SchemeInfo;
-        OptionalType<TextFragment> m_Scheme;
-        OptionalType<TextFragment> m_Username;
-        OptionalType<TextFragment> m_Password;
-        OptionalType<TextFragment> m_Host;
-        OptionalType<unsigned short> m_Port;
-        OptionalType<TextFragment> m_Path;
-        OptionalType<TextFragment> m_Query;
-        OptionalType<TextFragment> m_Ref;
+        Core::OptionalType<Core::TextFragment> m_Scheme;
+        Core::OptionalType<Core::TextFragment> m_Username;
+        Core::OptionalType<Core::TextFragment> m_Password;
+        Core::OptionalType<Core::TextFragment> m_Host;
+        Core::OptionalType<unsigned short> m_Port;
+        Core::OptionalType<Core::TextFragment> m_Path;
+        Core::OptionalType<Core::TextFragment> m_Query;
+        Core::OptionalType<Core::TextFragment> m_Ref;
 
         // This is a placeholder to reference the string in case a string is ingested..
         string m_Maintainer;

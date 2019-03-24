@@ -25,9 +25,11 @@ set(SOURCES_COM
 
 set(SOURCES_WEBSOCKETS
         websocket/URL.cpp
+        websocket/JSONWebToken.cpp
         websocket/WebSerializer.cpp
         websocket/WebSocketLink.cpp
         websocket/URL.h
+        websocket/JSONWebToken.h
         websocket/WebLink.h
         websocket/WebRequest.h
         websocket/WebResponse.h
@@ -56,6 +58,7 @@ set(COM_INCLUDES
 
 set(PROTOCOLS_INCLUDES
         URL.h
+        JSONWebToken.h
         WebLink.h
         WebRequest.h
         WebResponse.h
@@ -76,6 +79,7 @@ set(PUBLIC_HEADERS
 add_library(${TARGET} SHARED
         Module.cpp
         URL.cpp
+        JSONWebToken.cpp
         ITracing.cpp
         IUnknown.cpp
         WebSerializer.cpp

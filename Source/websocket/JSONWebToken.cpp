@@ -6,10 +6,43 @@ ENUM_CONVERSION_BEGIN(Web::JSONWebToken::mode)
 
     { Web::JSONWebToken::mode::SHA256, _TXT("HS256") },
 
-    ENUM_CONVERSION_END(Web::JSONWebToken::mode)
+ENUM_CONVERSION_END(Web::JSONWebToken::mode)
 
-        namespace Web
+namespace Web
 {
+    class EXTERNAL JSONWebData : public Core::JSON::Container {
+    private:
+        JSONWebData(const JSONWebData&);
+        JSONWebData& operator=(const JSONWebData&);
+
+    public:
+        JSONWebData()
+            : Core::JSON::Container()
+            , Type()
+            , Algorithm(JSONWebToken::mode::SHA256)
+        {
+            Add(_T("alg"), &Algorithm);
+            Add(_T("typ"), &Type);
+        }
+        JSONWebData(const TCHAR data[], const uint16_t length)
+            : Core::JSON::Container()
+            , Type()
+            , Algorithm(JSONWebToken::mode::SHA256)
+
+        {
+            Add(_T("alg"), &Algorithm);
+            Add(_T("typ"), &Type);
+
+			FromString(string(data, length));
+        }
+        ~JSONWebData()
+        {
+        }
+
+    public:
+        Core::JSON::String Type;
+        Core::JSON::EnumType<JSONWebToken::mode> Algorithm;
+    };
 
     JSONWebToken::JSONWebToken(const mode type, const uint8_t length, const uint8_t key[])
         : _mode(type)
@@ -58,35 +91,66 @@ ENUM_CONVERSION_BEGIN(Web::JSONWebToken::mode)
     {
         string result;
 
-		// Check if the Hash is correct..
-        size_t pos = token.find_last_of('.', 0);
+		// Check what method to use
+        size_t pos = token.find_first_of('.');
 
 		if (pos != string::npos) {
-			// Extract the signature and convert it to a binary string.
-            uint8_t signature[Crypto::SHA256HMAC::Length];
-            Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr);
 
-			// Now calculate what we think it should be..
-            Crypto::SHA256HMAC hash(_key);
-            string payload = token.substr(0, pos);
+			// Extract the header
+            string header(token.substr(0, pos));
+            TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(header.length() * sizeof(TCHAR)));
 
-            hash.Input(reinterpret_cast<const uint8_t*>(payload.c_str()), static_cast<uint16_t>(payload.length() * sizeof(TCHAR)));
-            if (::memcmp(hash.Result(), signature, sizeof(signature)) == 0) {
+            uint16_t length = Core::URL::Base64Decode(
+				header.c_str(), 
+				static_cast<uint16_t>(header.length()), 
+				reinterpret_cast<uint8_t*>(output), 
+				static_cast<uint16_t>(header.length() * sizeof(TCHAR)), 
+				nullptr);
+
+			JSONWebData info(output, length);
+
+			if ((info.Type.Value() == _T("JWT")) && (info.Algorithm.IsSet() == true) && (ValidSignature(info.Algorithm.Value(), token) == true)) {
 
                 // Check if the Hash is correct..
-                pos = payload.find_last_of('.', 0);
+                size_t sig_pos = token.find_last_of('.');
 
-				if (pos != string::npos) {
-                    uint16_t length = static_cast<uint16_t>(payload.length() - pos);
+                if ( (sig_pos != string::npos) && (sig_pos > pos) ) {
+
+                    uint16_t length = static_cast<uint16_t>(sig_pos - pos);
                     TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(length * sizeof(TCHAR)));
                     // Oke, this is a valid frame, let extract the payload..
-                    length = Core::URL::Base64Decode(payload.substr(pos + 1).c_str(), length - 1, reinterpret_cast<uint8_t*>(output), length * sizeof(TCHAR), nullptr);
-                    result = string(output, length); 
-				}
-			}
+                    length = Core::URL::Base64Decode(token.substr(pos + 1).c_str(), length - 1, reinterpret_cast<uint8_t*>(output), length * sizeof(TCHAR), nullptr);
+                    result = string(output, length);
+                }
+            }
         }
 
         return (result);
     }
-}
-} // namespace WPEFramework::Web
+
+	bool JSONWebToken::ValidSignature(const mode type, const string& token) const 
+	{
+        bool result = false;
+
+        // Check if the Hash is correct..
+        size_t pos = token.find_last_of('.');
+
+        if (pos != string::npos) {
+		
+            if (type == JSONWebToken::mode::SHA256) {
+                // Now calculate what we think it should be..
+                Crypto::SHA256HMAC hash(_key);
+
+                // Extract the signature and convert it to a binary string.
+				uint8_t signature[Crypto::SHA256HMAC::Length];
+                if (Core::URL::Base64Decode(token.substr(pos + 1).c_str(), static_cast<uint16_t>(token.length() - pos - 1), signature, sizeof(signature), nullptr) == sizeof(signature)) {
+
+					hash.Input(reinterpret_cast<const uint8_t*>(token.substr(0, pos).c_str()), static_cast<uint16_t>(pos * sizeof(TCHAR)));
+					result = (::memcmp(hash.Result(), signature, sizeof(signature)) == 0);
+				}
+            }
+		}
+
+		return (result);
+    }
+} } // namespace WPEFramework::Web

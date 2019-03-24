@@ -3,6 +3,7 @@ set(TARGET ${NAMESPACE}WebSocket)
 add_library(${TARGET} SHARED
         Module.cpp
         URL.cpp
+        JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
         )
@@ -11,6 +12,7 @@ find_package(ZLIB REQUIRED)
 
 set(PUBLIC_HEADERS
         URL.h
+        JSONWebToken.h
         WebLink.h
         WebRequest.h
         WebResponse.h

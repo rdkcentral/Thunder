@@ -187,6 +187,8 @@ namespace PluginHost {
 
         //! What options are allowed to be passed to this service???
         virtual Core::ProxyType<Web::Response> Options(const Web::Request& request) = 0;
+
+        // virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer, string& token) = 0;
     };
 } // namespace PluginHost
 } // namespace WPEFramework

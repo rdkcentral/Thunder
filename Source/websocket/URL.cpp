@@ -51,10 +51,7 @@ ENUM_CONVERSION_BEGIN(URL::SchemeType)
     { URL::SCHEME_RTP_TCP, _TXT("rtptcp") },
     { URL::SCHEME_WS, _TXT("ws") },
     { URL::SCHEME_WSS, _TXT("wss") },
-    {
-        URL::SCHEME_UNKNOWN,
-        _TXT("????"),
-    },
+    { URL::SCHEME_UNKNOWN, _TXT("????") },
 
 ENUM_CONVERSION_END(URL::SchemeType)
 

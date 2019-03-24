@@ -172,15 +172,40 @@ namespace JSONRPC {
         Client(const Client&) = delete;
         Client& operator=(Client&) = delete;
 
+        typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
+
         class Entry {
         private:
             Entry(const Entry&) = delete;
             Entry& operator=(const Entry&) = delete;
+            struct Synchronous {
+                Synchronous()
+                    : _signal(false, true)
+                    , _response()
+                {
+                }
+                Core::Event _signal;
+                Core::ProxyType<Core::JSONRPC::Message> _response;
+            };
+            struct ASynchronous {
+                ASynchronous(const uint32_t waitTime, const CallbackFunction& completed)
+                    : _waitTime(waitTime)
+                    , _completed(completed)
+                {
+                }
+                uint64_t _waitTime;
+                CallbackFunction _completed;
+            };
 
         public:
             Entry()
-                : _signal(false, true)
-                , _response()
+                : _synchronous(true)
+                , _info()
+            {
+            }
+            Entry(const uint32_t waitTime, const CallbackFunction& completed)
+                : _synchronous(false)
+                , _info(waitTime, completed)
             {
             }
             ~Entry()
@@ -190,25 +215,47 @@ namespace JSONRPC {
         public:
             const Core::ProxyType<Core::JSONRPC::Message>& Response() const
             {
-                return (_response);
+                return (_info.sync._response);
             }
             void Signal(const Core::ProxyType<Core::JSONRPC::Message>& response)
             {
-                _response = response;
-                _signal.SetEvent();
+                if (_synchronous == true) {
+                    _info.sync._response = response;
+                    _info.sync._signal.SetEvent();
+                } else {
+                    _info.async._completed(*response);
+                }
             }
             void Abort()
             {
-                _signal.SetEvent();
+                if (_synchronous == true) {
+                    _info.sync._signal.SetEvent();
+                } else {
+                    Core::JSONRPC::Message message;
+                    _info.async._completed(message);
+                }
             }
             bool WaitForResponse(const uint32_t waitTime)
             {
-                return (_signal.Lock(waitTime) == Core::ERROR_NONE);
+                return (_info.sync._signal.Lock(waitTime) == Core::ERROR_NONE);
             }
 
         private:
-            Core::Event _signal;
-            Core::ProxyType<Core::JSONRPC::Message> _response;
+            bool _synchronous;
+            union Info {
+            public:
+                Info() : sync()
+                {
+                }
+                Info(const uint32_t waitTime, const CallbackFunction& completed) : async(waitTime, completed)
+                {
+                }
+                ~Info() 
+                {
+                }
+                Synchronous sync;
+                ASynchronous async;
+            } _info;
         };
 
         static Core::NodeId RemoteNodeId()
@@ -221,7 +268,7 @@ namespace JSONRPC {
             return (result);
         }
 
-		static constexpr uint32_t DefaultWaitTime = 10000;
+        static constexpr uint32_t DefaultWaitTime = 10000;
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
 
@@ -326,13 +373,13 @@ namespace JSONRPC {
             _handler.Unregister(eventName);
         }
 
-		// Opaque JSON structure methods.
-		// These methods have a performance impact. Dedicated JSONRPC structs are preferred!!
-		// ===================================================================================
+        // Opaque JSON structure methods.
+        // These methods have a performance impact. Dedicated JSONRPC structs are preferred!!
+        // ===================================================================================
         uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = DefaultWaitTime)
         {
             return (Invoke<Core::JSON::VariantContainer, Core::JSON::VariantContainer>(waitTime, method, parameters, response));
-		}
+        }
         uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
         {
             return (Set<Core::JSON::VariantContainer>(waitTime, method, object));
@@ -342,10 +389,10 @@ namespace JSONRPC {
             return (Get<Core::JSON::VariantContainer>(waitTime, method, object));
         }
 
-		// Specific JSONRPC methods.
-		// Preferred methods to use. Less memory footprint, less processing power and type checking applied.
-		// =====================================================================================================
-        template <typename PARAMETERS, typename RESPONSE>
+        // Specific JSONRPC methods.
+        // Preferred methods to use. Less memory footprint, less processing power and type checking applied.
+        // =====================================================================================================
+        template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
         uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
         {
             Core::ProxyType<Core::JSONRPC::Message> response;
@@ -355,6 +402,41 @@ namespace JSONRPC {
             if (result == Core::ERROR_NONE) {
                 inbound.FromString(response->Result.Value());
             }
+            return (result);
+        }
+        template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
+        void Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&)>& callback)
+        {
+            CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
+                RESPONSE response;
+                if (inbound.Error.IsSet() == false) {
+                    response.FromString(inbound.Result.Value());
+                }
+
+                callback(response);
+            };
+
+            string subject;
+            parameters.ToString(subject);
+            uint32_t result = Send(waitTime, method, subject, implementation);
+            return (result);
+        }
+        template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
+        void Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&, const Core::JSONRPC::Message::Info)>& callback)
+        {
+            CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
+                RESPONSE response;
+                if (inbound.Error.IsSet() == false) {
+                    response.FromString(inbound.Result.Value());
+                    callback(response);
+                } else {
+                    callback(response);
+                }
+            };
+
+            string subject;
+            parameters.ToString(subject);
+            uint32_t result = Send(waitTime, method, subject, implementation);
             return (result);
         }
         template <typename PARAMETERS, typename... TYPES>
@@ -455,8 +537,8 @@ namespace JSONRPC {
                     if (slot.WaitForResponse(waitTime) == true) {
                         response = slot.Response();
 
-						// See if we have a response, maybe it was just the connection
-						// that closed?
+                        // See if we have a response, maybe it was just the connection
+                        // that closed?
                         if (response.IsValid() == true) {
                             result = Core::ERROR_NONE;
                         }
@@ -465,6 +547,48 @@ namespace JSONRPC {
                     _adminLock.Lock();
 
                     _pendingQueue.erase(id);
+                }
+
+                _adminLock.Unlock();
+            }
+
+            return (result);
+        }
+        uint32_t Send(const uint32_t waitTime, const string& method, const string& parameters, CallbackFunction& response)
+        {
+            uint32_t result = Core::ERROR_UNAVAILABLE;
+
+            if (_channel.IsValid() == false) {
+            } else {
+
+                result = Core::ERROR_ASYNC_FAILED;
+
+                Core::ProxyType<Core::JSONRPC::Message> message(Channel::Message());
+                uint32_t id = _channel->Sequence();
+                message->Id = id;
+                if (_callsign.empty() == false) {
+                    message->Designator = _callsign + '.' + method;
+                } else {
+                    message->Designator = method;
+                }
+                if (parameters.empty() == false) {
+                    message->Parameters = parameters;
+                }
+
+                _adminLock.Lock();
+
+                std::pair<PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
+                    std::forward_as_tuple(id),
+                    std::forward_as_tuple(waitTime, response));
+                ASSERT(newElement.second == true);
+
+                if (newElement.second == true) {
+
+                    _channel->Submit(message);
+
+                    message.Release();
+
+                    _adminLock.Lock();
                 }
 
                 _adminLock.Unlock();

@@ -2391,7 +2391,7 @@ namespace Core {
 } // namespace Core
 } // namespace WPEFramework
 
-using JsonObject = typename WPEFramework::Core::JSON::VariantContainer;
-using JsonValue = typename WPEFramework::Core::JSON::Variant;
+using JsonObject = WPEFramework::Core::JSON::VariantContainer;
+using JsonValue = WPEFramework::Core::JSON::Variant;
 
 #endif // __JSON_H

@@ -4,6 +4,7 @@
 #include "Module.h"
 
 #include "URL.h"
+#include "JSONWebToken.h"
 #include "WebLink.h"
 #include "WebRequest.h"
 #include "WebResponse.h"

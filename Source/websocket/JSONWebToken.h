@@ -23,6 +23,7 @@ namespace Web {
 	public:
         string Encode(const string& payload) const;
         string Decode(const string& token) const;
+        bool ValidSignature(const mode type, const string& token) const;
 
     private:
         mode _mode;
