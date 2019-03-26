@@ -8,21 +8,19 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
-
         GstMapInfo dataMap;
         GstBuffer* dataBuffer = reinterpret_cast<GstBuffer*>(buffer);
-        if (gst_buffer_map(dataBuffer, &dataMap, GST_MAP_WRITE) == false) {
+        if (gst_buffer_map(dataBuffer, &dataMap, (GstMapFlags) GST_MAP_READWRITE) == false) {
             printf("Invalid buffer.\n");
             return (ERROR_INVALID_DECRYPT_BUFFER);
         }
 
         uint8_t *mappedData = reinterpret_cast<uint8_t* >(dataMap.data);
         uint32_t mappedDataSize = static_cast<uint32_t >(dataMap.size);
-
         if (subSample != nullptr) {
             GstMapInfo sampleMap;
             GstBuffer* subSampleBuffer = reinterpret_cast<GstBuffer*>(subSample);
-            if (gst_buffer_map(subSampleBuffer, &sampleMap, GST_MAP_WRITE) == false) {
+            if (gst_buffer_map(subSampleBuffer, &sampleMap, GST_MAP_READ) == false) {
                 printf("Invalid subsample buffer.\n");
                 gst_buffer_unmap(dataBuffer, &dataMap);
                 return (ERROR_INVALID_DECRYPT_BUFFER);
@@ -39,6 +37,8 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
                 gst_byte_reader_get_uint32_be(reader, &inEncrypted);
                 totalEncrypted += inEncrypted;
             }
+            gst_byte_reader_set_pos(reader, 0);
+
             uint8_t* encryptedData = reinterpret_cast<uint8_t*> (malloc(totalEncrypted));
             uint8_t* encryptedDataIter = encryptedData;
 
