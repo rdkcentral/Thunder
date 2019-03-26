@@ -405,7 +405,7 @@ namespace JSONRPC {
             return (result);
         }
         template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
-        void Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&)>& callback)
+        uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&)>& callback)
         {
             CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
                 RESPONSE response;
@@ -422,7 +422,7 @@ namespace JSONRPC {
             return (result);
         }
         template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
-        void Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&, const Core::JSONRPC::Message::Info)>& callback)
+        uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, std::function<void(const RESPONSE&, const Core::JSONRPC::Message::Info)>& callback)
         {
             CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
                 RESPONSE response;
