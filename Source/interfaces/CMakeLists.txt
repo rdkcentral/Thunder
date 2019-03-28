@@ -65,6 +65,10 @@ set(PUBLIC_HEADERS
         ITestUtility.h
         Module.h
         )
+        
+set(JSON_DATA_HEADERS
+        json/RemoteControl_JsonData.h
+        )
 
 target_link_libraries(${TargetMarshalling}
         PRIVATE
@@ -128,6 +132,11 @@ install(
 install(
         TARGETS ${TargetMarshalling} EXPORT ${TargetMarshalling}Targets  # for downstream dependencies
         LIBRARY DESTINATION lib/${NAMESPACE_LIB}/proxystubs COMPONENT libs      # shared lib
+)
+
+install(
+        FILES ${JSON_DATA_HEADERS}
+        DESTINATION include/${NAMESPACE}/interfaces/json
 )
 
 InstallPackageConfig(
