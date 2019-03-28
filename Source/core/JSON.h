@@ -1501,6 +1501,27 @@ namespace Core {
                 String::SetQuoted(true);
                 String::operator=(value);
             }
+            template <typename VALUE>
+            Variant& operator=(const VALUE& value)
+            {
+                Number(value);
+                return (*this);
+            }
+            Variant& operator=(const bool& value)
+            {
+                Boolean(value);
+                return (*this);
+            }
+            Variant& operator=(const string& value)
+            {
+                String(value.c_str());
+                return (*this);
+            }
+            Variant& operator=(const TCHAR value[])
+            {
+                String(value);
+                return (*this);
+            }
 
         private:
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
@@ -1615,6 +1636,18 @@ namespace Core {
                 : Container()
                 , _elements()
             {
+            }
+            VariantContainer(const TCHAR serialized[])
+                : Container()
+                , _elements()
+            {
+                Container::FromString(serialized);
+            }
+            VariantContainer(const string& serialized)
+                : Container()
+                , _elements()
+            {
+                Container::FromString(serialized);
             }
             explicit VariantContainer(const VariantContainer& copy)
                 : Container()
