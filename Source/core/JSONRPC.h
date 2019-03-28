@@ -166,17 +166,115 @@ namespace Core {
             Info Error;
         };
 
+        class EXTERNAL Connection {
+        private:
+            Connection() = delete;
+
+        public:
+            Connection(const uint32_t channelId, const uint32_t sequence)
+                : _channelId(channelId)
+                , _sequence(sequence)
+            {
+            }
+            Connection(const Connection& copy)
+                : _channelId(copy._channelId)
+                , _sequence(copy._sequence)
+            {
+            }
+            ~Connection()
+            {
+            }
+
+            Connection& operator=(const Connection& rhs)
+            {
+                _channelId = rhs._channelId;
+                _sequence = rhs._sequence;
+
+                return (*this);
+            }
+
+        public:
+            uint32_t ChannelId() const
+            {
+                return (_channelId);
+            }
+            uint32_t Sequence() const
+            {
+                return (_sequence);
+            }
+
+        private:
+            uint32_t _channelId;
+            uint32_t _sequence;
+        };
+
         class EXTERNAL Handler {
         private:
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
-
+          
+            typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
             typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
-            typedef std::map<const string, InvokeFunction> HandlerMap;
+
+            class Entry {
+            private:
+                Entry() = delete;
+                Entry(const Entry&) = delete;
+                Entry& operator=(const Entry&) = delete;
+
+                union Functions {
+                    Functions(const CallbackFunction& function)
+                        : _callback(function)
+                    {
+                    }
+                    Functions(const InvokeFunction& function)
+                        : _invoke(function)
+                    {
+                    }
+                    ~Functions()
+                    {
+                    }
+
+                    CallbackFunction _callback;
+                    InvokeFunction _invoke;
+                };
+
+            public:
+                Entry(const CallbackFunction& callback)
+                    : _asynchronous(true)
+                    , _info(callback)
+                {
+                }
+                Entry(const InvokeFunction& callback)
+                    : _asynchronous(false)
+                    , _info(callback)
+                {
+                }
+
+            public:
+                uint32_t Invoke(const Connection connection, const string& parameters, string& response)
+                {
+                    uint32_t result = ~0;
+                    if (_asynchronous == true) {
+                        _info._callback(connection, parameters);
+                    } else {
+                        result = _info._invoke(parameters, response);
+                    }
+                    return (result);
+                }
+
+            private:
+                bool _asynchronous;
+                Functions _info;
+            };
+			typedef std::map<const string, Entry> HandlerMap;
 
         public:
             Handler()
                 : _handlers()
+                , _callsign()
+                , _designator()
+                , _versions()
             {
             }
             virtual ~Handler()
@@ -188,7 +286,7 @@ namespace Core {
             // The interface is prepared.
             inline uint32_t Exists(const string& methodName, const uint8_t version) const
             {
-                return (_handlers.find(methodName) != _handlers.end() ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
+                return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
             }
             uint32_t Validate(const Message& message) const
             {
@@ -230,38 +328,65 @@ namespace Core {
             void Register(const string& methodName, const METHOD& method)
             {
                 InternalRegister<INBOUND, OUTBOUND, METHOD>(
-                    ::TemplateIntToType<Core::TypeTraits::is_same<INBOUND, void>::value>(),
-                    ::TemplateIntToType<Core::TypeTraits::is_same<OUTBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
                     methodName,
                     method);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
             void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                InternalRegister<INBOUND, OUTBOUND, METHOD>(
-                    ::TemplateIntToType<Core::TypeTraits::is_same<INBOUND, void>::value>(), 
-					::TemplateIntToType<Core::TypeTraits::is_same<OUTBOUND, void>::value>(),
-					methodName, 
-					method,
-					objectPtr);
+                InternalRegister<INBOUND, OUTBOUND, METHOD, REALOBJECT>(
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    ::TemplateIntToType<std::is_same<OUTBOUND, void>::value>(),
+                    methodName,
+                    method,
+                    objectPtr);
+            }
+            template <typename INBOUND, typename METHOD>
+            void Register(const string& methodName, const METHOD& method)
+            {
+                InternalAnnounce<INBOUND, METHOD>(
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    methodName,
+                    method);
+            }
+            template <typename INBOUND, typename METHOD, typename REALOBJECT>
+            void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                InternalAnnounce<INBOUND, METHOD, REALOBJECT>(
+                    ::TemplateIntToType<std::is_same<INBOUND, void>::value>(),
+                    methodName,
+                    method,
+                    objectPtr);
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
                 ASSERT(_handlers.find(methodName) == _handlers.end());
-                _handlers[methodName] = lambda;
+
+                _handlers.emplace(std::piecewise_construct,
+                    std::make_tuple(methodName),
+                    std::make_tuple(lambda));
+            }
+			void Register(const string& methodName, const CallbackFunction& lambda)
+            {
+                ASSERT(_handlers.find(methodName) == _handlers.end());
+
+                _handlers.emplace(std::piecewise_construct,
+                    std::make_tuple(methodName),
+                    std::make_tuple(lambda));
             }
             void Unregister(const string& methodName)
             {
                 HandlerMap::iterator index = _handlers.find(methodName);
 
-                // Only unregister if you registered.
-                ASSERT(index != _handlers.end());
+				ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 
                 if (index != _handlers.end()) {
                     _handlers.erase(index);
                 }
             }
-            uint32_t Invoke(const string& method, const string& parameters, string& response)
+            uint32_t Invoke(const Connection connection, const string& method, const string& parameters, string& response)
             {
                 uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -269,7 +394,7 @@ namespace Core {
 
                 HandlerMap::iterator index = _handlers.find(method);
                 if (index != _handlers.end()) {
-                    result = index->second(parameters, response);
+                    result = index->second.Invoke(connection, parameters, response);
                 }
                 return (result);
             }
@@ -289,12 +414,11 @@ namespace Core {
             {
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (std::find(_versions.begin(), _versions.end(), static_cast<uint8_t>(atoi(number.c_str()))) != _versions.end());
             }
-
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t()> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
                     return (actualMethod());
                 };
                 Register(methodName, implementation);
@@ -303,7 +427,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -314,10 +438,14 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
-                    outbound.ToString(result);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -331,7 +459,11 @@ namespace Core {
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
                     uint32_t code = actualMethod(inbound, outbound);
-                    outbound.ToString(result);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -349,7 +481,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -360,10 +492,14 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
-                    outbound.ToString(result);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
                     return (code);
                 };
                 Register(methodName, implementation);
@@ -377,8 +513,52 @@ namespace Core {
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
                     uint32_t code = actualMethod(inbound, outbound);
-                    outbound.ToString(result);
+                    if (code == Core::ERROR_NONE) {
+                        outbound.ToString(result);
+                    } else {
+                        result.clear();
+                    }
                     return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename METHOD>
+            void InternalAnnounce(const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
+            {
+                std::function<void(const Core::JSONRPC::Connection&)> actualMethod = method;
+                CallbackFunction implementation = [actualMethod](const Connection& connection, const string&) -> void {
+                    actualMethod(connection);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename METHOD>
+            void InternalAnnounce(const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
+            {
+                std::function<void(const Core::JSONRPC::Connection&, const INBOUND&)> actualMethod = method;
+                CallbackFunction implementation = [actualMethod](const Connection& connection, const string& parameters) -> void {
+                    INBOUND inbound;
+                    inbound.FromString(parameters);
+                    actualMethod(connection, inbound);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename METHOD, typename REALOBJECT>
+            void InternalAnnounce(const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<void(const Core::JSONRPC::Connection&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+                CallbackFunction implementation = [actualMethod](const Connection& connection, const string&) -> void {
+                    actualMethod(connection);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename INBOUND, typename METHOD, typename REALOBJECT>
+            void InternalAnnounce(const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                std::function<void(const Core::JSONRPC::Connection&, const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
+                CallbackFunction implementation = [actualMethod](const Connection& connection, const string& parameters) -> void {
+                    INBOUND inbound;
+                    inbound.FromString(parameters);
+                    actualMethod(connection, inbound);
                 };
                 Register(methodName, implementation);
             }
@@ -389,6 +569,8 @@ namespace Core {
             string _designator;
             std::vector<uint8_t> _versions;
         };
+
+        using Error = Message::Info;
     }
 }
 } // namespace WPEFramework::Core::JSONRPC

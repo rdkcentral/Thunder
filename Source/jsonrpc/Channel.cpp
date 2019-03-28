@@ -11,6 +11,10 @@ namespace JSONRPC {
         return (_singleton);
     }
 
+	uint64_t Channel::FactoryImpl::WatchDog::Timed(const uint64_t /* scheduledTime */) {
+        return (_client->Timed());
+	}
+
     class ChannelProxy : public Core::ProxyObject<Channel> {
     private:
         ChannelProxy(const ChannelProxy&) = delete;

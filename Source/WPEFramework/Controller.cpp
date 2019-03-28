@@ -585,6 +585,7 @@ namespace Plugin {
     {
         Core::ProxyType<Core::JSONRPC::Message> response;
         uint32_t result = Validate(inbound);
+        bool asyncCall = false;
 
         if (result == Core::ERROR_NONE) {
             // Call the real baseclass, we should be able to handle it.
@@ -610,11 +611,12 @@ namespace Plugin {
                         forwarder.Parameters = inbound.Parameters;
                         forwarder.Designator = inbound.Method();
                         response = plugin->Invoke(channelId, forwarder);
+                        asyncCall = (response.IsValid() == false);
                     }
                 }
             }
 
-            if ((response.IsValid() == false) && (inbound.Id.Value() != static_cast<uint32_t>(~0))) {
+            if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
                 response = Message();
                 response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
                 response->Error.SetError(result);

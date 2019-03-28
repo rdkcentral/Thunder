@@ -127,9 +127,26 @@ namespace PluginHost {
         {
             _handler.Register<INBOUND, OUTBOUND, METHOD>(methodName, method);
         }
+        template <typename INBOUND, typename METHOD, typename REALOBJECT>
+        void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+            _handler.Register<INBOUND, METHOD, REALOBJECT>(methodName, method, objectPtr);
+        }
+        template <typename INBOUND, typename METHOD>
+        void Register(const string& methodName, const METHOD& method)
+        {
+            _handler.Register<INBOUND, METHOD>(methodName, method);
+        }
         void Unregister(const string& methodName)
         {
             _handler.Unregister(methodName);
+        }
+        template <typename JSONOBJECT>
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const JSONOBJECT& parameters)
+        {
+            string subject;
+            parameters.ToString(subject);
+            return (Response(channel, subject));
         }
         template <typename JSONOBJECT>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters)
@@ -170,6 +187,30 @@ namespace PluginHost {
             _adminLock.Unlock();
 
             return (result);
+        }
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const string& result)
+        {
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
+
+            ASSERT(_service != nullptr);
+
+            message->Result = result;
+            message->Id = channel.Sequence();
+            message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+
+            return (_service->Submit(channel.ChannelId(), message));
+        }
+        uint32_t Response(const Core::JSONRPC::Connection& channel, const Core::JSONRPC::Error& result)
+        {
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
+
+            ASSERT(_service != nullptr);
+
+            message->Error = result;
+            message->Id = channel.Sequence();
+            message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+
+            return (_service->Submit(channel.ChannelId(), message));
         }
         virtual uint32_t Exists(const string& method, const uint8_t version) const override
         {
@@ -311,12 +352,15 @@ namespace PluginHost {
 
                 if (_handler.Exists(Core::JSONRPC::Message::Method(method), Core::JSONRPC::Message::Version(method)) == Core::ERROR_NONE) {
                     string result;
-                    uint32_t code = _handler.Invoke(method, parameters, result);
+                    uint32_t code = _handler.Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), method, parameters, result);
                     if (response.IsValid() == true) {
-                        if (code == Core::ERROR_NONE) {
+	                    if (code == static_cast<uint32_t>(~0)) {
+                            response.Release();
+						}
+						else if (code == Core::ERROR_NONE) {
                             response->Result = result;
                         } else {
-                            response->Error.SetError(code);
+                            response->Error.Code = code;
                             response->Error.Text = result;
                         }
                     }
@@ -326,9 +370,9 @@ namespace PluginHost {
 
                     if (response.IsValid() == true) {
                         if (_handler.Exists(Core::JSONRPC::Message::Method(parameters), Core::JSONRPC::Message::Version(parameters)) == Core::ERROR_NONE) {
-                            response->Result = _T("0");
+                            response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
                         } else {
-                            response->Result = _T("22"); // ERROR_UNKNOWN_KEY
+                            response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
                         }
                     }
                 } else if (method == _T("register")) {

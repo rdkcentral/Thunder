@@ -10,6 +10,47 @@ using EnableIfParameter = typename std::enable_if<PARAMETER, int>::type;
 
 namespace Core {
     namespace TypeTraits {
+        template <unsigned Idx, typename... T>
+        struct pick {
+            typedef void result;
+        };
+
+        template <typename T, typename... TRest>
+        struct pick<0U, T, TRest...> {
+            typedef T result;
+        };
+
+        template <unsigned Idx, typename T, typename... TRest>
+        struct pick<Idx, T, TRest...> {
+            typedef typename pick<Idx - 1, TRest...>::result result;
+        };
+
+        template <typename Func>
+        struct func_traits;
+
+        template <typename TObj, typename R, typename... TArgs>
+        struct func_traits<R (TObj::*)(TArgs...)> {
+            typedef R result_type;
+
+            typedef TObj classtype;
+
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+        };
+
+	template <typename R, typename... TArgs>
+        struct func_traits<R (*)(TArgs...)> {
+            typedef R result_type;
+
+            typedef void classtype;
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+        };
+
         template <typename SCALAR>
         struct sign {
             enum { Signed = 1 };
