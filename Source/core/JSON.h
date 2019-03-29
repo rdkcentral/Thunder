@@ -1554,7 +1554,7 @@ namespace Core {
         private:
             typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
 
-		public:
+	public:
             class Iterator {
             public:
                 Iterator()
@@ -1649,7 +1649,7 @@ namespace Core {
             {
                 Container::FromString(serialized);
             }
-            explicit VariantContainer(const VariantContainer& copy)
+            VariantContainer(const VariantContainer& copy)
                 : Container()
                 , _elements(copy._elements)
             {
