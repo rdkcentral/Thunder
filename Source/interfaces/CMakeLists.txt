@@ -16,6 +16,7 @@ add_library(${TargetMarshalling} SHARED
         ProxyStubs_Provisioning.cpp
         ProxyStubs_RPCLink.cpp
         ProxyStubs_RtspClient.cpp
+        ProxyStubs_Spark.cpp
         ProxyStubs_Streaming.cpp
         ProxyStubs_TestController.cpp
         ProxyStubs_TVControl.cpp
@@ -51,6 +52,7 @@ set(PUBLIC_HEADERS
         IPower.h
         IProvisioning.h
         IRPCLink.h
+        ISpark.h
         IStreaming.h
         ISwitchBoard.h
         ISystemCommands.h
