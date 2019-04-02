@@ -11,6 +11,12 @@ ENUM_CONVERSION_BEGIN(Broadcast::ITuner::DTVStandard){ Broadcast::ITuner::DVB, _
     { Broadcast::ITuner::C, _TXT("C") },
     ENUM_CONVERSION_END(Broadcast::ITuner::Annex)
 
+    ENUM_CONVERSION_BEGIN(Broadcast::ITuner::Modus)
+    { Broadcast::ITuner::Cable, _TXT("Cable") },
+    { Broadcast::ITuner::Terrestrial, _TXT("Terrestrial") },
+    { Broadcast::ITuner::Satellite, _TXT("Satellite") },
+    ENUM_CONVERSION_END(Broadcast::ITuner::Modus)
+    
         ENUM_CONVERSION_BEGIN(Broadcast::SpectralInversion){ Broadcast::Auto, _TXT("Auto") },
     { Broadcast::Normal, _TXT("Normal") },
     { Broadcast::Inverted, _TXT("Inverted") },
