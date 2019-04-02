@@ -155,7 +155,7 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (Notify(event, subject));
         }
-        uint32_t Notify(const string& event, const string& parameters)
+        uint32_t Notify(const string& event, const string& parameters = "")
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -175,7 +175,10 @@ namespace PluginHost {
 
                     ASSERT(_service != nullptr);
 
-                    message->Parameters = parameters;
+                    if (!parameters.empty()) {
+                       message->Parameters = parameters;
+                    }
+
                     message->Designator = (designator.empty() == false ? designator + '.' + event : event);
                     message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
