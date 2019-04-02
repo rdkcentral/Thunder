@@ -70,6 +70,7 @@ set(PUBLIC_HEADERS
         
 set(JSON_DATA_HEADERS
         json/RemoteControl_JsonData.h
+        json/WebKitBrowser_JsonData.h
         )
 
 target_link_libraries(${TargetMarshalling}
