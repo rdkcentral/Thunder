@@ -67,11 +67,11 @@ set(PUBLIC_HEADERS
         ITestUtility.h
         Module.h
         )
-        
+
 set(JSON_DATA_HEADERS
-        json/RemoteControl_JsonData.h
-        json/WebKitBrowser_JsonData.h
-        json/LocationSync_JsonData.h
+        json/JsonData_RemoteControl.h
+        json/JsonData_WebKitBrowser.h
+        json/JsonData_LocationSync.h
         )
 
 target_link_libraries(${TargetMarshalling}

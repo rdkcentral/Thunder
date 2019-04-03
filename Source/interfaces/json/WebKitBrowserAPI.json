@@ -1,5 +1,5 @@
 {
-  "$schema": "interface.schema.com",
+  "$schema": "interface.schema.json",
   "jsonrpc": "2.0",
   "info": {
     "title": "WebKit Browser API",
@@ -13,9 +13,6 @@
     "WebKitBrowser.1.status": {
       "summary": "Retrieves the WebKit Browser information.",
       "description": "With this method current running state can be retrieved from the WebKit Browser.",
-      "tags": [
-        "WebKitBrowser"
-      ],
       "result": {
         "type": "object",
         "properties": {
@@ -52,10 +49,7 @@
       "summary": "Suspends the WebKit Browser.",
       "description": "With this method the WebKit Browser can be suspended. Suspending when already in suspended mode has no effect.",
       "events": [
-        "WebKitBrowser.statechange"
-      ],
-      "tags": [
-        "WebKitBrowser "
+        "statechange"
       ],
       "result": {
         "$ref": "#/common/results/void"
@@ -65,10 +59,7 @@
       "summary": "Resumes the WebKit Browser.",
       "description": "With this method the WebKit Browser can be resumed from suspended mode. Resuming from a not suspended mode has no effect.",
       "events": [
-        "WebKitBrowser.statechange"
-      ],
-      "tags": [
-        "WebKitBrowser "
+        "statechange"
       ],
       "result": {
         "$ref": "#/common/results/void"
@@ -78,10 +69,7 @@
       "summary": "Hides the WebKit Browser.",
       "description": "With this method rendering of the WebKit Browser can be stopped. Hiding an already hidden browser has no effect.",
       "events": [
-        "WebKitBrowser.visibilitychange"
-      ],
-      "tags": [
-        "WebKitBrowser "
+        "visibilitychange"
       ],
       "result": {
         "$ref": "#/common/results/void"
@@ -91,10 +79,7 @@
       "summary": "Shows the WebKit Browser.",
       "description": "With this method rendering of the WebKit Browser can be (re)started. Showing a not hidden browser has no effect.",
       "events": [
-        "WebKitBrowser.visibilitychange"
-      ],
-      "tags": [
-        "WebKitBrowser "
+        "visibilitychange"
       ],
       "result": {
         "$ref": "#/common/results/void"
@@ -104,10 +89,7 @@
       "summary": "Sets a URL in the WebKit Browser.",
       "description": "With this method a new URL can be loaded in the WebKit Browser.",
       "events": [
-        "WebKitBrowser.urlchange"
-      ],
-      "tags": [
-        "WebKitBrowser "
+        "urlchange"
       ],
       "params": {
         "type": "object",
