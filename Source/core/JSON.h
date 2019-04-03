@@ -1964,18 +1964,22 @@ namespace Core {
             {
                 if (_type == type::STRING) {
                     const_cast<Variant*>(this)->_string = Value();
-                    //printf("%s _string=%s\n", __PRETTY_FUNCTION__, _string.c_str());
                 }
                 return _string.c_str();
             } 
-            Core::ProxyType<ArrayType<Variant>> Array() const
+            const ArrayType<Variant>& Array() const
             {
-                return _array;
+                if(_type == type::ARRAY)
+                {
+                    return *_array;
+                }
+                else
+                {
+                    static ArrayType<Variant> empty;
+                    return empty;
+                }
             }
-            Core::ProxyType<VariantContainer> Object() const
-            {
-                return _object;
-            }
+            const VariantContainer& Object() const;
             void Boolean(const bool value)
             {
                 _type = type::BOOLEAN;
@@ -2033,7 +2037,9 @@ namespace Core {
             {
                 Object(value);
                 return (*this);
-            }                   
+            }
+            const JSON::Variant& operator[](uint32_t index) const;            
+            const JSON::Variant& operator[](const TCHAR fieldName[]) const;
             inline void ToString(string& result) const;
             virtual bool IsSet() const override
             {
@@ -2044,7 +2050,7 @@ namespace Core {
                 else
                     return String::IsSet();
             }
-            inline void prettyPrint(FILE* file, const TCHAR name[], int indent=0, int arrayIndex=-1) const;
+            string GetDebugString(const TCHAR name[], int indent=0, int arrayIndex=-1) const;
         private:
             virtual ParserType Type() const override
             {
@@ -2323,7 +2329,7 @@ namespace Core {
 			Iterator Variants() const {
                 return (Iterator(_elements));
 			}
-            inline void prettyPrint(FILE* file, int indent=0) const;
+            string GetDebugString(int indent=0) const;
         private:
             Elements::iterator Find(const TCHAR fieldName[])
             {
@@ -2363,12 +2369,48 @@ namespace Core {
             , _object(Core::ProxyType<VariantContainer>::Create())
         {
             *_object = object;
-        }            
+        }
         inline void Variant::Object(const VariantContainer& object)
         {
             _type = type::OBJECT;
             _object = Core::ProxyType<VariantContainer>::Create();
             *_object = object;
+        }
+        inline const VariantContainer& Variant::Object() const
+        {
+            if(_type == type::OBJECT)
+            {
+                return *_object;
+            }
+            else
+            {
+                static VariantContainer empty;
+                return empty;
+            }
+        }
+        inline const JSON::Variant& Variant::operator[](uint32_t index) const
+        {
+            if(_type == type::ARRAY)
+            {
+                return _array->operator[](index);
+            }
+            else
+            {
+                static Variant empty;
+                return empty;
+            }
+        }
+        inline const JSON::Variant& Variant::operator[](const TCHAR fieldName[]) const
+        {
+            if(_type == type::OBJECT)
+            {
+                return _object->operator[](fieldName);
+            }
+            else
+            {
+                static Variant empty;
+                return empty;
+            }
         }
         inline void Variant::ToString(string& result) const
         {
@@ -2434,52 +2476,6 @@ namespace Core {
             }
             return (result);
         }        
-        inline void Variant::prettyPrint(FILE* file, const TCHAR name[], int indent, int arrayIndex) const
-        {
-            if(indent > 0)
-                fprintf(file, "%*s", indent*4, " ");
-            if(arrayIndex>=0)
-                fprintf(file, "[%d] ", arrayIndex);
-                
-            if(name)
-                fprintf(file, "name=%s ", name);
-                    
-            if(_type == type::EMPTY)
-            {
-                fprintf(file, "type=Empty value=%s\n", String());
-            }
-            else if(_type == type::BOOLEAN)
-            {
-                fprintf(file, "type=Boolean value=%s\n", Boolean() ? "true" : "false");
-            }
-            else if(_type == type::NUMBER)
-            {
-                fprintf(file, "type=Number value=%ld\n", Number());
-            }
-            else if(_type == type::STRING)
-            {
-                fprintf(file, "type=String value=%s\n", String());
-            }
-            else if(_type == type::ARRAY)
-            {
-                fprintf(file, "type=Array value=[\n");
-                for(int i = 0; i < Array()->Length(); ++i)
-                    Array()->Get(i).prettyPrint(file, nullptr, indent+1, i);
-                fprintf(file, "%*c\n", indent*4, ']');
-            }
-            else if(_type == type::OBJECT)
-            {
-                fprintf(file, "type=Object value={\n");
-                Object()->prettyPrint(file, indent+1);
-                fprintf(file, "%*c\n", indent*4+1, '}');
-            }
-        }
-        inline void VariantContainer::prettyPrint(FILE* file, int indent) const
-        {
-            Iterator iterator = Variants();
-            while(iterator.Next())
-                iterator.Current().prettyPrint(file, iterator.Label(), indent);
-        }
 
         template <uint16_t SIZE, typename INSTANCEOBJECT>
         class Tester {

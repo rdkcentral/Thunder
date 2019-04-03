@@ -1,4 +1,6 @@
 #include "JSON.h"
+#include <sstream>
+#include <iomanip>
 
 namespace WPEFramework {
 namespace Core {
@@ -536,6 +538,46 @@ namespace Core {
 
             return result;
         }
+        string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
+        {
+            std::stringstream ss;
+            if(indent > 0)
+                ss << std::setw(indent*4) << " " << std::setw(1);
+            if(arrayIndex>=0)
+                ss << "[" << arrayIndex << "] ";
+            if(name)
+                ss << "name=" << name << " ";
+            if(_type == type::EMPTY)
+                ss << "type=Empty value=" << String() << std::endl;
+            else if(_type == type::BOOLEAN)
+                ss << "type=Boolean value=" << (Boolean() ? "true" : "false") << std::endl;
+            else if(_type == type::NUMBER)
+                ss << "type=Number value=" << Number() << std::endl;
+            else if(_type == type::STRING)
+                ss << "type=String value=" << String() << std::endl;
+            else if(_type == type::ARRAY)
+            {
+                ss << "type=Array value=[" << std::endl;
+                for(int i = 0; i < Array().Length(); ++i)
+                    ss << Array()[i].GetDebugString(nullptr, indent+1, i);
+                ss << std::setw(indent*4) << ']' << std::setw(1) << std::endl;
+            }
+            else if(_type == type::OBJECT)
+            {
+                ss << "type=Object value={" << std::endl;
+                ss << Object().GetDebugString(indent+1);
+                ss << std::setw(indent*4) << '}' << std::setw(1) << std::endl;
+            }
+            return ss.str();
+        }
+        string VariantContainer::GetDebugString(int indent) const
+        {
+            std::stringstream ss;
+            Iterator iterator = Variants();
+            while(iterator.Next())
+                ss << iterator.Current().GetDebugString(iterator.Label(), indent);
+            return ss.str();
+        }        
     }
 }
 
