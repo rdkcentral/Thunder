@@ -1369,12 +1369,14 @@ namespace Core {
             {
                 return nullptr;
             }
+        public:
             virtual IIterator* ElementIterator() override
             {
                 _iterator.Reset();
 
                 return (&_iterator);
             }
+        private:
             virtual bool Request(const TCHAR label[])
             {
                 return (false);
@@ -1733,6 +1735,7 @@ namespace Core {
             {
                 return nullptr;
             }
+        public:
             virtual IIterator* ElementIterator() override
             {
                 _iterator.Reset();
@@ -1776,6 +1779,10 @@ namespace Core {
                 ASSERT(locator != _data.end());
 
                 return (*locator);
+            }
+            const ELEMENT& Get(const uint32_t index) const
+            {
+                return operator[](index);
             }
             inline ELEMENT& Add()
             {
@@ -1849,13 +1856,17 @@ namespace Core {
             }
         };
 
+        class VariantContainer;
+        
         class EXTERNAL Variant : public JSON::String {
         public:
             enum class type {
                 EMPTY,
                 BOOLEAN,
                 NUMBER,
-                STRING
+                STRING,
+                ARRAY,
+                OBJECT
             };
 
         public:
@@ -1901,9 +1912,19 @@ namespace Core {
             {
                 String::operator=(text);
             }
+            Variant(const ArrayType<Variant>& array)
+                : JSON::String(false)
+                , _type(type::ARRAY)
+                , _array(Core::ProxyType<ArrayType<Variant>>::Create())
+            {
+                *_array = array;
+            }            
+            inline Variant(const VariantContainer& object);
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
+                , _array(copy._array)
+                , _object(copy._object)                
             {
             }
             virtual ~Variant()
@@ -1913,7 +1934,8 @@ namespace Core {
             {
                 JSON::String::operator=(RHS);
                 _type = RHS._type;
-
+                _array = RHS._array;
+                _object = RHS._object;
                 return (*this);
             }
 
@@ -1940,12 +1962,19 @@ namespace Core {
             }
             const TCHAR* String() const
             {
-                const TCHAR* result = nullptr;
-
                 if (_type == type::STRING) {
-                    result = Value().c_str();
+                    const_cast<Variant*>(this)->_string = Value();
+                    //printf("%s _string=%s\n", __PRETTY_FUNCTION__, _string.c_str());
                 }
-                return result;
+                return _string.c_str();
+            } 
+            Core::ProxyType<ArrayType<Variant>> Array() const
+            {
+                return _array;
+            }
+            Core::ProxyType<VariantContainer> Object() const
+            {
+                return _object;
             }
             void Boolean(const bool value)
             {
@@ -1966,6 +1995,14 @@ namespace Core {
                 String::SetQuoted(true);
                 String::operator=(value);
             }
+            void Array(const ArrayType<Variant>& array)
+            {
+                _type = type::ARRAY;
+                _array = Core::ProxyType<ArrayType<Variant>>::Create();
+                *_array = array;
+            }
+            inline void Object(const VariantContainer& object);
+            
             template <typename VALUE>
             Variant& operator=(const VALUE& value)
             {
@@ -1987,32 +2024,84 @@ namespace Core {
                 String(value);
                 return (*this);
             }
-
-        private:
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            Variant& operator=(const ArrayType<Variant>& value)
             {
-                uint16_t result = String::Deserialize(stream, maxLength, offset);
+                Array(value);
+                return (*this);
+            }
+            Variant& operator=(const VariantContainer& value)
+            {
+                Object(value);
+                return (*this);
+            }                   
+            inline void ToString(string& result) const;
+            virtual bool IsSet() const override
+            {
+                if(_type == type::ARRAY)
+                    return _array->IsSet();
+                else if(_type == type::OBJECT)
+                    return true;
+                else
+                    return String::IsSet();
+            }
+            inline void prettyPrint(FILE* file, const TCHAR name[], int indent=0, int arrayIndex=-1) const;
+        private:
+            virtual ParserType Type() const override
+            {
+                if(_type == type::ARRAY || _type == type::OBJECT)
+                    return (PARSE_CONTAINER);
+                 else
+                    return (PARSE_DIRECT);
+            }
+            virtual IBuffered* BufferParser() override
+            {
+                return nullptr;
+            }
 
-                _type = type::STRING;
-
-                // If we are complete, try to guess what it was that we received...
-                if (offset == 0) {
-                    bool quoted = IsQuoted();
-                    SetQuoted(quoted);
-                    // If it is not quoted, it can be a boolean or a number...
-                    if (quoted == false) {
-                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
-                            _type = type::BOOLEAN;
-                        } else {
-                            _type = type::NUMBER;
+            virtual IDirect* DirectParser() override
+            {
+                if(_type == type::ARRAY || _type == type::OBJECT)
+                    return nullptr;
+                else
+                    return String::DirectParser();
+            }
+            virtual IIterator* ElementIterator() override;
+        private:
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
+            static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
+            {
+                ASSERT(maxLength > 0 && (stream[0] == '{' || stream[0] == '['));
+                char charOpen = stream[0];
+                char charClose = charOpen == '{' ? '}' : ']';
+                uint16_t stack = 1;
+                uint16_t endIndex = 0;
+                bool insideQuotes = false;
+                for(uint16_t i = 1; i < maxLength; ++i)
+                {
+                    if(stream[i] == '\"')
+                    {
+                        insideQuotes = !insideQuotes;
+                    }
+                    if(!insideQuotes)
+                    {
+                        if(stream[i] == charClose)
+                            stack--;
+                        else if(stream[i] == charOpen)
+                            stack++;
+                        if(stack == 0)
+                        {
+                            endIndex = i;
+                            break;
                         }
                     }
                 }
-                return (result);
-            }
-
+                return endIndex;
+            }        
         private:
             type _type;
+            string _string;
+            Core::ProxyType<ArrayType<Variant>> _array;
+            Core::ProxyType<VariantContainer> _object;            
         };
 
         class EXTERNAL VariantContainer : public Container {
@@ -2234,7 +2323,7 @@ namespace Core {
 			Iterator Variants() const {
                 return (Iterator(_elements));
 			}
-
+            inline void prettyPrint(FILE* file, int indent=0) const;
         private:
             Elements::iterator Find(const TCHAR fieldName[])
             {
@@ -2268,6 +2357,129 @@ namespace Core {
         private:
             Elements _elements;
         };
+        inline Variant::Variant(const VariantContainer& object)
+            : JSON::String(false)
+            , _type(type::OBJECT)
+            , _object(Core::ProxyType<VariantContainer>::Create())
+        {
+            *_object = object;
+        }            
+        inline void Variant::Object(const VariantContainer& object)
+        {
+            _type = type::OBJECT;
+            _object = Core::ProxyType<VariantContainer>::Create();
+            *_object = object;
+        }
+        inline void Variant::ToString(string& result) const
+        {
+            if(_type == type::ARRAY)
+                return _array->ToString(result);
+            else if(_type == type::OBJECT)
+                return _object->ToString(result);
+            else
+                return String::ToString(result);
+        }
+        inline IIterator* Variant::ElementIterator()
+        {
+            if(_type == type::ARRAY)
+                return _array->ElementIterator();
+            else if(_type == type::OBJECT)
+                return _object->ElementIterator();                
+            else
+                return nullptr;
+        }
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+        {
+            uint16_t result = 0;
+            if(stream[0] == '{' || stream[0] == '[')
+            {
+                uint16_t endIndex = FindEndOfScope(stream, maxLength);
+                if(endIndex > 0 && endIndex < maxLength)
+                {
+                    result = endIndex+1;
+                    string str(stream, endIndex+1);
+                    if(stream[0] == '{')
+                    {
+                        VariantContainer object;
+                        object.FromString(str);
+                        Object(object);
+                     }
+                     else                     
+                    {
+                        ArrayType<Variant> array;
+                        array.FromString(str);
+                        Array(array);
+                    }
+                }
+            }
+            else
+            {
+                result = String::Deserialize(stream, maxLength, offset);
+
+                _type = type::STRING;
+
+                // If we are complete, try to guess what it was that we received...
+                if (offset == 0) {
+                    bool quoted = IsQuoted();
+                    SetQuoted(quoted);
+                    // If it is not quoted, it can be a boolean or a number...
+                    if (quoted == false) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
+                            _type = type::BOOLEAN;
+                        } else {
+                            _type = type::NUMBER;
+                        }
+                    }
+                }
+            }
+            return (result);
+        }        
+        inline void Variant::prettyPrint(FILE* file, const TCHAR name[], int indent, int arrayIndex) const
+        {
+            if(indent > 0)
+                fprintf(file, "%*s", indent*4, " ");
+            if(arrayIndex>=0)
+                fprintf(file, "[%d] ", arrayIndex);
+                
+            if(name)
+                fprintf(file, "name=%s ", name);
+                    
+            if(_type == type::EMPTY)
+            {
+                fprintf(file, "type=Empty value=%s\n", String());
+            }
+            else if(_type == type::BOOLEAN)
+            {
+                fprintf(file, "type=Boolean value=%s\n", Boolean() ? "true" : "false");
+            }
+            else if(_type == type::NUMBER)
+            {
+                fprintf(file, "type=Number value=%ld\n", Number());
+            }
+            else if(_type == type::STRING)
+            {
+                fprintf(file, "type=String value=%s\n", String());
+            }
+            else if(_type == type::ARRAY)
+            {
+                fprintf(file, "type=Array value=[\n");
+                for(int i = 0; i < Array()->Length(); ++i)
+                    Array()->Get(i).prettyPrint(file, nullptr, indent+1, i);
+                fprintf(file, "%*c\n", indent*4, ']');
+            }
+            else if(_type == type::OBJECT)
+            {
+                fprintf(file, "type=Object value={\n");
+                Object()->prettyPrint(file, indent+1);
+                fprintf(file, "%*c\n", indent*4+1, '}');
+            }
+        }
+        inline void VariantContainer::prettyPrint(FILE* file, int indent) const
+        {
+            Iterator iterator = Variants();
+            while(iterator.Next())
+                iterator.Current().prettyPrint(file, iterator.Label(), indent);
+        }
 
         template <uint16_t SIZE, typename INSTANCEOBJECT>
         class Tester {
@@ -2427,5 +2639,5 @@ namespace Core {
 
 using JsonObject = WPEFramework::Core::JSON::VariantContainer;
 using JsonValue = WPEFramework::Core::JSON::Variant;
-
+using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
 #endif // __JSON_H
