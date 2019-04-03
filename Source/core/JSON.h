@@ -1912,6 +1912,12 @@ namespace Core {
             {
                 String::operator=(text);
             }
+            Variant(const TCHAR* text)
+                : JSON::String(true)
+                , _type(type::STRING)
+            {
+                String::operator=(text);
+            }            
             Variant(const ArrayType<Variant>& array)
                 : JSON::String(false)
                 , _type(type::ARRAY)
@@ -2392,6 +2398,7 @@ namespace Core {
         {
             if(_type == type::ARRAY)
             {
+                ASSERT(index < _array->Length());
                 return _array->operator[](index);
             }
             else
