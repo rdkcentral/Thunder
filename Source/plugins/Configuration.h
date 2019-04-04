@@ -18,6 +18,7 @@ namespace Plugin {
             , ClassName()
             , Versions()
             , AutoStart(true)
+            , Resumed(false)
             , WebUI()
             , Precondition()
             , Termination()
@@ -28,6 +29,7 @@ namespace Plugin {
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
             Add(_T("autostart"), &AutoStart);
+            Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
@@ -40,6 +42,7 @@ namespace Plugin {
             , ClassName(copy.ClassName)
             , Versions(copy.Versions)
             , AutoStart(copy.AutoStart)
+            , Resumed(copy.Resumed)
             , WebUI(copy.WebUI)
             , Precondition(copy.Precondition)
             , Termination(copy.Termination)
@@ -50,6 +53,7 @@ namespace Plugin {
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
             Add(_T("autostart"), &AutoStart);
+            Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
@@ -66,6 +70,7 @@ namespace Plugin {
             ClassName = RHS.ClassName;
             Versions = RHS.Versions;
             AutoStart = RHS.AutoStart;
+            Resumed = RHS.Resumed;
             WebUI = RHS.WebUI;
             Configuration = RHS.Configuration;
             Precondition = RHS.Precondition;
@@ -80,6 +85,7 @@ namespace Plugin {
         Core::JSON::String ClassName;
         Core::JSON::String Versions;
         Core::JSON::Boolean AutoStart;
+        Core::JSON::Boolean Resumed;
         Core::JSON::String WebUI;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;

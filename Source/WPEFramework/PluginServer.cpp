@@ -340,10 +340,11 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                         EnableWebServer(webUI, EMPTY_STRING);
                     }
 
-                    PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+                    IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
 
                     if (dispatcher != nullptr) {
                         dispatcher->Activate(this);
+                        dispatcher->Release();
                     }
 
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
@@ -351,6 +352,13 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     State(ACTIVATED);
                     _administrator.StateChange(this);
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"activated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
+
+                    IStateControl* stateControl = nullptr;
+                    if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
+
+                        stateControl->Request(PluginHost::IStateControl::RESUME);
+                        stateControl->Release();
+                    }
                 }
             }
         }
