@@ -422,13 +422,13 @@ namespace JSONRPC {
         {
             _callsign = callsign;
         }
-        template <typename INBOUND, typename METHOD>
+        template <typename INBOUND = Core::JSON::VariantContainer, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
             std::function<void(const INBOUND& parameters)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
-                inbound = parameters;
+                inbound.FromString(parameters);
                 actualMethod(inbound);
                 result.clear();
                 return (Core::ERROR_NONE);
@@ -445,14 +445,13 @@ namespace JSONRPC {
 
             return (result);
         }
-        template <typename METHOD, typename REALOBJECT>
+        template <typename INBOUND = Core::JSON::VariantContainer, typename METHOD, typename REALOBJECT>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
         {
-            using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
             std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
-                inbound = parameters;
+                inbound.FromString(parameters);
                 actualMethod(inbound);
                 result.clear();
                 return (Core::ERROR_NONE);
