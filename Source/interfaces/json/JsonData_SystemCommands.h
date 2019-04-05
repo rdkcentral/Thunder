@@ -36,5 +36,5 @@ namespace JsonData {
 
 } // namespace JsonData
 
-} // namespace WPEFramework
+}
 
