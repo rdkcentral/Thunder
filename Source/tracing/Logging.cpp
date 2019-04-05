@@ -40,7 +40,7 @@ namespace Logging {
         } else
 #endif
         {
-            printf("[%11llu us] %s\n", static_cast<uint64_t>(now.Ticks() - _baseTime), information->Data());
+            printf("[%11ju us] %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Data());
         }
     }
 }
