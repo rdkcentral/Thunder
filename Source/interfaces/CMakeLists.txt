@@ -27,6 +27,7 @@ add_library(${TargetMarshalling} SHARED
 
 add_library(${TargetInterfaces} SHARED
         Enumerations.cpp
+        json/Enumerations.cpp
         )
 
 set(PUBLIC_HEADERS
