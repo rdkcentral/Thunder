@@ -73,6 +73,7 @@ set(JSON_DATA_HEADERS
         json/JsonData_WebKitBrowser.h
         json/JsonData_LocationSync.h
         json/JsonData_NetworkControl.h
+        json/JsonData_SystemCommands.h
         )
 
 target_link_libraries(${TargetMarshalling}

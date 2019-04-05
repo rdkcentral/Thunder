@@ -282,6 +282,10 @@ namespace PluginHost {
         {
             return (_config.Configuration().AutoStart.Value());
         }
+        virtual bool Resumed() const
+        {
+            return (_config.Configuration().Resumed.Value());
+        }
         virtual bool IsSupported(const uint8_t number) const
         {
             return (_config.IsSupported(number));

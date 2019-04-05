@@ -37,7 +37,7 @@ namespace WPEFramework {
 ENUM_CONVERSION_BEGIN(URL::SchemeType)
 
     { URL::SCHEME_FILE, _TXT("file") },
-    { URL::SCHEMA_MAIL, _TXT("mailto") },
+    { URL::SCHEME_MAIL, _TXT("mailto") },
     { URL::SCHEME_HTTP, _TXT("http") },
     { URL::SCHEME_HTTPS, _TXT("https") },
     { URL::SCHEME_FTP, _TXT("ftp") },
@@ -1479,7 +1479,7 @@ namespace Core
 
     const SchemeInfo g_SchemeOverview[] = {
         { URL::SCHEME_FILE, _TXT("file"), 0, ParseFileURL, URL::CreateFileURL },
-        { URL::SCHEMA_MAIL, _TXT("mailto"), 0, ParseMailtoURL, URL::CreateMailtoURL },
+        { URL::SCHEME_MAIL, _TXT("mailto"), 0, ParseMailtoURL, URL::CreateMailtoURL },
         { URL::SCHEME_HTTP, _TXT("http"), 80, ParseStandardURL, URL::CreateStandardURL },
         { URL::SCHEME_HTTPS, _TXT("https"), 443, ParseStandardURL, URL::CreateStandardURL },
         { URL::SCHEME_FTP, _TXT("ftp"), 21, ParseStandardURL, URL::CreateStandardURL },
