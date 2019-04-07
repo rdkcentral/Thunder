@@ -155,7 +155,15 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (Notify(event, subject));
         }
-        uint32_t Notify(const string& event, const string& parameters = "")
+
+        template <typename JSONOBJECT, typename SENDIFMETHOD>
+        uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
+        {
+            string subject;
+            parameters.ToString(subject);
+            return Notify(event, subject, std::function<bool(const string&)>(std::move(method))); //note needs explicit std::function otherwise will call itself
+        }
+        uint32_t Notify(const string& event, const string& parameters = "", std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -171,18 +179,23 @@ namespace PluginHost {
 
                 while (loop != clients.end()) {
                     const string& designator(loop->Designator());
-                    Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
 
-                    ASSERT(_service != nullptr);
+                    if (!sendifmethod || sendifmethod(designator)) {
 
-                    if (!parameters.empty()) {
-                       message->Parameters = parameters;
+                        Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
+
+                        ASSERT(_service != nullptr);
+
+                        if (!parameters.empty()) {
+                            message->Parameters = parameters;
+                        }
+
+                        message->Designator = (designator.empty() == false ? designator + '.' + event : event);
+                        message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+
+                        _service->Submit(loop->Id(), message);
                     }
 
-                    message->Designator = (designator.empty() == false ? designator + '.' + event : event);
-                    message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-
-                    _service->Submit(loop->Id(), message);
                     loop++;
                 }
             }
@@ -357,10 +370,9 @@ namespace PluginHost {
                     string result;
                     uint32_t code = _handler.Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), method, parameters, result);
                     if (response.IsValid() == true) {
-	                    if (code == static_cast<uint32_t>(~0)) {
+                        if (code == static_cast<uint32_t>(~0)) {
                             response.Release();
-						}
-						else if (code == Core::ERROR_NONE) {
+                        } else if (code == Core::ERROR_NONE) {
                             response->Result = result;
                         } else {
                             response->Error.Code = code;

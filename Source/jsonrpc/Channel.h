@@ -425,6 +425,7 @@ namespace JSONRPC {
         template <typename INBOUND, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
+            // @PierreWielders: zie Inbound hieronder: waarom ook niet de INBOUND uit te METHOD halen? (technische reden?)
             std::function<void(const INBOUND& parameters)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
