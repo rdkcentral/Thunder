@@ -17,13 +17,13 @@ namespace Core {
         public:
             AllocatorType()
                 : _bufferSize(STARTSIZE)
-                , _data(new uint8_t[_bufferSize])
+                , _data(reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
             {
                 static_assert(STARTSIZE != 0, "This method can only be called if you specify an initial blocksize");
             }
             AllocatorType(const AllocatorType<STARTSIZE>& copy)
                 : _bufferSize(copy._bufferSize)
-                , _data(STARTSIZE == 0 ? copy._data : new uint8_t[_bufferSize])
+                , _data(STARTSIZE == 0 ? copy._data : reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
             {
 
                 if (STARTSIZE != 0) {
@@ -39,7 +39,7 @@ namespace Core {
             ~AllocatorType()
             {
                 if ((STARTSIZE != 0) && (_data != nullptr)) {
-                    delete[] _data;
+                    ::free(_data);
                 }
             }
 
