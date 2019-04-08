@@ -775,10 +775,22 @@ namespace PluginHost {
                     result = Factories::Instance().Response();
                     FileToServe(request.Path, *result);
                 } else if (request.Verb == Web::Request::HTTP_OPTIONS) {
-                    ASSERT(_webSecurity != nullptr);
 
-                    // Create a security response..
-                    result = _webSecurity->Options(request);
+                    result = Factories::Instance().Response();
+
+                    TRACE_L1("Filling the Options on behalf of: %s", request.Path.c_str());
+
+                    result->ErrorCode = Web::STATUS_NO_CONTENT;
+                    result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
+                    result->Allowed = request.AccessControlMethod.Value();
+                    result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
+                    result->AccessControlOrigin = _T("*");
+                    result->AccessControlHeaders = _T("Content-Type");
+
+                    // This will last for an hour, try again after an hour :-)
+                    result->AccessControlMaxAge = 60 * 60;
+
+                    result->Date = Core::Time::Now();
                 } else if (WebRequestSupported() == false) {
                     result = _missingHandler;
                 }
@@ -1400,7 +1412,6 @@ namespace PluginHost {
                 SubSystems(const SubSystems&) = delete;
                 SubSystems& operator=(const SubSystems&) = delete;
 
-            private:
                 class Job : public Core::IDispatchType<void> {
                 private:
                     Job() = delete;
@@ -1452,6 +1463,7 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
+                    _parent.Security(SystemInfo::IsActive(PluginHost::ISubSystem::SECURITY));
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1472,11 +1484,13 @@ namespace PluginHost {
             ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
                 : _webbridgeConfig(config)
                 , _adminLock()
+                , _notificationLock()
                 , _services()
                 , _notifiers()
                 , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
                 , _server(server)
                 , _subSystems(this)
+                , _authenticationHandler(nullptr)
             {
             }
             ~ServiceMap()
@@ -1486,6 +1500,37 @@ namespace PluginHost {
             }
 
         public:
+            inline void Security(const bool enabled)
+            {
+                _adminLock.Lock();
+
+                if ((_authenticationHandler == nullptr) ^ (enabled == false)) {
+                    if (_authenticationHandler == nullptr) {
+                        // Let get the AuthentcationHandler.
+                        _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
+                    } else {
+                        // Remove the security from all the channels.
+                        _server.Dispatcher().SecurityRevoke(_webbridgeConfig.Security());
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+            inline ISecurity* Officer(const string& token)
+            {
+                ISecurity* result;
+
+                _adminLock.Lock();
+
+                if (_authenticationHandler != nullptr) {
+                    _authenticationHandler->Officer(token);
+                } else {
+                    result = _webbridgeConfig.Security();
+                }
+
+                _adminLock.Unlock();
+                return (result);
+            }
             inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
             {
                 return (_server.Dispatcher().Submit(id, response));
@@ -1733,8 +1778,6 @@ namespace PluginHost {
             }
 
         private:
-            // If there are no security arangements for the specific plugin, the overall security arangement is used.
-            // Store the overall security arrangement in the server.
             PluginHost::Config& _webbridgeConfig;
 
             mutable Core::CriticalSection _adminLock;
@@ -1744,6 +1787,7 @@ namespace PluginHost {
             CommunicatorServer _processAdministrator;
             Server& _server;
             Core::Sink<SubSystems> _subSystems;
+            IAuthenticate* _authenticationHandler;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -2016,6 +2060,20 @@ namespace PluginHost {
                 _incorrectVersion->ErrorCode = Web::STATUS_BAD_REQUEST;
                 _incorrectVersion->Message = _T("Callsign was oke, but the requested version was not supported.");
             }
+            void Revoke(PluginHost::ISecurity* baseRights)
+            {
+                PluginHost::Channel::Lock();
+
+                if (_security != baseRights) {
+                    if (_security != nullptr) {
+                        _security->Release();
+                    }
+                    _security = baseRights;
+                    _security->AddRef();
+                }
+
+                PluginHost::Channel::Unlock();
+            }
 
         private:
             // Handle the HTTP Web requests.
@@ -2277,8 +2335,9 @@ namespace PluginHost {
             }
 
         private:
-            Core::ProxyType<Service> _service;
             Server& _parent;
+            PluginHost::ISecurity* _security;
+            Core::ProxyType<Service> _service;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
@@ -2371,6 +2430,18 @@ namespace PluginHost {
             }
 
         public:
+            void SecurityRevoke(ISecurity* fallback)
+            {
+                BaseClass::Lock();
+
+                BaseClass::Iterator index(BaseClass::Clients());
+
+                while (index.Next() == true) {
+                    index.Client()->Revoke(fallback);
+                }
+
+                BaseClass::Unlock();
+            }
             inline Server& Parent()
             {
                 return (_parent);
@@ -2419,7 +2490,7 @@ namespace PluginHost {
         };
 
     public:
-        Server(Config& configuration, ISecurity* securityHandler, const bool background);
+        Server(Config& configuration, const bool background);
         virtual ~Server();
 
     public:
@@ -2457,7 +2528,7 @@ namespace PluginHost {
         }
         inline const string& ControllerName() const
         {
-            return (_controllerName);
+            return (_controller->Callsign());
         }
         void Notify(const string& message)
         {
@@ -2488,7 +2559,6 @@ namespace PluginHost {
         // Hold on to the controller that controls the PluginHost. Using this plugin, the
         // system can externally control the webbridge.
         Core::ProxyType<Service> _controller;
-        string _controllerName;
     };
 }
 }

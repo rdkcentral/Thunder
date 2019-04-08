@@ -15,16 +15,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-            { PluginHost::InputHandler::DEVICE, _TXT("device") },
+    { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-        namespace PluginHost
+namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -48,6 +48,79 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
     static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
+
+    class DefaultSecurity : public ISecurity {
+    public:
+        DefaultSecurity() = delete;
+        DefaultSecurity(const DefaultSecurity&) = delete;
+        DefaultSecurity& operator=(const DefaultSecurity&) = delete;
+
+        DefaultSecurity(const bool hasSecurity, const string& prefix, const string jsonrpcPath, const string& controllerName)
+            : _hasSecurity(hasSecurity)
+            , _controllerPath(prefix + '/' + controllerName)
+            , _jsonrpcPath(jsonrpcPath)
+            , _controllerName(controllerName)
+        {
+        }
+        ~DefaultSecurity()
+        {
+        }
+
+    public:
+        // Allow a request to be checked before it is offered for processing.
+        virtual bool Allowed(const Web::Request& request) const override
+        {
+            bool result = (_hasSecurity == false);
+
+            if (result == false) {
+                // If there is security, maybe this is a valid reuest, althoug this
+                // validation is not done by an instance issued by the SecurityOfficer.
+                result = ((request.Verb == Web::Request::HTTP_GET) && (request.Path.substr(0, _controllerPath.length()) == _controllerPath));
+
+                if ((result == false) && (request.Verb == Web::Request::HTTP_POST) && (request.HasBody() == true) && (request.Path == _jsonrpcPath)) {
+
+					// Now dig into the message, if the method is for the controller and the method is to get info
+                    // it is good to go... Other wise NO
+                    Core::ProxyType<const Core::JSONRPC::Message> body = request.Body<const Core::JSONRPC::Message>();
+
+					if (body.IsValid() == true)
+					{
+                        result = CheckMessage(*body);
+					}	
+				}
+            }
+            return (result);
+        }
+        //! Allow a JSONRPC message to be checked before it is offered for processing.
+		virtual bool Allowed(const Core::JSONRPC::Message& message) const override {
+            return ((_hasSecurity == false) || CheckMessage(message));
+        }
+
+        //  IUnknown methods
+        // -------------------------------------------------------------------------------------------------------
+        BEGIN_INTERFACE_MAP(DefaultSecurity)
+        INTERFACE_ENTRY(ISecurity)
+        END_INTERFACE_MAP
+
+	private:
+        bool CheckMessage(const Core::JSONRPC::Message& message) const
+        {
+            bool result = false;
+
+            if (message.Callsign() == _controllerName)
+            {
+				result = (message.Method() == _T("exists"));
+            }
+
+			return (result);
+		}
+
+    private:
+        const bool _hasSecurity;
+        const string _controllerPath;
+        const string _jsonrpcPath;
+        const string _controllerName;
+    };
 
     static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
     {
@@ -499,6 +572,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     Server::Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent)
         : PluginHost::Channel(connector, remoteId)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
+        , _security(nullptr)
+        , _service()
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
@@ -512,6 +587,10 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             _service->Unsubscribe(*this);
 
             _service.Release();
+        }
+        if (_security != nullptr) {
+            _security->Release();
+            _security = nullptr;
         }
 
         Close(0);
@@ -533,7 +612,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 #pragma warning(disable : 4355)
 #endif
 
-    Server::Server(Server::Config & configuration, ISecurity * securityHandler, const bool background)
+    Server::Server(Server::Config & configuration, const bool background)
         : _accessor()
         , _dispatcher(configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
         , _connections(*this, DetermineAccessor(configuration, _accessor), configuration.IdleTime)
@@ -550,8 +629,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
               configuration.Signature.Value(),
               _accessor,
               Core::NodeId(configuration.Communicator.Value().c_str()),
-              configuration.Redirect.Value(),
-              securityHandler)
+              configuration.Redirect.Value())
         , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
         , _controller()
     {
@@ -628,9 +706,19 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Open()
     {
         _controller->Activate(PluginHost::IShell::STARTUP);
+
+		// Before we do anything with the subsystems (notifications)
+		// Lets see if security is already set..
+        _config.Security(
+            Core::Service<DefaultSecurity>::Create<ISecurity>(
+                ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) == 0),
+                _config.WebPrefix(),
+                _config.JSONRPCPrefix(),
+                _controller->Callsign()));
+
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
-        _controllerName = _controller->Callsign();
+
 
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());

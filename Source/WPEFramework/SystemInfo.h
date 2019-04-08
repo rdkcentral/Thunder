@@ -97,6 +97,41 @@ namespace PluginHost {
             string _ipAddress;
         };
 
+        class Security : public PluginHost::ISubSystem::ISecurity {
+        private:
+        public:
+            Security(const Security&) = delete;
+            Security& operator=(const Security&) = delete;
+
+            Security()
+                : _callsign()
+            {
+            }
+
+        public:
+            BEGIN_INTERFACE_MAP(Security)
+            INTERFACE_ENTRY(PluginHost::ISubSystem::ISecurity)
+            END_INTERFACE_MAP
+
+        public:
+            virtual string Callsign() const override;
+
+            bool Set(const PluginHost::ISubSystem::ISecurity* info);
+            inline bool Set(const string& callsign)
+            {
+                bool result(false);
+                if (_callsign != callsign) {
+                    _callsign = callsign;
+
+                    result = true;
+                }
+                return result;
+            }
+
+        private:
+            string _callsign;
+        };
+
         class Location : public PluginHost::ISubSystem::ILocation {
         public:
             Location()
@@ -194,6 +229,21 @@ namespace PluginHost {
     public:
         virtual void Register(PluginHost::ISubSystem::INotification* notification) override;
         virtual void Unregister(PluginHost::ISubSystem::INotification* notification) override;
+
+        string SecurityCallsign() const
+        {
+            string result;
+
+            _adminLock.Lock();
+
+            if (_security != nullptr) {
+                result = _security->Callsign();
+            }
+
+            _adminLock.Unlock();
+
+            return (result);
+        }
 
         // Software information
         virtual string BuildTreeHash() const override;
@@ -428,6 +478,46 @@ namespace PluginHost {
                 SYSLOG(Logging::Shutdown, (_T("EVENT: Streaming")));
                 break;
             }
+            case SECURITY: {
+                PluginHost::ISubSystem::ISecurity* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ISecurity>() : nullptr);
+
+                if (info == nullptr) {
+
+                    _adminLock.Lock();
+
+                    if (_security != nullptr) {
+                        _security->Release();
+                    }
+
+                    _security = Core::Service<Security>::Create<Security>();
+                    _security->Set(_T(""));
+
+                    _adminLock.Unlock();
+                } else {
+                    Security* security = Core::Service<Security>::Create<Security>();
+                    sendUpdate = security->Set(info) || sendUpdate;
+
+                    info->Release();
+
+                    _adminLock.Lock();
+
+                    if (_security != nullptr) {
+                        _security->Release();
+                    }
+
+                    _security = security;
+                    _adminLock.Unlock();
+                }
+
+                SYSLOG(Logging::Startup, (_T("EVENT: Security")));
+                break;
+            }
+            case NOT_SECURITY: {
+                /* No information to set yet */
+                SYSLOG(Logging::Shutdown, (_T("EVENT: Security")));
+                break;
+            }
+
             default: {
                 ASSERT(false && "Unknown Event");
             }
@@ -534,6 +624,7 @@ namespace PluginHost {
         Id* _identifier;
         Location* _location;
         Internet* _internet;
+        Security* _security;
         Time* _time;
         uint32_t _flags;
     };

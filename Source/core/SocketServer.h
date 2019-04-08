@@ -248,6 +248,14 @@ namespace Core {
                     _lock.Unlock();
                 }
             }
+			void Lock() 
+			{
+                _lock.Lock();
+			}
+            void Unlock()
+            {
+                _lock.Unlock();
+            }
 
         private:
             // -----------------------------------------------------
@@ -334,6 +342,14 @@ namespace Core {
         inline uint32_t Count() const
         {
             return (_handler.Count());
+        }
+        void Lock()
+        {
+            _handler.Lock();
+        }
+        void Unlock()
+        {
+            _handler.Unlock();
         }
 
     private:
