@@ -12,7 +12,8 @@ namespace Exchange {
         enum { ID = 0x00000016 };
 
         enum state {
-            NotAvailable = 0,
+            Idle = 0,
+            Loading,
             Prepared,
             Paused,
             Playing,
@@ -51,7 +52,7 @@ namespace Exchange {
 
                 virtual ~ICallback() {}
 
-                virtual void TimeUpdate(uint64_t position) = 0;
+                virtual void TimeUpdate(const uint64_t position) = 0;
             };
 
             virtual ~IControl(){};
@@ -71,8 +72,8 @@ namespace Exchange {
 
             virtual ~ICallback() {}
 
-            virtual void DRM(uint32_t state) = 0;
-            virtual void StateChange(state newState) = 0;
+            virtual void DRM(const uint32_t state) = 0;
+            virtual void StateChange(const state newState) = 0;
         };
 
         virtual ~IStream() {}
@@ -83,14 +84,14 @@ namespace Exchange {
         virtual IControl* Control() = 0;
         virtual void Callback(IStream::ICallback* callback) = 0;
         virtual state State() const = 0;
-        virtual uint32_t Load(std::string configuration) = 0;
+        virtual uint32_t Load(const std::string& configuration) = 0;
     };
 
     struct IPlayer : virtual public Core::IUnknown {
         enum { ID = 0x00000015 };
 
         virtual ~IPlayer() {}
-        virtual IStream* CreateStream(IStream::streamtype streamType) = 0;
+        virtual IStream* CreateStream(const IStream::streamtype streamType) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
 } // namespace Exchange
