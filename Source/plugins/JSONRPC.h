@@ -117,6 +117,11 @@ namespace PluginHost {
         {
             _handler.Property<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(methodName, getter, setter, objectPtr);
         }
+        template <typename METHOD, typename REALOBJECT>
+        void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+            _handler.Register<Core::JSON::VariantContainer, Core::JSON::VariantContainer, METHOD, REALOBJECT>(methodName, method, objectPtr);
+        }
         template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
