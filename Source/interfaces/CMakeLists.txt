@@ -74,6 +74,7 @@ set(JSON_DATA_HEADERS
         json/JsonData_LocationSync.h
         json/JsonData_NetworkControl.h
         json/JsonData_SystemCommands.h
+        json/JsonData_TestUtility.h
         )
 
 target_link_libraries(${TargetMarshalling}
