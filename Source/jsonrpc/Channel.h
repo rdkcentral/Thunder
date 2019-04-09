@@ -181,7 +181,7 @@ namespace JSONRPC {
         {
             _adminLock.Lock();
             std::list<Client*>::iterator index(std::find(_observers.begin(), _observers.end(), &client));
-            if (index == _observers.end()) {
+            if (index != _observers.end()) {
                 _observers.erase(index);
             }
             FactoryImpl::Instance().Revoke(&client);
