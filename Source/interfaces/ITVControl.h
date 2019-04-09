@@ -13,6 +13,7 @@ namespace Exchange {
 
         enum state {
             NotAvailable = 0,
+            Prepared,
             Paused,
             Playing,
             Error
@@ -39,7 +40,6 @@ namespace Exchange {
                 virtual ~IGeometry() {}
 
                 virtual uint32_t X() const = 0;
-                ;
                 virtual uint32_t Y() const = 0;
                 virtual uint32_t Z() const = 0;
                 virtual uint32_t Width() const = 0;

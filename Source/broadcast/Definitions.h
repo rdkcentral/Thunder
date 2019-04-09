@@ -208,6 +208,22 @@ namespace Broadcast {
     };
 
     struct ITuner {
+
+        struct INotification {
+            virtual ~INotification() {}
+
+            virtual void Activated(ITuner* tuner) = 0;
+            virtual void Deactivated(ITuner* tuner) = 0;
+            virtual void StateChange(ITuner* tuner) = 0;
+        };
+
+        struct ICallback {
+            virtual ~ICallback() {}
+
+            virtual void StateChange() = 0;
+        };
+
+        ITuner() : _adminLock(), _callback(nullptr) {}
         virtual ~ITuner() {}
 
         enum state {
@@ -245,6 +261,10 @@ namespace Broadcast {
         // Accessor to create a tuner.
         static ITuner* Create(const string& info);
 
+        // Accessor to metadata on the tuners.
+        static void Register(INotification* notify);
+        static void Unregister(INotification* notify);
+
         // Currently locked on ID
         // This method return a unique number that will identify the locked on Transport stream. The ID will always
         // identify the uniquely locked on to Tune request. ID => 0 is reserved and means not locked on to anything.
@@ -274,6 +294,40 @@ namespace Broadcast {
         // Using the next two methods, the frontends will be hooked up to decoders or file, and be removed from a decoder or file.
         virtual uint32_t Attach(const uint8_t index) = 0;
         virtual uint32_t Detach(const uint8_t index) = 0;
+
+
+        // If you have an ITuner interface, you can subscribe to state changes of this Tuner interface
+        // This will only be one instance, by design, to avoid the overhead of maintining a list and
+        // thus spending more resources. The idea is that the object holding the ITuner interface to
+        // do the actual tune can assign a callback and receive the actual state changes. If you "just"
+        // receive this interface on the INotification, you should *NOT* set a callback on this interface
+        void Callback(ICallback* callback) {
+
+            _adminLock.Lock();
+
+            ASSERT ((_callback == nullptr) ^ (callback == nullptr));
+
+            _callback = callback;
+
+            _adminLock.Unlock();
+        }
+        void StateChange() {
+            _adminLock.Lock();
+            if (_callback != nullptr) {
+                _callback->StateChange();
+            }
+            _adminLock.Unlock();
+        }
+        void Lock() const {
+            _adminLock.Lock();
+        }
+        void Unlock() const {
+            _adminLock.Unlock();
+        }
+
+    private:
+        mutable Core::CriticalSection _adminLock;
+        ICallback* _callback;
     };
 
 } // namespace Broadcast

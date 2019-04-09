@@ -9,5 +9,17 @@ namespace Broadcast {
         static TunerAdministrator _instance;
         return (_instance);
     }
+
+    // Accessor to metadata on the tuners.
+    /* static */ void ITuner::Register(ITuner::INotification* notify)
+    {
+        TunerAdministrator::Instance().Register(notify);
+    }
+
+    /* static */ void ITuner::Unregister(ITuner::INotification* notify)
+    {
+        TunerAdministrator::Instance().Unregister(notify);
+    }
+
 }
 } // namespace WPEFramework::Broadcast
