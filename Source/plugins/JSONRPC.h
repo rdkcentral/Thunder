@@ -153,7 +153,7 @@ namespace PluginHost {
         {
             string subject;
             parameters.ToString(subject);
-            return (Notify(event, subject));
+            return (NotifyImpl(event, subject));
         }
 
         template <typename JSONOBJECT, typename SENDIFMETHOD>
@@ -161,9 +161,11 @@ namespace PluginHost {
         {
             string subject;
             parameters.ToString(subject);
-            return Notify(event, subject, std::function<bool(const string&)>(std::move(method))); //note needs explicit std::function otherwise will call itself
+            return NotifyImpl(event, subject, std::move(method)); 
         }
-        uint32_t Notify(const string& event, const string& parameters = "", std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
+
+    private:
+        uint32_t NotifyImpl(const string& event, const string& parameters = "", std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
@@ -204,6 +206,9 @@ namespace PluginHost {
 
             return (result);
         }
+
+    public:
+
         uint32_t Response(const Core::JSONRPC::Connection& channel, const string& result)
         {
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();

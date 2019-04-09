@@ -403,7 +403,7 @@ namespace JSONRPC {
             while (index != _pendingQueue.end()) {
 
                 if (index->second.Expired(index->first, currentTime, result) == true) {
-                    _pendingQueue.erase(index);
+                    index = _pendingQueue.erase(index);
                 } else {
                     index++;
                 }
@@ -425,7 +425,6 @@ namespace JSONRPC {
         template <typename INBOUND, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
-            // @PierreWielders: zie Inbound hieronder: waarom ook niet de INBOUND uit te METHOD halen? (technische reden?)
             std::function<void(const INBOUND& parameters)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
@@ -500,27 +499,74 @@ namespace JSONRPC {
         // Less memory footprint, less processing power and type checking applied.
         // =====================================================================================================
         template <typename RESPONSE = Core::JSON::VariantContainer>
-        uint32_t Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
+        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
+        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<void, ResponeType>(..
         {
-            Core::ProxyType<Core::JSONRPC::Message> response;
-            uint32_t result = Send(waitTime, method, EMPTY_STRING, response);
-            if (result == Core::ERROR_NONE) {
-                inbound.FromString(response->Result.Value());
-            }
-            return (result);
+            return InternalInvoke(waitTime, method, EMPTY_STRING, inbound);
         }
-        template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
-        uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
+        //template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
+        template <typename PARAMETERS = Core::JSON::VariantContainer>
+        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, Core::JSON::VariantContainer& inbound)
+        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<PARAMETER type, Core::JSON::VariantContainer>(..
         {
-            Core::ProxyType<Core::JSONRPC::Message> response;
             string subject;
             parameters.ToString(subject);
-            uint32_t result = Send(waitTime, method, subject, response);
+            return InternalInvoke(waitTime, method, subject, inbound);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
+        Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
+        {
+            string subject;
+            parameters.ToString(subject);
+            return InternalInvoke(waitTime, method, subject, inbound);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
+        Invoke(const uint32_t waitTime, const string& method)
+        {
+            return InternalInvoke(waitTime, method, EMPTY_STRING);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
+        Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
+        {
+            string subject;
+            parameters.ToString(subject);
+            return InternalInvoke(waitTime, method, subject);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        typename std::enable_if<(std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
+        Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
+        {
+            return InternalInvoke(waitTime, method, EMPTY_STRING, inbound);
+        }
+
+    private:
+        
+        template <typename RESPONSE>
+        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters, RESPONSE& inbound)
+        {
+            Core::ProxyType<Core::JSONRPC::Message> response;
+            uint32_t result = Send(waitTime, method, parameters, response);
             if (result == Core::ERROR_NONE) {
                 inbound.FromString(response->Result.Value());
             }
             return (result);
         }
+
+        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters)
+        {
+            Core::ProxyType<Core::JSONRPC::Message> response;
+            return Send(waitTime, method, parameters, response);
+        }
+
+    public:
+
         template <typename PARAMETERS, typename HANDLER>
         typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
         Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
@@ -628,7 +674,7 @@ namespace JSONRPC {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
             CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
-                typename std::remove_const< typename std::remove_reference<RESPONSE>::type>::type response;
+                typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                 if (inbound.Error.IsSet() == false) {
                     response.FromString(inbound.Result.Value());
                 }
@@ -644,7 +690,7 @@ namespace JSONRPC {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
             CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
-                typename std::remove_const< typename std::remove_reference<RESPONSE>::type>::type response;
+                typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
 
                 if (inbound.Error.IsSet() == false) {
                     response.FromString(inbound.Result.Value());
@@ -664,7 +710,7 @@ namespace JSONRPC {
 
             std::function<void(RESPONSE)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1);
             CallbackFunction implementation = [actualMethod](const Core::JSONRPC::Message& inbound) -> void {
-                typename std::remove_const< typename std::remove_reference<RESPONSE>::type>::type response;
+                typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
 
                 if (inbound.Error.IsSet() == false) {
                     response.FromString(inbound.Result.Value());
@@ -683,7 +729,7 @@ namespace JSONRPC {
 
             std::function<void(RESPONSE, const Core::JSONRPC::Message::Info* result)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1, std::placeholders::_2);
             CallbackFunction implementation = [actualMethod](const Core::JSONRPC::Message& inbound) -> void {
-                typename std::remove_const < typename std::remove_reference < RESPONSE > ::type >::type response;
+                typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                 if (inbound.Error.IsSet() == false) {
                     response.FromString(inbound.Result.Value());
                     actualMethod(response, nullptr);
@@ -801,6 +847,8 @@ namespace JSONRPC {
                 if (newElement.second == true) {
 
                     _channel->Submit(message);
+
+                    result = Core::ERROR_NONE;
 
                     message.Release();
                     if ((_scheduledTime == 0) || (_scheduledTime > newElement.first->second.Expiry())) {
