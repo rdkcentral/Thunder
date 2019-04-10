@@ -184,8 +184,8 @@ static constexpr conversion_entry _tableRollOff[] = {
                 Core::JSON::DecUInt8 Frontends;
                 Core::JSON::DecUInt8 Decoders;
                 Core::JSON::EnumType<ITuner::DTVStandard> Standard;
-                Core::JSON::EnumType<ITuner::Annex> Annex;
-                Core::JSON::EnumType<ITuner::Modus> Modus; 
+                Core::JSON::EnumType<ITuner::annex> Annex;
+                Core::JSON::EnumType<ITuner::modus> Modus; 
                 Core::JSON::Boolean Scan;
                 Core::JSON::String Callsign;
             };
@@ -236,11 +236,11 @@ static constexpr conversion_entry _tableRollOff[] = {
             {
                 return (_standard);
             }
-            inline ITuner::Annex Annex() const
+            inline ITuner::annex Annex() const
             {
                 return (_annex);
             }
-            inline ITuner::Modus Modus() const
+            inline ITuner::modus Modus() const
             {
                 return (_modus);
             }
@@ -256,8 +256,8 @@ static constexpr conversion_entry _tableRollOff[] = {
         private:
             uint8_t _frontends;
             ITuner::DTVStandard _standard;
-            ITuner::Annex _annex;
-            ITuner::Modus _modus;
+            ITuner::annex _annex;
+            ITuner::modus _modus;
             int _type;
             bool _scan;
 
@@ -351,6 +351,20 @@ printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
         const char* Name() const
         {
             return (_info.name);
+        }
+
+        virtual uint32_t Properties() const override
+        {
+            Information& instance = Information::Instance();
+            return (instance.Annex() | instance.Standard() |
+            #ifdef SATELITE
+            ITuner::modus::Satellite 
+            #else
+            ITuner::modus::Terrestrial
+            #endif
+            );
+
+            // ITuner::modus::Cable
         }
 
         // Currently locked on ID

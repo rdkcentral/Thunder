@@ -240,15 +240,15 @@ namespace Broadcast {
             DAB = 0x4000
         };
 
-        enum Modus {
-            Satellite = 0x001,
-            Terrestrial = 0x002,
-            Cable = 0x003
+        enum modus {
+            Satellite = 0x1,
+            Terrestrial = 0x2,
+            Cable = 0x3
         };
 
-        enum Annex {
+        enum annex {
             NoAnnex = 0x000, // NoAnnex -> S/T
-            A = 0x400, // A       -> S2/T2
+            A = 0x400,       // A       -> S2/T2
             B = 0x800,
             C = 0xC00
         };
@@ -264,6 +264,19 @@ namespace Broadcast {
         // Accessor to metadata on the tuners.
         static void Register(INotification* notify);
         static void Unregister(INotification* notify);
+
+        // Offer the ability to get the proper information (with respect to hardware properties) of this tuner instance.
+        virtual uint32_t Properties() const = 0;
+
+        inline annex Annex() const {
+            return (static_cast<annex>(Properties() & 0x0F00));
+        }
+        inline modus Modus() const {
+            return (static_cast<modus>(Properties() & 0xF));
+        }
+        inline DTVStandard Standard() const {
+            return (static_cast<DTVStandard>(Properties() & 0xF000));
+        }
 
         // Currently locked on ID
         // This method return a unique number that will identify the locked on Transport stream. The ID will always
