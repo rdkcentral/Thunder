@@ -55,8 +55,8 @@ namespace PluginHost
         DefaultSecurity(const DefaultSecurity&) = delete;
         DefaultSecurity& operator=(const DefaultSecurity&) = delete;
 
-        DefaultSecurity(const bool hasSecurity, const string& prefix, const string jsonrpcPath, const string& controllerName)
-            : _hasSecurity(hasSecurity)
+        DefaultSecurity(const string& prefix, const string jsonrpcPath, const string& controllerName)
+            : _hasSecurity(true)
             , _controllerPath(prefix + '/' + controllerName)
             , _jsonrpcPath(jsonrpcPath)
             , _controllerName(controllerName)
@@ -67,6 +67,9 @@ namespace PluginHost
         }
 
     public:
+		inline void Security(const bool enabled) {
+            _hasSecurity = enabled;
+		}
         // Allow a request to be checked before it is offered for processing.
         virtual bool Allowed(const Web::Request& request) const override
         {
@@ -116,7 +119,7 @@ namespace PluginHost
 		}
 
     private:
-        const bool _hasSecurity;
+        bool _hasSecurity;
         const string _controllerPath;
         const string _jsonrpcPath;
         const string _controllerName;
@@ -705,17 +708,26 @@ namespace PluginHost
 
     void Server::Open()
     {
-        _controller->Activate(PluginHost::IShell::STARTUP);
-
-		// Before we do anything with the subsystems (notifications)
-		// Lets see if security is already set..
-        _config.Security(
-            Core::Service<DefaultSecurity>::Create<ISecurity>(
-                ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) == 0),
+        // Before we do anything with the subsystems (notifications)
+        // Lets see if security is already set..
+        DefaultSecurity* securityProvider = 
+			Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
                 _config.WebPrefix(),
                 _config.JSONRPCPrefix(),
-                _controller->Callsign()));
+                _controller->Callsign());
 
+        _config.Security(securityProvider);
+
+        _controller->Activate(PluginHost::IShell::STARTUP);
+
+		if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) == 0) {
+			// The controller is on control of the security, so I guess all systems green
+			// as the controller does not know anything about security :-)
+            securityProvider->Security(false);
+        }
+
+		securityProvider->Release();
+        
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
 

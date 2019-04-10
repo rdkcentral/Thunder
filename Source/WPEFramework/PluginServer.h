@@ -1600,7 +1600,7 @@ namespace PluginHost {
             {
                 void* result = nullptr;
 
-                const string& callsign(name.empty() == true ? _server.ControllerName() : name);
+                const string callsign(name.empty() == true ? _server.ControllerName() : name);
 
                 Core::ProxyType<Service> service;
 
@@ -2526,7 +2526,7 @@ namespace PluginHost {
         {
             _controller->Notification(message);
         }
-        inline const string& ControllerName() const
+        inline string ControllerName() const
         {
             return (_controller->Callsign());
         }

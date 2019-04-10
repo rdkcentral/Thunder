@@ -255,9 +255,11 @@ namespace PluginHost {
         {
             ASSERT((_security == nullptr) && (security != nullptr));
 
-			// Ref count is done in the server. The config object is "taking" over
-			// that refcount.
             _security = security;
+
+            if (_security != nullptr) {
+                _security->AddRef();
+			}
         }
 
     private:
