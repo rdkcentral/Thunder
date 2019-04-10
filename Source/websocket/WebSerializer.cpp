@@ -43,6 +43,7 @@ static const TCHAR __TRANSFER_ENCODING[] = _T("TRANSFER-ENCODING:");
 static const TCHAR __ST[] = _T("ST:");
 static const TCHAR __MAN[] = _T("MAN:");
 static const TCHAR __MX[] = _T("MX:");
+static const TCHAR __AUTHORIZATION[] = _T("AUTHORIZATION");
 
 static const TCHAR __DATE[] = _T("DATE:");
 static const TCHAR __SERVER[] = _T("SERVER:");
@@ -100,32 +101,32 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::MIME_APPLICATION_RSS_XML, _TXT("application/rss+xml") },
     { Web::MIME_UNKNOWN, _TXT("unknown") },
 
-    ENUM_CONVERSION_END(Web::MIMETypes)
+ENUM_CONVERSION_END(Web::MIMETypes)
 
-        ENUM_CONVERSION_BEGIN(Web::EncodingTypes)
+ENUM_CONVERSION_BEGIN(Web::EncodingTypes)
 
-            { Web::ENCODING_GZIP, _TXT(__ENCODING_GZIP) },
+    { Web::ENCODING_GZIP, _TXT(__ENCODING_GZIP) },
     { Web::ENCODING_UNKNOWN, _TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::EncodingTypes)
+ENUM_CONVERSION_END(Web::EncodingTypes)
 
-        ENUM_CONVERSION_BEGIN(Web::TransferTypes)
+ENUM_CONVERSION_BEGIN(Web::TransferTypes)
 
-            { Web::TRANSFER_CHUNKED, _TXT("chunked") },
+    { Web::TRANSFER_CHUNKED, _TXT("chunked") },
     { Web::TRANSFER_UNKNOWN, _TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::TransferTypes)
+ENUM_CONVERSION_END(Web::TransferTypes)
 
-        ENUM_CONVERSION_BEGIN(Web::CharacterTypes)
+ENUM_CONVERSION_BEGIN(Web::CharacterTypes)
 
-            { Web::CHARACTER_UTF8, _TXT("utf-8") },
+    { Web::CHARACTER_UTF8, _TXT("utf-8") },
     { Web::CHARACTER_UNKNOWN, _TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::CharacterTypes)
+ENUM_CONVERSION_END(Web::CharacterTypes)
 
-        ENUM_CONVERSION_BEGIN(Web::WebStatus)
+ENUM_CONVERSION_BEGIN(Web::WebStatus)
 
-            { Web::STATUS_CONTINUE, _TXT("CONTINUE") },
+    { Web::STATUS_CONTINUE, _TXT("CONTINUE") },
     { Web::STATUS_SWITCH_PROTOCOL, _TXT("SWITCH_PROTOCOL") },
     { Web::STATUS_OK, _TXT("OK") },
     { Web::STATUS_CREATED, _TXT("CREATED") },
@@ -166,11 +167,11 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::STATUS_GATEWAY_TIMEOUT, _TXT("GATEWAY_TIMEOUT") },
     { Web::STATUS_VERSION_NOT_SUPPORTED, _TXT("VERSION_NOT_SUPPORTED") },
 
-    ENUM_CONVERSION_END(Web::WebStatus)
+ENUM_CONVERSION_END(Web::WebStatus)
 
-        ENUM_CONVERSION_BEGIN(Web::Request::type)
+ENUM_CONVERSION_BEGIN(Web::Request::type)
 
-            { Web::Request::HTTP_GET, __TXT(Web::Request::GET) },
+    { Web::Request::HTTP_GET, __TXT(Web::Request::GET) },
     { Web::Request::HTTP_HEAD, __TXT(Web::Request::HEAD) },
     { Web::Request::HTTP_POST, __TXT(Web::Request::POST) },
     { Web::Request::HTTP_PUT, __TXT(Web::Request::PUT) },
@@ -184,11 +185,11 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::Request::HTTP_UNKNOWN, _TXT("UNKNOWN") },
     { Web::Request::HTTP_NONE, _TXT("NONE") },
 
-    ENUM_CONVERSION_END(Web::Request::type)
+ENUM_CONVERSION_END(Web::Request::type)
 
-        ENUM_CONVERSION_BEGIN(Web::Request::keywords)
+ENUM_CONVERSION_BEGIN(Web::Request::keywords)
 
-            { Web::Request::HOST, __TXT(__HOST) },
+    { Web::Request::HOST, __TXT(__HOST) },
     { Web::Request::UPGRADE, __TXT(__UPGRADE) },
     { Web::Request::ORIGIN, __TXT(__ORIGIN) },
     { Web::Request::CONNECTION, __TXT(__CONNECTION) },
@@ -210,28 +211,29 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::Request::MAN, __TXT(__MAN) },
     { Web::Request::M_X, __TXT(__MX) },
     { Web::Request::S_T, __TXT(__ST) },
+    { Web::Request::AUTHORIZATION, __TXT(__AUTHORIZATION) },
 
-    ENUM_CONVERSION_END(Web::Request::keywords)
+ENUM_CONVERSION_END(Web::Request::keywords)
 
-        ENUM_CONVERSION_BEGIN(Web::Request::upgrade)
+ENUM_CONVERSION_BEGIN(Web::Request::upgrade)
 
-            { Web::Request::UPGRADE_WEBSOCKET, __TXT(__WEBSOCKET) },
+    { Web::Request::UPGRADE_WEBSOCKET, __TXT(__WEBSOCKET) },
     { Web::Request::UPGRADE_UNKNOWN, __TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::Request::upgrade)
+ENUM_CONVERSION_END(Web::Request::upgrade)
 
-        ENUM_CONVERSION_BEGIN(Web::Request::connection)
+ENUM_CONVERSION_BEGIN(Web::Request::connection)
 
-            { Web::Request::CONNECTION_CLOSE, __TXT(__CONNECTION_CLOSE) },
+    { Web::Request::CONNECTION_CLOSE, __TXT(__CONNECTION_CLOSE) },
     { Web::Request::CONNECTION_UPGRADE, __TXT(__CONNECTION_UPGRADE) },
     { Web::Request::CONNECTION_KEEPALIVE, __TXT(__CONNECTION_KEEPALIVE) },
     { Web::Request::CONNECTION_UNKNOWN, __TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::Request::connection)
+ENUM_CONVERSION_END(Web::Request::connection)
 
-        ENUM_CONVERSION_BEGIN(Web::Response::keywords)
+ENUM_CONVERSION_BEGIN(Web::Response::keywords)
 
-            { Web::Response::DATE, __TXT(__DATE) },
+    { Web::Response::DATE, __TXT(__DATE) },
     { Web::Response::UPGRADE, __TXT(__UPGRADE) },
     { Web::Response::SERVER, __TXT(__SERVER) },
     { Web::Response::MODIFIED, __TXT(__MODIFIED) },
@@ -257,36 +259,42 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
     { Web::Response::CACHE_CONTROL, __TXT(__CACHE_CONTROL) },
     { Web::Response::APPLICATION_URL, __TXT(__APPLICATION_URL) },
 
-    ENUM_CONVERSION_END(Web::Response::keywords)
+ENUM_CONVERSION_END(Web::Response::keywords)
 
-        ENUM_CONVERSION_BEGIN(Web::Response::upgrade)
+ENUM_CONVERSION_BEGIN(Web::Response::upgrade)
 
-            { Web::Response::UPGRADE_WEBSOCKET, __TXT(__WEBSOCKET) },
+    { Web::Response::UPGRADE_WEBSOCKET, __TXT(__WEBSOCKET) },
     { Web::Response::UPGRADE_UNKNOWN, __TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::Response::upgrade)
+ENUM_CONVERSION_END(Web::Response::upgrade)
 
-        ENUM_CONVERSION_BEGIN(Web::Response::connection)
+ENUM_CONVERSION_BEGIN(Web::Response::connection)
 
-            { Web::Response::CONNECTION_CLOSE, __TXT(__CONNECTION_CLOSE) },
+    { Web::Response::CONNECTION_CLOSE, __TXT(__CONNECTION_CLOSE) },
     { Web::Response::CONNECTION_UPGRADE, __TXT(__CONNECTION_UPGRADE) },
     { Web::Response::CONNECTION_KEEPALIVE, __TXT(__CONNECTION_KEEPALIVE) },
     { Web::Response::CONNECTION_UNKNOWN, __TXT(__UNKNOWN) },
 
-    ENUM_CONVERSION_END(Web::Response::connection)
+ENUM_CONVERSION_END(Web::Response::connection)
 
-        ENUM_CONVERSION_BEGIN(Crypto::EnumHashType)
+ENUM_CONVERSION_BEGIN(Crypto::EnumHashType)
 
-            { Crypto::HASH_MD5, _TXT("md5") },
+    { Crypto::HASH_MD5, _TXT("md5") },
     { Crypto::HASH_SHA1, _TXT("sha1") },
     { Crypto::HASH_SHA224, _TXT("sha224") },
     { Crypto::HASH_SHA256, _TXT("sha256") },
     { Crypto::HASH_SHA384, _TXT("sha384") },
     { Crypto::HASH_SHA512, _TXT("sha512") },
 
-    ENUM_CONVERSION_END(Crypto::EnumHashType)
+ENUM_CONVERSION_END(Crypto::EnumHashType)
 
-        namespace Web
+ENUM_CONVERSION_BEGIN(Web::Authorization::type)
+
+    { Web::Authorization::BEARER, _TXT("Bearer") },
+
+ENUM_CONVERSION_END(Web::Authorization::type)
+
+namespace Web
 {
     static const TCHAR DefaultPath[] = _T("/");
     static const TCHAR HTTPKeyWord[] = _T("HTTP/");
@@ -417,6 +425,33 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
         Core::ToString(input.Data(), input.Type(), false, signature);
         signature = string(enumValue.Data()) + ' ' + signature;
     }
+
+    static Authorization ToAuthorization(const string& input)
+    {
+        Core::OptionalType<Authorization::type> authorizationType;
+        Core::OptionalType<Core::TextFragment> token;
+        Core::TextFragment inputLine(input);
+
+        // Convert type and value
+        Core::TextParser lineParser(inputLine);
+
+        lineParser.ReadEnumerate<Authorization::type, false>(authorizationType, _T(" \t"));
+        lineParser.ReadText(token, _T(" \t"));
+
+        if (authorizationType.IsSet() && token.IsSet()) {
+            return (Authorization(authorizationType.Value(), token.Value().Text()));
+        }
+ 
+        return (Authorization());
+    }
+
+    static void FromAuthorization(const Authorization& input, string& authorization)
+    {
+        Core::EnumerateType<Authorization::type> enumValue(input.Type());
+
+        authorization = string(enumValue.Data()) + ' ' + input.Token();
+    }
+
 
     static void ParseContentType(const string& text, Core::OptionalType<MIMETypes>& mime, Core::OptionalType<CharacterTypes>& charType)
     {
@@ -750,15 +785,20 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __ST : _T("ST:"));
                             _value = _current->ST.Value();
                             _offset = 0;
-                        } else if ((_keyIndex <= 21) && (((_bodyLength = (_current->_body.IsValid() ? _current->_body->Serialize() : 0)) > 0) || (_current->ContentLength.IsSet() == true) || (!_current->Connection.IsSet()) || (_current->Connection.Value() != Request::CONNECTION_CLOSE))) {
-                            _keyIndex = (_bodyLength > 0 ? 22 : 23);
+                        } else if ((_keyIndex <= 21) && (_current->WebToken.IsSet() == true)) {
+                            _keyIndex = 22;
+                            _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __AUTHORIZATION : _T("Authorization:"));
+                            FromAuthorization(_current->WebToken.Value(), _value);
+                            _offset = 0;
+                        } else if ((_keyIndex <= 22) && (((_bodyLength = (_current->_body.IsValid() ? _current->_body->Serialize() : 0)) > 0) || (_current->ContentLength.IsSet() == true) || (!_current->Connection.IsSet()) || (_current->Connection.Value() != Request::CONNECTION_CLOSE))) {
+                            _keyIndex = (_bodyLength > 0 ? 23 : 24);
 
                             Core::NumberType<uint32_t, false, BASE_DECIMAL> number(_bodyLength);
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __CONTENT_LENGTH : _T("Content-Length:"));
                             number.Serialize(_value);
                             _offset = 0;
-                        } else if ((_keyIndex <= 22) && (_current->ContentSignature.IsSet() == true)) {
-                            _keyIndex = 23;
+                        } else if ((_keyIndex <= 23) && (_current->ContentSignature.IsSet() == true)) {
+                            _keyIndex = 24;
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __CONTENT_SIGNATURE : _T("Content-HMAC:"));
                             FromSignature(_current->ContentSignature.Value(), _value);
                             _offset = 0;
@@ -1417,6 +1457,9 @@ ENUM_CONVERSION_BEGIN(Web::MIMETypes)
                 break;
             case Request::M_X:
                 _current->MX = Core::NumberType<uint32_t>(buffer.c_str(), static_cast<uint32_t>(buffer.length())).Value();
+                break;
+            case Request::AUTHORIZATION:
+                _current->WebToken = ToAuthorization(buffer);
                 break;
             case Request::CONTENT_SIGNATURE:
                 _current->ContentSignature = ToSignature(buffer);
