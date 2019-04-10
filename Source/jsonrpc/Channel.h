@@ -54,6 +54,8 @@ namespace JSONRPC {
                 Client* _client;
             };
 
+            friend Core::SingletonType<FactoryImpl>;
+
             FactoryImpl()
                 : _jsonRPCFactory(2)
                 , _watchDog(Core::Thread::DefaultStackSize(), _T("JSONRPCCleaner"))
