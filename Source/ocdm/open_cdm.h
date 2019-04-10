@@ -195,28 +195,35 @@ typedef struct
     * Request of process of DRM challenge data. Server is indicated by \ref url. The response of the server
     * needs to be send to \ref opencdm_session_update.
     *
-    * \param userData Pointer passed along when \ref opencdm_session_callback was called.
+    * \param session The session the notification applies to.
+    * \param userData Pointer passed along when \ref opencdm_construct_session was issued.
     * \param url Target URL to send challenge to.
     * \param challenge Buffer containing challenge.
     * \param challengeLength Length of challenge (in bytes).
     */
+    void (*process_challenge_callback)(struct OpenCDMSession* session, void* userData, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
     void (*process_challenge)(struct OpenCDMSession* session, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
 
     /**
     * Called when status of a key changes. Use \ref opencdm_session_status to find out new key status.
     *
-    * \param userData Pointer passed along when \ref opencdm_session_callback was issued.
+    * \param session The session the notification applies to.
+    * \param userData Pointer passed along when \ref opencdm_construct_session was issued.
     * \param keyId Buffer containing key ID.
     * \param length Length of key ID buffer.
     */
+    void (*key_update_callback)(struct OpenCDMSession* session, void* userData, const uint8_t keyId[], const uint8_t length);
     void (*key_update)(struct OpenCDMSession* session, const uint8_t keyId[], const uint8_t length);
 
     /**
     * Called when a message is received from the DRM system
     *
+    * \param session The session the notification applies to.
+    * \param userData Pointer passed along when \ref opencdm_construct_session was issued.
     * \param message Text string, null terminated, from the DRM session.
     */
-    void (*message)(struct OpenCDMSession* userData, const char message[]);
+    void (*message_callback)(struct OpenCDMSession* session, void* userData, const char message[]);
+    void (*message)(struct OpenCDMSession* session, const char message[]);
 } OpenCDMSessionCallbacks;
 
 /**
@@ -279,9 +286,15 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMAccessor* syste
  * \param initDataLength Length (in bytes) of initialization data.
  * \param CDMData CDM data.
  * \param CDMDataLength Length (in bytes) of \ref CDMData.
+ * \param callbacks the instance of \ref OpenCDMSessionCallbacks with callbacks to be called on events.
+ * \param userData the user data to be passed back to the \ref OpenCDMSessionCallbacks callbacks.
  * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
  * \return Zero on success, non-zero on error.
  */
+OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
+    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
+    struct OpenCDMSession** session);
 OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
