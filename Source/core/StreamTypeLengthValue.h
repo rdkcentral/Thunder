@@ -361,7 +361,7 @@ namespace Core {
 
             _responses.Unlock();
 
-            return (OK);
+            return (Core::ERROR_NONE);
         }
         uint32_t Submit(const typename DATAEXCHANGE::Request& request, const uint32_t allowedTime = Core::infinite)
         {
