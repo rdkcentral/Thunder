@@ -136,7 +136,7 @@ namespace Broadcast {
 
                 NxClient_AllocSettings allocSettings;
                 NxClient_GetDefaultAllocSettings(&allocSettings);
-                allocSettings.simpleVideoDecoder = config.Decoders.Value();
+                allocSettings.simpleVideoDecoder = _frontends;
                 allocSettings.simpleAudioDecoder = 1;
                 _rc = NxClient_Alloc(&allocSettings, &_allocResults);
                 BDBG_ASSERT(!_rc);

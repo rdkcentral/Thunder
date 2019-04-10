@@ -149,6 +149,7 @@ public:
     virtual ~OpenCDMSession()
     {
         if (_session != nullptr) {
+
             _session->Release();
         }
         if (_decryptSession != nullptr) {
@@ -246,7 +247,7 @@ protected:
     {
         ASSERT((_session == nullptr) ^ (session == nullptr));
 
-        if ((session == nullptr) && (_session != nullptr)) {
+        if (_session != nullptr) {
             _session->Release();
         }
         _session = session;
@@ -375,7 +376,6 @@ public:
     {
         if (OpenCDMSession::IsValid() == true) {
             Revoke(&_sink);
-            OpenCDMSession::Session(nullptr);
         }
     }
 
@@ -1125,7 +1125,6 @@ std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* a
         ASSERT(_session == nullptr);
 
         ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession(_implementation, _keySystem, dataType, addData, addDataLength, cdmData, cdmDataLength, static_cast<::LicenseType>(license), nullptr);
-
         result = newSession->SessionId();
 
         _session = newSession;
@@ -1290,6 +1289,7 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system, const
 
         if (session != nullptr) {
             result = new OpenCDMSession(session);
+            session->Release();
         }
     }
 
@@ -1356,7 +1356,7 @@ OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session)
 
     if (session != nullptr) {
         result = OpenCDMError::ERROR_NONE;
-        session->Release();
+        delete session;
     }
 
     return (result);
@@ -1500,6 +1500,7 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session)
  */
 OpenCDMError opencdm_session_close(struct OpenCDMSession* session)
 {
+
     OpenCDMError result(ERROR_INVALID_SESSION);
 
     if (session != nullptr) {

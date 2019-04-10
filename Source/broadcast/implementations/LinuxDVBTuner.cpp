@@ -1,6 +1,6 @@
-#define MODULE_NAME TestApp
-#include <broadcast/broadcast.h>
-#include <core/core.h>
+#include "Definitions.h"
+#include "ProgramTable.h"
+#include "TunerAdministrator.h"
 
 #include <linux/dvb/frontend.h>
 

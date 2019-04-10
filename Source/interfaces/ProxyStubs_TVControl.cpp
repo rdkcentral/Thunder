@@ -711,7 +711,7 @@ namespace ProxyStubs {
             return output;
         }
 
-        uint32_t Load(string param0) override
+        uint32_t Load(const string& param0) override
         {
             IPCMessage newMessage(BaseClass::Message(6));
 

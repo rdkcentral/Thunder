@@ -35,7 +35,7 @@ target_link_libraries(${TARGET}
         )
 
 
-if(NXCLENT_FOUND)
+if(NXCLIENT_FOUND)
     find_package(NEXUS REQUIRED)
 
      target_sources(${TARGET} PRIVATE implementations/NexusTuner.cpp)

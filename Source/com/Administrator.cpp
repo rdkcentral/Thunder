@@ -180,6 +180,10 @@ namespace RPC {
                 if (entry != index->second.end()) {
                     result = (*entry);
 
+                    if (refCounted == true) {
+                        (*entry)->AddRefCachedCount();
+                    }
+
                     if (piggyBack == true) {
                         // Reference counting can be cached on this on object for now. This is a request
                         // from an incoming interface of which the lifetime is guaranteed by the callee.

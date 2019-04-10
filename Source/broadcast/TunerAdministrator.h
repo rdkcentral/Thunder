@@ -8,16 +8,16 @@ namespace WPEFramework {
 
 namespace Broadcast {
 
+    // This class is the linking pin (Singleton) between the Tuner Implementation and the outside world.
+    // However the definition of this class should not be shared with the outside world as this class 
+    // should not be directly accessed by anyone in the outside world
+    // The purpose of this class is to allow SI/PSI parsing on tuners while thay are not yet tuned, or
+    // if they are tuned, to collect (P)SI information on that transport stream and so it looks to the
+    // outside world that if one tunes automagically the P(SI) get populated.
+    // So: DO *NOT* USE THIS CLASS OUTSIDE THE BROADCAST LIBRARY, THAT IS WHY IT IS IN ANY OF THE 
+    //     INCLUDES OF ANY OTHER HEADER FILES AND ONLY USED BY THE TUNER IMPLEMENTATIONS !!!!
     class TunerAdministrator {
     public:
-        struct INotification {
-            virtual ~INotification() {}
-
-            virtual void Activated(ITuner* tuner) = 0;
-            virtual void Deactivated(ITuner* tuner) = 0;
-            virtual void StateChange(ITuner* tuner) = 0;
-        };
-
         struct ICallback {
             virtual ~ICallback() {}
 
@@ -61,7 +61,7 @@ namespace Broadcast {
         {
         }
 
-        typedef std::list<INotification*> Observers;
+        typedef std::list<ITuner::INotification*> Observers;
         typedef std::list<ITuner*> Tuners;
 
     public:
@@ -69,7 +69,7 @@ namespace Broadcast {
         virtual ~TunerAdministrator() {}
 
     public:
-        void Register(INotification* observer)
+        void Register(ITuner::INotification* observer)
         {
             _adminLock.Lock();
 
@@ -86,7 +86,7 @@ namespace Broadcast {
 
             _adminLock.Unlock();
         }
-        void Unregister(INotification* observer)
+        void Unregister(ITuner::INotification* observer)
         {
             _adminLock.Lock();
 
@@ -143,6 +143,9 @@ namespace Broadcast {
     private:
         void StateChange(ITuner* tuner)
         {
+            // Before notifying the others, lets notify the real user of the ITuner interface
+            tuner->StateChange();
+
             _adminLock.Lock();
 
             ASSERT(std::find(_tuners.begin(), _tuners.end(), tuner) != _tuners.end());
