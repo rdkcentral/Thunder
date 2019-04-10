@@ -148,6 +148,10 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (Response(channel, subject));
         }
+        uint32_t Notify(const string& event)
+        {
+            return (NotifyImpl(event, _T("")));
+        }
         template <typename JSONOBJECT>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters)
         {
@@ -155,7 +159,6 @@ namespace PluginHost {
             parameters.ToString(subject);
             return (NotifyImpl(event, subject));
         }
-
         template <typename JSONOBJECT, typename SENDIFMETHOD>
         uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
         {
@@ -165,7 +168,7 @@ namespace PluginHost {
         }
 
     private:
-        uint32_t NotifyImpl(const string& event, const string& parameters = "", std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
+        uint32_t NotifyImpl(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
         {
             uint32_t result = Core::ERROR_UNKNOWN_KEY;
 
