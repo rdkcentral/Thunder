@@ -4,7 +4,6 @@
 #include "Definitions.h"
 #include "Descriptors.h"
 #include "EIT.h"
-#include "TunerAdministrator.h"
 
 namespace WPEFramework {
 
@@ -15,7 +14,7 @@ namespace Broadcast {
         Schedules(const Schedules&) = delete;
         Schedules& operator=(const Schedules&) = delete;
 
-        class Sink : public TunerAdministrator::INotification {
+        class Sink : public ITuner::INotification {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
@@ -125,11 +124,11 @@ namespace Broadcast {
             , _sink(*this)
             , _scan(true)
         {
-            TunerAdministrator::Instance().Register(&_sink);
+            ITuner::Register(&_sink);
         }
         virtual ~Schedules()
         {
-            TunerAdministrator::Instance().Unregister(&_sink);
+            ITuner::Unregister(&_sink);
         }
 
     public:

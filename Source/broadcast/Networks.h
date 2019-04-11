@@ -5,7 +5,6 @@
 #include "Descriptors.h"
 #include "NIT.h"
 #include "ProgramTable.h"
-#include "TunerAdministrator.h"
 
 namespace WPEFramework {
 
@@ -16,7 +15,7 @@ namespace Broadcast {
         Networks(const Networks&) = delete;
         Networks& operator=(const Networks&) = delete;
 
-        class Sink : public TunerAdministrator::INotification {
+        class Sink : public ITuner::INotification {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
@@ -241,11 +240,11 @@ namespace Broadcast {
             , _scan(true)
             , _networks()
         {
-            TunerAdministrator::Instance().Register(&_sink);
+            ITuner::Register(&_sink);
         }
         virtual ~Networks()
         {
-            TunerAdministrator::Instance().Unregister(&_sink);
+            ITuner::Unregister(&_sink);
         }
 
     public:

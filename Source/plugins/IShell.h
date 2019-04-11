@@ -164,6 +164,9 @@ namespace PluginHost {
         //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
 
+        //! Resumed: boolean to inidcate wheter we need to start a plugin in a Resumed state, i.s.o. the Suspended state
+        virtual bool Resumed() const = 0;
+
         virtual string HashKey() const = 0;
         virtual string ConfigLine() const = 0;
 

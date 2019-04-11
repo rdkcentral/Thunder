@@ -39,8 +39,12 @@ namespace ProxyStub {
             case 1: {
                 // Release
                 RPC::Data::Frame::Writer response(message->Response().Writer());
+                RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+                uint32_t dropCount(reader.Number<uint32_t>());
+                uint32_t result = Core::ERROR_NONE;
 
-                response.Number<uint32_t>(implementation->Release());
+                while (dropCount-- != 0) { result = implementation->Release(); }
+                response.Number<uint32_t>(result);
                 break;
             }
             case 2: {

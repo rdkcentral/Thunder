@@ -585,7 +585,7 @@ namespace Core {
                     m_State = SerialPort::OPEN;
                     ResourceMonitor::Instance().Register(*this);
 
-                    result = OK;
+                    result = Core::ERROR_NONE;
                 }
             }
         }
@@ -623,7 +623,7 @@ namespace Core {
 
                     g_SerialPortMonitor.Monitor(*this);
 
-                    result = OK;
+                    result = Core::ERROR_NONE;
                 }
             }
         }
@@ -673,7 +673,7 @@ namespace Core {
                 m_syncAdmin.Unlock();
             }
 
-            return (OK);
+            return (Core::ERROR_NONE);
         }
 
         uint32_t SerialPort::WaitForClosure(const uint32_t time) const

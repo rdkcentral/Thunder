@@ -6,7 +6,7 @@ namespace JSONRPC {
 
     /* static */ Channel::FactoryImpl& Channel::FactoryImpl::Instance()
     {
-        static FactoryImpl _singleton;
+        static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
 
         return (_singleton);
     }

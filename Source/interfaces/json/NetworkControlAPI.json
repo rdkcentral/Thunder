@@ -1,0 +1,209 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Network Control API",
+    "class": "NetworkControl",
+    "description": "Network Control JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "NetworkControl.1.network": {
+      "summary": "Retrieves the actual network information for targeted network interface, if network interface is not given, all network interfaces are returned.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "interface": {
+              "description": "Interface name",
+              "type": "string",
+              "default": "eth0"
+            },
+            "mode": {
+              "description": "Mode type",
+              "type": "string",
+              "enum": [
+                "Manual",
+                "Static",
+                "Dynamic"
+              ],
+              "default": "dynamic"
+            },
+            "address": {
+              "description": "IP address",
+              "type": "string",
+              "default": "192.168.1.158"
+            },
+            "mask": {
+              "description": "Network inteface mask",
+              "type": "number",
+              "size": 8,
+              "default": "24"
+            },
+            "gateway": {
+              "description": "Gateway address",
+              "type": "string",
+              "default": "192.168.1.1"
+            },
+            "broadcast": {
+              "description": "Broadcast IP",
+              "type": "string",
+              "default": "192.168.1.255"
+            }
+          }
+        }
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.reload": {
+      "summary": "Reload static and non-static network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.request": {
+      "summary": "Reload non-static network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.assign": {
+      "summary": "Reload static network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.up": {
+      "summary": "Set up network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.down": {
+      "summary": "Set down network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "NetworkControl.1.flush": {
+      "summary": "Flush network interface adapter.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "default": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavaliable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}

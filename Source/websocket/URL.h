@@ -26,7 +26,7 @@ namespace Core {
     public:
         typedef enum {
             SCHEME_FILE = 0,
-            SCHEMA_MAIL,
+            SCHEME_MAIL,
             SCHEME_HTTP,
             SCHEME_HTTPS,
             SCHEME_FTP,
