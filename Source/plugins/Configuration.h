@@ -241,6 +241,7 @@ namespace PluginHost {
         }
         inline ISecurity* Security() const
         {
+            _security->AddRef();
             return (_security);
         }
         inline bool Background() const

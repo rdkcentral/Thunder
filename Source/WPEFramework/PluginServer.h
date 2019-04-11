@@ -1523,7 +1523,7 @@ namespace PluginHost {
                 _adminLock.Lock();
 
                 if (_authenticationHandler != nullptr) {
-                    _authenticationHandler->Officer(token);
+                    result = _authenticationHandler->Officer(token);
                 } else {
                     result = _webbridgeConfig.Security();
                 }
@@ -2059,6 +2059,9 @@ namespace PluginHost {
 
                 _incorrectVersion->ErrorCode = Web::STATUS_BAD_REQUEST;
                 _incorrectVersion->Message = _T("Callsign was oke, but the requested version was not supported.");
+
+                _unauthorizedRequest->ErrorCode = Web::STATUS_UNAUTHORIZED;
+                _unauthorizedRequest->Message = _T("Request needs authorization, but it was not authorized");
             }
             void Revoke(PluginHost::ISecurity* baseRights)
             {
@@ -2106,17 +2109,48 @@ namespace PluginHost {
             }
             virtual void Received(Core::ProxyType<Request>& request)
             {
+                ISecurity* security = nullptr;
+
                 TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
 
-                // If there was no body, we are still incomplete.
-                if (request->State() == Request::INCOMPLETE) {
+                // See if a token has been hooked up to the request, maybe we need a
+                // different security provider.
+                if (request->WebToken.IsSet()) {
+                    security = _parent.Officer(request->WebToken.Value().Token());
 
-                    Core::ProxyType<Service> service;
-                    bool serviceCall;
-                    uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
-
-                    request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                    // Do we now want this token to be permant for this channel or only
+                    // for this request ??? For now we will only use it for this request
+                    // If it must be made permanent, swap the current _security with this
+                    // one...
+                } else {
+                    PluginHost::Channel::Lock();
+                    security = _security;
+                    security->AddRef();
+                    PluginHost::Channel::Unlock();
                 }
+
+                // See if we are allowed to process this request..
+                if (security->Allowed(*request) == false) {
+                    request->Unauthorized();
+                } else {
+                    // If there was no body, we are still incomplete.
+                    if (request->State() == Request::INCOMPLETE) {
+
+                        Core::ProxyType<Service> service;
+                        bool serviceCall;
+                        uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+
+                        request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                    } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
+                        Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
+                        if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
+                            request->Unauthorized();
+                        }
+                    }
+                }
+
+                // We are done with the security related items, let go of the officer.
+                security->Release();
 
                 switch (request->State()) {
                 case Request::OBLIVIOUS: {
@@ -2142,6 +2176,11 @@ namespace PluginHost {
                 case Request::INVALID_VERSION: {
                     // Report that we, at least, need a call sign.
                     Submit(_incorrectVersion);
+                    break;
+                }
+                case Request::UNAUTHORIZED: {
+                    // Report that we, at least, need a call sign.
+                    Submit(_unauthorizedRequest);
                     break;
                 }
                 case Request::COMPLETE: {
@@ -2203,19 +2242,38 @@ namespace PluginHost {
             }
             virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
             {
+                bool securityClearance = true;
+
                 ASSERT(_service.IsValid() == true);
 
                 TRACE(SocketFlow, (element));
 
-                // Send the JSON object out to be handled.
-                // By definition, we can issue it on a rental thread..
-                Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+                if (State() & Channel::JSONRPC) {
+                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
+                    if (message.IsValid()) {
+                        PluginHost::Channel::Lock();
+                        securityClearance = _security->Allowed(*message);
+                        PluginHost::Channel::Unlock();
 
-                ASSERT(job.IsValid() == true);
+						if (securityClearance == false)
+                        {
+                            // Oopsie daisy we are not allowed to handle this request.
+                            // TODO: How shall we report back on this?
+                        }
+                    }
+                }
 
-                if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
-                    _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                if (securityClearance == true) {
+                    // Send the JSON object out to be handled.
+                    // By definition, we can issue it on a rental thread..
+                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+
+                    ASSERT(job.IsValid() == true);
+
+                    if ((_service.IsValid() == true) && (job.IsValid() == true)) {
+                        job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
+                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                    }
                 }
             }
             virtual void Received(const string& value)
@@ -2351,6 +2409,10 @@ namespace PluginHost {
             // If there is a call sign but the version request is not avilable,
             // we can return a proper answer, without dispatching.
             static Core::ProxyType<Web::Response> _incorrectVersion;
+
+            // If a request requires security clearance, but it is not give, for
+            // whatever reason, we will report back that the request is unauthorized.
+            static Core::ProxyType<Web::Response> _unauthorizedRequest;
         };
         class EXTERNAL ChannelMap : public Core::SocketServerType<Channel> {
         private:
@@ -2536,6 +2598,17 @@ namespace PluginHost {
         }
         void Open();
         void Close();
+
+    private:
+        ISecurity* Officer(const string& token)
+        {
+            return (_services.Officer(token));
+        }
+        inline ISecurity* Officer()
+        {
+            return (_config.Security());
+        }
+
 
     private:
         Core::NodeId _accessor;

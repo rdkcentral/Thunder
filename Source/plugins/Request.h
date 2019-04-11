@@ -18,11 +18,12 @@ namespace PluginHost {
     public:
         enum enumState : uint8_t {
             INCOMPLETE = 0x01,
-            OBLIVIOUS = 0x02,
-            MISSING_CALLSIGN = 0x04,
-            INVALID_VERSION = 0x08,
-            COMPLETE = 0x10,
-            SERVICE_CALL = 0x80
+            OBLIVIOUS,
+            MISSING_CALLSIGN,
+            INVALID_VERSION,
+            COMPLETE,
+            UNAUTHORIZED,
+            SERVICE_CALL = 0x80	
         };
 
     private:
@@ -34,18 +35,24 @@ namespace PluginHost {
         virtual ~Request();
 
     public:
+		// This method tells us if this call was received over the 
+		// Service prefix path or (if it is false) over the JSONRPC
+		// prefix path.
         inline bool ServiceCall() const
         {
             return ((_state & SERVICE_CALL) != 0);
         }
         inline enumState State() const
         {
-            return (static_cast<enumState>(_state & 0x3F));
+            return (static_cast<enumState>(_state & 0x7F));
         }
         inline Core::ProxyType<PluginHost::Service>& Service()
         {
             return (_service);
         }
+		inline void Unauthorized() {
+            _state = ((_state & 0x80) | UNAUTHORIZED);
+		}
 
         void Clear();
         void Service(const uint32_t errorCode, const Core::ProxyType<PluginHost::Service>& service, const bool serviceCall);
