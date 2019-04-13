@@ -6,7 +6,7 @@
 namespace WPEFramework {
 namespace Web {
 
-	class JSONWebToken {
+	class EXTERNAL JSONWebToken {
     private:
         JSONWebToken() = delete;
         JSONWebToken(const JSONWebToken&) = delete;
@@ -21,11 +21,14 @@ namespace Web {
         ~JSONWebToken();
 
 	public:
-        string Encode(const string& payload) const;
-        string Decode(const string& token) const;
+        uint16_t Encode(string& token, const uint16_t length, const uint8_t payload[]) const;
+        uint16_t Decode(const string& token, const uint16_t maxLength, uint8_t payload[]) const;
+        uint16_t PayloadLength(const string& token) const;
+
+	private:
         bool ValidSignature(const mode type, const string& token) const;
 
-    private:
+	private:
         mode _mode;
         string _header; 
 		string _key;

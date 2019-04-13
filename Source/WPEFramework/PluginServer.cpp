@@ -724,7 +724,7 @@ namespace PluginHost
 		if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) == 0) {
 			// The controller is on control of the security, so I guess all systems green
 			// as the controller does not know anything about security :-)
-            securityProvider->Security(false);
+            securityProvider->Security(true);
         }
 
 		securityProvider->Release();

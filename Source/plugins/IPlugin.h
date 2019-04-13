@@ -194,7 +194,7 @@ namespace PluginHost {
             ID = RPC::ID_AUTHENTICATE
         };
 
-        virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer, string& token) = 0;
+        virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer[], string& token) = 0;
         virtual ISecurity* Officer(const string& token) = 0;
     };
 

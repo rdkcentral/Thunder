@@ -467,6 +467,9 @@ namespace PluginHost {
                         printf("Platform:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
                                                                                          : "Unavailable");
+                        printf("Security:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
+                                                                                        : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
                                                                                         : "Unavailable");
@@ -494,11 +497,9 @@ namespace PluginHost {
                         printf("WebSource:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
                                                                                           : "Unavailable");
-
                         printf("Streaming:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
                                                                                           : "Unavailable");
-
                         printf("------------------------------------------------------------\n");
                         if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                             printf("Network Type: %s\n",
