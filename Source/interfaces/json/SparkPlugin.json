@@ -1,0 +1,114 @@
+{
+  "$schema": "plugin.schema.json",
+  "info": {
+    "title": "Spark Plugin",
+    "callsign": "Spark",
+    "locator": "libWPEFrameworkSpark.so",
+    "class": {
+      "$ref": "SparkAPI.json#/info/class"
+    },
+    "description": "The Spark plugin provides web browsing functionality based on the Spark engine.",
+    "version": "1.0"
+  },
+  "configuration": {
+    "type": "object",
+    "properties": {
+      "configuration": {
+        "type": "object",
+        "required": [],
+        "properties": {
+          "useragent": {
+            "type": "string",
+            "description": "The UserAgent used during communication with the web server"
+          },
+          "url": {
+            "type": "string",
+            "description": "The URL that is loaded upon starting the browser"
+          },
+          "injectedbundle": {
+            "type": "string",
+            "description": "The name of the .so loaded to extend the HTML5 with customized JavaScript handlers"
+          },
+          "cookiestorage": {
+            "type": "string",
+            "description": "Post-fixed path to the persistent location on where cookies will be stored"
+          },
+          "localstorage": {
+            "type": "string",
+            "description": "Post-fixed path to the persistent location on where local-storage will be stored"
+          },
+          "certificatecheck": {
+            "type": "boolean",
+            "description": "If enabled, SSL certificate error will lead to a page error"
+          },
+          "javascript": {
+            "type": "object",
+            "properties": {
+              "useLLInt": {
+                "type": "boolean",
+                "description": "Enable Low Level Interpreter"
+              },
+              "useJIT": {
+                "type": "boolean",
+                "description": "Enable JIT"
+              },
+              "useDFG": {
+                "type": "boolean",
+                "description": "Enable Data-Flow-Graph-JIT compiler"
+              },
+              "useFTL": {
+                "type": "boolean",
+                "description": "Enable Faster-Than-Light-JIT compiler"
+              },
+              "useDOM": {
+                "type": "boolean",
+                "description": "Enable the DOM-JIT compiler"
+              },
+              "dumpOptions": {
+                "type": "string",
+                "description": "Dump options: 0 = None, 1 = Overridden only, 2 = All, 3 = Verbose"
+              }
+            },
+            "required": []
+          },
+          "secure": {
+            "type": "boolean",
+            "description": "If false, every domain can access any other domain, otherwise fill in fields in whitelist definition table"
+          },
+          "whitelist": {
+            "type": "object",
+            "properties": {
+              "origin": {
+                "type": "string",
+                "description": "Origin domain allowed to access domains in domain"
+              },
+              "domain": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "description": "Domain allowed to access from origin"
+                }
+              },
+              "subdomain": {
+                "type": "string",
+                "description": "whether it is also OK to access subdomains of domains listed in domain"
+              }
+            },
+            "required": []
+          }
+        }
+      }
+    },
+    "required": [
+      "callsign",
+      "classname",
+      "locator"
+    ]
+  },
+  "methods": {
+    "$ref": "SparkAPI.json#/methods"
+  },
+  "events": {
+    "$ref": "SparkAPI.json#/events"
+  }
+}

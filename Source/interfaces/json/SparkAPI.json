@@ -1,0 +1,165 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Spark Browser API",
+    "class": "Spark",
+    "description": "Spark JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "Spark.1.status": {
+      "summary": "Retrieves the Spark Engine information.",
+      "description": "With this method current running state can be retrieved from the Spark browser.",
+      "result": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The currently loaded URL in the Spark browser",
+            "type": "string",
+            "example": "https://www.google.com"
+          },
+          "fps": {
+            "description": "The current number of frames per second the browser is rendering",
+            "type": "number",
+            "example": 30
+          },
+          "suspended": {
+            "description": "Determines if the browser is in suspended mode (true) or resumed mode (false)",
+            "type": "boolean",
+            "example": false
+          },
+          "hidden": {
+            "description": "Determines if the browser is hidden (true) or visible (false)",
+            "type": "boolean",
+            "example": false
+          }
+        },
+        "required": [
+          "url",
+          "fps",
+          "suspended",
+          "hidden"
+        ]
+      }
+    },
+    "Spark.1.suspend": {
+      "summary": "Suspends the Spark Browser.",
+      "description": "With this method the Spark Browser can be suspended. Suspending when already in suspended mode has no effect.",
+      "events": [
+        "statechange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Spark.1.resume": {
+      "summary": "Resumes the Spark Browser.",
+      "description": "With this method the Spark Browser can be resumed from suspended mode. Resuming from a not suspended mode has no effect.",
+      "events": [
+        "statechange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Spark.1.hide": {
+      "summary": "Hides the Spark Browser.",
+      "description": "With this method rendering of the Spark Browser can be stopped. Hiding an already hidden browser has no effect.",
+      "events": [
+        "visibilitychange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Spark.1.show": {
+      "summary": "Shows the Spark Browser.",
+      "description": "With this method rendering of the Spark Browser can be (re)started. Showing a not hidden browser has no effect.",
+      "events": [
+        "visibilitychange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Spark.1.seturl": {
+      "summary": "Sets a URL in the Spark Browser.",
+      "description": "With this method a new URL can be loaded in the Spark Browser.",
+      "events": [
+        "urlchange"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL to load",
+            "type": "string",
+            "example": "https://www.google.com"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/incorrecturl"
+        }
+      ]
+    }
+  },
+  "events": {
+    "urlchange": {
+      "summary": "Signals a URL change in the browser.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL that has been loaded or requested",
+            "type": "string",
+            "example": "https://www.google.com"
+          },
+          "loaded": {
+            "description": "Determines if the URL has just been loaded (true) or if URL change has been requested (false)",
+            "type": "boolean",
+            "default": true,
+            "example": false
+          }
+        },
+        "required": [
+          "url",
+          "loaded"
+        ]
+      }
+    },
+    "statechange": {
+      "summary": "Signals a state change in the browser.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "suspended": {
+            "description": "Determines if the browser has reached suspended state (true) or resumed state (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    },
+    "visibilitychange": {
+      "summary": "Signals a visibility change of the browser.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "description": "Determines if the browser has been hidden (true) or made visible (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}
