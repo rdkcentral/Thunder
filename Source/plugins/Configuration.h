@@ -156,8 +156,7 @@ namespace PluginHost {
             const string& hashKey,
             const Core::NodeId& accessor,
             const Core::NodeId& communicator,
-            const string& redirect,
-            ISecurity* security)
+            const string& redirect)
             : _webPrefix('/' + webPrefix)
             , _JSONRPCPrefix('/' + JSONRPCPrefix)
             , _volatilePath(Core::Directory::Normalize(volatilePath))
@@ -170,18 +169,16 @@ namespace PluginHost {
             , _accessor(accessor)
             , _communicator(communicator)
             , _redirect(redirect)
-            , _security(security)
+            , _security(nullptr)
             , _background(background)
             , _version(version)
             , _model(model)
         {
-            ASSERT(_security != nullptr);
             ASSERT(_appPath.empty() == false);
-
-            _security->AddRef();
         }
         ~Config()
         {
+            ASSERT(_security != nullptr);
             _security->Release();
         }
 
@@ -207,7 +204,7 @@ namespace PluginHost {
             return (_JSONRPCPrefix);
         }
         inline const string& VolatilePath() const
-        {
+		{
             return (_volatilePath);
         }
         inline const string& PersistentPath() const
@@ -244,11 +241,26 @@ namespace PluginHost {
         }
         inline ISecurity* Security() const
         {
+            _security->AddRef();
             return (_security);
         }
         inline bool Background() const
         {
             return (_background);
+        }
+
+	private:
+        friend class Server;
+
+        inline void Security(ISecurity* security)
+        {
+            ASSERT((_security == nullptr) && (security != nullptr));
+
+            _security = security;
+
+            if (_security != nullptr) {
+                _security->AddRef();
+			}
         }
 
     private:

@@ -15,6 +15,7 @@ namespace PluginHost {
 
         enum subsystem {
             PLATFORM = 0, // platform is available.
+			SECURITY, // A security system can validate external requests (JSONRPC/WebRequest)
             NETWORK, // Network connectivity has been established.
             IDENTIFIER, // System identification has been accomplished.
             GRAPHICS, // Graphics screen EGL is available.
@@ -29,6 +30,7 @@ namespace PluginHost {
 
             // Also define a "negative" value.
             NOT_PLATFORM = 0x80000000, // platform is NOT available.
+			NOT_SECURITY, // A security system can validate external requests (JSONRPC/WebRequest)
             NOT_NETWORK, // Network connectivity has NOT been established.
             NOT_IDENTIFIER, // System identification has NOT been accomplished.
             NOT_GRAPHICS, // Graphics screen EGL is NOT available.
@@ -54,6 +56,21 @@ namespace PluginHost {
 
             // Some change happened with respect to the Network..
             virtual void Updated() = 0;
+        };
+
+        struct ISecurity
+            : virtual public Core::IUnknown {
+
+            enum {
+                ID = RPC::ID_SUBSYSTEM_SECURITY
+            };
+
+            enum {
+                SUBSYSTEM = SECURITY
+            };
+
+            // Security information
+            virtual string Callsign() const = 0;
         };
 
         struct IInternet

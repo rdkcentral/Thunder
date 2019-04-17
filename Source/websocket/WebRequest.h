@@ -135,6 +135,67 @@ namespace Web {
         Crypto::EnumHashType _type;
     };
 
+    class EXTERNAL Authorization {
+    public:
+        enum type {
+            BEARER
+        };
+
+    public:
+        Authorization()
+            : _type(BEARER)
+            , _token()
+        {
+        }
+        Authorization(const type& value, const string& token)
+            : _type(value)
+            , _token(token)
+        {
+        }
+        Authorization(const Authorization& copy)
+            : _type(copy._type)
+            , _token(copy._token)
+        {
+        }
+        ~Authorization()
+        {
+        }
+
+        Authorization& operator=(const Authorization& RHS)
+        {
+            _type = RHS._type;
+            _token = RHS._token;
+
+            return (*this);
+        }
+
+    public:
+        bool Equal(const type& value, const string& token) const
+        {
+            return ((_type == value) && (token == _token));
+        }
+        inline bool operator==(const Authorization& RHS) const
+        {
+            return ((_type == RHS._type) && (_token == RHS._token));
+        }
+        inline bool operator!=(const Authorization& RHS) const
+        {
+            return (!(operator==(RHS)));
+        }
+        type Type() const
+        {
+            return (_type);
+        }
+        const string& Token() const
+        {
+            return (_token);
+        }
+
+    private:
+        type _type;
+        string _token;
+    };
+
     class EXTERNAL Request {
     public:
         typedef Request BaseElement;
@@ -162,7 +223,8 @@ namespace Web {
             WEBSOCKET_EXTENSIONS,
             MAN,
             M_X,
-            S_T
+            S_T,
+			AUTHORIZATION
         };
 
         enum type {
@@ -507,6 +569,7 @@ namespace Web {
             Man.Clear();
             MX.Clear();
             ST.Clear();
+            WebToken.Clear();
 
             if (_body.IsValid() == true) {
                 _body.Release();
@@ -543,6 +606,7 @@ namespace Web {
         Core::OptionalType<string> Man;
         Core::OptionalType<string> ST;
         Core::OptionalType<uint32_t> MX;
+        Core::OptionalType<Authorization> WebToken;
 
         inline bool HasBody() const
         {

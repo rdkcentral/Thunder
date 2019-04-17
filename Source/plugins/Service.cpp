@@ -42,19 +42,17 @@ namespace PluginHost {
         ASSERT(_service.IsValid() == false);
         ASSERT(State() == INCOMPLETE);
 
+		uint8_t value = (serviceCall ? SERVICE_CALL : 0);
+
         if (service.IsValid() == true) {
-            _state = COMPLETE | SERVICE_CALL;
+            _state = COMPLETE | value;
             _service = service;
         } else if (errorCode == Core::ERROR_BAD_REQUEST) {
-            _state = OBLIVIOUS | SERVICE_CALL;
+            _state = OBLIVIOUS | value;
         } else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
-            _state = INVALID_VERSION | SERVICE_CALL;
+            _state = INVALID_VERSION | value;
         } else if (errorCode == Core::ERROR_UNAVAILABLE) {
-            _state = MISSING_CALLSIGN | SERVICE_CALL;
-        }
-
-        if (serviceCall == false) {
-            _state &= (~SERVICE_CALL);
+            _state = MISSING_CALLSIGN | value;
         }
     }
 
