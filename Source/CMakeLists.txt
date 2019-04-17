@@ -1,4 +1,5 @@
 include(config)
+include(GNUInstallDirs)
 
 option(CORE
         "Include the core library." ON)
