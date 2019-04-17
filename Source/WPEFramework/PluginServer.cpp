@@ -721,13 +721,16 @@ namespace PluginHost
 
         _controller->Activate(PluginHost::IShell::STARTUP);
 
-		if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) == 0) {
-			// The controller is on control of the security, so I guess all systems green
-			// as the controller does not know anything about security :-)
-            securityProvider->Security(true);
+        if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) != 0) {
+            // The controller is on control of the security, so I guess all systems green
+            // as the controller does not know anything about security :-)
+            securityProvider->Security(false);
+        }
+        else {
+            SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
         }
 
-		securityProvider->Release();
+	securityProvider->Release();
         
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
