@@ -27,6 +27,8 @@ namespace PluginHost {
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator=(const JSONRPC&) = delete;
 
+    protected:
+
         class Registration : public Core::JSON::Container {
         private:
             Registration(const Registration&) = delete;
@@ -49,6 +51,8 @@ namespace PluginHost {
             Core::JSON::String Event;
             Core::JSON::String Callsign;
         };
+
+	private:
 
         class Observer {
         private:
@@ -117,6 +121,11 @@ namespace PluginHost {
         {
             _handler.Property<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(methodName, getter, setter, objectPtr);
         }
+        template <typename METHOD, typename REALOBJECT>
+        void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+            _handler.Register<Core::JSON::VariantContainer, Core::JSON::VariantContainer, METHOD, REALOBJECT>(methodName, method, objectPtr);
+        }
         template <typename INBOUND, typename OUTBOUND, typename METHOD, typename REALOBJECT>
         void Register(const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
         {
@@ -164,7 +173,7 @@ namespace PluginHost {
         {
             string subject;
             parameters.ToString(subject);
-            return NotifyImpl(event, subject, std::move(method)); 
+            return NotifyImpl(event, subject, std::move(method));
         }
 
     private:
@@ -211,7 +220,6 @@ namespace PluginHost {
         }
 
     public:
-
         uint32_t Response(const Core::JSONRPC::Connection& channel, const string& result)
         {
             Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
@@ -246,7 +254,19 @@ namespace PluginHost {
         {
             Registration info;
             info.FromString(parameters);
+            Register(id, info, response);
+        }
 
+        void Unregister(const uint32_t id, const string& parameters, Core::JSONRPC::Message& response)
+        {
+            Registration info;
+            info.FromString(parameters);
+            Unregister(id, info, response);
+        }
+
+	protected:
+        void Register(const uint32_t id, const Registration& info, Core::JSONRPC::Message& response)
+        {
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.find(info.Event.Value());
@@ -264,11 +284,9 @@ namespace PluginHost {
 
             _adminLock.Unlock();
         }
-        void Unregister(const uint32_t id, const string& parameters, Core::JSONRPC::Message& response)
-        {
-            Registration info;
-            info.FromString(parameters);
 
+        void Unregister(const uint32_t id, const Registration& info, Core::JSONRPC::Message& response)
+        {
             _adminLock.Lock();
 
             ObserverMap::iterator index = _observers.find(info.Event.Value());
@@ -298,7 +316,9 @@ namespace PluginHost {
 
             _adminLock.Unlock();
         }
-        virtual void Activate(IShell* service) override
+
+    private:
+        virtual void Activate(IShell * service) override
         {
             ASSERT(_service == nullptr);
             ASSERT(service != nullptr);
@@ -356,9 +376,9 @@ namespace PluginHost {
         }
 
     protected:
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
+        inline bool Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound, string& method, string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response)
         {
-            Core::ProxyType<Core::JSONRPC::Message> response;
+            bool handled = true;
             uint32_t result = _handler.Validate(inbound);
 
             if (inbound.Id.IsSet() == true) {
@@ -371,8 +391,8 @@ namespace PluginHost {
                 response->Error.SetError(result);
                 response->Error.Text = _T("Destined invoke failed.");
             } else {
-                const string method = inbound.Method();
-                const string parameters = inbound.Parameters.Value();
+                method = inbound.Method();
+                parameters = inbound.Parameters.Value();
 
                 if (_handler.Exists(Core::JSONRPC::Message::Method(method), Core::JSONRPC::Message::Version(method)) == Core::ERROR_NONE) {
                     string result;
@@ -387,39 +407,75 @@ namespace PluginHost {
                             response->Error.Text = result;
                         }
                     }
-                } else if (method == _T("exists")) {
-
-                    ASSERT(response.IsValid() == true);
-
-                    if (response.IsValid() == true) {
-                        if (_handler.Exists(Core::JSONRPC::Message::Method(parameters), Core::JSONRPC::Message::Version(parameters)) == Core::ERROR_NONE) {
-                            response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
-                        } else {
-                            response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
-                        }
-                    }
-                } else if (method == _T("register")) {
-
-                    ASSERT(response.IsValid() == true);
-
-                    if (response.IsValid() == true) {
-
-                        Register(channelId, inbound.Parameters.Value(), *response);
-                    }
-                } else if (method == _T("unregister")) {
-
-                    ASSERT(response.IsValid() == true);
-
-                    if (response.IsValid() == true) {
-
-                        Unregister(channelId, inbound.Parameters.Value(), *response);
-                    }
                 } else {
-                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                    response->Error.Text = _T("Unhandled method.");
+                    handled = false;
                 }
             }
-            return (response);
+
+            return handled;
+        }
+
+        inline bool IsRegisterMethod(const string& methodname) const
+        {
+            return methodname == _T("register");
+        }
+
+        inline bool IsUnregisterMethod(const string& methodname) const
+        {
+            return methodname == _T("unregister");
+        }
+
+        inline bool IsExistsMethod(const string& methodname) const
+        {
+            return methodname == _T("exists");
+        }
+
+        inline void InvokeInternalMethods(const uint32_t channelId, const Core::JSONRPC::Message& inbound, string& method, string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response)
+        {
+            if (IsExistsMethod(method) == true) {
+
+                ASSERT(response.IsValid() == true);
+
+                if (response.IsValid() == true) {
+                    if (_handler.Exists(Core::JSONRPC::Message::Method(parameters), Core::JSONRPC::Message::Version(parameters)) == Core::ERROR_NONE) {
+                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
+                    } else {
+                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
+                    }
+                }
+            } else if (IsRegisterMethod(method) == true) {
+
+                ASSERT(response.IsValid() == true);
+
+                if (response.IsValid() == true) {
+
+                    Register(channelId, inbound.Parameters.Value(), *response);
+                }
+            } else if (IsUnregisterMethod(method) == true) {
+
+                ASSERT(response.IsValid() == true);
+
+                if (response.IsValid() == true) {
+
+                    Unregister(channelId, inbound.Parameters.Value(), *response);
+                }
+            } else {
+                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                response->Error.Text = _T("Unhandled method.");
+            }
+        }
+
+        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
+        {
+            string method;
+            string parameters;
+            Core::ProxyType<Core::JSONRPC::Message> response;
+
+            if (Invoke(channelId, inbound, method, parameters, response) == false) {
+                InvokeInternalMethods(channelId, inbound, method, parameters, response);
+            }
+
+            return response;
         }
 
     private:
@@ -430,5 +486,89 @@ namespace PluginHost {
 
         static Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCMessageFactory;
     };
-}
-} // namespace WPEFramework::PluginHost
+
+    class EXTERNAL JSONRPCSupportsEventStatus : public JSONRPC {
+    public:
+        JSONRPCSupportsEventStatus(const JSONRPCSupportsEventStatus&) = delete;
+        JSONRPCSupportsEventStatus& operator=(const JSONRPCSupportsEventStatus&) = delete;
+
+        JSONRPCSupportsEventStatus() = default;
+        virtual ~JSONRPCSupportsEventStatus() = default;
+
+		using JSONRPC::Invoke;
+		using JSONRPC::Notify;
+
+        enum class Status { registered,
+            unregistered };
+
+        template <typename METHOD>
+        void RegisterEventStatusListener(const string& event, METHOD method)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) == _observers.end());
+
+            _observers[event] = method;
+
+            _adminLock.Unlock();
+        }
+
+        void UnregisterEventStatusListener(const string& event)
+        {
+            _adminLock.Lock();
+
+            ASSERT(_observers.find(event) != _observers.end());
+
+            _observers.erase(event);
+
+            _adminLock.Unlock();
+        }
+
+    protected:
+
+        void NotifyObservers(const string& event, const string& client, const Status status) const
+        {
+            _adminLock.Lock();
+
+            StatusCallbackMap::const_iterator it = _observers.find(event);
+            if (it != _observers.cend()) {
+                it->second(client, status);
+			}
+
+            _adminLock.Unlock();
+        }
+
+        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
+        {
+            string method;
+            string parameters;
+            Core::ProxyType<Core::JSONRPC::Message> response;
+
+            if (Invoke(channelId, inbound, method, parameters, response) == false) {
+                if (IsRegisterMethod(method) == true) {
+                    Registration info;
+                    info.FromString(parameters);
+                    NotifyObservers(info.Event.Value(), info.Callsign.Value(), Status::registered);
+                    Register(channelId, info, *response);
+                } else if (IsUnregisterMethod(method) == true) {
+                    Registration info;
+                    info.FromString(parameters);
+                    NotifyObservers(info.Event.Value(), info.Callsign.Value(), Status::unregistered);
+                    Unregister(channelId, info, *response);
+                } else {
+					InvokeInternalMethods(channelId, inbound, method, parameters, response);
+                }
+            }
+
+            return response;
+        }
+
+    private:
+        using EventStatusCallback = std::function<void(const string&, Status status)>;
+        using StatusCallbackMap = std::map<string, EventStatusCallback>;
+
+        mutable Core::CriticalSection _adminLock;
+        StatusCallbackMap _observers;
+    };
+ } // namespace WPEFramework::PluginHost
+ }

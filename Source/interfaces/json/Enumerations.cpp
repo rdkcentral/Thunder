@@ -2,6 +2,7 @@
 #include <core/Enumerate.h>
 #include "JsonData_NetworkControl.h"
 #include "JsonData_RemoteControl.h"
+#include "JsonData_TestUtility.h"
 
 namespace WPEFramework {
 
@@ -23,5 +24,15 @@ ENUM_CONVERSION_BEGIN(JsonData::RemoteControl::ModifiersType)
     { JsonData::RemoteControl::ModifiersType::LEFTCTRL, _TXT("leftctrl") },
     { JsonData::RemoteControl::ModifiersType::RIGHTCTRL, _TXT("rightctrl") },
 ENUM_CONVERSION_END(JsonData::RemoteControl::ModifiersType);
+
+// TestUtility
+
+ENUM_CONVERSION_BEGIN(JsonData::TestUtility::InputInfo::ParamType)
+    { JsonData::TestUtility::InputInfo::ParamType::NUMBER, _TXT("Number") },
+    { JsonData::TestUtility::InputInfo::ParamType::STRING, _TXT("String") },
+    { JsonData::TestUtility::InputInfo::ParamType::BOOLEAN, _TXT("Boolean") },
+    { JsonData::TestUtility::InputInfo::ParamType::OBJECT, _TXT("Object") },
+    { JsonData::TestUtility::InputInfo::ParamType::SYMBOL, _TXT("Symbol") },
+ENUM_CONVERSION_END(JsonData::TestUtility::InputInfo::ParamType);
 
 }

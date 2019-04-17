@@ -348,7 +348,8 @@ public:
         const uint8_t* pbCustomData,
         const uint16_t cbCustomData,
         const LicenseType licenseType,
-        OpenCDMSessionCallbacks* callbacks)
+        OpenCDMSessionCallbacks* callbacks,
+        void* userData)
         : OpenCDMSession()
         , _sink(this)
         , _state(SESSION_INIT)
@@ -359,6 +360,7 @@ public:
         , _sysError(0)
         , _key(OCDM::ISession::StatusPending)
         , _callback(callbacks)
+        , _userData(userData)
     {
 
         std::string bufferId;
@@ -489,7 +491,10 @@ private:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_MESSAGE | SESSION_UPDATE);
         } else {
-            _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
+            if (_callback->process_challenge)
+                _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
+            else
+                _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
         }
     }
     // Event fired when MediaKeySession has found a usable key.
@@ -499,7 +504,10 @@ private:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
+            if (_callback->key_update)
+                _callback->key_update(this, nullptr, 0);
+            else
+                _callback->key_update_callback(this, _userData, nullptr, 0);
         }
     }
     // Event fired when MediaKeySession encounters an error.
@@ -513,8 +521,13 @@ private:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_ERROR | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
-            _callback->message(this, errorMessage.c_str());
+            if (_callback->key_update) {
+                _callback->key_update(this, nullptr, 0);
+                _callback->message(this, errorMessage.c_str());
+            } else {
+                _callback->key_update_callback(this, _userData, nullptr, 0);
+                _callback->message_callback(this, _userData, errorMessage.c_str());
+            }
         }
     }
     // Event fired on key status update
@@ -525,7 +538,10 @@ private:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
+            if (_callback->key_update)
+                _callback->key_update(this, nullptr, 0);
+            else
+                _callback->key_update_callback(this, _userData, nullptr, 0);
         }
     }
 
@@ -539,6 +555,7 @@ private:
     OCDM::OCDM_RESULT _sysError;
     OCDM::ISession::KeyStatus _key;
     OpenCDMSessionCallbacks* _callback;
+    void* _userData;
 };
 
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM {
@@ -1124,7 +1141,7 @@ std::string OpenCdm::CreateSession(const std::string& dataType, const uint8_t* a
 
         ASSERT(_session == nullptr);
 
-        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession(_implementation, _keySystem, dataType, addData, addDataLength, cdmData, cdmDataLength, static_cast<::LicenseType>(license), nullptr);
+        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession(_implementation, _keySystem, dataType, addData, addDataLength, cdmData, cdmDataLength, static_cast<::LicenseType>(license), nullptr, nullptr);
         result = newSession->SessionId();
 
         _session = newSession;
@@ -1333,10 +1350,19 @@ OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char k
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
     struct OpenCDMSession** session)
 {
+    return opencdm_construct_session(system, keySystem, licenseType, initDataType, initData, initDataLength, CDMData,
+                                     CDMDataLength, callbacks, nullptr, session);
+}
+
+OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
+    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
+    struct OpenCDMSession** session)
+{
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength, CDMData, CDMDataLength, licenseType, callbacks);
+        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength, CDMData, CDMDataLength, licenseType, callbacks, userData);
 
         result = (*session != nullptr ? OpenCDMError::ERROR_NONE : OpenCDMError::ERROR_INVALID_SESSION);
     }
