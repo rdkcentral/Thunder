@@ -371,10 +371,6 @@ typedef DEPRECATED signed long long sint64;
 #define TRUE (!FALSE)
 #endif
 
-#ifndef OK
-#define OK (0)
-#endif
-
 #ifdef __WIN32__
 #define SYSTEM_SYNC_HANDLE HANDLE
 #else
