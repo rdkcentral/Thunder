@@ -40,7 +40,7 @@ namespace PluginHost
 #ifdef __WIN32__
     /* static */ const TCHAR* Server::ConfigFile = _T("C:\\Projects\\PluginHost.json");
 #else
-    /* static */ const TCHAR* Server::ConfigFile = _T(WPEFRAMEWORK_CONFIG_FILE);
+    /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
