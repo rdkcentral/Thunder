@@ -1113,12 +1113,14 @@ namespace Core {
                     offset++;
                 }
                 if (result < maxLength) {
+                    const std::string& source = (((_value.empty() == true) && (UseQuotes() == false))? "null" : _value);
+
 #ifdef __WIN32__
 #pragma warning(disable : 4996)
 #endif
 
                     // Write the amount we possibly can..
-                    uint16_t written = static_cast<uint16_t>(_value.copy(&(stream[result]), maxLength - result, offset - 1));
+                    uint16_t written = static_cast<uint16_t>(source.copy(&(stream[result]), maxLength - result, offset - 1));
 
 #ifdef __WIN32__
 #pragma warning(default : 4996)
