@@ -1113,7 +1113,8 @@ namespace Core {
                     offset++;
                 }
                 if (result < maxLength) {
-                    const std::string& source = (((_value.empty() == true) && (UseQuotes() == false))? "null" : _value);
+                    static const std::string kNull("null");
+                    const std::string& source = (((_value.empty() == true) && (UseQuotes() == false))? kNull : _value);
 
 #ifdef __WIN32__
 #pragma warning(disable : 4996)
