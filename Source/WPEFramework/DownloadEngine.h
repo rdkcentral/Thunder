@@ -46,7 +46,7 @@ namespace PluginHost {
                         _current._source = locator;
                         ::memcpy(_current._hash, hash, sizeof(_current._hash));
 
-                        BaseClass::Download(url, _storage);
+                        result = BaseClass::Download(url, _storage);
                     }
                 }
 

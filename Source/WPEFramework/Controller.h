@@ -5,6 +5,8 @@
 #include "Module.h"
 #include "PluginServer.h"
 #include "Probe.h"
+#include "json/JsonData_Controller.h"
+
 
 namespace WPEFramework {
 namespace Plugin {
@@ -111,71 +113,6 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-        uint32_t exists(const Core::JSON::String& designator, Core::JSON::DecUInt32& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-            const string locator(designator.Value());
-            string callsign = Core::JSONRPC::Message::Callsign(locator);
-            response = Core::ERROR_UNKNOWN_KEY;
-
-            if (callsign.empty() == true) {
-                if (Exists(locator, Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
-                    response = Core::ERROR_NONE;
-                }
-            } else {
-                uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
-
-                if (result == Core::ERROR_NONE) {
-                    if (service->State() != PluginHost::IShell::ACTIVATED) {
-                        response = Core::ERROR_UNAVAILABLE;
-                    } else {
-                        ASSERT(service.IsValid());
-                        PluginHost::IDispatcher* plugin = service->Dispatcher();
-                        if (plugin != nullptr) {
-                            if (plugin->Exists(Core::JSONRPC::Message::Method(locator), Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
-                                response = Core::ERROR_NONE;
-                            }
-                        }
-                    }
-                } else {
-                    response = result;
-                }
-            }
-            return (Core::ERROR_NONE);
-        }
-        uint32_t activate(const Core::JSON::String& designator, Core::JSON::String& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
-
-                ASSERT(service.IsValid() == true);
-
-                if (service->State() == PluginHost::IShell::DEACTIVATED) {
-                    // Activate the plugin.
-                    response = service->Activate(PluginHost::IShell::REQUESTED);
-                }
-            }
-
-            return (Core::ERROR_NONE);
-        }
-        uint32_t deactivate(const Core::JSON::String& designator, Core::JSON::String& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
-
-                ASSERT(service.IsValid() == true);
-
-                if (service->State() == PluginHost::IShell::ACTIVATED) {
-                    // Deactivate the plugin.
-                    response = service->Deactivate(PluginHost::IShell::REQUESTED);
-                }
-            }
-
-            return (Core::ERROR_NONE);
-        }
-
         // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Configure
         // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
@@ -251,14 +188,13 @@ namespace Plugin {
             , _resumes()
             , _lastReported()
         {
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"), &Controller::exists, this);
-            Register<Core::JSON::String, Core::JSON::String>(_T("activate"), &Controller::activate, this);
-            Register<Core::JSON::String, Core::JSON::String>(_T("deactivate"), &Controller::deactivate, this);
+            RegisterAll();
         }
 
     public:
         virtual ~Controller()
         {
+            UnregisterAll();
             SetServer(nullptr);
         }
         inline void SetServer(PluginHost::Server* pluginServer)
@@ -344,6 +280,31 @@ namespace Plugin {
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
         virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
+
+        void RegisterAll();
+        void UnregisterAll();
+        uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_exists(const JsonData::Controller::ExistsParamsData& params, Core::JSON::DecUInt32& response);
+        uint32_t endpoint_status(const JsonData::Controller::ActivateParamsInfo& params, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response);
+        uint32_t endpoint_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response);
+        uint32_t endpoint_process(PluginHost::MetaData::Server& response);
+        uint32_t endpoint_subsystems(Core::JSON::ArrayType<JsonData::Controller::SubsystemsResultData>& response);
+        uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
+        uint32_t endpoint_discovery(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response);
+        uint32_t endpoint_getenv(const JsonData::Controller::GetenvParamsData& params, Core::JSON::String& response);
+        uint32_t endpoint_getconfig(const JsonData::Controller::GetconfigParamsData& params, Core::JSON::String& response);
+        uint32_t endpoint_setconfig(const JsonData::Controller::SetconfigParamsData& params);
+        uint32_t endpoint_storeconfig();
+        uint32_t endpoint_download(const JsonData::Controller::DownloadParamsData& params);
+        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
+        uint32_t endpoint_harakiri();
+
+        /*
+        void event_all(const string& callsign, const Core::JSON::Variant& data);
+        void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
+        void event_downloadcompleted(const string& source);
+        */
 
     private:
         Core::CriticalSection _adminLock;
