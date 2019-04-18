@@ -775,10 +775,22 @@ namespace PluginHost {
                     result = Factories::Instance().Response();
                     FileToServe(request.Path, *result);
                 } else if (request.Verb == Web::Request::HTTP_OPTIONS) {
-                    ASSERT(_webSecurity != nullptr);
 
-                    // Create a security response..
-                    result = _webSecurity->Options(request);
+                    result = Factories::Instance().Response();
+
+                    TRACE_L1("Filling the Options on behalf of: %s", request.Path.c_str());
+
+                    result->ErrorCode = Web::STATUS_NO_CONTENT;
+                    result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
+                    result->Allowed = request.AccessControlMethod.Value();
+                    result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
+                    result->AccessControlOrigin = _T("*");
+                    result->AccessControlHeaders = _T("Content-Type");
+
+                    // This will last for an hour, try again after an hour :-)
+                    result->AccessControlMaxAge = 60 * 60;
+
+                    result->Date = Core::Time::Now();
                 } else if (WebRequestSupported() == false) {
                     result = _missingHandler;
                 }
@@ -1400,7 +1412,6 @@ namespace PluginHost {
                 SubSystems(const SubSystems&) = delete;
                 SubSystems& operator=(const SubSystems&) = delete;
 
-            private:
                 class Job : public Core::IDispatchType<void> {
                 private:
                     Job() = delete;
@@ -1452,6 +1463,7 @@ namespace PluginHost {
             private:
                 virtual void Dispatch() override
                 {
+                    _parent.Security(SystemInfo::IsActive(PluginHost::ISubSystem::SECURITY));
                     _decoupling->Schedule();
                 }
                 inline void Evaluate()
@@ -1472,11 +1484,13 @@ namespace PluginHost {
             ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
                 : _webbridgeConfig(config)
                 , _adminLock()
+                , _notificationLock()
                 , _services()
                 , _notifiers()
                 , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
                 , _server(server)
                 , _subSystems(this)
+                , _authenticationHandler(nullptr)
             {
             }
             ~ServiceMap()
@@ -1486,6 +1500,37 @@ namespace PluginHost {
             }
 
         public:
+            inline void Security(const bool enabled)
+            {
+                _adminLock.Lock();
+
+                if ((_authenticationHandler == nullptr) ^ (enabled == false)) {
+                    if (_authenticationHandler == nullptr) {
+                        // Let get the AuthentcationHandler.
+                        _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
+                    } else {
+                        // Remove the security from all the channels.
+                        _server.Dispatcher().SecurityRevoke(_webbridgeConfig.Security());
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+            inline ISecurity* Officer(const string& token)
+            {
+                ISecurity* result;
+
+                _adminLock.Lock();
+
+                if (_authenticationHandler != nullptr) {
+                    result = _authenticationHandler->Officer(token);
+                } else {
+                    result = _webbridgeConfig.Security();
+                }
+
+                _adminLock.Unlock();
+                return (result);
+            }
             inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
             {
                 return (_server.Dispatcher().Submit(id, response));
@@ -1555,7 +1600,7 @@ namespace PluginHost {
             {
                 void* result = nullptr;
 
-                const string& callsign(name.empty() == true ? _server.ControllerName() : name);
+                const string callsign(name.empty() == true ? _server.ControllerName() : name);
 
                 Core::ProxyType<Service> service;
 
@@ -1733,8 +1778,6 @@ namespace PluginHost {
             }
 
         private:
-            // If there are no security arangements for the specific plugin, the overall security arangement is used.
-            // Store the overall security arrangement in the server.
             PluginHost::Config& _webbridgeConfig;
 
             mutable Core::CriticalSection _adminLock;
@@ -1744,6 +1787,7 @@ namespace PluginHost {
             CommunicatorServer _processAdministrator;
             Server& _server;
             Core::Sink<SubSystems> _subSystems;
+            IAuthenticate* _authenticationHandler;
         };
 
         // Connection handler is the listening socket and keeps track of all open
@@ -2015,6 +2059,23 @@ namespace PluginHost {
 
                 _incorrectVersion->ErrorCode = Web::STATUS_BAD_REQUEST;
                 _incorrectVersion->Message = _T("Callsign was oke, but the requested version was not supported.");
+
+                _unauthorizedRequest->ErrorCode = Web::STATUS_UNAUTHORIZED;
+                _unauthorizedRequest->Message = _T("Request needs authorization, but it was not authorized");
+            }
+            void Revoke(PluginHost::ISecurity* baseRights)
+            {
+                PluginHost::Channel::Lock();
+
+                if (_security != baseRights) {
+                    if (_security != nullptr) {
+                        _security->Release();
+                    }
+                    _security = baseRights;
+                    _security->AddRef();
+                }
+
+                PluginHost::Channel::Unlock();
             }
 
         private:
@@ -2048,17 +2109,48 @@ namespace PluginHost {
             }
             virtual void Received(Core::ProxyType<Request>& request)
             {
+                ISecurity* security = nullptr;
+
                 TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
 
-                // If there was no body, we are still incomplete.
-                if (request->State() == Request::INCOMPLETE) {
+                // See if a token has been hooked up to the request, maybe we need a
+                // different security provider.
+                if (request->WebToken.IsSet()) {
+                    security = _parent.Officer(request->WebToken.Value().Token());
 
-                    Core::ProxyType<Service> service;
-                    bool serviceCall;
-                    uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
-
-                    request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                    // Do we now want this token to be permant for this channel or only
+                    // for this request ??? For now we will only use it for this request
+                    // If it must be made permanent, swap the current _security with this
+                    // one...
+                } else {
+                    PluginHost::Channel::Lock();
+                    security = _security;
+                    security->AddRef();
+                    PluginHost::Channel::Unlock();
                 }
+
+                // See if we are allowed to process this request..
+                if (security->Allowed(*request) == false) {
+                    request->Unauthorized();
+                } else {
+                    // If there was no body, we are still incomplete.
+                    if (request->State() == Request::INCOMPLETE) {
+
+                        Core::ProxyType<Service> service;
+                        bool serviceCall;
+                        uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+
+                        request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                    } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
+                        Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
+                        if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
+                            request->Unauthorized();
+                        }
+                    }
+                }
+
+                // We are done with the security related items, let go of the officer.
+                security->Release();
 
                 switch (request->State()) {
                 case Request::OBLIVIOUS: {
@@ -2084,6 +2176,11 @@ namespace PluginHost {
                 case Request::INVALID_VERSION: {
                     // Report that we, at least, need a call sign.
                     Submit(_incorrectVersion);
+                    break;
+                }
+                case Request::UNAUTHORIZED: {
+                    // Report that we, at least, need a call sign.
+                    Submit(_unauthorizedRequest);
                     break;
                 }
                 case Request::COMPLETE: {
@@ -2145,19 +2242,38 @@ namespace PluginHost {
             }
             virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
             {
+                bool securityClearance = true;
+
                 ASSERT(_service.IsValid() == true);
 
                 TRACE(SocketFlow, (element));
 
-                // Send the JSON object out to be handled.
-                // By definition, we can issue it on a rental thread..
-                Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+                if (State() & Channel::JSONRPC) {
+                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
+                    if (message.IsValid()) {
+                        PluginHost::Channel::Lock();
+                        securityClearance = _security->Allowed(*message);
+                        PluginHost::Channel::Unlock();
 
-                ASSERT(job.IsValid() == true);
+						if (securityClearance == false)
+                        {
+                            // Oopsie daisy we are not allowed to handle this request.
+                            // TODO: How shall we report back on this?
+                        }
+                    }
+                }
 
-                if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
-                    _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                if (securityClearance == true) {
+                    // Send the JSON object out to be handled.
+                    // By definition, we can issue it on a rental thread..
+                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+
+                    ASSERT(job.IsValid() == true);
+
+                    if ((_service.IsValid() == true) && (job.IsValid() == true)) {
+                        job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
+                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                    }
                 }
             }
             virtual void Received(const string& value)
@@ -2277,8 +2393,9 @@ namespace PluginHost {
             }
 
         private:
-            Core::ProxyType<Service> _service;
             Server& _parent;
+            PluginHost::ISecurity* _security;
+            Core::ProxyType<Service> _service;
 
             // Factories for creating jobs that can be placed on the PluginHost Worker pool.
             static Core::ProxyPoolType<WebRequestJob> _webJobs;
@@ -2292,6 +2409,10 @@ namespace PluginHost {
             // If there is a call sign but the version request is not avilable,
             // we can return a proper answer, without dispatching.
             static Core::ProxyType<Web::Response> _incorrectVersion;
+
+            // If a request requires security clearance, but it is not give, for
+            // whatever reason, we will report back that the request is unauthorized.
+            static Core::ProxyType<Web::Response> _unauthorizedRequest;
         };
         class EXTERNAL ChannelMap : public Core::SocketServerType<Channel> {
         private:
@@ -2371,6 +2492,18 @@ namespace PluginHost {
             }
 
         public:
+            void SecurityRevoke(ISecurity* fallback)
+            {
+                BaseClass::Lock();
+
+                BaseClass::Iterator index(BaseClass::Clients());
+
+                while (index.Next() == true) {
+                    index.Client()->Revoke(fallback);
+                }
+
+                BaseClass::Unlock();
+            }
             inline Server& Parent()
             {
                 return (_parent);
@@ -2419,7 +2552,7 @@ namespace PluginHost {
         };
 
     public:
-        Server(Config& configuration, ISecurity* securityHandler, const bool background);
+        Server(Config& configuration, const bool background);
         virtual ~Server();
 
     public:
@@ -2455,9 +2588,9 @@ namespace PluginHost {
         {
             _controller->Notification(message);
         }
-        inline const string& ControllerName() const
+        inline string ControllerName() const
         {
-            return (_controllerName);
+            return (_controller->Callsign());
         }
         void Notify(const string& message)
         {
@@ -2465,6 +2598,17 @@ namespace PluginHost {
         }
         void Open();
         void Close();
+
+    private:
+        ISecurity* Officer(const string& token)
+        {
+            return (_services.Officer(token));
+        }
+        inline ISecurity* Officer()
+        {
+            return (_config.Security());
+        }
+
 
     private:
         Core::NodeId _accessor;
@@ -2488,7 +2632,6 @@ namespace PluginHost {
         // Hold on to the controller that controls the PluginHost. Using this plugin, the
         // system can externally control the webbridge.
         Core::ProxyType<Service> _controller;
-        string _controllerName;
     };
 }
 }

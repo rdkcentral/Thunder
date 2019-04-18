@@ -209,8 +209,6 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // Careful, out of order due to HashKey() in incorrect position.
-            //
             // virtual bool AutoStart() const = 0;
             //
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -382,6 +380,14 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             response.Text(message->Parameters().Implementation<IShell>()->Version());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual bool Resumed() const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Boolean(message->Parameters().Implementation<IShell>()->Resumed());
         },
         nullptr
     };
@@ -714,6 +720,7 @@ namespace ProxyStubs {
         // virtual string DataPath() const = 0;
         // virtual string HashKey() const = 0;
         // virtual bool AutoStart() const = 0;
+        // virtual bool Resumed() const = 0;
         // virtual void Notify(const string& message) = 0;
         // virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
         // virtual void Register(IPlugin::INotification* sink) = 0;
@@ -1033,6 +1040,18 @@ namespace ProxyStubs {
 
             return (result);
         }
+        virtual bool Resumed() const override
+        {
+            bool result = false;
+            IPCMessage newMessage(BaseClass::Message(28));
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                result = newMessage->Response().Reader().Boolean();
+            }
+
+            return (result);
+        }
+ 
         virtual IProcess* Process() override
         {
             return (nullptr);

@@ -51,26 +51,36 @@ namespace Core {
 #else
     void ProcessName(const uint32_t pid, TCHAR buffer[], const uint32_t maxLength)
     {
-        snprintf(buffer, maxLength, "/proc/%d/exe", pid);
-        int32_t length = readlink(buffer, buffer, maxLength - 1);
+        ASSERT(maxLength > 0);
 
-        if (length > 0) {
-            buffer[length] = '\0';
-        } else {
-            int fd;
+        if (maxLength > 0) {
+            char procpath[48];
+            snprintf(procpath, sizeof(procpath), "/proc/%u/exe", pid);
+            ssize_t length = readlink(procpath, buffer, maxLength - 1);
 
-            snprintf(buffer, maxLength, "/proc/%d/status", pid);
+            if (length > 0) {
+                buffer[length] = '\0';
+            } else {
+                int fd;
 
-            if ((fd = open(buffer, O_RDONLY)) > 0) {
-                if (read(fd, buffer, (maxLength > 48 ? 48 : maxLength)) > 0) {
-                    sscanf(buffer, "Name: %s", buffer);
+                snprintf(procpath, sizeof(procpath), "/proc/%u/comm", pid);
+
+                if ((fd = open(procpath, O_RDONLY)) > 0) {
+                    ssize_t size;
+                    if ((size = read(fd, buffer, maxLength - 1)) > 0) {
+                        if(buffer[size - 1] == '\n') {
+                            buffer[size - 1] = '\0';
+                        } else {
+                            buffer[size] = '\0';
+                        }
+                    } else {
+                        buffer[0] = '\0';
+                    }
+
+                    close(fd);
                 } else {
                     buffer[0] = '\0';
                 }
-
-                close(fd);
-            } else {
-                buffer[0] = '\0';
             }
         }
     }

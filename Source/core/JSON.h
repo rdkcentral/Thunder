@@ -1113,12 +1113,15 @@ namespace Core {
                     offset++;
                 }
                 if (result < maxLength) {
+                    static const std::string kNull("null");
+                    const std::string& source = (((_value.empty() == true) && (UseQuotes() == false))? kNull : _value);
+
 #ifdef __WIN32__
 #pragma warning(disable : 4996)
 #endif
 
                     // Write the amount we possibly can..
-                    uint16_t written = static_cast<uint16_t>(_value.copy(&(stream[result]), maxLength - result, offset - 1));
+                    uint16_t written = static_cast<uint16_t>(source.copy(&(stream[result]), maxLength - result, offset - 1));
 
 #ifdef __WIN32__
 #pragma warning(default : 4996)
@@ -1369,12 +1372,14 @@ namespace Core {
             {
                 return nullptr;
             }
+        public:
             virtual IIterator* ElementIterator() override
             {
                 _iterator.Reset();
 
                 return (&_iterator);
             }
+        private:
             virtual bool Request(const TCHAR label[])
             {
                 return (false);
@@ -1383,425 +1388,6 @@ namespace Core {
         private:
             JSONElementList _data;
             Container::Iterator _iterator;
-        };
-        class EXTERNAL Variant : public JSON::String {
-        public:
-            enum class type {
-                EMPTY,
-                BOOLEAN,
-                NUMBER,
-                STRING
-            };
-
-        public:
-            Variant()
-                : JSON::String(false)
-                , _type(type::EMPTY)
-            {
-                String::operator=("null");
-            }
-            Variant(const int32_t value)
-                : JSON::String(false)
-                , _type(type::NUMBER)
-            {
-                String::operator=(Core::NumberType<int32_t, true, NumberBase::BASE_DECIMAL>(value).Text());
-            }
-            Variant(const int64_t value)
-                : JSON::String(false)
-                , _type(type::NUMBER)
-            {
-                String::operator=(Core::NumberType<int64_t, true, NumberBase::BASE_DECIMAL>(value).Text());
-            }
-            Variant(const uint32_t value)
-                : JSON::String(false)
-                , _type(type::NUMBER)
-            {
-                String::operator=(Core::NumberType<uint32_t, false, NumberBase::BASE_DECIMAL>(value).Text());
-            }
-            Variant(const uint64_t value)
-                : JSON::String(false)
-                , _type(type::NUMBER)
-            {
-                String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
-            }
-            Variant(const bool value)
-                : JSON::String(false)
-                , _type(type::BOOLEAN)
-            {
-                String::operator=(value ? _T("true") : _T("false"));
-            }
-            Variant(const string& text)
-                : JSON::String(true)
-                , _type(type::STRING)
-            {
-                String::operator=(text);
-            }
-            Variant(const Variant& copy)
-                : JSON::String(copy)
-                , _type(copy._type)
-            {
-            }
-            virtual ~Variant()
-            {
-            }
-            Variant& operator=(const Variant& RHS)
-            {
-                JSON::String::operator=(RHS);
-                _type = RHS._type;
-
-                return (*this);
-            }
-
-        public:
-            type Content() const
-            {
-                return _type;
-            }
-            bool Boolean() const
-            {
-                bool result = false;
-                if (_type == type::BOOLEAN) {
-                    result = (Value() == "true");
-                }
-                return result;
-            }
-            int64_t Number() const
-            {
-                int64_t result = 0;
-                if (_type == type::NUMBER) {
-                    result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
-                }
-                return result;
-            }
-            const TCHAR* String() const
-            {
-                const TCHAR* result = nullptr;
-
-                if (_type == type::STRING) {
-                    result = Value().c_str();
-                }
-                return result;
-            }
-            void Boolean(const bool value)
-            {
-                _type = type::BOOLEAN;
-                String::SetQuoted(false);
-                String::operator=(value ? _T("true") : _T("false"));
-            }
-            template <typename TYPE>
-            void Number(const TYPE value)
-            {
-                _type = type::NUMBER;
-                String::SetQuoted(false);
-                String::operator=(Core::NumberType<TYPE>(value).Text());
-            }
-            void String(const TCHAR* value)
-            {
-                _type = type::STRING;
-                String::SetQuoted(true);
-                String::operator=(value);
-            }
-            template <typename VALUE>
-            Variant& operator=(const VALUE& value)
-            {
-                Number(value);
-                return (*this);
-            }
-            Variant& operator=(const bool& value)
-            {
-                Boolean(value);
-                return (*this);
-            }
-            Variant& operator=(const string& value)
-            {
-                String(value.c_str());
-                return (*this);
-            }
-            Variant& operator=(const TCHAR value[])
-            {
-                String(value);
-                return (*this);
-            }
-
-        private:
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
-            {
-                uint16_t result = String::Deserialize(stream, maxLength, offset);
-
-                _type = type::STRING;
-
-                // If we are complete, try to guess what it was that we received...
-                if (offset == 0) {
-                    bool quoted = IsQuoted();
-                    SetQuoted(quoted);
-                    // If it is not quoted, it can be a boolean or a number...
-                    if (quoted == false) {
-                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
-                            _type = type::BOOLEAN;
-                        } else {
-                            _type = type::NUMBER;
-                        }
-                    }
-                }
-                return (result);
-            }
-
-        private:
-            type _type;
-        };
-
-        class EXTERNAL VariantContainer : public Container {
-        private:
-            typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
-
-	public:
-            class Iterator {
-            public:
-                Iterator()
-                    : _container(nullptr)
-                    , _index()
-                    , _start(true)
-                {
-                }
-                Iterator(const Elements& container)
-                    : _container(&container)
-                    , _index(_container->begin())
-                    , _start(true)
-                {
-                }
-                Iterator(const Iterator& copy)
-                    : _container(copy._container)
-                    , _index()
-                    , _start(true)
-                {
-                    if (_container != nullptr) {
-                        _index = _container->begin();
-                    }
-                }
-                ~Iterator()
-                {
-                }
-
-                Iterator& operator=(const Iterator& rhs)
-                {
-                    _container = rhs._container;
-                    _index = rhs._index;
-                    _start = rhs._start;
-
-                    return (*this);
-                }
-
-            public:
-                bool IsValid() const
-                {
-                    return ((_container != nullptr) && (_start == false) && (_index != _container->end()));
-                }
-                void Reset()
-                {
-                    if (_container != nullptr) {
-                        _start = true;
-                        _index = _container->begin();
-                    }
-                }
-                bool Next()
-                {
-                    if (_container != nullptr) {
-                        if (_start == true) {
-                            _start = false;
-                        } else if (_index != _container->end()) {
-                            _index++;
-                        }
-                        return (_index != _container->end());
-                    }
-
-                    return (false);
-                }
-                const TCHAR* Label() const
-                {
-                    return (_index->first.c_str());
-                }
-                const JSON::Variant& Current() const
-                {
-                    return (_index->second);
-                }
-
-            private:
-                const Elements* _container;
-                Elements::const_iterator _index;
-                bool _start;
-            };
-
-        public:
-            VariantContainer()
-                : Container()
-                , _elements()
-            {
-            }
-            VariantContainer(const TCHAR serialized[])
-                : Container()
-                , _elements()
-            {
-                Container::FromString(serialized);
-            }
-            VariantContainer(const string& serialized)
-                : Container()
-                , _elements()
-            {
-                Container::FromString(serialized);
-            }
-            VariantContainer(const VariantContainer& copy)
-                : Container()
-                , _elements(copy._elements)
-            {
-                Elements::iterator index(_elements.begin());
-
-                while (index != _elements.end()) {
-                    if (copy.HasLabel(index->first.c_str()))
-                        Container::Add(index->first.c_str(), &(index->second));
-                    index++;
-                }
-            }
-            VariantContainer(const Elements& values)
-                : Container()
-            {
-                Elements::const_iterator index(values.begin());
-
-                while (index != values.end()) {
-                    _elements.emplace_back(std::piecewise_construct,
-                        std::forward_as_tuple(index->first),
-                        std::forward_as_tuple(index->second));
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-                    index++;
-                }
-            }
-            virtual ~VariantContainer()
-            {
-            }
-
-        public:
-            VariantContainer& operator=(const VariantContainer& rhs)
-            {
-                // combine the labels
-                Elements::iterator index(_elements.begin());
-
-                // First copy all existing ones over, if the rhs does not have a value, remove the entry.
-                while (index != _elements.end()) {
-                    // Check if the rhs, has these..
-                    Elements::const_iterator rhs_index(rhs.Find(index->first.c_str()));
-
-                    if (rhs_index != rhs._elements.end()) {
-                        // This is a valid element, copy the value..
-                        index->second = rhs_index->second;
-                        index++;
-                    } else {
-                        // This element does not exist on the other side..
-                        Container::Remove(index->first.c_str());
-                        index = _elements.erase(index);
-                    }
-                }
-
-                Elements::const_iterator rhs_index(rhs._elements.begin());
-
-                // Now add the ones we are missing from the RHS
-                while (rhs_index != rhs._elements.end()) {
-                    if (Find(rhs_index->first.c_str()) == _elements.end()) {
-                        _elements.emplace_back(std::piecewise_construct,
-                            std::forward_as_tuple(rhs_index->first),
-                            std::forward_as_tuple(rhs_index->second));
-                        Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-                    }
-                    rhs_index++;
-                }
-
-                return (*this);
-            }
-            void Set(const TCHAR fieldName[], const JSON::Variant& value)
-            {
-                Elements::iterator index(Find(fieldName));
-                if (index != _elements.end()) {
-                    index->second = value;
-                } else {
-                    _elements.emplace_back(std::piecewise_construct,
-                        std::forward_as_tuple(fieldName),
-                        std::forward_as_tuple(value));
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-                }
-            }
-            Variant Get(const TCHAR fieldName[]) const
-            {
-                JSON::Variant result;
-
-                Elements::const_iterator index(Find(fieldName));
-
-                if (index != _elements.end()) {
-                    result = index->second;
-                }
-
-                return (result);
-            }
-            JSON::Variant& operator[](const TCHAR fieldName[])
-            {
-                Elements::iterator index(Find(fieldName));
-
-                if (index == _elements.end()) {
-                    _elements.emplace_back(std::piecewise_construct,
-                        std::forward_as_tuple(fieldName),
-                        std::forward_as_tuple());
-                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-                    index = _elements.end();
-                    index--;
-                }
-
-                return (index->second);
-            }
-            const JSON::Variant& operator[](const TCHAR fieldName[]) const
-            {
-                static const JSON::Variant emptyVariant;
-
-                Elements::const_iterator index(Find(fieldName));
-
-                return (index == _elements.end() ? emptyVariant : index->second);
-            }
-            bool HasLabel(const TCHAR labelName[]) const
-            {
-                return (Find(labelName) != _elements.end());
-            }
-			Iterator Variants() const {
-                return (Iterator(_elements));
-			}
-
-        private:
-            Elements::iterator Find(const TCHAR fieldName[])
-            {
-                Elements::iterator index(_elements.begin());
-                while ((index != _elements.end()) && (index->first != fieldName)) {
-                    index++;
-                }
-                return (index);
-            }
-            Elements::const_iterator Find(const TCHAR fieldName[]) const
-            {
-                Elements::const_iterator index(_elements.begin());
-                while ((index != _elements.end()) && (index->first != fieldName)) {
-                    index++;
-                }
-                return (index);
-            }
-            virtual bool Request(const TCHAR label[])
-            {
-                // Whetever comes in and has no counter part, we need to create a Variant for it, so
-                // it can be filled.
-                _elements.emplace_back(std::piecewise_construct,
-                    std::forward_as_tuple(label),
-                    std::forward_as_tuple());
-
-                Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
-
-                return (true);
-            }
-
-        private:
-            Elements _elements;
         };
 
         template <typename ELEMENTSELECTOR>
@@ -2152,6 +1738,7 @@ namespace Core {
             {
                 return nullptr;
             }
+        public:
             virtual IIterator* ElementIterator() override
             {
                 _iterator.Reset();
@@ -2195,6 +1782,10 @@ namespace Core {
                 ASSERT(locator != _data.end());
 
                 return (*locator);
+            }
+            const ELEMENT& Get(const uint32_t index) const
+            {
+                return operator[](index);
             }
             inline ELEMENT& Add()
             {
@@ -2267,6 +1858,634 @@ namespace Core {
                 return (className.c_str());
             }
         };
+
+        class VariantContainer;
+        
+        class EXTERNAL Variant : public JSON::String {
+        public:
+            enum class type {
+                EMPTY,
+                BOOLEAN,
+                NUMBER,
+                STRING,
+                ARRAY,
+                OBJECT
+            };
+
+        public:
+            Variant()
+                : JSON::String(false)
+                , _type(type::EMPTY)
+            {
+                String::operator=("null");
+            }
+            Variant(const int32_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<int32_t, true, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const int64_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<int64_t, true, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const uint32_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<uint32_t, false, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const uint64_t value)
+                : JSON::String(false)
+                , _type(type::NUMBER)
+            {
+                String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
+            }
+            Variant(const bool value)
+                : JSON::String(false)
+                , _type(type::BOOLEAN)
+            {
+                String::operator=(value ? _T("true") : _T("false"));
+            }
+            Variant(const string& text)
+                : JSON::String(true)
+                , _type(type::STRING)
+            {
+                String::operator=(text);
+            }
+            Variant(const TCHAR* text)
+                : JSON::String(true)
+                , _type(type::STRING)
+            {
+                String::operator=(text);
+            }            
+            Variant(const ArrayType<Variant>& array)
+                : JSON::String(false)
+                , _type(type::ARRAY)
+                , _array(Core::ProxyType<ArrayType<Variant>>::Create())
+            {
+                *_array = array;
+            }            
+            inline Variant(const VariantContainer& object);
+            Variant(const Variant& copy)
+                : JSON::String(copy)
+                , _type(copy._type)
+                , _array(copy._array)
+                , _object(copy._object)                
+            {
+            }
+            virtual ~Variant()
+            {
+            }
+            Variant& operator=(const Variant& RHS)
+            {
+                JSON::String::operator=(RHS);
+                _type = RHS._type;
+                _array = RHS._array;
+                _object = RHS._object;
+                return (*this);
+            }
+
+        public:
+            type Content() const
+            {
+                return _type;
+            }
+            bool Boolean() const
+            {
+                bool result = false;
+                if (_type == type::BOOLEAN) {
+                    result = (Value() == "true");
+                }
+                return result;
+            }
+            int64_t Number() const
+            {
+                int64_t result = 0;
+                if (_type == type::NUMBER) {
+                    result = Core::NumberType<int64_t>(Value().c_str(), static_cast<uint32_t>(Value().length()));
+                }
+                return result;
+            }
+            const TCHAR* String() const
+            {
+                if (_type == type::STRING) {
+                    const_cast<Variant*>(this)->_string = Value();
+                }
+                return _string.c_str();
+            } 
+            const ArrayType<Variant>& Array() const
+            {
+                if(_type == type::ARRAY)
+                {
+                    return *_array;
+                }
+                else
+                {
+                    static ArrayType<Variant> empty;
+                    return empty;
+                }
+            }
+            const VariantContainer& Object() const;
+            void Boolean(const bool value)
+            {
+                _type = type::BOOLEAN;
+                String::SetQuoted(false);
+                String::operator=(value ? _T("true") : _T("false"));
+            }
+            template <typename TYPE>
+            void Number(const TYPE value)
+            {
+                _type = type::NUMBER;
+                String::SetQuoted(false);
+                String::operator=(Core::NumberType<TYPE>(value).Text());
+            }
+            void String(const TCHAR* value)
+            {
+                _type = type::STRING;
+                String::SetQuoted(true);
+                String::operator=(value);
+            }
+            void Array(const ArrayType<Variant>& array)
+            {
+                _type = type::ARRAY;
+                _array = Core::ProxyType<ArrayType<Variant>>::Create();
+                *_array = array;
+            }
+            inline void Object(const VariantContainer& object);
+            
+            template <typename VALUE>
+            Variant& operator=(const VALUE& value)
+            {
+                Number(value);
+                return (*this);
+            }
+            Variant& operator=(const bool& value)
+            {
+                Boolean(value);
+                return (*this);
+            }
+            Variant& operator=(const string& value)
+            {
+                String(value.c_str());
+                return (*this);
+            }
+            Variant& operator=(const TCHAR value[])
+            {
+                String(value);
+                return (*this);
+            }
+            Variant& operator=(const ArrayType<Variant>& value)
+            {
+                Array(value);
+                return (*this);
+            }
+            Variant& operator=(const VariantContainer& value)
+            {
+                Object(value);
+                return (*this);
+            }
+            const JSON::Variant& operator[](uint32_t index) const;            
+            const JSON::Variant& operator[](const TCHAR fieldName[]) const;
+            inline void ToString(string& result) const;
+            virtual bool IsSet() const override
+            {
+                if(_type == type::ARRAY)
+                    return _array->IsSet();
+                else if(_type == type::OBJECT)
+                    return true;
+                else
+                    return String::IsSet();
+            }
+            string GetDebugString(const TCHAR name[], int indent=0, int arrayIndex=-1) const;
+        private:
+            virtual ParserType Type() const override
+            {
+                if(_type == type::ARRAY || _type == type::OBJECT)
+                    return (PARSE_CONTAINER);
+                 else
+                    return (PARSE_DIRECT);
+            }
+            virtual IBuffered* BufferParser() override
+            {
+                return nullptr;
+            }
+
+            virtual IDirect* DirectParser() override
+            {
+                if(_type == type::ARRAY || _type == type::OBJECT)
+                    return nullptr;
+                else
+                    return String::DirectParser();
+            }
+            virtual IIterator* ElementIterator() override;
+        private:
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
+            static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
+            {
+                ASSERT(maxLength > 0 && (stream[0] == '{' || stream[0] == '['));
+                char charOpen = stream[0];
+                char charClose = charOpen == '{' ? '}' : ']';
+                uint16_t stack = 1;
+                uint16_t endIndex = 0;
+                bool insideQuotes = false;
+                for(uint16_t i = 1; i < maxLength; ++i)
+                {
+                    if(stream[i] == '\"')
+                    {
+                        insideQuotes = !insideQuotes;
+                    }
+                    if(!insideQuotes)
+                    {
+                        if(stream[i] == charClose)
+                            stack--;
+                        else if(stream[i] == charOpen)
+                            stack++;
+                        if(stack == 0)
+                        {
+                            endIndex = i;
+                            break;
+                        }
+                    }
+                }
+                return endIndex;
+            }        
+        private:
+            type _type;
+            string _string;
+            Core::ProxyType<ArrayType<Variant>> _array;
+            Core::ProxyType<VariantContainer> _object;            
+        };
+
+        class EXTERNAL VariantContainer : public Container {
+        private:
+            typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
+
+	public:
+            class Iterator {
+            public:
+                Iterator()
+                    : _container(nullptr)
+                    , _index()
+                    , _start(true)
+                {
+                }
+                Iterator(const Elements& container)
+                    : _container(&container)
+                    , _index(_container->begin())
+                    , _start(true)
+                {
+                }
+                Iterator(const Iterator& copy)
+                    : _container(copy._container)
+                    , _index()
+                    , _start(true)
+                {
+                    if (_container != nullptr) {
+                        _index = _container->begin();
+                    }
+                }
+                ~Iterator()
+                {
+                }
+
+                Iterator& operator=(const Iterator& rhs)
+                {
+                    _container = rhs._container;
+                    _index = rhs._index;
+                    _start = rhs._start;
+
+                    return (*this);
+                }
+
+            public:
+                bool IsValid() const
+                {
+                    return ((_container != nullptr) && (_start == false) && (_index != _container->end()));
+                }
+                void Reset()
+                {
+                    if (_container != nullptr) {
+                        _start = true;
+                        _index = _container->begin();
+                    }
+                }
+                bool Next()
+                {
+                    if (_container != nullptr) {
+                        if (_start == true) {
+                            _start = false;
+                        } else if (_index != _container->end()) {
+                            _index++;
+                        }
+                        return (_index != _container->end());
+                    }
+
+                    return (false);
+                }
+                const TCHAR* Label() const
+                {
+                    return (_index->first.c_str());
+                }
+                const JSON::Variant& Current() const
+                {
+                    return (_index->second);
+                }
+
+            private:
+                const Elements* _container;
+                Elements::const_iterator _index;
+                bool _start;
+            };
+
+        public:
+            VariantContainer()
+                : Container()
+                , _elements()
+            {
+            }
+            VariantContainer(const TCHAR serialized[])
+                : Container()
+                , _elements()
+            {
+                Container::FromString(serialized);
+            }
+            VariantContainer(const string& serialized)
+                : Container()
+                , _elements()
+            {
+                Container::FromString(serialized);
+            }
+            VariantContainer(const VariantContainer& copy)
+                : Container()
+                , _elements(copy._elements)
+            {
+                Elements::iterator index(_elements.begin());
+
+                while (index != _elements.end()) {
+                    if (copy.HasLabel(index->first.c_str()))
+                        Container::Add(index->first.c_str(), &(index->second));
+                    index++;
+                }
+            }
+            VariantContainer(const Elements& values)
+                : Container()
+            {
+                Elements::const_iterator index(values.begin());
+
+                while (index != values.end()) {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(index->first),
+                        std::forward_as_tuple(index->second));
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    index++;
+                }
+            }
+            virtual ~VariantContainer()
+            {
+            }
+
+        public:
+            VariantContainer& operator=(const VariantContainer& rhs)
+            {
+                // combine the labels
+                Elements::iterator index(_elements.begin());
+
+                // First copy all existing ones over, if the rhs does not have a value, remove the entry.
+                while (index != _elements.end()) {
+                    // Check if the rhs, has these..
+                    Elements::const_iterator rhs_index(rhs.Find(index->first.c_str()));
+
+                    if (rhs_index != rhs._elements.end()) {
+                        // This is a valid element, copy the value..
+                        index->second = rhs_index->second;
+                        index++;
+                    } else {
+                        // This element does not exist on the other side..
+                        Container::Remove(index->first.c_str());
+                        index = _elements.erase(index);
+                    }
+                }
+
+                Elements::const_iterator rhs_index(rhs._elements.begin());
+
+                // Now add the ones we are missing from the RHS
+                while (rhs_index != rhs._elements.end()) {
+                    if (Find(rhs_index->first.c_str()) == _elements.end()) {
+                        _elements.emplace_back(std::piecewise_construct,
+                            std::forward_as_tuple(rhs_index->first),
+                            std::forward_as_tuple(rhs_index->second));
+                        Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    }
+                    rhs_index++;
+                }
+
+                return (*this);
+            }
+            void Set(const TCHAR fieldName[], const JSON::Variant& value)
+            {
+                Elements::iterator index(Find(fieldName));
+                if (index != _elements.end()) {
+                    index->second = value;
+                } else {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(fieldName),
+                        std::forward_as_tuple(value));
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                }
+            }
+            Variant Get(const TCHAR fieldName[]) const
+            {
+                JSON::Variant result;
+
+                Elements::const_iterator index(Find(fieldName));
+
+                if (index != _elements.end()) {
+                    result = index->second;
+                }
+
+                return (result);
+            }
+            JSON::Variant& operator[](const TCHAR fieldName[])
+            {
+                Elements::iterator index(Find(fieldName));
+
+                if (index == _elements.end()) {
+                    _elements.emplace_back(std::piecewise_construct,
+                        std::forward_as_tuple(fieldName),
+                        std::forward_as_tuple());
+                    Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+                    index = _elements.end();
+                    index--;
+                }
+
+                return (index->second);
+            }
+            const JSON::Variant& operator[](const TCHAR fieldName[]) const
+            {
+                static const JSON::Variant emptyVariant;
+
+                Elements::const_iterator index(Find(fieldName));
+
+                return (index == _elements.end() ? emptyVariant : index->second);
+            }
+            bool HasLabel(const TCHAR labelName[]) const
+            {
+                return (Find(labelName) != _elements.end());
+            }
+			Iterator Variants() const {
+                return (Iterator(_elements));
+			}
+            string GetDebugString(int indent=0) const;
+        private:
+            Elements::iterator Find(const TCHAR fieldName[])
+            {
+                Elements::iterator index(_elements.begin());
+                while ((index != _elements.end()) && (index->first != fieldName)) {
+                    index++;
+                }
+                return (index);
+            }
+            Elements::const_iterator Find(const TCHAR fieldName[]) const
+            {
+                Elements::const_iterator index(_elements.begin());
+                while ((index != _elements.end()) && (index->first != fieldName)) {
+                    index++;
+                }
+                return (index);
+            }
+            virtual bool Request(const TCHAR label[])
+            {
+                // Whetever comes in and has no counter part, we need to create a Variant for it, so
+                // it can be filled.
+                _elements.emplace_back(std::piecewise_construct,
+                    std::forward_as_tuple(label),
+                    std::forward_as_tuple());
+
+                Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
+
+                return (true);
+            }
+
+        private:
+            Elements _elements;
+        };
+        inline Variant::Variant(const VariantContainer& object)
+            : JSON::String(false)
+            , _type(type::OBJECT)
+            , _object(Core::ProxyType<VariantContainer>::Create())
+        {
+            *_object = object;
+        }
+        inline void Variant::Object(const VariantContainer& object)
+        {
+            _type = type::OBJECT;
+            _object = Core::ProxyType<VariantContainer>::Create();
+            *_object = object;
+        }
+        inline const VariantContainer& Variant::Object() const
+        {
+            if(_type == type::OBJECT)
+            {
+                return *_object;
+            }
+            else
+            {
+                static VariantContainer empty;
+                return empty;
+            }
+        }
+        inline const JSON::Variant& Variant::operator[](uint32_t index) const
+        {
+            if(_type == type::ARRAY)
+            {
+                ASSERT(index < _array->Length());
+                return _array->operator[](index);
+            }
+            else
+            {
+                static Variant empty;
+                return empty;
+            }
+        }
+        inline const JSON::Variant& Variant::operator[](const TCHAR fieldName[]) const
+        {
+            if(_type == type::OBJECT)
+            {
+                return _object->operator[](fieldName);
+            }
+            else
+            {
+                static Variant empty;
+                return empty;
+            }
+        }
+        inline void Variant::ToString(string& result) const
+        {
+            if(_type == type::ARRAY)
+                return _array->ToString(result);
+            else if(_type == type::OBJECT)
+                return _object->ToString(result);
+            else
+                return String::ToString(result);
+        }
+        inline IIterator* Variant::ElementIterator()
+        {
+            if(_type == type::ARRAY)
+                return _array->ElementIterator();
+            else if(_type == type::OBJECT)
+                return _object->ElementIterator();                
+            else
+                return nullptr;
+        }
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+        {
+            uint16_t result = 0;
+            if(stream[0] == '{' || stream[0] == '[')
+            {
+                uint16_t endIndex = FindEndOfScope(stream, maxLength);
+                if(endIndex > 0 && endIndex < maxLength)
+                {
+                    result = endIndex+1;
+                    string str(stream, endIndex+1);
+                    if(stream[0] == '{')
+                    {
+                        VariantContainer object;
+                        object.FromString(str);
+                        Object(object);
+                     }
+                     else                     
+                    {
+                        ArrayType<Variant> array;
+                        array.FromString(str);
+                        Array(array);
+                    }
+                }
+            }
+            else
+            {
+                result = String::Deserialize(stream, maxLength, offset);
+
+                _type = type::STRING;
+
+                // If we are complete, try to guess what it was that we received...
+                if (offset == 0) {
+                    bool quoted = IsQuoted();
+                    SetQuoted(quoted);
+                    // If it is not quoted, it can be a boolean or a number...
+                    if (quoted == false) {
+                        if ((Value() == _T("true")) || (Value() == _T("false"))) {
+                            _type = type::BOOLEAN;
+                        } else {
+                            _type = type::NUMBER;
+                        }
+                    }
+                }
+            }
+            return (result);
+        }        
 
         template <uint16_t SIZE, typename INSTANCEOBJECT>
         class Tester {
@@ -2426,5 +2645,5 @@ namespace Core {
 
 using JsonObject = WPEFramework::Core::JSON::VariantContainer;
 using JsonValue = WPEFramework::Core::JSON::Variant;
-
+using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
 #endif // __JSON_H

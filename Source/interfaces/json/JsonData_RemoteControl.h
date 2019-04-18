@@ -1,6 +1,8 @@
 
-// C++ classes for Remote Control Plugin JSON-RPC API.
-// Generated automatically from 'RemoteControl.json'.
+// C++ classes for Remote Control JSON-RPC API.
+// Generated automatically from 'RemoteControlAPI.json'.
+
+// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.
 
 #pragma once
 
@@ -47,7 +49,6 @@ namespace JsonData {
         public:
             KeyParamsInfo()
                 : Core::JSON::Container()
-                , Code(0)
             {
                 Add(_T("device"), &Device);
                 Add(_T("code"), &Code);
@@ -61,13 +62,10 @@ namespace JsonData {
             Core::JSON::DecUInt32 Code; // Key code
         }; // class KeyParamsInfo
 
-        class ModifyParamsInfo : public Core::JSON::Container {
+        class RcinfoInfo : public Core::JSON::Container {
         public:
-            ModifyParamsInfo()
+            RcinfoInfo()
                 : Core::JSON::Container()
-                , Code(0)
-                , Key(0)
-                , Modifiers()
             {
                 Add(_T("device"), &Device);
                 Add(_T("code"), &Code);
@@ -75,15 +73,15 @@ namespace JsonData {
                 Add(_T("modifiers"), &Modifiers);
             }
 
-            ModifyParamsInfo(const ModifyParamsInfo&) = delete;
-            ModifyParamsInfo& operator=(const ModifyParamsInfo&) = delete;
+            RcinfoInfo(const RcinfoInfo&) = delete;
+            RcinfoInfo& operator=(const RcinfoInfo&) = delete;
 
         public:
             Core::JSON::String Device; // Device name
             Core::JSON::DecUInt32 Code; // Key code
             Core::JSON::DecUInt16 Key; // Key ingest code
             Core::JSON::ArrayType<Core::JSON::EnumType<ModifiersType>> Modifiers;
-        }; // class ModifyParamsInfo
+        }; // class RcinfoInfo
 
         // Method params/result classes
         //
@@ -109,9 +107,6 @@ namespace JsonData {
         public:
             KeyResultData()
                 : Core::JSON::Container()
-                , Code(0)
-                , Key(0)
-                , Modifiers()
             {
                 Add(_T("code"), &Code);
                 Add(_T("key"), &Key);
@@ -133,7 +128,7 @@ namespace JsonData {
                 : Core::JSON::Container()
             {
                 Add(_T("device"), &Device);
-                Add(_T("bindId"), &BindId);
+                Add(_T("bindid"), &Bindid);
             }
 
             UnpairParamsData(const UnpairParamsData&) = delete;
@@ -141,13 +136,12 @@ namespace JsonData {
 
         public:
             Core::JSON::String Device; // Device name
-            Core::JSON::String BindId; // Binding id
+            Core::JSON::String Bindid; // Binding id
         }; // class UnpairParamsData
-
 
     } // namespace RemoteControl
 
 } // namespace JsonData
 
-} // namespace WPEFramework
+}
 

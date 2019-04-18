@@ -247,7 +247,7 @@ namespace Core {
 
             _channel.Flush();
 
-            return (OK);
+            return (ERROR_NONE);
         }
         virtual uint32_t Write(uint16_t& sendSize, const uint8_t dataFrame[], const uint32_t duration)
         {
@@ -288,7 +288,7 @@ namespace Core {
 
                 _sendBuffer = nullptr;
                 sendSize -= _sendSize;
-                result = (_sendSize == 0 ? OK : (_aborting ? ERROR_ASYNC_ABORTED : (_channel.IsOpen() == false ? ERROR_UNAVAILABLE : ERROR_TIMEDOUT)));
+                result = (_sendSize == 0 ? ERROR_NONE : (_aborting ? ERROR_ASYNC_ABORTED : (_channel.IsOpen() == false ? ERROR_UNAVAILABLE : ERROR_TIMEDOUT)));
 
                 // If we were the last, triggered by the Abort, clear the Abort.
                 if (_receiveBuffer == nullptr) {
@@ -337,7 +337,7 @@ namespace Core {
 
                 _receiveBuffer = nullptr;
                 receiveSize -= _receiveSize;
-                result = (_receiveSize == 0 ? OK : (_aborting ? ERROR_ASYNC_ABORTED : (_channel.IsOpen() == false ? ERROR_UNAVAILABLE : ERROR_TIMEDOUT)));
+                result = (_receiveSize == 0 ? ERROR_NONE : (_aborting ? ERROR_ASYNC_ABORTED : (_channel.IsOpen() == false ? ERROR_UNAVAILABLE : ERROR_TIMEDOUT)));
 
                 // If we were the last, triggered by the Abort, clear the Abort.
                 if (_sendBuffer == nullptr) {

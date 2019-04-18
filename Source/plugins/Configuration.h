@@ -18,6 +18,7 @@ namespace Plugin {
             , ClassName()
             , Versions()
             , AutoStart(true)
+            , Resumed(false)
             , WebUI()
             , Precondition()
             , Termination()
@@ -28,6 +29,7 @@ namespace Plugin {
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
             Add(_T("autostart"), &AutoStart);
+            Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
@@ -40,6 +42,7 @@ namespace Plugin {
             , ClassName(copy.ClassName)
             , Versions(copy.Versions)
             , AutoStart(copy.AutoStart)
+            , Resumed(copy.Resumed)
             , WebUI(copy.WebUI)
             , Precondition(copy.Precondition)
             , Termination(copy.Termination)
@@ -50,6 +53,7 @@ namespace Plugin {
             Add(_T("classname"), &ClassName);
             Add(_T("versions"), &Versions);
             Add(_T("autostart"), &AutoStart);
+            Add(_T("resumed"), &Resumed);
             Add(_T("webui"), &WebUI);
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
@@ -66,6 +70,7 @@ namespace Plugin {
             ClassName = RHS.ClassName;
             Versions = RHS.Versions;
             AutoStart = RHS.AutoStart;
+            Resumed = RHS.Resumed;
             WebUI = RHS.WebUI;
             Configuration = RHS.Configuration;
             Precondition = RHS.Precondition;
@@ -80,6 +85,7 @@ namespace Plugin {
         Core::JSON::String ClassName;
         Core::JSON::String Versions;
         Core::JSON::Boolean AutoStart;
+        Core::JSON::Boolean Resumed;
         Core::JSON::String WebUI;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
@@ -150,8 +156,7 @@ namespace PluginHost {
             const string& hashKey,
             const Core::NodeId& accessor,
             const Core::NodeId& communicator,
-            const string& redirect,
-            ISecurity* security)
+            const string& redirect)
             : _webPrefix('/' + webPrefix)
             , _JSONRPCPrefix('/' + JSONRPCPrefix)
             , _volatilePath(Core::Directory::Normalize(volatilePath))
@@ -164,18 +169,16 @@ namespace PluginHost {
             , _accessor(accessor)
             , _communicator(communicator)
             , _redirect(redirect)
-            , _security(security)
+            , _security(nullptr)
             , _background(background)
             , _version(version)
             , _model(model)
         {
-            ASSERT(_security != nullptr);
             ASSERT(_appPath.empty() == false);
-
-            _security->AddRef();
         }
         ~Config()
         {
+            ASSERT(_security != nullptr);
             _security->Release();
         }
 
@@ -201,7 +204,7 @@ namespace PluginHost {
             return (_JSONRPCPrefix);
         }
         inline const string& VolatilePath() const
-        {
+		{
             return (_volatilePath);
         }
         inline const string& PersistentPath() const
@@ -238,11 +241,26 @@ namespace PluginHost {
         }
         inline ISecurity* Security() const
         {
+            _security->AddRef();
             return (_security);
         }
         inline bool Background() const
         {
             return (_background);
+        }
+
+	private:
+        friend class Server;
+
+        inline void Security(ISecurity* security)
+        {
+            ASSERT((_security == nullptr) && (security != nullptr));
+
+            _security = security;
+
+            if (_security != nullptr) {
+                _security->AddRef();
+			}
         }
 
     private:

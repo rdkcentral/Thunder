@@ -53,54 +53,6 @@ namespace PluginHost {
         }
     };
 
-    class SecurityOptions : public ISecurity {
-    private:
-        SecurityOptions(const SecurityOptions&) = delete;
-        SecurityOptions& operator=(const SecurityOptions&) = delete;
-
-    public:
-        SecurityOptions()
-        {
-        }
-        ~SecurityOptions()
-        {
-        }
-
-    public:
-        // Allow a request to be checked before it is offered for processing.
-        virtual bool Allowed(const Web::Request& /* request */) override
-        {
-            // Regardless of the WebAgent, there is no differnt priocessing and we allow it :-)
-            return (true);
-        }
-
-        // What options are allowed to be passed to this service???
-        virtual Core::ProxyType<Web::Response> Options(const Web::Request& request) override
-        {
-            Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
-
-            TRACE_L1("Filling the Options on behalf of: %s", request.Path.c_str());
-            result->ErrorCode = Web::STATUS_NO_CONTENT;
-            result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
-            result->Allowed = request.AccessControlMethod.Value();
-            result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
-            result->AccessControlOrigin = _T("*");
-            result->AccessControlHeaders = _T("Content-Type");
-
-            // This will last for an hour, try again after an hour :-)
-            result->AccessControlMaxAge = 60 * 60;
-
-            result->Date = Core::Time::Now();
-
-            return (result);
-        }
-
-        //  IUnknown methods
-        // -------------------------------------------------------------------------------------------------------
-        BEGIN_INTERFACE_MAP(SecurityOptions)
-        INTERFACE_ENTRY(ISecurity)
-        END_INTERFACE_MAP
-    };
 
     extern "C" {
 
@@ -395,8 +347,6 @@ namespace PluginHost {
         // Set the path for the out-of-process thingies
         Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, tracePath);
 
-        ISecurity* securityOptions = Core::Service<SecurityOptions>::Create<ISecurity>();
-
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
         SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
@@ -427,10 +377,7 @@ namespace PluginHost {
         LoadPlugins(pluginPath, serviceConfig);
 
         // Startup/load/initialize what we found in the configuration.
-        _dispatcher = new PluginHost::Server(serviceConfig, securityOptions, _background);
-
-        // We don't need it anymore..
-        securityOptions->Release();
+        _dispatcher = new PluginHost::Server(serviceConfig, _background);
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
@@ -520,6 +467,9 @@ namespace PluginHost {
                         printf("Platform:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
                                                                                          : "Unavailable");
+                        printf("Security:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
+                                                                                        : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
                                                                                         : "Unavailable");
@@ -547,11 +497,9 @@ namespace PluginHost {
                         printf("WebSource:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
                                                                                           : "Unavailable");
-
                         printf("Streaming:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
                                                                                           : "Unavailable");
-
                         printf("------------------------------------------------------------\n");
                         if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                             printf("Network Type: %s\n",

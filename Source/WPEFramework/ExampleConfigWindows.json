@@ -14,14 +14,9 @@
     {
       "callsign": "Controller",
       "configuration": {
-        "switch": {
-          "callsigns": [
-            "WebKitBrowser",
-            "YouTube",
-            "Netflix"
-          ],
-          "default": "WebKitBrowser"
-        }
+        "subsystems": [
+          "Security"
+        ]
       }
     },
     {
@@ -34,6 +29,14 @@
         "url": "http://netflix.com/tv",
         "sleep": "1",
         "crash": true
+      }
+    },
+    {
+      "callsign": "SecurityOfficer",
+      "locator": "libSecurityOfficer.so",
+      "classname": "SecurityOfficer",
+      "autostart": false,
+      "configuration": {
       }
     },
     {

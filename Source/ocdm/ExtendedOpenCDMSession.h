@@ -104,7 +104,8 @@ public:
         const uint8_t* pbCustomData,
         const uint16_t cbCustomData,
         const LicenseType licenseType,
-        OpenCDMSessionCallbacks* callbacks)
+        OpenCDMSessionCallbacks* callbacks,
+        void* userData)
         : OpenCDMSession()
         , _sink(this)
         , _state(SESSION_INIT)
@@ -115,6 +116,7 @@ public:
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
         , _key(OCDM::ISession::StatusPending)
         , _callback(callbacks)
+        , _userData(userData)
     {
 
         std::string bufferId;
@@ -134,7 +136,6 @@ public:
     {
         if (OpenCDMSession::IsValid() == true) {
             Revoke(&_sink);
-            OpenCDMSession::Session(nullptr);
         }
     }
 
@@ -250,10 +251,10 @@ protected:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_MESSAGE | SESSION_UPDATE);
         } else {
-            _callback->process_challenge(
-                this, _URL.c_str(),
-                reinterpret_cast<const uint8_t*>(_message.c_str()),
-                static_cast<uint16_t>(_message.length()));
+            if (_callback->process_challenge)
+                _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
+            else
+                _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
         }
     }
     // Event fired when MediaKeySession has found a usable key.
@@ -263,7 +264,10 @@ protected:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
+            if (_callback->key_update)
+                _callback->key_update(this, nullptr, 0);
+            else
+                _callback->key_update_callback(this, _userData, nullptr, 0);
         }
     }
     // Event fired when MediaKeySession encounters an error.
@@ -278,8 +282,13 @@ protected:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_ERROR | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
-            _callback->message(this, errorMessage.c_str());
+            if (_callback->key_update) {
+                _callback->key_update(this, nullptr, 0);
+                _callback->message(this, errorMessage.c_str());
+            } else {
+                _callback->key_update_callback(this, _userData, nullptr, 0);
+                _callback->message_callback(this, _userData, errorMessage.c_str());
+            }
         }
     }
     // Event fired on key status update
@@ -290,7 +299,10 @@ protected:
         if (_callback == nullptr) {
             _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
         } else {
-            _callback->key_update(this, nullptr, 0);
+            if (_callback->key_update)
+                _callback->key_update(this, nullptr, 0);
+            else
+                _callback->key_update_callback(this, _userData, nullptr, 0);
         }
     }
 
@@ -304,6 +316,7 @@ protected:
     OCDM::OCDM_RESULT _sysError;
     OCDM::ISession::KeyStatus _key;
     OpenCDMSessionCallbacks* _callback;
+    void* _userData;
 };
 
 #endif /* EXTENDEDOPENCDMSESSION_H */

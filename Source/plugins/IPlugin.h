@@ -176,20 +176,28 @@ namespace PluginHost {
         virtual uint32_t Outbound(const uint32_t ID, uint8_t data[], const uint16_t length) const = 0;
     };
 
-    struct ISecurity
-        : virtual public Core::IUnknown {
+    struct ISecurity : virtual public Core::IUnknown {
         enum {
             ID = RPC::ID_SECURITY
         };
 
         //! Allow a request to be checked before it is offered for processing.
-        virtual bool Allowed(const Web::Request& request) = 0;
+        virtual bool Allowed(const Web::Request& request) const = 0;
 
-        //! What options are allowed to be passed to this service???
-        virtual Core::ProxyType<Web::Response> Options(const Web::Request& request) = 0;
-
-        // virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer, string& token) = 0;
+        //! Allow a JSONRPC message to be checked before it is offered for processing.
+        virtual bool Allowed(const Core::JSONRPC::Message& message) const = 0;
     };
+
+	struct IAuthenticate : virtual public Core::IUnknown {
+
+        enum {
+            ID = RPC::ID_AUTHENTICATE
+        };
+
+        virtual uint32_t CreateToken(const uint16_t length, const uint8_t buffer[], string& token) = 0;
+        virtual ISecurity* Officer(const string& token) = 0;
+    };
+
 } // namespace PluginHost
 } // namespace WPEFramework
 

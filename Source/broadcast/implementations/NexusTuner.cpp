@@ -81,7 +81,7 @@ namespace Broadcast {
                     , Frontends(1)
                     , Decoders(1)
                     , Standard(ITuner::DVB)
-                    , Annex(ITuner::Annex::A)
+                    , Annex(ITuner::annex::A)
                     , Scan(false)
                     , Callsign("Streamer")
                 {
@@ -100,7 +100,7 @@ namespace Broadcast {
                 Core::JSON::DecUInt8 Frontends;
                 Core::JSON::DecUInt8 Decoders;
                 Core::JSON::EnumType<ITuner::DTVStandard> Standard;
-                Core::JSON::EnumType<ITuner::Annex> Annex;
+                Core::JSON::EnumType<ITuner::annex> Annex;
                 Core::JSON::Boolean Scan;
                 Core::JSON::String Callsign;
             };
@@ -136,7 +136,7 @@ namespace Broadcast {
 
                 NxClient_AllocSettings allocSettings;
                 NxClient_GetDefaultAllocSettings(&allocSettings);
-                allocSettings.simpleVideoDecoder = config.Decoders.Value();
+                allocSettings.simpleVideoDecoder = _frontends;
                 allocSettings.simpleAudioDecoder = 1;
                 _rc = NxClient_Alloc(&allocSettings, &_allocResults);
                 BDBG_ASSERT(!_rc);
@@ -149,7 +149,7 @@ namespace Broadcast {
         public:
             inline bool Joined() const { return (_rc == 0); }
             inline ITuner::DTVStandard Standard() const { return (_standard); }
-            inline ITuner::Annex Annex() const { return (_annex); }
+            inline ITuner::annex Annex() const { return (_annex); }
             inline bool Scan() const { return (_eScan); }
             inline int AudioDecoder() const { return (_allocResults.simpleAudioDecoder.id); }
             inline int VideoDecoder(const uint8_t index) const { return (_allocResults.simpleVideoDecoder[index].id); }
@@ -157,7 +157,7 @@ namespace Broadcast {
         private:
             uint8_t _frontends;
             ITuner::DTVStandard _standard;
-            ITuner::Annex _annex;
+            ITuner::annex _annex;
             bool _eScan;
             NEXUS_Error _rc;
             NxClient_AllocResults _allocResults;
@@ -730,6 +730,20 @@ namespace Broadcast {
     public:
         inline bool IsValid() const { return (_frontend != nullptr); }
 
+        virtual uint32_t Properties() const override
+        {
+            NexusInformation& instance = NexusInformation::Instance();
+            return (instance.Annex() | instance.Standard() | 
+            #ifdef NEXUS_SATELITE
+            ITuner::modus::Satellite
+            #else
+            ITuner::modus::Cable
+            #endif
+            );
+
+            // ITuner::modus::Terrestrial
+        }
+
         // Using these methods the state of the tuner can be viewed.
         // IDLE:      Means there is no request,, or the frequency requested (with other parameters) can not be locked.
         // LOCKED:    The stream has been locked, frequency, modulation, symbolrate and spectral inversion seem to be fine.
@@ -754,7 +768,6 @@ namespace Broadcast {
         virtual uint32_t Tune(const uint16_t frequency, const Modulation modulation, const uint32_t symbolRate, const uint16_t fec, const SpectralInversion inversion) override
         {
             uint32_t result = Core::ERROR_UNAVAILABLE;
-
             if (_frontend != nullptr) {
                 if (_state != IDLE) {
                     _state = IDLE;
@@ -932,6 +945,9 @@ namespace Broadcast {
             _videoDecoder.Attach(index);
             _audioDecoder.Attach();
 
+            _state = STREAMING;
+            _callback->StateChange(this);
+
             return (Core::ERROR_NONE);
         }
 
@@ -941,6 +957,9 @@ namespace Broadcast {
             _audioDecoder.Detach();
 
             NxClient_Disconnect(_connectId);
+
+            _state = PREPARED;
+            _callback->StateChange(this);
 
             return (Core::ERROR_NONE);
         }

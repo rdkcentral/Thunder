@@ -16,7 +16,6 @@ add_library(${TargetMarshalling} SHARED
         ProxyStubs_Provisioning.cpp
         ProxyStubs_RPCLink.cpp
         ProxyStubs_RtspClient.cpp
-        ProxyStubs_Spark.cpp
         ProxyStubs_Streaming.cpp
         ProxyStubs_TestController.cpp
         ProxyStubs_TVControl.cpp
@@ -27,6 +26,7 @@ add_library(${TargetMarshalling} SHARED
 
 add_library(${TargetInterfaces} SHARED
         Enumerations.cpp
+        json/Enumerations.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -46,13 +46,13 @@ set(PUBLIC_HEADERS
         IIPNetwork.h
         IKeyHandler.h
         IMemory.h
+        IMessenger.h
         INetflix.h
         IPackager.h
         IPlayGiga.h
         IPower.h
         IProvisioning.h
         IRPCLink.h
-        ISpark.h
         IStreaming.h
         ISwitchBoard.h
         ISystemCommands.h
@@ -67,9 +67,15 @@ set(PUBLIC_HEADERS
         ITestUtility.h
         Module.h
         )
-        
+
 set(JSON_DATA_HEADERS
-        json/RemoteControl_JsonData.h
+        json/JsonData_RemoteControl.h
+        json/JsonData_WebKitBrowser.h
+        json/JsonData_LocationSync.h
+        json/JsonData_NetworkControl.h
+        json/JsonData_Spark.h
+        json/JsonData_SystemCommands.h
+        json/JsonData_TestUtility.h
         )
 
 target_link_libraries(${TargetMarshalling}

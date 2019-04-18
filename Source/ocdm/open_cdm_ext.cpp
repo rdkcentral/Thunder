@@ -353,6 +353,31 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
  *
  * Creates an instance of \ref OpenCDMSession using initialization data.
  * \param keySystem DRM system to create the session for.
+ * \param licenseType DRM specifc signed integer selecting License Type (e.g. "Limited Duration" for PlayReady).
+ * \param initDataType Type of data passed in \ref initData.
+ * \param initData Initialization data.
+ * \param initDataLength Length (in bytes) of initialization data.
+ * \param CDMData CDM data.
+ * \param CDMDataLength Length (in bytes) of \ref CDMData.
+ * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
+ * \return Zero on success, non-zero on error.
+ */
+
+OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
+    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
+    struct OpenCDMSession** session)
+{
+    return opencdm_construct_session(system, keySystem, licenseType, initDataType, initData, initDataLength, CDMData,
+                                     CDMDataLength, callbacks, nullptr, session);
+}
+
+
+/**
+ * \brief Create DRM session (for actual decrypting of data).
+ *
+ * Creates an instance of \ref OpenCDMSession using initialization data.
+ * \param keySystem DRM system to create the session for.
  * \param licenseType DRM specifc signed integer selecting License Type (e.g.
  * "Limited Duration" for PlayReady).
  * \param initDataType Type of data passed in \ref initData.
@@ -365,7 +390,7 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
  * \return Zero on success, non-zero on error.
  */
 OpenCDMError
-opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[],
+opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[],
     const LicenseType licenseType, const char initDataType[],
     const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength,
@@ -380,7 +405,7 @@ opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[],
             *session = new ExtendedOpenCDMSession(
                 static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem),
                 std::string(initDataType), initData, initDataLength, CDMData,
-                CDMDataLength, licenseType, callbacks);
+                CDMDataLength, licenseType, callbacks, nullptr);
 
             result = (*session != nullptr ? OpenCDMError::ERROR_NONE
                                           : OpenCDMError::ERROR_INVALID_SESSION);

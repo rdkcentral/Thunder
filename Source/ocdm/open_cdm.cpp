@@ -223,10 +223,7 @@ std::string OpenCdm::CreateSession(const std::string& dataType,
 
         ASSERT(_session == nullptr);
 
-        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession(
-            _implementation, _keySystem, dataType, addData, addDataLength, cdmData,
-            cdmDataLength, static_cast<::LicenseType>(license), nullptr);
-
+        ExtendedOpenCDMSession* newSession = new ExtendedOpenCDMSession(_implementation, _keySystem, dataType, addData, addDataLength, cdmData, cdmDataLength, static_cast<::LicenseType>(license), nullptr, nullptr);
         result = newSession->SessionId();
 
         _session = newSession;
@@ -423,6 +420,7 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
 
         if (session != nullptr) {
             result = new OpenCDMSession(session);
+            session->Release();
         }
     }
 
@@ -451,6 +449,24 @@ OpenCDMError opencdm_system_set_server_certificate(
     return (result);
 }
 
+/*
+OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
+    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
+    struct OpenCDMSession** session)
+{
+    OpenCDMError result(ERROR_INVALID_ACCESSOR);
+
+    if (system != nullptr) {
+        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength, CDMData, CDMDataLength, licenseType, callbacks, userData);
+
+        result = (*session != nullptr ? OpenCDMError::ERROR_NONE : OpenCDMError::ERROR_INVALID_SESSION);
+    }
+
+    return (result);
+}
+*/
+
 /**
  * Destructs an \ref OpenCDMSession instance.
  * \param system \ref OpenCDMSession instance to desctruct.
@@ -463,7 +479,7 @@ OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session)
 
     if (session != nullptr) {
         result = OpenCDMError::ERROR_NONE;
-        session->Release();
+        delete session;
     }
 
     return (result);
@@ -615,6 +631,7 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session)
  */
 OpenCDMError opencdm_session_close(struct OpenCDMSession* session)
 {
+
     OpenCDMError result(ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
