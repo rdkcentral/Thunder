@@ -123,7 +123,6 @@ namespace Web
                 if ( (sig_pos != string::npos) && (sig_pos > pos) ) {
 
                     length = static_cast<uint16_t>(sig_pos - pos);
-                    TCHAR* output = reinterpret_cast<TCHAR*>(ALLOCA(length * sizeof(TCHAR)));
                     // Oke, this is a valid frame, let extract the payload..
                     length = Core::URL::Base64Decode(token.substr(pos + 1).c_str(), length - 1, payload, maxLength, nullptr);
                 }
