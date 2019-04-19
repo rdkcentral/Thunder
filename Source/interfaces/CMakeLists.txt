@@ -2,80 +2,17 @@ set(TargetMarshalling ${NAMESPACE}Marshallings)
 set(TargetInterfaces ${NAMESPACE}Interfaces)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
-add_library(${TargetMarshalling} SHARED
-        ProxyStubs.cpp
-        ProxyStubs_AVNClient.cpp
-        ProxyStubs_Browser.cpp
-        ProxyStubs_Composition.cpp
-        ProxyStubs_ContentDecryption.cpp
-        ProxyStubs_DsgccClient.cpp
-        ProxyStubs_Guide.cpp
-        ProxyStubs_Netflix.cpp
-        ProxyStubs_Packager.cpp
-        ProxyStubs_PlayGiga.cpp
-        ProxyStubs_Provisioning.cpp
-        ProxyStubs_RPCLink.cpp
-        ProxyStubs_RtspClient.cpp
-        ProxyStubs_Streaming.cpp
-        ProxyStubs_TestController.cpp
-        ProxyStubs_TVControl.cpp
-        ProxyStubs_WebDriver.cpp
-        ProxyStubs_WebServer.cpp
-        ProxyStubs_TestUtility.cpp
-        )
+file(GLOB PUBLIC_HEADERS I*.h)
+file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
+file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
+
+list(APPEND PUBLIC_HEADERS Module.h)
+
+add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
 add_library(${TargetInterfaces} SHARED
         Enumerations.cpp
         json/Enumerations.cpp
-        )
-
-set(PUBLIC_HEADERS
-        IAVNClient.h
-        IBluetooth.h
-        IBrowser.h
-        ICapture.h
-        ICommand.h
-        IComposition.h
-        IContentDecryption.h
-        Ids.h
-        IDictionary.h
-        IDRM.h
-        IDsgccClient.h
-        IExternal.h
-        IGuide.h
-        IIPNetwork.h
-        IKeyHandler.h
-        IMemory.h
-        IMessenger.h
-        INetflix.h
-        IPackager.h
-        IPlayGiga.h
-        IPower.h
-        IProvisioning.h
-        IRPCLink.h
-        IStreaming.h
-        ISwitchBoard.h
-        ISystemCommands.h
-        ITimeSync.h
-        ITVControl.h
-        ITVPlatform.h
-        IVoiceHandler.h
-        IRtspClient.h
-        IWebDriver.h
-        IWebServer.h
-        ITestController.h
-        ITestUtility.h
-        Module.h
-        )
-
-set(JSON_DATA_HEADERS
-        json/JsonData_RemoteControl.h
-        json/JsonData_WebKitBrowser.h
-        json/JsonData_LocationSync.h
-        json/JsonData_NetworkControl.h
-        json/JsonData_Spark.h
-        json/JsonData_SystemCommands.h
-        json/JsonData_TestUtility.h
         )
 
 target_link_libraries(${TargetMarshalling}
