@@ -487,11 +487,6 @@ namespace Core {
         {
             CONTEXT* result(dynamic_cast<CONTEXT*>(source.operator->()));
 
-            // Although the constructor was called under the assumption that the object could be
-            // casted. It can *NOT* be casted, if we get a nullptr. Please fix your casting request
-            // that caused this assert !!!
-            ASSERT(result != nullptr);
-
             if (result == nullptr) {
                 m_RefCount = nullptr;
             } else {
