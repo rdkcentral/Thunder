@@ -449,24 +449,6 @@ OpenCDMError opencdm_system_set_server_certificate(
     return (result);
 }
 
-/*
-OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
-    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
-    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
-    struct OpenCDMSession** session)
-{
-    OpenCDMError result(ERROR_INVALID_ACCESSOR);
-
-    if (system != nullptr) {
-        *session = new ExtendedOpenCDMSession(static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem), std::string(initDataType), initData, initDataLength, CDMData, CDMDataLength, licenseType, callbacks, userData);
-
-        result = (*session != nullptr ? OpenCDMError::ERROR_NONE : OpenCDMError::ERROR_INVALID_SESSION);
-    }
-
-    return (result);
-}
-*/
-
 /**
  * Destructs an \ref OpenCDMSession instance.
  * \param system \ref OpenCDMSession instance to desctruct.
