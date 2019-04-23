@@ -394,7 +394,7 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
     const LicenseType licenseType, const char initDataType[],
     const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength,
-    OpenCDMSessionCallbacks* callbacks,
+    OpenCDMSessionCallbacks* callbacks, void* userData,
     struct OpenCDMSession** session)
 {
 
