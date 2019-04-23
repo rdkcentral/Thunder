@@ -21,7 +21,7 @@ option(PROTOCOLS
 option(CDMI
         "Include OpenCDM interface." OFF)
 option(PROCESS
-        "Include WPEProcess executable." ON)
+        "Include the COM hosting process executable." ON)
 option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
@@ -98,10 +98,6 @@ if(PROTOCOLS)
     add_subdirectory(protocols)
 endif()
 
-if(PROCESS)
-    add_subdirectory(WPEProcess)
-endif()
-
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
 endif()
@@ -114,16 +110,20 @@ if(INTERFACES)
     add_subdirectory(interfaces)
 endif()
 
-if(EXECUTABLE)
-    add_subdirectory(WPEFramework)
-endif()
-
 if(VIRTUALINPUT)
     add_subdirectory(virtualinput)
 endif()
 
 if(JSONRPC)
     add_subdirectory(jsonrpc)
+endif()
+
+if(PROCESS)
+    add_subdirectory(WPEProcess)
+endif()
+
+if(EXECUTABLE)
+    add_subdirectory(WPEFramework)
 endif()
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake

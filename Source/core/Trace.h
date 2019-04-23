@@ -80,7 +80,7 @@
         if (!(x)) {                                                                                         \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n", TRACE_PROCESS_ID, __FILE__, __LINE__) \
             DumpCallStack();                                                                                \
-            assert(x);                                                                                      \
+            exit(1);                                                                                        \
         }                                                                                                   \
     }
 
@@ -89,7 +89,7 @@
         if (!(x)) {                                                                                                                         \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n         " #y "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, ##__VA_ARGS__) \
             DumpCallStack();                                                                                                                \
-            assert(x);                                                                                                                      \
+            exit(1);                                                                                                                      \
         }                                                                                                                                   \
     }
 
