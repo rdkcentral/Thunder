@@ -424,7 +424,6 @@ namespace Core {
         uint16_t GetText(const uint16_t offset, string& result) const
         {
             uint16_t textLength;
-
             ASSERT((offset + sizeof(uint16_t)) <= _size);
 
             GetNumber<uint16_t>(offset, textLength);

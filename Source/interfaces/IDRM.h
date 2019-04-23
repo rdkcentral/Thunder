@@ -149,20 +149,6 @@ namespace CDMi {
 #define MEDIA_KEYERR_HARDWARECHANGE 5
 #define MEDIA_KEYERR_DOMAIN 6
 
-// The status code returned by CDMi APIs.
-typedef int32_t CDMi_RESULT;
-
-// REVIEW: Why make up new truth values, what's wrong with true/false?
-#define CDMi_SUCCESS ((CDMi_RESULT)0)
-#define CDMi_S_FALSE ((CDMi_RESULT)1)
-#define CDMi_E_OUT_OF_MEMORY ((CDMi_RESULT)0x80000002)
-#define CDMi_E_FAIL ((CDMi_RESULT)0x80004005)
-#define CDMi_E_INVALID_ARG ((CDMi_RESULT)0x80070057)
-
-#define CDMi_E_SERVER_INTERNAL_ERROR ((CDMi_RESULT)0x8004C600)
-#define CDMi_E_SERVER_INVALID_MESSAGE ((CDMi_RESULT)0x8004C601)
-#define CDMi_E_SERVER_SERVICE_SPECIFIC ((CDMi_RESULT)0x8004C604)
-
 // More CDMi status codes can be defined. In general
 // CDMi status codes should use the same PK error codes.
 
@@ -179,10 +165,37 @@ typedef int32_t CDMi_RESULT;
 #define MEDIA_KEY_STATUS_KEY_STATUS_MAX KEY_STATUS_PENDING
 
 typedef enum {
+    CDMi_SUCCESS = 0,
+    CDMi_S_FALSE = 1,
+    CDMi_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
+    CDMi_INVALID_SESSION = 0x80000003,
+    CDMi_INVALID_DECRYPT_BUFFER = 0x80000004,
+    CDMi_OUT_OF_MEMORY = 0x80000005,
+    CDMi_FAIL = 0x80004005,
+    CDMi_INVALID_ARG = 0x80070057,
+    CDMi_SERVER_INTERNAL_ERROR = 0x8004C600,
+    CDMi_SERVER_INVALID_MESSAGE = 0x8004C601,
+    CDMi_SERVER_SERVICE_SPECIFIC = 0x8004C604,
+} CDMi_RESULT;
+
+typedef enum {
     Temporary,
     PersistentUsageRecord,
     PersistentLicense
 } LicenseType;
+
+typedef enum {
+    Invalid = 0,
+    LimitedDuration,
+    Standard
+} LicenseTypeExt;
+
+typedef enum {
+    LicenseAcquisitionState = 0,
+    InactiveDecryptionState,
+    ActiveDecryptionState,
+    InvalidState
+} SessionStateExt;
 
 // IMediaKeySessionCallback defines the callback interface to receive
 // events originated from MediaKeySession.
@@ -238,6 +251,8 @@ public:
     // Explicitly release all resources associated with the MediaKeySession.
     virtual CDMi_RESULT Close(void) = 0;
 
+    virtual void UninitializeContext() = 0;
+
     // Return the session ID of the MediaKeySession. The returned pointer
     // is valid as long as the associated MediaKeySession still exists.
     virtual const char* GetSessionId(void) const = 0;
@@ -257,7 +272,8 @@ public:
         uint32_t* f_pcbOpaqueClearContent,
         uint8_t** f_ppbOpaqueClearContent,
         const uint8_t keyIdLength,
-        const uint8_t* keyId)
+        const uint8_t* keyId,
+        bool initWithLast15)
         = 0;
 
     virtual CDMi_RESULT ReleaseClearContent(
@@ -268,6 +284,28 @@ public:
         = 0;
 };
 
+// IMediaKeySession defines the MediaKeySession interface.
+class IMediaKeySessionExt {
+public:
+    IMediaKeySessionExt(void) {}
+    virtual ~IMediaKeySessionExt(void) {}
+
+    virtual uint32_t GetSessionIdExt(void) const = 0;
+
+    virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
+
+    virtual CDMi_RESULT GetChallengeDataExt(uint8_t* challenge, uint32_t& challengeSize, uint32_t isLDL) = 0;
+
+    virtual CDMi_RESULT CancelChallengeDataExt() = 0;
+    ;
+
+    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t* secureStopId) = 0;
+
+    virtual CDMi_RESULT InitDecryptContextByKid() = 0;
+
+    virtual CDMi_RESULT CleanDecryptContext() = 0;
+};
+
 // IMediaKeys defines the MediaKeys interface.
 class IMediaKeys {
 public:
@@ -276,6 +314,7 @@ public:
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
+        const std::string& keySystem,
         int32_t licenseType,
         const char* f_pwszInitDataType,
         const uint8_t* f_pbInitData,
@@ -294,6 +333,77 @@ public:
     // Destroy a MediaKeySession instance.
     virtual CDMi_RESULT DestroyMediaKeySession(
         IMediaKeySession* f_piMediaKeySession)
+        = 0;
+};
+
+// IMediaKeySession defines the MediaKeySessionExt interface.
+class IMediaKeysExt {
+public:
+    IMediaKeysExt(void) {}
+    virtual ~IMediaKeysExt(void) {}
+
+    virtual time_t GetDrmSystemTime() const = 0;
+
+    virtual CDMi_RESULT CreateMediaKeySessionExt(
+        const uint8_t drmHeader[],
+        uint32_t drmHeaderLength,
+        IMediaKeySessionExt** session)
+        = 0;
+
+    // Destroy a MediaKeySession instance.
+    virtual CDMi_RESULT DestroyMediaKeySessionExt(
+        IMediaKeySession* f_piMediaKeySession)
+        = 0;
+
+    virtual std::string GetVersionExt() const = 0;
+
+    virtual uint32_t GetLdlSessionLimit() const = 0;
+
+    virtual bool IsSecureStopEnabled() = 0;
+
+    virtual CDMi_RESULT EnableSecureStop(bool enable) = 0;
+
+    virtual uint32_t ResetSecureStops() = 0;
+
+    virtual CDMi_RESULT GetSecureStopIds(
+        uint8_t ids[],
+        uint8_t idSize,
+        uint32_t& count)
+        = 0;
+
+    virtual CDMi_RESULT GetSecureStop(
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        uint8_t* rawData,
+        uint16_t& rawSize)
+        = 0;
+
+    virtual CDMi_RESULT CommitSecureStop(
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        const uint8_t serverResponse[],
+        uint32_t serverResponseLength)
+        = 0;
+
+    // TODO: rename to something like "SetStoreDirs"
+    virtual CDMi_RESULT CreateSystemExt() = 0;
+
+    virtual CDMi_RESULT InitSystemExt() = 0;
+
+    virtual CDMi_RESULT TeardownSystemExt() = 0;
+
+    virtual CDMi_RESULT DeleteKeyStore() = 0;
+
+    virtual CDMi_RESULT DeleteSecureStore() = 0;
+
+    virtual CDMi_RESULT GetKeyStoreHash(
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
+        = 0;
+
+    virtual CDMi_RESULT GetSecureStoreHash(
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
         = 0;
 };
 
