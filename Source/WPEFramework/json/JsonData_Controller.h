@@ -127,14 +127,14 @@ namespace JsonData {
             GetconfigParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("service"), &Service);
+                Add(_T("callsign"), &Callsign);
             }
 
             GetconfigParamsData(const GetconfigParamsData&) = delete;
             GetconfigParamsData& operator=(const GetconfigParamsData&) = delete;
 
         public:
-            Core::JSON::String Service; // Name of the service to get the configuration of
+            Core::JSON::String Callsign; // Name of the service to get the configuration of
         }; // class GetconfigParamsData
 
         class GetenvParamsData : public Core::JSON::Container {
@@ -157,7 +157,7 @@ namespace JsonData {
             SetconfigParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("service"), &Service);
+                Add(_T("callsign"), &Callsign);
                 Add(_T("configuration"), &Configuration);
             }
 
@@ -165,7 +165,7 @@ namespace JsonData {
             SetconfigParamsData& operator=(const SetconfigParamsData&) = delete;
 
         public:
-            Core::JSON::String Service; // Name of the service to set the configuration of
+            Core::JSON::String Callsign; // Name of the service to set the configuration of
             Core::JSON::String Configuration; // Configuration object to set
         }; // class SetconfigParamsData
 

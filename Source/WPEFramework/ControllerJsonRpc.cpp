@@ -319,7 +319,7 @@ namespace Plugin {
     uint32_t Controller::endpoint_getconfig(const GetconfigParamsData& params, Core::JSON::String& response)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& callsign = params.Service.Value();
+        const string& callsign = params.Callsign.Value();
         Core::ProxyType<PluginHost::Server::Service> service;
 
         ASSERT(_pluginServer != nullptr);
@@ -343,7 +343,7 @@ namespace Plugin {
     uint32_t Controller::endpoint_setconfig(const SetconfigParamsData& params)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& callsign = params.Service.Value();
+        const string& callsign = params.Callsign.Value();
         Core::ProxyType<PluginHost::Server::Service> service;
 
         ASSERT(_pluginServer != nullptr);
@@ -386,7 +386,7 @@ namespace Plugin {
     //  - ERROR_INPROGRESS: Operation in progress
     //  - ERROR_INCORRECT_URL: Incorrect URL given
     //  - ERROR_BAD_REQUEST: The given destination path or hash was invalid
-    //  - ERROR_WRITE_ERROR: Failed to save the file to the persistent storage
+    //  - ERROR_WRITE_ERROR: Failed to save the file to the persistent storage (e.g. the file already exists)
     uint32_t Controller::endpoint_download(const Download& params)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
@@ -404,19 +404,23 @@ namespace Plugin {
 
                 Core::FromString(hash, digest, length);
                 if (length == sizeof(digest)) {
-                     if (Core::File(path).Create() == true) {
+
+                    if (Core::File(path).Create() == true) {
                         ASSERT(_downloader != nullptr);
 
                         result = _downloader->Start(source, destination, digest);
 
                         // Normalise the result
-                        if ((result != Core::ERROR_INPROGRESS) && (result != Core::ERROR_INCORRECT_URL)) {
+                        if (result == Core::ERROR_COULD_NOT_SET_ADDRESS ) {
+                            result = Core::ERROR_INCORRECT_URL;
+                        }
+                        else if ((result != Core::ERROR_NONE) && (result != Core::ERROR_INPROGRESS) && (result != Core::ERROR_INCORRECT_URL)) {
                             result = Core::ERROR_WRITE_ERROR;
                         }
-                     }
-                     else {
+                    }
+                    else {
                         result = Core::ERROR_WRITE_ERROR;
-                     }
+                    }
                 }
             }
         }
@@ -427,11 +431,11 @@ namespace Plugin {
         return result;
     }
 
-    // Removes directory from the persistent storage.
+    // Removes contents of a directory from the persistent storage.
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The given path was incorrect
-    //    ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory
+    //    ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
@@ -439,10 +443,13 @@ namespace Plugin {
 
         if (path.empty() == false) {
             if (path.find("..") == string::npos) {
-                //DeleteDirectory(_service->PersistentPath() + "/" + path);
+                ASSERT(_service != nullptr);
+
+                DeleteDirectory(_service->PersistentPath() +  path);
+                result = Core::ERROR_NONE; // FIXME: return the real deletion result instead
             }
             else {
-                result = Core::ERROR_UNKNOWN_KEY;
+                result = Core::ERROR_PRIVILIGED_REQUEST;
             }
         }
 
@@ -464,20 +471,6 @@ namespace Plugin {
         }
 
         return result;
-    }
-
-    // Signals each and every event in the system.
-    void Controller::event_all(const string& callsign, const string& data)
-    {
-        string validData = data; // copy!
-        validData.erase(std::remove(validData.begin(), validData.end(), '\n'), validData.end());
-        EscapeQuotes(validData);
-
-        AllParamsData params;
-        params.Callsign = callsign;
-        params.Data = validData;
-
-        Notify(_T("all"), params);
     }
 
     // Signals a plugin state change.

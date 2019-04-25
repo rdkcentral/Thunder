@@ -17,28 +17,6 @@ namespace Plugin {
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
     static Core::ProxyPoolType<Web::JSONBodyType<Controller::Download>> jsonBodyDownloadFactory(1);
 
-    static void DeleteDirectory(const string& directory)
-    {
-        Core::Directory dir(directory.c_str());
-
-        while (dir.Next() == true) {
-            Core::File file(dir.Current());
-
-            if (file.IsDirectory() == true) {
-
-                string name(file.FileName());
-
-                // We can not delete the "." or  ".." entries....
-                if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
-                    DeleteDirectory(dir.Current());
-                    file.Destroy();
-                }
-            } else {
-                file.Destroy();
-            }
-        }
-    }
-
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
     {
 
@@ -618,6 +596,27 @@ namespace Plugin {
         }
 
         return (response);
+    }
+
+    void Controller::DeleteDirectory(const string& directory)
+    {
+        Core::Directory dir(directory.c_str());
+
+        while (dir.Next() == true) {
+            Core::File file(dir.Current());
+
+            if (file.IsDirectory() == true) {
+                string name(file.FileName());
+
+                // We can not delete the "." or  ".." entries....
+                if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
+                    DeleteDirectory(dir.Current());
+                    file.Destroy();
+                }
+            } else {
+                file.Destroy();
+            }
+        }
     }
 }
 }

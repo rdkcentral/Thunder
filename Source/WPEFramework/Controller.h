@@ -280,6 +280,7 @@ namespace Plugin {
         void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
         virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
+        void DeleteDirectory(const string& directory);
 
         void RegisterAll();
         void UnregisterAll();
@@ -300,7 +301,6 @@ namespace Plugin {
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
 
-        void event_all(const string& callsign, const string& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
         void event_downloadcompleted(uint32_t result, const string& source, const string& destination);
 
