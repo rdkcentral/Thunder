@@ -49,7 +49,7 @@ namespace Core {
 
         ThreadLocalStorageType()
         {
-            TRACE_L5("Constructor ThreadControlBlockInfo <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor ThreadControlBlockInfo <%p>", (this));
 
 #ifdef __WIN32__
             m_Index = TlsAlloc();
@@ -67,7 +67,7 @@ namespace Core {
     public:
         ~ThreadLocalStorageType()
         {
-            TRACE_L5("Destructor ThreadControlBlockInfo <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ThreadControlBlockInfo <%p>", (this));
 
 #ifdef __WIN32__
             if (m_Index != -1) {

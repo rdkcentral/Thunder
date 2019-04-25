@@ -378,14 +378,14 @@ namespace Core {
         SocketListner()
             : _socket(*this)
         {
-            TRACE_L5("Constructor SocketListner <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor SocketListner <%p>", (this));
         }
 
     public:
         SocketListner(const NodeId& refLocalNode)
             : _socket(*this, refLocalNode)
         {
-            TRACE_L5("Constructor SocketListner <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor SocketListner <%p>", (this));
         }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
@@ -393,7 +393,7 @@ namespace Core {
 
         virtual ~SocketListner()
         {
-            TRACE_L5("Destructor SocketListner <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor SocketListner <%p>", (this));
 
             _socket.Close(0);
         }

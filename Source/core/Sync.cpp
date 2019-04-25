@@ -111,7 +111,7 @@ namespace Core {
 #ifdef __WIN32__
     CriticalSection::CriticalSection()
     {
-        TRACE_L5("Constructor CriticalSection <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor CriticalSection <%p>", (this));
 
         ::InitializeCriticalSection(&m_syncMutex);
     }
@@ -124,7 +124,7 @@ namespace Core {
         , _LockingThread(0)
 #endif // CRITICAL_SECTION_LOCK_LOG
     {
-        TRACE_L5("Constructor CriticalSection <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor CriticalSection <%p>", (this));
 
         pthread_mutexattr_t structAttributes;
 
@@ -213,7 +213,7 @@ namespace Core {
 
     CriticalSection::~CriticalSection()
     {
-        TRACE_L5("Destructor CriticalSection <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor CriticalSection <%p>", (this));
 
 #ifdef __POSIX__
         if (pthread_mutex_destroy(&m_syncMutex) != 0) {
@@ -244,7 +244,7 @@ namespace Core {
         DEBUG_VARIABLE(nMaxCount);
         ASSERT((nInitialCount == 0) || (nInitialCount == 1));
 
-        TRACE_L5("Constructor BinairySemaphore (int, int)  <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor BinairySemaphore (int, int)  <%p>", (this));
 
 #ifdef __POSIX__
         m_blLocked = (nInitialCount == 0);
@@ -284,7 +284,7 @@ namespace Core {
         : m_blLocked(blLocked)
 #endif
     {
-        TRACE_L5("Constructor BinairySemaphore <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor BinairySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         pthread_condattr_t attr;
@@ -318,7 +318,7 @@ namespace Core {
 
     BinairySemaphore::~BinairySemaphore()
     {
-        TRACE_L5("Destructor BinairySemaphore <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor BinairySemaphore <%p>", (this));
 
 #ifdef __POSIX__
         // If we really create it, we really have to destroy it.
@@ -482,7 +482,7 @@ namespace Core {
         , m_nMaxCount(nMaxCount)
 #endif
     {
-        TRACE_L5("Constructor CountingSemaphore <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor CountingSemaphore <%p>", (this));
 
 #ifdef __POSIX__
 
@@ -513,7 +513,7 @@ namespace Core {
 
     CountingSemaphore::~CountingSemaphore()
     {
-        TRACE_L5("Destructor CountingSemaphore <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor CountingSemaphore <%p>", (this));
 
 #ifdef __POSIX__
         // O.K. Destroy all the semaphores used by this class.
@@ -753,7 +753,7 @@ namespace Core {
         , m_blCondition(blSet)
 #endif
     {
-        TRACE_L5("Constructor Event <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor Event <%p>", (this));
 
 #ifdef __POSIX__
         pthread_condattr_t attr;
@@ -789,7 +789,7 @@ namespace Core {
     {
 
 #ifdef __POSIX__
-        TRACE_L5("Destructor Event <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor Event <%p>", (this));
 
         // If we really create it, we really have to destroy it.
         pthread_mutex_destroy(&m_syncAdminLock);

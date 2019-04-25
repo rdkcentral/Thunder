@@ -24,8 +24,6 @@
 #endif
 #endif
 
-#define TRACE_POINTER(x) reinterpret_cast<unsigned long>(x)
-
 #if _TRACE_LEVEL > 4
 #define TRACE_L5(x, ...)                                                         \
     fprintf(stderr, "----- L5 [%d]: " #x "\n", TRACE_PROCESS_ID, ##__VA_ARGS__); \

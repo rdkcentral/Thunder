@@ -183,7 +183,7 @@ namespace Core {
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
     {
-        TRACE_L5("Constructor SocketPort (NodeId&) <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
     }
 
     SocketPort::SocketPort(
@@ -224,7 +224,7 @@ namespace Core {
 
     SocketPort::~SocketPort()
     {
-        TRACE_L5("Destructor SocketPort <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor SocketPort <%p>", (this));
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!

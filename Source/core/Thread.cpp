@@ -31,7 +31,7 @@ namespace Core {
         , m_ThreadId(0)
 #endif
     {
-        TRACE_L5("Constructor Thread <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor Thread <%p>", (this));
 
 // Create a worker that can do actions in parallel
 #ifdef __WIN32__
@@ -87,7 +87,7 @@ namespace Core {
     }
     Thread::~Thread()
     {
-        TRACE_L5("Destructor Thread <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor Thread <%p>", (this));
 
         Terminate();
     }

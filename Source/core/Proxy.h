@@ -162,7 +162,7 @@ namespace Core {
 
             ASSERT(m_RefCount == 0);
 
-            TRACE_L5("Destructor ProxyObject <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ProxyObject <%p>", (this));
         }
 
     public:
@@ -767,12 +767,12 @@ namespace Core {
             // A highwatermark of 0 is bullshit.
             ASSERT(a_HighWaterMark != 0);
 
-            TRACE_L5("Constructor ProxyQueue <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor ProxyQueue <%p>", (this));
         }
 
         ~ProxyQueue()
         {
-            TRACE_L5("Destructor ProxyQueue <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ProxyQueue <%p>", (this));
 
             // Disable the queue and flush all entries.
             Disable();
