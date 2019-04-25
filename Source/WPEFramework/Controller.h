@@ -296,15 +296,13 @@ namespace Plugin {
         uint32_t endpoint_getconfig(const JsonData::Controller::GetconfigParamsData& params, Core::JSON::String& response);
         uint32_t endpoint_setconfig(const JsonData::Controller::SetconfigParamsData& params);
         uint32_t endpoint_storeconfig();
-        uint32_t endpoint_download(const JsonData::Controller::DownloadParamsData& params);
+        uint32_t endpoint_download(const Download& params);
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
 
-        /*
-        void event_all(const string& callsign, const Core::JSON::Variant& data);
+        void event_all(const string& callsign, const string& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void event_downloadcompleted(const string& source);
-        */
+        void event_downloadcompleted(uint32_t result, const string& source, const string& destination);
 
     private:
         Core::CriticalSection _adminLock;

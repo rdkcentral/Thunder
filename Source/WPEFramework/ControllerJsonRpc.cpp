@@ -44,7 +44,7 @@ namespace Plugin {
         Register<GetconfigParamsData,Core::JSON::String>(_T("getconfig"), &Controller::endpoint_getconfig, this);
         Register<SetconfigParamsData,void>(_T("setconfig"), &Controller::endpoint_setconfig, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
-        Register<DownloadParamsData,void>(_T("download"), &Controller::endpoint_download, this);
+        Register<Download,void>(_T("download"), &Controller::endpoint_download, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
         Register<void,void>(_T("harakiri"), &Controller::endpoint_harakiri, this);
     }
@@ -96,7 +96,7 @@ namespace Plugin {
                 result = service->Activate(PluginHost::IShell::REQUESTED);
 
                 // Normalise return code
-                if ((service->HasError() == true) || ((result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS) && (result != Core::ERROR_PENDING_CONDITIONS))) {
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS) && (result != Core::ERROR_PENDING_CONDITIONS)) {
                     result = Core::ERROR_OPENING_FAILED;
                 }
             }
@@ -134,7 +134,7 @@ namespace Plugin {
                 result = service->Deactivate(PluginHost::IShell::REQUESTED);
 
                 // Normalise return code
-                if ((result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
+                if ((result != Core::ERROR_NONE) && (result != Core::ERROR_ILLEGAL_STATE) && (result !=  Core::ERROR_INPROGRESS)) {
                     result = Core::ERROR_CLOSING_FAILED;
                 }
             }
@@ -246,8 +246,6 @@ namespace Plugin {
     //  - ERROR_NONE: Success
     uint32_t Controller::endpoint_subsystems(Core::JSON::ArrayType<SubsystemsResultData>& response)
     {
-        uint32_t result = Core::ERROR_NONE;
-
         ASSERT(_service != nullptr);
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
@@ -264,8 +262,7 @@ namespace Plugin {
             subSystem->Release();
         }
 
-
-        return result;
+        return Core::ERROR_NONE;
     }
 
     // Starts the network discovery.
@@ -286,8 +283,6 @@ namespace Plugin {
     //  - ERROR_NONE: Success
     uint32_t Controller::endpoint_discovery(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response)
     {
-        uint32_t result = Core::ERROR_NONE;
-
         ASSERT(_probe != nullptr);
         Probe::Iterator index(_probe->Instances());
 
@@ -296,7 +291,7 @@ namespace Plugin {
             response.Add(element);
         }
 
-        return result;
+        return Core::ERROR_NONE;
     }
 
     // Retrieves the value of an environment variable.
@@ -334,7 +329,6 @@ namespace Plugin {
             configuration.erase(std::remove(configuration.begin(), configuration.end(), '\n'), configuration.end());
             EscapeQuotes(configuration);
             response = configuration;
-
             result = Core::ERROR_NONE;
         }
 
@@ -393,7 +387,7 @@ namespace Plugin {
     //  - ERROR_INCORRECT_URL: Incorrect URL given
     //  - ERROR_BAD_REQUEST: The given destination path or hash was invalid
     //  - ERROR_WRITE_ERROR: Failed to save the file to the persistent storage
-    uint32_t Controller::endpoint_download(const DownloadParamsData& params)
+    uint32_t Controller::endpoint_download(const Download& params)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         const string& source = params.Source.Value();
@@ -472,13 +466,16 @@ namespace Plugin {
         return result;
     }
 
-#if 0
     // Signals each and every event in the system.
-    void Controller::event_all(const string& callsign, const Core::JSON::Variant& data)
+    void Controller::event_all(const string& callsign, const string& data)
     {
+        string validData = data; // copy!
+        validData.erase(std::remove(validData.begin(), validData.end(), '\n'), validData.end());
+        EscapeQuotes(validData);
+
         AllParamsData params;
         params.Callsign = callsign;
-        params.Data = data;
+        params.Data = validData;
 
         Notify(_T("all"), params);
     }
@@ -495,14 +492,16 @@ namespace Plugin {
     }
 
     // Signals that a file download has completed.
-    void Controller::event_downloadcompleted(const string& source)
+    void Controller::event_downloadcompleted(uint32_t result, const string& source, const string& destination)
     {
         DownloadcompletedParamsData params;
+        params.Result = result;
         params.Source = source;
+        params.Destination = destination;
 
         Notify(_T("downloadcompleted"), params);
     }
-#endif
+
 } // namespace Plugin
 
 }

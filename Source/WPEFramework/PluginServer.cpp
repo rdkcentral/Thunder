@@ -524,6 +524,7 @@ namespace PluginHost
     /* virtual */ void Server::Service::Notify(const string& message)
     {
         const string fullMessage("{\"callsign\":\"" + PluginHost::Service::Callsign() + "\", \"data\": " + message + " }");
+        printf("******** %s: %sn", PluginHost::Service::Callsign(), message);
 
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);

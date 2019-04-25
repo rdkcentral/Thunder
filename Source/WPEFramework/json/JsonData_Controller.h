@@ -51,7 +51,7 @@ namespace JsonData {
 
         public:
             Core::JSON::String Callsign; // Callsign of the originator plugin of the event
-            Core::JSON::Variant Data; // Object that was broadcasted as an event by the originator plugin
+            Core::JSON::String Data; // Object that was broadcasted as an event by the originator plugin
         }; // class AllParamsData
 
         class DeleteParamsData : public Core::JSON::Container {
@@ -93,14 +93,18 @@ namespace JsonData {
             DownloadcompletedParamsData()
                 : Core::JSON::Container()
             {
+                Add(_T("result"), &Source);
                 Add(_T("source"), &Source);
+                Add(_T("destination"), &Source);
             }
 
             DownloadcompletedParamsData(const DownloadcompletedParamsData&) = delete;
             DownloadcompletedParamsData& operator=(const DownloadcompletedParamsData&) = delete;
 
         public:
+            Core::JSON::DecUInt32 Result; // Operation status code
             Core::JSON::String Source; // Source URL identifying the downloaded file
+            Core::JSON::String Destination; // Destination path
         }; // class DownloadcompletedParamsData
 
         class ExistsParamsData : public Core::JSON::Container {

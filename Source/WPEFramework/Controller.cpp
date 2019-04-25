@@ -97,11 +97,9 @@ namespace Plugin {
             while (index.Next() == true) {
                 _resumes.push_back(index.Current().Value());
             }
-
-            if (_resumes.size() > 0) {
-                _service->Register(&_systemInfoReport);
-            }
         }
+
+        _service->Register(&_systemInfoReport);
 
         _service->EnableWebServer(_T("UI"), EMPTY_STRING);
 
@@ -129,9 +127,7 @@ namespace Plugin {
         delete _probe;
         _probe = nullptr;
 
-        if (_resumes.size() > 0) {
-            _service->Unregister(&_systemInfoReport);
-        }
+        _service->Unregister(&_systemInfoReport);
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
@@ -496,14 +492,15 @@ namespace Plugin {
 
     void Controller::Transfered(const uint32_t result, const string& source, const string& destination)
     {
-
         // Report over a socket a download is completed with its state.
+        event_downloadcompleted(result, source, destination);
     }
 
     void Controller::StateChange(PluginHost::IShell* plugin)
     {
+        event_statechange(plugin->Callsign(), plugin->State(), plugin->Reason());
 
-        if (plugin->State() == PluginHost::IShell::ACTIVATED) {
+        if ((plugin->State() == PluginHost::IShell::ACTIVATED) && (_resumes.size() > 0)) {
             string callsign(plugin->Callsign());
             std::list<string>::const_iterator index(_resumes.begin());
 
@@ -530,11 +527,6 @@ namespace Plugin {
                 }
 
                 _resumes.erase(index);
-
-                if (_resumes.size() == 0) {
-                    // No more resumes required, unregister your self...
-                    _service->Unregister(&_systemInfoReport);
-                }
             }
         }
     }
