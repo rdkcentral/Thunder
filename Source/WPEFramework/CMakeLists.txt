@@ -2,6 +2,7 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 add_executable(${TARGET}
         Controller.cpp
+        ControllerJsonRpc.cpp
         PluginHost.cpp
         PluginServer.cpp
         Probe.cpp
@@ -26,7 +27,7 @@ endif()
 target_link_libraries(${TARGET}
         PRIVATE
           ${CMAKE_DL_LIBS}
-	  ${LIBEXECINFO_LIBRARY}
+          ${LIBEXECINFO_LIBRARY}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
