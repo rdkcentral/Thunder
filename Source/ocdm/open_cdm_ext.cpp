@@ -27,7 +27,7 @@ public:
         uint32_t drmHeaderLength,
         OpenCDMSessionCallbacks* callbacks)
         : ExtendedOpenCDMSession(callbacks)
-        , _userData(this)
+        , _userData(nullptr)
         , _realSession(nullptr)
     {
 
@@ -405,7 +405,7 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
             *session = new ExtendedOpenCDMSession(
                 static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem),
                 std::string(initDataType), initData, initDataLength, CDMData,
-                CDMDataLength, licenseType, callbacks, nullptr);
+                CDMDataLength, licenseType, callbacks, userData);
 
             result = (*session != nullptr ? OpenCDMError::ERROR_NONE
                                           : OpenCDMError::ERROR_INVALID_SESSION);
