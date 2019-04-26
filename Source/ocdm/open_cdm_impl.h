@@ -419,12 +419,12 @@ public:
     }
 
     virtual OCDM::OCDM_RESULT
-    CreateSessionExt(const uint8_t drmHeader[], uint32_t drmHeaderLength,
+    CreateSessionExt(const string keySystem, const uint8_t drmHeader[], uint32_t drmHeaderLength,
         ::OCDM::ISession::ICallback* callback,
         std::string& sessionId,
         OCDM::ISessionExt*& session) override
     {
-        return (_remoteExt->CreateSessionExt(drmHeader, drmHeaderLength, callback,
+        return (_remoteExt->CreateSessionExt(keySystem, drmHeader, drmHeaderLength, callback,
             sessionId, session));
     }
 

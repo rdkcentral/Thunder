@@ -23,7 +23,7 @@ public:
     ExtendedOpenCDMSessionExt& operator=(ExtendedOpenCDMSessionExt&) = delete;
 
 public:
-    ExtendedOpenCDMSessionExt(OpenCDMAccessor* system, const uint8_t drmHeader[],
+    ExtendedOpenCDMSessionExt(const string keySystem, OpenCDMAccessor* system, const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
         OpenCDMSessionCallbacks* callbacks)
         : ExtendedOpenCDMSession(callbacks)
@@ -33,7 +33,7 @@ public:
 
         OCDM::ISessionExt* realSession = nullptr;
 
-        system->CreateSessionExt(drmHeader, drmHeaderLength, &_sink, _sessionId,
+        system->CreateSessionExt(keySystem, drmHeader, drmHeaderLength, &_sink, _sessionId,
             realSession);
 
         if (realSession == nullptr) {
@@ -270,8 +270,8 @@ OpenCDMError opencdm_session_init_decrypt_context_by_kid(
     struct OpenCDMSession* mOpenCDMSession)
 {
     ExtendedOpenCDMSessionExt* sessionExt = static_cast<ExtendedOpenCDMSessionExt*>(mOpenCDMSession);
-
-    return (OpenCDMError)sessionExt->InitDecryptContextByKid();
+    OpenCDMError output = (OpenCDMError)sessionExt->InitDecryptContextByKid();
+    return output;
 }
 
 OpenCDMError
@@ -362,7 +362,6 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
  * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
  * \return Zero on success, non-zero on error.
  */
-
 OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
@@ -397,9 +396,9 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
     OpenCDMSessionCallbacks* callbacks, void* userData,
     struct OpenCDMSession** session)
 {
-
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
+    // TODO: Since we are passing key system name anyway, not need for if here.
     if (strcmp(keySystem, "com.netflix.playready") != 0) {
         if (system != nullptr) {
             *session = new ExtendedOpenCDMSession(
@@ -412,7 +411,7 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
         }
     } else {
         if (system != nullptr) {
-            *session = new ExtendedOpenCDMSessionExt(system, initData, initDataLength,
+            *session = new ExtendedOpenCDMSessionExt(std::string(keySystem), system, initData, initDataLength,
                 callbacks);
             result = OpenCDMError::ERROR_NONE;
         }

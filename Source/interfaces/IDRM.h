@@ -345,6 +345,7 @@ public:
     virtual time_t GetDrmSystemTime() const = 0;
 
     virtual CDMi_RESULT CreateMediaKeySessionExt(
+        const std::string& keySystem,
         const uint8_t drmHeader[],
         uint32_t drmHeaderLength,
         IMediaKeySessionExt** session)

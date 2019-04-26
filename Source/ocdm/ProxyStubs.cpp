@@ -232,6 +232,7 @@ ProxyStub::MethodHandler AccesorOCDMExtStubMethods[] = {
         Core::ProxyType<RPC::InvokeMessage>& message) {
         //
         // virtual OCDM_RESULT CreateSessionExt(
+        //    const string keySystem
         //    const uint8_t drmHeader[],
         //    uint32_t drmHeaderLength,
         //    ::OCDM::ISession::ICallback* callback,
@@ -241,6 +242,8 @@ ProxyStub::MethodHandler AccesorOCDMExtStubMethods[] = {
 
         RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
         RPC::Data::Frame::Writer response(message->Response().Writer());
+
+        std::string keySystem = parameters.Text();
 
         const uint8_t* drmHeader = nullptr;
         uint32_t drmHeaderLength = parameters.LockBuffer<uint32_t>(drmHeader);
@@ -266,7 +269,7 @@ ProxyStub::MethodHandler AccesorOCDMExtStubMethods[] = {
         OCDM::IAccessorOCDMExt* accessor = message->Parameters().Implementation<OCDM::IAccessorOCDMExt>();
 
         OCDM::OCDM_RESULT result = accessor->CreateSessionExt(
-            drmHeader, drmHeaderLength, param0_proxy, sessionId, session);
+            keySystem, drmHeader, drmHeaderLength, param0_proxy, sessionId, session);
 
         response.Number<OCDM::OCDM_RESULT>(result);
         response.Text(sessionId);
@@ -1151,13 +1154,15 @@ public:
     }
 
     virtual OCDM::OCDM_RESULT
-    CreateSessionExt(const uint8_t drmHeader[], uint32_t drmHeaderLength,
+    CreateSessionExt(const string keySystem, const uint8_t drmHeader[], uint32_t drmHeaderLength,
         ::OCDM::ISession::ICallback* callback,
         std::string& sessionId,
         OCDM::ISessionExt*& session) override
     {
         IPCMessage newMessage(BaseClass::Message(1));
         RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+        writer.Text(keySystem);
 
         OCDM::OCDM_RESULT result = OCDM::OCDM_RESULT::OCDM_S_FALSE;
         writer.Buffer(drmHeaderLength, drmHeader);
