@@ -3,23 +3,6 @@
 #include "Controller.h"
 #include "Module.h"
 
-namespace {
-    void EscapeQuotes(string& str) {
-        size_t pos = 0;
-        while ((pos = str.find('\"', pos)) != string::npos) {
-            str.replace(pos, 1, "\\\"");
-            pos += 2;
-        }
-    }
-
-    void UnescapeQuotes(string& str) {
-        size_t pos = 0;
-        while ((pos = str.find("\\\"", pos)) != string::npos) {
-            str.replace(pos++, 2, "\\\"");
-        }
-    }
-}
-
 namespace WPEFramework {
 
 namespace Plugin {
@@ -325,10 +308,8 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            string configuration(service->ConfigLine());
-            configuration.erase(std::remove(configuration.begin(), configuration.end(), '\n'), configuration.end());
-            EscapeQuotes(configuration);
-            response = configuration;
+            response.SetQuoted(false);
+            response = service->ConfigLine();
             result = Core::ERROR_NONE;
         }
 
@@ -349,8 +330,7 @@ namespace Plugin {
         ASSERT(_pluginServer != nullptr);
 
         if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            string configuration = params.Configuration.Value(); // copy!
-            UnescapeQuotes(configuration);
+            const string& configuration = params.Configuration.Value();
             result = service->ConfigLine(configuration);
 
             // Normalise return code

@@ -1042,7 +1042,6 @@ namespace Core {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
 
-        protected:
             inline bool IsQuoted() const
             {
                 return ((_scopeCount & QuoteFoundBit) != 0);
@@ -1055,6 +1054,8 @@ namespace Core {
                     _scopeCount &= (~QuotedSerializeBit);
                 }
             }
+
+        protected:
             // IElement interface methods (private)
             virtual ParserType Type() const override
             {
