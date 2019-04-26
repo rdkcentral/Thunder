@@ -385,7 +385,12 @@ public:
 
         KeyMap::iterator session(_sessionKeys.find(sessionId));
 
-        ASSERT(session != _sessionKeys.end());
+        // This isn't always fullfilled. In case the OCDM user
+        // crashes (or gets killed) and reattaches to the running OCDM instance
+        // after restarting it gets the notifications about pre-crash sessions
+        // which obviously haven't been cleaned up properly due to the crash
+        // and are known only to the instance.
+        // ASSERT(session != _sessionKeys.end());
 
         if (session != _sessionKeys.end()) {
 
@@ -413,9 +418,8 @@ public:
 
                 _signal.ResetEvent();
             }
-
-            _adminLock.Unlock();
         }
+        _adminLock.Unlock();
     }
 
     virtual OCDM::OCDM_RESULT
