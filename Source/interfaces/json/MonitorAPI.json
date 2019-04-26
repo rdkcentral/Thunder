@@ -1,0 +1,230 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Monitor API",
+    "class": "Monitor",
+    "description": "Monitor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "restartsettings": {
+      "type": "object",
+      "properties": {
+        "limit": {
+          "type": "number",
+          "signed": true,
+          "example": 3,
+          "description": "Maximum number or restarts to be attempted"
+        },
+        "windowseconds": {
+          "type": "number",
+          "signed": true,
+          "example": 60,
+          "description": "Time period within which failures must happen for the limit to be considered crossed"
+        }
+      },
+      "required": [
+        "limit",
+        "windowseconds"
+      ]
+    },
+    "measurement": {
+      "type": "object",
+      "properties": {
+        "min": {
+          "type": "number",
+          "example": 0,
+          "description": "Minimal value measured"
+        },
+        "max": {
+          "type": "number",
+          "example": 100,
+          "description": "Maximal value measured"
+        },
+        "average": {
+          "type": "number",
+          "example": 50,
+          "description": "Average of all measurements"
+        },
+        "last": {
+          "type": "number",
+          "example": 100,
+          "description": "Last measured value"
+        }
+      },
+      "required": [
+        "min",
+        "max",
+        "average",
+        "last"
+      ]
+    },
+    "measurements": {
+      "type": "object",
+      "properties": {
+        "resident": {
+          "$ref": "#/definitions/measurement",
+          "description": "Resident memory measurement"
+        },
+        "allocated": {
+          "$ref": "#/definitions/measurement",
+          "description": "Allocated memory measurement"
+        },
+        "shared": {
+          "$ref": "#/definitions/measurement",
+          "description": "Shared memory measurement"
+        },
+        "process": {
+          "$ref": "#/definitions/measurement",
+          "description": "Processes measurement"
+        },
+        "operational": {
+          "type": "boolean",
+          "example": true,
+          "description": "Whether the plugin is up and running"
+        },
+        "count": {
+          "type": "number",
+          "example": 100,
+          "description": "Number of measurements"
+        }
+      },
+      "required": [
+        "resident",
+        "allocated",
+        "shared",
+        "process",
+        "operational",
+        "count"
+      ]
+    },
+    "info": {
+      "type": "object",
+      "properties": {
+        "measurements": {
+          "description": "Measurements for the plugin",
+          "$ref": "#/definitions/measurements"
+        },
+        "observable": {
+          "description": "A callsign of the watched plugin",
+          "example": "callsign",
+          "type": "string"
+        },
+        "memoryrestartsettings": {
+          "$ref": "#/definitions/restartsettings",
+          "description": "Restart limits for memory consumption related failures applying to the plugin"
+        },
+        "operationalrestartsettings": {
+          "$ref": "#/definitions/restartsettings",
+          "description": "Restart limits for stability failures applying to the plugin"
+        }
+      },
+      "required": [
+        "measurements",
+        "observable",
+        "memoryrestartsettings",
+        "operationalrestartsettings"
+      ]
+    }
+  },
+  "methods": {
+    "Monitor.1.status": {
+      "summary": "Returns the memory and process statistics either for a single plugin or all plugins watched by the Monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsing of a plugin to get measurements snapshot of, if set empty then all observed objects will be returned",
+            "type": "string",
+            "example": ""
+          }
+        }
+      },
+      "result": {
+        "type": "array",
+        "items": {
+            "$ref": "#/definitions/info"
+        }
+      }
+    },
+    "Monitor.1.resetstats": {
+      "summary": "Resets memory and process statistics for a single plugin watched by the Monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsign of a plugin to reset statistics of",
+            "type": "string",
+            "example": "WebServer"
+          }
+        }
+      },
+      "result": {
+        "description": "Measurements for the plugin before reset",
+        "$ref": "#/definitions/info"
+      }
+    },
+    "Monitor.1.restartlimits": {
+      "summary": "Sets new restart limits for a plugin",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsign of a plugin to reset measurements snapshot for",
+            "type": "string",
+            "example": "WebServer"
+          },
+          "operationalrestartsettings": {
+            "description": "Restart setting for memory consumption type of failures",
+            "$ref": "#/definitions/restartsettings"
+          },
+          "memoryrestartsettings": {
+            "description": "Restart setting for stability type of failures",
+            "$ref": "#/definitions/restartsettings"
+          }
+        },
+        "required": [
+          "callsign",
+          "operationalrestartsettings",
+          "memoryrestartsettings"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  },
+  "events": {
+    "action": {
+      "summary": "Signals action taken by the monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "Callsign of the plugin the monitor acted upon",
+            "type": "string",
+            "example": "WebServer"
+          },
+          "action": {
+            "description": "The action executed by the monitor on a plugin. One of: \"Activate\", \"Deactivate\", \"StoppedRestarting\"",
+            "type": "string",
+            "example": "Deactivate"
+          },
+          "reason": {
+            "description": "A message describing the reason the action was taken of",
+            "type": "string",
+            "example": "EXCEEDED_MEMORY"
+          }
+        },
+        "required": [
+          "callsign",
+          "action",
+          "reason"
+        ]
+      }
+    }
+  }
+}
