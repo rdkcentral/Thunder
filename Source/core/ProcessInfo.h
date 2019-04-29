@@ -37,8 +37,11 @@ namespace Core {
 
         class EXTERNAL Iterator {
         public:
-            // Get the Processes with this name.
-            Iterator(const string& name, const bool exact);
+            // Get the Child Processes with a name name from a Parent with a certain name
+            Iterator(const string& parentname, const string& childname, const bool removepath);
+
+            // Get the Child Processes with a name name from a Parent pid
+            Iterator(const uint32_t parentPID, const string& childname, const bool removepath);
 
             // Get the Children of the given PID.
             Iterator(const uint32_t parentPID);
@@ -100,6 +103,86 @@ namespace Core {
             uint32_t _index;
         };
 
+       class EXTERNAL LibraryIterator {
+        public:
+
+            class LibraryInfo {
+            public:
+                LibraryInfo(const LibraryInfo&) = default;  
+                LibraryInfo& operator=(const LibraryInfo&) = default;  
+
+            private:
+                friend class LibraryIterator;
+
+                explicit LibraryInfo(const string& firstline);
+
+                bool ProcessLine(const string& firstline);
+
+            public:
+                const string& Name() const {
+                    return _name;
+                }
+
+                const string& Shortname() const {
+                    return _shortname;
+                }
+
+            private: 
+                string _name;
+                string _shortname;
+            };
+
+            LibraryIterator& operator=(const LibraryIterator& RHS) = default;
+            LibraryIterator(const LibraryIterator& copy) = default;
+
+            ~LibraryIterator()
+            {
+            }
+
+        private:
+            LibraryIterator(const uint32_t processPID);
+
+            friend class ProcessInfo;
+
+        public:
+            inline bool IsValid() const
+            {
+                return ((_index != 0) && (_index <= _libraries.size()));
+            }
+            inline void Reset()
+            {
+                _index = 0;
+                _current = _libraries.begin();
+            }
+            bool Next()
+            {
+            if (_index <= _libraries.size()) {
+                    _index++;
+
+                    if (_index != 1) {
+                        _current++;
+                    }
+                }
+                return (_index <= _libraries.size());
+            }
+            inline const LibraryInfo& Current() const
+            {
+                ASSERT(IsValid() == true);
+
+                return *_current;
+            }
+            inline uint32_t Count() const
+            {
+                return (static_cast<uint32_t>(_libraries.size()));
+            }
+
+        private:
+            using LibraryContainer = std::list<LibraryInfo>;
+            LibraryContainer _libraries;
+            LibraryContainer::iterator _current;
+            uint32_t _index = 0;
+        };
+
     public:
         // Current Process Information
         ProcessInfo();
@@ -121,6 +204,10 @@ namespace Core {
         inline Iterator Children()
         {
             return (Iterator(_pid));
+        }
+
+       inline LibraryIterator Libraries() const {
+            return LibraryIterator(_pid);
         }
 
         inline int8_t Priority() const

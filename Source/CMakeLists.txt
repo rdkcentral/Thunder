@@ -102,6 +102,10 @@ if(PROCESS)
     add_subdirectory(WPEProcess)
 endif()
 
+    add_subdirectory(memoryoverview)
+
+    add_subdirectory(WPEMemoryOverview)
+
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
 endif()

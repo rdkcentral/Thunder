@@ -1,4 +1,4 @@
-set(TARGET ${NAMESPACE}Core)
+        set(TARGET ${NAMESPACE}Core)
 
 option(DEADLOCK_DETECTION 
         "Enable deadlock detection tooling." OFF)

@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 
 #ifdef __APPLE__
 #import <mach/host_info.h>
@@ -216,6 +217,32 @@ namespace Core {
 
     SystemInfo::~SystemInfo()
     {
+    }
+
+    SystemInfo::MemorySnapshot::MemorySnapshot() {
+        std::ifstream file("/proc/meminfo", std::ifstream::in);
+        std::string line;
+        while( std::getline(file, line).eof() == false && file.good() == true ) {
+            std::stringstream stream(line);
+            std::string key;
+            stream >> key;
+            if( key == "MemTotal:" ) {
+                stream >> _total; 
+            } else if( key == "MemFree:" ) {
+                stream >> _free; 
+            } else if( key == "MemAvailable:" ) {
+                stream >> _available; 
+            } else if( key == "Cached:" ) {
+                stream >> _cached; 
+            } else if( key == "SwapTotal:" ) {
+                stream >> _swapTotal; 
+            } else if( key == "SwapFree:" ) {
+                stream >> _swapFree; 
+            } else if( key == "SwapCached:" ) {
+                stream >> _swapCached; 
+            } 
+        }
+        file.close();
     }
 
     void SystemInfo::UpdateCpuStats() const

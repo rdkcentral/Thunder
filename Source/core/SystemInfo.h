@@ -5,6 +5,8 @@
 #include "Portability.h"
 #include "Time.h"
 
+#include <sstream>
+
 #ifdef __LINUX__
 #include <time.h>
 #endif
@@ -86,6 +88,73 @@ namespace Core {
         {
             UpdateFreeGpuRam();
             return m_freegpuram;
+        }
+
+        class EXTERNAL MemorySnapshot {
+        public:
+            MemorySnapshot(const MemorySnapshot& copy) = default;
+            MemorySnapshot& operator=(const MemorySnapshot& copy) = default;
+            ~MemorySnapshot() = default;
+
+        private:
+            MemorySnapshot();
+
+            friend class SystemInfo;
+        public:
+            inline string AsJSON() const {
+                std::ostringstream output;
+                output << "{\n";
+                output << "\"total:\"" << Total() << ",\n";
+                output << "\"free:\"" << Free() << ",\n";
+                output << "\"avialble:\"" << Available() << ",\n";
+                output << "\"cached:\"" << Cached() << ",\n";
+                output << "\"swaptotal:\"" << SwapTotal() << ",\n";
+                output << "\"swapfree:\"" << SwapFree() << ",\n";
+                output << "\"swapcached:\"" << SwapCached() << '\n';
+                output << "}\n";
+                return output.str();
+            }
+
+            inline uint64_t Total() const {
+                return _total;
+            }
+
+            inline uint64_t Free() const {
+                return _free;
+            }
+
+            inline uint64_t Available() const {
+                return _available;
+            }
+
+            inline uint64_t Cached() const {
+                return _cached;
+            }
+
+            inline uint64_t SwapTotal() const {
+                return _swapTotal;
+            }
+
+            inline uint64_t SwapFree() const {
+                return _swapFree;
+            }
+
+            inline uint64_t SwapCached() const {
+                return _swapCached;
+            }
+
+        private:
+            uint64_t _total{0};
+            uint64_t _free{0};
+            uint64_t _available{0};
+            uint64_t _cached{0};
+            uint64_t _swapTotal{0};
+            uint64_t _swapFree{0};
+            uint64_t _swapCached{0};
+        };
+
+        inline MemorySnapshot TakeMemorySnapshot() const {
+            return MemorySnapshot();
         }
 
         /*

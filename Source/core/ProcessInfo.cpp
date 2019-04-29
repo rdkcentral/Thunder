@@ -11,6 +11,8 @@
 #include <unistd.h>
 #endif
 
+#include <fstream>
+
 #ifdef __APPLE__
 #include <libproc.h>
 #endif
@@ -85,7 +87,8 @@ namespace Core {
     }
 
     // Iterate over Processes
-    static void FindChildren(const uint32_t parent, std::list<uint32_t>& children)
+    template<typename ACCEPTFUNCTION>
+    static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
     {
         DIR* dp;
         struct dirent* ep;
@@ -111,7 +114,7 @@ namespace Core {
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
-                            if (static_cast<uint32_t>(ppid) == parent) {
+                            if( acceptfunction(ppid, pid) == true ) {
                                 children.push_back(pid);
                             }
                         }
@@ -166,7 +169,7 @@ namespace Core {
     }
 
 #endif
-
+/*
     // Get the Processes with this name.
     ProcessInfo::Iterator::Iterator(const string& name, const bool exact)
     {
@@ -195,6 +198,50 @@ namespace Core {
 #endif
         Reset();
     }
+*/
+
+    // Get the Child Processes with a name name from a Parent with a certain name
+    ProcessInfo::Iterator::Iterator(const string& parentname, const string& childname, const bool removepath)
+    : _pids()
+    , _current()
+    , _index(0) {
+#ifndef __WIN32__
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            bool accept = false;
+            char fullname[PATH_MAX];
+            ProcessName(foundparentPID, fullname, sizeof(fullname));
+
+            accept = ( parentname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+
+            if ( accept == true ) {
+                ProcessName(childPID, fullname, sizeof(fullname));
+                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+            }
+            return accept;
+        });
+#endif
+        Reset();
+    }
+
+    // Get the Child Processes with a name name from a Parent pid
+    ProcessInfo::Iterator::Iterator(const uint32_t parentPID, const string& childname, const bool removepath) 
+    : _pids()
+    , _current()
+    , _index(0) {
+#ifndef __WIN32__
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            bool accept = false;
+
+            if ( parentPID == foundparentPID ) {
+                char fullname[PATH_MAX];
+                ProcessName(childPID, fullname, sizeof(fullname));
+                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+            }
+            return accept;
+        });
+#endif
+        Reset();
+    }
 
     // Get the Children of the given PID.
     ProcessInfo::Iterator::Iterator(const uint32_t parentPID)
@@ -212,11 +259,48 @@ namespace Core {
             }
         }
 #else
-        FindChildren(parentPID, _pids);
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            return parentPID == foundparentPID;
+        });
 #endif
 
         Reset();
     }
+
+    ProcessInfo::LibraryIterator::LibraryInfo::LibraryInfo(const string& firstline) 
+    : _name()
+    , _shortname() {
+        size_t pos = firstline.rfind(' ');
+        _name = firstline.substr( pos == string::npos ? 0 : ( pos+1 >= firstline.length() ? pos : pos+1 ) );
+        pos = _name.rfind('/');
+        _shortname = _name.substr( pos == string::npos ? 0 : ( pos+1 >= _name.length() ? pos : pos+1 ) );
+    }
+
+    bool ProcessInfo::LibraryIterator::LibraryInfo::ProcessLine(const string& firstline) {
+        return std::isdigit(firstline[0]) == false; //skip first line of section as it starts with a number
+    }
+
+    ProcessInfo::LibraryIterator::LibraryIterator(const uint32_t processPID) 
+        : _libraries()
+        , _current()
+        , _index(0) {
+       std::string path("/proc/");
+        path += std::to_string(processPID);
+        path += "/smaps";
+        std::ifstream file(path, std::ifstream::in);
+        std::string line;
+        while( std::getline(file, line).eof() == false && file.good() == true ) {
+            if( _libraries.size() == 0 ) {
+                _libraries.push_back(LibraryInfo(line));
+            }
+            else if( _libraries.back().ProcessLine(line) == false ) {
+                _libraries.push_back(LibraryInfo(line));
+            }
+        }
+        file.close();  
+        Reset();         
+    }
+
 
     // Current Process Information
     ProcessInfo::ProcessInfo()
