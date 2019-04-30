@@ -436,6 +436,8 @@ namespace Core {
                             // Deserialize object
                             uint16_t usedBytes = deserializer.Deserialize(buffer, readBytes);
 
+							ASSERT(usedBytes <= readBytes);
+
                             unusedBytes = (readBytes - usedBytes);
                         }
                     }

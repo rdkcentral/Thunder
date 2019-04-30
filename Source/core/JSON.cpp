@@ -350,7 +350,7 @@ namespace Core {
                         }
                     }
                     if (_offset == 1) {
-                        // Skipp all whitespace
+                        // Skip all whitespace
                         while ((result < maxLength) && (isspace(stream[result]))) {
                             result++;
                         }
@@ -492,10 +492,11 @@ namespace Core {
                         result++;
                     }
 
-                    if (result <= maxLength) {
-                        // We handled the ','..
-
-                        if (current != nullptr) {
+                    if (current != nullptr) {
+                        if (result == maxLength) {
+                            _state = STATE_CLOSE;
+						} else {
+                            // We handled the ','..
                             result++;
                             IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
 
@@ -513,16 +514,15 @@ namespace Core {
                                     _state = STATE_START;
                                 }
                             }
-                        } else {
-                            // If we have something to report, report it..
-                            if (_handling != nullptr) {
-                                Deserialized(*_handling);
-                                _handling = nullptr;
-                            }
-
-                            _buffer.clear();
-                            break;
+						}
+                    } else {
+                        // If we have something to report, report it..
+                        if (_handling != nullptr) {
+                            Deserialized(*_handling);
+                            _handling = nullptr;
                         }
+
+                        _buffer.clear();
                     }
 
                     break;
