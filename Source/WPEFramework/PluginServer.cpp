@@ -386,8 +386,8 @@ namespace PluginHost
                         index++;
                     }
 
-                    Activity information(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(information);
+                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
+                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
                     Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
                 }
             } else {

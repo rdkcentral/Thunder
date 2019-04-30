@@ -1082,69 +1082,63 @@ namespace Core {
             {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
-            inline bool EnterScope(char ch) const
-            {
-                return (ch == '{') || (ch == '[');
-            }
-            inline bool ExitScope(char ch) const
-            {
-                return (ch == '}') || (ch == ']');
-            }
-            inline bool EndOfQuotedString(char ch) const
-            {
-                return ((_scopeCount & (QuoteFoundBit | 1)) == (QuoteFoundBit | 1)) && (ch == '\"');
-            }
-            inline bool OutsideQuotedString() const
-            {
-                return (_scopeCount & QuoteFoundBit) == 0;
-            }
 
             // IDirect interface methods (private)
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
+                bool quoted = UseQuotes();
                 uint16_t result = 0;
 
                 ASSERT(maxLength > 0);
 
-                if (offset == 0) {
-                    if (UseQuotes() == true) {
+                if (quoted == false) {
+                    static const std::string kNull("null");
+                    const std::string& source = ((_value.empty() == true) ? kNull : _value);
+                    result = static_cast<uint16_t>(source.copy(stream, maxLength - result, offset));
+                    offset = (result < maxLength ? 0 : offset + result);
+                } else {
+                    if (offset == 0) {
                         // We always start with a quote or Block marker
                         stream[result++] = '\"';
+                        offset = 1;
+                        _unaccountedCount = 0;
                     }
-                    offset++;
-                }
-                if (result < maxLength) {
-                    static const std::string kNull("null");
-                    const std::string& source = (((_value.empty() == true) && (UseQuotes() == false))? kNull : _value);
 
-#ifdef __WIN32__
-#pragma warning(disable : 4996)
-#endif
+                    uint16_t length = static_cast<uint16_t>(_value.length()) - (offset - 1);
+                    if (length > 0) {
+                        const TCHAR* source = &(_value[offset - 1]);
+                        offset += length;
 
-                    // Write the amount we possibly can..
-                    uint16_t written = static_cast<uint16_t>(source.copy(&(stream[result]), maxLength - result, offset - 1));
+                        while ((result < maxLength) && (length > 0)) {
 
-#ifdef __WIN32__
-#pragma warning(default : 4996)
-#endif
+                            // See where we are and add...
+                            if ((*source != '\"') || (_unaccountedCount == 1)) {
+                                _unaccountedCount = 0;
+                                stream[result++] = *source++;
+                                length--;
+                            } else {
+                                // this we need to escape...
+                                stream[result++] = '\\';
+                                _unaccountedCount = 1;
+                            }
+                        }
+                    }
 
-                    offset += written;
-                    result += written;
-                }
-                if (result < maxLength) {
-                    if (UseQuotes() == true) {
+                    if (result == maxLength) {
+                        offset -= length;
+                    } else {
                         // And we close with a quote..
                         stream[result++] = '\"';
+                        offset = 0;
                     }
-                    offset = 0;
                 }
 
                 return (result);
             }
 
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            virtual uint16_t
+            Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
-                bool noScoping = true;
                 bool finished = false;
                 uint16_t result = 0;
                 ASSERT(maxLength > 0);
@@ -1153,9 +1147,12 @@ namespace Core {
                     // We got a quote, start recording..
                     _value.clear();
                     _scopeCount &= QuotedSerializeBit;
-                    if (stream[result] == '\"') {
+                    if (stream[result] != '\"') {
+                        _unaccountedCount = 0;
+                    } else {
                         result++;
                         _scopeCount |= (QuoteFoundBit | 1);
+                        _unaccountedCount = 1;
                     }
                 }
 
@@ -1163,32 +1160,45 @@ namespace Core {
 
                 // Might be that the last character we added was a
                 while ((result < maxLength) && (finished == false)) {
+
+                    TCHAR current = stream[result];
+
                     if (escapedSequence == false) {
-                        if (EnterScope(stream[result])) {
-                            noScoping = false;
+                        if ((current == '{') || (current == '[')) {
                             _scopeCount++;
-                        } else if ((_scopeCount > 0) && (ExitScope(stream[result]) || EndOfQuotedString(stream[result]))) {
-                            _scopeCount--;
+                        } else if ((current == '}') || (current == ']')) {
+                            if ((_scopeCount & ScopeMask) > 0) {
+                                _scopeCount--;
+                            } else {
+                                finished = true;
+                            }
+                        } else if ((current == '\"') && ((_scopeCount & (ScopeMask | QuoteFoundBit)) == (QuoteFoundBit | 1))) {
+                            result++;
+                            finished = true;
+                        } else if ((_scopeCount & ScopeMask) == 0) {
+                            finished =  ((current == ',') || (current == ' ') || (current == '\t'));
                         }
-                        finished = (((_scopeCount & ScopeMask) == 0) && ((stream[result] == '\"') || (stream[result] == '}') || (stream[result] == ']') || (stream[result] == ',') || (stream[result] == ' ') || (stream[result] == '\t')));
                     }
 
-                    if ((finished == false) || ((noScoping == false) && ExitScope(stream[result]))) {
-                        escapedSequence = (stream[result] == '\\');
-                        // Write the amount we possibly can..
-                        _value += stream[result];
+                    if (finished == false) {
+
+                        if ((escapedSequence == true) && (current == '\"')) {
+                            _value[_value.length() - 1] = current;
+                            _unaccountedCount++;
+                        } else {
+                            // Write the amount we possibly can..
+                            _value += current;
+                        }
+
+                        escapedSequence = (current == '\\');
+
                         // Move on to the next position
-                        result++;
-                    } else if (stream[result] == '"') {
                         result++;
                     }
                 }
 
-                if ((result < maxLength) && (finished == false) && OutsideQuotedString())
-                    finished = true;
-
                 if (finished == false) {
-                    offset = static_cast<uint16_t>(_value.length() + (((_scopeCount & ScopeMask) != 0) ? 1 : 0));
+                    offset = static_cast<uint16_t>(_value.length()) + _unaccountedCount;
                 } else {
                     offset = 0;
                     _scopeCount |= (ContainsNull(_value) ? None : SetBit);
@@ -1200,6 +1210,7 @@ namespace Core {
         private:
             std::string _default;
             uint32_t _scopeCount;
+            mutable uint32_t _unaccountedCount;
             std::string _value;
         };
 
@@ -1373,6 +1384,7 @@ namespace Core {
             {
                 return nullptr;
             }
+
         public:
             virtual IIterator* ElementIterator() override
             {
@@ -1380,6 +1392,7 @@ namespace Core {
 
                 return (&_iterator);
             }
+
         private:
             virtual bool Request(const TCHAR label[])
             {
@@ -1739,6 +1752,7 @@ namespace Core {
             {
                 return nullptr;
             }
+
         public:
             virtual IIterator* ElementIterator() override
             {
@@ -1861,7 +1875,7 @@ namespace Core {
         };
 
         class VariantContainer;
-        
+
         class EXTERNAL Variant : public JSON::String {
         public:
             enum class type {
@@ -1921,20 +1935,20 @@ namespace Core {
                 , _type(type::STRING)
             {
                 String::operator=(text);
-            }            
+            }
             Variant(const ArrayType<Variant>& array)
                 : JSON::String(false)
                 , _type(type::ARRAY)
                 , _array(Core::ProxyType<ArrayType<Variant>>::Create())
             {
                 *_array = array;
-            }            
+            }
             inline Variant(const VariantContainer& object);
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
                 , _array(copy._array)
-                , _object(copy._object)                
+                , _object(copy._object)
             {
             }
             virtual ~Variant()
@@ -1976,15 +1990,12 @@ namespace Core {
                     const_cast<Variant*>(this)->_string = Value();
                 }
                 return _string.c_str();
-            } 
+            }
             const ArrayType<Variant>& Array() const
             {
-                if(_type == type::ARRAY)
-                {
+                if (_type == type::ARRAY) {
                     return *_array;
-                }
-                else
-                {
+                } else {
                     static ArrayType<Variant> empty;
                     return empty;
                 }
@@ -2016,7 +2027,7 @@ namespace Core {
                 *_array = array;
             }
             inline void Object(const VariantContainer& object);
-            
+
             template <typename VALUE>
             Variant& operator=(const VALUE& value)
             {
@@ -2048,25 +2059,26 @@ namespace Core {
                 Object(value);
                 return (*this);
             }
-            const JSON::Variant& operator[](uint32_t index) const;            
+            const JSON::Variant& operator[](uint32_t index) const;
             const JSON::Variant& operator[](const TCHAR fieldName[]) const;
             inline void ToString(string& result) const;
             virtual bool IsSet() const override
             {
-                if(_type == type::ARRAY)
+                if (_type == type::ARRAY)
                     return _array->IsSet();
-                else if(_type == type::OBJECT)
+                else if (_type == type::OBJECT)
                     return true;
                 else
                     return String::IsSet();
             }
-            string GetDebugString(const TCHAR name[], int indent=0, int arrayIndex=-1) const;
+            string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
+
         private:
             virtual ParserType Type() const override
             {
-                if(_type == type::ARRAY || _type == type::OBJECT)
+                if (_type == type::ARRAY || _type == type::OBJECT)
                     return (PARSE_CONTAINER);
-                 else
+                else
                     return (PARSE_DIRECT);
             }
             virtual IBuffered* BufferParser() override
@@ -2076,12 +2088,13 @@ namespace Core {
 
             virtual IDirect* DirectParser() override
             {
-                if(_type == type::ARRAY || _type == type::OBJECT)
+                if (_type == type::ARRAY || _type == type::OBJECT)
                     return nullptr;
                 else
                     return String::DirectParser();
             }
             virtual IIterator* ElementIterator() override;
+
         private:
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
             static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
@@ -2092,39 +2105,36 @@ namespace Core {
                 uint16_t stack = 1;
                 uint16_t endIndex = 0;
                 bool insideQuotes = false;
-                for(uint16_t i = 1; i < maxLength; ++i)
-                {
-                    if(stream[i] == '\"')
-                    {
+                for (uint16_t i = 1; i < maxLength; ++i) {
+                    if (stream[i] == '\"') {
                         insideQuotes = !insideQuotes;
                     }
-                    if(!insideQuotes)
-                    {
-                        if(stream[i] == charClose)
+                    if (!insideQuotes) {
+                        if (stream[i] == charClose)
                             stack--;
-                        else if(stream[i] == charOpen)
+                        else if (stream[i] == charOpen)
                             stack++;
-                        if(stack == 0)
-                        {
+                        if (stack == 0) {
                             endIndex = i;
                             break;
                         }
                     }
                 }
                 return endIndex;
-            }        
+            }
+
         private:
             type _type;
             string _string;
             Core::ProxyType<ArrayType<Variant>> _array;
-            Core::ProxyType<VariantContainer> _object;            
+            Core::ProxyType<VariantContainer> _object;
         };
 
         class EXTERNAL VariantContainer : public Container {
         private:
             typedef std::list<std::pair<string, WPEFramework::Core::JSON::Variant>> Elements;
 
-	public:
+        public:
             class Iterator {
             public:
                 Iterator()
@@ -2336,10 +2346,12 @@ namespace Core {
             {
                 return (Find(labelName) != _elements.end());
             }
-			Iterator Variants() const {
+            Iterator Variants() const
+            {
                 return (Iterator(_elements));
-			}
-            string GetDebugString(int indent=0) const;
+            }
+            string GetDebugString(int indent = 0) const;
+
         private:
             Elements::iterator Find(const TCHAR fieldName[])
             {
@@ -2388,85 +2400,69 @@ namespace Core {
         }
         inline const VariantContainer& Variant::Object() const
         {
-            if(_type == type::OBJECT)
-            {
+            if (_type == type::OBJECT) {
                 return *_object;
-            }
-            else
-            {
+            } else {
                 static VariantContainer empty;
                 return empty;
             }
         }
         inline const JSON::Variant& Variant::operator[](uint32_t index) const
         {
-            if(_type == type::ARRAY)
-            {
+            if (_type == type::ARRAY) {
                 ASSERT(index < _array->Length());
                 return _array->operator[](index);
-            }
-            else
-            {
+            } else {
                 static Variant empty;
                 return empty;
             }
         }
         inline const JSON::Variant& Variant::operator[](const TCHAR fieldName[]) const
         {
-            if(_type == type::OBJECT)
-            {
+            if (_type == type::OBJECT) {
                 return _object->operator[](fieldName);
-            }
-            else
-            {
+            } else {
                 static Variant empty;
                 return empty;
             }
         }
         inline void Variant::ToString(string& result) const
         {
-            if(_type == type::ARRAY)
+            if (_type == type::ARRAY)
                 return _array->ToString(result);
-            else if(_type == type::OBJECT)
+            else if (_type == type::OBJECT)
                 return _object->ToString(result);
             else
                 return String::ToString(result);
         }
         inline IIterator* Variant::ElementIterator()
         {
-            if(_type == type::ARRAY)
+            if (_type == type::ARRAY)
                 return _array->ElementIterator();
-            else if(_type == type::OBJECT)
-                return _object->ElementIterator();                
+            else if (_type == type::OBJECT)
+                return _object->ElementIterator();
             else
                 return nullptr;
         }
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
         {
             uint16_t result = 0;
-            if(stream[0] == '{' || stream[0] == '[')
-            {
+            if (stream[0] == '{' || stream[0] == '[') {
                 uint16_t endIndex = FindEndOfScope(stream, maxLength);
-                if(endIndex > 0 && endIndex < maxLength)
-                {
-                    result = endIndex+1;
-                    string str(stream, endIndex+1);
-                    if(stream[0] == '{')
-                    {
+                if (endIndex > 0 && endIndex < maxLength) {
+                    result = endIndex + 1;
+                    string str(stream, endIndex + 1);
+                    if (stream[0] == '{') {
                         VariantContainer object;
                         object.FromString(str);
                         Object(object);
-                     }
-                     else                     
-                    {
+                    } else {
                         ArrayType<Variant> array;
                         array.FromString(str);
                         Array(array);
                     }
                 }
-            }
-            else
-            {
+            } else {
                 result = String::Deserialize(stream, maxLength, offset);
 
                 _type = type::STRING;
@@ -2486,7 +2482,7 @@ namespace Core {
                 }
             }
             return (result);
-        }        
+        }
 
         template <uint16_t SIZE, typename INSTANCEOBJECT>
         class Tester {

@@ -53,7 +53,6 @@ namespace PluginHost {
         }
     };
 
-
     extern "C" {
 
 #ifndef __WIN32__
@@ -69,8 +68,7 @@ namespace PluginHost {
 
         if (signo == SIGTERM) {
             g_QuitEvent.SetEvent();
-        }
-        else if (signo == SIGSEGV) {
+        } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
@@ -127,9 +125,12 @@ namespace PluginHost {
                     pluginConfig.FromFile(file);
                     file.Close();
 
-                    if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
+                    if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true))
+                    {
                         SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
-                    } else {
+                    }
+                    else
+                    {
                         if (pluginConfig.Callsign.Value().empty() == true) {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
@@ -337,11 +338,6 @@ namespace PluginHost {
         const string tracePath(serviceConfig.VolatilePath.Value());
         Trace::TraceUnit::Instance().Open(tracePath);
 
-        // Time to open up the LOG tracings by default.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable(true);
-
         Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
 
         // Set the path for the out-of-process thingies
@@ -469,7 +465,7 @@ namespace PluginHost {
                                                                                          : "Unavailable");
                         printf("Security:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
-                                                                                        : "Unavailable");
+                                                                                         : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
                                                                                         : "Unavailable");

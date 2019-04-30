@@ -47,7 +47,7 @@ namespace PluginHost
 
         public:
             RootObject()
-                : Config(true)
+                : Config(false)
             {
                 Add(_T("root"), &Config);
             }

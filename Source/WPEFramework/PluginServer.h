@@ -1625,11 +1625,15 @@ namespace PluginHost {
                     ASSERT(result != nullptr);
 
                     if (result == nullptr) {
-                        TRACE_L1("RPC out-of-process server offer started but returned incorrect I/F. %d", object.Interface());
+                        TRACE(Trace::Fatal, (_T("RPC out-of-process server offer started but returned incorrect I/F. %d"), object.Interface()));
                         process->Terminate();
                         process->Release();
                     }
                 }
+                else {
+                    TRACE(Trace::Fatal, (_T("Could not instantiate a process for: %s [%s]"), className.c_str(), callsign.c_str()));
+                }
+
                 return (result);
             }
             virtual void Register(RPC::IRemoteProcess::INotification* sink) override
