@@ -3,6 +3,7 @@
 #include "JsonData_NetworkControl.h"
 #include "JsonData_RemoteControl.h"
 #include "JsonData_TestUtility.h"
+#include "JsonData_WifiControl.h"
 
 namespace WPEFramework {
 
@@ -34,5 +35,14 @@ ENUM_CONVERSION_BEGIN(JsonData::TestUtility::InputInfo::ParamType)
     { JsonData::TestUtility::InputInfo::ParamType::OBJECT, _TXT("Object") },
     { JsonData::TestUtility::InputInfo::ParamType::SYMBOL, _TXT("Symbol") },
 ENUM_CONVERSION_END(JsonData::TestUtility::InputInfo::ParamType);
+
+// WifiControl
+
+ENUM_CONVERSION_BEGIN(JsonData::WifiControl::TypeType)
+    { JsonData::WifiControl::TypeType::UNKNOWN, _TXT("Unknown") },
+    { JsonData::WifiControl::TypeType::UNSECURE, _TXT("Unsecure") },
+    { JsonData::WifiControl::TypeType::WPA, _TXT("WPA") },
+    { JsonData::WifiControl::TypeType::ENTERPRISE, _TXT("Enterprise") },
+ENUM_CONVERSION_END(JsonData::WifiControl::TypeType);
 
 }
