@@ -166,7 +166,7 @@ namespace Web
 
 		if (first != string::npos) {
             size_t last = token.find_last_of('.');
-            result = ((((last - first) * 6) + 6) / 8);
+            result = static_cast<uint16_t>((((last - first) * 6) + 6) / 8);
 		}
         return (result);
 	}
