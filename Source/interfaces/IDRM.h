@@ -251,8 +251,6 @@ public:
     // Explicitly release all resources associated with the MediaKeySession.
     virtual CDMi_RESULT Close(void) = 0;
 
-    virtual void UninitializeContext() = 0;
-
     // Return the session ID of the MediaKeySession. The returned pointer
     // is valid as long as the associated MediaKeySession still exists.
     virtual const char* GetSessionId(void) const = 0;
