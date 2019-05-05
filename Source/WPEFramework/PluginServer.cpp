@@ -92,6 +92,11 @@ namespace PluginHost
                         result = CheckMessage(*body);
 					}	
 				}
+
+
+				// Temporary allow the API REST Full API to get security to be called directly.
+				// TODO: Remove this check if security is fully operational!!!
+                result = (result == true) || ((request.Verb == Web::Request::HTTP_POST) && (request.Path == "/Service/SecurityOfficer/Token"));
             }
             return (result);
         }

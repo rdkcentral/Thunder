@@ -54,7 +54,7 @@
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -145,7 +145,7 @@
       "callsign": "Tracing",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": false
+      "autostart": true
     },
     {
       "autostart": false,

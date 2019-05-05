@@ -2133,8 +2133,9 @@ namespace PluginHost {
                     PluginHost::Channel::Unlock();
                 }
 
+
                 // See if we are allowed to process this request..
-                if (security->Allowed(*request) == false) {
+                if ((security == nullptr) || (security->Allowed(*request) == false)) {
                     request->Unauthorized();
                 } else {
                     // If there was no body, we are still incomplete.
@@ -2153,8 +2154,10 @@ namespace PluginHost {
                     }
                 }
 
-                // We are done with the security related items, let go of the officer.
-                security->Release();
+				if (security != nullptr) {
+                    // We are done with the security related items, let go of the officer.
+                    security->Release();
+                }
 
                 switch (request->State()) {
                 case Request::OBLIVIOUS: {

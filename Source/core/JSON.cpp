@@ -209,7 +209,7 @@ namespace Core {
             }
 
             if (_handleStack.size() > 0) {
-                current = _handleStack.front();
+                current = _handleStack.front().Element();
             }
 
             // Is there still space to write ?
@@ -237,7 +237,7 @@ namespace Core {
                                     _state = STATE_SKIP;
                                 } else {
                                     current = _handling->ElementIterator();
-                                    _handleStack.push_front(current);
+                                    _handleStack.emplace_back(current);
                                     _state = STATE_OPEN;
                                 }
                             } else if ((isspace(stream[result])) || (stream[result] == ':')) {
@@ -256,7 +256,7 @@ namespace Core {
                                 } else {
                                     // We found an entry, lock and load..
                                     current = _handling->ElementIterator();
-                                    _handleStack.push_front(current);
+                                    _handleStack.emplace_front(current);
                                     _state = STATE_OPEN;
                                 }
                             } else {
@@ -280,7 +280,7 @@ namespace Core {
                             _handleStack.pop_front();
 
                             if (_handleStack.empty() == false) {
-                                current = _handleStack.front();
+                                current = _handleStack.front().Element();
                             } else {
                                 current = nullptr;
                             }
@@ -293,7 +293,7 @@ namespace Core {
                                 // Check if the new element is a container..
                                 if (elementList->Element()->Type() == PARSE_CONTAINER) {
                                     current = elementList->Element()->ElementIterator();
-                                    _handleStack.push_front(current);
+                                    _handleStack.emplace_front(current);
                                     _state = STATE_OPEN;
                                 } else {
                                     _state = STATE_START;
@@ -367,7 +367,7 @@ namespace Core {
                                 // Oops it is another container.. reiterate..
                                 current = current->Element()->ElementIterator();
 
-                                _handleStack.push_front(current);
+                                _handleStack.emplace_front(current);
 
                                 _state = STATE_OPEN;
                             } else {
@@ -440,6 +440,8 @@ namespace Core {
                                 _quoted = QUOTED_ON;
                                 result++;
                             }
+							// Oke we got data. report it in the context of the current element...
+                            _handleStack.front().Loaded(); 
                             _offset++;
                             _buffer.clear();
                         }
@@ -448,13 +450,15 @@ namespace Core {
                             if (_quoted == QUOTED_ESCAPED) {
                                 // Whatever the character, we should keep on reading!!
                                 _quoted = QUOTED_ON;
-                            } else if (_quoted == QUOTED_ON) {
+                            } else if (_quoted == QUOTED_ON)
+                                {
                                 if (stream[result] == '\"') {
                                     result++;
                                     _quoted = QUOTED_OFF;
                                     _state = STATE_SKIP;
                                 }
-                            } else if ((_quoted == QUOTED_OFF) && (isspace(stream[result]))) {
+                            } else if ((_quoted == QUOTED_OFF) && (isspace(stream[result])))
+                                {
                                 _state = STATE_SKIP;
                             } else if ((stream[result] == '}') || (stream[result] == ']')) {
                                 _state = STATE_CLOSE;
@@ -480,11 +484,15 @@ namespace Core {
                 case STATE_CLOSE: {
                     while ((result < maxLength) && (current != nullptr) && (stream[result] != ',')) {
                         if ((stream[result] == '}') || (stream[result] == ']')) {
+                            bool loaded = _handleStack.front().IsLoaded();
                             _state = STATE_HANDLED;
                             _handleStack.pop_front();
 
                             if (_handleStack.empty() == false) {
-                                current = _handleStack.front();
+                                current = _handleStack.front().Element();
+                                if (loaded == true) {
+                                    _handleStack.front().Loaded();
+                                }
                             } else {
                                 current = nullptr;
                             }
@@ -508,7 +516,7 @@ namespace Core {
                                 // Check if the new element is a container..
                                 if (elementList->Element()->Type() == PARSE_CONTAINER) {
                                     current = elementList->Element()->ElementIterator();
-                                    _handleStack.push_front(current);
+                                    _handleStack.emplace_front(current);
                                     _state = STATE_OPEN;
                                 } else {
                                     _state = STATE_START;

@@ -155,16 +155,15 @@ namespace Core {
                 } State;
 
                 typedef enum {
-                    QUOTED_OFF,
+                    QUOTED_OFF = 0,
                     QUOTED_ON,
                     QUOTED_ESCAPED
                 } Quoted;
 
-            private:
-                Deserializer(const Deserializer&);
-                Deserializer& operator=(const Deserializer&);
-
             public:
+                Deserializer(const Deserializer&) = delete;
+                Deserializer& operator=(const Deserializer&) = delete;
+
                 Deserializer()
                     : _handling(nullptr)
                     , _handleStack()
@@ -208,9 +207,39 @@ namespace Core {
                 virtual IElement* Element(const string& identifer) = 0;
 
             private:
+                class EXTERNAL Context {
+                public:
+                    Context() = delete;
+                    Context(const Context&) = delete;
+                    Context& operator=(const Context&) = delete;
+
+                    Context(JSON::IIterator* element)
+                        : _loaded(false)
+                        , _element(element)
+                    {
+                    }
+                    ~Context()
+                    {
+                    }
+
+                    bool IsLoaded() const {
+						return (_loaded); 
+					}
+					void Loaded() {
+                        _loaded = true;
+					}
+                    JSON::IIterator* Element() {
+                        return (_element);
+					}
+
+                private:
+                    bool _loaded;
+                    JSON::IIterator* _element;
+                };
+
                 IElement* _handling;
                 string _handlingName;
-                std::list<JSON::IIterator*> _handleStack;
+                std::list<Context> _handleStack;
                 State _state;
                 uint16_t _offset;
                 uint16_t _bufferUsed;
@@ -436,7 +465,7 @@ namespace Core {
                             // Deserialize object
                             uint16_t usedBytes = deserializer.Deserialize(buffer, readBytes);
 
-							ASSERT(usedBytes <= readBytes);
+                            ASSERT(usedBytes <= readBytes);
 
                             unusedBytes = (readBytes - usedBytes);
                         }
@@ -1178,7 +1207,7 @@ namespace Core {
                             result++;
                             finished = true;
                         } else if ((_scopeCount & ScopeMask) == 0) {
-                            finished =  ((current == ',') || (current == ' ') || (current == '\t'));
+                            finished = ((current == ',') || (current == ' ') || (current == '\t'));
                         }
                     }
 
