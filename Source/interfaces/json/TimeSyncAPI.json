@@ -68,7 +68,13 @@
       },
       "result": {
         "$ref": "#/common/results/void"
-      }
+      },
+      "errors": [
+        {
+          "description": "Returned when the requested time was invalid",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
     }
   }
 }
