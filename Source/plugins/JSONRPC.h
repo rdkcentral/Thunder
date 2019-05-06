@@ -459,7 +459,7 @@ namespace PluginHost {
 
                     Unregister(channelId, inbound.Parameters.Value(), *response);
                 }
-            } else {
+            } else if (response.IsValid() == true) {
                 response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
                 response->Error.Text = _T("Unhandled method.");
             }

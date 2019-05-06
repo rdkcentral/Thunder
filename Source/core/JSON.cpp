@@ -1,6 +1,6 @@
 #include "JSON.h"
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 namespace WPEFramework {
 namespace Core {
@@ -440,8 +440,8 @@ namespace Core {
                                 _quoted = QUOTED_ON;
                                 result++;
                             }
-							// Oke we got data. report it in the context of the current element...
-                            _handleStack.front().Loaded(); 
+                            // Oke we got data. report it in the context of the current element...
+                            _handleStack.front().Loaded();
                             _offset++;
                             _buffer.clear();
                         }
@@ -450,15 +450,13 @@ namespace Core {
                             if (_quoted == QUOTED_ESCAPED) {
                                 // Whatever the character, we should keep on reading!!
                                 _quoted = QUOTED_ON;
-                            } else if (_quoted == QUOTED_ON)
-                                {
+                            } else if (_quoted == QUOTED_ON) {
                                 if (stream[result] == '\"') {
                                     result++;
                                     _quoted = QUOTED_OFF;
                                     _state = STATE_SKIP;
                                 }
-                            } else if ((_quoted == QUOTED_OFF) && (isspace(stream[result])))
-                                {
+                            } else if ((_quoted == QUOTED_OFF) && (isspace(stream[result]))) {
                                 _state = STATE_SKIP;
                             } else if ((stream[result] == '}') || (stream[result] == ']')) {
                                 _state = STATE_CLOSE;
@@ -486,6 +484,12 @@ namespace Core {
                         if ((stream[result] == '}') || (stream[result] == ']')) {
                             bool loaded = _handleStack.front().IsLoaded();
                             _state = STATE_HANDLED;
+                            if (loaded == false) {
+                                IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
+                                if (elementList != nullptr) {
+                                    elementList->Clear();
+                                }
+                            }
                             _handleStack.pop_front();
 
                             if (_handleStack.empty() == false) {
@@ -503,7 +507,7 @@ namespace Core {
                     if (current != nullptr) {
                         if (result == maxLength) {
                             _state = STATE_CLOSE;
-						} else {
+                        } else {
                             // We handled the ','..
                             result++;
                             IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
@@ -522,13 +526,15 @@ namespace Core {
                                     _state = STATE_START;
                                 }
                             }
-						}
+                        }
                     } else {
                         // If we have something to report, report it..
                         if (_handling != nullptr) {
                             Deserialized(*_handling);
                             _handling = nullptr;
-                        }
+                        } else {
+                            _state = STATE_HANDLED;
+						}
 
                         _buffer.clear();
                     }
@@ -549,32 +555,29 @@ namespace Core {
         string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
         {
             std::stringstream ss;
-            if(indent > 0)
-                ss << std::setw(indent*4) << " " << std::setw(1);
-            if(arrayIndex>=0)
+            if (indent > 0)
+                ss << std::setw(indent * 4) << " " << std::setw(1);
+            if (arrayIndex >= 0)
                 ss << "[" << arrayIndex << "] ";
-            if(name)
+            if (name)
                 ss << "name=" << name << " ";
-            if(_type == type::EMPTY)
+            if (_type == type::EMPTY)
                 ss << "type=Empty value=" << String() << std::endl;
-            else if(_type == type::BOOLEAN)
+            else if (_type == type::BOOLEAN)
                 ss << "type=Boolean value=" << (Boolean() ? "true" : "false") << std::endl;
-            else if(_type == type::NUMBER)
+            else if (_type == type::NUMBER)
                 ss << "type=Number value=" << Number() << std::endl;
-            else if(_type == type::STRING)
+            else if (_type == type::STRING)
                 ss << "type=String value=" << String() << std::endl;
-            else if(_type == type::ARRAY)
-            {
+            else if (_type == type::ARRAY) {
                 ss << "type=Array value=[" << std::endl;
-                for(int i = 0; i < Array().Length(); ++i)
-                    ss << Array()[i].GetDebugString(nullptr, indent+1, i);
-                ss << std::setw(indent*4) << ']' << std::setw(1) << std::endl;
-            }
-            else if(_type == type::OBJECT)
-            {
+                for (int i = 0; i < Array().Length(); ++i)
+                    ss << Array()[i].GetDebugString(nullptr, indent + 1, i);
+                ss << std::setw(indent * 4) << ']' << std::setw(1) << std::endl;
+            } else if (_type == type::OBJECT) {
                 ss << "type=Object value={" << std::endl;
-                ss << Object().GetDebugString(indent+1);
-                ss << std::setw(indent*4) << '}' << std::setw(1) << std::endl;
+                ss << Object().GetDebugString(indent + 1);
+                ss << std::setw(indent * 4) << '}' << std::setw(1) << std::endl;
             }
             return ss.str();
         }
@@ -582,10 +585,10 @@ namespace Core {
         {
             std::stringstream ss;
             Iterator iterator = Variants();
-            while(iterator.Next())
+            while (iterator.Next())
                 ss << iterator.Current().GetDebugString(iterator.Label(), indent);
             return ss.str();
-        }        
+        }
     }
 }
 

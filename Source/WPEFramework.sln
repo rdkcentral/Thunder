@@ -117,8 +117,19 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "BuilderTest", "tests\Builde
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DeviceInfo", "..\..\WPEFrameworkPlugins\DeviceInfo\DeviceInfo.vcxproj", "{6C8E75AE-796C-4598-9CFF-4F462F968955}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TraceControl", "..\..\WPEFrameworkPlugins\TraceControl\TraceControl.vcxproj", "{ACA665CC-3DFA-4C22-A6F4-2DF827A9378A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WebServer", "..\..\WPEFrameworkPlugins\WebServer\WebServer.vcxproj", "{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -288,6 +299,14 @@ Global
 		{ACA665CC-3DFA-4C22-A6F4-2DF827A9378A}.Release|x64.Build.0 = Release|x64
 		{ACA665CC-3DFA-4C22-A6F4-2DF827A9378A}.Release|x86.ActiveCfg = Release|Win32
 		{ACA665CC-3DFA-4C22-A6F4-2DF827A9378A}.Release|x86.Build.0 = Release|Win32
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Debug|x64.ActiveCfg = Debug|x64
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Debug|x64.Build.0 = Debug|x64
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Debug|x86.ActiveCfg = Debug|Win32
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Debug|x86.Build.0 = Debug|Win32
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Release|x64.ActiveCfg = Release|x64
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Release|x64.Build.0 = Release|x64
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Release|x86.ActiveCfg = Release|Win32
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -300,6 +319,7 @@ Global
 		{25126AD2-4715-494A-814B-DAA59EEA1C89} = {3757757F-7978-4C27-8691-73FFF12BDE9B}
 		{6C8E75AE-796C-4598-9CFF-4F462F968955} = {ADCA6209-AD2C-4990-9825-DE8CCA79BA2B}
 		{ACA665CC-3DFA-4C22-A6F4-2DF827A9378A} = {ADCA6209-AD2C-4990-9825-DE8CCA79BA2B}
+		{6B9091EB-E0CA-4FE5-9FF1-69DE4D749F00} = {ADCA6209-AD2C-4990-9825-DE8CCA79BA2B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {6895E9E2-C386-4F32-A22C-BE5EF06CFC20}

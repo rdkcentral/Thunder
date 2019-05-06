@@ -187,6 +187,7 @@ namespace Plugin {
 
         if (callsign.empty() == true) {
             _pluginServer->Services().GetMetaData(response);
+            result = Core::ERROR_NONE;
         }
         else {
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {

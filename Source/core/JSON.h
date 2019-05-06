@@ -528,6 +528,7 @@ namespace Core {
             virtual ~IArrayIterator() {}
 
             virtual void AddElement() = 0;
+            virtual void Clear() = 0;
         };
 
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
@@ -1701,6 +1702,15 @@ namespace Core {
                         _state = AT_ELEMENT;
                         _iterator = _container->end();
                         _iterator--;
+                    }
+                }
+                virtual void Clear()
+                {
+                    // This can only be called if there is a container..
+                    ASSERT(_container != nullptr);
+
+                    if (_container != nullptr) {
+                        _container->clear();
                     }
                 }
                 ARRAYELEMENT& Current()

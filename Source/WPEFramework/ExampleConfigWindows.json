@@ -1,6 +1,7 @@
 {
   "port": 80,
   "binding": "0.0.0.0",
+  "interface":  "NETWORK",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
@@ -45,9 +46,12 @@
       "callsign": "WebServer",
       "locator": "libwebserver.so",
       "classname": "WebServer",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "outofprocess": true
+
+        "root": {
+          "outofprocess": false
+        }
       }
     },
     {

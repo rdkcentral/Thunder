@@ -1861,13 +1861,18 @@ namespace PluginHost {
                                 response = Factories::Instance().Response();
                                 Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
                                 Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
-                                response->Body(body);
-                                if (body->Error.IsSet() == false) {
-                                    response->ErrorCode = Web::STATUS_OK;
-                                    response->Message = _T("JSONRPC executed succesfully");
-                                } else {
-                                    response->ErrorCode = Web::STATUS_NO_CONTENT;
-                                    response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+								if (body.IsValid() == false)
+								{
+                                    response->ErrorCode = Web::STATUS_BAD_REQUEST;
+								} else {
+                                    response->Body(body);
+                                    if (body->Error.IsSet() == false) {
+                                        response->ErrorCode = Web::STATUS_OK;
+                                        response->Message = _T("JSONRPC executed succesfully");
+                                    } else {
+                                        response->ErrorCode = Web::STATUS_NO_CONTENT;
+                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                    }
                                 }
                             } else {
                                 response = _service->Process(*_request);

@@ -31,7 +31,7 @@ extern const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WP
     }                                                                                                    \
     }                                                                                                    \
     ;                                                                                                    \
-    return (index < ((sizeof(table) / sizeof(EnumerateType<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
+    return (index < ((sizeof(table) / sizeof(WPEFramework::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
     }                                                                                                    \
     }
 
