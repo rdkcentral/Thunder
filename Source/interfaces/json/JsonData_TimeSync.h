@@ -29,7 +29,7 @@ namespace JsonData {
             SetParamsData& operator=(const SetParamsData&) = delete;
 
         public:
-            Core::JSON::DecUInt64 Time; // New system time (in microseconds since midnight 1/Jan/1970); if this parameter is omitted then the *time* subsystem will still become activated but without setting the time
+            Core::JSON::String Time; // New system time (in ISO8601 format); if this parameter is omitted then the *time* subsystem will still become activated but without setting the time (thereby notifying the framework that the time has been set externally)
         }; // class SetParamsData
 
         class TimeResultData : public Core::JSON::Container {
@@ -45,7 +45,7 @@ namespace JsonData {
             TimeResultData& operator=(const TimeResultData&) = delete;
 
         public:
-            Core::JSON::DecUInt64 Time; // Synchronized time (in microseconds since midnight 1/Jan/1970); *0* if the time has never been synchronized
+            Core::JSON::String Time; // Synchronized time (in ISO8601 format); empty string if the time has never been synchronized
             Core::JSON::String Source; // The synchronization source e.g. an NTP server
         }; // class TimeResultData
 

@@ -17,10 +17,9 @@
         "type": "object",
         "properties": {
           "time": {
-            "description": "Synchronized time (in microseconds since midnight 1/Jan/1970); *0* if the time has never been synchronized",
-            "example": 1552564125000000,
-            "type": "number",
-            "size": 64
+            "description": "Synchronized time (in ISO8601 format); empty string if the time has never been synchronized",
+            "example": "2019-05-07T07:20:26Z",
+            "type": "string"
           },
           "source": {
             "description": "The synchronization source e.g. an NTP server",
@@ -29,8 +28,7 @@
           }
         },
         "required": [
-          "time",
-          "source"
+          "time"
         ]
       }
     },
@@ -59,10 +57,9 @@
         "properties": {
           "time": {
             "optional": true,
-            "description": "New system time (in microseconds since midnight 1/Jan/1970); if this parameter is omitted then the *time* subsystem will still become activated but without setting the time",
-            "example": 1552564125000000,
-            "type": "number",
-            "size": 64
+            "description": "New system time (in ISO8601 format); if this parameter is omitted then the *time* subsystem will still become activated but without setting the time (thereby notifying the framework that the time has been set externally)",
+            "example": "2019-05-07T07:20:26Z",
+            "type": "string"
           }
         }
       },
