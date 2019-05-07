@@ -101,7 +101,10 @@ namespace Core {
         bool FromString(const string& buffer, const bool localTime = true)
         {
             if (buffer.size() >= 18) {
-                if (::isspace(buffer[3]) != 0) {
+                if (buffer[10] == 'T') {
+                    // 1994-11-06T08:49:37Z
+                    return (FromISO8601(buffer));
+                } else if (::isspace(buffer[3]) != 0) {
                     // Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format [18]
                     return (FromANSI(buffer, localTime));
                 } else if (buffer[3] == ',') {
@@ -192,8 +195,11 @@ namespace Core {
         bool FromRFC1123(const string& buffer);
         bool FromRFC1036(const string& buffer);
         bool FromANSI(const string& buffer, const bool localTime);
+        bool FromISO8601(const string& buffer);
         string ToRFC1123() const;
         string ToRFC1123(const bool localTime) const;
+        string ToISO8601() const;
+        string ToISO8601(const bool localTime) const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)
@@ -211,6 +217,10 @@ namespace Core {
         static bool RFC1036(const string& buffer, Time& element)
         {
             return (element.FromRFC1036(buffer));
+        }
+        static bool ISO8601(const string& buffer, Time& element)
+        {
+            return (element.FromISO8601(buffer));
         }
 
         Time& Add(const uint32_t timeInMilliseconds);
