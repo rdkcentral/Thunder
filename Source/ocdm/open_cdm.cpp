@@ -646,14 +646,16 @@ OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     uint8_t encrypted[],
     const uint32_t encryptedLength,
     const uint8_t* IV, const uint16_t IVLength,
+    const uint8_t* keyId, const uint16_t keyIdLength,
     uint32_t initWithLast15 /* = 0 */)
 {
     OpenCDMError result(ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
         result = static_cast<OpenCDMError>(session->Decrypt(
-            encrypted, encryptedLength, IV, IVLength, nullptr, 0, initWithLast15));
+            encrypted, encryptedLength, IV, IVLength, keyId, keyIdLength, initWithLast15));
     }
 
     return (result);
 }
+

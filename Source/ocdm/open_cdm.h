@@ -466,6 +466,8 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
  * \param IV Initial vector (IV) used during decryption. Can be NULL, in that
  * case and IV of all zeroes is assumed.
  * \param IVLength Length of IV buffer (in bytes).
+ * \param keyID keyID to use for decryption
+ * \param keyIDLength Length of keyID buffer (in bytes).
  * \param initWithLast15 Whether decryption context needs to be initialized with
  * last 15 bytes. Currently this only applies to PlayReady DRM.
  * \return Zero on success, non-zero on error.
@@ -475,12 +477,14 @@ OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     uint8_t encrypted[],
     const uint32_t encryptedLength,
     const uint8_t* IV, uint16_t IVLength,
+    const uint8_t* keyId, const uint16_t keyIdLength,
     uint32_t initWithLast15 = 0);
 #else
 OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     uint8_t encrypted[],
     const uint32_t encryptedLength,
     const uint8_t* IV, uint16_t IVLength,
+    const uint8_t* keyId, const uint16_t keyIdLength,
     uint32_t initWithLast15);
 #endif // __cplusplus
 

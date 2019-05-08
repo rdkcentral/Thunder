@@ -4,7 +4,8 @@
 #include <gst/gst.h>
 #include <gst/base/gstbytereader.h>
 
-OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength) {
+OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount,
+                                     const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength) {
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {
@@ -54,7 +55,7 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
             }
             gst_byte_reader_set_pos(reader, 0);
 
-            result = opencdm_session_decrypt(session, encryptedData, totalEncrypted, IV, IVLength);
+            result = opencdm_session_decrypt(session, encryptedData, totalEncrypted, IV, IVLength, keyID, keyIDLength);
             // Re-build sub-sample data.
             index = 0;
             unsigned total = 0;
@@ -71,7 +72,7 @@ OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buff
             free(encryptedData);
             gst_buffer_unmap(subSampleBuffer, &sampleMap);
         } else {
-            result = opencdm_session_decrypt(session, mappedData, mappedDataSize, IV, IVLength);
+            result = opencdm_session_decrypt(session, mappedData, mappedDataSize, IV, IVLength, keyID, keyIDLength);
         }
 
         gst_buffer_unmap(dataBuffer, &dataMap);
