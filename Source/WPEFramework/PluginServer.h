@@ -1870,7 +1870,7 @@ namespace PluginHost {
                                         response->ErrorCode = Web::STATUS_OK;
                                         response->Message = _T("JSONRPC executed succesfully");
                                     } else {
-                                        response->ErrorCode = Web::STATUS_NO_CONTENT;
+                                        response->ErrorCode = Web::STATUS_ACCEPTED;
                                         response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
                                     }
                                 }

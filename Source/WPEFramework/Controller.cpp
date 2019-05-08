@@ -169,7 +169,7 @@ namespace Plugin {
                     result->ErrorCode = Web::STATUS_OK;
                     result->Message = _T("JSONRPC executed succesfully");
                 } else {
-                    result->ErrorCode = Web::STATUS_NO_CONTENT;
+                    result->ErrorCode = Web::STATUS_ACCEPTED;
                     result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(answer->Error.Code).Text();
                 }
             }
