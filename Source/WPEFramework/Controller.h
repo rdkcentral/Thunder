@@ -197,6 +197,10 @@ namespace Plugin {
             UnregisterAll();
             SetServer(nullptr);
         }
+		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+            Notify("all", message);
+		}
+           
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));

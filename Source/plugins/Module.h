@@ -11,6 +11,8 @@
 #include "../tracing/tracing.h"
 #include "../websocket/websocket.h"
 
+#define RESTFULL_API 1
+
 #ifdef __WIN32__
 #undef EXTERNAL
 #ifdef PLUGINS_EXPORTS

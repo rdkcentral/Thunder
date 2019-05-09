@@ -209,9 +209,6 @@ namespace Core {
         };
 
         class EXTERNAL Handler {
-        private:
-            Handler(const Handler&) = delete;
-            Handler& operator=(const Handler&) = delete;
           
             typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
             typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
@@ -270,11 +267,15 @@ namespace Core {
 			typedef std::map<const string, Entry> HandlerMap;
 
         public:
-            Handler()
+            Handler() = delete;
+            Handler(const Handler&) = delete;
+            Handler& operator=(const Handler&) = delete;
+
+            Handler(const std::vector<uint8_t>& versions)
                 : _handlers()
                 , _callsign()
                 , _designator()
-                , _versions()
+                , _versions(versions)
             {
             }
             virtual ~Handler()
@@ -398,11 +399,10 @@ namespace Core {
                 }
                 return (result);
             }
-            void Designator(const string& callsign, const std::vector<uint8_t>& versions)
+            void Designator(const string& callsign)
             {
                 _callsign = callsign;
-                _versions = versions;
-                _designator = callsign + '.' + Core::NumberType<uint8_t>(versions.back()).Text();
+                _designator = callsign + '.' + Core::NumberType<uint8_t>(_versions.back()).Text();
             }
             const string& Callsign() const
             {
@@ -567,7 +567,7 @@ namespace Core {
             HandlerMap _handlers;
             string _callsign;
             string _designator;
-            std::vector<uint8_t> _versions;
+            const std::vector<uint8_t> _versions;
         };
 
         using Error = Message::Info;

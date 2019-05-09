@@ -39,6 +39,40 @@ namespace PluginHost {
         static const TCHAR* CommunicatorConnector;
 
     public:
+        class ForwardMessage : public Core::JSON::Container {
+        private:
+            ForwardMessage(const ForwardMessage&) = delete;
+            ForwardMessage& operator=(const ForwardMessage&) = delete;
+
+        public:
+            ForwardMessage()
+                : Core::JSON::Container()
+                , Callsign(true)
+                , Data(false)
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("data"), &Data);
+            }
+            ForwardMessage(const string& callsign, const string& message)
+                : Core::JSON::Container()
+                , Callsign(true)
+                , Data(false)
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("data"), &Data);
+
+                Callsign = callsign;
+                Data = message;
+            }
+            ~ForwardMessage()
+            {
+            }
+
+        public:
+            Core::JSON::String Callsign;
+            Core::JSON::String Data;
+        };
+
         // Configuration to get a server (PluginHost server) up and running.
         class Config : public Core::JSON::Container {
         private:
@@ -1629,8 +1663,7 @@ namespace PluginHost {
                         process->Terminate();
                         process->Release();
                     }
-                }
-                else {
+                } else {
                     TRACE(Trace::Fatal, (_T("Could not instantiate a process for: %s [%s]"), className.c_str(), callsign.c_str()));
                 }
 
@@ -1698,10 +1731,16 @@ namespace PluginHost {
             {
                 return (_processAdministrator.Processes(listOfPids));
             }
-            inline void Notification(const string& message)
+            inline void Notification(const ForwardMessage& message)
             {
                 _server.Notification(message);
             }
+			#ifdef RESTFULL_API
+            inline void Notification(const string& message)
+            {
+                _server._controller->Notification(message);
+            }
+			#endif
             void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
             {
                 _adminLock.Lock();
@@ -1861,10 +1900,9 @@ namespace PluginHost {
                                 response = Factories::Instance().Response();
                                 Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
                                 Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
-								if (body.IsValid() == false)
-								{
+                                if (body.IsValid() == false) {
                                     response->ErrorCode = Web::STATUS_BAD_REQUEST;
-								} else {
+                                } else {
                                     response->Body(body);
                                     if (body->Error.IsSet() == false) {
                                         response->ErrorCode = Web::STATUS_OK;
@@ -2138,7 +2176,6 @@ namespace PluginHost {
                     PluginHost::Channel::Unlock();
                 }
 
-
                 // See if we are allowed to process this request..
                 if ((security == nullptr) || (security->Allowed(*request) == false)) {
                     request->Unauthorized();
@@ -2159,7 +2196,7 @@ namespace PluginHost {
                     }
                 }
 
-				if (security != nullptr) {
+                if (security != nullptr) {
                     // We are done with the security related items, let go of the officer.
                     security->Release();
                 }
@@ -2267,8 +2304,7 @@ namespace PluginHost {
                         securityClearance = _security->Allowed(*message);
                         PluginHost::Channel::Unlock();
 
-						if (securityClearance == false)
-                        {
+                        if (securityClearance == false) {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
                         }
@@ -2596,10 +2632,7 @@ namespace PluginHost {
         {
             return (_config);
         }
-        inline void Notification(const string& message)
-        {
-            _controller->Notification(message);
-        }
+        void Notification(const ForwardMessage& message);
         inline string ControllerName() const
         {
             return (_controller->Callsign());
@@ -2620,7 +2653,6 @@ namespace PluginHost {
         {
             return (_config.Security());
         }
-
 
     private:
         Core::NodeId _accessor;

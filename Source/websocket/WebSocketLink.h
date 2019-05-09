@@ -1482,6 +1482,10 @@ namespace Web {
         {
             return (_channel.IsOpen());
         }
+        inline bool IsClosed() const
+        {
+            return (_channel.IsClosed());
+        }
         inline bool IsWebServer() const
         {
             return (_channel.IsWebServer());

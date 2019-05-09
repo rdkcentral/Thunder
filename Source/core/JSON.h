@@ -918,10 +918,11 @@ namespace Core {
         class EXTERNAL String : public IElement, public IDirect {
         private:
             static constexpr uint32_t None = 0x00000000;
-            static constexpr uint32_t ScopeMask = 0x1FFFFFFF;
+            static constexpr uint32_t ScopeMask = 0x0FFFFFFF;
             static constexpr uint32_t QuotedSerializeBit = 0x80000000;
             static constexpr uint32_t SetBit = 0x40000000;
             static constexpr uint32_t QuoteFoundBit = 0x20000000;
+            static constexpr uint32_t NullBit = 0x10000000;
 
         public:
             String(const bool quoted = true)
@@ -1064,6 +1065,10 @@ namespace Core {
                 }
             }
 
+            inline bool IsNull() const
+            {
+                return (_scopeCount & NullBit) != 0;
+            }
             // IElement interface methods
             virtual bool IsSet() const override
             {
@@ -1233,7 +1238,7 @@ namespace Core {
                     offset = static_cast<uint16_t>(_value.length()) + _unaccountedCount;
                 } else {
                     offset = 0;
-                    _scopeCount |= (ContainsNull(_value) ? None : SetBit);
+                    _scopeCount |= (ContainsNull(_value) ? NullBit : 0)|SetBit;
                 }
 
                 return (result);

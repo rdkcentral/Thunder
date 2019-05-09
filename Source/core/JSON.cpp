@@ -430,52 +430,20 @@ namespace Core {
                     if (current->Element()->Type() == PARSE_DIRECT) {
                         // By definition, no specific handling required here, just deserialize what you have..
                         result += current->Element()->DirectParser()->Deserialize(reinterpret_cast<const char*>(&stream[result]), (maxLength - result), _offset);
-
-                        if (_offset == 0) {
-                            _state = STATE_SKIP;
+                        if (current->Element()->IsSet()) {
+                            _handleStack.front().Loaded();
                         }
                     } else {
-                        if (_offset == 0) {
-                            if (stream[result] == '\"') {
-                                _quoted = QUOTED_ON;
-                                result++;
-                            }
-                            // Oke we got data. report it in the context of the current element...
+                        Core::JSON::String loader(false);
+                        static_cast<Core::JSON::IElement&>(loader).DirectParser()->Deserialize(reinterpret_cast<const char*>(&stream[result]), (maxLength - result), _offset);
+
+						if (loader.IsSet() == true) {
+                            current->Element()->BufferParser()->Deserialize(loader.Value());
                             _handleStack.front().Loaded();
-                            _offset++;
-                            _buffer.clear();
                         }
-                        // Copy till closure state or MinSize is reached..
-                        while ((result < maxLength) && (_state == STATE_VALUE)) {
-                            if (_quoted == QUOTED_ESCAPED) {
-                                // Whatever the character, we should keep on reading!!
-                                _quoted = QUOTED_ON;
-                            } else if (_quoted == QUOTED_ON) {
-                                if (stream[result] == '\"') {
-                                    result++;
-                                    _quoted = QUOTED_OFF;
-                                    _state = STATE_SKIP;
-                                }
-                            } else if ((_quoted == QUOTED_OFF) && (isspace(stream[result]))) {
-                                _state = STATE_SKIP;
-                            } else if ((stream[result] == '}') || (stream[result] == ']')) {
-                                _state = STATE_CLOSE;
-                            } else if (stream[result] == ',') {
-                                _state = STATE_CLOSE;
-                            }
-
-                            if (_state == STATE_VALUE) {
-                                _buffer += stream[result++];
-                            }
-                        }
-
-                        if (_state != STATE_VALUE) {
-                            // We now have the full pack unquoted, deserialize it.
-                            _offset = 0;
-
-                            // We need to build a buffer to get the next value complete
-                            current->Element()->BufferParser()->Deserialize(_buffer);
-                        }
+                    }
+                    if (_offset == 0) {
+                        _state = STATE_SKIP;
                     }
                     break;
                 }

@@ -131,6 +131,7 @@ namespace PluginHost
         const string _controllerName;
     };
 
+
     static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
     {
         Core::NodeId result(configuration.Binding.Value().c_str());
@@ -433,7 +434,12 @@ namespace PluginHost
                     Lock();
                     State(ACTIVATED);
                     _administrator.StateChange(this);
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"activated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
+
+					#ifdef RESTFULL_API
+                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
+					#endif
+
+                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + IShell::ToString(why) + _T("\"}")));
 
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
@@ -503,8 +509,12 @@ namespace PluginHost
             State(DEACTIVATED);
 
             _administrator.StateChange(this);
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
 
+			#ifdef RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));			
+			#endif
+
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + IShell::ToString(why) + _T("\"}")));
             if (State() != ACTIVATED) {
                 // We have no need for his module anymore..
                 ReleaseInterfaces();
@@ -528,12 +538,14 @@ namespace PluginHost
 
     /* virtual */ void Server::Service::Notify(const string& message)
     {
-        const string fullMessage("{\"callsign\":\"" + PluginHost::Service::Callsign() + "\", \"data\": " + message + " }");
+        const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
+		#ifdef RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
+		#endif
 
-        _administrator.Notification(fullMessage);
+        _administrator.Notification(forwarder);
     }
 
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall)
@@ -710,6 +722,16 @@ namespace PluginHost
 
     Server::~Server()
     {
+    }
+
+	void Server::Notification(const ForwardMessage& data)
+    {
+        _controller->ClassType<Plugin::Controller>()->Notification(data);
+		#ifdef RESTFULL_API
+        string result;
+        data.ToString(result);
+        _controller->Notification(result);
+		#endif
     }
 
     void Server::Open()

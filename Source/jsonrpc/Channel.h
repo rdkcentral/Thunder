@@ -199,7 +199,7 @@ namespace JSONRPC {
         bool Open(const uint32_t waitTime)
         {
             bool result = true;
-            if (_channel.IsOpen() == false) {
+            if (_channel.IsClosed() == true) {
                 result = (_channel.Open(waitTime) == Core::ERROR_NONE);
             }
             return (result);
@@ -349,41 +349,56 @@ namespace JSONRPC {
             }
             return (result);
         }
+        static uint8_t DetermineVersion(const string& designator)
+        {
+            uint8_t version = 1;
+            size_t pos = designator.find_last_of('.');
+            if (pos != string::npos) {
+                string number = designator.substr(pos + 1);
+                if ((number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
+                    version = atoi(number.c_str());
+                }
+            }
+            return (version);
+        }
 
         static constexpr uint32_t DefaultWaitTime = 10000;
         typedef std::map<uint32_t, Entry> PendingMap;
         typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
 
     public:
-        Client(const string& remoteCallsign, const TCHAR* localCallsign = nullptr, const bool directed = false)
+        Client(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
-            , _handler()
+            , _handler({ DetermineVersion(localCallsign) })
+            , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
+            , _pendingQueue()
+            , _scheduledTime(0)
+        {
+            string designator(localCallsign);
+            size_t pos = designator.find_last_of('.');
+            if (pos != string::npos) {
+                designator = designator.substr(0, pos);
+            }
+            _handler.Designator(designator);
+
+			_channel->Register(*this);
+        }
+        Client(const string& remoteCallsign, const uint8_t version, const bool directed = false)
+            : _adminLock()
+            , _connectId(RemoteNodeId())
+            , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
+            , _handler({ version })
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
             , _pendingQueue()
             , _scheduledTime(0)
         {
             static uint32_t sequence;
 
-            std::vector<uint8_t> versions;
-            Core::InterlockedIncrement(sequence);
+            uint32_t scope = Core::InterlockedIncrement(sequence);
 
-            if (localCallsign == nullptr) {
-                versions.push_back(1);
-                _handler.Designator("temporary" + Core::NumberType<uint32_t>(sequence).Text(), versions);
-            } else {
-                string designator(localCallsign);
-                size_t pos = designator.find_last_of('.');
-                if (pos != string::npos) {
-                    string number = designator.substr(pos + 1);
-                    designator = designator.substr(0, pos);
-                    if ((number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
-                        versions.push_back(static_cast<uint8_t>(atoi(number.c_str())));
-                    }
-                }
-                _handler.Designator(designator, versions);
-            }
+            _handler.Designator("temporary" + Core::NumberType<uint32_t>(scope).Text());
             _channel->Register(*this);
         }
         virtual ~Client()
@@ -547,7 +562,6 @@ namespace JSONRPC {
         }
 
     private:
-        
         template <typename RESPONSE>
         uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters, RESPONSE& inbound)
         {
@@ -566,7 +580,6 @@ namespace JSONRPC {
         }
 
     public:
-
         template <typename PARAMETERS, typename HANDLER>
         typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
         Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)

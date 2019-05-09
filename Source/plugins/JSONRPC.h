@@ -94,11 +94,18 @@ namespace PluginHost {
 
         typedef std::list<Observer> ObserverList;
         typedef std::map<string, ObserverList> ObserverMap;
-
+		
     public:
         JSONRPC()
             : _adminLock()
-            , _handler()
+            , _handler( { 1 } )
+            , _observers()
+            , _service(nullptr)
+        {
+        }
+        JSONRPC(const std::vector<uint8_t> versions)
+            : _adminLock()
+            , _handler(versions)
             , _observers()
             , _service(nullptr)
         {
@@ -324,23 +331,8 @@ namespace PluginHost {
             ASSERT(service != nullptr);
 
             _service = service;
-            std::vector<uint8_t> data;
 
-            // Extract the version list from the config
-            Core::JSON::ArrayType<Core::JSON::DecUInt8> versions;
-            versions.FromString(service->Versions());
-            Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
-
-            while (index.Next() == true) {
-                data.push_back(index.Current().Value());
-            }
-
-            // If no versions are give, lets assume this is version 1, and we support it :-)
-            if (data.empty() == true) {
-                data.push_back(1);
-            }
-
-            _handler.Designator(_service->Callsign(), data);
+            _handler.Designator(_service->Callsign());
         }
         virtual void Deactivate() override
         {
