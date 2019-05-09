@@ -540,8 +540,8 @@ namespace PluginHost {
                 if (IsRegisterMethod(method) == true) {
                     Registration info;
                     info.FromString(parameters);
-                    NotifyObservers(info.Event.Value(), info.Callsign.Value(), Status::registered);
                     Register(channelId, info, *response);
+                    NotifyObservers(info.Event.Value(), info.Callsign.Value(), Status::registered);
                 } else if (IsUnregisterMethod(method) == true) {
                     Registration info;
                     info.FromString(parameters);
