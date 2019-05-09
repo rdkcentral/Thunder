@@ -455,7 +455,7 @@ namespace Core {
                             if (loaded == false) {
                                 IArrayIterator* elementList = dynamic_cast<IArrayIterator*>(current);
                                 if (elementList != nullptr) {
-                                    //elementList->Clear();
+                                    elementList->Clear();
                                 }
                             }
                             _handleStack.pop_front();

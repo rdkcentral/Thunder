@@ -127,6 +127,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WebServer", "..\..\WPEFrame
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SecurityAgent", "..\..\WPEFrameworkPlugins\SecurityAgent\SecurityAgent.vcxproj", "{5CCE3B12-3CCC-4E4A-92CA-832D11F98F70}"
+	ProjectSection(ProjectDependencies) = postProject
+		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
