@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "ISubSystem.h"
 
 namespace WPEFramework {

@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "JSONRPC.h"
 
 namespace WPEFramework {

@@ -3,7 +3,6 @@
 
 #include "IPlugin.h"
 #include "ISubSystem.h"
-#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -39,8 +38,6 @@ namespace PluginHost {
             DESTROYED
         };
 
-        static const TCHAR* ToString(const state value);
-
         enum reason {
             REQUESTED,
             AUTOMATIC,
@@ -50,8 +47,6 @@ namespace PluginHost {
             SHUTDOWN,
             CONDITIONS
         };
-
-        static const TCHAR* ToString(const reason value);
 
         class EXTERNAL Job
             : public Core::IDispatchType<void> {

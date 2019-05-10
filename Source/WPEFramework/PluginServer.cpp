@@ -418,6 +418,7 @@ namespace PluginHost
                     State(DEACTIVATED);
                     _administrator.StateChange(this);
                 } else {
+                    const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
                     if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
                         EnableWebServer(webUI, EMPTY_STRING);
@@ -435,11 +436,11 @@ namespace PluginHost
                     State(ACTIVATED);
                     _administrator.StateChange(this);
 
-					#ifdef RESTFULL_API
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
-					#endif
+                    #ifdef RESTFULL_API
+                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+                    #endif
 
-                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + IShell::ToString(why) + _T("\"}")));
+                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
@@ -470,6 +471,8 @@ namespace PluginHost
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+
+            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             ASSERT(_handler != nullptr);
 
@@ -510,11 +513,11 @@ namespace PluginHost
 
             _administrator.StateChange(this);
 
-			#ifdef RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));			
-			#endif
+            #ifdef RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));			
+            #endif
 
-            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + IShell::ToString(why) + _T("\"}")));
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
             if (State() != ACTIVATED) {
                 // We have no need for his module anymore..
                 ReleaseInterfaces();

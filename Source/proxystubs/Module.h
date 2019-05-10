@@ -5,8 +5,8 @@
 #define MODULE_NAME ProxyStubs
 #endif
 
-#include "../com/com.h"
 #include "../core/core.h"
+#include "../com/com.h"
 #include "../plugins/plugins.h"
 
 #ifdef __WIN32__

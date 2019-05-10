@@ -5,10 +5,12 @@
 #define MODULE_NAME Interfaces
 #endif
 
-#include "../com/com.h"
 #include "../core/core.h"
-#include "../plugins/IShell.h"
+#include "../com/com.h"
 #include "Ids.h"
+#include "../plugins/IPlugin.h"
+#include "../plugins/IShell.h"
+#include "../plugins/ISubSystem.h"
 
 #undef EXTERNAL
 #define EXTERNAL

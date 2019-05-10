@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "MetaData.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"

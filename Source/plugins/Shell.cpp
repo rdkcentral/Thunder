@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "IShell.h"
 
 namespace WPEFramework {
@@ -27,17 +28,6 @@ ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
 namespace PluginHost
 {
-
-    /* static */ const TCHAR* IShell::ToString(const state value)
-    {
-        return (Core::EnumerateType<state>(value).Data());
-    }
-
-    /* static */ const TCHAR* IShell::ToString(const reason value)
-    {
-        return (Core::EnumerateType<reason>(value).Data());
-    }
-
     class EXTERNAL Object : public Core::JSON::Container {
     private:
         class RootObject : public Core::JSON::Container {
