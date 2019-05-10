@@ -435,7 +435,7 @@ namespace Core {
                         }
                     } else {
                         Core::JSON::String loader(false);
-                        static_cast<Core::JSON::IElement&>(loader).DirectParser()->Deserialize(reinterpret_cast<const char*>(&stream[result]), (maxLength - result), _offset);
+                        result += static_cast<Core::JSON::IElement&>(loader).DirectParser()->Deserialize(reinterpret_cast<const char*>(&stream[result]), (maxLength - result), _offset);
 
 						if (loader.IsSet() == true) {
                             current->Element()->BufferParser()->Deserialize(loader.Value());

@@ -19,74 +19,22 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
+    <ClCompile Include="Enumerations.cpp" />
+    <ClCompile Include="json\Enumerations.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="DataModel.json" />
+    <ClInclude Include="interfaces.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProxyStubs.cpp" />
-    <ClCompile Include="ProxyStubs_AVNClient.cpp" />
-    <ClCompile Include="ProxyStubs_Browser.cpp" />
-    <ClCompile Include="ProxyStubs_Composition.cpp" />
-    <ClCompile Include="ProxyStubs_ContentDecryption.cpp" />
-    <ClCompile Include="ProxyStubs_DsgccClient.cpp" />
-    <ClCompile Include="ProxyStubs_Guide.cpp" />
-    <ClCompile Include="ProxyStubs_Netflix.cpp" />
-    <ClCompile Include="ProxyStubs_Packager.cpp" />
-    <ClCompile Include="ProxyStubs_PlayGiga.cpp" />
-    <ClCompile Include="ProxyStubs_Power.cpp" />
-    <ClCompile Include="ProxyStubs_Provisioning.cpp" />
-    <ClCompile Include="ProxyStubs_RPCLink.cpp" />
-    <ClCompile Include="ProxyStubs_RtspClient.cpp" />
-    <ClCompile Include="ProxyStubs_Streaming.cpp" />
-    <ClCompile Include="ProxyStubs_TestController.cpp" />
-    <ClCompile Include="ProxyStubs_TVControl.cpp" />
-    <ClCompile Include="ProxyStubs_WebDriver.cpp" />
-    <ClCompile Include="ProxyStubs_WebServer.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="IAVNClient.h" />
-    <ClInclude Include="IBluetooth.h" />
-    <ClInclude Include="IBrowser.h" />
-    <ClInclude Include="ICapture.h" />
-    <ClInclude Include="ICommand.h" />
-    <ClInclude Include="IComposition.h" />
-    <ClInclude Include="IContentDecryption.h" />
-    <ClInclude Include="IDictionary.h" />
-    <ClInclude Include="IDRM.h" />
-    <ClInclude Include="Ids.h" />
-    <ClInclude Include="IDsgccClient.h" />
-    <ClInclude Include="IExternal.h" />
-    <ClInclude Include="IGuide.h" />
-    <ClInclude Include="IIPNetwork.h" />
-    <ClInclude Include="IKeyHandler.h" />
-    <ClInclude Include="IMemory.h" />
-    <ClInclude Include="INetflix.h" />
-    <ClInclude Include="IPackager.h" />
-    <ClInclude Include="IPlayGiga.h" />
-    <ClInclude Include="IPower.h" />
-    <ClInclude Include="IProvisioning.h" />
-    <ClInclude Include="IRPCLink.h" />
-    <ClInclude Include="IRtspClient.h" />
-    <ClInclude Include="IStreaming.h" />
-    <ClInclude Include="ISwitchBoard.h" />
-    <ClInclude Include="ISystemCommands.h" />
-    <ClInclude Include="ITestController.h" />
-    <ClInclude Include="ITimeSync.h" />
-    <ClInclude Include="ITVControl.h" />
-    <ClInclude Include="ITVPlatform.h" />
-    <ClInclude Include="IVoiceHandler.h" />
-    <ClInclude Include="IWebDriver.h" />
-    <ClInclude Include="IWebServer.h" />
-    <ClInclude Include="Module.h" />
+    <None Include="cpp.hint" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{3DA3B4B6-916E-4F21-88C6-512DF0C0A38C}</ProjectGuid>
+    <ProjectGuid>{577A83B6-66B6-4A98-A3D6-4EBA066A1772}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>interfaces</RootNamespace>
+    <RootNamespace>Definitions</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <ProjectName>Enumerations</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -133,47 +81,40 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
-    <TargetExt>.so</TargetExt>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
-    <TargetExt>.so</TargetExt>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
-    <TargetExt>.so</TargetExt>
+    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
-    <TargetExt>.so</TargetExt>
+    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
+    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENUMERATIONS_EXPORTS;_DEBUG;DEFINITIONS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)/..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -182,28 +123,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENUMERATIONS_EXPORTS;WIN32;_DEBUG;DEFINITIONS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)/..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -214,15 +141,36 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ENUMERATIONS_EXPORTS;WIN32;NDEBUG;DEFINITIONS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)/..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>ENUMERATIONS_EXPORTS;NDEBUG;DEFINITIONS_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)/..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

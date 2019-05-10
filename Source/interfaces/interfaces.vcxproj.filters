@@ -21,9 +21,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Enumerations.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

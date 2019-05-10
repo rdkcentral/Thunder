@@ -125,12 +125,9 @@ namespace PluginHost {
                     pluginConfig.FromFile(file);
                     file.Close();
 
-                    if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true))
-                    {
+                    if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
                         SYSLOG(Logging::Startup, (_T("Plugin config file [%s] does not contain classname or locator."), file.Name().c_str()));
-                    }
-                    else
-                    {
+                    } else {
                         if (pluginConfig.Callsign.Value().empty() == true) {
                             pluginConfig.Callsign = Core::File::FileName(file.FileName());
                         }
@@ -425,7 +422,10 @@ namespace PluginHost {
                         printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                         printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                         printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
+#ifdef RESTFULL_API
+
                         printf("Observers:  %d\n", index.Current().Observers.Value());
+#endif
                         printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
                         printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
                     }

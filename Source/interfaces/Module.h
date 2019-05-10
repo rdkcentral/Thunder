@@ -7,7 +7,7 @@
 
 #include "../com/com.h"
 #include "../core/core.h"
-#include "../plugins/plugins.h"
+#include "../plugins/IShell.h"
 #include "Ids.h"
 
 #undef EXTERNAL

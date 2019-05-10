@@ -711,6 +711,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
+#ifdef RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -718,11 +719,19 @@ namespace PluginHost {
                 }
 
                 return (result);
+#else
+                if (_extended != nullptr) {
+                    _extended->Attach(channel);
+                }
+
+                return (_extended != nullptr);
+#endif
             }
             inline void Unsubscribe(Channel& channel)
             {
+#ifdef RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
-
+#endif
                 if (_extended != nullptr) {
                     _extended->Detach(channel);
                 }
@@ -1735,12 +1744,12 @@ namespace PluginHost {
             {
                 _server.Notification(message);
             }
-			#ifdef RESTFULL_API
+#ifdef RESTFULL_API
             inline void Notification(const string& message)
             {
                 _server._controller->Notification(message);
             }
-			#endif
+#endif
             void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
             {
                 _adminLock.Lock();
@@ -2637,10 +2646,12 @@ namespace PluginHost {
         {
             return (_controller->Callsign());
         }
+#ifdef RESTFULL_API
         void Notify(const string& message)
         {
             _controller->Notification(message);
         }
+#endif
         void Open();
         void Close();
 

@@ -316,7 +316,9 @@ namespace PluginHost {
         inline void GetMetaData(MetaData::Service& metaData) const
         {
             metaData = _config.Configuration();
+#ifdef RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
+#endif
             metaData.JSONState = this;
 
 #ifdef RUNTIME_STATISTICS

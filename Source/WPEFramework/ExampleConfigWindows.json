@@ -155,6 +155,15 @@
       "autostart": true
     },
     {
+      "callsign": "RemoteControl",
+      "locator": "libremotecontrol.so",
+      "classname": "RemoteControl",
+      "autostart": true,
+      "configuration": {
+        "mapfile": "ir-remote.json"
+      }
+    },
+    {
       "autostart": false,
       "callsign": "WebKitBrowser",
       "classname": "OutOfProcessTest",

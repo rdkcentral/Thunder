@@ -547,8 +547,10 @@ namespace Plugin {
             response.ToString(message);
 
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
-
-            _pluginServer->Notify(message);
+#ifdef RESTFULL_API
+            _pluginServer->_controller->Notification(message);
+#endif
+            Notify("subsytem", response);
         }
     }
     /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)

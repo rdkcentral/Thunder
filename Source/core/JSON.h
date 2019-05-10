@@ -1050,7 +1050,7 @@ namespace Core {
 
             inline const string Value() const
             {
-                return (((_scopeCount & SetBit) != 0) ? Core::ToString(_value.c_str()) : _default);
+                return (((_scopeCount & (SetBit|NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : _default);
             }
             inline const string& Default() const
             {
