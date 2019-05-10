@@ -396,7 +396,7 @@ namespace PluginHost {
                             response->Result = result;
                         } else {
                             response->Error.Code = code;
-                            response->Error.Text = result;
+                            response->Error.Text = Core::ErrorToString(code);
                         }
                     }
                 } else {

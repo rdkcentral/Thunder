@@ -604,48 +604,91 @@ namespace Core {
         }
     };
 
-    const uint32_t ERROR_NONE = 0;
-    const uint32_t ERROR_GENERAL = 1;
-    const uint32_t ERROR_UNAVAILABLE = 2;
-    const uint32_t ERROR_ASYNC_FAILED = 3;
-    const uint32_t ERROR_ASYNC_ABORTED = 4;
-    const uint32_t ERROR_ILLEGAL_STATE = 5;
-    const uint32_t ERROR_OPENING_FAILED = 6;
-    const uint32_t ERROR_ACCEPT_FAILED = 7;
-    const uint32_t ERROR_PENDING_SHUTDOWN = 8;
-    const uint32_t ERROR_ALREADY_CONNECTED = 9;
-    const uint32_t ERROR_CONNECTION_CLOSED = 10;
-    const uint32_t ERROR_TIMEDOUT = 11;
-    const uint32_t ERROR_INPROGRESS = 12;
-    const uint32_t ERROR_COULD_NOT_SET_ADDRESS = 13;
-    const uint32_t ERROR_INCORRECT_HASH = 14;
-    const uint32_t ERROR_INCORRECT_URL = 15;
-    const uint32_t ERROR_INVALID_INPUT_LENGTH = 16;
-    const uint32_t ERROR_DESTRUCTION_SUCCEEDED = 17;
-    const uint32_t ERROR_DESTRUCTION_FAILED = 18;
-    const uint32_t ERROR_CLOSING_FAILED = 19;
-    const uint32_t ERROR_PROCESS_TERMINATED = 20;
-    const uint32_t ERROR_PROCESS_KILLED = 21;
-    const uint32_t ERROR_UNKNOWN_KEY = 22;
-    const uint32_t ERROR_INCOMPLETE_CONFIG = 23;
-    const uint32_t ERROR_PRIVILIGED_REQUEST = 24;
-    const uint32_t ERROR_RPC_CALL_FAILED = 25;
-    const uint32_t ERROR_UNREACHABLE_NETWORK = 26;
-    const uint32_t ERROR_REQUEST_SUBMITTED = 27;
-    const uint32_t ERROR_UNKNOWN_TABLE = 28;
-    const uint32_t ERROR_DUPLICATE_KEY = 29;
-    const uint32_t ERROR_BAD_REQUEST = 30;
-    const uint32_t ERROR_PENDING_CONDITIONS = 31;
-    const uint32_t ERROR_SURFACE_UNAVAILABLE = 32;
-    const uint32_t ERROR_PLAYER_UNAVAILABLE = 33;
-    const uint32_t ERROR_FIRST_RESOURCE_NOT_FOUND = 34;
-    const uint32_t ERROR_SECOND_RESOURCE_NOT_FOUND = 35;
-    const uint32_t ERROR_ALREADY_RELEASED = 36;
-    const uint32_t ERROR_NEGATIVE_ACKNOWLEDGE = 37;
-    const uint32_t ERROR_INVALID_SIGNATURE = 38;
-    const uint32_t ERROR_READ_ERROR = 39;
-    const uint32_t ERROR_WRITE_ERROR = 40;
-    const uint32_t ERROR_INVALID_DESIGNATOR = 41;
+
+    #define ERROR_CODES \
+        ERROR_CODE(ERROR_NONE, 0) \
+        ERROR_CODE(ERROR_GENERAL, 1) \
+        ERROR_CODE(ERROR_UNAVAILABLE, 2) \
+        ERROR_CODE(ERROR_ASYNC_FAILED, 3) \
+        ERROR_CODE(ERROR_ASYNC_ABORTED, 4) \
+        ERROR_CODE(ERROR_ILLEGAL_STATE, 5) \
+        ERROR_CODE(ERROR_OPENING_FAILED, 6) \
+        ERROR_CODE(ERROR_ACCEPT_FAILED, 7) \
+        ERROR_CODE(ERROR_PENDING_SHUTDOWN, 8) \
+        ERROR_CODE(ERROR_ALREADY_CONNECTED, 9) \
+        ERROR_CODE(ERROR_CONNECTION_CLOSED, 10) \
+        ERROR_CODE(ERROR_TIMEDOUT, 11) \
+        ERROR_CODE(ERROR_INPROGRESS, 12) \
+        ERROR_CODE(ERROR_COULD_NOT_SET_ADDRESS, 13) \
+        ERROR_CODE(ERROR_INCORRECT_HASH, 14) \
+        ERROR_CODE(ERROR_INCORRECT_URL, 15) \
+        ERROR_CODE(ERROR_INVALID_INPUT_LENGTH, 16) \
+        ERROR_CODE(ERROR_DESTRUCTION_SUCCEEDED, 17) \
+        ERROR_CODE(ERROR_DESTRUCTION_FAILED, 18) \
+        ERROR_CODE(ERROR_CLOSING_FAILED, 19) \
+        ERROR_CODE(ERROR_PROCESS_TERMINATED, 20) \
+        ERROR_CODE(ERROR_PROCESS_KILLED, 21) \
+        ERROR_CODE(ERROR_UNKNOWN_KEY, 22) \
+        ERROR_CODE(ERROR_INCOMPLETE_CONFIG, 23) \
+        ERROR_CODE(ERROR_PRIVILIGED_REQUEST, 24) \
+        ERROR_CODE(ERROR_RPC_CALL_FAILED, 25) \
+        ERROR_CODE(ERROR_UNREACHABLE_NETWORK, 26) \
+        ERROR_CODE(ERROR_REQUEST_SUBMITTED, 27) \
+        ERROR_CODE(ERROR_UNKNOWN_TABLE, 28) \
+        ERROR_CODE(ERROR_DUPLICATE_KEY, 29) \
+        ERROR_CODE(ERROR_BAD_REQUEST, 30) \
+        ERROR_CODE(ERROR_PENDING_CONDITIONS, 31) \
+        ERROR_CODE(ERROR_SURFACE_UNAVAILABLE, 32) \
+        ERROR_CODE(ERROR_PLAYER_UNAVAILABLE, 33) \
+        ERROR_CODE(ERROR_FIRST_RESOURCE_NOT_FOUND, 34) \
+        ERROR_CODE(ERROR_SECOND_RESOURCE_NOT_FOUND, 35) \
+        ERROR_CODE(ERROR_ALREADY_RELEASED, 36) \
+        ERROR_CODE(ERROR_NEGATIVE_ACKNOWLEDGE, 37) \
+        ERROR_CODE(ERROR_INVALID_SIGNATURE, 38) \
+        ERROR_CODE(ERROR_READ_ERROR, 39) \
+        ERROR_CODE(ERROR_WRITE_ERROR, 40) \
+        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41)
+
+    #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
+
+    enum ErrorCodes {
+        ERROR_CODES
+        ERROR_COUNT
+    };
+
+    #undef ERROR_CODE
+
+    // Convert error enumerations to string
+
+    template<uint32_t N>
+    inline const TCHAR* _Err2Str()
+    {
+        return _T("");
+    };
+
+    #define ERROR_CODE(CODE, VALUE) \
+        template<> inline const TCHAR* _Err2Str<VALUE>() { return _T(#CODE); }
+
+    ERROR_CODES;
+
+    template<uint32_t N = (ERROR_COUNT - 1)>
+    inline const TCHAR* _bogus_ErrorToString(uint32_t code)
+    {
+        return (code == N? _Err2Str<N>() : _bogus_ErrorToString<N-1>(code));
+    };
+
+    template<>
+    inline const TCHAR* _bogus_ErrorToString<0u>(uint32_t code)
+    {
+        return (code == 0? _Err2Str<0u>() : _Err2Str<~0u>());
+    };
+
+    inline const TCHAR* ErrorToString(uint32_t code)
+    {
+        return _bogus_ErrorToString<>(code);
+    }
+
+    #undef ERROR_CODE
 }
 }
 
