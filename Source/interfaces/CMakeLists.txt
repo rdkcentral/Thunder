@@ -1,5 +1,5 @@
 set(TargetMarshalling ${NAMESPACE}Marshallings)
-set(TargetInterfaces ${NAMESPACE}Interfaces)
+set(TargetDefinitions ${NAMESPACE}Definitions)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 file(GLOB PUBLIC_HEADERS I*.h)
@@ -7,10 +7,11 @@ file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
 file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
 
 list(APPEND PUBLIC_HEADERS Module.h)
+list(APPEND PUBLIC_HEADERS definitions.h)
 
 add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
-add_library(${TargetInterfaces} SHARED
+add_library(${TargetDefinitions} SHARED
         Definitions.cpp
         json/Enumerations.cpp
         )
@@ -21,7 +22,7 @@ target_link_libraries(${TargetMarshalling}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
-target_link_libraries(${TargetInterfaces}
+target_link_libraries(${TargetDefinitions}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
@@ -48,7 +49,7 @@ set_target_properties(${TargetMarshalling} PROPERTIES
         SOVERSION ${VERSION_MAJOR}
         )
 
-set_target_properties(${TargetInterfaces} PROPERTIES
+set_target_properties(${TargetDefinitions} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
@@ -57,7 +58,7 @@ set_target_properties(${TargetInterfaces} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         )
 
-target_include_directories(${TargetInterfaces}
+target_include_directories(${TargetDefinitions}
         PUBLIC
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
@@ -65,7 +66,7 @@ target_include_directories(${TargetInterfaces}
         )
 
 install(
-        TARGETS ${TargetInterfaces} EXPORT ${TargetInterfaces}Targets  # for downstream dependencies
+        TARGETS ${TargetDefinitions} EXPORT ${TargetDefinitions}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib/ COMPONENT libs      # static lib
         LIBRARY DESTINATION lib/ COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
@@ -85,8 +86,8 @@ install(
 )
 
 InstallPackageConfig(
-        TARGETS ${TargetInterfaces}
+        TARGETS ${TargetDefinitions}
         DESCRIPTION "Share lookup tables associated with interface enums."
         )
 
-InstallCMakeConfig(TARGETS ${TargetInterfaces})
+InstallCMakeConfig(TARGETS ${TargetDefinitions})
