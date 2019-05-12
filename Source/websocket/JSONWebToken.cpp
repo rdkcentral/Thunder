@@ -80,7 +80,7 @@ namespace Web
 		if (_mode == JSONWebToken::SHA256) {
             TCHAR signature[((Crypto::SHA256HMAC::Length * 8) / 6) + 4];
             Crypto::SHA256HMAC hash(_key);
-            hash.Input(reinterpret_cast<const uint8_t*>(token.c_str()), token.length());
+            hash.Input(reinterpret_cast<const uint8_t*>(token.c_str()), static_cast<uint16_t>(token.length()));
             const uint8_t* inputSignature = hash.Result(); // 32 length
            
             convertedLength = Core::URL::Base64Encode(inputSignature, hash.Length, signature, sizeof(signature), false);

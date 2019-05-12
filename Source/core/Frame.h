@@ -353,7 +353,7 @@ namespace Core {
         template <typename TYPENAME>
         uint16_t SetBuffer(const uint16_t offset, const TYPENAME& length, const uint8_t buffer[])
         {
-            uint16_t requiredLength(sizeof(TYPENAME) + length);
+            uint16_t requiredLength(static_cast<uint16_t>(sizeof(TYPENAME) + length));
 
             if ((offset + requiredLength) >= _size) {
                 Size(offset + requiredLength);
@@ -412,13 +412,13 @@ namespace Core {
 
             ASSERT((textLength + offset + sizeof(TYPENAME)) <= _size);
 
-            if (textLength + offset + sizeof(TYPENAME) > _size) {
-                textLength = (_size - (offset + sizeof(TYPENAME)));
+            if ((textLength + offset + sizeof(TYPENAME)) > _size) {
+                textLength = (_size - (offset + static_cast<uint16_t>(sizeof(TYPENAME))));
             }
 
             memcpy(buffer, &(_data[offset + sizeof(TYPENAME)]), (textLength > length ? length : textLength));
 
-            return (sizeof(TYPENAME) + textLength);
+            return (static_cast<uint16_t>(sizeof(TYPENAME) + textLength));
         }
 
         uint16_t GetText(const uint16_t offset, string& result) const
