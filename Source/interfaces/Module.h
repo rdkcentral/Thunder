@@ -7,10 +7,10 @@
 
 #include "../core/core.h"
 #include "../com/com.h"
-#include "Ids.h"
 #include "../plugins/IPlugin.h"
 #include "../plugins/IShell.h"
 #include "../plugins/ISubSystem.h"
+#include "Ids.h"
 
 #undef EXTERNAL
 #define EXTERNAL

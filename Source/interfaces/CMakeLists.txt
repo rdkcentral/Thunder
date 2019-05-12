@@ -11,7 +11,7 @@ list(APPEND PUBLIC_HEADERS Module.h)
 add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
 add_library(${TargetInterfaces} SHARED
-        Enumerations.cpp
+        Definitions.cpp
         json/Enumerations.cpp
         )
 

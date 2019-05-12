@@ -1,10 +1,4 @@
-
-#include <core/Enumerate.h>
-#include "JsonData_NetworkControl.h"
-#include "JsonData_RemoteControl.h"
-#include "JsonData_TestUtility.h"
-#include "JsonData_WifiControl.h"
-#include "JsonData_Messenger.h"
+#include"../definitions.h"
 
 namespace WPEFramework {
 

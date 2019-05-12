@@ -1,5 +1,4 @@
-#include "IComposition.h"
-#include "ITVControl.h"
+#include "definitions.h"
 
 namespace WPEFramework {
 
