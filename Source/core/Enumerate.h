@@ -15,8 +15,8 @@ namespace Core {
     // ---- Referenced classes and types ----
 
     // ---- Helper types and constants ----
-#define ENUM_CONVERSION_HANDLER(ENUMERATE) template <> \
-EXTERNAL const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WPEFramework::Core::EnumerateType<ENUMERATE>::Table(const uint16_t);
+#define ENUM_CONVERSION_HANDLER(ENUMERATE) \
+namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<ENUMERATE>* Core::EnumerateType<ENUMERATE>::Table(const uint16_t); }
 
 #define ENUM_CONVERSION_BEGIN(ENUMERATE)                                                            \
     namespace Core {                                                                                \
