@@ -7,7 +7,7 @@
 #include <core/Enumerate.h>
 
 #include "IComposition.h"
-#include "ITVControl.h"
+#include "IStream.h"
 
 #include "json/JsonData_NetworkControl.h"
 #include "json/JsonData_RemoteControl.h"

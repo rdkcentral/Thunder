@@ -1,5 +1,5 @@
 //
-// generated automatically from "ITVControl.h"
+// generated automatically from "IStream.h"
 //
 // implements RPC proxy stubs for:
 //   - class IStream
@@ -10,7 +10,7 @@
 //   - class IPlayer
 //
 
-#include "ITVControl.h"
+#include "IStream.h"
 
 namespace WPEFramework {
 
@@ -32,7 +32,7 @@ namespace ProxyStubs {
     //  (3) virtual IStream::IControl* Control() = 0
     //  (4) virtual void Callback(IStream::ICallback*) = 0
     //  (5) virtual IStream::state State() const = 0
-    //  (6) virtual uint32_t Load(string) = 0
+    //  (6) virtual uint32_t Load(const string&) = 0
     //
 
     ProxyStub::MethodHandler StreamStubMethods[] = {
@@ -150,7 +150,7 @@ namespace ProxyStubs {
             writer.Number<const IStream::state>(output);
         },
 
-        // virtual uint32_t Load(string) = 0
+        // virtual uint32_t Load(const string&) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -458,11 +458,11 @@ namespace ProxyStubs {
     // IStream::IControl::ICallback interface stub definitions
     //
     // Methods:
-    //  (0) virtual void TimeUpdate(uint64_t) = 0
+    //  (0) virtual void TimeUpdate(const uint64_t) = 0
     //
 
     ProxyStub::MethodHandler StreamControlCallbackStubMethods[] = {
-        // virtual void TimeUpdate(uint64_t) = 0
+        // virtual void TimeUpdate(const uint64_t) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -484,12 +484,12 @@ namespace ProxyStubs {
     // IStream::ICallback interface stub definitions
     //
     // Methods:
-    //  (0) virtual void DRM(uint32_t) = 0
-    //  (1) virtual void StateChange(IStream::state) = 0
+    //  (0) virtual void DRM(const uint32_t) = 0
+    //  (1) virtual void StateChange(const IStream::state) = 0
     //
 
     ProxyStub::MethodHandler StreamCallbackStubMethods[] = {
-        // virtual void DRM(uint32_t) = 0
+        // virtual void DRM(const uint32_t) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -504,7 +504,7 @@ namespace ProxyStubs {
             implementation->DRM(param0);
         },
 
-        // virtual void StateChange(IStream::state) = 0
+        // virtual void StateChange(const IStream::state) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -526,12 +526,12 @@ namespace ProxyStubs {
     // IPlayer interface stub definitions
     //
     // Methods:
-    //  (0) virtual IStream* CreateStream(IStream::streamtype) = 0
+    //  (0) virtual IStream* CreateStream(const IStream::streamtype) = 0
     //  (1) virtual uint32_t Configure(PluginHost::IShell*) = 0
     //
 
     ProxyStub::MethodHandler PlayerStubMethods[] = {
-        // virtual IStream* CreateStream(IStream::streamtype) = 0
+        // virtual IStream* CreateStream(const IStream::streamtype) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -610,7 +610,7 @@ namespace ProxyStubs {
     //  (3) virtual IStream::IControl* Control() = 0
     //  (4) virtual void Callback(IStream::ICallback*) = 0
     //  (5) virtual IStream::state State() const = 0
-    //  (6) virtual uint32_t Load(string) = 0
+    //  (6) virtual uint32_t Load(const string&) = 0
     //
 
     class StreamProxy final : public ProxyStub::UnknownProxyType<IStream> {
@@ -970,7 +970,7 @@ namespace ProxyStubs {
     // IStream::IControl::ICallback interface proxy definitions
     //
     // Methods:
-    //  (0) virtual void TimeUpdate(uint64_t) = 0
+    //  (0) virtual void TimeUpdate(const uint64_t) = 0
     //
 
     class StreamControlCallbackProxy final : public ProxyStub::UnknownProxyType<IStream::IControl::ICallback> {
@@ -980,7 +980,7 @@ namespace ProxyStubs {
         {
         }
 
-        void TimeUpdate(uint64_t param0) override
+        void TimeUpdate(const uint64_t param0) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
@@ -997,8 +997,8 @@ namespace ProxyStubs {
     // IStream::ICallback interface proxy definitions
     //
     // Methods:
-    //  (0) virtual void DRM(uint32_t) = 0
-    //  (1) virtual void StateChange(IStream::state) = 0
+    //  (0) virtual void DRM(const uint32_t) = 0
+    //  (1) virtual void StateChange(const IStream::state) = 0
     //
 
     class StreamCallbackProxy final : public ProxyStub::UnknownProxyType<IStream::ICallback> {
@@ -1008,7 +1008,7 @@ namespace ProxyStubs {
         {
         }
 
-        void DRM(uint32_t param0) override
+        void DRM(const uint32_t param0) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
@@ -1020,7 +1020,7 @@ namespace ProxyStubs {
             Invoke(newMessage);
         }
 
-        void StateChange(IStream::state param0) override
+        void StateChange(const IStream::state param0) override
         {
             IPCMessage newMessage(BaseClass::Message(1));
 
@@ -1037,7 +1037,7 @@ namespace ProxyStubs {
     // IPlayer interface proxy definitions
     //
     // Methods:
-    //  (0) virtual IStream* CreateStream(IStream::streamtype) = 0
+    //  (0) virtual IStream* CreateStream(const IStream::streamtype) = 0
     //  (1) virtual uint32_t Configure(PluginHost::IShell*) = 0
     //
 
@@ -1048,7 +1048,7 @@ namespace ProxyStubs {
         {
         }
 
-        IStream* CreateStream(IStream::streamtype param0) override
+        IStream* CreateStream(const IStream::streamtype param0) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
