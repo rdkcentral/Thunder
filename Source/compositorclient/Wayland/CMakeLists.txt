@@ -80,3 +80,9 @@ InstallPackageConfig(
         DESCRIPTION "A compositor implementation wrapper for EGL and key handling.")
 
 InstallCMakeConfig(TARGETS ${TARGET})
+
+install(
+	FILES Implementation.h
+        DESTINATION include/${NAMESPACE}/compositorclient
+)
+

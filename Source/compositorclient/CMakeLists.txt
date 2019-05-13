@@ -8,6 +8,6 @@ message("Setup ${TARGET} v${VERSION}...")
 add_subdirectory (${PLUGIN_COMPOSITOR_IMPLEMENTATION})
 
 install(
-	FILES Client.h 
-        DESTINATION include/${NAMESPACE}/compositor
+	FILES Client.h
+        DESTINATION include/${NAMESPACE}/compositorclient
 )

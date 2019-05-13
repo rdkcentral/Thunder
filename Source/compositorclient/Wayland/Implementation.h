@@ -18,7 +18,7 @@
 #include <bcm_host.h>
 #endif
 
-#include "../Client.h"
+#include <compositorclient/Client.h>
 
 //
 // Forward declaration of the wayland specific types.
@@ -327,12 +327,6 @@ namespace Wayland {
             int32_t Height;
         };
 
-        struct IProcess {
-            virtual ~IProcess() {}
-
-            virtual bool Dispatch() = 0;
-        };
-
         class Surface {
         public:
             inline Surface()
@@ -558,38 +552,12 @@ namespace Wayland {
 
         static Display& Instance(const std::string& displayName);
 
-        ~Display()
-        {
-            ASSERT(_refCount == 0);
-            DisplayMap::iterator index(_displays.find(_displayName));
-
-            if (index != _displays.end()) {
-                _displays.erase(index);
-            }
-#ifdef BCM_HOST
-            bcm_host_deinit();
-#endif
-        }
+        virtual ~Display();
 
     public:
         // Lifetime management
-        virtual void AddRef() const
-        {
-            if (Core::InterlockedIncrement(_refCount) == 1) {
-                const_cast<Display*>(this)->Initialize();
-            }
-            return;
-        }
-        virtual uint32_t Release() const
-        {
-            if (Core::InterlockedDecrement(_refCount) == 0) {
-                const_cast<Display*>(this)->Deinitialize();
-
-                //Indicate Wayland connection is closed properly
-                return (Core::ERROR_CONNECTION_CLOSED);
-            }
-            return (Core::ERROR_NONE);
-        }
+        virtual void AddRef() const;
+        virtual uint32_t Release() const;
 
         // Methods
         virtual EGLNativeDisplayType Native() const override

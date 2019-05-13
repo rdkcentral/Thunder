@@ -698,6 +698,19 @@ namespace Wayland {
         }
         return nullptr;
     }
+    Display::~Display()
+    {
+        ASSERT(_refCount == 0);
+        DisplayMap::iterator index(_displays.find(_displayName));
+
+        if (index != _displays.end()) {
+            _displays.erase(index);
+        }
+#ifdef BCM_HOST
+        bcm_host_deinit();
+#endif
+    }
+
 
     void Display::Initialize()
     {
@@ -1144,6 +1157,25 @@ namespace Wayland {
         }
         _adminLock.Unlock();
         return result;
+    }
+
+    void Display::AddRef() const
+    {
+        if (Core::InterlockedIncrement(_refCount) == 1) {
+            const_cast<Display*>(this)->Initialize();
+        }
+        return;
+    }
+
+    uint32_t Display::Release() const
+    {
+        if (Core::InterlockedDecrement(_refCount) == 0) {
+            const_cast<Display*>(this)->Deinitialize();
+
+            //Indicate Wayland connection is closed properly
+            return (Core::ERROR_CONNECTION_CLOSED);
+        }
+        return (Core::ERROR_NONE);
     }
 
     int Display::FileDescriptor() const
