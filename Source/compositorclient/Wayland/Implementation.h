@@ -9,17 +9,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define EGL_EGLEXT_PROTOTYPES 1
-
-#include <EGL/egl.h>
-#include <EGL/eglext.h>
-
-#ifdef BCM_HOST
-#include <bcm_host.h>
-#endif
-
-#include <compositorclient/Client.h>
-
 //
 // Forward declaration of the wayland specific types.
 // We do not want to make this header file (tsemaphore.hhe C++ abstraction)

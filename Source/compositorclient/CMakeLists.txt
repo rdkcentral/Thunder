@@ -9,5 +9,5 @@ add_subdirectory (${PLUGIN_COMPOSITOR_IMPLEMENTATION})
 
 install(
 	FILES Client.h
-        DESTINATION include/${NAMESPACE}/compositorclient
+        DESTINATION include/${NAMESPACE}/compositor
 )

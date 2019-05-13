@@ -1,4 +1,15 @@
 #include "Module.h"
+
+#define EGL_EGLEXT_PROTOTYPES 1
+
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
+#ifdef BCM_HOST
+#include <bcm_host.h>
+#endif
+
+#include "../Client.h"
 #include "Implementation.h"
 
 #include <GLES2/gl2.h>
