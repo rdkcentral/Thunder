@@ -1,7 +1,5 @@
 #include "Module.h"
 
-MODULE_NAME_DECLARATION(BUILD_REFERENCE)
-
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <bcm_host.h>

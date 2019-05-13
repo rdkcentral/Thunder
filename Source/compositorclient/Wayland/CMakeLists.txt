@@ -51,7 +51,7 @@ endif ()
 
 target_include_directories(${TARGET}
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../Client>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
         $<INSTALL_INTERFACE:include/${NAMESPACE}>
     PRIVATE
         ${EGL_INCLUDE_DIRS}
