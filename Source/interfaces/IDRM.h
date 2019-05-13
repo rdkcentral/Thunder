@@ -207,7 +207,7 @@ public:
     virtual void OnKeyMessage(
         const uint8_t* f_pbKeyMessage, //__in_bcount(f_cbKeyMessage)
         uint32_t f_cbKeyMessage, //__in
-        char* f_pszUrl)
+        const char* f_pszUrl)
         = 0; //__in_z_opt
 
     // Event fired when MediaKeySession has found a usable key.
