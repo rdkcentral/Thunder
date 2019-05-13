@@ -327,6 +327,12 @@ namespace Wayland {
             int32_t Height;
         };
 
+        struct IProcess {
+            virtual ~IProcess() {}
+
+            virtual bool Dispatch() = 0;
+        };
+
         class Surface {
         public:
             inline Surface()
