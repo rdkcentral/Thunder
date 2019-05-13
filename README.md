@@ -20,3 +20,6 @@ A C++ platform abstraction layer for generic functionality.
 *  -DPLUGINS=ON ,Include the plugin library.
 *  -DDEBUG=ON ,Enable debug build for WPEFramework.
 *  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in WPEFramework.
+
+**Internal plugins**
+* [Controller](Source/WPEFramework/ControllerPlugin.md)
