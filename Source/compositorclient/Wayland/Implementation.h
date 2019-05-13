@@ -824,5 +824,3 @@ namespace Wayland {
     };
 } // Wayland
 } // WPEFramework
-
-#endif // WAYLAND_CPP_ABSTRACTION_H
