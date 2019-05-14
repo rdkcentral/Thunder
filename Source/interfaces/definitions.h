@@ -14,6 +14,7 @@
 #include "json/JsonData_TestUtility.h"
 #include "json/JsonData_WifiControl.h"
 #include "json/JsonData_Messenger.h"
+#include "json/JsonData_Streamer.h"
 
 #undef EXTERNAL
 

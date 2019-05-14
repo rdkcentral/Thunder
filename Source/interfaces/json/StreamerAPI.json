@@ -1,0 +1,289 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Streamer API",
+    "class": "Streamer",
+    "description": "Streamer JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "type": {
+      "description": "Type of the stream",
+      "type": "string",
+      "enum": [
+        "Stubbed",
+        "DVB",
+        "VOD"
+      ],
+      "example": "DVB"
+    },
+    "drm": {
+      "description": "DRM/CAS attached with stream",
+      "type": "string",
+      "enum": [
+        "UnKnown",
+        "ClearKey",
+        "PlayReady",
+        "Widevine"
+      ],
+      "example": "PlayeReady" 
+    },
+    "state": {
+      "description": "Player State",
+      "type": "string",
+      "enum": [
+        "Idle",
+        "Loading",
+         "Prepared",
+         "Paused",
+         "Playing",
+         "Error"
+      ],
+      "example": "Playing"
+    },
+    "geometry": {
+      "description": "Geometry value of the window",
+      "type": "object",
+      "properties": {
+        "x": {
+          "description": "X co-ordinate",
+          "type": "number",
+          "example": "0" 
+        },
+        "y": {
+          "description": "Y co-ordinate",
+          "type": "number",
+          "example": "0"
+        },
+        "width": {
+          "description": "Width of the window",
+          "type": "number",
+          "example": "0"
+        },
+        "height": {
+          "description": "Height of the window",
+          "type": "number",
+          "example": "0"
+        }
+      }
+    }
+  },
+  
+  "methods": {
+    "Streamer.1.Count": {
+      "summary": "Returns the player numbers in use",
+      "result": {
+      "description": "Number of player instances are running",
+        "type": "number"
+      }
+    },
+    "Streamer.1.Type": {
+      "summary": "Returns the streame type - DVB or VOD",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "$ref": "#/definitions/type"
+      }
+    },
+    "Streamer.1.DRM": {
+      "summary": "Returns the DRM Type attached with stream",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "$ref": "#/definitions/drm"
+      }
+    },
+    "Streamer.1.State": {
+      "summary": "Returns the current state of Player",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+         "$ref": "#/definitions/state"
+      }
+    },
+    "Streamer.1.Metadata": {
+      "summary": "Return stream metadata",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "type": "string",
+        "example": "It is based on the stream"
+      }
+    },
+    "Streamer.1.Speed": {
+      "summary": "Return current speed of the stream",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "type": "number"
+      }
+    },
+    "Streamer.1.Position": {
+      "summary": "Return current position of the stream",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "type": "number"
+      }
+    },
+    "Streamer.1.Window": {
+      "summary": "Return geometry value of the screen",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+         "$ref": "#/definitions/geometry"
+      }
+    },
+    "Streamer.1.Speed": {
+      "summary": "Set speed of the stream",
+      "params": {
+        "type": "object",
+        "properties": {
+           "index": {
+             "description": "Index of the streamer instance",
+             "type": "number",
+             "example": 0
+           },
+           "speed": {
+             "description": "Speed value to be set",
+             "type": "number",
+             "example": 0
+           }
+         }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Streamer.1.Position": {
+      "summary": "Set position of the stream",
+      "params": {
+        "type": "object",
+        "properties": {
+           "index": {
+             "description": "Index of the streamer instance",
+             "type": "number",
+             "example": 0
+           },
+           "position": {
+             "description": "Absolute position value to be set",
+             "type": "number",
+             "example": 0
+           }
+         }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        { 
+          "description": "Player is invalid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        { 
+          "description": "Player instance not avaialbe",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "Streamer.1.Window": {
+      "summary": "Set geometry value of the screen",
+      "params": {
+        "type": "object",
+         "properties": {
+           "index": {
+             "description": "Index of the streamer instance",
+             "type": "number",
+             "example": 0
+           },
+           "geometry": {
+             "$ref": "#/definitions/geometry"
+           }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Streamer.1.Load": {
+      "summary": "Load the URL given in the body onto this stream",
+      "params": {
+        "type": "string"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Player is invalid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Passed in config is invalid",
+          "$ref": "#/common/errors/incompleteconfig"
+        }
+      ]
+    },
+    "Streamer.1.Attach": {
+      "summary": "Attach a decoder to the primer of stream <Number>",
+       "params": {
+         "description": "Index of the streamer instance",
+         "type": "number"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Streamer.1.Detach": {
+      "summary": "Detach a decoder to the primer of stream <Number>",
+       "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "Streamer.1.CreateStream": {
+      "summary": "Create an instance of a stream of type <Type>, Body return the stream index for reference in the other calls.",
+      "params": {
+        "description": "Type of the streamer to be created",
+        "type": "string",
+        "example": "DVB"
+      },
+      "result": {
+        "description": "Index of the streamer",
+        "type": "number"
+      }
+    },
+    "Streamer.1.DeleteStream": {
+      "summary": "Delete the given streamer instance",
+      "params": {
+        "description": "Index of the streamer instance",
+        "type": "number"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  },
+  "events": {
+  }
+}

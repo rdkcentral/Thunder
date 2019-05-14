@@ -52,4 +52,27 @@ ENUM_CONVERSION_BEGIN(JsonData::Messenger::UserupdateParamsData::ActionType)
     { JsonData::Messenger::UserupdateParamsData::ActionType::LEFT, _TXT("left") },
 ENUM_CONVERSION_END(JsonData::Messenger::UserupdateParamsData::ActionType);
 
+// Streamer
+ENUM_CONVERSION_BEGIN(JsonData::Streamer::TypeResultData::StreamType)
+    { JsonData::Streamer::TypeResultData::StreamType::STUBBED, _TXT("Stubbed") },
+    { JsonData::Streamer::TypeResultData::StreamType::DVB, _TXT("DVB") },
+    { JsonData::Streamer::TypeResultData::StreamType::VOD, _TXT("VOD") },
+ENUM_CONVERSION_END(JsonData::Streamer::TypeResultData::StreamType);
+
+ENUM_CONVERSION_BEGIN(JsonData::Streamer::DRMResultData::DrmType)
+    { JsonData::Streamer::DRMResultData::DrmType::UNKNOWN, _TXT("UnKnown") },
+    { JsonData::Streamer::DRMResultData::DrmType::CLEARKEY, _TXT("ClearKey") },
+    { JsonData::Streamer::DRMResultData::DrmType::PLAYREADY, _TXT("PlayReady") },
+    { JsonData::Streamer::DRMResultData::DrmType::WIDEVINE, _TXT("Widevine") },
+ENUM_CONVERSION_END(JsonData::Streamer::DRMResultData::DrmType);
+
+ENUM_CONVERSION_BEGIN(JsonData::Streamer::StateResultData::StateType)
+    { JsonData::Streamer::StateResultData::StateType::IDLE, _TXT("Idle") },
+    { JsonData::Streamer::StateResultData::StateType::LOADING, _TXT("Loading") },
+    { JsonData::Streamer::StateResultData::StateType::PREPARED, _TXT("Prepared") },
+    { JsonData::Streamer::StateResultData::StateType::PAUSED, _TXT("Paused") },
+    { JsonData::Streamer::StateResultData::StateType::PLAYING, _TXT("Playing") },
+    { JsonData::Streamer::StateResultData::StateType::ERROR, _TXT("Error") },
+ENUM_CONVERSION_END(JsonData::Streamer::StateResultData::StateType);
+
 }
