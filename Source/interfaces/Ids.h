@@ -91,8 +91,9 @@ namespace Exchange {
         ID_PLAYER,
 
         ID_DSGCC_CLIENT,
-        ID_DSGCC_CLIENT_NOTIFICATION
+        ID_DSGCC_CLIENT_NOTIFICATION,
 
+		ID_PERFORMANCE
     };
 }
 }

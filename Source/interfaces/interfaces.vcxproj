@@ -64,6 +64,7 @@
     <ClInclude Include="IMemory.h" />
     <ClInclude Include="INetflix.h" />
     <ClInclude Include="IPackager.h" />
+    <ClInclude Include="IPerformance.h" />
     <ClInclude Include="IPlayGiga.h" />
     <ClInclude Include="IPower.h" />
     <ClInclude Include="IProvisioning.h" />
