@@ -10,14 +10,14 @@
     "$ref": "common.json"
   },
   "definitions": {
-    "type": {
+    "stream": {
       "description": "Type of the stream",
       "type": "string",
-      "enum": [
-        "Stubbed",
-        "DVB",
-        "VOD"
-      ],
+        "enum": [
+          "Stubbed",
+          "DVB",
+          "VOD"
+        ],
       "example": "DVB"
     },
     "drm": {
@@ -29,7 +29,7 @@
         "PlayReady",
         "Widevine"
       ],
-      "example": "PlayeReady" 
+      "example": "PlayReady"
     },
     "state": {
       "description": "Player State",
@@ -73,11 +73,14 @@
   },
   
   "methods": {
-    "Streamer.1.Count": {
+    "Streamer.1.Ids": {
       "summary": "Returns the player numbers in use",
       "result": {
-      "description": "Number of player instances are running",
-        "type": "number"
+      "type": "array",
+        "items": {
+          "type": "number",
+          "description": "Number of player instances are running"
+        }
       }
     },
     "Streamer.1.Type": {
@@ -87,8 +90,16 @@
         "type": "number"
       },
       "result": {
-        "$ref": "#/definitions/type"
-      }
+        "type": "object",
+        "properties": {
+          "stream": {
+            "$ref": "#/definitions/stream"
+          }
+        }
+      },
+      "required": [
+          "stream"
+        ]
     },
     "Streamer.1.DRM": {
       "summary": "Returns the DRM Type attached with stream",
@@ -97,7 +108,12 @@
         "type": "number"
       },
       "result": {
-        "$ref": "#/definitions/drm"
+        "type": "object",
+        "properties": {
+          "drm": {
+            "$ref": "#/definitions/drm"
+          }
+        }
       }
     },
     "Streamer.1.State": {
@@ -107,7 +123,12 @@
         "type": "number"
       },
       "result": {
-         "$ref": "#/definitions/state"
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/state"
+          }
+        }
       }
     },
     "Streamer.1.Metadata": {
@@ -121,7 +142,7 @@
         "example": "It is based on the stream"
       }
     },
-    "Streamer.1.Speed": {
+    "Streamer.1.GetSpeed": {
       "summary": "Return current speed of the stream",
       "params": {
         "description": "Index of the streamer instance",
@@ -131,7 +152,7 @@
         "type": "number"
       }
     },
-    "Streamer.1.Position": {
+    "Streamer.1.GetPosition": {
       "summary": "Return current position of the stream",
       "params": {
         "description": "Index of the streamer instance",
@@ -141,7 +162,7 @@
         "type": "number"
       }
     },
-    "Streamer.1.Window": {
+    "Streamer.1.GetWindow": {
       "summary": "Return geometry value of the screen",
       "params": {
         "description": "Index of the streamer instance",
@@ -170,7 +191,21 @@
       },
       "result": {
         "$ref": "#/common/results/void"
-      }
+      },
+      "errors": [
+        {
+          "description": "Player is invalid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Player is not available",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Generic error",
+          "$ref": "#/common/errors/general"
+        }
+      ]
     },
     "Streamer.1.Position": {
       "summary": "Set position of the stream",
@@ -225,7 +260,18 @@
     "Streamer.1.Load": {
       "summary": "Load the URL given in the body onto this stream",
       "params": {
-        "type": "string"
+        "type": "object",
+         "properties": {
+           "index": {
+             "description": "Index of the streamer instance",
+             "type": "number",
+             "example": 0
+           },
+           "url": {
+             "description": "URL of the stream",
+              "type": "string"
+           }
+         }
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -236,8 +282,12 @@
           "$ref": "#/common/errors/illegalstate"
         },
         {
-          "description": "Passed in config is invalid",
-          "$ref": "#/common/errors/incompleteconfig"
+          "description": "Player is not available",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Incorrect URL given",
+          "$ref": "#/common/errors/incorrecturl"
         }
       ]
     },
@@ -249,7 +299,17 @@
       },
       "result": {
         "$ref": "#/common/results/void"
-      }
+      },
+      "errors": [
+        {
+          "description": "Player is invalid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Player is not available",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
     },
     "Streamer.1.Detach": {
       "summary": "Detach a decoder to the primer of stream <Number>",
@@ -259,14 +319,24 @@
       },
       "result": {
         "$ref": "#/common/results/void"
-      }
+      },
+      "errors": [
+        {
+          "description": "Player is invalid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Player is not available",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
     },
     "Streamer.1.CreateStream": {
       "summary": "Create an instance of a stream of type <Type>, Body return the stream index for reference in the other calls.",
       "params": {
         "description": "Type of the streamer to be created",
-        "type": "string",
-        "example": "DVB"
+        "type": "number",
+        "example": "1"
       },
       "result": {
         "description": "Index of the streamer",
