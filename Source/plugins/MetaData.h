@@ -191,6 +191,7 @@ namespace PluginHost {
             Plugins.Clear();
             Channels.Clear();
             Bridges.Clear();
+            containers.Clear();
             Process.Clear();
         }
 
@@ -199,6 +200,7 @@ namespace PluginHost {
         Core::JSON::ArrayType<Service> Plugins;
         Core::JSON::ArrayType<Channel> Channels;
         Core::JSON::ArrayType<Bridge> Bridges;
+        Core::JSON::ArrayType<Core::JSON::String> containers;
         Server Process;
         Core::JSON::String Value;
     };

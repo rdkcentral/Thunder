@@ -1,5 +1,10 @@
 #include "Controller.h"
 #include "SystemInfo.h"
+#include <ProcessContainer.h>
+
+#ifdef PROCESSCONTAINERS_ENABLED 
+#pragma message Huppel was here
+#endif
 
 namespace WPEFramework {
 
@@ -44,9 +49,12 @@ namespace Plugin {
         }
     }
 
-    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
+   // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
+
+//        Test t = Test::a | Test::b;
+
         ASSERT(_service == nullptr);
         ASSERT(_downloader == nullptr);
         ASSERT(_probe == nullptr);
@@ -265,6 +273,19 @@ namespace Plugin {
                 PluginHost::MetaData::Bridge newElement((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
                 response->Bridges.Add(newElement);
             }
+
+            result->Body(Core::proxy_cast<Web::IBody>(response));
+        } else if (index.Current() == _T("ListLXCContainers")) {
+
+            Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
+
+            ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance(string());
+
+//            response->containers.Add(Core::JSON::String(admin.GetNames()));
+
+            Core::JSON::String s;
+            s = admin.GetNames();
+            response->containers.Add(s);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("SubSystems")) {
