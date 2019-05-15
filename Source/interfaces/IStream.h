@@ -22,7 +22,9 @@ namespace Exchange {
 
         enum streamtype {
             Stubbed = 0,
-            DVB
+            DVB,
+            ATSC,
+            VOD
         };
 
         enum drmtype {
@@ -57,6 +59,7 @@ namespace Exchange {
 
             virtual ~IControl(){};
 
+            virtual RPC::IValueIterator* Speeds() const = 0;
             virtual void Speed(const int32_t request) = 0;
             virtual int32_t Speed() const = 0;
             virtual void Position(const uint64_t absoluteTime) = 0;
@@ -84,7 +87,7 @@ namespace Exchange {
         virtual IControl* Control() = 0;
         virtual void Callback(IStream::ICallback* callback) = 0;
         virtual state State() const = 0;
-        virtual uint32_t Load(const std::string& configuration) = 0;
+        virtual uint32_t Load(const string& configuration) = 0;
     };
 
     struct IPlayer : virtual public Core::IUnknown {
