@@ -43,8 +43,14 @@ static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
-OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount,
-                                     const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength) {
+OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength)
+{
+    return opencdm_gstreamer_session_decrypt(session, reinterpret_cast<GstBuffer*>(buffer), subSample, subSampleCount, IV, IVLength, keyID, keyIDLength, /* initWithLast15 = */ 0);
+}
+
+OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession * session, GstBuffer* buffer, void* subSample, const uint32_t subSampleCount, const uint8_t IV[], uint16_t IVLength,
+    const uint8_t keyID[], uint16_t keyIDLength, uint32_t initWithLast15)
+{
     OpenCDMError result (ERROR_INVALID_SESSION);
 
     if (session != nullptr) {

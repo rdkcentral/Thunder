@@ -4,6 +4,9 @@
 
 #include "open_cdm.h"
 
+struct _GstBuffer;
+typedef struct _GstBuffer GstBuffer;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,6 +29,9 @@ extern "C" {
  */
     OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount,
                                          const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength);
+
+    OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession * session, GstBuffer* buffer, void* subSample, const uint32_t subSampleCount,
+                                         const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength, uint32_t initWithLast15);
 
 #ifdef __cplusplus
 }
