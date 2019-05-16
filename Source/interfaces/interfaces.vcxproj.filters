@@ -69,9 +69,6 @@
     <ClCompile Include="ProxyStubs_TestController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs_TVControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs_WebDriver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

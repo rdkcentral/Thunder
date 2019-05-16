@@ -152,7 +152,7 @@ namespace Core {
                 uint16_t result = 0;
 
                 while (result < maxLength) {
-                    if ((_current == nullptr) && (_offset < 8)) {
+					if ((_current == nullptr) && (_offset < 8)) {
                         // We have nothing, start by getting the length/command
                         while ((_offset < 4) && (result < maxLength)) {
                             _length |= ((stream[result] & (_offset == 3 ? 0xFF : 0x7F)) << (7 * _offset));
@@ -924,9 +924,13 @@ namespace Core {
 
                     std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(_inbound->Label()));
 
+					ASSERT(index != _handlers.end());
+
                     if (index != _handlers.end()) {
                         procedure = (*index).second;
                         inbound = _inbound;
+                    } else {
+                        TRACE_L1("No handler defined to handle the incoming frames. [%d]", _inbound->Label());
                     }
 
                     _inbound.Release();
@@ -1127,9 +1131,7 @@ namespace Core {
 
                 if (handler.IsValid() == true) {
                     _parent.CallProcedure(handler, inbound);
-                } else {
-                    TRACE_L1("No handler defined to handle the incoming frames. [%d]", message->Label());
-                }
+                } 
             }
 
             // Notification of a Response send.

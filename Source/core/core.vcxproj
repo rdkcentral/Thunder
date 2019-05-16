@@ -70,6 +70,7 @@
     <ClInclude Include="SocketPort.h" />
     <ClInclude Include="SocketServer.h" />
     <ClInclude Include="StateTrigger.h" />
+    <ClInclude Include="StopWatch.h" />
     <ClInclude Include="Stream.h" />
     <ClInclude Include="StreamJSON.h" />
     <ClInclude Include="StreamText.h" />

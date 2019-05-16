@@ -102,9 +102,6 @@ namespace RPC {
         Register(_handler->InvokeHandler());
         Register(_handler->AnnounceHandler());
         _handler->AnnounceHandler(&_announcements);
-
-        // For now clients do not support announce messages from the server...
-        // Register(_handler->AnnounceHandler());
     }
 
     CommunicatorClient::~CommunicatorClient()
@@ -180,13 +177,11 @@ namespace RPC {
 
             uint32_t result = Invoke<RPC::AnnounceMessage>(_announceMessage, this);
 
-            TRACE_L1("Todo Announce message handled. %d", __LINE__);
-
             if (result != Core::ERROR_NONE) {
                 TRACE_L1("Error during invoke of AnnounceMessage: %d", result);
             }
         } else {
-            TRACE_L1("Connection to the server is down (ticket has been raised: WPE-255)");
+            TRACE_L1("Connection to the server is down");
         }
     }
 
@@ -197,17 +192,19 @@ namespace RPC {
 
         ASSERT(dynamic_cast<RPC::AnnounceMessage*>(&element) != nullptr);
 
-        // Is result of an announce message, contains default trace categories in JSON format.
-        string jsonDefaultCategories(announceMessage->Response().TraceCategories());
+		if (announceMessage->Response().IsSet() == true) {
+            // Is result of an announce message, contains default trace categories in JSON format.
+            string jsonDefaultCategories(announceMessage->Response().TraceCategories());
 
-        if (jsonDefaultCategories.empty() == false) {
-            Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
-        }
+            if (jsonDefaultCategories.empty() == false) {
+                Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+            }
 
-        string proxyStubPath(announceMessage->Response().ProxyStubPath());
-        if (proxyStubPath.empty() == false) {
-            // Also load the ProxyStubs before we do anything else
-            RPC::LoadProxyStubs(proxyStubPath);
+            string proxyStubPath(announceMessage->Response().ProxyStubPath());
+            if (proxyStubPath.empty() == false) {
+                // Also load the ProxyStubs before we do anything else
+                RPC::LoadProxyStubs(proxyStubPath);
+            }
         }
 
         // Set event so WaitForCompletion() can continue.

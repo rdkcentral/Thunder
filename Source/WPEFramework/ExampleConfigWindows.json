@@ -1,7 +1,7 @@
 {
   "port": 80,
   "binding": "0.0.0.0",
-  "interface":  "Ethernet",
+  "interface":  "ETHERNET",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",

@@ -174,6 +174,7 @@ typedef std::string string;
 //#endif
 
 #define LITTLE_ENDIAN_PLATFORM 1
+#undef ERROR
 
 #else
 #ifndef __LINUX__

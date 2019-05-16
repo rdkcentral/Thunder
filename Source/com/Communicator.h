@@ -1171,10 +1171,8 @@ namespace RPC {
 
                 _announceMessage->Parameters().Set(className, INTERFACE::ID, versionId);
 
-                BaseClass::Invoke(_announceMessage, waitTime);
-
                 // Lock event until Dispatch() sets it.
-                if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
+                if (BaseClass::Invoke(_announceMessage, waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
                     ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
@@ -1186,7 +1184,7 @@ namespace RPC {
 
                         ASSERT(baseChannel.IsValid() == true);
 
-                        result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+						result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
                     }
                 }
             }

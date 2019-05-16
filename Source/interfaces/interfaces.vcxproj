@@ -41,7 +41,6 @@
     <ClCompile Include="ProxyStubs_RtspClient.cpp" />
     <ClCompile Include="ProxyStubs_Streaming.cpp" />
     <ClCompile Include="ProxyStubs_TestController.cpp" />
-    <ClCompile Include="ProxyStubs_TVControl.cpp" />
     <ClCompile Include="ProxyStubs_WebDriver.cpp" />
     <ClCompile Include="ProxyStubs_WebServer.cpp" />
   </ItemGroup>

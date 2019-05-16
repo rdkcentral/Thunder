@@ -288,14 +288,17 @@ namespace RPC {
             void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
             {
                 _data.SetNumber<void*>(0, implementation);
-                uint16_t length = _data.SetText(4, proxyStubPath);
-                _data.SetText(4 + length, traceCategories);
+                uint16_t length = _data.SetText(sizeof(void*), proxyStubPath);
+                _data.SetText(sizeof(void*) + length, traceCategories);
             }
+			inline bool IsSet() const {
+                return (_data.Size() > 0);
+			}
             string ProxyStubPath() const
             {
                 string value;
 
-                _data.GetText(4, value);
+                _data.GetText(sizeof(void*), value);
 
                 return (value);
             }
@@ -303,7 +306,7 @@ namespace RPC {
             {
                 string value;
 
-                _data.GetText(4 + _data.GetText(4, value), value);
+                _data.GetText(sizeof(void*) + _data.GetText(sizeof(void*), value), value);
 
                 return (value);
             }

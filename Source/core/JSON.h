@@ -611,7 +611,6 @@ namespace Core {
             {
                 return this;
             }
-
             virtual IDirect* DirectParser() override
             {
                 return nullptr;
