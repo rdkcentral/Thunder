@@ -11,9 +11,17 @@ namespace ProcessContainers {
             IContainer() = default;
             virtual ~IContainer() = default;
 
+            virtual const string& Id() const = 0;
+            virtual void Start() = 0;
+
+            virtual void AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
         };
 
-        static IContainerAdministrator& Instance(const string& configuration);
+        static IContainerAdministrator& Instance();
+
+        // will search in the order, [0], [1], ...
+        virtual void ContainerDefinitionSearchPaths(const std::vector<string>&& searchpaths) = 0;  
 
         IContainerAdministrator() = default;
         virtual ~IContainerAdministrator() = default;
@@ -23,7 +31,7 @@ namespace ProcessContainers {
 //        virtual uint32_t Release() const = 0;
 
         // Methods
-        virtual IContainer* Create() = 0;
+        virtual IContainer* Container(const string& id) = 0;
 
         virtual string  GetNames() const = 0; 
     };

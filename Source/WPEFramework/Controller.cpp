@@ -279,9 +279,18 @@ namespace Plugin {
 
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance(string());
+            ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
+            admin.ContainerDefinitionSearchPaths({string("/home/marcelf/.local/share/lxc/")});
 
 //            response->containers.Add(Core::JSON::String(admin.GetNames()));
+
+            ProcessContainers::IContainerAdministrator::IContainer* container( admin.Container("p2") );
+
+            if( container != nullptr ) {
+                container->Start();
+
+                container->Release();
+            }
 
             Core::JSON::String s;
             s = admin.GetNames();
