@@ -65,7 +65,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession * session, 
 
         uint8_t *mappedSubSample = nullptr;
         uint32_t mappedSubSampleSize = 0;
-        if (subSample != nullptr && mappedBuffer(reinterpret_cast<GstBuffer*>(subSample), true, &mappedSubSample, &mappedSubSampleSize) == false) {
+        if (subSample != nullptr && mappedBuffer(reinterpret_cast<GstBuffer*>(subSample), false, &mappedSubSample, &mappedSubSampleSize) == false) {
 
             printf("Invalid subsample buffer.\n");
             return (ERROR_INVALID_DECRYPT_BUFFER);
