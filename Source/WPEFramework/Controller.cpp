@@ -2,10 +2,6 @@
 #include "SystemInfo.h"
 #include <ProcessContainer.h>
 
-#ifdef PROCESSCONTAINERS_ENABLED 
-#pragma message Huppel was here
-#endif
-
 namespace WPEFramework {
 
 namespace Plugin {

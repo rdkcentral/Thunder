@@ -6,6 +6,10 @@
 #include "IUnknown.h"
 #include "Module.h"
 
+#ifdef PROCESSCONTAINERS_ENABLED 
+    #include <ProcessContainer.h>
+#endif
+
 #include "../tracing/TraceUnit.h"
 
 namespace WPEFramework {
@@ -433,6 +437,136 @@ namespace RPC {
         private:
             Core::Process _process;
         };
+
+#ifndef PROCESSCONTAINERS_ENABLED 
+
+        class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        private:
+            friend class Core::Service<ContainerRemoteProcess>;
+
+            ContainerRemoteProcess() = delete; // note: not constructbale
+            ContainerRemoteProcess(const MasterRemoteProcess&) = delete;
+            ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
+
+        public:
+
+            inline static void ContainerInitialization() {}
+            inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config) {
+                SYSLOG(Logging::Notification, ("Trying to create a ProcessContainer while Containerization support is not enabled"));
+                return nullptr;
+            }
+        public:
+            uint32_t Id() const override
+            {
+                return 0;
+            }
+        };
+
+#else
+
+        class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        private:
+            friend class Core::Service<ContainerRemoteProcess>;
+
+            ContainerRemoteProcess() = delete;
+            ContainerRemoteProcess(const MasterRemoteProcess&) = delete;
+            ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
+
+        protected:
+            ContainerRemoteProcess(RemoteProcessMap* parent, uint32_t* pid, const Core::Process::Options* options, const string& configuration)
+                : RemoteProcess(parent)
+                , _container(nullptr)
+            {
+                ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
+
+                _container = admin.Container("webserver");
+
+                if( _container != nullptr ) {
+                    _container->Start();
+                }
+            }
+
+        public:
+            inline static void ContainerInitialization() {
+                ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
+                admin.ContainerDefinitionSearchPaths({string("/home/marcelf/.local/share/lxc/")}); //todo: replace by correct default searchpaths
+            }
+            inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
+            {
+
+                uint32_t loggingSettings = (Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x01 : 0) | (Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x02 : 0) | (Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x04 : 0);
+
+                Core::Process::Options options(config.HostApplication());
+
+                ASSERT(instance.Locator().empty() == false);
+                ASSERT(instance.ClassName().empty() == false);
+                ASSERT(config.Connector().empty() == false);
+
+                options[_T("-l")] = instance.Locator();
+                options[_T("-c")] = instance.ClassName();
+                options[_T("-r")] = config.Connector();
+                options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+                options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
+                if (instance.Version() != static_cast<uint32_t>(~0)) {
+                    options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+                }
+                if (instance.User().empty() == false) {
+                    options[_T("-u")] = instance.User();
+                }
+                if (instance.Group().empty() == false) {
+                    options[_T("-g")] = instance.Group();
+                }
+                if (config.PersistentPath().empty() == false) {
+                    options[_T("-p")] = config.PersistentPath();
+                }
+                if (config.SystemPath().empty() == false) {
+                    options[_T("-s")] = config.SystemPath();
+                }
+                if (config.DataPath().empty() == false) {
+                    options[_T("-d")] = config.DataPath();
+                }
+                if (config.ApplicationPath().empty() == false) {
+                    options[_T("-a")] = config.ApplicationPath();
+                }
+                if (config.ProxyStubPath().empty() == false) {
+                    options[_T("-m")] = config.ProxyStubPath();
+                }
+                if (instance.Threads() > 1) {
+                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                }
+
+                return (Core::Service<ContainerRemoteProcess>::Create<ContainerRemoteProcess>(&parent, &pid, &options, string()));
+            }
+            ~ContainerRemoteProcess()
+            {
+                if( _container != nullptr ) {
+                    _container->Release();
+                }
+
+                TRACE_L1("Destructor for ContainerRemoteProcess process for %d", Id());
+            }
+
+        public:
+            uint32_t Id() const override
+            {
+                return 0;
+            }
+            inline bool IsActive() const
+            {
+                return true;
+            }
+            inline uint32_t ExitCode() const
+            {
+                return 0;
+            }
+            inline void Kill(const bool hardKill)
+            {
+            }
+
+        private:
+            ProcessContainers::IContainerAdministrator::IContainer* _container;
+        };
+#endif
         class EXTERNAL SlaveRemoteProcess : public RemoteProcess {
         private:
             friend class Core::Service<SlaveRemoteProcess>;
@@ -634,7 +768,13 @@ namespace RPC {
             {
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = MasterRemoteProcess::Create(*this, pid, instance, config);
+                Communicator::RemoteProcess* result = nullptr;
+
+                if( false ) {
+                    result = MasterRemoteProcess::Create(*this, pid, instance, config);
+                } else {
+                    result = ContainerRemoteProcess::Create(*this, pid, instance, config);
+                }
 
                 ASSERT(result != nullptr);
 

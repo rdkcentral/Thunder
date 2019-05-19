@@ -86,6 +86,8 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
 
     _lock.Lock();
 
+    _searchpaths.push_back({string("/home/marcelf/.local/share/lxc/")});  // todo remove, after configuration in place. let's first get the container to work
+
     ProcessContainers::IContainerAdministrator::IContainer* container { nullptr };
     SearchPathContainer::const_iterator searchpath { _searchpaths.cbegin() };
 
@@ -102,6 +104,7 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
             else {
                 lxc_container_put(c);
             }
+            ++index;
         };
         if( numberofcontainersfound > 0 ) {
             free(clist);
@@ -130,7 +133,6 @@ string LXCContainerAdministrator::GetNames() const {
     return namecollection;
 }
 
-
 ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
 {
     static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
@@ -139,7 +141,7 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
 }
 
 void LXCContainerAdministrator::LCXContainer::Start() {
-    _lxccontainer->start(_lxccontainer, false, nullptr);    
+    _lxccontainer->start(_lxccontainer, true, nullptr);    
 }
 
 } //namespace WPEFramework 

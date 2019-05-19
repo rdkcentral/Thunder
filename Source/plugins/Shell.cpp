@@ -58,18 +58,55 @@ namespace PluginHost
         };
 
     public:
+
+        class EXTERNAL ContainerObject : public Core::JSON::Container {
+        public:
+            ContainerObject()
+                : AdditionalSearchpath()
+                , Config()
+            {
+                Add(_T("containerpath"), &AdditionalSearchpath);
+                Add(_T("config"), &Config);
+            }
+
+            ContainerObject(const ContainerObject& copy)
+                : AdditionalSearchpath(copy.AdditionalSearchpath)
+                , Config(copy.Config)
+            {
+                Add(_T("containerpath"), &AdditionalSearchpath);
+                Add(_T("config"), &Config);
+            }
+            ContainerObject& operator=(const ContainerObject& RHS)
+            {
+                if ( this != &RHS ) {
+                    AdditionalSearchpath = RHS.AdditionalSearchpath;
+                    Config = RHS.Config;
+                }
+
+                return (*this);
+            }
+            virtual ~ContainerObject() = default;
+
+        public:
+            Core::JSON::String AdditionalSearchpath;
+            Core::JSON::String Config;
+        };
+
+    public:
         Object()
             : Locator()
             , User()
             , Group()
             , Threads(1)
             , OutOfProcess(true)
+            , Container()
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("container"), &Container);
         }
         Object(const IShell* info)
             : Locator()
@@ -77,12 +114,14 @@ namespace PluginHost
             , Group()
             , Threads()
             , OutOfProcess(true)
+            , Container()
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("container"), &Container);
 
             RootObject config;
             config.FromString(info->ConfigLine());
@@ -105,12 +144,14 @@ namespace PluginHost
             , Group(copy.Group)
             , Threads(copy.Threads)
             , OutOfProcess(true)
+            , Container(copy.Container)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("container"), &Container);
         }
         virtual ~Object()
         {
@@ -124,6 +165,7 @@ namespace PluginHost
             Group = RHS.Group;
             Threads = RHS.Threads;
             OutOfProcess = RHS.OutOfProcess;
+            Container = RHS.Container;
 
             return (*this);
         }
@@ -134,6 +176,7 @@ namespace PluginHost
         Core::JSON::String Group;
         Core::JSON::DecUInt8 Threads;
         Core::JSON::Boolean OutOfProcess;
+        ContainerObject Container;
     };
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
