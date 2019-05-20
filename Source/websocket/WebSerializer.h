@@ -297,24 +297,17 @@ namespace Web {
         public:
             JSONDeserializer(JSONOBJECT& jsonElement)
                 : Core::JSON::IElement::Deserializer()
-                , _element(jsonElement)
             {
+                Submit(jsonElement);
             }
             ~JSONDeserializer()
             {
             }
 
         public:
-            virtual Core::JSON::IElement* Element(const string& identifier) override
-            {
-                return &_element;
-            }
             virtual void Deserialized(Core::JSON::IElement& /* element */) override
             {
             }
-
-        private:
-            JSONOBJECT& _element;
         };
 
     private:
