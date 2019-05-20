@@ -96,66 +96,13 @@ namespace Core {
         {
             __Initialize<CONTEXT>();
         }
-        template <typename arg1>
-        inline ProxyObject(arg1 a_Arg1)
-            : CONTEXT(a_Arg1)
+		template <typename... Args>
+        inline ProxyObject(Args... args)
+            : CONTEXT(args...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
         }
-        template <typename arg1, typename arg2>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2)
-            : CONTEXT(a_Arg1, a_Arg2)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6, typename arg7>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6, arg7 a_Arg7)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6, a_Arg7)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6, typename arg7, typename arg8>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6, arg7 a_Arg7, arg8 a_Arg8)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6, a_Arg7, a_Arg8)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
         virtual ~ProxyObject()
         {
             __Deinitialize<CONTEXT>();
@@ -316,82 +263,20 @@ namespace Core {
         {
             return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>());
         }
-
-        template <typename arg1>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1)
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> Create(Args... args)
         {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1));
-        }
-
-        template <typename arg1, typename arg2>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2));
-        }
-
-        template <typename arg1, typename arg2, typename arg3>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6));
+            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(args...));
         }
 
         inline static ProxyType<CONTEXT> CreateEx(const uint32_t size)
         {
             return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>());
         }
-
-        template <typename arg1>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1)
+        template <typename... Args>
+		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args... args)
         {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1));
-        }
-
-        template <typename arg1, typename arg2>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2));
-        }
-
-        template <typename arg1, typename arg2, typename arg3>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6));
+            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(args...));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)

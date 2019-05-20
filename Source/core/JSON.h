@@ -24,224 +24,47 @@ namespace Core {
 
             virtual ~IElement() {}
 
-            class EXTERNAL Serializer {
-            public:
-                Serializer(const Serializer&) = delete;
-                Serializer& operator=(const Serializer&) = delete;
-                Serializer()
-                    : _adminLock()
-                    , _offset(0)
-                    , _current(nullptr)
-                {
-                }
-                virtual ~Serializer()
-                {
-                }
-
-            public:
-                virtual void Serialized(const IElement& element)
-                {
-                }
-
-                void Flush()
-                {
-                    _adminLock.Lock();
-                    if (_current != nullptr) {
-                        const IElement* element = _current;
-                        _current = nullptr;
-
-                        Serialized(*element);
-                    }
-                    _adminLock.Unlock();
-                }
-                void Submit(const IElement& element)
-                {
-                    // If we are in progress, do not offer a new one. Wait till we are ready !!
-                    _adminLock.Lock();
-
-                    _current = const_cast<IElement*>(&element);
-                    _offset = 0;
-
-                    _adminLock.Unlock();
-                }
-                uint16_t Serialize(uint8_t stream[], const uint16_t maxLength)
-                {
-                    uint16_t loaded = _current->Serialize(reinterpret_cast<char*>(stream), maxLength, _offset);
-                    if (_offset == 0) {
-                        Serialized(*_current);
-                    }
-                    return (loaded);
-                }
-
-            private:
-                Core::CriticalSection _adminLock;
-                uint16_t _offset;
-                IElement* _current;
-            };
-
-            class EXTERNAL Deserializer {
-            public:
-                Deserializer(const Deserializer&) = delete;
-                Deserializer& operator=(const Deserializer&) = delete;
-
-                Deserializer()
-                    : _adminLock()
-                    , _offset(0)
-                    , _current(nullptr)
-                {
-                }
-                virtual ~Deserializer()
-                {
-                }
-
-            public:
-                virtual void Deserialized(IElement& element) = 0;
-                void Submit(IElement& element)
-                {
-                    // If we are in progress, do not offer a new one. Wait till we are ready !!
-                    _adminLock.Lock();
-
-                    _current = const_cast<IElement*>(&element);
-                    _offset = 0;
-
-                    _adminLock.Unlock();
-                }
-
-                void Flush()
-                {
-                    _adminLock.Lock();
-
-                    if (_current != nullptr) {
-                        IElement* element = _current;
-                        _current = nullptr;
-
-                        Deserialized(*element);
-                    }
-
-                    _adminLock.Unlock();
-                }
-
-                uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength)
-                {
-
-                    uint16_t loaded = 0;
-
-                    if (_current != nullptr) {
-                        loaded = _current->Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset);
-
-                        if (_offset == 0) {
-                            Deserialized(*_current);
-                            _current = nullptr;
-                        }
-                    }
-
-                    return (loaded);
-                }
-
-            private:
-                Core::CriticalSection _adminLock;
-                uint16_t _offset;
-                IElement* _current;
-            };
-
             template <typename INSTANCEOBJECT>
-            static void ToString(const INSTANCEOBJECT& realObject, string& text)
+            static bool ToString(const INSTANCEOBJECT& realObject, string& text)
             {
-                uint16_t fillCount = 0;
-                bool ready = false;
-                class SerializerImpl : public Serializer {
-                public:
-                    SerializerImpl(bool& readyFlag)
-                        : INSTANCEOBJECT::Serializer()
-                        , _ready(readyFlag)
-                    {
-                    }
-                    virtual ~SerializerImpl()
-                    {
-                    }
+                char buffer[1024];
+                uint16_t loaded;
+                uint16_t offset = 0;
 
-                public:
-                    virtual void Serialized(const Core::JSON::IElement& /* element */)
-                    {
-                        _ready = true;
-                    }
-
-                private:
-                    bool& _ready;
-                } serializer(ready);
-
-                // Request an object to e serialized..
-                serializer.Submit(realObject);
+                text.clear();
 
                 // Serialize object
-                while (ready == false) {
-                    uint8_t buffer[1024];
-                    uint16_t loaded = serializer.Serialize(buffer, sizeof(buffer));
+                do {
+                    loaded = static_cast<const IElement&>(realObject).Serialize(buffer, sizeof(buffer), offset);
 
                     ASSERT(loaded <= sizeof(buffer));
 
-                    fillCount += loaded;
+                    text += string(buffer, loaded);
 
-                    text += string(reinterpret_cast<char*>(&buffer[0]), loaded);
-                }
+                } while ((offset != 0) && (loaded == sizeof(buffer)));
+
+                return (offset == 0);
             }
-
             template <typename INSTANCEOBJECT>
             static bool FromString(const string& text, INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
-                class DeserializerImpl : public Deserializer {
-                public:
-                    DeserializerImpl(bool& ready)
-                        : INSTANCEOBJECT::Deserializer()
-                        , _element(nullptr)
-                        , _ready(ready)
-                    {
-                    }
-                    ~DeserializerImpl()
-                    {
-                    }
+                uint16_t offset = 0;
 
-                public:
-                    virtual void Deserialized(Core::JSON::IElement& element)
-                    {
-                        DEBUG_VARIABLE(element);
-                        ASSERT(&element == _element);
-                        _element = nullptr;
-                        _ready = true;
-                    }
-
-                private:
-                    Core::JSON::IElement* _element;
-                    bool& _ready;
-                } deserializer(ready);
-
-                uint16_t fillCount = 0;
                 realObject.Clear();
 
-                deserializer.Submit(realObject);
+                // Deserialize object
+                uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
 
-                // Serialize object
-                while ((ready == false) && (fillCount < text.size())) {
-                    uint8_t buffer[1024];
-                    uint16_t size = ((text.size() - fillCount) < sizeof(buffer) ? (static_cast<uint16_t>(text.size()) - fillCount) : sizeof(buffer));
+                ASSERT(loaded <= text.length());
 
-                    // Prepare the deserialize buffer
-                    memcpy(buffer, &(text.data()[fillCount]), size);
-
-                    fillCount += size;
-
-                    deserializer.Deserialize(buffer, size);
-                }
-
-                return (ready == true);
+                return (offset == 0);
             }
 
-            void ToString(string& text) const
+            inline bool ToString(string& text) const
             {
-                Core::JSON::IElement::ToString(*this, text);
+                return (Core::JSON::IElement::ToString(*this, text));
             }
-            bool FromString(const string& text)
+            inline bool FromString(const string& text)
             {
                 return (Core::JSON::IElement::FromString(text, *this));
             }
@@ -249,118 +72,58 @@ namespace Core {
             template <typename INSTANCEOBJECT>
             static bool ToFile(Core::File& fileObject, const INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
+                bool completed = false;
 
                 if (fileObject.IsOpen()) {
-                    uint32_t missedBytes = 0;
 
-                    class SerializerImpl : public Serializer {
-                    public:
-                        SerializerImpl(bool& readyFlag)
-                            : INSTANCEOBJECT::Serializer()
-                            , _ready(readyFlag)
-                        {
-                        }
-                        virtual ~SerializerImpl()
-                        {
-                        }
-
-                    public:
-                        virtual void Serialized(const Core::JSON::IElement& /* element */)
-                        {
-                            _ready = true;
-                        }
-
-                    private:
-                        bool& _ready;
-                    } serializer(ready);
-
-                    // Request an object to e serialized..
-                    serializer.Submit(realObject);
+                    char buffer[1024];
+                    uint16_t loaded;
+                    uint16_t offset = 0;
 
                     // Serialize object
-                    while ((ready == false) && (missedBytes == 0)) {
-                        uint8_t buffer[1024];
-                        uint16_t bytes = serializer.Serialize(buffer, sizeof(buffer));
+                    do {
+                        loaded = static_cast<const IElement&>(realObject).Serialize(buffer, sizeof(buffer), offset);
 
-                        missedBytes = (fileObject.Write(buffer, bytes) - bytes);
-                    }
+                        ASSERT(loaded <= sizeof(buffer));
+
+                    } while ((fileObject.Write(reinterpret_cast<const uint8_t*>(buffer), loaded) == loaded) && (loaded == sizeof(buffer)) && (offset != 0));
+
+                    completed = (offset == 0);
                 }
 
-                return (ready);
+                return (completed);
             }
-
             template <typename INSTANCEOBJECT>
             static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
+                bool completed = false;
 
-                if (fileObject.IsOpen() == true) {
-                    uint16_t unusedBytes = 0;
-                    uint16_t readBytes = static_cast<uint16_t>(~0);
+                if (fileObject.IsOpen()) {
 
-                    class DeserializerImpl : public Deserializer {
-                    public:
-                        DeserializerImpl(bool& ready)
-                            : INSTANCEOBJECT::Deserializer()
-                            , _element(nullptr)
-                            , _ready(ready)
-                        {
-                        }
-                        ~DeserializerImpl()
-                        {
-                        }
-
-                    public:
-                        inline void SetElement(Core::JSON::IElement* element)
-                        {
-                            ASSERT(_element == nullptr);
-                            _element = element;
-                        }
-                        virtual Core::JSON::IElement* Element(const string& identifier)
-                        {
-                            DEBUG_VARIABLE(identifier);
-                            ASSERT(identifier.empty() == true);
-                            return (_element);
-                        }
-                        virtual void Deserialized(Core::JSON::IElement& element)
-                        {
-                            DEBUG_VARIABLE(element);
-                            ASSERT(&element == _element);
-                            _element = nullptr;
-                            _ready = true;
-                        }
-
-                    private:
-                        Core::JSON::IElement* _element;
-                        bool& _ready;
-                    } deserializer(ready);
+                    char buffer[1024];
+                    uint16_t readBytes;
+                    uint16_t loaded;
+                    uint16_t offset = 0;
 
                     realObject.Clear();
 
-                    deserializer.SetElement(&realObject);
+                    // Serialize object
+                    do {
+                        readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
+                        loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
 
-                    while ((ready == false) && (unusedBytes == 0) && (readBytes != 0)) {
-                        uint8_t buffer[1024];
+                        ASSERT(loaded <= readBytes);
 
-                        readBytes = static_cast<uint16_t>(fileObject.Read(buffer, sizeof(buffer)));
-
-                        if (readBytes != 0) {
-                            // Deserialize object
-                            uint16_t usedBytes = deserializer.Deserialize(buffer, readBytes);
-
-                            ASSERT(usedBytes <= readBytes);
-
-                            unusedBytes = (readBytes - usedBytes);
+                        if (loaded != readBytes) {
+                            fileObject.Position(true, -(readBytes - loaded));
                         }
-                    }
 
-                    if (unusedBytes != 0) {
-                        fileObject.Position(true, -unusedBytes);
-                    }
+                    } while ((loaded == readBytes) && (offset != 0));
+
+                    completed = (offset == 0);
                 }
 
-                return (ready == true);
+                return (completed);
             }
 
             bool ToFile(Core::File& fileObject) const
@@ -439,11 +202,6 @@ namespace Core {
 
                 return (*this);
             }
-            void FromString(const string& RHS)
-            {
-                uint16_t offset = 0;
-                Deserialize(RHS.c_str(), static_cast<uint16_t>(RHS.length()), offset);
-            }
             inline TYPE Default() const
             {
                 return _default;
@@ -456,15 +214,20 @@ namespace Core {
             {
                 return _value;
             }
-            inline void ToString(string& result) const
+            bool Null() const
             {
-                result = Core::NumberType<TYPE, SIGNED, BASETYPE>(_value).Text();
+                return ((_set & UNDEFINED) != 0);
             }
-
-            // IElement interface methods
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _set |= UNDEFINED;
+                else
+                    _set &= ~UNDEFINED;
+            }
             virtual bool IsSet() const override
             {
-                return ((_set & SET) != 0);
+                return ((_set & (SET | UNDEFINED)) != 0);
             }
             virtual void Clear() override
             {
@@ -555,6 +318,12 @@ namespace Core {
                             _set = DECIMAL;
                             _value = (stream[loaded] - '0');
                             offset = 4;
+                        } else if (stream[loaded] == 'n') {
+                            _set = UNDEFINED;
+                            offset = 1;
+                        } else {
+                            _set = ERROR;
+                            offset = 4;
                         }
                     } else if (offset == 1) {
                         ASSERT(_set = QUOTED);
@@ -567,6 +336,8 @@ namespace Core {
                             _value = (stream[loaded] - '0');
                             _set |= DECIMAL;
                             offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
+                            offset = 2;
                         } else {
                             _set = ERROR;
                             offset = 4;
@@ -583,6 +354,8 @@ namespace Core {
                             _value = (stream[loaded] - '0');
                             _set = (_set & NEGATIVE ? DECIMAL : OCTAL);
                             offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
+                            offset = 3;
                         } else {
                             _set = ERROR;
                             offset = 4;
@@ -596,6 +369,8 @@ namespace Core {
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
                             _set |= OCTAL;
+                            offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 4;
                         } else {
                             _set = ERROR;
@@ -733,7 +508,7 @@ namespace Core {
 
                 if (offset == 0) {
                     if (bytes == 0) {
-                        stream[loaded++] = _value;
+                        stream[loaded++] = static_cast<uint8_t>(_value);
                     } else {
                         switch (bytes) {
                         case 1:
@@ -875,32 +650,32 @@ namespace Core {
 
                 return (*this);
             }
-            void FromString(const string& RHS)
-            {
-                uint16_t offset = 0;
-                Deserialize(RHS.c_str(), static_cast<uint16_t>(RHS.length()), offset);
-            }
             inline bool Value() const
             {
-                return (IsSet() ? (_value & ValueBit) != None : (_value & DefaultBit) != None);
+                return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
             }
             inline bool Default() const
             {
-                return (_value & DefaultBit) != None;
+                return (_value & DefaultBit) != 0;
             }
             inline operator bool() const
             {
                 return (_value & ValueBit);
             }
-            inline void ToString(string& result) const
+            bool Null() const
             {
-                result = ((_value & ValueBit) != 0 ? _T("true") : _T("false"));
+                return ((_value & NullBit) != 0);
             }
-
-            // IElement interface methods
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _value |= NullBit;
+                else
+                    _value &= ~NullBit;
+            }
             virtual bool IsSet() const override
             {
-                return ((_value & SetBit) != None);
+                return ((_value & (SetBit | NullBit)) != 0);
             }
             virtual void Clear() override
             {
@@ -1064,11 +839,6 @@ namespace Core {
             {
             }
 
-            void FromString(const string& RHS)
-            {
-                _value = RHS;
-                _scopeCount |= SetBit;
-            }
             String& operator=(const string& RHS)
             {
                 Core::ToString(RHS.c_str(), _value);
@@ -1096,7 +866,7 @@ namespace Core {
             {
                 _default = RHS._default;
                 _value = RHS._value;
-                _scopeCount = RHS._scopeCount & (QuotedSerializeBit | SetBit);
+                _scopeCount = RHS._scopeCount;
 
                 return (*this);
             }
@@ -1148,62 +918,58 @@ namespace Core {
                 return (!operator>(RHS));
             }
 
-            inline const string Value() const
-            {
-                return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : _default);
+			inline const string Value() const
+			{
+                if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit|QuoteFoundBit)) {
+					return('\"' + Core::ToString(_value.c_str()) + '\"');
+				}
+                return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
             inline const string& Default() const
             {
                 return (_default);
             }
-            inline void ToString(string& result) const
-            {
-                result = (((_scopeCount & SetBit) != 0) ? _value : _default);
-
-                if (UseQuotes() == true) {
-                    result = '"' + result + '"';
-                }
-            }
-
-            virtual bool IsNull() const
+            bool Null() const
             {
                 return (_scopeCount & NullBit) != 0;
+            }
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _scopeCount |= NullBit;
+                else
+                    _scopeCount &= ~NullBit;
             }
             // IElement interface methods
             virtual bool IsSet() const override
             {
-                return (_scopeCount & SetBit) != 0;
+                return ((_scopeCount & (SetBit|NullBit)) != 0);
             }
             virtual void Clear() override
             {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
-
             inline bool IsQuoted() const
             {
-                return ((_scopeCount & QuoteFoundBit) != 0);
+                return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
-                    _scopeCount |= QuotedSerializeBit;
+                    _scopeCount |= QuoteFoundBit;
                 } else {
-                    _scopeCount &= (~QuotedSerializeBit);
+                    _scopeCount &= (~QuoteFoundBit);
                 }
             }
 
         protected:
-            inline bool UseQuotes() const
-            {
-                return (_scopeCount & QuotedSerializeBit) != 0;
-            }
             inline bool MatchLastCharacter(const string& str, char ch) const
             {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
-                bool quoted = UseQuotes();
+                bool quoted = IsQuoted();
                 uint16_t result = 0;
 
                 ASSERT(maxLength > 0);
@@ -1251,9 +1017,7 @@ namespace Core {
 
                 return (result);
             }
-
-            virtual uint16_t
-            Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 bool finished = false;
                 uint16_t result = 0;
@@ -1345,18 +1109,17 @@ namespace Core {
                     }
                 }
 
-				if (offset != 0) {
+                if (offset != 0) {
                     while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
-						
                     }
 
                     while ((loaded < maxLength) && (offset == 0)) {
                         loaded += static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
                         offset += loaded;
 
-						if (offset - _unaccountedCount >= _value.length()) {
+                        if (offset - _unaccountedCount >= _value.length()) {
                             offset = 0;
-						}
+                        }
                     }
                 }
 
@@ -1380,7 +1143,8 @@ namespace Core {
         private:
             enum status {
                 SET = 0x01,
-                ERROR = 0x02
+                ERROR = 0x02,
+                UNDEFINED = 0x04
             };
 
         public:
@@ -1419,34 +1183,33 @@ namespace Core {
 
                 return (*this);
             }
-            void FromString(const string& RHS)
-            {
-                uint16_t offset = 0;
-                Deserialize(RHS.c_str(), static_cast<uint16_t>(RHS.length()), offset);
-            }
-
             inline const ENUMERATE Default() const
             {
                 return (_default);
             }
             inline const ENUMERATE Value() const
             {
-                return (((_state & SET) != 0) ? _value : _default);
+                return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
             }
             inline operator const ENUMERATE() const
             {
                 return _value;
             }
-            inline void ToString(string& result) const
-            {
-                result = string(Core::EnumerateType<ENUMERATE>(Value()).Data());
-            }
             const TCHAR* Data() const
             {
                 return (Core::EnumerateType<ENUMERATE>(Value()).Data());
             }
-
-            // IElement interface methods
+            bool Null() const
+            {
+                return ((_state & UNDEFINED) != 0);
+            }
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _state |= UNDEFINED;
+                else
+                    _state &= ~UNDEFINED;
+            }
             virtual bool IsSet() const override
             {
                 return ((_state & SET) != 0);
@@ -1460,7 +1223,11 @@ namespace Core {
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
                 if (offset == 0) {
-                    _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
+                    if ((_state & UNDEFINED) != 0) {
+                        _parser.Null(true);
+                    } else {
+                        _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
+                    }
                 }
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
@@ -1469,12 +1236,21 @@ namespace Core {
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset);
 
                 if (offset == 0) {
-                    // Looks like we parsed the value. Lets see if we can find it..
-                    Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
 
-                    if (converted.IsSet() == true) {
-                        _value = converted.Value();
-                        _state |= SET;
+                    if (_parser.Null() == true) {
+                        _state = UNDEFINED;
+                    } else if (_parser.IsSet() == true) {
+                        // Looks like we parsed the value. Lets see if we can find it..
+                        Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
+
+                        if (converted.IsSet() == true) {
+                            _value = converted.Value();
+                            _state = SET;
+                        } else {
+                            _state = ERROR;
+                        }
+                    } else {
+                        _state = ERROR;
                     }
                 }
 
@@ -1819,7 +1595,7 @@ namespace Core {
         private:
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
 
                 if (offset == 0) {
                     _iterator.Reset();
@@ -1851,8 +1627,12 @@ namespace Core {
                     while ((loaded < maxLength) && (stream[loaded] != '[')) {
                         loaded++;
                     }
-
-                    offset = (loaded < maxLength ? SKIP_BEFORE : BEGIN_MARKER);
+                    if (loaded == maxLength) {
+                        offset = BEGIN_MARKER;
+                    } else {
+                        offset = SKIP_BEFORE;
+                        loaded++;
+                    }
                 }
 
                 while ((offset != 0) && (loaded < maxLength)) {
@@ -2046,7 +1826,7 @@ namespace Core {
         private:
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
-                uint8_t loaded = 0;
+                uint16_t loaded = 0;
 
                 if (offset == 0) {
                     _iterator = _data.begin();
@@ -2748,11 +2528,11 @@ namespace Core {
         inline void Variant::ToString(string& result) const
         {
             if (_type == type::ARRAY)
-                return _array->ToString(result);
+                _array->ToString(result);
             else if (_type == type::OBJECT)
-                return _object->ToString(result);
+                _object->ToString(result);
             else
-                return String::ToString(result);
+                String::ToString(result);
         }
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
         {
@@ -2799,72 +2579,12 @@ namespace Core {
         private:
             typedef Tester<SIZE, INSTANCEOBJECT> ThisClass;
 
-            class SerializerImpl : public INSTANCEOBJECT::Serializer {
-            private:
-                SerializerImpl(const SerializerImpl&) = delete;
-                SerializerImpl& operator=(const SerializerImpl&) = delete;
-
-            public:
-                SerializerImpl(bool& readyFlag)
-                    : INSTANCEOBJECT::Serializer()
-                    , _ready(readyFlag)
-                {
-                }
-                ~SerializerImpl()
-                {
-                }
-
-            public:
-                virtual void Serialized(const INSTANCEOBJECT& /* element */)
-                {
-                    _ready = true;
-                }
-                virtual void Serialized(const Core::JSON::IElement& /* element */)
-                {
-                    _ready = true;
-                }
-
-            private:
-                bool& _ready;
-            };
-
-            class DeserializerImpl : public INSTANCEOBJECT::Deserializer {
-            private:
-                DeserializerImpl() = delete;
-                DeserializerImpl(const DeserializerImpl&) = delete;
-                DeserializerImpl& operator=(const DeserializerImpl&) = delete;
-
-            public:
-                DeserializerImpl(ThisClass& parent, bool& ready)
-                    : INSTANCEOBJECT::Deserializer()
-                    , _parent(parent)
-                    , _ready(ready)
-                {
-                }
-                ~DeserializerImpl()
-                {
-                }
-
-            public:
-                virtual void Deserialized(Core::JSON::IElement& /* element */)
-                {
-                    _ready = true;
-                }
-
-            private:
-                ThisClass& _parent;
-                bool& _ready;
-            };
-
         private:
             Tester(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
             Tester<SIZE, INSTANCEOBJECT>& operator=(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
 
         public:
             Tester()
-                : _ready(false)
-                , _serializer(_ready)
-                , _deserializer(*this, _ready)
             {
             }
             ~Tester()
@@ -2874,56 +2594,49 @@ namespace Core {
             bool FromString(const string& value, Core::ProxyType<INSTANCEOBJECT>& receptor)
             {
                 uint16_t fillCount = 0;
+                uint16_t offset = 0;
+                uint16_t size, loaded;
+
                 receptor->Clear();
 
-                _ready = false;
-                _deserializer.Submit(*receptor);
-                // Serialize object
-                while ((_ready == false) && (fillCount < value.size())) {
-                    uint16_t size = static_cast<uint16_t>((value.size() - fillCount) < SIZE ? (value.size() - fillCount) : SIZE);
+                do {
+                    size = static_cast<uint16_t>((value.size() - fillCount) < SIZE ? (value.size() - fillCount) : SIZE);
 
                     // Prepare the deserialize buffer
                     memcpy(_buffer, &(value.data()[fillCount]), size);
 
                     fillCount += size;
 
-#ifdef __DEBUG__
-                    uint16_t handled =
-#endif // __DEBUG__
+                    loaded = static_cast<IElement&>(*receptor).Deserialize(_buffer, size, offset);
 
-                        _deserializer.Deserialize(_buffer, size);
+                    ASSERT(loaded <= size);
 
-                    ASSERT(handled <= size);
-                }
+                } while ((loaded == size) && (offset != 0));
 
-                return (_ready == true);
+                return (offset == 0);
             }
 
-            void ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
+            bool ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
             {
-                uint16_t fillCount = 0;
-                _ready = false;
-
-                // Request an object to e serialized..
-                _serializer.Submit(*receptor);
+                uint16_t offset = 0;
+                uint16_t loaded;
 
                 // Serialize object
-                while (_ready == false) {
-                    uint16_t loaded = _serializer.Serialize(_buffer, SIZE);
+                do {
+
+                    loaded = static_cast<Core::JSON::IElement&>(*receptor).Serialize(_buffer, SIZE, offset);
 
                     ASSERT(loaded <= SIZE);
 
-                    fillCount += loaded;
+                    value += string(_buffer, loaded);
 
-                    value += string(reinterpret_cast<char*>(&_buffer[0]), loaded);
-                }
+                } while ((loaded == SIZE) && (offset != 0));
+
+                return (offset == 0);
             }
 
         private:
-            bool _ready;
-            SerializerImpl _serializer;
-            DeserializerImpl _deserializer;
-            uint8_t _buffer[SIZE];
+            char _buffer[SIZE];
         };
     } // namespace JSON
 } // namespace Core
@@ -2932,4 +2645,5 @@ namespace Core {
 using JsonObject = WPEFramework::Core::JSON::VariantContainer;
 using JsonValue = WPEFramework::Core::JSON::Variant;
 using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+
 #endif // __JSON_H
