@@ -1,5 +1,5 @@
-#ifndef _ITVCONTROL_H
-#define _ITVCONTROL_H
+#ifndef _ISTREAM_H
+#define _ISTREAM_H
 
 #include "Module.h"
 
@@ -119,4 +119,4 @@ namespace Player {
     }
 } // // namespace Player::Implementation
 } // namespace WPEFramework
-#endif //_ITVCONTROL_H
+#endif //_ISTREAM_H
