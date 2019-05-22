@@ -1,0 +1,49 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "StateControl API",
+    "class": "StateControl",
+    "description": "StateControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "StateControl.1.suspend": {
+      "summary": "Suspends the service.",
+      "description": "With this method the service can be suspended. Suspending when already in suspended mode has no effect.",
+      "events": [
+        "statechange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    },
+    "StateControl.1.resume": {
+      "summary": "Resumes the service.",
+      "description": "With this method the service can be resumed from suspended mode. Resuming from a not suspended mode has no effect.",
+      "events": [
+        "statechange"
+      ],
+      "result": {
+        "$ref": "#/common/results/void"
+      }
+    }
+  },
+  "events": {
+    "statechange": {
+      "summary": "Signals a state change of the service.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "suspended": {
+            "description": "Determines if the service has entered suspended state (true) or resumed state (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    }
+  }
+}

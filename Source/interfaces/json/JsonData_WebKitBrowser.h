@@ -32,21 +32,6 @@ namespace JsonData {
             Core::JSON::String Url; // The URL to load
         }; // class SeturlParamsData
 
-        class StatechangeParamsData : public Core::JSON::Container {
-        public:
-            StatechangeParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("suspended"), &Suspended);
-            }
-
-            StatechangeParamsData(const StatechangeParamsData&) = delete;
-            StatechangeParamsData& operator=(const StatechangeParamsData&) = delete;
-
-        public:
-            Core::JSON::Boolean Suspended; // Determines if the browser has reached suspended state (true) or resumed state (false)
-        }; // class StatechangeParamsData
-
         class StatusResultData : public Core::JSON::Container {
         public:
             StatusResultData()

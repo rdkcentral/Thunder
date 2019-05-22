@@ -2,12 +2,17 @@
   "$schema": "interface.schema.json",
   "jsonrpc": "2.0",
   "info": {
-    "title": "Spark Browser API",
+    "title": "Spark API",
     "class": "Spark",
     "description": "Spark JSON-RPC interface"
   },
   "common": {
     "$ref": "common.json"
+  },
+  "include": {
+    "statecontrol": {
+      "$ref": "StateControlAPI.json#"
+    }
   },
   "methods": {
     "Spark.1.status": {
@@ -43,26 +48,6 @@
           "suspended",
           "hidden"
         ]
-      }
-    },
-    "Spark.1.suspend": {
-      "summary": "Suspends the Spark Browser.",
-      "description": "With this method the Spark Browser can be suspended. Suspending when already in suspended mode has no effect.",
-      "events": [
-        "statechange"
-      ],
-      "result": {
-        "$ref": "#/common/results/void"
-      }
-    },
-    "Spark.1.resume": {
-      "summary": "Resumes the Spark Browser.",
-      "description": "With this method the Spark Browser can be resumed from suspended mode. Resuming from a not suspended mode has no effect.",
-      "events": [
-        "statechange"
-      ],
-      "result": {
-        "$ref": "#/common/results/void"
       }
     },
     "Spark.1.hide": {
@@ -133,19 +118,6 @@
           "url",
           "loaded"
         ]
-      }
-    },
-    "statechange": {
-      "summary": "Signals a state change in the browser.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "suspended": {
-            "description": "Determines if the browser has reached suspended state (true) or resumed state (false)",
-            "type": "boolean",
-            "example": false
-          }
-        }
       }
     },
     "visibilitychange": {

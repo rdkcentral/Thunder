@@ -1,6 +1,6 @@
 
-// C++ classes for Spark Browser JSON-RPC API.
-// Generated automatically from 'SparkPlugin.json'.
+// C++ classes for Spark JSON-RPC API.
+// Generated automatically from 'SparkAPI.json'.
 
 // Note: This code is inherently not thread safe. If required, proper synchronisation must be added.
 
@@ -31,21 +31,6 @@ namespace JsonData {
         public:
             Core::JSON::String Url; // The URL to load
         }; // class SeturlParamsData
-
-        class StatechangeParamsData : public Core::JSON::Container {
-        public:
-            StatechangeParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("suspended"), &Suspended);
-            }
-
-            StatechangeParamsData(const StatechangeParamsData&) = delete;
-            StatechangeParamsData& operator=(const StatechangeParamsData&) = delete;
-
-        public:
-            Core::JSON::Boolean Suspended; // Determines if the browser has reached suspended state (true) or resumed state (false)
-        }; // class StatechangeParamsData
 
         class StatusResultData : public Core::JSON::Container {
         public:
