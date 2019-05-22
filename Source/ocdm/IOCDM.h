@@ -42,7 +42,7 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
         // Event fired when a key message is successfully created.
         virtual void
-        OnKeyMessage(const uint8_t* keyMessage, //__in_bcount(f_cbKeyMessage)
+        OnKeyMessage(const uint8_t* keyMessage /* @length:keyLength */, //__in_bcount(f_cbKeyMessage)
             const uint16_t keyLength, //__in
             const std::string URL)
             = 0; //__in_z_opt
@@ -68,7 +68,7 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
     // Process a key message response.
     virtual void
-    Update(const uint8_t* keyMessage, //__in_bcount(f_cbKeyMessageResponse)
+    Update(const uint8_t* keyMessage /* @length:keyLength */, //__in_bcount(f_cbKeyMessageResponse)
         const uint16_t keyLength)
         = 0; //__in
 
@@ -113,20 +113,20 @@ struct ISessionExt : virtual public WPEFramework::Core::IUnknown {
     // Encrypted fragements.
     virtual std::string BufferIdExt() const = 0;
 
-    virtual OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[],
+    virtual OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[] /* @length:drmHeaderLength */,
         uint32_t drmHeaderLength)
         = 0;
 
-    virtual OCDM_RESULT GetChallengeDataExt(uint8_t* challenge,
-        uint32_t& challengeSize,
+    virtual OCDM_RESULT GetChallengeDataExt(uint8_t* challenge /* @inout @length:challengeSize */,
+        uint32_t& challengeSize /* @inout */,
         uint32_t isLDL)
         = 0;
 
     virtual OCDM_RESULT CancelChallengeDataExt() = 0;
 
-    virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[],
+    virtual OCDM_RESULT StoreLicenseData(const uint8_t licenseData[] /* @length:licenseDataSize */,
         uint32_t licenseDataSize,
-        uint8_t* secureStopId)
+        uint8_t* secureStopId /* @out @length:16 */)
         = 0;
 
     virtual OCDM_RESULT InitDecryptContextByKid() = 0;
@@ -146,7 +146,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
         virtual void Create(const string& sessionId) = 0;
         virtual void Destroy(const string& sessionId) = 0;
-        virtual void KeyChange(const string& sessionId, const uint8_t keyId[],
+        virtual void KeyChange(const string& sessionId, const uint8_t keyId[] /* @length:length */,
             const uint8_t length,
             const OCDM::ISession::KeyStatus status)
             = 0;
@@ -160,15 +160,15 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM_RESULT
     CreateSession(const string keySystem, const int32_t licenseType,
-        const std::string initDataType, const uint8_t* initData,
-        const uint16_t initDataLength, const uint8_t* CDMData,
+        const std::string initDataType, const uint8_t* initData /* @length:initDataLength */,
+        const uint16_t initDataLength, const uint8_t* CDMData /* @length:CDMDataLength */,
         const uint16_t CDMDataLength, ISession::ICallback* callback,
-        std::string& sessionId, ISession*& session)
+        std::string& sessionId /* @out */, ISession*& session /* @out */)
         = 0;
 
     // Set Server Certificate
     virtual OCDM_RESULT
-    SetServerCertificate(const string keySystem, const uint8_t* serverCertificate,
+    SetServerCertificate(const string keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
 
@@ -178,7 +178,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     virtual ISession* Session(const std::string sessionId) = 0;
 
-    virtual ISession* Session(const uint8_t keyId[], const uint8_t length) = 0;
+    virtual ISession* Session(const uint8_t keyId[] /* @length:length */, const uint8_t length) = 0;
 };
 
 struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
@@ -189,11 +189,11 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
 
     virtual OCDM_RESULT CreateSessionExt(
         const std::string keySystem,
-        const uint8_t drmHeader[],
+        const uint8_t drmHeader[] /* @length:drmHeaderLength */,
         uint32_t drmHeaderLength,
         ::OCDM::ISession::ICallback* callback,
-        std::string& sessionId,
-        ISessionExt*& session)
+        std::string& sessionId /* @out */,
+        ISessionExt*& session /* @out */)
         = 0;
 
     virtual std::string GetVersionExt(const std::string& keySystem) const = 0;
@@ -209,20 +209,20 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
     virtual uint32_t ResetSecureStops(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT GetSecureStopIds(const std::string& keySystem,
-        uint8_t ids[], uint8_t idSize,
-        uint32_t& count)
+        uint8_t ids[] /* @out @length:idSize */, uint8_t idSize,
+        uint32_t& count /* @inout */)
         = 0;
 
     virtual OCDM_RESULT GetSecureStop(const std::string& keySystem,
-        const uint8_t sessionID[],
-        uint32_t sessionIDLength, uint8_t* rawData,
-        uint16_t& rawSize)
+        const uint8_t sessionID[] /* @length:sessionIDLength */,
+        uint32_t sessionIDLength, uint8_t* rawData /* @out @length:rawSize */,
+        uint16_t& rawSize /* @inout */)
         = 0;
 
     virtual OCDM_RESULT CommitSecureStop(const std::string& keySystem,
-        const uint8_t sessionID[],
+        const uint8_t sessionID[] /* @length:sessionIDLength */,
         uint32_t sessionIDLength,
-        const uint8_t serverResponse[],
+        const uint8_t serverResponse[] /* @length:serverResponseLength */,
         uint32_t serverResponseLength)
         = 0;
 
@@ -237,12 +237,12 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
     virtual OCDM_RESULT DeleteSecureStore(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT GetKeyStoreHash(const std::string& keySystem,
-        uint8_t keyStoreHash[],
+        uint8_t keyStoreHash[] /* @out @length:keyStoreHashLength */,
         uint32_t keyStoreHashLength)
         = 0;
 
     virtual OCDM_RESULT GetSecureStoreHash(const std::string& keySystem,
-        uint8_t secureStoreHash[],
+        uint8_t secureStoreHash[] /* @out @length:secureStoreHashLength */,
         uint32_t secureStoreHashLength)
         = 0;
 };
