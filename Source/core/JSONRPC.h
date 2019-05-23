@@ -288,12 +288,12 @@ namespace Core {
                 Entry& operator=(const Entry&) = delete;
 
                 union Functions {
-                    Functions(const Functions& function, const bool async)
+                    Functions(const Functions& function, const bool async)  
                     {
                         if (async == true) {
-                            _callback = function._callback;
+                            new (&_callback) auto(function._callback);
 						} else {
-                            _invoke = function._invoke;                        
+                            new (&_invoke) auto(function._invoke);
 						}
                     }
                     Functions(const CallbackFunction& function)
