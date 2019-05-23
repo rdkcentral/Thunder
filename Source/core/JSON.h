@@ -12,352 +12,63 @@
 #include "TextFragment.h"
 #include "TypeTraits.h"
 
-#define JSONTYPEID(JSONNAME) \
-                             \
-public:                      \
-    static const char* Id() { return (#JSONNAME); }
-
 namespace WPEFramework {
+
 namespace Core {
+
     namespace JSON {
 
-        bool EXTERNAL ContainsNull(const string& value);
-
-        struct IIterator;
-        class String;
-
-        typedef enum {
-            PARSE_CONTAINER,
-            PARSE_DIRECT,
-            PARSE_BUFFERED
-
-        } ParserType;
-
-        struct EXTERNAL IDirect {
-            virtual ~IDirect() {}
-
-            // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
-            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
-        };
-
-        struct EXTERNAL IBuffered {
-            virtual ~IBuffered() {}
-
-            // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            virtual void Serialize(std::string& buffer) const = 0;
-            virtual void Deserialize(const std::string& buffer) = 0;
-        };
-
         struct EXTERNAL IElement {
+
+            static char NullTag[];
+
             virtual ~IElement() {}
 
-            class EXTERNAL Serializer {
-            private:
-                typedef enum {
-                    STATE_OPEN,
-                    STATE_LABEL,
-                    STATE_DELIMITER,
-                    STATE_VALUE,
-                    STATE_CLOSE,
-                    STATE_PREFIX,
-                    STATE_REPORT
-
-                } State;
-
-            private:
-                Serializer(const Serializer&);
-                Serializer& operator=(const Serializer&);
-
-            public:
-                Serializer()
-                    : _root(nullptr)
-                    , _handleStack()
-                    , _state(STATE_OPEN)
-                    , _offset(0)
-                    , _bufferUsed(0)
-                    , _adminLock()
-                    , _buffer()
-                    , _prefix()
-                {
-                }
-                virtual ~Serializer()
-                {
-                }
-
-            public:
-                virtual void Serialized(const IElement& element) = 0;
-
-                void Flush()
-                {
-                    _adminLock.Lock();
-                    _handleStack.clear();
-                    if (_root != nullptr) {
-                        const IElement* element = _root;
-                        _root = nullptr;
-
-                        Serialized(*element);
-                    }
-                    _adminLock.Unlock();
-                }
-                void Submit(const IElement& element)
-                {
-                    // If we are in progress, do not offer a new one. Wait till we are ready !!
-                    ASSERT(_root == nullptr);
-
-                    _adminLock.Lock();
-
-                    if (element.Label() != nullptr) {
-                        Core::ToString(element.Label(), _prefix);
-
-                        ASSERT(_prefix.empty() == false);
-
-                        _state = STATE_PREFIX;
-                        _root = const_cast<IElement*>(&element);
-                        _handleStack.push_front(_root->ElementIterator());
-                        _offset = 0;
-                    } else {
-                        _prefix.clear();
-                        _state = STATE_OPEN;
-                        _root = const_cast<IElement*>(&element);
-                        _handleStack.push_front(_root->ElementIterator());
-                        _offset = 0;
-                    }
-
-                    _adminLock.Unlock();
-                }
-                uint16_t Serialize(uint8_t stream[], const uint16_t maxLength);
-
-            private:
-                IElement* _root;
-                std::list<JSON::IIterator*> _handleStack;
-                State _state;
-                uint16_t _offset;
-                uint16_t _bufferUsed;
-                Core::CriticalSection _adminLock;
-                std::string _buffer;
-                std::string _prefix;
-            };
-
-            class EXTERNAL Deserializer {
-            private:
-                typedef enum {
-                    STATE_OPEN,
-                    STATE_LABEL,
-                    STATE_DELIMITER,
-                    STATE_VALUE,
-                    STATE_CLOSE,
-                    STATE_SKIP,
-                    STATE_START,
-                    STATE_PREFIX,
-                    STATE_HANDLED
-
-                } State;
-
-                typedef enum {
-                    QUOTED_OFF = 0,
-                    QUOTED_ON,
-                    QUOTED_ESCAPED
-                } Quoted;
-
-            public:
-                Deserializer(const Deserializer&) = delete;
-                Deserializer& operator=(const Deserializer&) = delete;
-
-                Deserializer()
-                    : _handling(nullptr)
-                    , _handleStack()
-                    , _state(STATE_HANDLED)
-                    , _offset(0)
-                    , _bufferUsed(0)
-                    , _quoted(QUOTED_OFF)
-                    , _levelSkip(0)
-                    , _adminLock()
-                    , _buffer()
-                {
-                }
-                virtual ~Deserializer()
-                {
-                }
-
-            public:
-                virtual void Deserialized(IElement& element) = 0;
-
-                void Flush()
-                {
-                    _adminLock.Lock();
-                    _handleStack.clear();
-                    if (_handling != nullptr) {
-                        Deserialized(*_handling);
-                        _handling = nullptr;
-                        _handlingName.clear();
-                    }
-                    _state = STATE_HANDLED;
-                    _adminLock.Unlock();
-                }
-
-                inline const string& Label() const
-                {
-                    return (_handlingName);
-                }
-
-                uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength);
-
-            private:
-                virtual IElement* Element(const string& identifer) = 0;
-
-            private:
-                class EXTERNAL Context {
-                public:
-                    Context() = delete;
-                    Context(const Context&) = delete;
-                    Context& operator=(const Context&) = delete;
-
-                    Context(JSON::IIterator* element)
-                        : _loaded(false)
-                        , _element(element)
-                    {
-                    }
-                    ~Context()
-                    {
-                    }
-
-                    bool IsLoaded() const {
-						return (_loaded); 
-					}
-					void Loaded() {
-                        _loaded = true;
-					}
-                    JSON::IIterator* Element() {
-                        return (_element);
-					}
-
-                private:
-                    bool _loaded;
-                    JSON::IIterator* _element;
-                };
-
-                IElement* _handling;
-                string _handlingName;
-                std::list<Context> _handleStack;
-                State _state;
-                uint16_t _offset;
-                uint16_t _bufferUsed;
-                Quoted _quoted;
-                uint16_t _levelSkip;
-                Core::CriticalSection _adminLock;
-                std::string _buffer;
-            };
-
             template <typename INSTANCEOBJECT>
-            static void ToString(const INSTANCEOBJECT& realObject, string& text)
+            static bool ToString(const INSTANCEOBJECT& realObject, string& text)
             {
-                uint16_t fillCount = 0;
-                bool ready = false;
-                class SerializerImpl : public Serializer {
-                public:
-                    SerializerImpl(bool& readyFlag)
-                        : INSTANCEOBJECT::Serializer()
-                        , _ready(readyFlag)
-                    {
-                    }
-                    virtual ~SerializerImpl()
-                    {
-                    }
+                char buffer[1024];
+                uint16_t loaded;
+                uint16_t offset = 0;
 
-                public:
-                    virtual void Serialized(const Core::JSON::IElement& /* element */)
-                    {
-                        _ready = true;
-                    }
-
-                private:
-                    bool& _ready;
-                } serializer(ready);
-
-                // Request an object to e serialized..
-                serializer.Submit(realObject);
+                text.clear();
 
                 // Serialize object
-                while (ready == false) {
-                    uint8_t buffer[1024];
-                    uint16_t loaded = serializer.Serialize(buffer, sizeof(buffer));
+                do {
+                    loaded = static_cast<const IElement&>(realObject).Serialize(buffer, sizeof(buffer), offset);
 
                     ASSERT(loaded <= sizeof(buffer));
+                    DEBUG_VARIABLE(loaded);
 
-                    fillCount += loaded;
+                    text += string(buffer, loaded);
 
-                    text += string(reinterpret_cast<char*>(&buffer[0]), loaded);
-                }
+                } while ((offset != 0) && (loaded == sizeof(buffer)));
+
+                return (offset == 0);
             }
-
             template <typename INSTANCEOBJECT>
             static bool FromString(const string& text, INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
-                class DeserializerImpl : public Deserializer {
-                public:
-                    DeserializerImpl(bool& ready)
-                        : INSTANCEOBJECT::Deserializer()
-                        , _element(nullptr)
-                        , _ready(ready)
-                    {
-                    }
-                    ~DeserializerImpl()
-                    {
-                    }
+                uint16_t offset = 0;
 
-                public:
-                    inline void SetElement(Core::JSON::IElement* element)
-                    {
-                        ASSERT(_element == nullptr);
-                        _element = element;
-                    }
-                    virtual Core::JSON::IElement* Element(const string& identifier)
-                    {
-                        DEBUG_VARIABLE(identifier);
-                        ASSERT(identifier.empty() == true);
-                        return (_element);
-                    }
-                    virtual void Deserialized(Core::JSON::IElement& element)
-                    {
-                        DEBUG_VARIABLE(element);
-                        ASSERT(&element == _element);
-                        _element = nullptr;
-                        _ready = true;
-                    }
-
-                private:
-                    Core::JSON::IElement* _element;
-                    bool& _ready;
-                } deserializer(ready);
-
-                uint16_t fillCount = 0;
                 realObject.Clear();
 
-                deserializer.SetElement(&realObject);
+                if (text.empty() == false) {
+                    // Deserialize object
+                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
 
-                // Serialize object
-                while ((ready == false) && (fillCount < text.size())) {
-                    uint8_t buffer[1024];
-                    uint16_t size = ((text.size() - fillCount) < sizeof(buffer) ? (static_cast<uint16_t>(text.size()) - fillCount) : sizeof(buffer));
-
-                    // Prepare the deserialize buffer
-                    memcpy(buffer, &(text.data()[fillCount]), size);
-
-                    fillCount += size;
-
-                    deserializer.Deserialize(buffer, size);
+                    ASSERT(loaded <= text.length());
+                    DEBUG_VARIABLE(loaded);
                 }
 
-                return (ready == true);
+                return (offset == 0);
             }
 
-            void ToString(string& text) const
+            inline bool ToString(string& text) const
             {
-                Core::JSON::IElement::ToString(*this, text);
+                return (Core::JSON::IElement::ToString(*this, text));
             }
-            bool FromString(const string& text)
+            inline bool FromString(const string& text)
             {
                 return (Core::JSON::IElement::FromString(text, *this));
             }
@@ -365,118 +76,63 @@ namespace Core {
             template <typename INSTANCEOBJECT>
             static bool ToFile(Core::File& fileObject, const INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
+                bool completed = false;
 
                 if (fileObject.IsOpen()) {
-                    uint32_t missedBytes = 0;
 
-                    class SerializerImpl : public Serializer {
-                    public:
-                        SerializerImpl(bool& readyFlag)
-                            : INSTANCEOBJECT::Serializer()
-                            , _ready(readyFlag)
-                        {
-                        }
-                        virtual ~SerializerImpl()
-                        {
-                        }
-
-                    public:
-                        virtual void Serialized(const Core::JSON::IElement& /* element */)
-                        {
-                            _ready = true;
-                        }
-
-                    private:
-                        bool& _ready;
-                    } serializer(ready);
-
-                    // Request an object to e serialized..
-                    serializer.Submit(realObject);
+                    char buffer[1024];
+                    uint16_t loaded;
+                    uint16_t offset = 0;
 
                     // Serialize object
-                    while ((ready == false) && (missedBytes == 0)) {
-                        uint8_t buffer[1024];
-                        uint16_t bytes = serializer.Serialize(buffer, sizeof(buffer));
+                    do {
+                        loaded = static_cast<const IElement&>(realObject).Serialize(buffer, sizeof(buffer), offset);
 
-                        missedBytes = (fileObject.Write(buffer, bytes) - bytes);
-                    }
+                        ASSERT(loaded <= sizeof(buffer));
+
+                    } while ((fileObject.Write(reinterpret_cast<const uint8_t*>(buffer), loaded) == loaded) && (loaded == sizeof(buffer)) && (offset != 0));
+
+                    completed = (offset == 0);
                 }
 
-                return (ready);
+                return (completed);
             }
-
             template <typename INSTANCEOBJECT>
             static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject)
             {
-                bool ready = false;
+                bool completed = false;
 
-                if (fileObject.IsOpen() == true) {
-                    uint16_t unusedBytes = 0;
-                    uint16_t readBytes = static_cast<uint16_t>(~0);
+                if (fileObject.IsOpen()) {
 
-                    class DeserializerImpl : public Deserializer {
-                    public:
-                        DeserializerImpl(bool& ready)
-                            : INSTANCEOBJECT::Deserializer()
-                            , _element(nullptr)
-                            , _ready(ready)
-                        {
-                        }
-                        ~DeserializerImpl()
-                        {
-                        }
-
-                    public:
-                        inline void SetElement(Core::JSON::IElement* element)
-                        {
-                            ASSERT(_element == nullptr);
-                            _element = element;
-                        }
-                        virtual Core::JSON::IElement* Element(const string& identifier)
-                        {
-                            DEBUG_VARIABLE(identifier);
-                            ASSERT(identifier.empty() == true);
-                            return (_element);
-                        }
-                        virtual void Deserialized(Core::JSON::IElement& element)
-                        {
-                            DEBUG_VARIABLE(element);
-                            ASSERT(&element == _element);
-                            _element = nullptr;
-                            _ready = true;
-                        }
-
-                    private:
-                        Core::JSON::IElement* _element;
-                        bool& _ready;
-                    } deserializer(ready);
+                    char buffer[1024];
+                    uint16_t readBytes;
+                    uint16_t loaded;
+                    uint16_t offset = 0;
 
                     realObject.Clear();
 
-                    deserializer.SetElement(&realObject);
+                    // Serialize object
+                    do {
+                        readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
 
-                    while ((ready == false) && (unusedBytes == 0) && (readBytes != 0)) {
-                        uint8_t buffer[1024];
+						if (readBytes == 0) {
+                            loaded = ~0;
+						} else {
+                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
 
-                        readBytes = static_cast<uint16_t>(fileObject.Read(buffer, sizeof(buffer)));
+                            ASSERT(loaded <= readBytes);
 
-                        if (readBytes != 0) {
-                            // Deserialize object
-                            uint16_t usedBytes = deserializer.Deserialize(buffer, readBytes);
-
-                            ASSERT(usedBytes <= readBytes);
-
-                            unusedBytes = (readBytes - usedBytes);
+                            if (loaded != readBytes) {
+                                fileObject.Position(true, -(readBytes - loaded));
+                            }
                         }
-                    }
 
-                    if (unusedBytes != 0) {
-                        fileObject.Position(true, -unusedBytes);
-                    }
+                    } while ((loaded == readBytes) && (offset != 0));
+
+                    completed = (offset == 0);
                 }
 
-                return (ready == true);
+                return (completed);
             }
 
             bool ToFile(Core::File& fileObject) const
@@ -488,61 +144,51 @@ namespace Core {
                 return (Core::JSON::IElement::FromFile(fileObject, *this));
             }
 
-            virtual const char* Label() const
-            {
-                return nullptr;
-            }
-            static const char* Id()
-            {
-                return nullptr;
-            }
-
-            virtual ParserType Type() const = 0;
+            // JSON Serialization interface
+            // --------------------------------------------------------------------------------
+            virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
+
+            virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
+            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
+        };
+
+        struct EXTERNAL IMessagePack {
+            virtual ~IMessagePack() {}
+
+            // JSON Serialization interface
+            // --------------------------------------------------------------------------------
             virtual void Clear() = 0;
+            virtual bool IsSet() const = 0;
 
-            virtual IBuffered* BufferParser() = 0;
-            virtual IDirect* DirectParser() = 0;
-            virtual IIterator* ElementIterator() = 0;
-        };
-
-        struct IIterator {
-            virtual ~IIterator() {}
-
-            // Just move the iterator to the next point in the map.
-            virtual bool Next() = 0;
-
-            // Return the element, we are currently pointing at.
-            virtual IElement* Element() = 0;
-        };
-
-        struct ILabelIterator : public IIterator {
-            virtual ~ILabelIterator() {}
-
-            // Move the iterator to the element that is compliant with the label.
-            virtual const char* Label() const = 0;
-            virtual bool Find(const char label[]) = 0;
-        };
-
-        struct IArrayIterator : public IIterator {
-            virtual ~IArrayIterator() {}
-
-            virtual void AddElement() = 0;
-            virtual void Clear() = 0;
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
         };
 
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
-        class NumberType : public IElement, public IBuffered {
+        class NumberType : public IElement, public IMessagePack {
+        private:
+            enum modes {
+                OCTAL = 0x008,
+                DECIMAL = 0x00A,
+                HEXADECIMAL = 0x010,
+                QUOTED = 0x020,
+                SET = 0x040,
+                ERROR = 0x080,
+                NEGATIVE = 0x100,
+                UNDEFINED = 0x200
+            };
+
         public:
             NumberType()
-                : _set(false)
-                , _value()
+                : _set(0)
+                , _value(0)
                 , _default(0)
             {
             }
             NumberType(const TYPE Value, const bool set = false)
-                : _set(set)
-                , _value(set == false ? 0 : Value)
+                : _set(set ? SET : 0)
+                , _value(Value)
                 , _default(Value)
             {
             }
@@ -566,13 +212,9 @@ namespace Core {
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const TYPE& RHS)
             {
                 _value = RHS;
-                _set = true;
+                _set = SET;
 
                 return (*this);
-            }
-            void FromString(const string& RHS)
-            {
-                Deserialize(RHS);
             }
             inline TYPE Default() const
             {
@@ -580,71 +222,379 @@ namespace Core {
             }
             inline TYPE Value() const
             {
-                return (_set == true ? _value.Value() : _default);
+                return ((_set & SET) != 0 ? _value : _default);
             }
             inline operator TYPE() const
             {
-                return Value();
+                return _value;
             }
-            inline void ToString(string& result) const
+            bool Null() const
             {
-                Serialize(result);
+                return ((_set & UNDEFINED) != 0);
             }
-
-            // IElement interface methods
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _set |= UNDEFINED;
+                else
+                    _set &= ~UNDEFINED;
+            }
             virtual bool IsSet() const override
             {
-                return (_set == true);
+                return ((_set & (SET | UNDEFINED)) != 0);
             }
             virtual void Clear() override
             {
-                _set = false;
+                _set = 0;
+                _value = 0;
             }
 
         private:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
+            // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
-                return (PARSE_BUFFERED);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return this;
-            }
-            virtual IDirect* DirectParser() override
-            {
-                return nullptr;
-            }
+                uint16_t loaded = 0;
 
-            virtual IIterator* ElementIterator() override
-            {
-                return nullptr;
-            }
+                ASSERT(maxLength > 0);
 
-            // IBuffered interface methods (private)
-            virtual void Serialize(std::string& buffer) const override
-            {
-                _value.Serialize(buffer);
+                while ((offset < 4) && (loaded < maxLength)) {
 
-                if (BASETYPE != BASE_DECIMAL) {
-                    // JSON does not support octal and hexadecimal format as number,
-                    // make it string between double quotes
-                    buffer = '"' + buffer + '"';
+                    if ((_set & UNDEFINED) != 0) {
+                        stream[loaded++] = IElement::NullTag[offset++];
+                        if (offset == 4) {
+                            offset = 0;
+                        }
+                    } else if (BASETYPE == BASE_DECIMAL) {
+                        if ((SIGNED == true) && (_value < 0)) {
+                            stream[loaded++] = '-';
+                        }
+                        offset = 4;
+                    } else if (BASETYPE == BASE_OCTAL) {
+                        if (offset == 0) {
+                            stream[loaded++] = '\"';
+                            offset = 1;
+                        } else if (offset == 1) {
+                            if ((SIGNED == true) && (_value < 0)) {
+                                stream[loaded++] = '-';
+                            }
+                            offset = 2;
+                        } else if (offset == 2) {
+                            stream[loaded++] = '0';
+                            offset = 4;
+                        }
+                    } else if (BASETYPE == BASE_HEXADECIMAL) {
+                        if (offset == 0) {
+                            stream[loaded++] = '\"';
+                            offset = 1;
+                        } else if (offset == 1) {
+                            if ((SIGNED == true) && (_value < 0)) {
+                                stream[loaded++] = '-';
+                            }
+                            offset = 2;
+                        } else if (offset == 2) {
+                            stream[loaded++] = '0';
+                            offset = 3;
+                        } else if (offset == 3) {
+                            stream[loaded++] = 'x';
+                            offset = 4;
+                        }
+                    }
                 }
-            }
-            virtual void Deserialize(const std::string& buffer) override
-            {
-                _set = !ContainsNull(buffer);
 
-                if (_set == true) {
-
-                    _value.Deserialize(buffer);
+                if (loaded < maxLength) {
+                    loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
+                if ((offset != 0) && (loaded < maxLength)) {
+                    stream[loaded++] = '\"';
+                    offset = 0;
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    // We are starting, see what the current char is
+                    _value = 0;
+                    _set = 0;
+                }
+                while ((offset < 4) && (loaded < maxLength)) {
+                    if (offset == 0) {
+                        if (stream[loaded] == '\"') {
+                            _set = QUOTED;
+                            offset++;
+                        } else if (stream[loaded] == '-') {
+                            _set = NEGATIVE | DECIMAL;
+                            offset = 4;
+                        } else if (isdigit(stream[loaded])) {
+                            _set = DECIMAL;
+                            _value = (stream[loaded] - '0');
+                            offset = 4;
+                        } else if (stream[loaded] == 'n') {
+                            _set = UNDEFINED;
+                            offset = 1;
+                        } else {
+                            _set = ERROR;
+                            offset = 4;
+                        }
+                    } else if (offset == 1) {
+                        ASSERT(_set = QUOTED);
+                        if (stream[loaded] == '0') {
+                            offset = 2;
+                        } else if (stream[loaded] == '-') {
+                            _set |= NEGATIVE;
+                            offset = 3;
+                        } else if (isdigit(stream[loaded])) {
+                            _value = (stream[loaded] - '0');
+                            _set |= DECIMAL;
+                            offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
+                            offset = 2;
+                        } else {
+                            _set = ERROR;
+                            offset = 4;
+                        }
+                    } else if (offset == 2) {
+                        ASSERT(_set = QUOTED);
+                        if (stream[loaded] == '0') {
+                            ASSERT(_set & NEGATIVE);
+                            offset = 3;
+                        } else if (::toupper(stream[loaded]) == 'X') {
+                            offset = 4;
+                            _set |= HEXADECIMAL;
+                        } else if (isdigit(stream[loaded])) {
+                            _value = (stream[loaded] - '0');
+                            _set = (_set & NEGATIVE ? DECIMAL : OCTAL);
+                            offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
+                            offset = 3;
+                        } else {
+                            _set = ERROR;
+                            offset = 4;
+                        }
+                    } else if (offset == 3) {
+                        ASSERT(_set & QUOTED);
+                        ASSERT(_set & NEGATIVE);
+                        if (::toupper(stream[loaded]) == 'X') {
+                            offset = 4;
+                            _set |= HEXADECIMAL;
+                        } else if (isdigit(stream[loaded])) {
+                            _value = (stream[loaded] - '0');
+                            _set |= OCTAL;
+                            offset = 4;
+                        } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
+                            offset = 4;
+                        } else {
+                            _set = ERROR;
+                            offset = 4;
+                        }
+                    }
+                    loaded++;
+                }
+
+                bool completed = ((_set & ERROR) != 0);
+
+                while ((loaded < maxLength) && (completed == false)) {
+                    if (isdigit(stream[loaded])) {
+                        _value *= (_set & 0x1F);
+                        _value += (stream[loaded] - '0');
+                        loaded++;
+                    } else if (isxdigit(stream[loaded])) {
+                        _value *= 16;
+                        _value += (::toupper(stream[loaded]) - 'A') + 10;
+                        loaded++;
+                    } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
+                        completed = true;
+                        loaded++;
+                    } else if (((_set & QUOTED) == 0) && ((stream[loaded] == ',') || stream[loaded] == '}' || stream[loaded] == ']')) {
+                        completed = true;
+                    } else {
+                        // Oopsie daisy, error, computer says *NO*
+                        _set |= ERROR;
+                        completed = true;
+                    }
+                }
+
+                if ((_set & (ERROR | QUOTED)) == (ERROR | QUOTED)) {
+                    while ((loaded < maxLength) && (offset != 0)) {
+                        if (stream[loaded++] == '\"') {
+                            offset = 0;
+                        }
+                    }
+                } else if (completed == true) {
+                    if (_set & NEGATIVE) {
+                        _value *= -1;
+                    }
+                    _set |= SET;
+                    offset = 0;
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                if ((_set & UNDEFINED) != 0) {
+                    stream[0] = 0xC0;
+                    return (1);
+                }
+                return (Convert(stream, maxLength, offset, TemplateIntToType<SIGNED>()));
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset)
+            {
+                uint8_t loaded = 0;
+                if (offset == 0) {
+                    // First byte depicts a lot. Find out what we need to read
+                    _value = 0;
+                    uint8_t header = stream[loaded++];
+
+                    if (header == 0xC0) {
+                        _set = UNDEFINED;
+                    } else if ((header >= 0xCC) && (header <= 0xCF)) {
+                        _set = (1 < (header - 0xCC)) << 12;
+                        offset = 1;
+                    } else if ((header >= 0xD0) && (header <= 0xD3)) {
+                        _set = (1 << (header - 0xD0)) << 12;
+                        offset = 1;
+                    } else if ((header & 0x80) == 0) {
+                        _value = (header & 0x7F);
+                    } else if ((header & 0xE0) == 0xE0) {
+                        _value = (header & 0x0F);
+                    } else {
+                        _set = ERROR;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset != 0)) {
+                    _value = _value << 8;
+                    _value += stream[loaded++];
+                    offset = (offset == ((_set >> 12) & 0xF) ? 0 : offset + 1);
+                }
+                return (loaded);
+            }
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TYPE serialize) const
+            {
+                uint8_t parsed = 4;
+                uint16_t loaded = 0;
+                TYPE divider = 1;
+                TYPE value = (serialize / BASETYPE);
+
+                while (divider <= value) {
+                    divider *= BASETYPE;
+                }
+
+                value = serialize;
+
+                while ((divider > 0) && (loaded < maxLength)) {
+                    if (parsed >= offset) {
+                        uint8_t digit = static_cast<uint8_t>(value / divider);
+                        if ((BASETYPE != BASE_HEXADECIMAL) || (digit < 10)) {
+                            stream[loaded++] = static_cast<char>('0' + digit);
+                        } else {
+                            stream[loaded++] = static_cast<char>('A' - 10 + digit);
+                        }
+                        offset++;
+                    }
+                    parsed++;
+                    value %= divider;
+                    divider /= BASETYPE;
+                }
+
+                if ((BASETYPE == BASE_DECIMAL) && (loaded < maxLength)) {
+                    offset = 0;
+                }
+
+                return (loaded);
+            }
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
+            {
+                return (Convert(stream, maxLength, offset, _value));
+            }
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
+            {
+                return (Convert(stream, maxLength, offset, ::abs(_value)));
+            }
+            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
+            {
+                uint8_t loaded = 0;
+                uint8_t bytes = (_value <= 0x7F ? 0 : _value < 0xFF ? 1 : _value < 0xFFFF ? 2 : _value < 0xFFFFFFFF ? 4 : 8);
+
+                if (offset == 0) {
+                    if (bytes == 0) {
+                        stream[loaded++] = static_cast<uint8_t>(_value);
+                    } else {
+                        switch (bytes) {
+                        case 1:
+                            stream[loaded++] = 0xCC;
+                            break;
+                        case 2:
+                            stream[loaded++] = 0xCD;
+                            break;
+                        case 4:
+                            stream[loaded++] = 0xCE;
+                            break;
+                        case 8:
+                            stream[loaded++] = 0xCF;
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                        offset = 1;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset != 0)) {
+                    TYPE value = _value >> (8 * (bytes - offset));
+
+                    stream[loaded++] = static_cast<uint8_t>(value & 0xFF);
+                    offset = (offset == bytes ? 0 : offset + 1);
+                }
+
+                return (loaded);
+            }
+            uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
+            {
+                uint8_t loaded = 0;
+                uint8_t bytes = (((_value < 16) && (_value > -15)) ? 0 : ((_value < 128) && (_value > -127)) ? 1 : ((_value < 32767) && (_value > -32766)) ? 2 : ((_value < 2147483647) && (_value > -2147483646)) ? 4 : 8);
+
+                if (offset == 0) {
+                    if (bytes == 0) {
+                        stream[loaded++] = (_value & 0x1F) | 0xE0;
+                    } else {
+                        switch (bytes) {
+                        case 1:
+                            stream[loaded++] = 0xD0;
+                            break;
+                        case 2:
+                            stream[loaded++] = 0xD1;
+                            break;
+                        case 4:
+                            stream[loaded++] = 0xD2;
+                            break;
+                        case 8:
+                            stream[loaded++] = 0xD3;
+                            break;
+                        default:
+                            ASSERT(false);
+                        }
+                        offset = 1;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset != 0)) {
+                    TYPE value = _value >> (8 * (bytes - offset));
+
+                    stream[loaded++] = static_cast<uint8_t>(value & 0xFF);
+                    offset = (offset == bytes ? 0 : offset + 1);
+                }
+
+                return (loaded);
             }
 
         private:
-            bool _set;
-            Core::NumberType<TYPE, SIGNED, BASETYPE> _value;
+            uint16_t _set;
+            TYPE _value;
             TYPE _default;
         };
 
@@ -673,134 +623,15 @@ namespace Core {
         typedef NumberType<uint64_t, false, BASE_OCTAL> OctUInt64;
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
-        template <typename ENUMERATE>
-        class EnumType : public IElement, public IBuffered {
-        public:
-            EnumType()
-                : _value()
-                , _default(static_cast<ENUMERATE>(0))
-            {
-            }
-            EnumType(const ENUMERATE Value)
-                : _value()
-                , _default(Value)
-            {
-            }
-            EnumType(const EnumType<ENUMERATE>& copy)
-                : _value(copy._value)
-                , _default(copy._default)
-            {
-            }
-            virtual ~EnumType()
-            {
-            }
-
-            EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
-            {
-                _value = RHS._value;
-
-                return (*this);
-            }
-            EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)
-            {
-                _value = RHS;
-
-                return (*this);
-            }
-            void FromString(const string& RHS)
-            {
-                Deserialize(RHS);
-            }
-
-            inline const ENUMERATE Default() const
-            {
-                return (_default);
-            }
-            inline const ENUMERATE Value() const
-            {
-                return (_value.IsSet() == true ? _value.Value() : _default);
-            }
-            inline operator const ENUMERATE() const
-            {
-                return Value();
-            }
-            inline void ToString(string& result) const
-            {
-                Serialize(result);
-            }
-            const TCHAR* Data() const
-            {
-                return (_value.Data());
-            }
-
-            // IElement interface methods
-            virtual bool IsSet() const override
-            {
-                return (_value.IsSet() == true);
-            }
-            virtual void Clear() override
-            {
-                _value.Clear();
-            }
-
-        private:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
-            {
-                return (PARSE_BUFFERED);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return this;
-            }
-
-            virtual IDirect* DirectParser() override
-            {
-                return nullptr;
-            }
-
-            virtual IIterator* ElementIterator() override
-            {
-                return nullptr;
-            }
-
-            // IBuffered interface methods (private)
-            virtual void Serialize(std::string& buffer) const override
-            {
-                uint16_t index = 0;
-
-                // We always start with a quote...
-                buffer = '\"';
-
-                const TCHAR* enumText = _value.Data();
-
-                while (enumText[index] != '\0') {
-                    buffer += enumText[index++];
-                }
-
-                // and end with a quote...
-                buffer += '\"';
-            }
-            virtual void Deserialize(const std::string& buffer) override
-            {
-                if (ContainsNull(buffer)) {
-                    _value.Clear();
-                } else {
-                    _value.Assignment(true, buffer.c_str());
-                }
-            }
-
-        private:
-            Core::EnumerateType<ENUMERATE> _value;
-            ENUMERATE _default;
-        };
-
-        class EXTERNAL Boolean : public IElement, public IBuffered {
+        class EXTERNAL Boolean : public IElement, public IMessagePack {
         private:
             static constexpr uint8_t None = 0x00;
             static constexpr uint8_t ValueBit = 0x01;
             static constexpr uint8_t DefaultBit = 0x02;
             static constexpr uint8_t SetBit = 0x04;
+            static constexpr uint8_t DeserializeBit = 0x08;
+            static constexpr uint8_t ErrorBit = 0x10;
+            static constexpr uint8_t NullBit = 0x20;
 
         public:
             Boolean()
@@ -833,31 +664,32 @@ namespace Core {
 
                 return (*this);
             }
-            void FromString(const string& RHS)
-            {
-                Deserialize(RHS);
-            }
             inline bool Value() const
             {
-                return (IsSet() ? (_value & ValueBit) != None : (_value & DefaultBit) != None);
+                return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
             }
             inline bool Default() const
             {
-                return (_value & DefaultBit) != None;
+                return (_value & DefaultBit) != 0;
             }
             inline operator bool() const
             {
-                return Value();
+                return (_value & ValueBit);
             }
-            inline void ToString(string& result) const
+            bool Null() const
             {
-                Serialize(result);
+                return ((_value & NullBit) != 0);
             }
-
-            // IElement interface methods
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _value |= NullBit;
+                else
+                    _value &= ~NullBit;
+            }
             virtual bool IsSet() const override
             {
-                return ((_value & SetBit) != None);
+                return ((_value & (SetBit | NullBit)) != 0);
             }
             virtual void Clear() override
             {
@@ -865,56 +697,114 @@ namespace Core {
             }
 
         private:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
-                return (PARSE_BUFFERED);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return this;
-            }
+                static constexpr char trueBuffer[] = "true";
+                static constexpr char falseBuffer[] = "false";
 
-            virtual IDirect* DirectParser() override
-            {
-                return nullptr;
-            }
-
-            virtual IIterator* ElementIterator() override
-            {
-                return nullptr;
-            }
-
-            // IBuffered interface methods (private)
-            virtual void Serialize(std::string& buffer) const override
-            {
-                if (Value() == true) {
-                    buffer = "true";
-                } else {
-                    buffer = "false";
-                }
-            }
-
-            virtual void Deserialize(const std::string& buffer) override
-            {
-                if (buffer.length() == 1) {
-                    if ((buffer[0] == '1') || (toupper(buffer[0]) == 'T')) {
-                        _value = (SetBit | ValueBit) | (_value & DefaultBit);
-                    } else if ((buffer[0] == '0') || (toupper(buffer[0]) == 'F')) {
-                        _value = SetBit | (_value & DefaultBit);
+                uint16_t loaded = 0;
+                if ((_value & NullBit) != 0) {
+                    while ((loaded < maxLength) && (offset < 4)) {
+                        stream[loaded++] = NullTag[offset++];
                     }
-                } else if ((buffer.length() >= 4) && (toupper(buffer[0]) == 'T') && (toupper(buffer[1]) == 'R') && (toupper(buffer[2]) == 'U') && (toupper(buffer[3]) == 'E')) {
-                    _value = (SetBit | ValueBit) | (_value & DefaultBit);
-                } else if ((buffer.length() >= 5) && (toupper(buffer[0]) == 'F') && (toupper(buffer[1]) == 'A') && (toupper(buffer[2]) == 'L') && (toupper(buffer[3]) == 'S') && (toupper(buffer[4]) == 'E')) {
-                    _value = SetBit | (_value & DefaultBit);
+                    if (offset == 4) {
+                        offset = 0;
+                    }
+                } else if (Value() == true) {
+                    while ((loaded < maxLength) && (offset < (sizeof(trueBuffer) - 1))) {
+                        stream[loaded++] = trueBuffer[offset++];
+                    }
+                    if (offset == (sizeof(trueBuffer) - 1)) {
+                        offset = 0;
+                    }
+                } else {
+                    while ((loaded < maxLength) && (offset < (sizeof(falseBuffer) - 1))) {
+                        stream[loaded++] = falseBuffer[offset++];
+                    }
+                    if (offset == (sizeof(falseBuffer) - 1)) {
+                        offset = 0;
+                    }
                 }
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+            {
+                uint16_t loaded = 0;
+                static constexpr char trueBuffer[] = "true";
+                static constexpr char falseBuffer[] = "false";
+
+                if (offset == 0) {
+                    if (stream[0] == trueBuffer[0]) {
+                        _value = DeserializeBit | (_value & DefaultBit);
+                        offset = 1;
+                        loaded = 1;
+                    } else if (stream[0] == falseBuffer[0]) {
+                        _value = (_value & DefaultBit);
+                        offset = 1;
+                        loaded = 1;
+                    } else if (stream[0] == '0') {
+                        _value = SetBit | (_value & DefaultBit);
+                        loaded = 1;
+                    } else if (stream[0] == '1') {
+                        _value = SetBit | ValueBit | (_value & DefaultBit);
+                        loaded = 1;
+                    } else {
+                        _value = ErrorBit | (_value & DefaultBit);
+                        offset = 0;
+                    }
+                }
+
+                if (offset > 0) {
+                    uint8_t length = (_value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
+                    const char* buffer = (_value & DeserializeBit ? trueBuffer : falseBuffer);
+
+                    while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
+                        if (stream[loaded] != buffer[offset]) {
+                            _value = ErrorBit | (_value & DefaultBit);
+                        } else {
+                            offset++;
+                            loaded++;
+                        }
+                    }
+
+                    if ((offset == length) || ((_value & ErrorBit) != 0)) {
+                        offset = 0;
+                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit)) == DeserializeBit ? ValueBit : 0);
+                    }
+                }
+                return (loaded);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                if ((_value & NullBit) != 0) {
+                    stream[0] = 0xC0;
+                } else if ((_value & ValueBit) != 0) {
+                    stream[0] = 0xC3;
+                } else {
+                    stream[0] = 0xC2;
+                }
+                return (1);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                if ((stream[0] == 0xC0) != 0) {
+                    _value = NullBit;
+                } else if ((stream[0] == 0xC3) != 0) {
+                    _value = ValueBit | SetBit;
+                } else if ((stream[0] == 0xC2) != 0) {
+                    _value = SetBit;
+                } else {
+                    _value = ErrorBit;
+                }
+
+                return (1);
             }
 
         private:
             uint8_t _value;
         };
 
-        class EXTERNAL String : public IElement, public IDirect {
+        class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint32_t None = 0x00000000;
             static constexpr uint32_t ScopeMask = 0x0FFFFFFF;
@@ -963,11 +853,6 @@ namespace Core {
             {
             }
 
-            void FromString(const string& RHS)
-            {
-                _value = RHS;
-                _scopeCount |= SetBit;
-            }
             String& operator=(const string& RHS)
             {
                 Core::ToString(RHS.c_str(), _value);
@@ -995,7 +880,7 @@ namespace Core {
             {
                 _default = RHS._default;
                 _value = RHS._value;
-                _scopeCount = RHS._scopeCount & (QuotedSerializeBit | SetBit);
+                _scopeCount = (RHS._scopeCount & ~QuotedSerializeBit) | (_scopeCount & QuotedSerializeBit);
 
                 return (*this);
             }
@@ -1047,89 +932,64 @@ namespace Core {
                 return (!operator>(RHS));
             }
 
-            inline const string Value() const
-            {
-                return (((_scopeCount & (SetBit|NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : _default);
+			inline const string Value() const
+			{
+                if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit|QuoteFoundBit)) {
+					return('\"' + Core::ToString(_value.c_str()) + '\"');
+				}
+                return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
             inline const string& Default() const
             {
                 return (_default);
             }
-            inline void ToString(string& result) const
-            {
-                result = (((_scopeCount & SetBit) != 0) ? _value : _default);
-
-                if (UseQuotes() == true) {
-                    result = '"' + result + '"';
-                }
-            }
-
-            inline bool IsNull() const
+            bool Null() const
             {
                 return (_scopeCount & NullBit) != 0;
+            }
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _scopeCount |= NullBit;
+                else
+                    _scopeCount &= ~NullBit;
             }
             // IElement interface methods
             virtual bool IsSet() const override
             {
-                return (_scopeCount & SetBit) != 0;
+                return ((_scopeCount & (SetBit|NullBit)) != 0);
             }
             virtual void Clear() override
             {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
-
             inline bool IsQuoted() const
             {
-                return ((_scopeCount & QuoteFoundBit) != 0);
+                return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
-                    _scopeCount |= QuotedSerializeBit;
+                    _scopeCount |= QuoteFoundBit;
                 } else {
-                    _scopeCount &= (~QuotedSerializeBit);
+                    _scopeCount &= (~QuoteFoundBit);
                 }
             }
 
         protected:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
-            {
-                return (PARSE_DIRECT);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return nullptr;
-            }
-            virtual IDirect* DirectParser() override
-            {
-                return this;
-            }
-            virtual IIterator* ElementIterator() override
-            {
-                return nullptr;
-            }
-
-            inline bool UseQuotes() const
-            {
-                return (_scopeCount & QuotedSerializeBit) != 0;
-            }
             inline bool MatchLastCharacter(const string& str, char ch) const
             {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
-
-            // IDirect interface methods (private)
             virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
-                bool quoted = UseQuotes();
+                bool quoted = IsQuoted();
                 uint16_t result = 0;
 
                 ASSERT(maxLength > 0);
 
-                if (quoted == false) {
-                    static const std::string kNull("null");
-                    const std::string& source = ((_value.empty() == true) ? kNull : _value);
+                if ((quoted == false) || ((_scopeCount & NullBit) != 0)) {
+                    std::string source((_value.empty() || (_scopeCount & NullBit)) ? NullTag : _value);
                     result = static_cast<uint16_t>(source.copy(stream, maxLength - result, offset));
                     offset = (result < maxLength ? 0 : offset + result);
                 } else {
@@ -1171,9 +1031,7 @@ namespace Core {
 
                 return (result);
             }
-
-            virtual uint16_t
-            Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 bool finished = false;
                 uint16_t result = 0;
@@ -1237,10 +1095,90 @@ namespace Core {
                     offset = static_cast<uint16_t>(_value.length()) + _unaccountedCount;
                 } else {
                     offset = 0;
-                    _scopeCount |= (ContainsNull(_value) ? NullBit : 0)|SetBit;
+                    _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
                 }
 
                 return (result);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+                if (offset == 0) {
+                    if ((_scopeCount & NullBit) == 0) {
+                        stream[loaded++] = 0xC0;
+                    } else if (_value.length() <= 31) {
+                        _unaccountedCount = 0;
+                        stream[loaded++] = static_cast<uint8_t>(_value.length() | 0xA0);
+                        offset++;
+                    } else if (_value.length() <= 0xFF) {
+                        _unaccountedCount = 1;
+                        stream[loaded++] = 0xD9;
+                        offset++;
+                    } else if (_value.length() <= 0xFFFF) {
+                        _unaccountedCount = 2;
+                        stream[loaded++] = 0xDA;
+                        offset++;
+                    } else {
+                        stream[loaded++] = 0xC0;
+                    }
+                }
+
+                if (offset != 0) {
+                    while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
+                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset))) & 0xFF);
+                    }
+
+                    while ((loaded < maxLength) && (offset == 0)) {
+                        loaded += static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
+                        offset += loaded;
+
+                        if (offset - _unaccountedCount >= _value.length()) {
+                            offset = 0;
+                        }
+                    }
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+                if (offset == 0) {
+                    if (stream[loaded] == 0xC0) {
+                        _scopeCount |= NullBit;
+                        loaded++;
+                    } else if (stream[loaded] == 0xA0) {
+                        _unaccountedCount = stream[loaded] & 0x1F;
+                        offset = 3;
+                        loaded++;
+                    } else if (stream[loaded] == 0xD9) {
+                        _unaccountedCount = 0;
+                        offset = 2;
+                        loaded++;
+                    } else if (stream[loaded] == 0xDA) {
+                        _unaccountedCount = 0;
+                        offset = 1;
+                        loaded++;
+                    }
+                }
+
+                if (offset != 0) {
+                    while ((loaded < maxLength) && (offset < 3)) {
+                        _unaccountedCount = (_unaccountedCount << 8) + stream[loaded++];
+                        offset++;
+                    }
+
+                    while ((loaded < maxLength) && ((offset - 3) < static_cast<uint16_t>(_unaccountedCount))) {
+                        _value += static_cast<char>(stream[loaded++]);
+                        offset++;
+                    }
+
+		    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                      offset = 0;
+                    }
+                }
+
+                return (loaded);
             }
 
         private:
@@ -1250,283 +1188,145 @@ namespace Core {
             std::string _value;
         };
 
-        class EXTERNAL Container : public IElement {
+        template <typename ENUMERATE>
+        class EnumType : public IElement {
         private:
-            Container(const Container& copy) = delete;
-            Container& operator=(const Container& RHS) = delete;
-
-            typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
-            typedef std::list<JSONLabelValue> JSONElementList;
-
-            class Iterator : public ILabelIterator {
-            private:
-                enum State {
-                    AT_BEGINNING,
-                    AT_ELEMENT,
-                    AT_END
-                };
-
-            private:
-                Iterator();
-                Iterator(const Iterator& copy);
-                Iterator& operator=(const Iterator& RHS);
-
-            public:
-                Iterator(Container& parent, JSONElementList& container)
-                    : _parent(parent)
-                    , _container(container)
-                    , _iterator(container.begin())
-                    , _state(AT_BEGINNING)
-                {
-                }
-                virtual ~Iterator()
-                {
-                }
-
-            public:
-                void Reset()
-                {
-                    _iterator = _container.begin();
-                    _state = AT_BEGINNING;
-                }
-                virtual bool Next()
-                {
-                    if (_state != AT_END) {
-                        if (_state != AT_BEGINNING) {
-                            _iterator++;
-                        }
-
-                        _state = (_iterator != _container.end() ? AT_ELEMENT : AT_END);
-                    }
-                    return (_state == AT_ELEMENT);
-                }
-                virtual const TCHAR* Label() const
-                {
-                    ASSERT(_state == AT_ELEMENT);
-
-                    return (*_iterator).first;
-                }
-                virtual IElement* Element()
-                {
-                    ASSERT(_state == AT_ELEMENT);
-                    ASSERT((*_iterator).second != nullptr);
-
-                    return ((*_iterator).second);
-                }
-                virtual bool Find(const char label[])
-                {
-                    _iterator = _container.begin();
-
-                    while ((_iterator != _container.end()) && (strcmp(label, _iterator->first) != 0)) {
-                        _iterator++;
-                    }
-
-                    if (_iterator != _container.end()) {
-                        _state = AT_ELEMENT;
-                    } else if (_parent.Request(label) == false) {
-                        _state = AT_END;
-                    } else {
-                        _iterator = _container.begin();
-
-                        while ((_iterator != _container.end()) && (strcmp(label, _iterator->first) != 0)) {
-                            _iterator++;
-                        }
-
-                        _state = (_iterator != _container.end() ? AT_ELEMENT : AT_END);
-                    }
-
-                    return (_state == AT_ELEMENT);
-                }
-
-            private:
-                Container& _parent;
-                JSONElementList& _container;
-                JSONElementList::iterator _iterator;
-                State _state;
+            enum status {
+                SET = 0x01,
+                ERROR = 0x02,
+                UNDEFINED = 0x04
             };
 
         public:
-            Container()
-                : _data()
-                , _iterator(*this, _data)
+            EnumType()
+                : _state(0)
+                , _value()
+                , _default(static_cast<ENUMERATE>(0))
             {
             }
-            virtual ~Container()
+            EnumType(const ENUMERATE Value)
+                : _state(0)
+                , _value()
+                , _default(Value)
+            {
+            }
+            EnumType(const EnumType<ENUMERATE>& copy)
+                : _state(copy._state)
+                , _value(copy._value)
+                , _default(copy._default)
+            {
+            }
+            virtual ~EnumType()
             {
             }
 
-        public:
-            bool HasLabel(const string& label) const
+            EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
             {
-                JSONElementList::const_iterator index(_data.begin());
-
-                while ((index != _data.end()) && (index->first != label)) {
-                    index++;
-                }
-
-                return (index != _data.end());
+                _value = RHS._value;
+                _state = SET;
+                return (*this);
             }
+            EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)
+            {
+                _value = RHS;
+                _state = SET;
 
-            // IElement interface methods
+                return (*this);
+            }
+            inline const ENUMERATE Default() const
+            {
+                return (_default);
+            }
+            inline const ENUMERATE Value() const
+            {
+                return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
+            }
+            inline operator const ENUMERATE() const
+            {
+                return _value;
+            }
+            const TCHAR* Data() const
+            {
+                return (Core::EnumerateType<ENUMERATE>(Value()).Data());
+            }
+            bool Null() const
+            {
+                return ((_state & UNDEFINED) != 0);
+            }
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _state |= UNDEFINED;
+                else
+                    _state &= ~UNDEFINED;
+            }
             virtual bool IsSet() const override
             {
-                JSONElementList::const_iterator index = _data.begin();
-
-                // As long as we did not find a set element, continue..
-                while ((index != _data.end()) && (index->second->IsSet() == false)) {
-                    index++;
-                }
-
-                return (index != _data.end());
+                return ((_state & SET) != 0);
             }
             virtual void Clear() override
             {
-                JSONElementList::const_iterator index = _data.begin();
+                _state = 0;
+            }
 
-                // As long as we did not find a set element, continue..
-                while (index != _data.end()) {
-                    index->second->Clear();
-                    index++;
+        private:
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            {
+                if (offset == 0) {
+                    if ((_state & UNDEFINED) != 0) {
+                        _parser.Null(true);
+                    } else {
+                        _parser = Core::EnumerateType<ENUMERATE>(Value()).Data();
+                    }
                 }
+                return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
-            void Add(const TCHAR label[], IElement* element)
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
-                _data.push_back(JSONLabelValue(label, element));
-            }
-            void Remove(const TCHAR label[])
-            {
-                JSONElementList::iterator index(_data.begin());
+                uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset);
 
-                while ((index != _data.end()) && (index->first != label)) {
-                    index++;
+                if (offset == 0) {
+
+                    if (_parser.Null() == true) {
+                        _state = UNDEFINED;
+                    } else if (_parser.IsSet() == true) {
+                        // Looks like we parsed the value. Lets see if we can find it..
+                        Core::EnumerateType<ENUMERATE> converted(_parser.Value().c_str(), false);
+
+                        if (converted.IsSet() == true) {
+                            _value = converted.Value();
+                            _state = SET;
+                        } else {
+                            _state = ERROR;
+                        }
+                    } else {
+                        _state = ERROR;
+                    }
                 }
 
-                if (index != _data.end()) {
-                    _data.erase(index);
-                }
+                return (result);
             }
 
         private:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
-            {
-                return (PARSE_CONTAINER);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return nullptr;
-            }
-            virtual IDirect* DirectParser() override
-            {
-                return nullptr;
-            }
-
-        public:
-            virtual IIterator* ElementIterator() override
-            {
-                _iterator.Reset();
-
-                return (&_iterator);
-            }
-
-        private:
-            virtual bool Request(const TCHAR label[])
-            {
-                return (false);
-            }
-
-        private:
-            JSONElementList _data;
-            Container::Iterator _iterator;
-        };
-
-        template <typename ELEMENTSELECTOR>
-        class ChoiceType : public IElement {
-        public:
-        private:
-            ELEMENTSELECTOR _selector;
-        };
-
-        class Iterator : public ILabelIterator {
-        private:
-            Iterator();
-            Iterator(const Iterator& copy);
-            Iterator& operator=(const Iterator& RHS);
-
-        public:
-            Iterator(IElement* element)
-                : _element(element)
-                , _label()
-                , _index(0)
-            {
-            }
-            Iterator(IElement* element, const char label[])
-                : _element(element)
-                , _label()
-                , _index(0)
-            {
-                ToString(label, _label);
-            }
-#ifndef __NO_WCHAR_SUPPORT__
-            Iterator(IElement* element, const wchar_t label[])
-                : _element(element)
-                , _label()
-                , _index(0)
-            {
-                ToString(label, _label);
-            }
-#endif
-            ~Iterator()
-            {
-            }
-
-        public:
-            void Reset()
-            {
-                _index = 0;
-            }
-
-            // Just move the iterator to the next point in the map.
-            virtual bool Next()
-            {
-                if (_index != 2) {
-                    _index++;
-                }
-                return (_index == 1);
-            }
-
-            // Return the element, we are currently pointing at.
-            virtual IElement* Element()
-            {
-                ASSERT(_index == 1);
-
-                return (_element);
-            }
-
-            virtual const char* Label() const
-            {
-                ASSERT(_index == 1);
-
-                return _label.c_str();
-            }
-            virtual bool Find(const char label[])
-            {
-                if (strcmp(_label.c_str(), label) == 0) {
-                    _index = 1;
-                } else {
-                    _index = 2;
-                }
-                return (_index == 1);
-            }
-
-        private:
-            IElement* _element;
-            std::string _label;
-            uint8_t _index;
+            uint8_t _state;
+            ENUMERATE _value;
+            ENUMERATE _default;
+            mutable String _parser;
         };
 
         template <typename ELEMENT>
         class ArrayType : public IElement {
+        private:
+            enum mode : uint8_t {
+                ERROR = 0x80
+            };
+
+            static constexpr uint16_t BEGIN_MARKER = 1;
+            static constexpr uint16_t END_MARKER = 2;
+            static constexpr uint16_t SKIP_BEFORE = 3;
+            static constexpr uint16_t SKIP_AFTER = 4;
+            static constexpr uint16_t PARSE = 5;
+
         public:
             template <typename ARRAYELEMENT>
             class ConstIteratorType {
@@ -1618,7 +1418,7 @@ namespace Core {
                 State _state;
             };
             template <typename ARRAYELEMENT>
-            class IteratorType : public IArrayIterator {
+            class IteratorType {
             private:
                 typedef std::list<ARRAYELEMENT> ArrayContainer;
                 enum State {
@@ -1671,7 +1471,7 @@ namespace Core {
                     }
                     _state = AT_BEGINNING;
                 }
-                virtual bool Next()
+                bool Next()
                 {
                     if (_container != nullptr) {
                         if (_state != AT_END) {
@@ -1690,13 +1490,13 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
-                virtual IElement* Element()
+                IElement* Element()
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (&(*_iterator));
                 }
-                virtual void AddElement()
+                void AddElement()
                 {
                     // This can only be called if there is a container..
                     ASSERT(_container != nullptr);
@@ -1708,7 +1508,7 @@ namespace Core {
                         _iterator--;
                     }
                 }
-                virtual void Clear()
+                void Clear()
                 {
                     // This can only be called if there is a container..
                     ASSERT(_container != nullptr);
@@ -1752,64 +1552,31 @@ namespace Core {
             {
             }
 
-            // IElement interface methods
+        public:
             virtual bool IsSet() const override
             {
                 return (Length() > 0);
             }
             virtual void Clear() override
             {
+                _state = 0;
                 _data.clear();
             }
-
-            ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
-            {
-
-                _data = RHS._data;
-                _iterator = IteratorType<ELEMENT>(_data);
-
-                return (*this);
-            }
-            inline operator string() const
-            {
-                string result;
-                ToString(result);
-                return (result);
-            }
-            inline ArrayType<ELEMENT>& operator=(const string& RHS)
-            {
-                FromString(RHS);
-                return (*this);
-            }
-
-        private:
-            // IElement interface methods (private)
-            virtual ParserType Type() const override
-            {
-                return (PARSE_CONTAINER);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return nullptr;
-            }
-
-            virtual IDirect* DirectParser() override
-            {
-                return nullptr;
-            }
-
-        public:
-            virtual IIterator* ElementIterator() override
-            {
-                _iterator.Reset();
-
-                return (&_iterator);
-            }
-
-        public:
             inline uint16_t Length() const
             {
                 return static_cast<uint16_t>(_data.size());
+            }
+            inline ELEMENT& Add()
+            {
+                _data.push_back(ELEMENT());
+
+                return (_data.back());
+            }
+            inline ELEMENT& Add(const ELEMENT& element)
+            {
+                _data.push_back(element);
+
+                return (_data.back());
             }
             ELEMENT& operator[](const uint32_t index)
             {
@@ -1847,18 +1614,6 @@ namespace Core {
             {
                 return operator[](index);
             }
-            inline ELEMENT& Add()
-            {
-                _data.push_back(ELEMENT());
-
-                return (_data.back());
-            }
-            inline ELEMENT& Add(const ELEMENT& element)
-            {
-                _data.push_back(element);
-
-                return (_data.back());
-            }
             inline Iterator Elements()
             {
                 return (Iterator(_data));
@@ -1867,56 +1622,426 @@ namespace Core {
             {
                 return (ConstIterator(_data));
             }
+            ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
+            {
+                _state = RHS._state;
+                _data = RHS._data;
+                _iterator = IteratorType<ELEMENT>(_data);
+
+                return (*this);
+            }
+            inline operator string() const
+            {
+                string result;
+                ToString(result);
+                return (result);
+            }
+            inline ArrayType<ELEMENT>& operator=(const string& RHS)
+            {
+                FromString(RHS);
+                return (*this);
+            }
 
         private:
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _iterator.Reset();
+                    stream[loaded++] = '[';
+                    offset = (_iterator.Next() == false ? ~0 : PARSE);
+                }
+                while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
+                    if (offset >= PARSE) {
+                        offset -= PARSE;
+                        loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset = (offset != 0 ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
+                    } else if (offset == BEGIN_MARKER) {
+                        stream[loaded++] = ',';
+                        offset = PARSE;
+                    }
+                }
+                if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
+                    stream[loaded++] = ']';
+                    offset = 0;
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+            {
+                uint16_t loaded = 0;
+                if ((offset == 0) || (offset == BEGIN_MARKER)) {
+                    // Run till we find opening bracket..
+                    while ((loaded < maxLength) && (stream[loaded] != '[')) {
+                        loaded++;
+                    }
+                    if (loaded == maxLength) {
+                        offset = BEGIN_MARKER;
+                    } else {
+                        offset = SKIP_BEFORE;
+                        loaded++;
+                    }
+                }
+
+                while ((offset != 0) && (loaded < maxLength)) {
+                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
+                        // Run till we find a character not a whitespace..
+                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                            loaded++;
+                        }
+
+                        if (loaded < maxLength) {
+                            switch (stream[loaded]) {
+                            case ']':
+                                offset = 0;
+                                loaded++;
+                                break;
+                            case ',':
+                                if (offset == SKIP_BEFORE) {
+                                    _state = ERROR;
+                                } else {
+                                    offset = SKIP_BEFORE;
+                                }
+                                loaded++;
+                                break;
+                            default:
+                                offset = PARSE;
+                                _data.push_back(ELEMENT());
+                                break;
+                            }
+                        }
+                    }
+                    if (offset >= PARSE) {
+                        offset = (offset - PARSE);
+                        loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
+                    }
+                }
+
+                return (loaded);
+            }
+
+        private:
+            uint8_t _state;
             std::list<ELEMENT> _data;
-            IteratorType<ELEMENT> _iterator;
+            mutable IteratorType<ELEMENT> _iterator;
         };
 
-        template <typename JSONOBJECT>
-        class LabelType : public JSONOBJECT {
+        class EXTERNAL Container : public IElement {
         private:
-            LabelType(const LabelType<JSONOBJECT>&) = delete;
-            LabelType<JSONOBJECT>& operator=(const LabelType<JSONOBJECT>) = delete;
+            enum mode : uint8_t {
+                ERROR = 0x80
+            };
+
+            static constexpr uint16_t BEGIN_MARKER = 1;
+            static constexpr uint16_t END_MARKER = 2;
+            static constexpr uint16_t SKIP_BEFORE = 3;
+            static constexpr uint16_t SKIP_AFTER = 4;
+            static constexpr uint16_t PARSE = 5;
+
+            typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
+            typedef std::list<JSONLabelValue> JSONElementList;
+
+            class Iterator {
+            private:
+                enum State {
+                    AT_BEGINNING,
+                    AT_ELEMENT,
+                    AT_END
+                };
+
+            private:
+                Iterator();
+                Iterator(const Iterator& copy);
+                Iterator& operator=(const Iterator& RHS);
+
+            public:
+                Iterator(Container& parent, JSONElementList& container)
+                    : _parent(parent)
+                    , _container(container)
+                    , _iterator(container.begin())
+                    , _state(AT_BEGINNING)
+                {
+                }
+                virtual ~Iterator()
+                {
+                }
+
+            public:
+                void Reset()
+                {
+                    _iterator = _container.begin();
+                    _state = AT_BEGINNING;
+                }
+                bool Next()
+                {
+                    if (_state != AT_END) {
+                        if (_state != AT_BEGINNING) {
+                            _iterator++;
+                        }
+
+                        _state = (_iterator != _container.end() ? AT_ELEMENT : AT_END);
+                    }
+                    return (_state == AT_ELEMENT);
+                }
+                const TCHAR* Label() const
+                {
+                    ASSERT(_state == AT_ELEMENT);
+
+                    return (*_iterator).first;
+                }
+                IElement* Element()
+                {
+                    ASSERT(_state == AT_ELEMENT);
+                    ASSERT((*_iterator).second != nullptr);
+
+                    return ((*_iterator).second);
+                }
+
+            private:
+                Container& _parent;
+                JSONElementList& _container;
+                JSONElementList::iterator _iterator;
+                State _state;
+            };
 
         public:
-            LabelType()
-                : JSONOBJECT()
+            Container(const Container& copy) = delete;
+            Container& operator=(const Container& RHS) = delete;
+            Container()
+                : _state(0)
+                , _current(nullptr)
+                , _data()
+                , _iterator()
+                , _fieldName(true)
             {
             }
-            virtual ~LabelType()
+            virtual ~Container()
             {
             }
 
         public:
-            static const char* Id()
+            bool HasLabel(const string& label) const
             {
-                return (__ID<JSONOBJECT>());
+                JSONElementList::const_iterator index(_data.begin());
+
+                while ((index != _data.end()) && (index->first != label)) {
+                    index++;
+                }
+
+                return (index != _data.end());
             }
 
-            virtual const char* Label() const
+            virtual bool IsSet() const override
             {
-                return (LabelType<JSONOBJECT>::Id());
+                JSONElementList::const_iterator index = _data.begin();
+
+                // As long as we did not find a set element, continue..
+                while ((index != _data.end()) && (index->second->IsSet() == false)) {
+                    index++;
+                }
+
+                return (index != _data.end());
+            }
+            virtual void Clear() override
+            {
+                JSONElementList::const_iterator index = _data.begin();
+
+                // As long as we did not find a set element, continue..
+                while (index != _data.end()) {
+                    index->second->Clear();
+                    index++;
+                }
+            }
+
+            void Add(const TCHAR label[], IElement* element)
+            {
+                _data.push_back(JSONLabelValue(label, element));
+            }
+            void Remove(const TCHAR label[])
+            {
+                JSONElementList::iterator index(_data.begin());
+
+                while ((index != _data.end()) && (index->first != label)) {
+                    index++;
+                }
+
+                if (index != _data.end()) {
+                    _data.erase(index);
+                }
             }
 
         private:
-            HAS_MEMBER(Id, hasID);
-
-            typedef hasID<JSONOBJECT, const char* (JSONOBJECT::*)()> TraitID;
-
-            template <typename TYPE>
-            static inline typename Core::TypeTraits::enable_if<LabelType<TYPE>::TraitID::value, const char*>::type __ID()
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
             {
-                return (JSONOBJECT::Id());
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _iterator = _data.begin();
+                    stream[loaded++] = '{';
+
+                    offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
+                    if (offset == BEGIN_MARKER) {
+                        _fieldName = string(_iterator->first);
+                        _current = &_fieldName;
+                        offset = PARSE;
+                    }
+                }
+                while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
+                    if (offset >= PARSE) {
+                        offset -= PARSE;
+                        loaded += _current->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        offset = (offset == 0 ? BEGIN_MARKER : offset + PARSE);
+                    } else if (offset == BEGIN_MARKER) {
+                        if (_current == &_fieldName) {
+                            stream[loaded++] = ':';
+                            _current = _iterator->second;
+                            offset = PARSE;
+                        } else {
+                            if (FindNext() != false) {
+                                stream[loaded++] = ',';
+                                _fieldName = string(_iterator->first);
+                                _current = &_fieldName;
+                                offset = PARSE;
+                            } else {
+                                offset = ~0;
+                            }
+                        }
+                    }
+                }
+                if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
+                    stream[loaded++] = '}';
+                    offset = 0;
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+            {
+                uint16_t loaded = 0;
+                if ((offset == 0) || (offset == BEGIN_MARKER)) {
+                    // Run till we find opening bracket..
+                    while ((loaded < maxLength) && (stream[loaded] != '{')) {
+                        loaded++;
+                    }
+
+                    if (stream[loaded] != '{') {
+                        offset = BEGIN_MARKER;
+                    } else {
+                        loaded++;
+                        _fieldName.Clear();
+                        offset = SKIP_BEFORE;
+                    }
+                }
+
+                while ((offset != 0) && (loaded < maxLength)) {
+                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
+                        // Run till we find a character not a whitespace..
+                        while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
+                            loaded++;
+                        }
+
+                        if (loaded < maxLength) {
+                            switch (stream[loaded]) {
+                            case '}':
+                                offset = 0;
+                                loaded++;
+                                break;
+                            case ',':
+                                if (offset == SKIP_BEFORE) {
+                                    _state = ERROR;
+                                } else {
+                                    offset = SKIP_BEFORE;
+                                }
+                                loaded++;
+                                break;
+                            case ':':
+                                if (offset == SKIP_BEFORE) {
+                                    _state = ERROR;
+                                } else {
+                                    offset = SKIP_BEFORE;
+                                }
+                                loaded++;
+                                break;
+                            default:
+                                offset = PARSE;
+                                if (_fieldName.IsSet() == true) {
+                                    if (_current != nullptr) {
+                                        _state = ERROR;
+                                    }
+                                    _current = Find(_fieldName.Value().c_str());
+
+                                    _fieldName.Clear();
+
+                                    if (_current == nullptr) {
+                                        _current = &_fieldName;
+                                    }
+                                } else {
+                                    _current = nullptr;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                    if (offset >= PARSE) {
+                        offset = (offset - PARSE);
+                        if (_current == nullptr) {
+                            loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                        } else {
+                            loaded += _current->Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                        }
+                        offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
+                    }
+                }
+
+                return (loaded);
+            }
+            IElement* Find(const char label[])
+            {
+                IElement* result = nullptr;
+
+                JSONElementList::iterator index = _data.begin();
+
+                while ((index != _data.end()) && (strcmp(label, index->first) != 0)) {
+                    index++;
+                }
+
+                if (index != _data.end()) {
+                    result = index->second;
+                }
+                if (Request(label) == true) {
+                    index = _data.end();
+
+                    while ((result == nullptr) && (index != _data.begin())) {
+                        index--;
+                        if (strcmp(label, index->first) == 0) {
+                            result = index->second;
+                        }
+                    }
+                }
+                return (result);
+            }
+            bool FindNext() const
+            {
+                _iterator++;
+                while ((_iterator != _data.end()) && (_iterator->second->IsSet() == false)) {
+                    _iterator++;
+                }
+                return (_iterator != _data.end());
+            }
+            virtual bool Request(const TCHAR label[])
+            {
+                return (false);
             }
 
-            template <typename TYPE>
-            static inline typename Core::TypeTraits::enable_if<!LabelType<TYPE>::TraitID::value, const char*>::type __ID()
-            {
-                static std::string className = (Core::ClassNameOnly(typeid(JSONOBJECT).name()).Text());
-
-                return (className.c_str());
-            }
+        private:
+            uint8_t _state;
+            mutable IElement* _current;
+            JSONElementList _data;
+            mutable JSONElementList::const_iterator _iterator;
+            mutable String _fieldName;
         };
 
         class VariantContainer;
@@ -1988,7 +2113,7 @@ namespace Core {
             {
                 *_array = array;
             }
-            inline Variant(const VariantContainer& object);
+            //Variant(const VariantContainer& object);
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
@@ -1996,6 +2121,7 @@ namespace Core {
                 , _object(copy._object)
             {
             }
+            inline Variant(const VariantContainer& object);
             virtual ~Variant()
             {
             }
@@ -2117,28 +2243,6 @@ namespace Core {
                     return String::IsSet();
             }
             string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
-
-        private:
-            virtual ParserType Type() const override
-            {
-                if (_type == type::ARRAY || _type == type::OBJECT)
-                    return (PARSE_CONTAINER);
-                else
-                    return (PARSE_DIRECT);
-            }
-            virtual IBuffered* BufferParser() override
-            {
-                return nullptr;
-            }
-
-            virtual IDirect* DirectParser() override
-            {
-                if (_type == type::ARRAY || _type == type::OBJECT)
-                    return nullptr;
-                else
-                    return String::DirectParser();
-            }
-            virtual IIterator* ElementIterator() override;
 
         private:
             virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
@@ -2474,20 +2578,11 @@ namespace Core {
         inline void Variant::ToString(string& result) const
         {
             if (_type == type::ARRAY)
-                return _array->ToString(result);
+                _array->ToString(result);
             else if (_type == type::OBJECT)
-                return _object->ToString(result);
+                _object->ToString(result);
             else
-                return String::ToString(result);
-        }
-        inline IIterator* Variant::ElementIterator()
-        {
-            if (_type == type::ARRAY)
-                return _array->ElementIterator();
-            else if (_type == type::OBJECT)
-                return _object->ElementIterator();
-            else
-                return nullptr;
+                String::ToString(result);
         }
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
         {
@@ -2534,93 +2629,12 @@ namespace Core {
         private:
             typedef Tester<SIZE, INSTANCEOBJECT> ThisClass;
 
-            class SerializerImpl : public INSTANCEOBJECT::Serializer {
-            private:
-                SerializerImpl(const SerializerImpl&) = delete;
-                SerializerImpl& operator=(const SerializerImpl&) = delete;
-
-            public:
-                SerializerImpl(bool& readyFlag)
-                    : INSTANCEOBJECT::Serializer()
-                    , _ready(readyFlag)
-                {
-                }
-                ~SerializerImpl()
-                {
-                }
-
-            public:
-                virtual void Serialized(const INSTANCEOBJECT& /* element */)
-                {
-                    _ready = true;
-                }
-                virtual void Serialized(const Core::JSON::IElement& /* element */)
-                {
-                    _ready = true;
-                }
-
-            private:
-                bool& _ready;
-            };
-
-            class DeserializerImpl : public INSTANCEOBJECT::Deserializer {
-            private:
-                DeserializerImpl() = delete;
-                DeserializerImpl(const DeserializerImpl&) = delete;
-                DeserializerImpl& operator=(const DeserializerImpl&) = delete;
-
-            public:
-                DeserializerImpl(ThisClass& parent, bool& ready)
-                    : INSTANCEOBJECT::Deserializer()
-                    , _element(nullptr)
-                    , _parent(parent)
-                    , _ready(ready)
-                {
-                }
-                ~DeserializerImpl()
-                {
-                }
-
-            public:
-                inline void SetElement(Core::JSON::IElement* element)
-                {
-                    ASSERT(((element == nullptr) ^ (_element == nullptr)) || (element == _element));
-
-                    _element = element;
-                }
-
-                virtual Core::JSON::IElement* Element(const string& identifier VARIABLE_IS_NOT_USED)
-                {
-                    return (_element);
-                }
-                virtual void Deserialized(INSTANCEOBJECT& element)
-                {
-                    ASSERT(&element == _element);
-                    _element = nullptr;
-                    _ready = true;
-                }
-                virtual void Deserialized(Core::JSON::IElement& element)
-                {
-                    ASSERT(&element == _element);
-                    _element = nullptr;
-                    _ready = true;
-                }
-
-            private:
-                Core::JSON::IElement* _element;
-                ThisClass& _parent;
-                bool& _ready;
-            };
-
         private:
             Tester(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
             Tester<SIZE, INSTANCEOBJECT>& operator=(const Tester<SIZE, INSTANCEOBJECT>&) = delete;
 
         public:
             Tester()
-                : _ready(false)
-                , _serializer(_ready)
-                , _deserializer(*this, _ready)
             {
             }
             ~Tester()
@@ -2630,56 +2644,49 @@ namespace Core {
             bool FromString(const string& value, Core::ProxyType<INSTANCEOBJECT>& receptor)
             {
                 uint16_t fillCount = 0;
+                uint16_t offset = 0;
+                uint16_t size, loaded;
+
                 receptor->Clear();
 
-                _ready = false;
-                _deserializer.SetElement(&(*(receptor)));
-                // Serialize object
-                while ((_ready == false) && (fillCount < value.size())) {
-                    uint16_t size = ((value.size() - fillCount) < SIZE ? (value.size() - fillCount) : SIZE);
+                do {
+                    size = static_cast<uint16_t>((value.size() - fillCount) < SIZE ? (value.size() - fillCount) : SIZE);
 
                     // Prepare the deserialize buffer
                     memcpy(_buffer, &(value.data()[fillCount]), size);
 
                     fillCount += size;
 
-#ifdef __DEBUG__
-                    uint16_t handled =
-#endif // __DEBUG__
+                    loaded = static_cast<IElement&>(*receptor).Deserialize(_buffer, size, offset);
 
-                        _deserializer.Deserialize(_buffer, size);
+                    ASSERT(loaded <= size);
 
-                    ASSERT(handled <= size);
-                }
+                } while ((loaded == size) && (offset != 0));
 
-                return (_ready == true);
+                return (offset == 0);
             }
 
-            void ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
+            bool ToString(const Core::ProxyType<INSTANCEOBJECT>& receptor, string& value)
             {
-                uint16_t fillCount = 0;
-                _ready = false;
-
-                // Request an object to e serialized..
-                _serializer.Submit(*receptor);
+                uint16_t offset = 0;
+                uint16_t loaded;
 
                 // Serialize object
-                while (_ready == false) {
-                    uint16_t loaded = _serializer.Serialize(_buffer, SIZE);
+                do {
+
+                    loaded = static_cast<Core::JSON::IElement&>(*receptor).Serialize(_buffer, SIZE, offset);
 
                     ASSERT(loaded <= SIZE);
 
-                    fillCount += loaded;
+                    value += string(_buffer, loaded);
 
-                    value += string(reinterpret_cast<char*>(&_buffer[0]), loaded);
-                }
+                } while ((loaded == SIZE) && (offset != 0));
+
+                return (offset == 0);
             }
 
         private:
-            bool _ready;
-            SerializerImpl _serializer;
-            DeserializerImpl _deserializer;
-            uint8_t _buffer[SIZE];
+            char _buffer[SIZE];
         };
     } // namespace JSON
 } // namespace Core
@@ -2688,4 +2695,5 @@ namespace Core {
 using JsonObject = WPEFramework::Core::JSON::VariantContainer;
 using JsonValue = WPEFramework::Core::JSON::Variant;
 using JsonArray = WPEFramework::Core::JSON::ArrayType<JsonValue>;
+
 #endif // __JSON_H

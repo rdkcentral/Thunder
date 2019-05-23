@@ -114,28 +114,81 @@ namespace Core {
         public:
             static string Callsign(const string& designator)
             {
-                size_t pos = designator.find_last_of('.');
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                if ((pos != string::npos) && (pos > 0)) {
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        pos = index;
+                    } else if ((index == 0) && (isdigit(designator[0]))) {
+                        pos = string::npos;
+                    }
+                }
+                return (pos == string::npos ? _T("") : designator.substr(0, pos));
+            }
+            static string FullCallsign(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
                 return (pos == string::npos ? _T("") : designator.substr(0, pos));
             }
             static string Method(const string& designator)
             {
-                size_t pos = designator.find_last_of('.');
-                return (pos == string::npos ? designator : designator.substr(pos + 1));
+                size_t end = designator.find_last_of('@');
+                size_t begin = designator.find_last_of('.', end);
+
+                return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end - 1 : end - begin - 2)));
+            }
+            static string FullMethod(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                return (designator.substr(pos == string::npos ? 0 : pos + 1));
+            }
+            static string VersionedFullMethod(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                if ((pos != string::npos) && (pos > 0)) {
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        pos = index;
+                    } else if ((index == 0) && (isdigit(designator[0]))) {
+                        pos = string::npos;
+                    }
+                }
+                return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
             static uint8_t Version(const string& designator)
             {
                 uint8_t result = ~0;
-                string number(Callsign(designator));
-                size_t pos = number.find_last_of('.');
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
 
                 if (pos != string::npos) {
-                    number = number.substr(pos + 1);
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        index++;
+                    } else if ((index == 0) && (isdigit(designator[0]) == false)) {
+                        index = pos;
+                    }
 
-                    if ((number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
-                        result = static_cast<uint8_t>(atoi(number.c_str()));
+                    if (index < pos) {
+                        result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
                     }
                 }
                 return (result);
+            }
+            static string Index(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.');
+                size_t end = designator.find_first_of('@', (pos != string::npos ? pos + 1 : 0));
+
+                return (end == string::npos ? EMPTY_STRING : designator.substr(end + 1));
             }
             void Clear()
             {
@@ -150,13 +203,29 @@ namespace Core {
             {
                 return (Callsign(Designator.Value()));
             }
+            string FullCallsign() const
+            {
+                return (FullCallsign(Designator.Value()));
+            }
             string Method() const
             {
                 return (Method(Designator.Value()));
             }
+            string FullMethod() const
+            {
+                return (FullMethod(Designator.Value()));
+            }
+            string VersionedFullMethod() const
+            {
+                return (VersionedFullMethod(Designator.Value()));
+            }
             uint8_t Version() const
             {
                 return (Version(Designator.Value()));
+            }
+            string Index() const
+            {
+                return (Index(Designator.Value()));
             }
             Core::JSON::String JSONRPC;
             Core::JSON::DecUInt32 Id;
@@ -209,17 +278,24 @@ namespace Core {
         };
 
         class EXTERNAL Handler {
-          
+        private:
             typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
             typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
 
             class Entry {
             private:
                 Entry() = delete;
-                Entry(const Entry&) = delete;
                 Entry& operator=(const Entry&) = delete;
 
                 union Functions {
+                    Functions(const Functions& function, const bool async)
+                    {
+                        if (async == true) {
+                            _callback = function._callback;
+						} else {
+                            _invoke = function._invoke;                        
+						}
+                    }
                     Functions(const CallbackFunction& function)
                         : _callback(function)
                     {
@@ -247,6 +323,12 @@ namespace Core {
                     , _info(callback)
                 {
                 }
+                Entry(const Entry& copy)
+                    : _asynchronous(copy._asynchronous)
+                    , _info(copy._info, copy._asynchronous)
+                {
+                }
+                ~Entry() = default;
 
             public:
                 uint32_t Invoke(const Connection connection, const string& parameters, string& response)
@@ -264,46 +346,103 @@ namespace Core {
                 bool _asynchronous;
                 Functions _info;
             };
-			typedef std::map<const string, Entry> HandlerMap;
+
+            class Observer {
+            private:
+                Observer(const Observer&) = delete;
+                Observer& operator=(const Observer&) = delete;
+
+            public:
+                Observer(const uint32_t id, const string& designator)
+                    : _id(id)
+                    , _designator(designator)
+                {
+                }
+                ~Observer()
+                {
+                }
+
+                bool operator==(const Observer& rhs) const
+                {
+                    return ((rhs._id == _id) && (rhs._designator == _designator));
+                }
+                bool operator!=(const Observer& rhs) const
+                {
+                    return (!operator==(rhs));
+                }
+
+                uint32_t Id() const
+                {
+                    return (_id);
+                }
+                const string& Designator() const
+                {
+                    return (_designator);
+                }
+
+            private:
+                uint32_t _id;
+                string _designator;
+            };
+
+            typedef std::map<const string, Entry> HandlerMap;
+            typedef std::list<Observer> ObserverList;
+            typedef std::map<string, ObserverList> ObserverMap;
+
+            typedef std::function<void(const uint32_t id, const string& designator, const string& data)> NotificationFunction;
 
         public:
             Handler() = delete;
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
 
-            Handler(const std::vector<uint8_t>& versions)
-                : _handlers()
-                , _callsign()
-                , _designator()
+            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions)
+                : _adminLock()
+                , _handlers()
+                , _observers()
+                , _notificationFunction(notificationFunction)
                 , _versions(versions)
             {
             }
-            virtual ~Handler()
+            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions, const Handler& copy)
+                : _adminLock()
+                , _handlers(copy._handlers)
+                , _observers()
+                , _notificationFunction(notificationFunction)
+                , _versions(versions)
+            {
+            }
+            ~Handler()
             {
             }
 
         public:
+            inline bool Copy(const Handler& copy, const string& method)
+            {
+                bool copied = false;
+
+                HandlerMap::const_iterator index = copy._handlers.find(method);
+
+                if (index != copy._handlers.end()) {
+                    copied = true;
+                    const Entry& info(index->second);
+
+                    _handlers.emplace(std::piecewise_construct,
+                        std::forward_as_tuple(method),
+                        std::forward_as_tuple(info));
+                }
+
+                return (copied);
+            }
             // For now the version is not used for exist determination, but who knows what will happen in the future.
             // The interface is prepared.
-            inline uint32_t Exists(const string& methodName, const uint8_t version) const
+            inline uint32_t Exists(const string& methodName) const
             {
                 return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
             }
-            uint32_t Validate(const Message& message) const
+            bool HasVersionSupport(const uint8_t number) const
             {
-                const string callsign(message.Callsign());
-                uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
-                if (result != Core::ERROR_NONE) {
-                    uint32_t length = static_cast<uint32_t>(_callsign.length());
-                    if (callsign.compare(0, length, _callsign) == 0) {
-                        result = Core::ERROR_INVALID_SIGNATURE;
-
-                        if ((callsign.length() == length) || ((callsign[length] == '.') && (HasVersionSupport(callsign.substr(length + 1))))) {
-                            result = Core::ERROR_NONE;
-                        }
-                    }
-                }
-                return (result);
+                return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             void Property(const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
@@ -369,7 +508,7 @@ namespace Core {
                     std::make_tuple(methodName),
                     std::make_tuple(lambda));
             }
-			void Register(const string& methodName, const CallbackFunction& lambda)
+            void Register(const string& methodName, const CallbackFunction& lambda)
             {
                 ASSERT(_handlers.find(methodName) == _handlers.end());
 
@@ -381,7 +520,7 @@ namespace Core {
             {
                 HandlerMap::iterator index = _handlers.find(methodName);
 
-				ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
+                ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 
                 if (index != _handlers.end()) {
                     _handlers.erase(index);
@@ -399,21 +538,110 @@ namespace Core {
                 }
                 return (result);
             }
-            void Designator(const string& callsign)
+            void Subscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
             {
-                _callsign = callsign;
-                _designator = callsign + '.' + Core::NumberType<uint8_t>(_versions.back()).Text();
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(eventId);
+
+                if (index == _observers.end()) {
+                    _observers[eventId].emplace_back(id, callsign);
+                    response.Result = _T("0");
+                } else if (std::find(index->second.begin(), index->second.end(), Observer(id, callsign)) == index->second.end()) {
+                    index->second.emplace_back(id, callsign);
+                    response.Result = _T("0");
+                } else {
+                    response.Error.SetError(Core::ERROR_DUPLICATE_KEY);
+                    response.Error.Text = _T("Duplicate registration. Only 1 remains!!!");
+                }
+
+                _adminLock.Unlock();
             }
-            const string& Callsign() const
+            void Unsubscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
             {
-                return (_designator);
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(eventId);
+
+                if (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+                    Observer key(id, callsign);
+
+                    while ((loop != clients.end()) && (*loop != key)) {
+                        loop++;
+                    }
+
+                    if (loop != clients.end()) {
+                        clients.erase(loop);
+                        if (clients.empty() == true) {
+                            _observers.erase(index);
+                        }
+                        response.Result = _T("0");
+                    }
+                }
+
+                if (response.Result.IsSet() == false) {
+                    response.Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                    response.Error.Text = _T("Registration not found!!!");
+                }
+
+                _adminLock.Unlock();
+            }
+            uint32_t Notify(const string& event)
+            {
+                return (InternalNotify(event, _T("")));
+            }
+            template <typename JSONOBJECT>
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters)
+            {
+                string subject;
+                parameters.ToString(subject);
+                return (InternalNotify(event, subject));
+            }
+            template <typename JSONOBJECT, typename SENDIFMETHOD>
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
+            {
+                string subject;
+                parameters.ToString(subject);
+                return InternalNotify(event, subject, std::move(method));
+            }
+            void Close(const uint32_t id)
+            {
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.begin();
+
+                while (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+
+                    while (loop != clients.end()) {
+                        if (loop->Id() != id) {
+                            loop++;
+                        } else {
+                            loop = clients.erase(loop);
+                        }
+                    }
+                    if (clients.empty() == true) {
+                        index = _observers.erase(index);
+                    } else {
+                        index++;
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+            void Close()
+            {
+                _adminLock.Lock();
+
+                _observers.clear();
+
+                _adminLock.Unlock();
             }
 
         private:
-            bool HasVersionSupport(const string& number) const
-            {
-                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (std::find(_versions.begin(), _versions.end(), static_cast<uint8_t>(atoi(number.c_str()))) != _versions.end());
-            }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
@@ -562,11 +790,42 @@ namespace Core {
                 };
                 Register(methodName, implementation);
             }
+            uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
+            {
+                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(event);
+
+                if (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+
+                    result = Core::ERROR_NONE;
+
+                    while (loop != clients.end()) {
+                        const string& designator(loop->Designator());
+
+                        if (!sendifmethod || sendifmethod(designator)) {
+
+                            _notificationFunction(loop->Id(), (designator.empty() == false ? designator + '.' + event : event), parameters);
+                        }
+
+                        loop++;
+                    }
+                }
+
+                _adminLock.Unlock();
+
+                return (result);
+            }
 
         private:
+            Core::CriticalSection _adminLock;
             HandlerMap _handlers;
-            string _callsign;
-            string _designator;
+            ObserverMap _observers;
+            NotificationFunction _notificationFunction;
             const std::vector<uint8_t> _versions;
         };
 
