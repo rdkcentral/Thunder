@@ -6,6 +6,8 @@ namespace WPEFramework {
 namespace Core {
     namespace JSON {
 
+        /* static */ char IElement::NullTag[] = "null";
+
         string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
         {
             std::stringstream ss;

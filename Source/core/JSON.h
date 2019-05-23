@@ -20,7 +20,7 @@ namespace Core {
 
         struct EXTERNAL IElement {
 
-            static constexpr char NullTag[] = "null";
+            static char NullTag[];
 
             virtual ~IElement() {}
 
@@ -38,6 +38,7 @@ namespace Core {
                     loaded = static_cast<const IElement&>(realObject).Serialize(buffer, sizeof(buffer), offset);
 
                     ASSERT(loaded <= sizeof(buffer));
+                    DEBUG_VARIABLE(loaded);
 
                     text += string(buffer, loaded);
 
@@ -52,11 +53,12 @@ namespace Core {
 
                 realObject.Clear();
 
-				if (text.empty() == false) {
+                if (text.empty() == false) {
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
 
                     ASSERT(loaded <= text.length());
+                    DEBUG_VARIABLE(loaded);
                 }
 
                 return (offset == 0);
@@ -545,7 +547,7 @@ namespace Core {
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
 
-                    stream[loaded++] = static_cast<uint8_t>(_value & 0xFF);
+                    stream[loaded++] = static_cast<uint8_t>(value & 0xFF);
                     offset = (offset == bytes ? 0 : offset + 1);
                 }
 
@@ -583,7 +585,7 @@ namespace Core {
                 while ((loaded < maxLength) && (offset != 0)) {
                     TYPE value = _value >> (8 * (bytes - offset));
 
-                    stream[loaded++] = static_cast<uint8_t>(_value & 0xFF);
+                    stream[loaded++] = static_cast<uint8_t>(value & 0xFF);
                     offset = (offset == bytes ? 0 : offset + 1);
                 }
 
@@ -1171,9 +1173,9 @@ namespace Core {
                         offset++;
                     }
 
-					if ((offset - 3) == _unaccountedCount) {
-                        offset = 0;
-					}
+		    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                      offset = 0;
+                    }
                 }
 
                 return (loaded);
