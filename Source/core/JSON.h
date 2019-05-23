@@ -52,10 +52,12 @@ namespace Core {
 
                 realObject.Clear();
 
-                // Deserialize object
-                uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
+				if (text.empty() == false) {
+                    // Deserialize object
+                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
 
-                ASSERT(loaded <= text.length());
+                    ASSERT(loaded <= text.length());
+                }
 
                 return (offset == 0);
             }
@@ -110,12 +112,17 @@ namespace Core {
                     // Serialize object
                     do {
                         readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
-                        loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
 
-                        ASSERT(loaded <= readBytes);
+						if (readBytes == 0) {
+                            loaded = ~0;
+						} else {
+                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
 
-                        if (loaded != readBytes) {
-                            fileObject.Position(true, -(readBytes - loaded));
+                            ASSERT(loaded <= readBytes);
+
+                            if (loaded != readBytes) {
+                                fileObject.Position(true, -(readBytes - loaded));
+                            }
                         }
 
                     } while ((loaded == readBytes) && (offset != 0));
@@ -144,15 +151,20 @@ namespace Core {
             virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
         };
 
-        struct EXTERNAL IMessagePack : public IElement {
+        struct EXTERNAL IMessagePack {
             virtual ~IMessagePack() {}
+
+            // JSON Serialization interface
+            // --------------------------------------------------------------------------------
+            virtual void Clear() = 0;
+            virtual bool IsSet() const = 0;
 
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
         };
 
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
-        class NumberType : public IMessagePack {
+        class NumberType : public IElement, public IMessagePack {
         private:
             enum modes {
                 OCTAL = 0x008,
@@ -609,7 +621,7 @@ namespace Core {
         typedef NumberType<uint64_t, false, BASE_OCTAL> OctUInt64;
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
-        class EXTERNAL Boolean : public IMessagePack {
+        class EXTERNAL Boolean : public IElement, public IMessagePack {
         private:
             static constexpr uint8_t None = 0x00;
             static constexpr uint8_t ValueBit = 0x01;
@@ -790,7 +802,7 @@ namespace Core {
             uint8_t _value;
         };
 
-        class EXTERNAL String : public IMessagePack {
+        class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint32_t None = 0x00000000;
             static constexpr uint32_t ScopeMask = 0x0FFFFFFF;
@@ -1111,6 +1123,7 @@ namespace Core {
 
                 if (offset != 0) {
                     while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
+                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset))) & 0xFF);
                     }
 
                     while ((loaded < maxLength) && (offset == 0)) {
@@ -1128,6 +1141,41 @@ namespace Core {
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
+                if (offset == 0) {
+                    if (stream[loaded] == 0xC0) {
+                        _scopeCount |= NullBit;
+                        loaded++;
+                    } else if (stream[loaded] == 0xA0) {
+                        _unaccountedCount = stream[loaded] & 0x1F;
+                        offset = 3;
+                        loaded++;
+                    } else if (stream[loaded] == 0xD9) {
+                        _unaccountedCount = 0;
+                        offset = 2;
+                        loaded++;
+                    } else if (stream[loaded] == 0xDA) {
+                        _unaccountedCount = 0;
+                        offset = 1;
+                        loaded++;
+                    }
+                }
+
+                if (offset != 0) {
+                    while ((loaded < maxLength) && (offset < 3)) {
+                        _unaccountedCount = (_unaccountedCount << 8) + stream[loaded++];
+                        offset++;
+                    }
+
+                    while ((loaded < maxLength) && ((offset - 3) < static_cast<uint16_t>(_unaccountedCount))) {
+                        _value += static_cast<char>(stream[loaded++]);
+                        offset++;
+                    }
+
+					if ((offset - 3) == _unaccountedCount) {
+                        offset = 0;
+					}
+                }
+
                 return (loaded);
             }
 

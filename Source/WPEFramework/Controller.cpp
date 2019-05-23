@@ -156,7 +156,7 @@ namespace Plugin {
         if (request.Verb == Web::Request::HTTP_POST) {
             result = PluginHost::Factories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-            result->Message = _T("Request has no JSOBNRPC body!");
+            result->Message = _T("Request has no JSONRPC body!");
 
             if (request.HasBody() == true) {
                 Core::ProxyType<Web::TextBody> response(jsonBodyTextFactory.Element());
@@ -555,46 +555,47 @@ namespace Plugin {
     }
     /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
     {
-        Core::ProxyType<Core::JSONRPC::Message> response;
-        uint32_t result = Validate(inbound);
+        uint32_t result = Core::ERROR_BAD_REQUEST;
         bool asyncCall = false;
+        string callsign(inbound.Callsign());
+        Core::ProxyType<Core::JSONRPC::Message> response;
 
-        if (result == Core::ERROR_NONE) {
-            // Call the real baseclass, we should be able to handle it.
+        if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             response = PluginHost::JSONRPC::Invoke(channelId, inbound);
-        } else {
-            if (result == Core::ERROR_INVALID_DESIGNATOR) {
-                Core::ProxyType<PluginHost::Server::Service> service;
+		}
+		else {
+			Core::ProxyType<PluginHost::Server::Service> service;
 
-                result = _pluginServer->Services().FromIdentifier(inbound.Callsign(), service);
+            uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
 
-                if (result == Core::ERROR_NONE) {
-                    ASSERT(service.IsValid());
-                    PluginHost::IDispatcher* plugin = service->Dispatcher();
+            if (result == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                PluginHost::IDispatcher* plugin = service->Dispatcher();
 
-                    if (plugin == nullptr) {
-                        result = Core::ERROR_BAD_REQUEST;
-                    } else if (service->State() != PluginHost::IShell::ACTIVATED) {
-                        result = Core::ERROR_UNAVAILABLE;
-                    } else {
-                        Core::JSONRPC::Message forwarder;
+                if (plugin == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                } else if (service->State() != PluginHost::IShell::ACTIVATED) {
+                    result = Core::ERROR_UNAVAILABLE;
+                } else {
+                    uint8_t version(inbound.Version());
+                    Core::JSONRPC::Message forwarder;
 
-                        forwarder.Id = inbound.Id;
-                        forwarder.Parameters = inbound.Parameters;
-                        forwarder.Designator = inbound.Method();
-                        response = plugin->Invoke(channelId, forwarder);
-                        asyncCall = (response.IsValid() == false);
-                    }
+                    forwarder.Id = inbound.Id;
+                    forwarder.Parameters = inbound.Parameters;
+                    
+                    forwarder.Designator = inbound.VersionedFullMethod();
+                    response = plugin->Invoke(channelId, forwarder);
+                    asyncCall = (response.IsValid() == false);
                 }
             }
+		}
 
-            if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
-                response = Message();
-                response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-                response->Error.SetError(result);
-                response->Error.Text = "Invalid JSONRPC Request";
-                response->Id = inbound.Id.Value();
-            }
+        if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
+            response = Message();
+            response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+            response->Error.SetError(result);
+            response->Error.Text = "Invalid JSONRPC Request";
+            response->Id = inbound.Id.Value();
         }
 
         return (response);

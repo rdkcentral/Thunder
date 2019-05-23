@@ -17,7 +17,6 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
-        Register<ExistsParamsData,Core::JSON::DecUInt32>(_T("exists"), &Controller::endpoint_exists, this);
         Register<ActivateParamsInfo,Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::endpoint_status, this);
         Register<void,Core::JSON::ArrayType<PluginHost::MetaData::Channel>>(_T("links"), &Controller::endpoint_links, this);
         Register<void,PluginHost::MetaData::Server>(_T("process"), &Controller::endpoint_process, this);
@@ -48,7 +47,6 @@ namespace Plugin {
         Unregister(_T("process"));
         Unregister(_T("links"));
         Unregister(_T("status"));
-        Unregister(_T("exists"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
     }
@@ -131,46 +129,6 @@ namespace Plugin {
         }
 
         return result;
-    }
-
-    uint32_t Controller::endpoint_exists(const JsonData::Controller::ExistsParamsData& params, Core::JSON::DecUInt32& response)
-    {
-        const string& designator = params.Designator.Value();
-        Core::ProxyType<PluginHost::Server::Service> service;
-        string callsign = Core::JSONRPC::Message::Callsign(designator);
-        response = Core::ERROR_UNKNOWN_KEY;
-
-        if (callsign.empty() == true) {
-            if (Exists(designator, Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
-                response = Core::ERROR_NONE;
-            }
-        }
-        else {
-            ASSERT(_pluginServer != nullptr);
-
-            uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
-
-            if (result == Core::ERROR_NONE) {
-                if (service->State() != PluginHost::IShell::ACTIVATED) {
-                    response = Core::ERROR_UNAVAILABLE;
-                }
-                else {
-                    ASSERT(service.IsValid());
-                    PluginHost::IDispatcher* plugin = service->Dispatcher();
-
-                    if (plugin != nullptr) {
-                        if (plugin->Exists(Core::JSONRPC::Message::Method(designator), Core::JSONRPC::Message::Version(designator)) == Core::ERROR_NONE) {
-                            response = Core::ERROR_NONE;
-                        }
-                    }
-                }
-            }
-            else {
-                response = result;
-            }
-        }
-
-        return Core::ERROR_NONE;
     }
 
     // Retrieves information about plugins.

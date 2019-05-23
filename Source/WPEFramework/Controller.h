@@ -290,7 +290,6 @@ namespace Plugin {
         void UnregisterAll();
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
-        uint32_t endpoint_exists(const JsonData::Controller::ExistsParamsData& params, Core::JSON::DecUInt32& response);
         uint32_t endpoint_status(const JsonData::Controller::ActivateParamsInfo& params, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response);
         uint32_t endpoint_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response);
         uint32_t endpoint_process(PluginHost::MetaData::Server& response);

@@ -351,15 +351,8 @@ namespace JSONRPC {
         }
         static uint8_t DetermineVersion(const string& designator)
         {
-            uint8_t version = 1;
-            size_t pos = designator.find_last_of('.');
-            if (pos != string::npos) {
-                string number = designator.substr(pos + 1);
-                if ((number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
-                    version = atoi(number.c_str());
-                }
-            }
-            return (version);
+            uint8_t version = Core::JSONRPC::Message::Version(designator);
+            return (version == static_cast<uint8_t>(~0) ? 1 : version);
         }
 
         static constexpr uint32_t DefaultWaitTime = 10000;
@@ -371,26 +364,21 @@ namespace JSONRPC {
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
-            , _handler({ DetermineVersion(localCallsign) })
+            , _handler([&](const uint32_t, const string&, const string&) { }, { DetermineVersion(remoteCallsign) })
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
+            , _localSpace(localCallsign)
             , _pendingQueue()
             , _scheduledTime(0)
         {
-            string designator(localCallsign);
-            size_t pos = designator.find_last_of('.');
-            if (pos != string::npos) {
-                designator = designator.substr(0, pos);
-            }
-            _handler.Designator(designator);
-
 			_channel->Register(*this);
         }
         Client(const string& remoteCallsign, const uint8_t version, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
-            , _handler({ version })
+            , _handler([&](const uint32_t, const string&, const string&) {}, { version })
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
+            , _localSpace()
             , _pendingQueue()
             , _scheduledTime(0)
         {
@@ -398,7 +386,7 @@ namespace JSONRPC {
 
             uint32_t scope = Core::InterlockedIncrement(sequence);
 
-            _handler.Designator("temporary" + Core::NumberType<uint32_t>(scope).Text());
+            _localSpace = string("temporary") + Core::NumberType<uint32_t>(scope).Text();
             _channel->Register(*this);
         }
         virtual ~Client()
@@ -431,26 +419,19 @@ namespace JSONRPC {
 
             return (_scheduledTime);
         }
-        const string& Callsign() const
-        {
-            return (_callsign);
-        }
-        void Callsign(const string& callsign)
-        {
-            _callsign = callsign;
-        }
         template <typename INBOUND, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
             std::function<void(const INBOUND& parameters)> actualMethod = method;
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
-                INBOUND inbound(parameters);
+                INBOUND inbound;
+                inbound.FromString(parameters);
                 actualMethod(inbound);
                 result.clear();
                 return (Core::ERROR_NONE);
             };
             _handler.Register(eventName, implementation);
-            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}");
+            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
             Core::ProxyType<Core::JSONRPC::Message> response;
 
             uint32_t result = Send(waitTime, "register", parameters, response);
@@ -461,19 +442,20 @@ namespace JSONRPC {
 
             return (result);
         }
-        template <typename METHOD, typename REALOBJECT>
+        template <typename INBOUND, typename METHOD, typename REALOBJECT>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
         {
-            using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
-            std::function<void(const INBOUND& parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
+            // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
+            std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
             InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
-                INBOUND inbound(parameters);
+                INBOUND inbound;
+                inbound.FromString(parameters);
                 actualMethod(inbound);
                 result.clear();
                 return (Core::ERROR_NONE);
             };
             _handler.Register(eventName, implementation);
-            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}");
+            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
             Core::ProxyType<Core::JSONRPC::Message> response;
 
             uint32_t result = Send(waitTime, "register", parameters, response);
@@ -486,7 +468,7 @@ namespace JSONRPC {
         }
         void Unsubscribe(const uint32_t waitTime, const string& eventName)
         {
-            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _handler.Callsign() + "\"}");
+            const string parameters("{ \"event\": \"" + eventName + "\", \"id\": \"" + _localSpace + "\"}");
             Core::ProxyType<Core::JSONRPC::Message> response;
 
             Send(waitTime, "unregister", parameters, response);
@@ -901,14 +883,14 @@ namespace JSONRPC {
                 _adminLock.Unlock();
             } else {
                 // check if we understand this message (correct callsign?)
-                uint32_t result(_handler.Validate(*inbound));
+                string callsign (inbound->FullCallsign());
 
-                if (result == Core::ERROR_NONE) {
+                if (callsign == _localSpace) {
                     // Looks like this is an event.
                     ASSERT(inbound->Id.IsSet() == false);
 
                     string response;
-                    _handler.Invoke(Core::JSONRPC::Connection(~0, ~0), inbound->Method(), inbound->Parameters.Value(), response);
+                    _handler.Invoke(Core::JSONRPC::Connection(~0, ~0), inbound->FullMethod(), inbound->Parameters.Value(), response);
                 }
             }
 
@@ -921,6 +903,7 @@ namespace JSONRPC {
         Core::ProxyType<Channel> _channel;
         Core::JSONRPC::Handler _handler;
         string _callsign;
+        string _localSpace;
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
     };
