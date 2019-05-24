@@ -328,15 +328,14 @@ namespace Core {
                     , _info(copy._info, copy._asynchronous)
                 {
                 }
-				~Entry() 
-				{
-                    if (_asynchronous = true) {
+                ~Entry() 
+                {
+                    if (_asynchronous == true) {
                         _info._callback.~CallbackFunction();
                     } else {
                         _info._invoke.~InvokeFunction();
-                    
-					}
-				}
+                    }
+                }
 
             public:
                 uint32_t Invoke(const Connection connection, const string& parameters, string& response)

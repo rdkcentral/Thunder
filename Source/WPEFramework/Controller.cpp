@@ -577,7 +577,6 @@ namespace Plugin {
                 } else if (service->State() != PluginHost::IShell::ACTIVATED) {
                     result = Core::ERROR_UNAVAILABLE;
                 } else {
-                    uint8_t version(inbound.Version());
                     Core::JSONRPC::Message forwarder;
 
                     forwarder.Id = inbound.Id;
