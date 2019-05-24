@@ -328,7 +328,15 @@ namespace Core {
                     , _info(copy._info, copy._asynchronous)
                 {
                 }
-                ~Entry() = default;
+				~Entry() 
+				{
+                    if (_asynchronous = true) {
+                        _info._callback.~CallbackFunction();
+                    } else {
+                        _info._invoke.~InvokeFunction();
+                    
+					}
+				}
 
             public:
                 uint32_t Invoke(const Connection connection, const string& parameters, string& response)
@@ -502,7 +510,8 @@ namespace Core {
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
-                ASSERT(_handlers.find(methodName) == _handlers.end());
+				// Due to versioning, we do allow to overwrite methods that have been registsred.
+				// These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,
                     std::make_tuple(methodName),
@@ -510,7 +519,8 @@ namespace Core {
             }
             void Register(const string& methodName, const CallbackFunction& lambda)
             {
-                ASSERT(_handlers.find(methodName) == _handlers.end());
+                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,
                     std::make_tuple(methodName),

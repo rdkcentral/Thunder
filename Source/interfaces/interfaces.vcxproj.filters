@@ -63,9 +63,6 @@
     <ClCompile Include="ProxyStubs_RtspClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs_Streaming.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs_TestController.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
