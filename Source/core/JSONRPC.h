@@ -461,11 +461,19 @@ namespace Core {
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, parameter);
+                        if (setter) {
+							parameter.FromString(inbound);
+							code = setter(*objectPtr, parameter);
+                        } else {
+                            code = Core::ERROR_UNAVAILABLE;
+                        }
                     } else {
-                        code = getter(*objectPtr, parameter);
-                        parameter.ToString(outbound);
+                        if (getter) {
+							code = getter(*objectPtr, parameter);
+							parameter.ToString(outbound); 
+						} else {
+                            code = Core::ERROR_UNAVAILABLE;
+                        }
                     }
                     return (code);
                 };
