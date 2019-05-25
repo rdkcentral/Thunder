@@ -451,6 +451,42 @@ namespace Core {
             {
                 return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
             }
+            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
+            void WriteOnlyProperty(const string& methodName, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, setter](const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+						parameter.FromString(inbound);
+						code = setter(*objectPtr, parameter);
+                    } else {
+						code = Core::ERROR_UNAVAILABLE;
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
+            void ReadOnlyProperty(const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter](const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+						code = Core::ERROR_UNAVAILABLE;
+                    } else {
+						code = getter(*objectPtr, parameter);
+						parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             void Property(const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
             {
@@ -461,19 +497,11 @@ namespace Core {
                     PARAMETER parameter;
                     uint32_t code;
                     if (inbound.empty() == false) {
-                        if (setter) {
-							parameter.FromString(inbound);
-							code = setter(*objectPtr, parameter);
-                        } else {
-                            code = Core::ERROR_UNAVAILABLE;
-                        }
+						parameter.FromString(inbound);
+						code = setter(*objectPtr, parameter);
                     } else {
-                        if (getter) {
-							code = getter(*objectPtr, parameter);
-							parameter.ToString(outbound); 
-						} else {
-                            code = Core::ERROR_UNAVAILABLE;
-                        }
+						code = getter(*objectPtr, parameter);
+						parameter.ToString(outbound); 
                     }
                     return (code);
                 };

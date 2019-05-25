@@ -140,7 +140,20 @@ namespace PluginHost {
         // Register/Unregister methods for incoming method handling on the "base" handler elements.
         // ------------------------------------------------------------------------------------------------------------------------------
         template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
-        void Property(const string& methodName, const GET_METHOD& getter, const SET_METHOD& setter, REALOBJECT* objectPtr)
+        typename std::enable_if<(std::is_same<std::nullptr_t, std::remove_cv_t<GET_METHOD>>::value && !std::is_same<std::nullptr_t, std::remove_cv_t<SET_METHOD>>::value), void>::type
+        Property(const string& methodName, const GET_METHOD& getter, const SET_METHOD& setter, REALOBJECT* objectPtr)
+        {
+            _handlers.front().WriteOnlyProperty<PARAMETER, SET_METHOD, REALOBJECT>(methodName, setter, objectPtr);
+        }
+        template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+        typename std::enable_if<(!std::is_same<std::nullptr_t, std::remove_cv_t<GET_METHOD>>::value && std::is_same<std::nullptr_t, std::remove_cv_t<SET_METHOD>>::value), void>::type
+        Property(const string& methodName, const GET_METHOD& getter, const SET_METHOD& setter, REALOBJECT* objectPtr)
+        {
+            _handlers.front().ReadOnlyProperty<PARAMETER, GET_METHOD, REALOBJECT>(methodName, getter, objectPtr);
+        }
+        template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+        typename std::enable_if<(!std::is_same<std::nullptr_t, std::remove_cv_t<GET_METHOD>>::value && !std::is_same<std::nullptr_t, std::remove_cv_t<SET_METHOD>>::value), void>::type
+        Property(const string& methodName, const GET_METHOD& getter, const SET_METHOD& setter, REALOBJECT* objectPtr)
         {
             _handlers.front().Property<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(methodName, getter, setter, objectPtr);
         }
