@@ -60,7 +60,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession * session, 
             }
             gst_byte_reader_set_pos(reader, 0);
 
-            result = opencdm_session_decrypt(session, encryptedData, totalEncrypted, IV, IVLength, keyID, keyIDLength);
+            result = opencdm_session_decrypt(session, encryptedData, totalEncrypted, IV, IVLength, keyID, keyIDLength, initWithLast15);
             // Re-build sub-sample data.
             index = 0;
             unsigned total = 0;
