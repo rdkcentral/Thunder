@@ -46,7 +46,47 @@ namespace Compositor {
             virtual int32_t Height() const = 0;
         };
 
+        // If CLIENT_IDENTIFIER variable is set its value is tokenized using comma as the separator
+        // and the first token is used to override the passed in name. The second - if present - is
+        // used as an underlaying compositor specific identifier.
+        // See GetOverrides()
         static IDisplay* Instance(const std::string& displayName);
+        static bool GetOverrides(std::string* name, std::string* identifier)
+        {
+            ASSERT(name != nullptr || identifier != nullptr);
+
+            const char* overrides = getenv("CLIENT_IDENTIFIER");
+            if (overrides != nullptr && overrides[0] != '\0') {
+                const char* delimiter = strchr(overrides, ',');
+                if (delimiter != nullptr) {
+                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    if (name != nullptr) {
+                        name->clear();
+                        name->insert(0, overrides, delimiterPos);
+                    }
+
+                    if (identifier != nullptr) {
+                        identifier->clear();
+                        if (delimiterPos + 1 < strlen(overrides))
+                            identifier->insert(0, overrides + delimiterPos + 1);
+                    }
+                } else {
+                    // No delimiter found so it's only a name.
+                    if (name != nullptr) {
+                        name->clear();
+                        name->insert(0, overrides);
+                    }
+
+                    if (identifier != nullptr) {
+                        identifier->clear();
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
 
         virtual ~IDisplay() {}
 
