@@ -41,6 +41,8 @@ namespace WPEFramework {
 	ENUM_CONVERSION_HANDLER(JsonData::TestUtility::InputInfo::ParamType);
 	ENUM_CONVERSION_HANDLER(JsonData::RemoteControl::ModifiersType);
 	ENUM_CONVERSION_HANDLER(JsonData::WifiControl::TypeType);
+	ENUM_CONVERSION_HANDLER(JsonData::Messenger::RoomupdateParamsData::ActionType);
+	ENUM_CONVERSION_HANDLER(JsonData::Messenger::UserupdateParamsData::ActionType);
 	ENUM_CONVERSION_HANDLER(JsonData::StateControl::StateType);
 	ENUM_CONVERSION_HANDLER(JsonData::Browser::VisibilityType);
 
