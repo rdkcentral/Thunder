@@ -115,9 +115,9 @@ namespace Core {
                     do {
                         readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
 
-						if (readBytes == 0) {
+                        if (readBytes == 0) {
                             loaded = ~0;
-						} else {
+                        } else {
                             loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
 
                             ASSERT(loaded <= readBytes);
@@ -148,6 +148,7 @@ namespace Core {
             // --------------------------------------------------------------------------------
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
+            virtual bool IsNull() const = 0;
 
             virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
@@ -156,10 +157,13 @@ namespace Core {
         struct EXTERNAL IMessagePack {
             virtual ~IMessagePack() {}
 
+            static constexpr uint8_t NullValue = 0xC0;
+
             // JSON Serialization interface
             // --------------------------------------------------------------------------------
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
+            virtual bool IsNull() const = 0;
 
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
@@ -228,10 +232,6 @@ namespace Core {
             {
                 return _value;
             }
-            bool Null() const
-            {
-                return ((_set & UNDEFINED) != 0);
-            }
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -242,6 +242,10 @@ namespace Core {
             virtual bool IsSet() const override
             {
                 return ((_set & (SET | UNDEFINED)) != 0);
+            }
+            virtual bool IsNull() const override
+            {
+                return ((_set & UNDEFINED) != 0);
             }
             virtual void Clear() override
             {
@@ -436,7 +440,7 @@ namespace Core {
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_set & UNDEFINED) != 0) {
-                    stream[0] = 0xC0;
+                    stream[0] = IMessagePack::NullValue;
                     return (1);
                 }
                 return (Convert(stream, maxLength, offset, TemplateIntToType<SIGNED>()));
@@ -449,7 +453,7 @@ namespace Core {
                     _value = 0;
                     uint8_t header = stream[loaded++];
 
-                    if (header == 0xC0) {
+                    if (header == IMessagePack::NullValue) {
                         _set = UNDEFINED;
                     } else if ((header >= 0xCC) && (header <= 0xCF)) {
                         _set = (1 < (header - 0xCC)) << 12;
@@ -676,10 +680,6 @@ namespace Core {
             {
                 return (_value & ValueBit);
             }
-            bool Null() const
-            {
-                return ((_value & NullBit) != 0);
-            }
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -690,6 +690,10 @@ namespace Core {
             virtual bool IsSet() const override
             {
                 return ((_value & (SetBit | NullBit)) != 0);
+            }
+            virtual bool IsNull() const override
+            {
+                return ((_value & NullBit) != 0);
             }
             virtual void Clear() override
             {
@@ -742,6 +746,10 @@ namespace Core {
                         _value = (_value & DefaultBit);
                         offset = 1;
                         loaded = 1;
+                    } else if (stream[0] == 'n') {
+                        offset = 1;
+                        _value = NullBit | (_value & DefaultBit);
+                        loaded = 1;
                     } else if (stream[0] == '0') {
                         _value = SetBit | (_value & DefaultBit);
                         loaded = 1;
@@ -755,8 +763,8 @@ namespace Core {
                 }
 
                 if (offset > 0) {
-                    uint8_t length = (_value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
-                    const char* buffer = (_value & DeserializeBit ? trueBuffer : falseBuffer);
+                    uint8_t length = (_value & NullBit ? 4 : _value & DeserializeBit ? sizeof(trueBuffer) : sizeof(falseBuffer)) - 1;
+                    const char* buffer = (_value & NullBit ? IElement::NullTag : _value & DeserializeBit ? trueBuffer : falseBuffer);
 
                     while ((loaded < maxLength) && (offset < length) && ((_value & ErrorBit) == 0)) {
                         if (stream[loaded] != buffer[offset]) {
@@ -769,7 +777,7 @@ namespace Core {
 
                     if ((offset == length) || ((_value & ErrorBit) != 0)) {
                         offset = 0;
-                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit)) == DeserializeBit ? ValueBit : 0);
+                        _value |= SetBit | ((_value & (ErrorBit | DeserializeBit | NullBit)) == DeserializeBit ? ValueBit : 0);
                     }
                 }
                 return (loaded);
@@ -777,7 +785,7 @@ namespace Core {
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_value & NullBit) != 0) {
-                    stream[0] = 0xC0;
+                    stream[0] = IMessagePack::NullValue;
                 } else if ((_value & ValueBit) != 0) {
                     stream[0] = 0xC3;
                 } else {
@@ -787,7 +795,7 @@ namespace Core {
             }
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
-                if ((stream[0] == 0xC0) != 0) {
+                if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
                 } else if ((stream[0] == 0xC3) != 0) {
                     _value = ValueBit | SetBit;
@@ -932,20 +940,16 @@ namespace Core {
                 return (!operator>(RHS));
             }
 
-			inline const string Value() const
-			{
-                if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit|QuoteFoundBit)) {
-					return('\"' + Core::ToString(_value.c_str()) + '\"');
-				}
+            inline const string Value() const
+            {
+                if ((_scopeCount & (SetBit | QuoteFoundBit | QuotedSerializeBit)) == (SetBit | QuoteFoundBit)) {
+                    return ('\"' + Core::ToString(_value.c_str()) + '\"');
+                }
                 return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
             inline const string& Default() const
             {
                 return (_default);
-            }
-            bool Null() const
-            {
-                return (_scopeCount & NullBit) != 0;
             }
             void Null(const bool enabled)
             {
@@ -955,9 +959,13 @@ namespace Core {
                     _scopeCount &= ~NullBit;
             }
             // IElement interface methods
+            virtual bool IsNull() const override
+            {
+                return (_scopeCount & NullBit) != 0;
+            }
             virtual bool IsSet() const override
             {
-                return ((_scopeCount & (SetBit|NullBit)) != 0);
+                return ((_scopeCount & (SetBit | NullBit)) != 0);
             }
             virtual void Clear() override
             {
@@ -1105,7 +1113,7 @@ namespace Core {
                 uint16_t loaded = 0;
                 if (offset == 0) {
                     if ((_scopeCount & NullBit) == 0) {
-                        stream[loaded++] = 0xC0;
+                        stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
                         _unaccountedCount = 0;
                         stream[loaded++] = static_cast<uint8_t>(_value.length() | 0xA0);
@@ -1119,7 +1127,7 @@ namespace Core {
                         stream[loaded++] = 0xDA;
                         offset++;
                     } else {
-                        stream[loaded++] = 0xC0;
+                        stream[loaded++] = IMessagePack::NullValue;
                     }
                 }
 
@@ -1144,7 +1152,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if (stream[loaded] == 0xC0) {
+                    if (stream[loaded] == IMessagePack::NullValue) {
                         _scopeCount |= NullBit;
                         loaded++;
                     } else if (stream[loaded] == 0xA0) {
@@ -1173,8 +1181,8 @@ namespace Core {
                         offset++;
                     }
 
-		    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
-                      offset = 0;
+                    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                        offset = 0;
                     }
                 }
 
@@ -1188,8 +1196,302 @@ namespace Core {
             std::string _value;
         };
 
+        class EXTERNAL Buffer : public IElement, public IMessagePack {
+        private:
+            enum modus {
+                SET = 0x20,
+                ERROR = 0x40,
+                UNDEFINED = 0x80
+            };
+
+        public:
+            Buffer()
+                : _state(0)
+                , _lastStuff(0)
+                , _index(0)
+                , _length(0)
+                , _maxLength(255)
+                , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
+            {
+            }
+            virtual ~Buffer()
+            {
+                if (_buffer != nullptr) {
+                    ::free(_buffer);
+                }
+            }
+
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _state |= UNDEFINED;
+                else
+                    _state &= ~UNDEFINED;
+            }
+            // IElement interface methods
+            virtual bool IsSet() const override
+            {
+                return ((_length > 0) && ((_state & SET) != 0));
+            }
+            virtual bool IsNull() const
+            {
+                return ((_state & UNDEFINED) != 0);
+            }
+            virtual void Clear() override
+            {
+                _state = 0;
+                _length = 0;
+            }
+
+        protected:
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                                    "abcdefghijklmnopqrstuvwxyz"
+                                                    "0123456789+/";
+
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _state = 0;
+                    _index = 0;
+                    _lastStuff = 0;
+                    offset = 1;
+                    stream[loaded++] = ((_state & UNDEFINED) == 0 ? '\"' : 'n');
+                }
+
+                if ((_state & UNDEFINED) == 0) {
+                    while ((loaded < maxLength) && (offset < 4)) {
+                        stream[loaded++] = IElement::NullTag[offset++];
+                    }
+                    if (offset == 4) {
+                        offset = 0;
+                    }
+                } else {
+                    while ((loaded < maxLength) && (_index < _length)) {
+                        if (_state == 0) {
+                            stream[loaded++] = base64_chars[((_buffer[_index] & 0xFC) >> 2)];
+                            _lastStuff = ((_buffer[_index] & 0x03) << 4);
+                            _state = 1;
+                            _index++;
+                        } else if (_state == 1) {
+                            stream[loaded++] += base64_chars[(((_buffer[_index] & 0xF0) >> 4) | _lastStuff)];
+                            _lastStuff = ((_buffer[_index] & 0x0F) << 2);
+                            _index++;
+                            _state = 2;
+                        } else if (_state == 2) {
+                            stream[loaded++] += base64_chars[(((_buffer[_index] & 0xC0) >> 6) | _lastStuff)];
+                            _state = 3;
+                        } else {
+                            ASSERT(_state == 3);
+                            stream[loaded++] += base64_chars[(_buffer[_index] & 0x3F)];
+                            _state = 0;
+                            _index++;
+                        }
+                    }
+
+                    if ((loaded < maxLength) && (_index == _length)) {
+                        if (_state != 0) {
+                            stream[loaded++] = base64_chars[_lastStuff];
+                            _state = 0;
+                        }
+                        if (loaded < maxLength) {
+                            stream[loaded++] = '\"';
+                            offset = 0;
+                        }
+                    }
+                }
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _state = 0xFF;
+                    _index = 0;
+                    _lastStuff = 0;
+                    _length = 0;
+                    offset = 1;
+                }
+
+                if (_state == 0xFF) {
+
+                    while ((loaded < maxLength) && ((stream[loaded] != '\"') && (stream[loaded] != 'n'))) {
+                        loaded++;
+                    }
+
+                    if (loaded < maxLength) {
+
+                        loaded++;
+                        _state = (stream[loaded] == 'n' ? UNDEFINED : 0);
+                    }
+                }
+
+                if (_state != 0xFF) {
+                    if ((_state & UNDEFINED) != 0) {
+                        while ((loaded < maxLength) && (offset != 0) && (offset < 4)) {
+                            if (stream[loaded] != IElement::NullTag[offset]) {
+                                _state = ERROR;
+                                offset = 0;
+                            } else {
+                                offset++;
+                                loaded++;
+                            }
+                        }
+                    } else if ((_state & SET) == 0) {
+                        while (loaded < maxLength) {
+                            uint8_t converted;
+                            TCHAR current = stream[loaded++];
+
+                            if ((current >= 'A') && (current <= 'Z')) {
+                                converted = (current - 'A');
+                            } else if ((current >= 'a') && (current <= 'z')) {
+                                converted = (current - 'a' + 26);
+                            } else if ((current >= '0') && (current <= '9')) {
+                                converted = (current - '0' + 52);
+                            } else if (current == '+') {
+                                converted = 62;
+                            } else if (current == '/') {
+                                converted = 63;
+                            } else if (::isspace(current)) {
+                                continue;
+                            } else if (current == '\"') {
+                                _state |= SET;
+                                break;
+                            } else {
+                                _state = ERROR;
+                                offset = 0;
+                                break;
+                            }
+
+                            // See if we can still add a character
+                            if (_index == _maxLength) {
+                                _maxLength = (2 * _maxLength);
+                                _buffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, _maxLength));
+                            }
+
+                            if (_state == 0) {
+                                _lastStuff = converted << 2;
+                                _state = 1;
+                            } else if (_state == 1) {
+                                _buffer[_index++] = (((converted & 0x30) >> 4) | _lastStuff);
+                                _lastStuff = ((converted & 0x0F) << 4);
+                                _state = 2;
+                            } else if (_state == 2) {
+                                _buffer[_index++] = (((converted & 0x3C) >> 2) | _lastStuff);
+                                _lastStuff = ((converted & 0x03) << 6);
+                                _state = 3;
+                            } else if (_state == 3) {
+                                _buffer[_index++] = ((converted & 0x3F) | _lastStuff);
+                                _state = 0;
+                            }
+                        }
+
+                        if (((_state & SET) == SET) && ((_state & 0xF) != 0)) {
+
+                            if (_index == _maxLength) {
+                                _maxLength = _maxLength + 0xFF;
+                                _buffer = reinterpret_cast<uint8_t*>(::realloc(_buffer, _maxLength));
+                            }
+                            _buffer[_index++] = _lastStuff;
+                        }
+                    }
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+                if (offset == 0) {
+                    if ((_state & UNDEFINED) != 0) {
+                        stream[loaded++] = IMessagePack::NullValue;
+                    } else if (_length <= 0xFF) {
+                        _index = 0;
+                        stream[loaded++] = 0xC4;
+                        offset = 2;
+                    } else {
+                        _index = 0;
+                        stream[loaded++] = 0xC5;
+                        offset = 1;
+                    }
+                }
+
+                if (offset != 0) {
+                    while ((loaded < maxLength) && (offset < 3)) {
+                        stream[loaded++] = static_cast<uint8_t>((_length >> (8 * (2 - offset))) & 0xFF);
+                        offset++;
+                    }
+
+                    while ((loaded < maxLength) && (_index < _length)) {
+                        stream[loaded++] = _buffer[_index++];
+                    }
+                    offset = (_index == _length);
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+                if (offset == 0) {
+                    _state = 0;
+                    _length = 0;
+                    _index = 0;
+
+                    if (stream[loaded] == IMessagePack::NullValue) {
+                        _state = UNDEFINED;
+                        loaded++;
+                    } else if (stream[loaded] == 0xC4) {
+                        offset = 2;
+                        loaded++;
+                    } else if (stream[loaded] == 0xC5) {
+                        offset = 1;
+                        loaded++;
+                    } else {
+                        _state = ERROR;
+                    }
+                }
+
+                if (offset != 0) {
+                    while ((loaded < maxLength) && (offset < 3)) {
+                        _length = (_length << 8) + stream[loaded++];
+                        offset++;
+                    }
+
+                    if (offset == 3) {
+                        if (_length > _maxLength) {
+                            _maxLength = _length;
+                            ::free(_buffer);
+                            _buffer = reinterpret_cast<uint8_t*>(::malloc(_maxLength));
+                        }
+                        offset = 4;
+                    }
+
+                    while ((loaded < maxLength) && (_index < _length)) {
+                        _buffer[_index++] = stream[loaded++];
+                    }
+
+                    if (_index == _length) {
+                        offset = 0;
+                    }
+                }
+
+                return (loaded);
+            }
+
+        private:
+            mutable uint8_t _state;
+            mutable uint8_t _lastStuff;
+            mutable uint16_t _index;
+            uint16_t _length;
+            uint16_t _maxLength;
+            uint8_t* _buffer;
+        };
+
         template <typename ENUMERATE>
-        class EnumType : public IElement {
+        class EnumType : public IElement, public IMessagePack {
         private:
             enum status {
                 SET = 0x01,
@@ -1249,10 +1551,6 @@ namespace Core {
             {
                 return (Core::EnumerateType<ENUMERATE>(Value()).Data());
             }
-            bool Null() const
-            {
-                return ((_state & UNDEFINED) != 0);
-            }
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -1263,6 +1561,10 @@ namespace Core {
             virtual bool IsSet() const override
             {
                 return ((_state & SET) != 0);
+            }
+            bool IsNull() const override
+            {
+                return ((_state & UNDEFINED) != 0);
             }
             virtual void Clear() override
             {
@@ -1287,7 +1589,7 @@ namespace Core {
 
                 if (offset == 0) {
 
-                    if (_parser.Null() == true) {
+                    if (_parser.IsNull() == true) {
                         _state = UNDEFINED;
                     } else if (_parser.IsSet() == true) {
                         // Looks like we parsed the value. Lets see if we can find it..
@@ -1306,19 +1608,56 @@ namespace Core {
 
                 return (result);
             }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    if ((_state & UNDEFINED) != 0) {
+                        stream[loaded++] = IMessagePack::NullValue;
+                    } else {
+                        _package = static_cast<uint32_t>(Value());
+                    }
+                }
+
+                return (loaded == 0 ? static_cast<const IMessagePack&>(_package).Serialize(stream, maxLength, offset) : loaded);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t result = 0;
+
+                if ((offset == 0) && (stream[0] == IMessagePack::NullValue)) {
+                    _state = UNDEFINED;
+                    result = 1;
+                } else {
+                    result = static_cast<IMessagePack&>(_package).Deserialize(stream, maxLength, offset);
+                }
+
+                if ((offset == 0) && (_state != UNDEFINED)) {
+                    if (_package.IsSet() == true) {
+                        _value = static_cast<ENUMERATE>(_package.Value());
+                    } else {
+                        _state = ERROR;
+                    }
+                }
+
+                return (result);
+            }
 
         private:
             uint8_t _state;
             ENUMERATE _value;
             ENUMERATE _default;
             mutable String _parser;
+            mutable NumberType<uint32_t, FALSE, BASE_HEXADECIMAL> _package;
         };
 
         template <typename ELEMENT>
-        class ArrayType : public IElement {
+        class ArrayType : public IElement, public IMessagePack {
         private:
-            enum mode : uint8_t {
-                ERROR = 0x80
+            enum modus : uint8_t {
+                ERROR = 0x80,
+                UNDEFINED = 0x40
             };
 
             static constexpr uint16_t BEGIN_MARKER = 1;
@@ -1446,7 +1785,7 @@ namespace Core {
                     , _state(copy._state)
                 {
                 }
-                virtual ~IteratorType()
+                ~IteratorType()
                 {
                 }
 
@@ -1496,27 +1835,6 @@ namespace Core {
 
                     return (&(*_iterator));
                 }
-                void AddElement()
-                {
-                    // This can only be called if there is a container..
-                    ASSERT(_container != nullptr);
-
-                    if ((_container->size() == 0) || (_container->back().IsSet() == true)) {
-                        _container->push_back(ARRAYELEMENT());
-                        _state = AT_ELEMENT;
-                        _iterator = _container->end();
-                        _iterator--;
-                    }
-                }
-                void Clear()
-                {
-                    // This can only be called if there is a container..
-                    ASSERT(_container != nullptr);
-
-                    if (_container != nullptr) {
-                        _container->clear();
-                    }
-                }
                 ARRAYELEMENT& Current()
                 {
                     ASSERT(_state == AT_ELEMENT);
@@ -1556,6 +1874,11 @@ namespace Core {
             virtual bool IsSet() const override
             {
                 return (Length() > 0);
+            }
+            virtual bool IsNull() const override
+            {
+                //TODO: Implement null for Arrays
+                return ((_state & UNDEFINED) != 0);
             }
             virtual void Clear() override
             {
@@ -1722,17 +2045,101 @@ namespace Core {
 
                 return (loaded);
             }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _iterator.Reset();
+                    if (_data.size() <= 15) {
+                        stream[loaded++] = (0x90 | static_cast<uint8_t>(_data.size()));
+                        if (_data.size() > 0) {
+                            offset = PARSE;
+                        }
+                    } else {
+                        stream[loaded++] = 0xDC;
+                        offset = 1;
+                    }
+                    _iterator.Next();
+                }
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                        offset = 2;
+                    } else if (offset == 2) {
+                        stream[loaded++] = _data.size() & 0xFF;
+                        offset = PARSE;
+                    }
+                }
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+                    offset -= PARSE;
+                    loaded += static_cast<const IMessagePack&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                    offset += PARSE;
+                    if ((offset == PARSE) && (_iterator.Next() != true)) {
+                        offset = 0;
+                    }
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    if (stream[0] == IMessagePack::NullValue) {
+                        _state = UNDEFINED;
+                        loaded = 1;
+                    } else if ((stream[0] & 0xF0) == 0x90) {
+                        _count = (stream[0] & 0x0F);
+                        offset = PARSE;
+                    } else if (stream[0] & 0xDC) {
+                        offset = 1;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        _count = (_count << 8) | stream[loaded++];
+                        offset = 2;
+                    } else if (offset == 2) {
+                        _count = (_count << 8) | stream[loaded++];
+                        offset = PARSE;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+
+                    if (offset == PARSE) {
+                        if (_count > 0) {
+                            _count--;
+                            _data.emplace_back(ELEMENT());
+                        } else {
+                            offset = 0;
+                        }
+                    }
+                    if (offset >= PARSE) {
+                        offset -= PARSE;
+                        loaded += static_cast<IMessagePack&>(_data.back()).Deserialize(stream, maxLength, offset);
+                        offset += PARSE;
+                    }
+                }
+
+                return (loaded);
+            }
 
         private:
             uint8_t _state;
+            uint16_t _count;
             std::list<ELEMENT> _data;
             mutable IteratorType<ELEMENT> _iterator;
         };
 
-        class EXTERNAL Container : public IElement {
+        class EXTERNAL Container : public IElement, public IMessagePack {
         private:
-            enum mode : uint8_t {
-                ERROR = 0x80
+            enum modus : uint8_t {
+                ERROR = 0x80,
+                UNDEFINED = 0x40
             };
 
             static constexpr uint16_t BEGIN_MARKER = 1;
@@ -1765,7 +2172,7 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
-                virtual ~Iterator()
+                ~Iterator()
                 {
                 }
 
@@ -1812,7 +2219,6 @@ namespace Core {
             Container& operator=(const Container& RHS) = delete;
             Container()
                 : _state(0)
-                , _current(nullptr)
                 , _data()
                 , _iterator()
                 , _fieldName(true)
@@ -1833,7 +2239,6 @@ namespace Core {
 
                 return (index != _data.end());
             }
-
             virtual bool IsSet() const override
             {
                 JSONElementList::const_iterator index = _data.begin();
@@ -1844,6 +2249,11 @@ namespace Core {
                 }
 
                 return (index != _data.end());
+            }
+            virtual bool IsNull() const override
+            {
+                // TODO: Implement null for conrtainers
+                return ((_state & UNDEFINED) != 0);
             }
             virtual void Clear() override
             {
@@ -1885,25 +2295,25 @@ namespace Core {
                     offset = (_iterator == _data.end() ? ~0 : ((_iterator->second->IsSet() == false) && (FindNext() == false)) ? ~0 : BEGIN_MARKER);
                     if (offset == BEGIN_MARKER) {
                         _fieldName = string(_iterator->first);
-                        _current = &_fieldName;
+                        _current.json = &_fieldName;
                         offset = PARSE;
                     }
                 }
                 while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
                     if (offset >= PARSE) {
                         offset -= PARSE;
-                        loaded += _current->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
                         offset = (offset == 0 ? BEGIN_MARKER : offset + PARSE);
                     } else if (offset == BEGIN_MARKER) {
-                        if (_current == &_fieldName) {
+                        if (_current.json == &_fieldName) {
                             stream[loaded++] = ':';
-                            _current = _iterator->second;
+                            _current.json = _iterator->second;
                             offset = PARSE;
                         } else {
                             if (FindNext() != false) {
                                 stream[loaded++] = ',';
                                 _fieldName = string(_iterator->first);
-                                _current = &_fieldName;
+                                _current.json = &_fieldName;
                                 offset = PARSE;
                             } else {
                                 offset = ~0;
@@ -1968,18 +2378,18 @@ namespace Core {
                             default:
                                 offset = PARSE;
                                 if (_fieldName.IsSet() == true) {
-                                    if (_current != nullptr) {
+                                    if (_current.json != nullptr) {
                                         _state = ERROR;
                                     }
-                                    _current = Find(_fieldName.Value().c_str());
+                                    _current.json = Find(_fieldName.Value().c_str());
 
                                     _fieldName.Clear();
 
-                                    if (_current == nullptr) {
-                                        _current = &_fieldName;
+                                    if (_current.json == nullptr) {
+                                        _current.json = &_fieldName;
                                     }
                                 } else {
-                                    _current = nullptr;
+                                    _current.json = nullptr;
                                 }
                                 break;
                             }
@@ -1987,12 +2397,123 @@ namespace Core {
                     }
                     if (offset >= PARSE) {
                         offset = (offset - PARSE);
-                        if (_current == nullptr) {
+                        if (_current.json == nullptr) {
                             loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset);
                         } else {
-                            loaded += _current->Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                            loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset);
                         }
                         offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
+                    }
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _iterator = _data.begin();
+                    if (_data.size() <= 15) {
+                        stream[loaded++] = (0x80 | static_cast<uint8_t>(_data.size()));
+                        if (_iterator != _data.end()) {
+                            offset = PARSE;
+                        }
+                    } else {
+                        stream[loaded++] = 0xDE;
+                        offset = 1;
+                    }
+                    if (offset != 0) {
+                        _fieldName = string(_iterator->first);
+                    }
+                }
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                        offset = 2;
+                    } else if (offset == 2) {
+                        stream[loaded++] = _data.size() & 0xFF;
+                        offset = PARSE;
+                    }
+                }
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+                    offset -= PARSE;
+                    if (_fieldName.IsSet() == true) {
+                        loaded += static_cast<const IMessagePack&>(_fieldName).Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        if (offset == 0) {
+                            _fieldName.Clear();
+                        }
+                        offset += PARSE;
+                    } else {
+                        const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
+                        if (element == nullptr) {
+                            loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                        } else {
+                            stream[loaded++] = IMessagePack::NullValue;
+                        }
+                        offset += PARSE;
+                        if (offset == PARSE) {
+                            _iterator++;
+                            if (_iterator == _data.end()) {
+                                offset = 0;
+                            } else {
+                                _fieldName = string(_iterator->first);
+                            }
+                        }
+                    }
+                }
+
+                return (loaded);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    if (stream[0] == IMessagePack::NullValue) {
+                        _state = UNDEFINED;
+                        loaded = 1;
+                    } else if ((stream[0] & 0x80) == 0x80) {
+                        _count = (stream[0] & 0x0F);
+                        offset = (_count > 0 ? PARSE : 0);
+                    } else if (stream[0] & 0xDE) {
+                        offset = 1;
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
+                    if (offset == 1) {
+                        _count = (_count << 8) | stream[loaded++];
+                        offset = 2;
+                    } else if (offset == 2) {
+                        _count = (_count << 8) | stream[loaded++];
+                        offset = (_count > 0 ? PARSE : 0);
+                    }
+                }
+
+                while ((loaded < maxLength) && (offset >= PARSE)) {
+
+                    if (_current.pack == nullptr) {
+                        offset -= PARSE;
+                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
+                        offset += PARSE;
+                    } else if (_fieldName.IsSet() == true) {
+                        _current.pack = dynamic_cast<IMessagePack*>(Find(_fieldName.Value().c_str()));
+                        if (_current.pack == nullptr) {
+                            _current.pack = &(static_cast<IMessagePack&>(_fieldName));
+                        }
+                        _fieldName.Clear();
+                    } else {
+                        offset -= PARSE;
+                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
+                        offset += PARSE;
+                        if (offset == PARSE) {
+                            // Seems like another field is completed. Reduce the count
+                            _count--;
+                            if (_count == 0) {
+                                offset = 0;
+                            }
+                        }
                     }
                 }
 
@@ -2038,7 +2559,11 @@ namespace Core {
 
         private:
             uint8_t _state;
-            mutable IElement* _current;
+            uint16_t _count;
+            union {
+                mutable IElement* json;
+                mutable IMessagePack* pack;
+            } _current;
             JSONElementList _data;
             mutable JSONElementList::const_iterator _iterator;
             mutable String _fieldName;
@@ -2534,6 +3059,7 @@ namespace Core {
         private:
             Elements _elements;
         };
+
         inline Variant::Variant(const VariantContainer& object)
             : JSON::String(false)
             , _type(type::OBJECT)

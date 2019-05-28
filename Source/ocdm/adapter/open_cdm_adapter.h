@@ -27,6 +27,7 @@ extern "C" {
  * \param keyIDLength Length of keyID buffer (in bytes).
  * \return Zero on success, non-zero on error.
  */
+    /* DEPRECATED INTERFACE. USE THE opencdm_gstreamer_session_decrypt METHOD !!!! */
     OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount,
                                          const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength);
 
