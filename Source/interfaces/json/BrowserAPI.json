@@ -1,0 +1,91 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Browser API",
+    "class": "Browser",
+    "description": "Browser JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "url": {
+      "summary": "URL loaded in the browser",
+      "events": [
+        "urlchange"
+      ],
+      "params": {
+        "type": "string",
+        "example": "https://www.google.com"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/incorrecturl"
+        }
+      ]
+    },
+    "visibility": {
+      "summary": "Current browser visibility",
+      "events": [
+        "visibilitychange"
+      ],
+      "params": {
+        "type": "string",
+        "enum": [
+          "visible",
+          "hidden"
+        ]
+      }
+    },
+    "fps": {
+      "summary": "Current number of frames per second the browser is rendering",
+      "readonly": true,
+      "params": {
+        "type": "number",
+        "example": 30
+      }
+    }
+  },
+  "events": {
+    "urlchange": {
+      "summary": "Signals a URL change in the browser",
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "description": "The URL that has been loaded or requested",
+            "type": "string",
+            "example": "https://www.google.com"
+          },
+          "loaded": {
+            "description": "Determines if the URL has just been loaded (true) or if URL change has been requested (false)",
+            "type": "boolean",
+            "default": true,
+            "example": false
+          }
+        },
+        "required": [
+          "url",
+          "loaded"
+        ]
+      }
+    },
+    "visibilitychange": {
+      "summary": "Signals a visibility change of the browser",
+      "params": {
+        "type": "object",
+        "properties": {
+          "hidden": {
+            "description": "Determines if the browser has been hidden (true) or made visible (false)",
+            "type": "boolean",
+            "example": false
+          }
+        }
+      }
+    },
+    "pageclosure": {
+      "summary": "Notifies that the web page requests to close its window"
+    }
+  }
+}

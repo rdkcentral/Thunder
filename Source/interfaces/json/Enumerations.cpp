@@ -53,6 +53,7 @@ ENUM_CONVERSION_BEGIN(JsonData::Messenger::UserupdateParamsData::ActionType)
 ENUM_CONVERSION_END(JsonData::Messenger::UserupdateParamsData::ActionType);
 
 // Streamer
+
 ENUM_CONVERSION_BEGIN(JsonData::Streamer::TypeType)
     { JsonData::Streamer::TypeType::STUBBED, _TXT("stubbed") },
     { JsonData::Streamer::TypeType::DVB, _TXT("dvb") },
@@ -75,4 +76,19 @@ ENUM_CONVERSION_BEGIN(JsonData::Streamer::StateType)
     { JsonData::Streamer::StateType::PLAYING, _TXT("playing") },
     { JsonData::Streamer::StateType::ERROR, _TXT("error") },
 ENUM_CONVERSION_END(JsonData::Streamer::StateType);
+
+// StateControl
+
+ENUM_CONVERSION_BEGIN(JsonData::StateControl::StateType)
+    { JsonData::StateControl::StateType::RESUMED, _TXT("resumed") },
+    { JsonData::StateControl::StateType::SUSPENDED, _TXT("suspended") },
+ENUM_CONVERSION_END(JsonData::StateControl::StateType);
+
+// Browser
+
+ENUM_CONVERSION_BEGIN(JsonData::Browser::VisibilityType)
+    { JsonData::Browser::VisibilityType::VISIBLE, _TXT("visible") },
+    { JsonData::Browser::VisibilityType::HIDDEN, _TXT("hidden") },
+ENUM_CONVERSION_END(JsonData::Browser::VisibilityType);
+
 }

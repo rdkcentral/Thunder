@@ -15,6 +15,8 @@
 #include "json/JsonData_WifiControl.h"
 #include "json/JsonData_Messenger.h"
 #include "json/JsonData_Streamer.h"
+#include "json/JsonData_StateControl.h"
+#include "json/JsonData_Browser.h"
 
 #undef EXTERNAL
 
@@ -39,5 +41,7 @@ namespace WPEFramework {
 	ENUM_CONVERSION_HANDLER(JsonData::TestUtility::InputInfo::ParamType);
 	ENUM_CONVERSION_HANDLER(JsonData::RemoteControl::ModifiersType);
 	ENUM_CONVERSION_HANDLER(JsonData::WifiControl::TypeType);
- 
+	ENUM_CONVERSION_HANDLER(JsonData::StateControl::StateType);
+	ENUM_CONVERSION_HANDLER(JsonData::Browser::VisibilityType);
+
 }

@@ -14,6 +14,14 @@ namespace JsonData {
 
     namespace StateControl {
 
+        // Common enums
+        //
+
+        enum class StateType {
+            RESUMED,
+            SUSPENDED
+        };
+
         // Method params/result classes
         //
 
