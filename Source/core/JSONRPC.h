@@ -2,6 +2,7 @@
 
 #include "JSON.h"
 #include "Module.h"
+#include "TypeTraits.h"
 
 #include <cctype>
 #include <functional>
@@ -280,7 +281,7 @@ namespace Core {
         class EXTERNAL Handler {
         private:
             typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
-            typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
+            typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
 
             class Entry {
             private:
@@ -288,13 +289,13 @@ namespace Core {
                 Entry& operator=(const Entry&) = delete;
 
                 union Functions {
-                    Functions(const Functions& function, const bool async)  
+                    Functions(const Functions& function, const bool async)
                     {
                         if (async == true) {
                             new (&_callback) auto(function._callback);
-						} else {
+                        } else {
                             new (&_invoke) auto(function._invoke);
-						}
+                        }
                     }
                     Functions(const CallbackFunction& function)
                         : _callback(function)
@@ -328,7 +329,7 @@ namespace Core {
                     , _info(copy._info, copy._asynchronous)
                 {
                 }
-                ~Entry() 
+                ~Entry()
                 {
                     if (_asynchronous == true) {
                         _info._callback.~CallbackFunction();
@@ -338,13 +339,13 @@ namespace Core {
                 }
 
             public:
-                uint32_t Invoke(const Connection connection, const string& parameters, string& response)
+                uint32_t Invoke(const Connection connection, const string& method, const string& parameters, string& response)
                 {
                     uint32_t result = ~0;
                     if (_asynchronous == true) {
                         _info._callback(connection, parameters);
                     } else {
-                        result = _info._invoke(parameters, response);
+                        result = _info._invoke(method, parameters, response);
                     }
                     return (result);
                 }
@@ -451,61 +452,38 @@ namespace Core {
             {
                 return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
             }
-            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
-            void WriteOnlyProperty(const string& methodName, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            typename std::enable_if<(std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
-                ASSERT(objectPtr != nullptr);
-                InvokeFunction implementation = [objectPtr, setter](const string& inbound, string& outbound) -> uint32_t {
-                    PARAMETER parameter;
-                    uint32_t code;
-                    if (inbound.empty() == false) {
-						parameter.FromString(inbound);
-						code = setter(*objectPtr, parameter);
-                    } else {
-						code = Core::ERROR_UNAVAILABLE;
-                    }
-                    return (code);
-                };
-                Register(methodName, implementation);
-            }
-            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
-            void ReadOnlyProperty(const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
-            {
-                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
-                ASSERT(objectPtr != nullptr);
-                InvokeFunction implementation = [objectPtr, getter](const string& inbound, string& outbound) -> uint32_t {
-                    PARAMETER parameter;
-                    uint32_t code;
-                    if (inbound.empty() == false) {
-						code = Core::ERROR_UNAVAILABLE;
-                    } else {
-						code = getter(*objectPtr, parameter);
-						parameter.ToString(outbound);
-                    }
-                    return (code);
-                };
-                Register(methodName, implementation);
+                using COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+
+                static_assert((COUNT::Arguments == 1) || (COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+
+                InternalProperty<PARAMETER, SET_METHOD, REALOBJECT>(::TemplateIntToType<COUNT::Arguments>(), methodName, objectPtr, setMethod);
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
-            void Property(const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
-                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
-                ASSERT(objectPtr != nullptr);
-                InvokeFunction implementation = [objectPtr, getter, setter](const string& inbound, string& outbound) -> uint32_t {
-                    PARAMETER parameter;
-                    uint32_t code;
-                    if (inbound.empty() == false) {
-						parameter.FromString(inbound);
-						code = setter(*objectPtr, parameter);
-                    } else {
-						code = getter(*objectPtr, parameter);
-						parameter.ToString(outbound); 
-                    }
-                    return (code);
-                };
-                Register(methodName, implementation);
+                using COUNT = Core::TypeTraits::func_traits<GET_METHOD>;
+
+                static_assert((COUNT::Arguments == 1) || (COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+
+                InternalProperty<PARAMETER, GET_METHOD, REALOBJECT>(::TemplateIntToType<COUNT::Arguments>(), methodName, getMethod, objectPtr);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            {
+                using GET_COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+                using SET_COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+
+                static_assert((GET_COUNT::Arguments == 1) || (GET_COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+                static_assert((SET_COUNT::Arguments == 1) || (SET_COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+                static_assert((GET_COUNT::Arguments == SET_COUNT::Arguments), "The getter and the setter need the same amount of arguments !!");
+
+                InternalProperty<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(::TemplateIntToType<SET_COUNT::Arguments>(), methodName, getMethod, setMethod, objectPtr);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void Register(const string& methodName, const METHOD& method)
@@ -545,8 +523,8 @@ namespace Core {
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
-				// Due to versioning, we do allow to overwrite methods that have been registsred.
-				// These are typically methods that are different from the preferred interface..
+                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,
                     std::make_tuple(methodName),
@@ -579,7 +557,7 @@ namespace Core {
 
                 HandlerMap::iterator index = _handlers.find(method);
                 if (index != _handlers.end()) {
-                    result = index->second.Invoke(connection, parameters, response);
+                    result = index->second.Invoke(connection, method, parameters, response);
                 }
                 return (result);
             }
@@ -687,11 +665,126 @@ namespace Core {
             }
 
         private:
+            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        code = Core::ERROR_UNAVAILABLE;
+                    } else {
+                        code = getter(*objectPtr, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, REALOBJECT* objectPtr, const SET_METHOD& setMethod)
+            {
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, setter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
+                    } else {
+                        code = Core::ERROR_UNAVAILABLE;
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter, setter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
+                    } else {
+                        code = getter(*objectPtr, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        code = Core::ERROR_UNAVAILABLE;
+                    } else {
+                        const string index = Message::Index(method);
+                        code = getter(*objectPtr, index, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, REALOBJECT* objectPtr, const SET_METHOD& setMethod)
+            {
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        const string index = Message::Index(method);
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
+                    } else {
+                        code = Core::ERROR_UNAVAILABLE;
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, const string& index, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(REALOBJECT&, const string& index, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    const string index = Message::Index(method);
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
+                    } else {
+                        code = getter(*objectPtr, index, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t()> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string&) -> uint32_t {
                     return (actualMethod());
                 };
                 Register(methodName, implementation);
@@ -700,7 +793,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -711,7 +804,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
                     if (code == Core::ERROR_NONE) {
@@ -727,7 +820,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
@@ -745,7 +838,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t()> actualMethod = std::bind(method, objectPtr);
-                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string&) -> uint32_t {
                     return (actualMethod());
                 };
                 Register(methodName, implementation);
@@ -754,7 +847,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -765,7 +858,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
                     if (code == Core::ERROR_NONE) {
@@ -781,7 +874,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
                     OUTBOUND outbound;
                     inbound.FromString(parameters);

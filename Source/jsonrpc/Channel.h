@@ -357,7 +357,7 @@ namespace JSONRPC {
 
         static constexpr uint32_t DefaultWaitTime = 10000;
         typedef std::map<uint32_t, Entry> PendingMap;
-        typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
+        typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
     public:
         Client(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
@@ -423,7 +423,7 @@ namespace JSONRPC {
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
             std::function<void(const INBOUND& parameters)> actualMethod = method;
-            InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+            InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
                 inbound.FromString(parameters);
                 actualMethod(inbound);
@@ -447,7 +447,7 @@ namespace JSONRPC {
         {
             // using INBOUND = typename Core::TypeTraits::func_traits<METHOD>::template argument<0>::type;
             std::function<void(INBOUND parameters)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-            InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+            InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                 INBOUND inbound;
                 inbound.FromString(parameters);
                 actualMethod(inbound);
