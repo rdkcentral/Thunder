@@ -19,9 +19,26 @@ public:
     LXCContainerAdministrator() 
         : _lock()
         , _searchpaths() {
+
+
+            printf("LXC Version:%s\n", lxc_get_version());
+
+            lxc_log log;
+            log.name = "huppel";
+            log.lxcpath = "/home/marcelf/.local/share/lxc/";
+            log.file = "/usr/src/huppel.log";
+            log.level = "0";
+            log.prefix = "huppel";
+            log.quiet = false;
+
+            int result = lxc_log_init(&log);
+            printf("LXC log init: %i\n",result);
+
         }
 
-    virtual ~LXCContainerAdministrator() = default;
+    virtual ~LXCContainerAdministrator() {
+            lxc_log_close();
+    }
 
     class LCXContainer : public ProcessContainers::IContainerAdministrator::IContainer {
     public:
@@ -99,6 +116,11 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
 //                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s retreived from %s."), c->name, (*searchpath).c_str()));
+//                c->set_config_item(c, "lxc.loglevel", "1");
+//                c->set_config_item(c, "lxc.log.file", "/usr/src/container.log");
+
+                c->set_config_item(c, "lxc.console.buffer.size", "4096");
+                c->set_config_item(c, "lxc.console.logfile", "/usr/src/containerconsole.log");
                 container = new LXCContainerAdministrator::LCXContainer(name, c);
             }
             else {
@@ -141,7 +163,50 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
 }
 
 void LXCContainerAdministrator::LCXContainer::Start() {
-    _lxccontainer->start(_lxccontainer, true, nullptr);    
+/*    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a /usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c WebServerImplementation", 
+    "-d /usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
+    "-p /root/WebServer/", "-r /tmp/communicator ", "-s /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL);    */
+
+    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/Testapp", NULL);
+    printf("Container start: %i\n", retval);
+    if(true) {
+        ::SleepMs(2000);
+        lxc_console_log log;
+        uint64_t sizeread = 0; // note will not allcate memory
+        log.read_max = &sizeread;
+        log.read = true;
+        log.clear = false;
+        int retint = _lxccontainer->console_log(_lxccontainer, &log);
+        printf("Get console log: %i\n", retint);
+        if( retint == 0 && sizeread != 0 ) {
+            printf("Get console value: %s\n", log.data);
+        }
+        sizeread = 0;
+        log.read = false;
+        log.clear = true;
+        retint = _lxccontainer->console_log(_lxccontainer, &log);
+        printf("Get console log: %i\n", retint);
+    } else {
+        int ttynum = -1;
+        int masterfd = 0;
+        int resultfd = _lxccontainer->console_getfd(_lxccontainer, &ttynum, &masterfd);
+        printf("Container console fd: %i\n", resultfd);
+        if( resultfd >= 0 ) {
+            ::SleepMs(5000);
+            char buffer[50];
+            ssize_t result = read(masterfd, buffer, 49);
+            if( result > 0 ) {
+                buffer[result] = '\0';
+                printf("Container console fd read: %s\n", buffer);
+            }
+            else {
+                printf("Container console read failed\n");
+            }
+            close(resultfd);
+            close(masterfd);
+
+        }
+    }
 }
 
 } //namespace WPEFramework 
