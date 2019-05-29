@@ -282,7 +282,7 @@ namespace PluginHost {
                 break;
             case STATE_CUSTOM:
                 string result;
-                uint32_t code = source->Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), inbound.Method(), inbound.Parameters.Value(), result);
+                uint32_t code = source->Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), inbound.FullMethod(), inbound.Parameters.Value(), result);
                 if (response.IsValid() == true) {
                     if (code == static_cast<uint32_t>(~0)) {
                         response.Release();

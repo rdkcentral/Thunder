@@ -554,7 +554,7 @@ namespace Core {
 
                 response.clear();
 
-                HandlerMap::iterator index = _handlers.find(method);
+                HandlerMap::iterator index = _handlers.find(Message::Method(method));
                 if (index != _handlers.end()) {
                     result = index->second.Invoke(connection, method, parameters, response);
                 }
