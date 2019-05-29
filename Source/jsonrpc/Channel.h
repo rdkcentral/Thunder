@@ -370,7 +370,7 @@ namespace JSONRPC {
             , _pendingQueue()
             , _scheduledTime(0)
         {
-			_channel->Register(*this);
+            _channel->Register(*this);
         }
         Client(const string& remoteCallsign, const uint8_t version, const bool directed = false)
             : _adminLock()
@@ -629,6 +629,18 @@ namespace JSONRPC {
             return (Set<PARAMETERS>(waitTime, method, sendObject));
         }
         template <typename PARAMETERS>
+        uint32_t Set(const uint32_t waitTime, const string& method, const string& index, const PARAMETERS& sendObject)
+        {
+            string fullMethod = method + '@' + index;
+            return (Set<PARAMETERS>(waitTime, fullMethod, sendObject));
+        }
+        template <typename PARAMETERS, typename NUMBER>
+        uint32_t Set(const uint32_t waitTime, const string& method, const NUMBER index, const PARAMETERS& sendObject)
+        {
+            string fullMethod = method + '@' + Core::NumberType<NUMBER>(index).Text();
+            return (Set<PARAMETERS>(waitTime, fullMethod, sendObject));
+        }
+        template <typename PARAMETERS>
         uint32_t Set(const uint32_t waitTime, const string& method, const PARAMETERS& sendObject)
         {
             Core::ProxyType<Core::JSONRPC::Message> response;
@@ -639,6 +651,18 @@ namespace JSONRPC {
                 result = response->Error.Code.Value();
             }
             return (result);
+        }
+        template <typename PARAMETERS>
+        uint32_t Get(const uint32_t waitTime, const string& method, const string& index, PARAMETERS& sendObject)
+        {
+            string fullMethod = method + '@' + index;
+            return (Get<PARAMETERS>(waitTime, fullMethod, sendObject));
+        }
+        template <typename PARAMETERS, typename NUMBER>
+        uint32_t Get(const uint32_t waitTime, const string& method, const NUMBER& index, PARAMETERS& sendObject)
+        {
+            string fullMethod = method + '@' + Core::NumberType<NUMBER>(index).Text();
+            return (Get<PARAMETERS>(waitTime, fullMethod, sendObject));
         }
         template <typename PARAMETERS>
         uint32_t Get(const uint32_t waitTime, const string& method, PARAMETERS& sendObject)
@@ -883,7 +907,7 @@ namespace JSONRPC {
                 _adminLock.Unlock();
             } else {
                 // check if we understand this message (correct callsign?)
-                string callsign (inbound->FullCallsign());
+                string callsign(inbound->FullCallsign());
 
                 if (callsign == _localSpace) {
                     // Looks like this is an event.
