@@ -21,18 +21,12 @@ extern "C" {
  * \param buffer Gstreamer buffer containing encrypted data and related meta data. If applicable, decrypted data will be stored here after this call returns.
  * \param subSample Gstreamer buffer containing subsamples size which has been parsed from protection meta data.
  * \param subSampleCount count of subsamples
- * \param IV Initial vector (IV) used during decryption.
- * \param IVLength Length of IV buffer (in bytes).
- * \param keyID keyID to use for decryption
- * \param keyIDLength Length of keyID buffer (in bytes).
+ * \param IV Gstreamer buffer containing initial vector (IV) used during decryption.
+ * \param keyID Gstreamer buffer containing keyID to use for decryption
  * \return Zero on success, non-zero on error.
  */
-    /* DEPRECATED INTERFACE. USE THE opencdm_gstreamer_session_decrypt METHOD !!!! */
-    OpenCDMError adapter_session_decrypt(struct OpenCDMSession * session, void* buffer, void* subSample, const uint32_t subSampleCount,
-                                         const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength);
-
-    OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession * session, GstBuffer* buffer, void* subSample, const uint32_t subSampleCount,
-                                         const uint8_t IV[], uint16_t IVLength, const uint8_t keyID[], uint16_t keyIDLength, uint32_t initWithLast15);
+    OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, GstBuffer* buffer, GstBuffer* subSample, const uint32_t subSampleCount,
+                                                   GstBuffer* IV, GstBuffer* keyID, uint32_t initWithLast15);
 
 #ifdef __cplusplus
 }
