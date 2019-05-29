@@ -127,19 +127,19 @@ namespace Core {
                         pos = string::npos;
                     }
                 }
-                return (pos == string::npos ? _T("") : designator.substr(0, pos));
+                return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
             static string FullCallsign(const string& designator)
             {
                 size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
-                return (pos == string::npos ? _T("") : designator.substr(0, pos));
+                return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
             static string Method(const string& designator)
             {
                 size_t end = designator.find_last_of('@');
                 size_t begin = designator.find_last_of('.', end);
 
-                return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end - 1 : end - begin - 2)));
+                return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1)));
             }
             static string FullMethod(const string& designator)
             {
@@ -186,10 +186,9 @@ namespace Core {
             }
             static string Index(const string& designator)
             {
-                size_t pos = designator.find_last_of('.');
-                size_t end = designator.find_first_of('@', (pos != string::npos ? pos + 1 : 0));
+                size_t end = designator.find_last_of('@');
 
-                return (end == string::npos ? EMPTY_STRING : designator.substr(end + 1));
+                return (end == string::npos ? EMPTY_STRING : designator.substr(end + 1, string::npos));
             }
             void Clear()
             {
