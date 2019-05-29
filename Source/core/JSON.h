@@ -55,7 +55,7 @@ namespace Core {
 
                 if (text.empty() == false) {
                     // Deserialize object
-                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length()), offset);
+                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset);
 
                     ASSERT(loaded <= text.length());
                     DEBUG_VARIABLE(loaded);
@@ -412,7 +412,7 @@ namespace Core {
                     } else if (((_set & QUOTED) != 0) && (stream[loaded] == '\"')) {
                         completed = true;
                         loaded++;
-                    } else if (((_set & QUOTED) == 0) && ((stream[loaded] == ',') || stream[loaded] == '}' || stream[loaded] == ']')) {
+                    } else if (((_set & QUOTED) == 0) && (::isspace(stream[loaded]) || (stream[loaded] == '\0') || (stream[loaded] == ',') || (stream[loaded] == '}') || (stream[loaded] == ']'))) {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
