@@ -1,6 +1,7 @@
 #ifndef COMPOSITOR_CPP_ABSTRACTION_H
 #define COMPOSITOR_CPP_ABSTRACTION_H
 
+#include <assert.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
@@ -53,7 +54,7 @@ namespace Compositor {
         static IDisplay* Instance(const std::string& displayName);
         static bool GetOverrides(std::string* name, std::string* identifier)
         {
-            ASSERT(name != nullptr || identifier != nullptr);
+            assert(name != nullptr || identifier != nullptr);
 
             const char* overrides = getenv("CLIENT_IDENTIFIER");
             if (overrides != nullptr && overrides[0] != '\0') {
