@@ -231,7 +231,7 @@ private:
         return displaysize;
     }
 
-    const std::string _displayName;
+    std::string _displayName;
     mutable Core::CriticalSection _adminLock;
     void* _virtualkeyboard;
     const DisplaySize _displaysize;
@@ -359,6 +359,12 @@ Display::Display(const string& name)
     , _displaysize(RetrieveDisplaySize())
     , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create()))
 {
+
+    std::string nameOverride;
+    if (IDisplay::GetOverrides(&nameOverride, nullptr) == true) {
+        if (nameOverride.empty() == false && nameOverride != _displayName)
+            _displayName = nameOverride;
+    }
 
     uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
     if (result != Core::ERROR_NONE) {

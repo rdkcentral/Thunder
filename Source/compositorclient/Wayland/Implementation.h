@@ -286,6 +286,7 @@ namespace Wayland {
             , _redraw()
             , _tid()
             , _displayName(displayName)
+            , _displayId()
             , _keyboardReceiver(nullptr)
             , _pointerReceiver(nullptr)
             , _keyMapConfiguration()
@@ -306,6 +307,14 @@ namespace Wayland {
 #ifdef V3D_DRM_DISABLE
             ::setenv("V3D_DRM_DISABLE", "1", 1);
 #endif
+            std::string nameOverride;
+            std::string idOverride;
+            if (IDisplay::GetOverrides(&nameOverride, &idOverride) == true) {
+                if (nameOverride.empty() == false && nameOverride != _displayName)
+                    _displayName = nameOverride;
+                if (idOverride.empty() == false)
+                    _displayId.swap(idOverride);
+            }
         }
 
     public:
@@ -754,7 +763,8 @@ namespace Wayland {
 
         pthread_t _tid;
 
-        const std::string _displayName;
+        std::string _displayName;
+        std::string _displayId;
         SurfaceImplementation* _keyboardReceiver;
         SurfaceImplementation* _pointerReceiver;
 

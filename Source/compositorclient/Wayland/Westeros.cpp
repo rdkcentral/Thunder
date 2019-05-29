@@ -737,8 +737,10 @@ namespace Wayland {
 
         Trace("Initialize Wayland Display on %s\n", _runtimeDir.c_str());
         Trace("Initialize Wayland Display Name %s\n", _displayName.c_str());
+        if (_displayId.empty() == false)
+            Trace("Connecting to Wayland Display %s\n", _displayId.c_str());
 
-        _display = wl_display_connect(nullptr);
+        _display = wl_display_connect(_displayId.empty() == false ? _displayId.c_str() : nullptr);
 
         assert(_display != nullptr);
 

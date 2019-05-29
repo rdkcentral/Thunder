@@ -71,13 +71,6 @@ namespace Nexus {
                 , _keyboard(nullptr)
             {
 
-                uint32_t nexusClientId(0); // For now we only accept 0. See Mail David Montgomery
-                const char* tmp(getenv("CLIENT_IDENTIFIER"));
-
-                if ((tmp != nullptr) && ((tmp = strchr(tmp, ',')) != nullptr)) {
-                    nexusClientId = atoi(&(tmp[1]));
-                }
-
                 NXPL_NativeWindowInfoEXT windowInfo;
                 NXPL_GetDefaultNativeWindowInfoEXT(&windowInfo);
                 windowInfo.x = 0;
@@ -88,7 +81,7 @@ namespace Nexus {
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT
                 windowInfo.zOrder = 0;
 #endif
-                windowInfo.clientID = nexusClientId;
+                windowInfo.clientID = display.NexusClientId();
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
 
                _parent.Register(this);
@@ -156,9 +149,19 @@ namespace Nexus {
             : _displayName(name)
             , _nxplHandle(nullptr)
             , _virtualkeyboard(nullptr)
+            , _nexusClientId(0)
         {
 
             NEXUS_DisplayHandle displayHandle(nullptr);
+
+            std::string nameOverride;
+            std::string idOverride;
+            if (IDisplay::GetOverrides(&nameOverride, &idOverride) == true) {
+                if (nameOverride.empty() == false && nameOverride != _displayName)
+                    _displayName = nameOverride;
+                if (idOverride.empty() == false)
+                    _nexusClientId = atoi(idOverride.c_str());
+            }
 
 #ifdef V3D_DRM_DISABLE
            ::setenv("V3D_DRM_DISABLE", "1", 1);
@@ -191,6 +194,8 @@ namespace Nexus {
 
            printf("Constructed the Display: %p - %s", this, _displayName.c_str());
         }
+
+        uint32_t NexusClientId() const { return _nexusClientId; }
 
     public:
         static Compositor::IDisplay* Instance(const std::string& displayName)
@@ -284,6 +289,7 @@ namespace Nexus {
         NXPL_PlatformHandle _nxplHandle;
         void* _virtualkeyboard;
         std::list<SurfaceImplementation*> _surfaces;
+        uint32_t _nexusClientId;
     };
 
 } // Nexus
