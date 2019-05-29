@@ -724,7 +724,7 @@ namespace Core {
             template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
             void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(const REALOBJECT&, const string&, PARAMETER&)> getter = getMethod;
                 ASSERT(objectPtr != nullptr);
                 InvokeFunction implementation = [objectPtr, getter](const string& method, const string& inbound, string& outbound) -> uint32_t {
                     PARAMETER parameter;
@@ -743,7 +743,7 @@ namespace Core {
             template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
             void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, REALOBJECT* objectPtr, const SET_METHOD& setMethod)
             {
-                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                std::function<uint32_t(REALOBJECT&, const string&, const PARAMETER&)> setter = setMethod;
                 ASSERT(objectPtr != nullptr);
                 InvokeFunction implementation = [objectPtr, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
                     PARAMETER parameter;
@@ -762,8 +762,8 @@ namespace Core {
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
             void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(const REALOBJECT&, const string& index, PARAMETER&)> getter = getMethod;
-                std::function<uint32_t(REALOBJECT&, const string& index, const PARAMETER&)> setter = setMethod;
+                std::function<uint32_t(const REALOBJECT&, const string&, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(REALOBJECT&, const string&, const PARAMETER&)> setter = setMethod;
                 ASSERT(objectPtr != nullptr);
                 InvokeFunction implementation = [objectPtr, getter, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
                     PARAMETER parameter;
