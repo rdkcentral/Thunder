@@ -17,19 +17,18 @@ namespace Plugin {
     {
         Register<ActivateParamsInfo,void>(_T("activate"), &Controller::endpoint_activate, this);
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
-        Register<ActivateParamsInfo,Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::endpoint_status, this);
-        Register<void,Core::JSON::ArrayType<PluginHost::MetaData::Channel>>(_T("links"), &Controller::endpoint_links, this);
-        Register<void,PluginHost::MetaData::Server>(_T("process"), &Controller::endpoint_process, this);
-        Register<void,Core::JSON::ArrayType<SubsystemsResultData>>(_T("subsystems"), &Controller::endpoint_subsystems, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
-        Register<void,Core::JSON::ArrayType<PluginHost::MetaData::Bridge>>(_T("discovery"), &Controller::endpoint_discovery, this);
-        Register<GetenvParamsData,Core::JSON::String>(_T("getenv"), &Controller::endpoint_getenv, this);
-        Register<GetconfigParamsData,Core::JSON::String>(_T("getconfig"), &Controller::endpoint_getconfig, this);
-        Register<SetconfigParamsData,void>(_T("setconfig"), &Controller::endpoint_setconfig, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
         Register<Download,void>(_T("download"), &Controller::endpoint_download, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
         Register<void,void>(_T("harakiri"), &Controller::endpoint_harakiri, this);
+        Property<Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::get_status, nullptr, this);
+        Property<Core::JSON::ArrayType<PluginHost::MetaData::Channel>>(_T("links"), &Controller::get_links, nullptr, this);
+        Property<PluginHost::MetaData::Server>(_T("processinfo"), &Controller::get_processinfo, nullptr, this);
+        Property<Core::JSON::ArrayType<SubsystemsParamsData>>(_T("subsystems"), &Controller::get_subsystems, nullptr, this);
+        Property<Core::JSON::ArrayType<PluginHost::MetaData::Bridge>>(_T("discoveryresults"), &Controller::get_discoveryresults, nullptr, this);
+        Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
+        Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
     }
 
     void Controller::UnregisterAll()
@@ -38,31 +37,30 @@ namespace Plugin {
         Unregister(_T("delete"));
         Unregister(_T("download"));
         Unregister(_T("storeconfig"));
-        Unregister(_T("setconfig"));
-        Unregister(_T("getconfig"));
-        Unregister(_T("getenv"));
-        Unregister(_T("discovery"));
         Unregister(_T("startdiscovery"));
-        Unregister(_T("subsystems"));
-        Unregister(_T("process"));
-        Unregister(_T("links"));
-        Unregister(_T("status"));
         Unregister(_T("deactivate"));
         Unregister(_T("activate"));
+        Unregister(_T("configuration"));
+        Unregister(_T("environment"));
+        Unregister(_T("discoveryresults"));
+        Unregister(_T("subsystems"));
+        Unregister(_T("processinfo"));
+        Unregister(_T("links"));
+        Unregister(_T("status"));
     }
 
     // API implementation
     //
 
-    // Activates a plugin.
+    // Method: activate - Activates a plugin
     // Return codes:
     //  - ERROR_NONE: Success
-    //    ERROR_PENDING_CONDITIONS: The plugin will activate once its preconditions are met
+    //  - ERROR_PENDING_CONDITIONS: The plugin will be activated once its activation preconditions are met
     //  - ERROR_INPROGRESS: The plugin is currently being activated
     //  - ERROR_UNKNOWN_KEY: The plugin does not exist
     //  - ERROR_OPENING_FAILED: Failed to activate the plugin
     //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow activation
-    //  - ERROR_PRIVILEGED_REQUEST: Activation of the plugin is not allowed
+    //  - ERROR_PRIVILEGED_REQUEST: Activation of the plugin is not allowed (e.g. Controller)
     uint32_t Controller::endpoint_activate(const ActivateParamsInfo& params)
     {
         uint32_t result = Core::ERROR_OPENING_FAILED;
@@ -93,14 +91,14 @@ namespace Plugin {
         return result;
     }
 
-    // Deactivates a plugin.
+    // Method: deactivate - Deactivates a plugin
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_INPROGRESS: The plugin is currently being deactivated
     //  - ERROR_UNKNOWN_KEY: The plugin does not exist
     //  - ERROR_ILLEGAL_STATE: Current state of the plugin does not allow deactivation
-    //    ERROR_CLOSING_FAILED: Failed to deactivate the plugin
-    //  - ERROR_PRIVILEGED_REQUEST: Deactivation of the plugin is not allowed
+    //  - ERROR_CLOSING_FAILED: Failed to activate the plugin
+    //  - ERROR_PRIVILEGED_REQUEST: Deactivation of the plugin is not allowed (e.g. Controller)
     uint32_t Controller::endpoint_deactivate(const ActivateParamsInfo& params)
     {
         uint32_t result = Core::ERROR_OPENING_FAILED;
@@ -131,83 +129,6 @@ namespace Plugin {
         return result;
     }
 
-    // Retrieves information about plugins.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_UNKNOWN_KEY: The plugin does not exist
-    uint32_t Controller::endpoint_status(const ActivateParamsInfo& params, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response)
-    {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& callsign = params.Callsign.Value();
-        Core::ProxyType<PluginHost::Server::Service> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (callsign.empty() == true) {
-            _pluginServer->Services().GetMetaData(response);
-            result = Core::ERROR_NONE;
-        }
-        else {
-            if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-                ASSERT(service.IsValid());
-
-                PluginHost::MetaData::Service status;
-                service->GetMetaData(status);
-
-                response.Add(status);
-
-                result = Core::ERROR_NONE;
-            }
-        }
-
-        return result;
-    }
-
-    // Retrieves information about active connections.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    uint32_t Controller::endpoint_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response)
-    {
-        ASSERT(_pluginServer != nullptr);
-
-        _pluginServer->Dispatcher().GetMetaData(response);
-
-        return Core::ERROR_NONE;
-    }
-
-    // Return codes:
-    //  - ERROR_NONE: Success
-    uint32_t Controller::endpoint_process(PluginHost::MetaData::Server& response)
-    {
-        PluginHost::WorkerPool::Instance().GetMetaData(response);
-
-        return Core::ERROR_NONE;
-    }
-
-    // Retrieves status of subsystems.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    uint32_t Controller::endpoint_subsystems(Core::JSON::ArrayType<SubsystemsResultData>& response)
-    {
-        ASSERT(_service != nullptr);
-        PluginHost::ISubSystem* subSystem = _service->SubSystems();
-
-        uint8_t index(0);
-        if (subSystem != nullptr) {
-            while (index < PluginHost::ISubSystem::END_LIST) {
-                PluginHost::ISubSystem::subsystem current(static_cast<PluginHost::ISubSystem::subsystem>(index));
-                SubsystemsResultData status;
-                status.Subsystem = current;
-                status.Active = subSystem->IsActive(current);
-                response.Add(status);
-                ++index;
-            }
-            subSystem->Release();
-        }
-
-        return Core::ERROR_NONE;
-    }
-
     // Starts the network discovery.
     // Return codes:
     //  - ERROR_NONE: Success
@@ -221,91 +142,10 @@ namespace Plugin {
         return Core::ERROR_NONE;
     }
 
-    // Retrieves network discovery results.
+    // Method: storeconfig - Stores the configuration
     // Return codes:
     //  - ERROR_NONE: Success
-    uint32_t Controller::endpoint_discovery(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response)
-    {
-        ASSERT(_probe != nullptr);
-        Probe::Iterator index(_probe->Instances());
-
-        while (index.Next() == true) {
-            PluginHost::MetaData::Bridge element((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
-            response.Add(element);
-        }
-
-        return Core::ERROR_NONE;
-    }
-
-    // Retrieves the value of an environment variable.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_UNKNOWN_KEY: The given variable is not defined
-    uint32_t Controller::endpoint_getenv(const GetenvParamsData& params, Core::JSON::String& response)
-    {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& variable = params.Variable.Value();
-        string value;
-
-        if (Core::SystemInfo::GetEnvironment(variable, value) == true) {
-            response = value;
-            result = Core::ERROR_NONE;
-        }
-
-        return result;
-    }
-
-    // Retrieves the configuration of a service.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_UNKNOWN_KEY: The service does not exist
-    uint32_t Controller::endpoint_getconfig(const GetconfigParamsData& params, Core::JSON::String& response)
-    {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& callsign = params.Callsign.Value();
-        Core::ProxyType<PluginHost::Server::Service> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            response.SetQuoted(false);
-            response = service->ConfigLine();
-            result = Core::ERROR_NONE;
-        }
-
-        return result;
-    }
-
-    // Updates the configuration of a service.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_UNKNOWN_KEY: The service does not exist
-    //  - ERROR_GENERAL: Failed to update the configuration
-    uint32_t Controller::endpoint_setconfig(const SetconfigParamsData& params)
-    {
-        uint32_t result = Core::ERROR_UNKNOWN_KEY;
-        const string& callsign = params.Callsign.Value();
-        Core::ProxyType<PluginHost::Server::Service> service;
-
-        ASSERT(_pluginServer != nullptr);
-
-        if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
-            const string& configuration = params.Configuration.Value();
-            result = service->ConfigLine(configuration);
-
-            // Normalise return code
-            if (result != Core::ERROR_NONE) {
-                result = Core::ERROR_GENERAL;
-            }
-        }
-
-        return result;
-    }
-
-    // Stores the configuration.
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_GENERAL: Failed to store the configuration as it was invalid or malformed
+    //  - ERROR_GENERAL: Failed to store the configuration
     uint32_t Controller::endpoint_storeconfig()
     {
         ASSERT(_pluginServer != nullptr);
@@ -320,11 +160,11 @@ namespace Plugin {
         return result;
     }
 
-    // Downloads a file to the persistent memory.
+    // Method: download - Downloads a file to the persistent memory
     // Return codes:
     //  - ERROR_NONE: Success
-    //  - ERROR_INPROGRESS: Operation in progress
-    //  - ERROR_INCORRECT_URL: Incorrect URL given
+    //  - ERROR_INPROGRESS: A download is currently in progress
+    //  - ERROR_INCORRECT_URL: The source URL was invalid
     //  - ERROR_BAD_REQUEST: The given destination path or hash was invalid
     //  - ERROR_WRITE_ERROR: Failed to save the file to the persistent storage (e.g. the file already exists)
     uint32_t Controller::endpoint_download(const Download& params)
@@ -371,11 +211,11 @@ namespace Plugin {
         return result;
     }
 
-    // Removes contents of a directory from the persistent storage.
+    // Method: delete - Removes contents of a directory from the persistent storage
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNKNOWN_KEY: The given path was incorrect
-    //    ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
+    //  - ERROR_PRIVILEGED_REQUEST: The path points outside of persistent directory or some files/directories couldn't have been deleted
     uint32_t Controller::endpoint_delete(const DeleteParamsData& params)
     {
         uint32_t result = Core::ERROR_UNKNOWN_KEY;
@@ -396,12 +236,12 @@ namespace Plugin {
         return result;
     }
 
-    // Reboots the device.
+    // Method: harakiri - Reboots the device
     // Return codes:
     //  - ERROR_NONE: Success
     //  - ERROR_UNAVAILABLE: Rebooting procedure is not available on the device
     //  - ERROR_PRIVILEGED_REQUEST: Insufficient privileges to reboot the device
-    //    ERROR_GENERAL: Failed to reboot the device
+    //  - ERROR_GENERAL: Failed to reboot the device
     uint32_t Controller::endpoint_harakiri()
     {
         uint32_t result =  Core::System::Reboot();
@@ -413,7 +253,163 @@ namespace Plugin {
         return result;
     }
 
-    // Signals a plugin state change.
+    // Property: status - Information about plugins, including their configurations
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The service does not exist
+    uint32_t Controller::get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (index.empty() == true) {
+            _pluginServer->Services().GetMetaData(response);
+            result = Core::ERROR_NONE;
+        }
+        else {
+            if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+
+                PluginHost::MetaData::Service status;
+                service->GetMetaData(status);
+
+                response.Add(status);
+
+                result = Core::ERROR_NONE;
+            }
+        }
+
+        return result;
+    }
+
+    // Property: links - Information about active connections
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const
+    {
+        ASSERT(_pluginServer != nullptr);
+
+        _pluginServer->Dispatcher().GetMetaData(response);
+
+        return Core::ERROR_NONE;
+    }
+
+    // Property: processinfo - Information about the framework process
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_processinfo(PluginHost::MetaData::Server& response) const
+    {
+        PluginHost::WorkerPool::Instance().GetMetaData(response);
+
+        return Core::ERROR_NONE;
+    }
+
+    // Property: subsystems - Status of subsystems
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_subsystems(Core::JSON::ArrayType<SubsystemsParamsData>& response) const
+    {
+        ASSERT(_service != nullptr);
+        PluginHost::ISubSystem* subSystem = _service->SubSystems();
+
+        if (subSystem != nullptr) {
+            uint8_t i = 0;
+            while (i < PluginHost::ISubSystem::END_LIST) {
+                PluginHost::ISubSystem::subsystem current(static_cast<PluginHost::ISubSystem::subsystem>(i));
+                SubsystemsParamsData status;
+                status.Subsystem = current;
+                status.Active = subSystem->IsActive(current);
+                response.Add(status);
+                ++i;
+            }
+            subSystem->Release();
+        }
+
+        return Core::ERROR_NONE;
+    }
+
+    // Property: discoveryresults - SSDP network discovery results
+    // Return codes:
+    //  - ERROR_NONE: Success
+    uint32_t Controller::get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const
+    {
+        ASSERT(_probe != nullptr);
+        Probe::Iterator index(_probe->Instances());
+
+        while (index.Next() == true) {
+            PluginHost::MetaData::Bridge element((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+            response.Add(element);
+        }
+
+        return Core::ERROR_NONE;
+    }
+
+    // Property: environment - Value of an environment variable
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The variable does not exist
+    uint32_t Controller::get_environment(const string& index, Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        string value;
+
+        if (Core::SystemInfo::GetEnvironment(index, value) == true) {
+            response = value;
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    // Property: configuration - Configuration object of a service
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The service does not exist
+    uint32_t Controller::get_configuration(const string& index, Core::JSON::String& response) const
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+            response.SetQuoted(false);
+            response = service->ConfigLine();
+            result = Core::ERROR_NONE;
+        }
+
+        return result;
+    }
+
+    // Property: configuration - Configuration object of a service
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The service does not exist
+    //  - ERROR_GENERAL: Failed to update the configuration
+    uint32_t Controller::set_configuration(const string& index, const Core::JSON::String& params)
+    {
+        uint32_t result = Core::ERROR_UNKNOWN_KEY;
+        Core::ProxyType<PluginHost::Server::Service> service;
+
+        ASSERT(_pluginServer != nullptr);
+
+        if (_pluginServer->Services().FromIdentifier(index, service) == Core::ERROR_NONE) {
+            const string& configuration = params.Value();
+
+            result = service->ConfigLine(configuration);
+
+            // Normalise return code
+            if (result != Core::ERROR_NONE) {
+                result = Core::ERROR_GENERAL;
+            }
+        }
+
+        return result;
+    }
+
+    // Event: statechange - Signals a plugin state change
     void Controller::event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason)
     {
         StatechangeParamsData params;
@@ -424,8 +420,8 @@ namespace Plugin {
         Notify(_T("statechange"), params);
     }
 
-    // Signals that a file download has completed.
-    void Controller::event_downloadcompleted(uint32_t result, const string& source, const string& destination)
+    // Event: downloadcompleted - Signals that a file download has completed
+    void Controller::event_downloadcompleted(const uint32_t& result, const string& source, const string& destination)
     {
         DownloadcompletedParamsData params;
         params.Result = result;

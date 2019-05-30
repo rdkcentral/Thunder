@@ -66,7 +66,7 @@ namespace JsonData {
             DeleteParamsData& operator=(const DeleteParamsData&) = delete;
 
         public:
-            Core::JSON::String Path; // Path to the file or directory (within the persistent storage) to delete
+            Core::JSON::String Path; // Path to directory (within the persistent storage) to delete contents of
         }; // class DeleteParamsData
 
         class DownloadParamsData : public Core::JSON::Container {
@@ -93,83 +93,21 @@ namespace JsonData {
             DownloadcompletedParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("result"), &Source);
+                Add(_T("result"), &Result);
                 Add(_T("source"), &Source);
-                Add(_T("destination"), &Source);
+                Add(_T("destination"), &Destination);
             }
 
             DownloadcompletedParamsData(const DownloadcompletedParamsData&) = delete;
             DownloadcompletedParamsData& operator=(const DownloadcompletedParamsData&) = delete;
 
         public:
-            Core::JSON::DecUInt32 Result; // Operation status code
+            Core::JSON::DecUInt32 Result; // Download operation result (0: success)
             Core::JSON::String Source; // Source URL identifying the downloaded file
-            Core::JSON::String Destination; // Destination path
+            Core::JSON::String Destination; // Path to the downloaded file in the persistent storage
         }; // class DownloadcompletedParamsData
 
-        class ExistsParamsData : public Core::JSON::Container {
-        public:
-            ExistsParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("designator"), &Designator);
-            }
-
-            ExistsParamsData(const ExistsParamsData&) = delete;
-            ExistsParamsData& operator=(const ExistsParamsData&) = delete;
-
-        public:
-            Core::JSON::String Designator; // Method designator; if callsign is omitted then the Controller itself will be queried
-        }; // class ExistsParamsData
-
-        class GetconfigParamsData : public Core::JSON::Container {
-        public:
-            GetconfigParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("callsign"), &Callsign);
-            }
-
-            GetconfigParamsData(const GetconfigParamsData&) = delete;
-            GetconfigParamsData& operator=(const GetconfigParamsData&) = delete;
-
-        public:
-            Core::JSON::String Callsign; // Name of the service to get the configuration of
-        }; // class GetconfigParamsData
-
-        class GetenvParamsData : public Core::JSON::Container {
-        public:
-            GetenvParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("variable"), &Variable);
-            }
-
-            GetenvParamsData(const GetenvParamsData&) = delete;
-            GetenvParamsData& operator=(const GetenvParamsData&) = delete;
-
-        public:
-            Core::JSON::String Variable; // Name of the environment variable to get the value of
-        }; // class GetenvParamsData
-
-        class SetconfigParamsData : public Core::JSON::Container {
-        public:
-            SetconfigParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("callsign"), &Callsign);
-                Add(_T("configuration"), &Configuration);
-            }
-
-            SetconfigParamsData(const SetconfigParamsData&) = delete;
-            SetconfigParamsData& operator=(const SetconfigParamsData&) = delete;
-
-        public:
-            Core::JSON::String Callsign; // Name of the service to set the configuration of
-            Core::JSON::String Configuration; // Configuration object to set
-        }; // class SetconfigParamsData
-
-       class StartdiscoveryParamsData : public Core::JSON::Container {
+        class StartdiscoveryParamsData : public Core::JSON::Container {
         public:
             StartdiscoveryParamsData()
                 : Core::JSON::Container()
@@ -203,15 +141,15 @@ namespace JsonData {
             Core::JSON::EnumType<PluginHost::IShell::reason> Reason; // Cause of the state change
         }; // class StatechangeParamsData
 
-        class SubsystemsResultData : public Core::JSON::Container {
+        class SubsystemsParamsData : public Core::JSON::Container {
         public:
-            SubsystemsResultData()
+            SubsystemsParamsData()
                 : Core::JSON::Container()
             {
                 Init();
             }
 
-            SubsystemsResultData(const SubsystemsResultData& other)
+            SubsystemsParamsData(const SubsystemsParamsData& other)
                 : Core::JSON::Container()
                 , Subsystem(other.Subsystem)
                 , Active(other.Active)
@@ -219,7 +157,7 @@ namespace JsonData {
                 Init();
             }
 
-            SubsystemsResultData& operator=(const SubsystemsResultData& rhs)
+            SubsystemsParamsData& operator=(const SubsystemsParamsData& rhs)
             {
                 Subsystem = rhs.Subsystem;
                 Active = rhs.Active;
@@ -234,9 +172,9 @@ namespace JsonData {
             }
 
         public:
-            Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> Subsystem;
-            Core::JSON::Boolean Active;
-        }; // class SubsystemsResultData
+            Core::JSON::EnumType<PluginHost::ISubSystem::subsystem> Subsystem; // Subsystem name
+            Core::JSON::Boolean Active; // Denotes whether the subsystem is active (true)
+        }; // class SubsystemsParamsData
 
     } // namespace Controller
 

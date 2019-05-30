@@ -63,10 +63,7 @@
       "callsign"
     ]
   },
-  "methods": {
-    "$ref": "ControllerAPI.json#/methods"
-  },
-  "events": {
-    "$ref": "ControllerAPI.json#/events"
+  "interface": {
+    "$ref": "ControllerAPI.json#"
   }
 }

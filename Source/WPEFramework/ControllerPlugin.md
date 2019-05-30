@@ -4,7 +4,7 @@
 
 **Version: 1.0**
 
-Controller functionality for WPEFramework.
+Controller plugin for WPEFramework.
 
 ### Table of Contents
 
@@ -12,6 +12,7 @@ Controller functionality for WPEFramework.
 - [Description](#head.Description)
 - [Configuration](#head.Configuration)
 - [Methods](#head.Methods)
+- [Properties](#head.Properties)
 - [Notifications](#head.Notifications)
 
 <a name="head.Introduction"></a>
@@ -20,7 +21,7 @@ Controller functionality for WPEFramework.
 <a name="head.Scope"></a>
 ## Scope
 
-This document describes purpose and functionality of the Controller plugin. It includes detailed specification of its configuration, methods provided and notifications sent.
+This document describes purpose and functionality of the Controller plugin. It includes detailed specification of its configuration, methods and properties provided, as well as notifications sent.
 
 <a name="head.Case_Sensitivity"></a>
 ## Case Sensitivity
@@ -85,32 +86,24 @@ The table below lists configuration options of the plugin.
 <a name="head.Methods"></a>
 # Methods
 
-The following API is provided by the plugin via JSON-RPC:
+The following methods are provided by the Controller plugin:
 
-- [activate](#method.activate)
-- [deactivate](#method.deactivate)
-- [exists](#method.exists)
-- [status](#method.status)
-- [links](#method.links)
-- [process](#method.process)
-- [subsystems](#method.subsystems)
-- [startdiscovery](#method.startdiscovery)
-- [discovery](#method.discovery)
-- [getenv](#method.getenv)
-- [getconfig](#method.getconfig)
-- [setconfig](#method.setconfig)
-- [storeconfig](#method.storeconfig)
-- [download](#method.download)
-- [delete](#method.delete)
-- [harakiri](#method.harakiri)
+Controller interface methods:
 
-This API follows the JSON-RPC 2.0 specification. Refer to [[JSON-RPC](#ref.JSON-RPC)] for more information.
-
+| Method | Description |
+| :-------- | :-------- |
+| [activate](#method.activate) | Activates a plugin |
+| [deactivate](#method.deactivate) | Deactivates a plugin |
+| [startdiscovery](#method.startdiscovery) | Starts the network discovery |
+| [storeconfig](#method.storeconfig) | Stores the configuration |
+| [download](#method.download) | Downloads a file to the persistent memory |
+| [delete](#method.delete) | Removes contents of a directory from the persistent storage |
+| [harakiri](#method.harakiri) | Reboots the device |
 
 <a name="method.activate"></a>
-## *activate*
+## *activate <sup>method</sup>*
 
-Activates a plugin.
+Activates a plugin
 
 ### Description
 
@@ -136,7 +129,7 @@ Also see: [statechange](#event.statechange)
 | Code | Message | Description |
 | :-------- | :-------- | :-------- |
 | 31 | ```ERROR_PENDING_CONDITIONS``` | The plugin will be activated once its activation preconditions are met |
-| 12 | ```ERROR_INPROGRESS``` | Operation in progress |
+| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being activated |
 | 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
 | 6 | ```ERROR_OPENING_FAILED``` | Failed to activate the plugin |
 | 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow activation |
@@ -166,9 +159,9 @@ Also see: [statechange](#event.statechange)
 }
 ```
 <a name="method.deactivate"></a>
-## *deactivate*
+## *deactivate <sup>method</sup>*
 
-Deactivates a plugin.
+Deactivates a plugin
 
 ### Description
 
@@ -193,7 +186,7 @@ Also see: [statechange](#event.statechange)
 
 | Code | Message | Description |
 | :-------- | :-------- | :-------- |
-| 12 | ```ERROR_INPROGRESS``` | Operation in progress |
+| 12 | ```ERROR_INPROGRESS``` | The plugin is currently being deactivated |
 | 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
 | 5 | ```ERROR_ILLEGAL_STATE``` | Current state of the plugin does not allow deactivation |
 | 19 | ```ERROR_CLOSING_FAILED``` | Failed to activate the plugin |
@@ -222,280 +215,10 @@ Also see: [statechange](#event.statechange)
     "result": null
 }
 ```
-<a name="method.exists"></a>
-## *exists*
-
-Checks if a JSON-RPC method exists.
-
-### Description
-
-Use this method to check if a method is currently callable. 
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.designator | string | Method designator; if callsign is omitted then the Controller itself will be queried |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | number | Code specifying the availability (0: available, 2: unavailable callsign, 22: method unavailable, 38: version unavailable |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.exists", 
-    "params": {
-        "designator": "DeviceInfo.1.system"
-    }
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": 0
-}
-```
-<a name="method.status"></a>
-## *status*
-
-Retrieves information about plugins.
-
-### Description
-
-Use this method to fetch information about plugins, including their configuration.
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params?.callsign | string | <sup>*(optional)*</sup> Callsign of the plugin (if omitted or empty, then status of all plugins is returned) |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | array | A list of loaded plugins |
-| result[#] | object | (a plugin entry) |
-| result[#].callsign | string | Instance name of the plugin |
-| result[#].locator | string | Library name |
-| result[#].classname | string | Class name |
-| result[#].autostart | string | Determines if the plugin is to be started automatically along with the framework |
-| result[#]?.precondition | array | <sup>*(optional)*</sup> List of subsystems the plugin depends on |
-| result[#]?.precondition[#] | string | <sup>*(optional)*</sup> (a subsystem entry) (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
-| result[#]?.configuration | object | <sup>*(optional)*</sup> Custom configuration properties of the plugin |
-| result[#].state | string | State of the plugin (must be one of the following: *Deactivated*, *Deactivation*, *Activated*, *Activation*, *Suspended*, *Resumed*, *Precondition*) |
-| result[#].processedrequests | number | Number of API requests that have been processed by the plugin |
-| result[#].processedobjects | number | Number of objects that have been processed by the plugin |
-| result[#].observers | number | Number of observers currently watching the plugin (WebSockets) |
-| result[#]?.module | string | <sup>*(optional)*</sup> Name of the plugin from a module perspective (used e.g. in tracing) |
-| result[#]?.hash | string | <sup>*(optional)*</sup> SHA256 hash identifying the sources from which this plugin was build |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.status", 
-    "params": {
-        "callsign": "DeviceInfo"
-    }
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": [
-        {
-            "callsign": "DeviceInfo", 
-            "locator": "libWPEFrameworkDeviceInfo", 
-            "classname": "DeviceInfo", 
-            "autostart": "True", 
-            "precondition": [
-                "Platform"
-            ], 
-            "configuration": {}, 
-            "state": "activated", 
-            "processedrequests": 2, 
-            "processedobjects": 0, 
-            "observers": 0, 
-            "module": "Plugin_DeviceInfo", 
-            "hash": "custom"
-        }
-    ]
-}
-```
-<a name="method.links"></a>
-## *links*
-
-Retrieves information about active connections.
-
-### Parameters
-
-This method takes no parameters.
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | array | List of active connections |
-| result[#] | object | (a connection entry) |
-| result[#].remote | string | IP address (or FQDN) of the other side of the connection |
-| result[#].state | string | State of the link (must be one of the following: *WebServer*, *WebSocket*, *RawSocket*, *Closed*, *Suspended*) |
-| result[#].activity | boolean | Denotes if there was any activity on this connection |
-| result[#].id | number | A unique number identifying the connection |
-| result[#]?.name | string | <sup>*(optional)*</sup> Name of the connection |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.links"
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": [
-        {
-            "remote": "localhost:52116", 
-            "state": "RawSocket", 
-            "activity": false, 
-            "id": 1, 
-            "name": "Controller"
-        }
-    ]
-}
-```
-<a name="method.process"></a>
-## *process*
-
-### Description
-
-Retrieves information about the framework process.
-
-### Parameters
-
-This method takes no parameters.
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | object |  |
-| result.threads | array | Thread pool |
-| result.threads[#] | number | (a thread entry) |
-| result.pending | number | Pending requests |
-| result.occupation | number | Pool occupation |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.process"
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": {
-        "threads": [
-            0
-        ], 
-        "pending": 0, 
-        "occupation": 2
-    }
-}
-```
-<a name="method.subsystems"></a>
-## *subsystems*
-
-Retrieves status of subsystems.
-
-### Description
-
-Use this method to get a list of subsystems and their status.
-
-### Parameters
-
-This method takes no parameters.
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | array |  |
-| result[#] | object |  |
-| result[#]?.name | string | <sup>*(optional)*</sup> Subsystem name (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
-| result[#]?.active | boolean | <sup>*(optional)*</sup> Denotes whether the subsystem is active (true) |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.subsystems"
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": [
-        {
-            "name": "Platform", 
-            "active": true
-        }
-    ]
-}
-```
 <a name="method.startdiscovery"></a>
-## *startdiscovery*
+## *startdiscovery <sup>method</sup>*
 
-Starts the network discovery.
+Starts the network discovery
 
 ### Description
 
@@ -537,217 +260,10 @@ Use this method to initiate SSDP network discovery process.
     "result": null
 }
 ```
-<a name="method.discovery"></a>
-## *discovery*
-
-Retrieves network discovery results.
-
-### Description
-
-Use this method to retrieve SSDP network discovery results.
-
-### Parameters
-
-This method takes no parameters.
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | array | List of network discovery results |
-| result[#] | object | (a discovery result entry) |
-| result[#].locator | string |  |
-| result[#].latency | number |  |
-| result[#].model | string |  |
-| result[#].secure | boolean |  |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.discovery"
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": [
-        {
-            "locator": "", 
-            "latency": 0, 
-            "model": "", 
-            "secure": true
-        }
-    ]
-}
-```
-<a name="method.getenv"></a>
-## *getenv*
-
-Retrieves the value of an environment variable.
-
-### Description
-
-Use this method to get values of shell environment variables.
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.variable | string | Name of the environment variable to get the value of |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | string | Value of the variable |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 22 | ```ERROR_UNKNOWN_KEY``` | The given variable is not defined |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.getenv", 
-    "params": {
-        "variable": "SHELL"
-    }
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": "/bin/sh"
-}
-```
-<a name="method.getconfig"></a>
-## *getconfig*
-
-Retrieves the configuration of a service.
-
-### Description
-
-Use this method to get configurations of framework services.
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.callsign | string | Name of the service to get the configuration of |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | object | The requested configuration object |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 22 | ```ERROR_UNKNOWN_KEY``` | The service does not exist |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.getconfig", 
-    "params": {
-        "callsign": "WebKitBrowser"
-    }
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": {}
-}
-```
-<a name="method.setconfig"></a>
-## *setconfig*
-
-Updates the configuration of a service.
-
-### Description
-
-Use this method to set configurations of framework services.
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.callsign | string | Name of the service to set the configuration of |
-| params.configuration | object | Configuration object to set |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | null | Always null |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 22 | ```ERROR_UNKNOWN_KEY``` | The service does not exist |
-| 1 | ```ERROR_GENERAL``` | Failed to update the configuration |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.setconfig", 
-    "params": {
-        "callsign": "WebKitBrowser", 
-        "configuration": {}
-    }
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": null
-}
-```
 <a name="method.storeconfig"></a>
-## *storeconfig*
+## *storeconfig <sup>method</sup>*
 
-Stores the configuration.
+Stores the configuration
 
 ### Description
 
@@ -790,9 +306,9 @@ This method takes no parameters.
 }
 ```
 <a name="method.download"></a>
-## *download*
+## *download <sup>method</sup>*
 
-Downloads a file to the persistent memory.
+Downloads a file to the persistent memory
 
 Also see: [downloadcompleted](#event.downloadcompleted)
 
@@ -815,8 +331,8 @@ Also see: [downloadcompleted](#event.downloadcompleted)
 
 | Code | Message | Description |
 | :-------- | :-------- | :-------- |
-| 12 | ```ERROR_INPROGRESS``` | Operation in progress |
-| 15 | ```ERROR_INCORRECT_URL``` | Incorrect URL given |
+| 12 | ```ERROR_INPROGRESS``` | A download is currently in progress |
+| 15 | ```ERROR_INCORRECT_URL``` | The source URL was invalid |
 | 30 | ```ERROR_BAD_REQUEST``` | The given destination path or hash was invalid |
 | 40 | ```ERROR_WRITE_ERROR``` | Failed to save the file to the persistent storage (e.g. the file already exists) |
 
@@ -846,9 +362,9 @@ Also see: [downloadcompleted](#event.downloadcompleted)
 }
 ```
 <a name="method.delete"></a>
-## *delete*
+## *delete <sup>method</sup>*
 
-Removes contents of a directory from the persistent storage.
+Removes contents of a directory from the persistent storage
 
 ### Description
 
@@ -898,9 +414,9 @@ Use this method to recursively delete contents of a directory
 }
 ```
 <a name="method.harakiri"></a>
-## *harakiri*
+## *harakiri <sup>method</sup>*
 
-Reboots the device.
+Reboots the device
 
 ### Description
 
@@ -944,19 +460,388 @@ This method takes no parameters.
     "result": null
 }
 ```
+<a name="head.Properties"></a>
+# Properties
+
+The following properties are provided by the Controller plugin:
+
+Controller interface properties:
+
+| Property | Description |
+| :-------- | :-------- |
+| [status](#property.status) <sup>RO</sup> | Information about plugins, including their configurations |
+| [links](#property.links) <sup>RO</sup> | Information about active connections |
+| [processinfo](#property.processinfo) <sup>RO</sup> | Information about the framework process |
+| [subsystems](#property.subsystems) <sup>RO</sup> | Status of the subsystems |
+| [discoveryresults](#property.discoveryresults) <sup>RO</sup> | SSDP network discovery results |
+| [environment](#property.environment) <sup>RO</sup> | Value of an environment variable |
+| [configuration](#property.configuration) | Configuration object of a service |
+
+<a name="property.status"></a>
+## *status <sup>property</sup>*
+
+Provides access to the information about plugins, including their configurations.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | array | A list of loaded plugins |
+| (property)[#] | object | (a plugin entry) |
+| (property)[#].callsign | string | Instance name of the plugin |
+| (property)[#].locator | string | Library name |
+| (property)[#].classname | string | Class name |
+| (property)[#].autostart | string | Determines if the plugin is to be started automatically along with the framework |
+| (property)[#]?.precondition | array | <sup>*(optional)*</sup> List of subsystems the plugin depends on |
+| (property)[#]?.precondition[#] | string | <sup>*(optional)*</sup> (a subsystem entry) (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
+| (property)[#]?.configuration | object | <sup>*(optional)*</sup> Custom configuration properties of the plugin |
+| (property)[#].state | string | State of the plugin (must be one of the following: *Deactivated*, *Deactivation*, *Activated*, *Activation*, *Suspended*, *Resumed*, *Precondition*) |
+| (property)[#].processedrequests | number | Number of API requests that have been processed by the plugin |
+| (property)[#].processedobjects | number | Number of objects that have been processed by the plugin |
+| (property)[#].observers | number | Number of observers currently watching the plugin (WebSockets) |
+| (property)[#]?.module | string | <sup>*(optional)*</sup> Name of the plugin from a module perspective (used e.g. in tracing) |
+| (property)[#]?.hash | string | <sup>*(optional)*</sup> SHA256 hash identifying the sources from which this plugin was build |
+
+> The *callsign* shall be passed as the index to the property, e.g. *Controller.1.status@DeviceInfo*. If the *callsign* is omitted, then status of all plugins is returned.
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 22 | ```ERROR_UNKNOWN_KEY``` | The plugin does not exist |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.status@DeviceInfo"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": [
+        {
+            "callsign": "DeviceInfo", 
+            "locator": "libWPEFrameworkDeviceInfo", 
+            "classname": "DeviceInfo", 
+            "autostart": "True", 
+            "precondition": [
+                "Platform"
+            ], 
+            "configuration": {}, 
+            "state": "activated", 
+            "processedrequests": 2, 
+            "processedobjects": 0, 
+            "observers": 0, 
+            "module": "Plugin_DeviceInfo", 
+            "hash": "custom"
+        }
+    ]
+}
+```
+<a name="property.links"></a>
+## *links <sup>property</sup>*
+
+Provides access to the information about active connections.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | array | List of active connections |
+| (property)[#] | object | (a connection entry) |
+| (property)[#].remote | string | IP address (or FQDN) of the other side of the connection |
+| (property)[#].state | string | State of the link (must be one of the following: *WebServer*, *WebSocket*, *RawSocket*, *Closed*, *Suspended*) |
+| (property)[#].activity | boolean | Denotes if there was any activity on this connection |
+| (property)[#].id | number | A unique number identifying the connection |
+| (property)[#]?.name | string | <sup>*(optional)*</sup> Name of the connection |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.links"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": [
+        {
+            "remote": "localhost:52116", 
+            "state": "RawSocket", 
+            "activity": false, 
+            "id": 1, 
+            "name": "Controller"
+        }
+    ]
+}
+```
+<a name="property.processinfo"></a>
+## *processinfo <sup>property</sup>*
+
+Provides access to the information about the framework process.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | object | Information about the framework process |
+| (property).threads | array | Thread pool |
+| (property).threads[#] | number | (a thread entry) |
+| (property).pending | number | Pending requests |
+| (property).occupation | number | Pool occupation |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.processinfo"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": {
+        "threads": [
+            0
+        ], 
+        "pending": 0, 
+        "occupation": 2
+    }
+}
+```
+<a name="property.subsystems"></a>
+## *subsystems <sup>property</sup>*
+
+Provides access to the status of the subsystems.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | array | Status of the subsystems |
+| (property)[#] | object |  |
+| (property)[#]?.subsystem | string | <sup>*(optional)*</sup> Subsystem name (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
+| (property)[#]?.active | boolean | <sup>*(optional)*</sup> Denotes whether the subsystem is active (true) |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.subsystems"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": [
+        {
+            "subsystem": "Platform", 
+            "active": true
+        }
+    ]
+}
+```
+<a name="property.discoveryresults"></a>
+## *discoveryresults <sup>property</sup>*
+
+Provides access to the SSDP network discovery results.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | array | List of network discovery results |
+| (property)[#] | object | (a discovery result entry) |
+| (property)[#].locator | string |  |
+| (property)[#].latency | number |  |
+| (property)[#].model | string |  |
+| (property)[#].secure | boolean |  |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.discoveryresults"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": [
+        {
+            "locator": "", 
+            "latency": 0, 
+            "model": "", 
+            "secure": true
+        }
+    ]
+}
+```
+<a name="property.environment"></a>
+## *environment <sup>property</sup>*
+
+Provides access to the value of an environment variable.
+
+> This property is **read-only**.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | string | Value of an environment variable |
+
+> The *variable* shall be passed as the index to the property, e.g. *Controller.1.environment@SHELL*.
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 22 | ```ERROR_UNKNOWN_KEY``` | The variable is not defined |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.environment@SHELL"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": "/bin/sh"
+}
+```
+<a name="property.configuration"></a>
+## *configuration <sup>property</sup>*
+
+Provides access to the configuration object of a service.
+
+### Value
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| (property) | object | The configuration JSON object |
+
+> The *callsign* shall be passed as the index to the property, e.g. *Controller.1.configuration@WebKitBrowser*.
+
+### Errors
+
+| Code | Message | Description |
+| :-------- | :-------- | :-------- |
+| 22 | ```ERROR_UNKNOWN_KEY``` | The service does not exist |
+| 1 | ```ERROR_GENERAL``` | Failed to update the configuration |
+
+### Example
+
+#### Get Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.configuration@WebKitBrowser"
+}
+```
+#### Get Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": {}
+}
+```
+#### Set Request
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "method": "Controller.1.configuration@WebKitBrowser", 
+    "params": {}
+}
+```
+#### Set Response
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "id": 1234567890, 
+    "result": "null"
+}
+```
 <a name="head.Notifications"></a>
 # Notifications
 
 Notifications are autonomous events, triggered by the internals of the plugin, and broadcasted via JSON-RPC to all registered observers. Refer to [[WPEF](#ref.WPEF)] for information on how to register for a notification.
 
-The following notifications are provided by the plugin:
+The following events are provided by the Controller plugin:
 
-- [all](#event.all)
-- [statechange](#event.statechange)
-- [downloadcompleted](#event.downloadcompleted)
+Controller interface events:
+
+| Event | Description |
+| :-------- | :-------- |
+| [all](#event.all) | Signals each and every event in the system |
+| [statechange](#event.statechange) | Signals a plugin state change |
+| [downloadcompleted](#event.downloadcompleted) | Signals that a file download has completed |
 
 <a name="event.all"></a>
-## *all*
+## *all <sup>event</sup>*
 
 Signals each and every event in the system. The Controller plugin is an aggregator of all the events triggered by a specific plugin. All notifications send by any plugin are forwarded over the Controller socket as an event.
 
@@ -981,9 +866,9 @@ Signals each and every event in the system. The Controller plugin is an aggregat
 }
 ```
 <a name="event.statechange"></a>
-## *statechange*
+## *statechange <sup>event</sup>*
 
-Signals a plugin state change.
+Signals a plugin state change
 
 ### Parameters
 
@@ -1008,9 +893,9 @@ Signals a plugin state change.
 }
 ```
 <a name="event.downloadcompleted"></a>
-## *downloadcompleted*
+## *downloadcompleted <sup>event</sup>*
 
-Signals that a file download has completed.
+Signals that a file download has completed
 
 ### Parameters
 
