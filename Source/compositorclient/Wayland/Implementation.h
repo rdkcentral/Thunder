@@ -307,13 +307,9 @@ namespace Wayland {
 #ifdef V3D_DRM_DISABLE
             ::setenv("V3D_DRM_DISABLE", "1", 1);
 #endif
-            std::string nameOverride;
-            std::string idOverride;
-            if (IDisplay::GetOverrides(&nameOverride, &idOverride) == true) {
-                if (nameOverride.empty() == false && nameOverride != _displayName)
-                    _displayName = nameOverride;
-                if (idOverride.empty() == false)
-                    _displayId.swap(idOverride);
+            std::string displayId = IDisplay::Configuration();
+            if (displayId.empty() == false) {
+                _displayId.swap(displayId);
             }
         }
 

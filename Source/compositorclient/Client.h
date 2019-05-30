@@ -47,46 +47,50 @@ namespace Compositor {
             virtual int32_t Height() const = 0;
         };
 
+        static IDisplay* Instance(const std::string& displayName);
+
         // If CLIENT_IDENTIFIER variable is set its value is tokenized using comma as the separator
         // and the first token is used to override the passed in name. The second - if present - is
-        // used as an underlaying compositor specific identifier.
-        // See GetOverrides()
-        static IDisplay* Instance(const std::string& displayName);
-        static bool GetOverrides(std::string* name, std::string* identifier)
-        {
-            assert(name != nullptr || identifier != nullptr);
+        // used as an underlaying compositor specific information, Configuration information.
 
+        // This method is intended to be used by the layers "using" the compositor client. using the 
+        // following method, a SuggestedName (typically the callsign) can be extracted from the 
+        // environment and can be used in the "static IDisplay* Instance(<displayName>)" method.
+        static std::string SuggestedName()
+        {
+            std::string result;
             const char* overrides = getenv("CLIENT_IDENTIFIER");
-            if (overrides != nullptr && overrides[0] != '\0') {
+            if (overrides != nullptr) {
                 const char* delimiter = strchr(overrides, ',');
+
                 if (delimiter != nullptr) {
                     ptrdiff_t delimiterPos = delimiter - overrides;
-                    if (name != nullptr) {
-                        name->clear();
-                        name->insert(0, overrides, delimiterPos);
-                    }
-
-                    if (identifier != nullptr) {
-                        identifier->clear();
-                        if (delimiterPos + 1 < strlen(overrides))
-                            identifier->insert(0, overrides + delimiterPos + 1);
-                    }
-                } else {
-                    // No delimiter found so it's only a name.
-                    if (name != nullptr) {
-                        name->clear();
-                        name->insert(0, overrides);
-                    }
-
-                    if (identifier != nullptr) {
-                        identifier->clear();
-                    }
+                    result.insert (0, overrides, delimiterPos);
                 }
-
-                return true;
+                else {
+                    result.insert (0, overrides);
+                }
             }
+            return (result);
+        }
 
-            return false;
+        // This method is intended to be used by the layers implementing the compositor client. 
+        // using the following method, additional configuration information e.g. to which wayland 
+        // server to connect to, or what ID to be used to connect to the nexus server, can be passed 
+        // to the implementation layers.
+        static std::string Configuration()
+        {
+            std::string result;
+            const char* overrides = getenv("CLIENT_IDENTIFIER");
+            if (overrides != nullptr) {
+                const char* delimiter = strchr(overrides, ',');
+
+                if (delimiter != nullptr) {
+                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    result.insert (0, overrides + delimiterPos + 1);
+                }
+            }
+            return (result);
         }
 
         virtual ~IDisplay() {}

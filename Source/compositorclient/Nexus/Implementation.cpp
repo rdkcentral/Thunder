@@ -154,13 +154,9 @@ namespace Nexus {
 
             NEXUS_DisplayHandle displayHandle(nullptr);
 
-            std::string nameOverride;
-            std::string idOverride;
-            if (IDisplay::GetOverrides(&nameOverride, &idOverride) == true) {
-                if (nameOverride.empty() == false && nameOverride != _displayName)
-                    _displayName = nameOverride;
-                if (idOverride.empty() == false)
-                    _nexusClientId = atoi(idOverride.c_str());
+            std::string idOverride = IDisplay::Configuration();
+            if (idOverride.empty() == false)
+                _nexusClientId = atoi(idOverride.c_str());
             }
 
 #ifdef V3D_DRM_DISABLE
