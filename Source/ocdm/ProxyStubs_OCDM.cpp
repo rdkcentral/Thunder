@@ -2105,7 +2105,3 @@ namespace ProxyStubs {
 } // namespace ProxyStubs
 
 }
-
-// Hook to the registration code
-void *OCDM_ProxyStubRegistration = &WPEFramework::ProxyStubs::ProxyStubRegistration;
-
