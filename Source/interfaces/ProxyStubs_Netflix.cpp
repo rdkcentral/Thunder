@@ -105,14 +105,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const INetflix* implementation = input.Implementation<INetflix>();
             ASSERT((implementation != nullptr) && "Null INetflix implementation pointer");
             const string output = implementation->GetESN();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 

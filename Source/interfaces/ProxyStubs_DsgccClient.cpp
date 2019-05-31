@@ -53,6 +53,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -60,8 +61,6 @@ namespace ProxyStubs {
                 IDsgccClient* implementation = input.Implementation<IDsgccClient>();
                 ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -78,14 +77,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IDsgccClient* implementation = input.Implementation<IDsgccClient>();
             ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
             const string output = implementation->GetChannels();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -94,14 +92,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IDsgccClient* implementation = input.Implementation<IDsgccClient>();
             ASSERT((implementation != nullptr) && "Null IDsgccClient implementation pointer");
             const string output = implementation->State();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 

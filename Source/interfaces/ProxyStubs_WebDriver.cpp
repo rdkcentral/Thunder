@@ -47,6 +47,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -54,8 +55,6 @@ namespace ProxyStubs {
                 IWebDriver* implementation = input.Implementation<IWebDriver>();
                 ASSERT((implementation != nullptr) && "Null IWebDriver implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code

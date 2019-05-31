@@ -51,6 +51,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -58,8 +59,6 @@ namespace ProxyStubs {
                 IContentDecryption* implementation = input.Implementation<IContentDecryption>();
                 ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -76,14 +75,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IContentDecryption* implementation = input.Implementation<IContentDecryption>();
             ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
             const uint32_t output = implementation->Reset();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -92,14 +90,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
             ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
             RPC::IStringIterator* output = implementation->Systems();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
         },
 
@@ -112,14 +109,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
             ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
             RPC::IStringIterator* output = implementation->Designators(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
         },
 
@@ -132,14 +128,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IContentDecryption* implementation = input.Implementation<IContentDecryption>();
             ASSERT((implementation != nullptr) && "Null IContentDecryption implementation pointer");
             RPC::IStringIterator* output = implementation->Sessions(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
         },
 

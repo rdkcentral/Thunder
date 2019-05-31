@@ -115,14 +115,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const uint8_t param0 = reader.Number<uint8_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             IComposition::IClient* output = implementation->Client(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IComposition::IClient*>(output);
         },
 
@@ -135,14 +134,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             IComposition::IClient* output = implementation->Client(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IComposition::IClient*>(output);
         },
 
@@ -161,14 +159,13 @@ namespace ProxyStubs {
             param1.width = reader.Number<uint32_t>();
             param1.height = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             const uint32_t output = implementation->Geometry(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -181,14 +178,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             const IComposition::Rectangle output = implementation->Geometry(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             // (decompose IComposition::Rectangle)
             writer.Number<uint32_t>(output.x);
             writer.Number<uint32_t>(output.y);
@@ -205,14 +201,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             const uint32_t output = implementation->ToTop(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -226,14 +221,13 @@ namespace ProxyStubs {
             const string param0 = reader.Text();
             const string param1 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             const uint32_t output = implementation->PutBelow(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -242,14 +236,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             RPC::IStringIterator* output = implementation->ClientsInZorder();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
         },
 
@@ -275,6 +268,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -282,8 +276,6 @@ namespace ProxyStubs {
                 IComposition* implementation = input.Implementation<IComposition>();
                 ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -315,14 +307,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IComposition* implementation = input.Implementation<IComposition>();
             ASSERT((implementation != nullptr) && "Null IComposition implementation pointer");
             const IComposition::ScreenResolution output = implementation->Resolution();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IComposition::ScreenResolution>(output);
         },
 
@@ -346,14 +337,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IComposition::IClient* implementation = input.Implementation<IComposition::IClient>();
             ASSERT((implementation != nullptr) && "Null IComposition::IClient implementation pointer");
             const string output = implementation->Name();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
