@@ -11,7 +11,7 @@
   },
   "methods": {
     "Messenger.1.join": {
-      "summary": "Joins a messaging room.",
+      "summary": "Joins a messaging room",
       "description": "Use this method to join a room. If the specified room does not exist, then it will be created.",
       "events": [
         "userupdate"
@@ -57,7 +57,7 @@
       ]
     },
     "Messenger.1.leave": {
-      "summary": "Leaves a messaging room.",
+      "summary": "Leaves a messaging room",
       "description": "Use this method to leave a room. The room ID becomes invalid after this call. If there are no more users, the room will be destroyed and related resources freed.",
       "events": [
         "userupdate"
@@ -83,7 +83,7 @@
       ]
     },
     "Messenger.1.send": {
-      "summary": "Sends a message to a room.",
+      "summary": "Sends a message to a room",
       "description": "Use this method to send a message to a room.",
       "events": [
         "message"
@@ -120,7 +120,9 @@
   },
   "events": {
     "roomupdate": {
-      "summary": "Notifies about room status updates. Upon registering to this notification the listener will sequentially receive updates of all rooms that have been created so far.",
+      "summary": "Notifies about room status updates",
+      "description": "Register to this event to be notified about room status updates. Immediately after registering to this notification the listener will sequentially receive updates of all rooms that have been created so far.",
+      "statuslistener": true,
       "params": {
         "type": "object",
         "properties": {
@@ -147,9 +149,13 @@
       }
     },
     "userupdate": {
-      "summary": "Notifies about user status updates. The room ID shall be specified within the designator. Upon registering to this notification the listener will sequentially receive updates of all users that have joined the room so far.",
-      "example": "1e217990dd1cd4f66124.*",
-      "sendif": true,
+      "summary": "Notifies about user status updates.",
+      "description": "Register to this event to be notified about room status updates. Immediately after registering to this notification the listener will sequentially receive updates of all users that have joined the room so far.",
+      "statuslistener": true,
+      "id": {
+        "name": "room ID",
+        "example": "1e217990dd1cd4f66124"
+      },
       "params": {
         "type": "object",
         "properties": {
@@ -176,9 +182,12 @@
       }
     },
     "message": {
-      "summary": "Notifies about new messages in a room. The room ID shall be specified within the designator.",
-      "example": "1e217990dd1cd4f66124.*",
-      "sendif": true,
+      "summary": "Notifies about new messages in a room",
+      "description": "Register to this event to be notified about new messages in a room.",
+      "id": {
+        "name": "room ID",
+        "example": "1e217990dd1cd4f66124"
+      },
       "params": {
         "type": "object",
         "properties": {
