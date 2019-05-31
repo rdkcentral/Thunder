@@ -67,6 +67,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ICategory::IIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual ITestController::ICategory* Category(const string&) const = 0
@@ -86,6 +87,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ICategory*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -218,6 +220,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ITest*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -355,6 +358,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ITest::IIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual ITestController::ITest* Test(const string&) const = 0
@@ -374,6 +378,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ITest*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -444,6 +449,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestController::ICategory*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
