@@ -41,14 +41,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             const string output = implementation->Metadata();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -57,14 +56,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             const IStream::streamtype output = implementation->Type();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IStream::streamtype>(output);
         },
 
@@ -73,14 +71,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             const IStream::drmtype output = implementation->DRM();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IStream::drmtype>(output);
         },
 
@@ -89,14 +86,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             IStream::IControl* output = implementation->Control();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream::IControl*>(output);
         },
 
@@ -139,14 +135,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             const IStream::state output = implementation->State();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IStream::state>(output);
         },
 
@@ -159,14 +154,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IStream* implementation = input.Implementation<IStream>();
             ASSERT((implementation != nullptr) && "Null IStream implementation pointer");
             const uint32_t output = implementation->Load(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -194,14 +188,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
             RPC::IValueIterator* output = implementation->Speeds();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IValueIterator*>(output);
         },
 
@@ -225,14 +218,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
             const int32_t output = implementation->Speed();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const int32_t>(output);
         },
 
@@ -256,28 +248,25 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
             const uint64_t output = implementation->Position();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint64_t>(output);
         },
 
-        // virtual void TimeRange(uint64_t&, uint64_t&) const = 0
+        // virtual void TimeRange(uint64_t& [out], uint64_t& [out]) const = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // read parameters
             RPC::Data::Frame::Reader reader(input.Reader());
-            uint64_t param0 = reader.Number<uint64_t>();
-            uint64_t param1 = reader.Number<uint64_t>();
-
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            uint64_t param0{}; // storage
+            uint64_t param1{}; // storage
 
             // call implementation
             const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
@@ -285,6 +274,7 @@ namespace ProxyStubs {
             implementation->TimeRange(param0, param1);
 
             // write return values
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<uint64_t>(param0);
             writer.Number<uint64_t>(param1);
         },
@@ -294,14 +284,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl* implementation = input.Implementation<IStream::IControl>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl implementation pointer");
             IStream::IControl::IGeometry* output = implementation->Geometry();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream::IControl::IGeometry*>(output);
         },
 
@@ -393,14 +382,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl::IGeometry* implementation = input.Implementation<IStream::IControl::IGeometry>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl::IGeometry implementation pointer");
             const uint32_t output = implementation->X();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -409,14 +397,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl::IGeometry* implementation = input.Implementation<IStream::IControl::IGeometry>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl::IGeometry implementation pointer");
             const uint32_t output = implementation->Y();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -425,14 +412,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl::IGeometry* implementation = input.Implementation<IStream::IControl::IGeometry>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl::IGeometry implementation pointer");
             const uint32_t output = implementation->Z();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -441,14 +427,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl::IGeometry* implementation = input.Implementation<IStream::IControl::IGeometry>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl::IGeometry implementation pointer");
             const uint32_t output = implementation->Width();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -457,14 +442,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IStream::IControl::IGeometry* implementation = input.Implementation<IStream::IControl::IGeometry>();
             ASSERT((implementation != nullptr) && "Null IStream::IControl::IGeometry implementation pointer");
             const uint32_t output = implementation->Height();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -557,14 +541,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const IStream::streamtype param0 = reader.Number<IStream::streamtype>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IPlayer* implementation = input.Implementation<IPlayer>();
             ASSERT((implementation != nullptr) && "Null IPlayer implementation pointer");
             IStream* output = implementation->CreateStream(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream*>(output);
         },
 
@@ -590,6 +573,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -597,8 +581,6 @@ namespace ProxyStubs {
                 IPlayer* implementation = input.Implementation<IPlayer>();
                 ASSERT((implementation != nullptr) && "Null IPlayer implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -839,14 +821,9 @@ namespace ProxyStubs {
             return output;
         }
 
-        void TimeRange(uint64_t& param0, uint64_t& param1) const override
+        void TimeRange(uint64_t& /* out */ param0, uint64_t& /* out */ param1) const override
         {
             IPCMessage newMessage(BaseClass::Message(5));
-
-            // write parameters
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<uint64_t>(param0);
-            writer.Number<uint64_t>(param1);
 
             // invoke the method handler
             if (Invoke(newMessage) == Core::ERROR_NONE) {
