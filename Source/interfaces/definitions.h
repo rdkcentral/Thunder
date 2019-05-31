@@ -46,4 +46,7 @@ namespace WPEFramework {
 	ENUM_CONVERSION_HANDLER(JsonData::StateControl::StateType);
 	ENUM_CONVERSION_HANDLER(JsonData::Browser::VisibilityType);
 
+	ENUM_CONVERSION_HANDLER(JsonData::Streamer::TypeType);
+	ENUM_CONVERSION_HANDLER(JsonData::Streamer::StateType);
+	ENUM_CONVERSION_HANDLER(JsonData::Streamer::DrmType);
 }

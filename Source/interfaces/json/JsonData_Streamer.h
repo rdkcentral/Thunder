@@ -46,50 +46,35 @@ namespace JsonData {
         // Common classes
         //
 
-        class DrmResultInfo : public Core::JSON::Container {
+        class DrmParamsInfo : public Core::JSON::Container {
         public:
-            DrmResultInfo()
+            DrmParamsInfo()
                 : Core::JSON::Container()
             {
                 Add(_T("drm"), &Drm);
             }
 
-            DrmResultInfo(const DrmResultInfo&) = delete;
-            DrmResultInfo& operator=(const DrmResultInfo&) = delete;
+            DrmParamsInfo(const DrmParamsInfo&) = delete;
+            DrmParamsInfo& operator=(const DrmParamsInfo&) = delete;
 
         public:
             Core::JSON::EnumType<DrmType> Drm; // DRM used
-        }; // class DrmResultInfo
+        }; // class DrmParamsInfo
 
-        class StateResultInfo : public Core::JSON::Container {
+        class StateParamsInfo : public Core::JSON::Container {
         public:
-            StateResultInfo()
+            StateParamsInfo()
                 : Core::JSON::Container()
             {
                 Add(_T("state"), &State);
             }
 
-            StateResultInfo(const StateResultInfo&) = delete;
-            StateResultInfo& operator=(const StateResultInfo&) = delete;
+            StateParamsInfo(const StateParamsInfo&) = delete;
+            StateParamsInfo& operator=(const StateParamsInfo&) = delete;
 
         public:
             Core::JSON::EnumType<StateType> State; // Stream state
-        }; // class StateResultInfo
-
-        class StatusParamsInfo : public Core::JSON::Container {
-        public:
-            StatusParamsInfo()
-                : Core::JSON::Container()
-            {
-                Add(_T("id"), &Id);
-            }
-
-            StatusParamsInfo(const StatusParamsInfo&) = delete;
-            StatusParamsInfo& operator=(const StatusParamsInfo&) = delete;
-
-        public:
-            Core::JSON::DecUInt8 Id; // ID of the streamer instance to get status of
-        }; // class StatusParamsInfo
+        }; // class StateParamsInfo
 
         class WindowInfo : public Core::JSON::Container {
         public:
@@ -135,7 +120,7 @@ namespace JsonData {
             LoadParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("id"), &Id);
+                Add(_T("index"), &Index);
                 Add(_T("location"), &Location);
             }
 
@@ -143,43 +128,9 @@ namespace JsonData {
             LoadParamsData& operator=(const LoadParamsData&) = delete;
 
         public:
-            Core::JSON::DecUInt8 Id; // ID of the streamer instance to attach a decoder to
+            Core::JSON::DecUInt8 Index; // ID of the streamer instance
             Core::JSON::String Location; // Location of the source to load
         }; // class LoadParamsData
-
-        class PositionParamsData : public Core::JSON::Container {
-        public:
-            PositionParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("id"), &Id);
-                Add(_T("position"), &Position);
-            }
-
-            PositionParamsData(const PositionParamsData&) = delete;
-            PositionParamsData& operator=(const PositionParamsData&) = delete;
-
-        public:
-            Core::JSON::DecUInt8 Id; // ID of the streamer instance to set position of
-            Core::JSON::DecUInt64 Position; // Position to set (in milliseconds)
-        }; // class PositionParamsData
-
-        class SpeedParamsData : public Core::JSON::Container {
-        public:
-            SpeedParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("id"), &Id);
-                Add(_T("speed"), &Speed);
-            }
-
-            SpeedParamsData(const SpeedParamsData&) = delete;
-            SpeedParamsData& operator=(const SpeedParamsData&) = delete;
-
-        public:
-            Core::JSON::DecUInt8 Id; // ID of the streamer instance to set speed of
-            Core::JSON::DecUInt32 Speed; // Speed to set; 0 - pause, 100 - normal playback forward, -100 - normal playback back, -200 - reverse at twice the speed, 50 - forward at half speed
-        }; // class SpeedParamsData
 
         class StatusResultData : public Core::JSON::Container {
         public:
@@ -221,27 +172,26 @@ namespace JsonData {
             Core::JSON::DecUInt64 Time; // Time in seconds
         }; // class TimeupdateParamsData
 
-        class TypeResultData : public Core::JSON::Container {
+        class TypeParamsData : public Core::JSON::Container {
         public:
-            TypeResultData()
+            TypeParamsData()
                 : Core::JSON::Container()
             {
                 Add(_T("stream"), &Stream);
             }
 
-            TypeResultData(const TypeResultData&) = delete;
-            TypeResultData& operator=(const TypeResultData&) = delete;
+            TypeParamsData(const TypeParamsData&) = delete;
+            TypeParamsData& operator=(const TypeParamsData&) = delete;
 
         public:
             Core::JSON::EnumType<TypeType> Stream; // Stream type
-        }; // class TypeResultData
+        }; // class TypeParamsData
 
         class WindowParamsData : public Core::JSON::Container {
         public:
             WindowParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("id"), &Id);
                 Add(_T("window"), &Window);
             }
 
@@ -249,7 +199,6 @@ namespace JsonData {
             WindowParamsData& operator=(const WindowParamsData&) = delete;
 
         public:
-            Core::JSON::DecUInt8 Id; // ID of the streamer instance to set window of
             WindowInfo Window; // Geometry of the window
         }; // class WindowParamsData
 
