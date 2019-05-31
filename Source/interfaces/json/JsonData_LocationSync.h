@@ -17,9 +17,9 @@ namespace JsonData {
         // Method params/result classes
         //
 
-        class LocationResultData : public Core::JSON::Container {
+        class LocationData : public Core::JSON::Container {
         public:
-            LocationResultData()
+            LocationData()
                 : Core::JSON::Container()
             {
                 Add(_T("city"), &City);
@@ -29,8 +29,8 @@ namespace JsonData {
                 Add(_T("publicip"), &Publicip);
             }
 
-            LocationResultData(const LocationResultData&) = delete;
-            LocationResultData& operator=(const LocationResultData&) = delete;
+            LocationData(const LocationData&) = delete;
+            LocationData& operator=(const LocationData&) = delete;
 
         public:
             Core::JSON::String City; // City name
@@ -38,7 +38,7 @@ namespace JsonData {
             Core::JSON::String Region; // Region name
             Core::JSON::String Timezone; // Time zone information
             Core::JSON::String Publicip; // Public IP
-        }; // class LocationResultData
+        }; // class LocationData
 
     } // namespace LocationSync
 
