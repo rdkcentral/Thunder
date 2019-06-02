@@ -123,6 +123,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IComposition::IClient*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual IComposition::IClient* Client(const string&) = 0
@@ -142,6 +143,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IComposition::IClient*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual uint32_t Geometry(const string&, const IComposition::Rectangle&) = 0
@@ -244,6 +246,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual uint32_t Configure(PluginHost::IShell*) = 0

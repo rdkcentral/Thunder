@@ -41,6 +41,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand::IIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual ITestUtility::ICommand* Command(const string&) const = 0
@@ -60,6 +61,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -208,6 +210,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr

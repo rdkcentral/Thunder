@@ -498,6 +498,7 @@ namespace ProxyStubs {
                 writer.Number<const OCDM_RESULT>(output);
                 writer.Text(param8);
                 writer.Number<ISession*>(param9);
+                RPC::Administrator::Instance().RegisterInterface(channel, param9);
             }
 
             if (param7_proxy_inst != nullptr) {
@@ -612,6 +613,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ISession*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual ISession* Session(const uint8_t*, const uint8_t) = 0
@@ -633,6 +635,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ISession*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -782,6 +785,7 @@ namespace ProxyStubs {
                 writer.Number<const OCDM_RESULT>(output);
                 writer.Text(param4);
                 writer.Number<ISessionExt*>(param5);
+                RPC::Administrator::Instance().RegisterInterface(channel, param5);
             }
 
             if (param3_proxy_inst != nullptr) {

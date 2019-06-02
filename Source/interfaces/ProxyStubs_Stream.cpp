@@ -94,6 +94,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream::IControl*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual void Callback(IStream::ICallback*) = 0
@@ -196,6 +197,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IValueIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual void Speed(const int32_t) = 0
@@ -292,6 +294,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream::IControl::IGeometry*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual void Geometry(const IStream::IControl::IGeometry*) = 0
@@ -549,6 +552,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<IStream*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual uint32_t Configure(PluginHost::IShell*) = 0

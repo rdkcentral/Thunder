@@ -98,6 +98,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual RPC::IStringIterator* Designators(const string&) const = 0
@@ -117,6 +118,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual RPC::IStringIterator* Sessions(const string&) const = 0
@@ -136,6 +138,7 @@ namespace ProxyStubs {
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<RPC::IStringIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
