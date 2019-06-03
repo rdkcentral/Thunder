@@ -46,35 +46,35 @@ namespace JsonData {
         // Common classes
         //
 
-        class DrmParamsInfo : public Core::JSON::Container {
+        class DrmInfo : public Core::JSON::Container {
         public:
-            DrmParamsInfo()
+            DrmInfo()
                 : Core::JSON::Container()
             {
                 Add(_T("drm"), &Drm);
             }
 
-            DrmParamsInfo(const DrmParamsInfo&) = delete;
-            DrmParamsInfo& operator=(const DrmParamsInfo&) = delete;
+            DrmInfo(const DrmInfo&) = delete;
+            DrmInfo& operator=(const DrmInfo&) = delete;
 
         public:
             Core::JSON::EnumType<DrmType> Drm; // DRM used
-        }; // class DrmParamsInfo
+        }; // class DrmInfo
 
-        class StateParamsInfo : public Core::JSON::Container {
+        class StateInfo : public Core::JSON::Container {
         public:
-            StateParamsInfo()
+            StateInfo()
                 : Core::JSON::Container()
             {
                 Add(_T("state"), &State);
             }
 
-            StateParamsInfo(const StateParamsInfo&) = delete;
-            StateParamsInfo& operator=(const StateParamsInfo&) = delete;
+            StateInfo(const StateInfo&) = delete;
+            StateInfo& operator=(const StateInfo&) = delete;
 
         public:
             Core::JSON::EnumType<StateType> State; // Stream state
-        }; // class StateParamsInfo
+        }; // class StateInfo
 
         class WindowInfo : public Core::JSON::Container {
         public:
@@ -153,7 +153,7 @@ namespace JsonData {
             Core::JSON::EnumType<StateType> State; // Stream state
             Core::JSON::String Metadata; // Custom metadata associated with the stream
             Core::JSON::EnumType<DrmType> Drm; // DRM used
-            Core::JSON::DecUInt64 Position; // Stream position (in nanoseconds)
+            Core::JSON::DecUInt64 Position; // Stream position (in milliseconds)
             WindowInfo Window; // Geometry of the window
         }; // class StatusResultData
 
@@ -169,38 +169,38 @@ namespace JsonData {
             TimeupdateParamsData& operator=(const TimeupdateParamsData&) = delete;
 
         public:
-            Core::JSON::DecUInt64 Time; // Time in seconds
+            Core::JSON::DecUInt64 Time; // Position in seconds
         }; // class TimeupdateParamsData
 
-        class TypeParamsData : public Core::JSON::Container {
+        class TypeData : public Core::JSON::Container {
         public:
-            TypeParamsData()
+            TypeData()
                 : Core::JSON::Container()
             {
                 Add(_T("stream"), &Stream);
             }
 
-            TypeParamsData(const TypeParamsData&) = delete;
-            TypeParamsData& operator=(const TypeParamsData&) = delete;
+            TypeData(const TypeData&) = delete;
+            TypeData& operator=(const TypeData&) = delete;
 
         public:
             Core::JSON::EnumType<TypeType> Stream; // Stream type
-        }; // class TypeParamsData
+        }; // class TypeData
 
-        class WindowParamsData : public Core::JSON::Container {
+        class WindowData : public Core::JSON::Container {
         public:
-            WindowParamsData()
+            WindowData()
                 : Core::JSON::Container()
             {
                 Add(_T("window"), &Window);
             }
 
-            WindowParamsData(const WindowParamsData&) = delete;
-            WindowParamsData& operator=(const WindowParamsData&) = delete;
+            WindowData(const WindowData&) = delete;
+            WindowData& operator=(const WindowData&) = delete;
 
         public:
             WindowInfo Window; // Geometry of the window
-        }; // class WindowParamsData
+        }; // class WindowData
 
     } // namespace Streamer
 

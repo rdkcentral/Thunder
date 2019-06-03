@@ -116,7 +116,7 @@
       "params": {
         "description": "Position to set (in milliseconds)",
         "type": "number",
-        "example": 60000000000,
+        "example": 60000,
         "size": 64
       },
       "index": {
@@ -174,12 +174,12 @@
         "type": "array",
         "description": "Supported streams in percentage, 100, 200, 400, ..",
         "example": [
-           0,
-           100,
+          0,
+          100,
           -100,
-           200,
+          200,
           -200,
-           400,
+          400,
           -400
         ],
         "items": {
@@ -320,9 +320,9 @@
             "$ref": "#/definitions/drm"
           },
           "position": {
-            "description": "Stream position (in nanoseconds)",
+            "description": "Stream position (in milliseconds)",
             "type": "number",
-            "example": 60000000000,
+            "example": 60000,
             "size": 64
           },
           "window": {
@@ -518,7 +518,7 @@
           "drm": {
             "$ref": "#/definitions/drm"
           }
-       },
+        },
         "required": [
           "drm"
         ]
@@ -536,7 +536,7 @@
         "properties": {
           "time": {
             "type": "number",
-            "description": "Time in seconds",
+            "description": "Position in seconds",
             "size": 64,
             "example": 30
           }

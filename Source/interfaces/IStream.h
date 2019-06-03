@@ -28,10 +28,11 @@ namespace Exchange {
         };
 
         enum drmtype {
-            Unknown = 0,
+            None = 0,
             ClearKey,
             PlayReady,
-            Widevine
+            Widevine,
+            Unknown
         };
 
         struct IControl : virtual public Core::IUnknown {
