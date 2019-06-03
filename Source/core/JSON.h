@@ -978,9 +978,9 @@ namespace Core {
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
-                    _scopeCount |= QuoteFoundBit;
+                    _scopeCount |= QuotedSerializeBit;
                 } else {
-                    _scopeCount &= (~QuoteFoundBit);
+                    _scopeCount &= (~QuotedSerializeBit);
                 }
             }
 
@@ -3141,7 +3141,7 @@ namespace Core {
                     if (quoted == false) {
                         if ((Value() == _T("true")) || (Value() == _T("false"))) {
                             _type = type::BOOLEAN;
-                        } else {
+                        } else if (IsNull() == false) {
                             _type = type::NUMBER;
                         }
                     }
