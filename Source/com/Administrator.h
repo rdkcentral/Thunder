@@ -27,8 +27,55 @@ namespace RPC {
         Administrator(const Administrator&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
+        class ExternalReference {
+        public:
+            ExternalReference() = delete;
+            ExternalReference(const ExternalReference&) = delete;
+            ExternalReference& operator=(const ExternalReference&) = delete;
+
+            ExternalReference(Core::IUnknown* baseInterface, void* implementation, const uint32_t id)
+                : _baseInterface(baseInterface)
+                , _implementation(implementation)
+                , _id(id)
+                , _refCount(1)
+            {
+            }
+            ~ExternalReference()
+            {
+            }
+
+        public:
+            bool operator==(const void* source) const
+            {
+                return (source == _implementation);
+            }
+            bool operator!=(const void* source) const
+            {
+                return (!operator==(source));
+            }
+            void Increment() {
+                _refCount++;
+            }
+            bool Decrement(const uint32_t dropCount) {
+                return (_refCount.fetch_sub(dropCount) == dropCount);
+            }
+            uint32_t Id() const {
+                return (_id);
+            }
+            uint32_t RefCount() const {
+                return (_refCount.load());
+            }
+
+        private:
+            Core::IUnknown* _baseInterface;
+            void* _implementation;
+            const uint32_t _id;
+            std::atomic<uint32_t> _refCount;
+        };
+
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
         typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
+        typedef std::map<const Core::IPCChannel*, std::list<ExternalReference> > ReferenceMap;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
@@ -122,15 +169,48 @@ namespace RPC {
         void RegisterProxy(ProxyStub::UnknownProxy& proxy);
         void UnregisterProxy(ProxyStub::UnknownProxy& proxy);
 
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* interface)
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t id)
         {
-            // TODO
+            RegisterInterface(channel, Convert(reference, id), reference, id);
+        }
+        template <typename ACTUALINTERFACE>
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
+        {
+            RegisterInterface(channel, static_cast<Core::IUnknown*>(reference), reinterpret_cast<void*>(reference), ACTUALINTERFACE::ID);
+        }
+        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t interfaceId, const uint32_t dropCount)
+        {
+            ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
+
+            ASSERT(index != _channelReferenceMap.end());
+
+            if (index != _channelReferenceMap.end()) {
+                std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), reference));
+                ASSERT(element != index->second.end());
+
+                if (element != index->second.end()) {
+                    if (element->Decrement(dropCount) == true) {
+                        index->second.erase(element);
+                        if (index->second.size() == 0) {
+                            _channelReferenceMap.erase(index);
+                        }
+                    }
+                }
+                else {
+                    printf("Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+                }
+            }
+            else {
+                printf("Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            }
         }
 
     private:
+        Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
         void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
-
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id);
+ 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
         Core::CriticalSection _adminLock;
@@ -138,6 +218,7 @@ namespace RPC {
         std::map<uint32_t, IMetadata*> _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
         ChannelMap _channelProxyMap;
+        ReferenceMap _channelReferenceMap;
     };
 
     struct IHandler {

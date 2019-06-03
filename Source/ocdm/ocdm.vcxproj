@@ -22,6 +22,7 @@
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="adapter\open_cdm_adapter.h" />
     <ClInclude Include="DataExchange.h" />
     <ClInclude Include="IOCDM.h" />
     <ClInclude Include="Module.h" />
@@ -29,7 +30,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="open_cdm.cpp" />
-    <ClCompile Include="ProxyStubs.cpp" />
+    <ClCompile Include="open_cdm_ext.cpp" />
+    <ClCompile Include="ProxyStubs_OCDM.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

@@ -776,6 +776,9 @@ namespace RPC {
                         if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
                             // See if we have something we can return right away, if it has been requested..
                             implementation = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
+                            if (implementation != nullptr) {
+                                Administrator::Instance().RegisterInterface(channel, implementation, info.InterfaceId());
+                            }
                         }
                     } else if ((info.IsOffer() == true) || (info.IsRequested())) {
                         Core::IUnknown* result = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, implementation, info.InterfaceId(), info.IsRequested());
@@ -925,6 +928,7 @@ namespace RPC {
                     string jsonDefaultCategories;
                     Trace::TraceUnit::Instance().GetDefaultCategoriesJson(jsonDefaultCategories);
                     _parent.Announce(channel, data->Parameters(), result);
+
                     data->Response().Set(result, _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
@@ -1244,7 +1248,14 @@ namespace RPC {
         {
             Core::Library emptyLibrary;
             // Allright, respond with the interface.
-            return (Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId));
+            void* result = Core::ServiceAdministrator::Instance().Instantiate(emptyLibrary, className.c_str(), versionId, interfaceId);
+
+            if (result != nullptr) {
+                Core::ProxyType<Core::IPCChannel> baseChannel(*this);
+                Administrator::Instance().RegisterInterface(baseChannel, result, interfaceId);
+            }
+
+            return(result);
         }
 
     private:

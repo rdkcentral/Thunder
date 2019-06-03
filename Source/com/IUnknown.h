@@ -28,7 +28,12 @@ namespace ProxyStub {
         {
             return (3);
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const;
+	virtual Core::IUnknown* Convert(void* incomingData) const {
+            return (reinterpret_cast<Core::IUnknown*>(incomingData));
+        }
+	virtual uint32_t InterfaceId() const {
+            return (Core::IUnknown::ID);
+        }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
     };
 
@@ -61,9 +66,10 @@ namespace ProxyStub {
         }
         virtual Core::IUnknown* Convert(void* incomingData) const
         {
-            INTERFACE* result = reinterpret_cast<INTERFACE*>(incomingData);
-
-            return (result);
+            return (reinterpret_cast<INTERFACE*>(incomingData));
+        }
+	virtual uint32_t InterfaceId() const {
+            return (INTERFACE::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
         {

@@ -30,12 +30,18 @@
     <ClInclude Include="open_cdm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="adapter\open_cdm_adapter.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="open_cdm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs.cpp">
+    <ClCompile Include="ProxyStubs_OCDM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="open_cdm_ext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
