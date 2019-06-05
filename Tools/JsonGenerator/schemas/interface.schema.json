@@ -25,7 +25,10 @@
           "description": "Description of the interface",
           "type": "string"
         }
-      }
+      },
+      "required": [
+        "class"
+      ]
     },
     "definitions": {
       "description": "Global definitions for use in the spec.",
@@ -144,7 +147,7 @@
                 }
               }
             },
-            "value": {
+            "params": {
               "description": "JSON-Schema of the property value.",
               "type": "object",
               "$ref": "http://json-schema.org/draft-07/schema#"

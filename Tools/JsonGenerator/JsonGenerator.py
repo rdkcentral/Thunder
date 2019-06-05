@@ -479,8 +479,8 @@ def JsonItem(name, parent, schema, origName=None, included=None):
     else:
         raise JsonParseError("undefined type for item: %s" % name)
 
-def LoadSchema(file):
-    def PreprocessJson(file, string):
+def LoadSchema(file, include_path):
+    def PreprocessJson(file, string, include_path = None):
         def __Tokenize(contents):
             # Tokenize the JSON first to be able to preprocess it easier
             formula = ( \
@@ -496,16 +496,24 @@ def LoadSchema(file):
             return tokens
         path = os.path.abspath(file.rsplit("/",1)[0])
         if path:
-            path += "/"
+            path += '/'
         tokens = __Tokenize(string)
         # BUG?: jsonref (urllib) needs file:// and absolute path to a ref'd file
         for c, t in enumerate(tokens):
             if t == '"$ref"' and tokens[c + 1] == ":" and tokens[c + 2][:2] != '"#':
-                tokens[c + 2] = '"file://%s%s"' %(path, tokens[c + 2].strip('"'))
+                ref_file = tokens[c + 2].strip('"')
+                if "{interfacedir}/" in ref_file:
+                    ref_file = ref_file.replace("{interfacedir}/", include_path if include_path else "")
+                    if not include_path:
+                        ref_file = path + ref_file
+                else:
+                    ref_file = path + ref_file
+                ref_file = '"file://%s"' % ref_file
+                tokens[c + 2] = ref_file
         # Return back the preprocessed JSON as a string
         return " ".join(tokens)
     with open(file, "r") as json_file:
-        return jsonref.loads(PreprocessJson(file, json_file.read()), object_pairs_hook=OrderedDict)
+        return jsonref.loads(PreprocessJson(file, json_file.read(), include_path), object_pairs_hook=OrderedDict)
 
 def ParseJsonRpcSchema(schema):
     objTracker.Reset()
@@ -1347,10 +1355,32 @@ def CreateDocument(schema, path):
 
         if "title" in info:
             MdHeader(info["title"])
-        if "version" in info:
-            MdParagraph(bold("Version: " + info["version"]))
 
-        MdParagraph("%s plugin for WPEFramework." % info["class"])
+        version = info["version"] if "version" in info else "1.0"
+        MdParagraph(bold("Version: " + version))
+        status = info["status"] if "status" in info else "alpha"
+        rating = 0
+        if status == "dev" or status == "development":
+            rating = 0
+        elif status == "alpha":
+            rating = 1
+        elif status == "beta":
+            rating = 2
+        elif status == "production" or status == "prod":
+            rating = 3
+        else:
+            raise RuntimeError("invalid status")
+        MdParagraph(bold("Status: " + rating*":black_circle:" + (3-rating)*":white_circle:"))
+
+        plugin_class = None
+        if "class" in info:
+            plugin_class = info["class"]
+        elif "info" in interface and "class" in interface["info"]:
+            plugin_class = interface["info"]["class"]
+        else:
+            raise RuntimeError("missing class in info or interface/info")
+
+        MdParagraph("%s plugin for WPEFramework." % plugin_class)
 
         MdHeader("Table of Contents",3)
         MdBody("- " + link("head.Introduction"))
@@ -1388,7 +1418,7 @@ def CreateDocument(schema, path):
                 extra = " and properties provided"
             elif event_count:
                 extra = " and notifications sent"
-            MdParagraph("This document describes purpose and functionality of the %s plugin. It includes detailed specification of its configuration%s." % (info["class"], extra))
+            MdParagraph("This document describes purpose and functionality of the %s plugin. It includes detailed specification of its configuration%s." % (plugin_class, extra))
 
         MdHeader("Case Sensitivity",2)
         MdParagraph("All identifiers on the interface described in this document are case-sensitive. Thus, unless stated otherwise, all keywords, entities, properties, relations and actions should be treated as such.")
@@ -1423,8 +1453,8 @@ def CreateDocument(schema, path):
             if "configuration" not in schema or ("nodefault" not in schema["configuration"] or not schema["configuration"]["nodefault"]):
                 if "callsign" in info:
                     commonConfig["callsign"] = { "type": "string", "description": 'Plugin instance name (default: *%s*)' % info["callsign"] }
-                if "class" in info:
-                    commonConfig["classname"] = { "type": "string", "description": 'Class name: *%s*' % info["class"] }
+                if plugin_class:
+                    commonConfig["classname"] = { "type": "string", "description": 'Class name: *%s*' % plugin_class }
                 if "locator" in info:
                     commonConfig["locator"] = { "type": "string", "description":  'Library name: *%s*' % info["locator"] }
                 commonConfig["autostart"] = {"type": "boolean", "description": "Determines if the plugin is to be started automatically along with the framework" }
@@ -1478,7 +1508,7 @@ def CreateDocument(schema, path):
             if description:
                 MdParagraph(description)
 
-            MdParagraph("The following %s are provided by the %s plugin:" % (section, info["class"]))
+            MdParagraph("The following %s are provided by the %s plugin:" % (section, plugin_class))
             InterfaceDump(interface, section, header)
             if "include" in interface:
                 for name, s in interface["include"].iteritems():
@@ -1494,7 +1524,7 @@ def CreateDocument(schema, path):
             if section in interface:
                 for method, props in interface[section].iteritems():
                     if props:
-                        MethodDump(method, props, info["class"], event, prop)
+                        MethodDump(method, props, plugin_class, event, prop)
 
             if "include" in interface:
                 for name, s in interface["include"].iteritems():
@@ -1502,7 +1532,7 @@ def CreateDocument(schema, path):
                         cl = s["info"]["class"]
                         if section in s:
                             for method, props in s[section].iteritems():
-                                MethodDump(method, props, info["class"], event, prop, cl)
+                                MethodDump(method, props, plugin_class, event, prop, cl)
 
         if method_count:
             SectionDump("Methods", "methods", "method")
@@ -1530,6 +1560,7 @@ if __name__ == "__main__":
     argparser.add_argument("-d", "--docs", dest="docs", action="store_true", default=False, help="generate documentation")
     argparser.add_argument("-c", "--code", dest="code", action="store_true", default=False, help="generate JSON classes")
     argparser.add_argument("-s", "--stubs", dest="stubs", action="store_true", default=False, help="generate JSON-RPC stub code")
+    argparser.add_argument("-i", "--ifdir", dest="if_dir",  metavar="DIR", action="store", default=None, help="for 'include' directive, a directory with API interfaces (default: same directory as source file)")
     argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory (default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--copy-ctor", dest="copy_ctor", action="store_true", default=False, help="always emit a copy constructor and assignment operator for a class (default: emit only when it appears to be needed)")
@@ -1544,6 +1575,8 @@ if __name__ == "__main__":
     CLASSNAME_FROM_REF = not args.no_ref_names
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
+    if args.if_dir and not args.if_dir.endswith('/'):
+        args.if_dir = args.if_dir + '/'
     generateCode = args.code
     generateDocs = args.docs
     generateStubs = args.stubs
@@ -1557,7 +1590,7 @@ if __name__ == "__main__":
         for path in args.path:
             try:
                 trace.Header("\nProcessing file '%s'" % path)
-                schema = LoadSchema(path)
+                schema = LoadSchema(path, args.if_dir)
                 output_path = path
                 if args.output_dir:
                     output_path = args.output_dir.strip("/") + "/" + output_path[output_path.rfind('/') + 1:]
