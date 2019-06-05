@@ -4,6 +4,8 @@
 
 **Version: 1.0**
 
+**Status: :black_circle::black_circle::black_circle:**
+
 Controller plugin for WPEFramework.
 
 ### Table of Contents
