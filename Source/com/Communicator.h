@@ -575,38 +575,7 @@ namespace RPC {
 
                     index = newElement.first;
 
-                    if (info.IsOffer() == true) {
-
-                        ASSERT(result != nullptr);
-
-                        Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(remoteConnection->Channel(), result, info.InterfaceId(), info.IsRequested());
-
-                        if (baseIUnknown != nullptr) {
-                            _parent.Offer(baseIUnknown, info.InterfaceId());
-                            baseIUnknown->Release();
-                        }
-                    } else if (info.IsRevoke() == true) {
-
-                        ASSERT(result != nullptr);
-
-                        Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(remoteConnection->Channel(), result, info.InterfaceId());
-                        if (baseIUnknown != nullptr) {
-                            _parent.Revoke(baseIUnknown, info.InterfaceId());
-                            baseIUnknown->Release();
-                        }
-                    } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
-
-                        ASSERT(result == nullptr);
-
-                        // See if we have something we can return right away, if it has been requested..
-                        result = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
-
-                        if (result != nullptr) {
-                            Core::ProxyType<Core::IPCChannel> channel(remoteConnection->Channel());
-                            Administrator::Instance().RegisterInterface(channel, result, info.InterfaceId());
-                        }
-                    }
-                } else {
+                } else if (index->second->IsOperational() == false) {
                     // This is when we started a process, than the connection al
                     index->second->Announce(channel);
 
@@ -622,6 +591,38 @@ namespace RPC {
                 }
 
                 ASSERT(index != _connections.end());
+
+                if (info.IsOffer() == true) {
+
+                    ASSERT(result != nullptr);
+
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(index->second->Channel(), result, info.InterfaceId(), info.IsRequested());
+
+                    if (baseIUnknown != nullptr) {
+                        _parent.Offer(baseIUnknown, info.InterfaceId());
+                        baseIUnknown->Release();
+                    }
+                } else if (info.IsRevoke() == true) {
+
+                    ASSERT(result != nullptr);
+
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(index->second->Channel(), result, info.InterfaceId());
+                    if (baseIUnknown != nullptr) {
+                        _parent.Revoke(baseIUnknown, info.InterfaceId());
+                        baseIUnknown->Release();
+                    }
+                } else if ((info.IsRequested() == false) && (info.InterfaceId() != static_cast<uint32_t>(~0))) {
+
+                    ASSERT(result == nullptr);
+
+                    // See if we have something we can return right away, if it has been requested..
+                    result = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
+
+                    if (result != nullptr) {
+                        Core::ProxyType<Core::IPCChannel> channel(index->second->Channel());
+                        Administrator::Instance().RegisterInterface(channel, result, info.InterfaceId());
+                    }
+                }
 
                 _adminLock.Unlock();
 

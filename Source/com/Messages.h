@@ -186,7 +186,7 @@ namespace RPC {
             Init()
                 : _implementation(nullptr)
                 , _interfaceId(~0)
-                , _exchangeId(~0)
+                , _exchangeId(Core::ProcessInfo().Id())
             {
             }
             Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
