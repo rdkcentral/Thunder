@@ -204,12 +204,13 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
+            , Exchange(0)
             , PersistentPath(nullptr)
             , SystemPath(nullptr)
             , DataPath(nullptr)
@@ -232,6 +233,7 @@ namespace Process {
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
+        uint32_t Exchange;
         const TCHAR* PersistentPath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
@@ -284,6 +286,9 @@ namespace Process {
                 break;
             case 'v':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                break;
+            case 'x':
+                Exchange = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 't':
                 Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
@@ -386,7 +391,7 @@ int main(int argc, char** argv)
 #endif
 {
     // Give the debugger time to attach to this process..
-    Sleep(20000);
+    // Sleep(20000);
 
     if (atexit(CloseDown) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
@@ -403,6 +408,7 @@ int main(int argc, char** argv)
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
+        printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
         printf("        [-v <version>]\n");
@@ -473,7 +479,7 @@ int main(int argc, char** argv)
                 uint32_t result;
 
                 // We have something to report back, do so...
-                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
+                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
 

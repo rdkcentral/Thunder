@@ -492,7 +492,7 @@ namespace RPC {
                 }
                 _adminLock.Unlock();
 
-                return (result);
+                return (interfaceReturned);
             }
             inline void Closed(const uint32_t id)
             {
@@ -946,7 +946,7 @@ namespace RPC {
         }
 
         // Open and offer the requested interface (Applicable if the WPEProcess starts the RPCClient)
-        uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation);
+        uint32_t Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId);
 
         template <typename INTERFACE>
         INTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t versionId)

@@ -216,12 +216,12 @@ uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& classNa
     return (result);
 }
 
-uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation)
+uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId)
 {
     ASSERT(BaseClass::IsOpen() == false);
     _announceEvent.ResetEvent();
 
-    _announceMessage->Parameters().Set(interfaceId, implementation, Data::Init::REQUEST);
+    _announceMessage->Parameters().Set(interfaceId, implementation, Data::Init::REQUEST, exchangeId);
 
     uint32_t result = BaseClass::Open(waitTime);
 

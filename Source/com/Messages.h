@@ -216,11 +216,11 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
-            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            void Set(const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
             {
                 ASSERT(whatKind != AQUIRE);
 
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = exchangeId;
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
