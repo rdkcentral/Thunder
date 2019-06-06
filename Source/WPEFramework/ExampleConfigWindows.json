@@ -53,7 +53,7 @@
       "configuration": {
 
         "root": {
-          "outofprocess": false
+          "outofprocess": true
         }
       }
     },

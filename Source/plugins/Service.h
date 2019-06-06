@@ -365,7 +365,7 @@ namespace PluginHost {
         virtual void Unregister(IPlugin::INotification* sink) = 0;
 
         // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-        virtual IProcess* Process() = 0;
+        virtual ICOMLink* COMLink() = 0;
 
         // Methods to Activate and Deactivate the aggregated Plugin to this shell.
         // These are Blocking calls!!!!!

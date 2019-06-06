@@ -247,52 +247,9 @@ namespace PluginHost
 
         ASSERT(_notifiers.size() == 0);
 
-        std::list<uint32_t> pidList;
+        _processAdministrator.Close(Core::infinite);
 
-        // See if there are still pending processes, we need to shoot and kill..
-        Processes(pidList);
-
-        if (pidList.size() > 0) {
-            uint16_t waitSlots = 50; /* each slot is 100ms, so we wait for 5 Seconds for all processes to terminte !!! */
-
-            std::list<uint32_t>::iterator index(pidList.begin());
-
-            while (index != pidList.end()) {
-                _processAdministrator.Destroy(*index);
-
-                SYSLOG(Logging::Shutdown, (_T("Process [%d] requested to be shutdown."), *index));
-
-                index++;
-            }
-
-            // Now it is time to wait, for a certain amount of time to see
-            // if all processes are killed.
-            while ((waitSlots-- != 0) && (pidList.size() > 0)) {
-                SleepMs(100);
-
-                // Now chek the process in the list if they are still alive..
-                std::list<uint32_t>::iterator check(pidList.begin());
-
-                while (check != pidList.end()) {
-                    Core::ProcessInfo process(*check);
-
-                    if (process.IsActive() == false) {
-                        check = pidList.erase(check);
-                    } else {
-                        check++;
-                    }
-                }
-            }
-
-            if (pidList.size() > 0) {
-                index = pidList.begin();
-
-                while (index != pidList.end()) {
-                    SYSLOG(Logging::Shutdown, (_T("Process [%d] could not be destroyed in time."), *index));
-                    index++;
-                }
-            }
-        }
+		_processAdministrator.Destroy();
     }
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
@@ -333,7 +290,7 @@ namespace PluginHost
     }
 
     // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-    /* virtual */ PluginHost::IShell::IProcess* Server::Service::Process()
+    /* virtual */ PluginHost::IShell::ICOMLink* Server::Service::COMLink()
     {
         return (&_administrator);
     }
@@ -341,7 +298,6 @@ namespace PluginHost
     // Methods to stop/start/update the service.
     uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
     {
-
         uint32_t result = Core::ERROR_NONE;
 
         Lock();

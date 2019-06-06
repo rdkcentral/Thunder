@@ -237,7 +237,7 @@ namespace RPC {
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
             }
-            void* Implementation()
+            void* Implementation() const
             {
                 return (_implementation);
             }

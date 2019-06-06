@@ -154,7 +154,7 @@ namespace PluginHost
                 }
             }
         } else {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
