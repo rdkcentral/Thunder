@@ -52,6 +52,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -59,8 +60,6 @@ namespace ProxyStubs {
                 IRtspClient* implementation = input.Implementation<IRtspClient>();
                 ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
                 const uint32_t output = implementation->Configure(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -82,14 +81,13 @@ namespace ProxyStubs {
             const string param0 = reader.Text();
             const uint32_t param1 = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRtspClient* implementation = input.Implementation<IRtspClient>();
             ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
             const uint32_t output = implementation->Setup(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -103,14 +101,13 @@ namespace ProxyStubs {
             const int32_t param0 = reader.Number<int32_t>();
             const uint32_t param1 = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRtspClient* implementation = input.Implementation<IRtspClient>();
             ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
             const uint32_t output = implementation->Play(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -119,14 +116,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRtspClient* implementation = input.Implementation<IRtspClient>();
             ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
             const uint32_t output = implementation->Teardown();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -155,14 +151,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IRtspClient* implementation = input.Implementation<IRtspClient>();
             ASSERT((implementation != nullptr) && "Null IRtspClient implementation pointer");
             const string output = implementation->Get(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 

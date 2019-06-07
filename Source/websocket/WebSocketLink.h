@@ -871,7 +871,7 @@ namespace Web {
                                 waitTime -= sleepTime;
                             }
                         }
-                        if ((IsSuspended() == true) && (_serializerImpl.IsIdle() == true) && (_deserialiserImpl.IsIdle() == true) && (_parent.IsIdle() == true)) {
+                        if ((IsOpen() == false) || ((IsSuspended() == true) && (_serializerImpl.IsIdle() == true) && (_deserialiserImpl.IsIdle() == true) && (_parent.IsIdle() == true))) {
                             result = ACTUALLINK::Close(waitTime);
 
                             waitTime = 0;
@@ -1481,6 +1481,10 @@ namespace Web {
         inline bool IsOpen() const
         {
             return (_channel.IsOpen());
+        }
+        inline bool IsClosed() const
+        {
+            return (_channel.IsClosed());
         }
         inline bool IsWebServer() const
         {

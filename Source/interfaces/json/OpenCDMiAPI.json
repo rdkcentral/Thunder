@@ -1,0 +1,71 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "OpenCDMi API",
+    "class": "OCDM",
+    "description": "OpenCDMi JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "keysystem": {
+      "type": "string",
+      "example": "com.microsoft.playready",
+      "description": "Identifier of a key system"
+    },
+    "drm": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the DRM",
+          "example": "PlayReady"
+        },
+        "keysystems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/keysystem"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "keysystems"
+      ]
+    }
+  },
+  "properties": {
+    "drms": {
+      "summary": "Supported DRM systems",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/drm"
+        }
+      }
+    },
+    "keysystems": {
+      "summary": "DRM key systems",
+      "index": {
+        "name": "DRM system",
+        "example": "PlayReady"
+      },
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/keysystem"
+        }
+      },
+      "errors": [
+        {
+          "description": "Invalid DRM name",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  }
+}

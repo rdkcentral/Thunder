@@ -1,6 +1,7 @@
 {
   "port": 80,
   "binding": "0.0.0.0",
+  "interface_org": "LAN",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
@@ -27,9 +28,12 @@
       }
     },
     {
-      "callsign": "SecurityOfficer",
-      "locator": "libSecurityOfficer.so",
-      "classname": "SecurityOfficer",
+      "callsign": "SecurityAgent",
+      "locator": "libSecurityAgent.so",
+      "classname": "SecurityAgent",
+      "precondition": [
+        "Platform"
+      ],
       "autostart": true,
       "configuration": {
         "acl": "data.json"
@@ -45,16 +49,19 @@
       "callsign": "WebServer",
       "locator": "libwebserver.so",
       "classname": "WebServer",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
-        "outofprocess": true
+
+        "root": {
+          "outofprocess": true
+        }
       }
     },
     {
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -145,7 +152,16 @@
       "callsign": "Tracing",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": false
+      "autostart": true
+    },
+    {
+      "callsign": "RemoteControl",
+      "locator": "libremotecontrol.so",
+      "classname": "RemoteControl",
+      "autostart": true,
+      "configuration": {
+        "mapfile": "ir-remote.json"
+      }
     },
     {
       "autostart": false,

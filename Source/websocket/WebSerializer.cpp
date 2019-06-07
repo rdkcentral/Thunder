@@ -43,7 +43,7 @@ static const TCHAR __TRANSFER_ENCODING[] = _T("TRANSFER-ENCODING:");
 static const TCHAR __ST[] = _T("ST:");
 static const TCHAR __MAN[] = _T("MAN:");
 static const TCHAR __MX[] = _T("MX:");
-static const TCHAR __AUTHORIZATION[] = _T("AUTHORIZATION");
+static const TCHAR __AUTHORIZATION[] = _T("AUTHORIZATION:");
 
 static const TCHAR __DATE[] = _T("DATE:");
 static const TCHAR __SERVER[] = _T("SERVER:");

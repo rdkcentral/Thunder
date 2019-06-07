@@ -2,6 +2,7 @@
 
 #include "JSON.h"
 #include "Module.h"
+#include "TypeTraits.h"
 
 #include <cctype>
 #include <functional>
@@ -114,28 +115,80 @@ namespace Core {
         public:
             static string Callsign(const string& designator)
             {
-                size_t pos = designator.find_last_of('.');
-                return (pos == string::npos ? _T("") : designator.substr(0, pos));
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                if ((pos != string::npos) && (pos > 0)) {
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        pos = index;
+                    } else if ((index == 0) && (isdigit(designator[0]))) {
+                        pos = string::npos;
+                    }
+                }
+                return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
+            }
+            static string FullCallsign(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                return (pos == string::npos ? EMPTY_STRING : designator.substr(0, pos));
             }
             static string Method(const string& designator)
             {
-                size_t pos = designator.find_last_of('.');
-                return (pos == string::npos ? designator : designator.substr(pos + 1));
+                size_t end = designator.find_last_of('@');
+                size_t begin = designator.find_last_of('.', end);
+
+                return (designator.substr((begin == string::npos) ? 0 : begin + 1, (end == string::npos ? string::npos : (begin == string::npos) ? end : end - begin - 1)));
+            }
+            static string FullMethod(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                return (designator.substr(pos == string::npos ? 0 : pos + 1));
+            }
+            static string VersionedFullMethod(const string& designator)
+            {
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
+                if ((pos != string::npos) && (pos > 0)) {
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        pos = index;
+                    } else if ((index == 0) && (isdigit(designator[0]))) {
+                        pos = string::npos;
+                    }
+                }
+                return (designator.substr(pos == string::npos ? 0 : pos + 1));
             }
             static uint8_t Version(const string& designator)
             {
                 uint8_t result = ~0;
-                string number(Callsign(designator));
-                size_t pos = number.find_last_of('.');
+                size_t pos = designator.find_last_of('.', designator.find_last_of('@'));
 
                 if (pos != string::npos) {
-                    number = number.substr(pos + 1);
+                    size_t index = pos - 1;
+                    while ((index != 0) && (isdigit(designator[index]))) {
+                        index--;
+                    }
+                    if ((index != 0) && (designator[index] == '.')) {
+                        index++;
+                    } else if ((index == 0) && (isdigit(designator[0]) == false)) {
+                        index = pos;
+                    }
 
-                    if ((number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); }))) {
-                        result = static_cast<uint8_t>(atoi(number.c_str()));
+                    if (index < pos) {
+                        result = static_cast<uint8_t>(atoi(designator.substr(index, pos - index).c_str()));
                     }
                 }
                 return (result);
+            }
+            static string Index(const string& designator)
+            {
+                size_t end = designator.find_last_of('@');
+
+                return (end == string::npos ? EMPTY_STRING : designator.substr(end + 1, string::npos));
             }
             void Clear()
             {
@@ -150,13 +203,29 @@ namespace Core {
             {
                 return (Callsign(Designator.Value()));
             }
+            string FullCallsign() const
+            {
+                return (FullCallsign(Designator.Value()));
+            }
             string Method() const
             {
                 return (Method(Designator.Value()));
             }
+            string FullMethod() const
+            {
+                return (FullMethod(Designator.Value()));
+            }
+            string VersionedFullMethod() const
+            {
+                return (VersionedFullMethod(Designator.Value()));
+            }
             uint8_t Version() const
             {
                 return (Version(Designator.Value()));
+            }
+            string Index() const
+            {
+                return (Index(Designator.Value()));
             }
             Core::JSON::String JSONRPC;
             Core::JSON::DecUInt32 Id;
@@ -210,19 +279,23 @@ namespace Core {
 
         class EXTERNAL Handler {
         private:
-            Handler(const Handler&) = delete;
-            Handler& operator=(const Handler&) = delete;
-          
             typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
-            typedef std::function<uint32_t(const string& parameters, string& result)> InvokeFunction;
+            typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
 
             class Entry {
             private:
                 Entry() = delete;
-                Entry(const Entry&) = delete;
                 Entry& operator=(const Entry&) = delete;
 
                 union Functions {
+                    Functions(const Functions& function, const bool async)
+                    {
+                        if (async == true) {
+                            new (&_callback) auto(function._callback);
+                        } else {
+                            new (&_invoke) auto(function._invoke);
+                        }
+                    }
                     Functions(const CallbackFunction& function)
                         : _callback(function)
                     {
@@ -250,15 +323,28 @@ namespace Core {
                     , _info(callback)
                 {
                 }
+                Entry(const Entry& copy)
+                    : _asynchronous(copy._asynchronous)
+                    , _info(copy._info, copy._asynchronous)
+                {
+                }
+                ~Entry()
+                {
+                    if (_asynchronous == true) {
+                        _info._callback.~CallbackFunction();
+                    } else {
+                        _info._invoke.~InvokeFunction();
+                    }
+                }
 
             public:
-                uint32_t Invoke(const Connection connection, const string& parameters, string& response)
+                uint32_t Invoke(const Connection connection, const string& method, const string& parameters, string& response)
                 {
                     uint32_t result = ~0;
                     if (_asynchronous == true) {
                         _info._callback(connection, parameters);
                     } else {
-                        result = _info._invoke(parameters, response);
+                        result = _info._invoke(method, parameters, response);
                     }
                     return (result);
                 }
@@ -267,62 +353,136 @@ namespace Core {
                 bool _asynchronous;
                 Functions _info;
             };
-			typedef std::map<const string, Entry> HandlerMap;
+
+            class Observer {
+            private:
+                Observer(const Observer&) = delete;
+                Observer& operator=(const Observer&) = delete;
+
+            public:
+                Observer(const uint32_t id, const string& designator)
+                    : _id(id)
+                    , _designator(designator)
+                {
+                }
+                ~Observer()
+                {
+                }
+
+                bool operator==(const Observer& rhs) const
+                {
+                    return ((rhs._id == _id) && (rhs._designator == _designator));
+                }
+                bool operator!=(const Observer& rhs) const
+                {
+                    return (!operator==(rhs));
+                }
+
+                uint32_t Id() const
+                {
+                    return (_id);
+                }
+                const string& Designator() const
+                {
+                    return (_designator);
+                }
+
+            private:
+                uint32_t _id;
+                string _designator;
+            };
+
+            typedef std::map<const string, Entry> HandlerMap;
+            typedef std::list<Observer> ObserverList;
+            typedef std::map<string, ObserverList> ObserverMap;
+
+            typedef std::function<void(const uint32_t id, const string& designator, const string& data)> NotificationFunction;
 
         public:
-            Handler()
-                : _handlers()
-                , _callsign()
-                , _designator()
-                , _versions()
+            Handler() = delete;
+            Handler(const Handler&) = delete;
+            Handler& operator=(const Handler&) = delete;
+
+            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions)
+                : _adminLock()
+                , _handlers()
+                , _observers()
+                , _notificationFunction(notificationFunction)
+                , _versions(versions)
             {
             }
-            virtual ~Handler()
+            Handler(const NotificationFunction& notificationFunction, const std::vector<uint8_t>& versions, const Handler& copy)
+                : _adminLock()
+                , _handlers(copy._handlers)
+                , _observers()
+                , _notificationFunction(notificationFunction)
+                , _versions(versions)
+            {
+            }
+            ~Handler()
             {
             }
 
         public:
+            inline bool Copy(const Handler& copy, const string& method)
+            {
+                bool copied = false;
+
+                HandlerMap::const_iterator index = copy._handlers.find(method);
+
+                if (index != copy._handlers.end()) {
+                    copied = true;
+                    const Entry& info(index->second);
+
+                    _handlers.emplace(std::piecewise_construct,
+                        std::forward_as_tuple(method),
+                        std::forward_as_tuple(info));
+                }
+
+                return (copied);
+            }
             // For now the version is not used for exist determination, but who knows what will happen in the future.
             // The interface is prepared.
-            inline uint32_t Exists(const string& methodName, const uint8_t version) const
+            inline uint32_t Exists(const string& methodName) const
             {
                 return ((_handlers.find(methodName) != _handlers.end()) ? Core::ERROR_NONE : Core::ERROR_UNKNOWN_KEY);
             }
-            uint32_t Validate(const Message& message) const
+            bool HasVersionSupport(const uint8_t number) const
             {
-                const string callsign(message.Callsign());
-                uint32_t result = (callsign.empty() ? Core::ERROR_NONE : Core::ERROR_INVALID_DESIGNATOR);
-                if (result != Core::ERROR_NONE) {
-                    uint32_t length = static_cast<uint32_t>(_callsign.length());
-                    if (callsign.compare(0, length, _callsign) == 0) {
-                        result = Core::ERROR_INVALID_SIGNATURE;
-
-                        if ((callsign.length() == length) || ((callsign[length] == '.') && (HasVersionSupport(callsign.substr(length + 1))))) {
-                            result = Core::ERROR_NONE;
-                        }
-                    }
-                }
-                return (result);
+                return (std::find(_versions.begin(), _versions.end(), number) != _versions.end());
             }
             template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
-            void Property(const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            typename std::enable_if<(std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
             {
-                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
-                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
-                ASSERT(objectPtr != nullptr);
-                InvokeFunction implementation = [objectPtr, getter, setter](const string& inbound, string& outbound) -> uint32_t {
-                    PARAMETER parameter;
-                    uint32_t code;
-                    if (inbound.empty() == false) {
-                        parameter.FromString(inbound);
-                        code = setter(*objectPtr, parameter);
-                    } else {
-                        code = getter(*objectPtr, parameter);
-                        parameter.ToString(outbound);
-                    }
-                    return (code);
-                };
-                Register(methodName, implementation);
+                using COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+
+                static_assert((COUNT::Arguments == 1) || (COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+
+                InternalProperty<PARAMETER, SET_METHOD, REALOBJECT>(::TemplateIntToType<COUNT::Arguments>(), methodName, objectPtr, setMethod);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            {
+                using COUNT = Core::TypeTraits::func_traits<GET_METHOD>;
+
+                static_assert((COUNT::Arguments == 1) || (COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+
+                InternalProperty<PARAMETER, GET_METHOD, REALOBJECT>(::TemplateIntToType<COUNT::Arguments>(), methodName, getMethod, objectPtr);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            typename std::enable_if<(!std::is_same<std::nullptr_t, typename std::remove_cv<GET_METHOD>::type>::value && !std::is_same<std::nullptr_t, typename std::remove_cv<SET_METHOD>::type>::value), void>::type
+            Property(const string& methodName, GET_METHOD getMethod, SET_METHOD setMethod, REALOBJECT* objectPtr)
+            {
+                using GET_COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+                using SET_COUNT = Core::TypeTraits::func_traits<SET_METHOD>;
+
+                static_assert((GET_COUNT::Arguments == 1) || (GET_COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+                static_assert((SET_COUNT::Arguments == 1) || (SET_COUNT::Arguments == 2), "We need 1 (value to set) or 2 (index and value to set) arguments!!!");
+                static_assert((GET_COUNT::Arguments == SET_COUNT::Arguments), "The getter and the setter need the same amount of arguments !!");
+
+                InternalProperty<PARAMETER, GET_METHOD, SET_METHOD, REALOBJECT>(::TemplateIntToType<SET_COUNT::Arguments>(), methodName, getMethod, setMethod, objectPtr);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void Register(const string& methodName, const METHOD& method)
@@ -362,15 +522,17 @@ namespace Core {
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
-                ASSERT(_handlers.find(methodName) == _handlers.end());
+                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,
                     std::make_tuple(methodName),
                     std::make_tuple(lambda));
             }
-			void Register(const string& methodName, const CallbackFunction& lambda)
+            void Register(const string& methodName, const CallbackFunction& lambda)
             {
-                ASSERT(_handlers.find(methodName) == _handlers.end());
+                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,
                     std::make_tuple(methodName),
@@ -380,7 +542,7 @@ namespace Core {
             {
                 HandlerMap::iterator index = _handlers.find(methodName);
 
-				ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
+                ASSERT((index != _handlers.end()) && _T("Do not unregister methods that are not registered!!!"));
 
                 if (index != _handlers.end()) {
                     _handlers.erase(index);
@@ -392,33 +554,236 @@ namespace Core {
 
                 response.clear();
 
-                HandlerMap::iterator index = _handlers.find(method);
+                HandlerMap::iterator index = _handlers.find(Message::Method(method));
                 if (index != _handlers.end()) {
-                    result = index->second.Invoke(connection, parameters, response);
+                    result = index->second.Invoke(connection, method, parameters, response);
                 }
                 return (result);
             }
-            void Designator(const string& callsign, const std::vector<uint8_t>& versions)
+            void Subscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
             {
-                _callsign = callsign;
-                _versions = versions;
-                _designator = callsign + '.' + Core::NumberType<uint8_t>(versions.back()).Text();
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(eventId);
+
+                if (index == _observers.end()) {
+                    _observers[eventId].emplace_back(id, callsign);
+                    response.Result = _T("0");
+                } else if (std::find(index->second.begin(), index->second.end(), Observer(id, callsign)) == index->second.end()) {
+                    index->second.emplace_back(id, callsign);
+                    response.Result = _T("0");
+                } else {
+                    response.Error.SetError(Core::ERROR_DUPLICATE_KEY);
+                    response.Error.Text = _T("Duplicate registration. Only 1 remains!!!");
+                }
+
+                _adminLock.Unlock();
             }
-            const string& Callsign() const
+            void Unsubscribe(const uint32_t id, const string& eventId, const string& callsign, Core::JSONRPC::Message& response)
             {
-                return (_designator);
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(eventId);
+
+                if (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+                    Observer key(id, callsign);
+
+                    while ((loop != clients.end()) && (*loop != key)) {
+                        loop++;
+                    }
+
+                    if (loop != clients.end()) {
+                        clients.erase(loop);
+                        if (clients.empty() == true) {
+                            _observers.erase(index);
+                        }
+                        response.Result = _T("0");
+                    }
+                }
+
+                if (response.Result.IsSet() == false) {
+                    response.Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                    response.Error.Text = _T("Registration not found!!!");
+                }
+
+                _adminLock.Unlock();
+            }
+            uint32_t Notify(const string& event)
+            {
+                return (InternalNotify(event, _T("")));
+            }
+            template <typename JSONOBJECT>
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters)
+            {
+                string subject;
+                parameters.ToString(subject);
+                return (InternalNotify(event, subject));
+            }
+            template <typename JSONOBJECT, typename SENDIFMETHOD>
+            uint32_t Notify(const string& event, const JSONOBJECT& parameters, SENDIFMETHOD method)
+            {
+                string subject;
+                parameters.ToString(subject);
+                return InternalNotify(event, subject, std::move(method));
+            }
+            void Close(const uint32_t id)
+            {
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.begin();
+
+                while (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+
+                    while (loop != clients.end()) {
+                        if (loop->Id() != id) {
+                            loop++;
+                        } else {
+                            loop = clients.erase(loop);
+                        }
+                    }
+                    if (clients.empty() == true) {
+                        index = _observers.erase(index);
+                    } else {
+                        index++;
+                    }
+                }
+
+                _adminLock.Unlock();
+            }
+            void Close()
+            {
+                _adminLock.Lock();
+
+                _observers.clear();
+
+                _adminLock.Unlock();
             }
 
         private:
-            bool HasVersionSupport(const string& number) const
+            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
             {
-                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (std::find(_versions.begin(), _versions.end(), static_cast<uint8_t>(atoi(number.c_str()))) != _versions.end());
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        code = Core::ERROR_UNAVAILABLE;
+                    } else {
+                        code = getter(*objectPtr, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, REALOBJECT* objectPtr, const SET_METHOD& setMethod)
+            {
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, setter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
+                    } else {
+                        code = Core::ERROR_UNAVAILABLE;
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<1>&, const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(REALOBJECT&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter, setter](const string&, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, parameter);
+                    } else {
+                        code = getter(*objectPtr, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, const string&, PARAMETER&)> getter = getMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        code = Core::ERROR_UNAVAILABLE;
+                    } else {
+                        const string index = Message::Index(method);
+                        code = getter(*objectPtr, index, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, REALOBJECT* objectPtr, const SET_METHOD& setMethod)
+            {
+                std::function<uint32_t(REALOBJECT&, const string&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    if (inbound.empty() == false) {
+                        const string index = Message::Index(method);
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
+                    } else {
+                        code = Core::ERROR_UNAVAILABLE;
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
+            }
+            template <typename PARAMETER, typename GET_METHOD, typename SET_METHOD, typename REALOBJECT>
+            void InternalProperty(const ::TemplateIntToType<2>&, const string& methodName, const GET_METHOD& getMethod, const SET_METHOD& setMethod, REALOBJECT* objectPtr)
+            {
+                std::function<uint32_t(const REALOBJECT&, const string&, PARAMETER&)> getter = getMethod;
+                std::function<uint32_t(REALOBJECT&, const string&, const PARAMETER&)> setter = setMethod;
+                ASSERT(objectPtr != nullptr);
+                InvokeFunction implementation = [objectPtr, getter, setter](const string& method, const string& inbound, string& outbound) -> uint32_t {
+                    PARAMETER parameter;
+                    uint32_t code;
+                    const string index = Message::Index(method);
+                    if (inbound.empty() == false) {
+                        parameter.FromString(inbound);
+                        code = setter(*objectPtr, index, parameter);
+                    } else {
+                        code = getter(*objectPtr, index, parameter);
+                        parameter.ToString(outbound);
+                    }
+                    return (code);
+                };
+                Register(methodName, implementation);
             }
             template <typename INBOUND, typename OUTBOUND, typename METHOD>
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t()> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string&) -> uint32_t {
                     return (actualMethod());
                 };
                 Register(methodName, implementation);
@@ -427,7 +792,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -438,7 +803,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
                     if (code == Core::ERROR_NONE) {
@@ -454,7 +819,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method)
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = method;
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
@@ -472,7 +837,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t()> actualMethod = std::bind(method, objectPtr);
-                InvokeFunction implementation = [actualMethod](const string&, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string&) -> uint32_t {
                     return (actualMethod());
                 };
                 Register(methodName, implementation);
@@ -481,7 +846,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<1>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string&) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string&) -> uint32_t {
                     INBOUND inbound;
                     inbound.FromString(parameters);
                     return (actualMethod(inbound));
@@ -492,7 +857,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<1>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1);
-                InvokeFunction implementation = [actualMethod](const string&, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string&, string& result) -> uint32_t {
                     OUTBOUND outbound;
                     uint32_t code = actualMethod(outbound);
                     if (code == Core::ERROR_NONE) {
@@ -508,7 +873,7 @@ namespace Core {
             void InternalRegister(const ::TemplateIntToType<0>&, const ::TemplateIntToType<0>&, const string& methodName, const METHOD& method, REALOBJECT* objectPtr)
             {
                 std::function<uint32_t(const INBOUND&, OUTBOUND&)> actualMethod = std::bind(method, objectPtr, std::placeholders::_1, std::placeholders::_2);
-                InvokeFunction implementation = [actualMethod](const string& parameters, string& result) -> uint32_t {
+                InvokeFunction implementation = [actualMethod](const string&, const string& parameters, string& result) -> uint32_t {
                     INBOUND inbound;
                     OUTBOUND outbound;
                     inbound.FromString(parameters);
@@ -562,12 +927,43 @@ namespace Core {
                 };
                 Register(methodName, implementation);
             }
+            uint32_t InternalNotify(const string& event, const string& parameters, std::function<bool(const string&)>&& sendifmethod = std::function<bool(const string&)>())
+            {
+                uint32_t result = Core::ERROR_UNKNOWN_KEY;
+
+                _adminLock.Lock();
+
+                ObserverMap::iterator index = _observers.find(event);
+
+                if (index != _observers.end()) {
+                    ObserverList& clients = index->second;
+                    ObserverList::iterator loop = clients.begin();
+
+                    result = Core::ERROR_NONE;
+
+                    while (loop != clients.end()) {
+                        const string& designator(loop->Designator());
+
+                        if (!sendifmethod || sendifmethod(designator)) {
+
+                            _notificationFunction(loop->Id(), (designator.empty() == false ? designator + '.' + event : event), parameters);
+                        }
+
+                        loop++;
+                    }
+                }
+
+                _adminLock.Unlock();
+
+                return (result);
+            }
 
         private:
+            Core::CriticalSection _adminLock;
             HandlerMap _handlers;
-            string _callsign;
-            string _designator;
-            std::vector<uint8_t> _versions;
+            ObserverMap _observers;
+            NotificationFunction _notificationFunction;
+            const std::vector<uint8_t> _versions;
         };
 
         using Error = Message::Info;

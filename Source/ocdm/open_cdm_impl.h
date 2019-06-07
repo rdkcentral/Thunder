@@ -728,7 +728,7 @@ public:
     }
     uint32_t Decrypt(uint8_t* encryptedData, const uint32_t encryptedDataLength,
         const uint8_t* ivData, uint16_t ivDataLength,
-        const uint8_t* keyId, const uint8_t keyIdLength,
+        const uint8_t* keyId, const uint16_t keyIdLength,
         uint32_t initWithLast15)
     {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;

@@ -53,7 +53,6 @@ namespace PluginHost {
         }
     };
 
-
     extern "C" {
 
 #ifndef __WIN32__
@@ -69,8 +68,7 @@ namespace PluginHost {
 
         if (signo == SIGTERM) {
             g_QuitEvent.SetEvent();
-        }
-        else if (signo == SIGSEGV) {
+        } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
@@ -337,11 +335,6 @@ namespace PluginHost {
         const string tracePath(serviceConfig.VolatilePath.Value());
         Trace::TraceUnit::Instance().Open(tracePath);
 
-        // Time to open up the LOG tracings by default.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable(true);
-
         Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
 
         // Set the path for the out-of-process thingies
@@ -349,6 +342,7 @@ namespace PluginHost {
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+        SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
         SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
@@ -429,7 +423,10 @@ namespace PluginHost {
                         printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                         printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                         printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
+#ifdef RESTFULL_API
+
                         printf("Observers:  %d\n", index.Current().Observers.Value());
+#endif
                         printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
                         printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
                     }
@@ -469,7 +466,7 @@ namespace PluginHost {
                                                                                          : "Unavailable");
                         printf("Security:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
-                                                                                        : "Unavailable");
+                                                                                         : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
                                                                                         : "Unavailable");

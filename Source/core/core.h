@@ -60,6 +60,7 @@
 #include "SocketPort.h"
 #include "SocketServer.h"
 #include "StateTrigger.h"
+#include "StopWatch.h"
 #include "Stream.h"
 #include "StreamJSON.h"
 #include "StreamText.h"

@@ -7,11 +7,19 @@
 namespace WPEFramework {
 namespace Logging {
 
+    template<>
+    /* static */ LoggingType<Startup>::template LoggingControl<Startup> LoggingType<Startup>::s_LogControl;
+    template<>
+    /* static */ LoggingType<Shutdown>::template LoggingControl<Shutdown> LoggingType<Shutdown>::s_LogControl;
+    template<>
+    /* static */ LoggingType<Notification>::template LoggingControl<Notification> LoggingType<Notification>::s_LogControl;
+
     static const string LoggingToConsole(_T("LOGGING_TO_CONSOLE"));
 
     static bool DetectLoggingOutput()
     {
         string result;
+
         if (Core::SystemInfo::GetEnvironment(LoggingToConsole, result) == true) {
             return (result[0] != '1');
         }
@@ -43,5 +51,6 @@ namespace Logging {
             printf("[%11ju us] %s\n", static_cast<uintmax_t>(now.Ticks() - _baseTime), information->Data());
         }
     }
+
 }
 } // namespace PluginHost

@@ -1,8 +1,6 @@
 #ifndef __ISYSTEMINFO_H
 #define __ISYSTEMINFO_H
 
-#include "Module.h"
-
 namespace WPEFramework {
 namespace PluginHost {
 

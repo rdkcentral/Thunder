@@ -1,22 +1,10 @@
 #ifndef __VIRTUAL_KEYBOARD_H__
 #define __VIRTUAL_KEYBOARD_H__
 
+#include "Module.h"
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#include <stdbool.h>
-
-#ifdef _MSVC_LANG
-#undef EXTERNAL
-#ifdef VIRTUALINPUT_EXPORTS
-#define EXTERNAL __declspec(dllexport)
-#else
-#define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "virtualinput.lib")
-#endif
-#else
-#define EXTERNAL
 #endif
 
 enum actiontype {

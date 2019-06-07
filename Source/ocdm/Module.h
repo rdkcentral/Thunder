@@ -5,8 +5,8 @@
 #define MODULE_NAME OpenCDM
 #endif
 
-#include "../com/com.h"
 #include "../core/core.h"
+#include "../com/com.h"
 
 #ifdef __WIN32__
 #undef EXTERNAL

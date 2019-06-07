@@ -78,6 +78,7 @@ namespace PluginHost {
         return (Core::SingletonType<Factories>::Instance());
     }
 
+#ifdef RESTFULL_API
     void Service::Notification(const string& message)
     {
         _notifierLock.Lock();
@@ -94,6 +95,7 @@ namespace PluginHost {
 
         _notifierLock.Unlock();
     }
+#endif
 
     void Service::FileToServe(const string& webServiceRequest, Web::Response& response)
     {

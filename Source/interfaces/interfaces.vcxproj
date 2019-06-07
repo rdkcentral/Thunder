@@ -25,12 +25,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Enumerations.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="ProxyStubs.cpp" />
     <ClCompile Include="ProxyStubs_AVNClient.cpp" />
     <ClCompile Include="ProxyStubs_Browser.cpp" />
@@ -45,9 +39,7 @@
     <ClCompile Include="ProxyStubs_Provisioning.cpp" />
     <ClCompile Include="ProxyStubs_RPCLink.cpp" />
     <ClCompile Include="ProxyStubs_RtspClient.cpp" />
-    <ClCompile Include="ProxyStubs_Streaming.cpp" />
     <ClCompile Include="ProxyStubs_TestController.cpp" />
-    <ClCompile Include="ProxyStubs_TVControl.cpp" />
     <ClCompile Include="ProxyStubs_WebDriver.cpp" />
     <ClCompile Include="ProxyStubs_WebServer.cpp" />
   </ItemGroup>
@@ -70,6 +62,7 @@
     <ClInclude Include="IMemory.h" />
     <ClInclude Include="INetflix.h" />
     <ClInclude Include="IPackager.h" />
+    <ClInclude Include="IPerformance.h" />
     <ClInclude Include="IPlayGiga.h" />
     <ClInclude Include="IPower.h" />
     <ClInclude Include="IProvisioning.h" />

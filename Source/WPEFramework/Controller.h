@@ -197,6 +197,10 @@ namespace Plugin {
             UnregisterAll();
             SetServer(nullptr);
         }
+		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+            Notify("all", message);
+		}
+           
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
@@ -286,23 +290,22 @@ namespace Plugin {
         void UnregisterAll();
         uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
-        uint32_t endpoint_exists(const JsonData::Controller::ExistsParamsData& params, Core::JSON::DecUInt32& response);
-        uint32_t endpoint_status(const JsonData::Controller::ActivateParamsInfo& params, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response);
-        uint32_t endpoint_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response);
-        uint32_t endpoint_process(PluginHost::MetaData::Server& response);
-        uint32_t endpoint_subsystems(Core::JSON::ArrayType<JsonData::Controller::SubsystemsResultData>& response);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
-        uint32_t endpoint_discovery(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response);
-        uint32_t endpoint_getenv(const JsonData::Controller::GetenvParamsData& params, Core::JSON::String& response);
-        uint32_t endpoint_getconfig(const JsonData::Controller::GetconfigParamsData& params, Core::JSON::String& response);
-        uint32_t endpoint_setconfig(const JsonData::Controller::SetconfigParamsData& params);
         uint32_t endpoint_storeconfig();
         uint32_t endpoint_download(const Download& params);
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
-
+        uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
+        uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
+        uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;
+        uint32_t get_subsystems(Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData>& response) const;
+        uint32_t get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const;
+        uint32_t get_environment(const string& index, Core::JSON::String& response) const;
+        uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
+        uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        void event_all(const string& callsign, const Core::JSON::String& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void event_downloadcompleted(uint32_t result, const string& source, const string& destination);
+        void event_downloadcompleted(const uint32_t& result, const string& source, const string& destination);
 
     private:
         Core::CriticalSection _adminLock;

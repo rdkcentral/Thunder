@@ -385,20 +385,18 @@ namespace Core {
                     // This is a connectionless link, do not expect a close from the otherside.
                     // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
                     m_State |= (SHUTDOWN | EXCEPTION);
-
-                    ResourceMonitor::Instance().Break();
                 } else {
                     m_State |= SHUTDOWN;
 
-// Block new data from coming in, signal the other side that we close !!
-#ifdef __LINUX__
-                    shutdown(m_Socket, SHUT_RDWR);
-#endif
-
+					// Block new data from coming in, signal the other side that we close !!
 #ifdef __WIN32__
                     shutdown(m_Socket, SD_BOTH);
+#else
+                    shutdown(m_Socket, SHUT_RDWR);
 #endif
                 }
+
+                ResourceMonitor::Instance().Break();
             }
 
             if (waitTime > 0) {

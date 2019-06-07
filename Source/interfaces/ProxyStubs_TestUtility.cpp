@@ -33,15 +33,15 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility* implementation = input.Implementation<ITestUtility>();
             ASSERT((implementation != nullptr) && "Null ITestUtility implementation pointer");
             ITestUtility::ICommand::IIterator* output = implementation->Commands();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand::IIterator*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         // virtual ITestUtility::ICommand* Command(const string&) const = 0
@@ -53,15 +53,15 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility* implementation = input.Implementation<ITestUtility>();
             ASSERT((implementation != nullptr) && "Null ITestUtility implementation pointer");
             ITestUtility::ICommand* output = implementation->Command(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr
@@ -87,14 +87,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             ITestUtility::ICommand* implementation = input.Implementation<ITestUtility::ICommand>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand implementation pointer");
             const string output = implementation->Execute(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -103,14 +102,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility::ICommand* implementation = input.Implementation<ITestUtility::ICommand>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand implementation pointer");
             const string output = implementation->Description();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -119,14 +117,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility::ICommand* implementation = input.Implementation<ITestUtility::ICommand>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand implementation pointer");
             const string output = implementation->Signature();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -135,14 +132,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility::ICommand* implementation = input.Implementation<ITestUtility::ICommand>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand implementation pointer");
             const string output = implementation->Name();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -176,14 +172,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility::ICommand::IIterator* implementation = input.Implementation<ITestUtility::ICommand::IIterator>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand::IIterator implementation pointer");
             const bool output = implementation->IsValid();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -192,14 +187,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             ITestUtility::ICommand::IIterator* implementation = input.Implementation<ITestUtility::ICommand::IIterator>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand::IIterator implementation pointer");
             const bool output = implementation->Next();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -208,15 +202,15 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const ITestUtility::ICommand::IIterator* implementation = input.Implementation<ITestUtility::ICommand::IIterator>();
             ASSERT((implementation != nullptr) && "Null ITestUtility::ICommand::IIterator implementation pointer");
             ITestUtility::ICommand* output = implementation->Command();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<ITestUtility::ICommand*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
 
         nullptr

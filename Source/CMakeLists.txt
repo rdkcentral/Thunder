@@ -32,6 +32,8 @@ option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
+option(COMPOSITORCLIENT
+        "Include a graphics backend abstraction for external applications." OFF)
 option(JSONRPC
         "Include JSONRPC C++ utility library for external applications." ON)
 option(PROCESSCONTAINERS
@@ -122,6 +124,10 @@ endif()
 
 if(JSONRPC)
     add_subdirectory(jsonrpc)
+endif()
+
+if(COMPOSITORCLIENT)
+    add_subdirectory(compositorclient)
 endif()
 
 if(PROCESS)

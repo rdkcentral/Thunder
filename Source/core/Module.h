@@ -5,6 +5,8 @@
 #define MODULE_NAME Core
 #endif
 
+#undef EXTERNAL
+
 #ifdef _WINDOWS
 #ifdef CORE_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

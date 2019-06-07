@@ -15,13 +15,13 @@ namespace Core {
     // ---- Referenced classes and types ----
 
     // ---- Helper types and constants ----
-#define ENUM_CONVERSION_HANDLER(ENUMERATE) template <> \
-extern const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WPEFramework::Core::EnumerateType<ENUMERATE>::Table(const uint16_t);
+#define ENUM_CONVERSION_HANDLER(ENUMERATE) \
+namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<ENUMERATE>* Core::EnumerateType<ENUMERATE>::Table(const uint16_t); }
 
 #define ENUM_CONVERSION_BEGIN(ENUMERATE)                                                            \
     namespace Core {                                                                                \
         template <>                                                                                 \
-        const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
+        EXTERNAL const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
         {                                                                                           \
             static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
 
@@ -31,7 +31,7 @@ extern const typename ::WPEFramework::Core::EnumerateConversion<ENUMERATE>* ::WP
     }                                                                                                    \
     }                                                                                                    \
     ;                                                                                                    \
-    return (index < ((sizeof(table) / sizeof(EnumerateType<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
+    return (index < ((sizeof(table) / sizeof(WPEFramework::Core::EnumerateConversion<ENUMERATE>)) - 1) ? &table[index] : nullptr); \
     }                                                                                                    \
     }
 

@@ -104,14 +104,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             const IPower* implementation = input.Implementation<IPower>();
             ASSERT((implementation != nullptr) && "Null IPower implementation pointer");
             const IPower::PCState output = implementation->GetState();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IPower::PCState>(output);
         },
 
@@ -125,14 +124,13 @@ namespace ProxyStubs {
             const IPower::PCState param0 = reader.Number<IPower::PCState>();
             const uint32_t param1 = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IPower* implementation = input.Implementation<IPower>();
             ASSERT((implementation != nullptr) && "Null IPower implementation pointer");
             const IPower::PCStatus output = implementation->SetState(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const IPower::PCStatus>(output);
         },
 

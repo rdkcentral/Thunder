@@ -195,15 +195,16 @@ namespace PluginHost {
 
     public:
         Service(const PluginHost::Config& server, const Plugin::Config& plugin)
-            :
+            : _adminLock()
 #ifdef RUNTIME_STATISTICS
-            _processedRequests(0)
+            , _processedRequests(0)
             , _processedObjects(0)
-            ,
 #endif
-            _state(DEACTIVATED)
+            , _state(DEACTIVATED)
             , _config(server, plugin)
+#ifdef RESTFULL_API
             , _notifiers()
+#endif
         {
         }
         ~Service()
@@ -212,8 +213,10 @@ namespace PluginHost {
 
     public:
         bool IsWebServerRequest(const string& segment) const;
-        void Notification(const string& message);
 
+#ifdef RESTFULL_API
+        void Notification(const string& message);
+#endif
         virtual string Version() const
         {
             return (_config.Information().Version());
@@ -313,7 +316,9 @@ namespace PluginHost {
         inline void GetMetaData(MetaData::Service& metaData) const
         {
             metaData = _config.Configuration();
+#ifdef RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
+#endif
             metaData.JSONState = this;
 
 #ifdef RUNTIME_STATISTICS
@@ -354,14 +359,13 @@ namespace PluginHost {
         virtual Core::ProxyType<Core::JSON::IElement> Inbound(const string& identifier) = 0;
 
         virtual void Notify(const string& message) = 0;
-
         virtual void* QueryInterface(const uint32_t id) = 0;
         virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
         virtual void Register(IPlugin::INotification* sink) = 0;
         virtual void Unregister(IPlugin::INotification* sink) = 0;
 
         // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-        virtual IProcess* Process() = 0;
+        virtual ICOMLink* COMLink() = 0;
 
         // Methods to Activate and Deactivate the aggregated Plugin to this shell.
         // These are Blocking calls!!!!!
@@ -422,6 +426,7 @@ namespace PluginHost {
         {
             _errorMessage = message;
         }
+#ifdef RESTFULL_API
         inline bool Subscribe(Channel& channel)
         {
             _notifierLock.Lock();
@@ -451,7 +456,7 @@ namespace PluginHost {
 
             _notifierLock.Unlock();
         }
-
+#endif
 #ifdef RUNTIME_STATISTICS
         inline void IncrementProcessedRequests()
         {
@@ -466,7 +471,9 @@ namespace PluginHost {
 
     private:
         mutable Core::CriticalSection _adminLock;
+#ifdef RESTFULL_API
         Core::CriticalSection _notifierLock;
+#endif
 
 #ifdef RUNTIME_STATISTICS
         uint32_t _processedRequests;
@@ -482,8 +489,10 @@ namespace PluginHost {
         string _webURLPath;
         string _webServerFilePath;
 
+#ifdef RESTFULL_API
         // Keep track of people who want to be notified of changes.
         std::list<Channel*> _notifiers;
+#endif
     };
 }
 }

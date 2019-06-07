@@ -64,7 +64,9 @@ namespace PluginHost {
             Core::JSON::DecUInt32 ProcessedRequests;
             Core::JSON::DecUInt32 ProcessedObjects;
 #endif
+#ifdef RESTFULL_API
             Core::JSON::DecUInt32 Observers;
+#endif
             Core::JSON::String Module;
             Core::JSON::String Hash;
         };

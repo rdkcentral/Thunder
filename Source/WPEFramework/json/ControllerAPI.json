@@ -14,13 +14,13 @@
       "description": "State of the plugin",
       "type": "string",
       "enum": [
-        "deactivated",
-        "deactivation",
-        "activated",
-        "activation",
-        "suspended",
-        "resumed",
-        "precondition"
+        "Deactivated",
+        "Deactivation",
+        "Activated",
+        "Activation",
+        "Suspended",
+        "Resumed",
+        "Precondition"
       ],
       "example": "activated"
     },
@@ -190,7 +190,7 @@
   },
   "methods": {
     "Controller.1.activate": {
-      "summary": "Activates a plugin.",
+      "summary": "Activates a plugin",
       "description": "Use this method to activate a plugin, i.e. move from Deactivated, via Activating to Activated state. If a plugin is in the Activated state, it can handle JSON-RPC requests that are coming in. The plugin is loaded into memory only if it gets activated.",
       "events": [
         "statechange"
@@ -236,7 +236,7 @@
       ]
     },
     "Controller.1.deactivate": {
-      "summary": "Deactivates a plugin.",
+      "summary": "Deactivates a plugin",
       "description": "Use this method to deactivate a plugin, i.e. move from Activated, via Deactivating to Deactivated state. If a plugin is Deactivated, the actual plugin (.so) is no longer loaded into the memory of the process. In a deactivated state, the plugin will not respond to any JSON-RPC requests.",
       "events": [
         "statechange"
@@ -277,93 +277,8 @@
         }
       ]
     },
-    "Controller.1.exists": {
-      "summary": "Checks if a JSON-RPC method exists.",
-      "description": "Use this method to check if a method is currently callable. ",
-      "params": {
-        "type": "object",
-        "properties": {
-          "designator": {
-            "description": "Method designator; if callsign is omitted then the Controller itself will be queried",
-            "type": "string",
-            "example": "DeviceInfo.1.system"
-          }
-        }
-      },
-      "result": {
-        "type": "number",
-        "description": "Code specifying the availability (0: available, 2: unavailable callsign, 22: method unavailable, 38: version unavailable",
-        "example": 0
-      }
-    },
-    "Controller.1.status": {
-      "summary": "Retrieves information about plugins.",
-      "description": "Use this method to fetch information about plugins, including their configuration.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "callsign": {
-            "description": "Callsign of the plugin (if omitted or empty, then status of all plugins is returned)",
-            "type": "string",
-            "example": "DeviceInfo"
-          }
-        },
-        "required": []
-      },
-      "result": {
-        "type": "array",
-        "description": "A list of loaded plugins",
-        "items": {
-          "description": "(a plugin entry)",
-          "$ref": "#/definitions/plugin"
-        }
-      },
-      "errors": [
-        {
-          "description": "The plugin does not exist",
-          "$ref": "#/common/errors/unknownkey"
-        }
-      ]
-    },
-    "Controller.1.links": {
-      "summary": "Retrieves information about active connections.",
-      "result": {
-        "description": "List of active connections",
-        "type": "array",
-        "items": {
-          "description": "(a connection entry)",
-          "$ref": "#/definitions/channel"
-        }
-      }
-    },
-    "Controller.1.process": {
-      "description": "Retrieves information about the framework process.",
-      "result": {
-        "$ref": "#/definitions/server"
-      }
-    },
-    "Controller.1.subsystems": {
-      "summary": "Retrieves status of subsystems.",
-      "description": "Use this method to get a list of subsystems and their status.",
-      "result": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string",
-              "example": "DeviceInfo"
-            },
-            "active": {
-              "type": "boolean",
-              "example": true
-            }
-          }
-        }
-      }
-    },
     "Controller.1.startdiscovery": {
-      "summary": "Starts the network discovery.",
+      "summary": "Starts the network discovery",
       "description": "Use this method to initiate SSDP network discovery process.",
       "params": {
         "type": "object",
@@ -383,129 +298,8 @@
         "$ref": "#/common/results/void"
       }
     },
-    "Controller.1.discovery": {
-      "summary": "Retrieves network discovery results.",
-      "description": "Use this method to retrieve SSDP network discovery results.",
-      "result": {
-        "type": "array",
-        "description": "List of network discovery results",
-        "items": {
-          "type": "object",
-          "description": "(a discovery result entry)",
-          "properties": {
-            "locator": {
-              "type": "string"
-            },
-            "latency": {
-              "type": "number"
-            },
-            "model": {
-              "type": "string"
-            },
-            "secure": {
-              "type": "boolean",
-              "example": true
-            }
-          },
-          "required": [
-            "locator",
-            "latency",
-            "model",
-            "secure"
-          ]
-        }
-      }
-    },
-    "Controller.1.getenv": {
-      "summary": "Retrieves the value of an environment variable.",
-      "description": "Use this method to get values of shell environment variables.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "variable": {
-            "type": "string",
-            "description": "Name of the environment variable to get the value of",
-            "example": "SHELL"
-          }
-        }
-      },
-      "result": {
-        "type": "string",
-        "description": "Value of the variable",
-        "example": "/bin/sh"
-      },
-      "errors": [
-        {
-          "description": "The given variable is not defined",
-          "$ref": "#/common/errors/unknownkey"
-        }
-      ]
-    },
-    "Controller.1.getconfig": {
-      "summary": "Retrieves the configuration of a service.",
-      "description": "Use this method to get configurations of framework services.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "service": {
-            "type": "string",
-            "description": "Name of the service to get the configuration of",
-            "example": "WebKitBrowser"
-          }
-        }
-      },
-      "result": {
-        "type": "object",
-        "description": "The requested configuration object",
-        "properties": {},
-        "required": []
-      },
-      "errors": [
-        {
-          "description": "The service does not exist",
-          "$ref": "#/common/errors/unknownkey"
-        }
-      ]
-    },
-    "Controller.1.setconfig": {
-      "summary": "Updates the configuration of a service.",
-      "description": "Use this method to set configurations of framework services.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "service": {
-            "type": "string",
-            "description": "Name of the service to set the configuration of",
-            "example": "WebKitBrowser"
-          },
-          "configuration": {
-            "type": "object",
-            "description": "Configuration object to set",
-            "properties": {},
-            "required": []
-          }
-        },
-        "required": [
-          "service",
-          "configuration"
-        ]
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "The service does not exist",
-          "$ref": "#/common/errors/unknownkey"
-        },
-        {
-          "description": "Failed to update the configuration",
-          "$ref": "#/common/errors/general"
-        }
-      ]
-    },
     "Controller.1.storeconfig": {
-      "summary": "Stores the configuration.",
+      "summary": "Stores the configuration",
       "description": "Use this method to save the current configuration to persistent memory.",
       "result": {
         "$ref": "#/common/results/void"
@@ -518,7 +312,7 @@
       ]
     },
     "Controller.1.download": {
-      "summary": "Downloads a file to the persistent memory.",
+      "summary": "Downloads a file to the persistent memory",
       "events": [
         "downloadcompleted"
       ],
@@ -564,20 +358,20 @@
           "$ref": "#/common/errors/badrequest"
         },
         {
-          "description": "Failed to save the file to the persistent storage",
+          "description": "Failed to save the file to the persistent storage (e.g. the file already exists)",
           "$ref": "#/common/errors/writeerror"
         }
       ]
     },
     "Controller.1.delete": {
-      "summary": "Removes a directory from the persistent storage.",
-      "description": "Use this method to delete a directory and all of its contents from the persistent storage.",
+      "summary": "Removes contents of a directory from the persistent storage",
+      "description": "Use this method to recursively delete contents of a directory",
       "params": {
         "type": "object",
         "properties": {
           "path": {
             "type": "string",
-            "description": "Path to directory (within the persistent storage) to delete",
+            "description": "Path to directory (within the persistent storage) to delete contents of",
             "example": "test/test.txt"
           }
         }
@@ -591,13 +385,13 @@
           "$ref": "#/common/errors/unknownkey"
         },
         {
-          "description": "The path points outside of persistent directory",
+          "description": "The path points outside of persistent directory or some files/directories couldn't have been deleted",
           "$ref": "#/common/errors/privilegedrequest"
         }
       ]
     },
     "Controller.1.harakiri": {
-      "summary": "Reboots the device.",
+      "summary": "Reboots the device",
       "description": "Use this method to reboot the device. Depending on the device, this call may not generate a response.",
       "result": {
         "$ref": "#/common/results/void"
@@ -613,6 +407,160 @@
         },
         {
           "description": "Failed to reboot the device",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "status": {
+      "summary": "Information about plugins, including their configurations",
+      "readonly": true,
+      "index": {
+        "name": "callsign",
+        "description": "If the *callsign* is omitted, then status of all plugins is returned.",
+        "example": "DeviceInfo"
+      },
+      "params": {
+        "type": "array",
+        "description": "A list of loaded plugins",
+        "items": {
+          "description": "(a plugin entry)",
+          "$ref": "#/definitions/plugin"
+        }
+      },
+      "errors": [
+        {
+          "description": "The plugin does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "links": {
+      "summary": "Information about active connections",
+      "readonly": true,
+      "params": {
+        "description": "List of active connections",
+        "type": "array",
+        "items": {
+          "description": "(a connection entry)",
+          "$ref": "#/definitions/channel"
+        }
+      }
+    },
+    "processinfo": {
+      "summary": "Information about the framework process",
+      "readonly": true,
+      "params": {
+        "$ref": "#/definitions/server"
+      }
+    },
+    "subsystems": {
+      "summary": "Status of the subsystems",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "subsystem": {
+              "description": "Subsystem name",
+              "type": "string",
+              "enum": [
+                "Platform",
+                "Network",
+                "Security",
+                "Identifier",
+                "Internet",
+                "Location",
+                "Time",
+                "Provisioning",
+                "Decryption,",
+                "Graphics",
+                "WebSource",
+                "Streaming"
+              ],
+              "example": "Platform"
+            },
+            "active": {
+              "description": "Denotes whether the subsystem is active (true)",
+              "type": "boolean",
+              "example": true
+            }
+          }
+        }
+      }
+    },
+    "discoveryresults": {
+      "summary": "SSDP network discovery results",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of network discovery results",
+        "items": {
+          "type": "object",
+          "description": "(a discovery result entry)",
+          "properties": {
+            "locator": {
+              "type": "string"
+            },
+            "latency": {
+              "type": "number"
+            },
+            "model": {
+              "type": "string"
+            },
+            "secure": {
+              "type": "boolean",
+              "example": true
+            }
+          },
+          "required": [
+            "locator",
+            "latency",
+            "model",
+            "secure"
+          ]
+        }
+      }
+    },
+    "environment": {
+      "summary": "Value of an environment variable",
+      "readonly": true,
+      "index": {
+        "name": "variable",
+        "example": "SHELL"
+      },
+      "params": {
+        "example": "/bin/sh",
+        "type": "string"
+      },
+      "errors": [
+        {
+          "description": "The variable is not defined",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "configuration": {
+      "summary": "Configuration object of a service",
+      "index": {
+        "name": "callsign",
+        "example": "WebKitBrowser"
+      },
+      "params": {
+        "type": "object",
+        "description": "The configuration JSON object",
+        "properties": {},
+        "required": []
+      },
+      "errors": [
+        {
+          "description": "The service does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Failed to update the configuration",
           "$ref": "#/common/errors/general"
         }
       ]
@@ -643,7 +591,7 @@
       }
     },
     "statechange": {
-      "summary": "Signals a plugin state change.",
+      "summary": "Signals a plugin state change",
       "params": {
         "type": "object",
         "properties": {
@@ -677,16 +625,31 @@
       }
     },
     "downloadcompleted": {
-      "summary": "Signals that a file download has completed.",
+      "summary": "Signals that a file download has completed",
       "params": {
         "type": "object",
         "properties": {
+          "result": {
+            "type": "number",
+            "description": "Download operation result (0: success)",
+            "example": 0
+          },
           "source": {
             "type": "string",
             "description": "Source URL identifying the downloaded file",
             "example": "http://example/com/test.txt"
+          },
+          "destination": {
+            "type": "string",
+            "description": "Path to the downloaded file in the persistent storage",
+            "example": "test.txt"
           }
-        }
+        },
+        "required": [
+          "result",
+          "source",
+          "destination"
+        ]
       }
     }
   }

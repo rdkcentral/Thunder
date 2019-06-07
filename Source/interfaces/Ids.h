@@ -88,8 +88,12 @@ namespace Exchange {
         ID_STREAM_CONTROL_GEOMETRY,
         ID_STREAM_CONTROL_CALLBACK,
         ID_STREAM_CALLBACK,
-        ID_PLAYER
+        ID_PLAYER,
 
+        ID_DSGCC_CLIENT,
+        ID_DSGCC_CLIENT_NOTIFICATION,
+
+		ID_PERFORMANCE
     };
 }
 }

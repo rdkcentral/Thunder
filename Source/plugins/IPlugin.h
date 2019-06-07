@@ -1,8 +1,6 @@
 #ifndef __IPLUGIN_H
 #define __IPLUGIN_H
 
-#include "Module.h"
-
 namespace WPEFramework {
 
 namespace Web {

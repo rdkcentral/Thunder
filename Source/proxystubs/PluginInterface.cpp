@@ -1052,7 +1052,7 @@ namespace ProxyStubs {
             return (result);
         }
  
-        virtual IProcess* Process() override
+        virtual ICOMLink* COMLink() override
         {
             return (nullptr);
         }

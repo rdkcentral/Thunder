@@ -14,18 +14,12 @@ namespace ProxyStub {
     {
     }
 
-    /* virtual */ Core::IUnknown* UnknownStub::Convert(void* incomingData) const
-    {
-        Core::IUnknown* result = reinterpret_cast<Core::IUnknown*>(incomingData);
-
-        return (result);
-    }
-
     /* virtual */ void UnknownStub::Handle(const uint16_t index,
-        Core::ProxyType<Core::IPCChannel>& /* channel */,
+        Core::ProxyType<Core::IPCChannel>& channel,
         Core::ProxyType<RPC::InvokeMessage>& message)
     {
-        Core::IUnknown* implementation(Convert(message->Parameters().Implementation<void*>()));
+        void* rawIdentifier(message->Parameters().Implementation<void*>());
+        Core::IUnknown* implementation(Convert(rawIdentifier));
 
         ASSERT(implementation != nullptr);
 
@@ -42,8 +36,13 @@ namespace ProxyStub {
                 RPC::Data::Frame::Reader reader(message->Parameters().Reader());
                 uint32_t dropCount(reader.Number<uint32_t>());
                 uint32_t result = Core::ERROR_NONE;
+                uint32_t index = dropCount;
 
-                while (dropCount-- != 0) { result = implementation->Release(); }
+                while (index-- != 0) { result = implementation->Release(); }
+                
+                // This is an external referenced interface that we handed out, so it should
+                // be registered. Lets unregister this reference, it is dropped
+                RPC::Administrator::Instance().UnregisterInterface(channel, rawIdentifier, InterfaceId(), dropCount);
                 response.Number<uint32_t>(result);
                 break;
             }
@@ -56,6 +55,7 @@ namespace ProxyStub {
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
                 response.Number<void*>(newInterface);
 
+                RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
                 break;
             }
             default: {

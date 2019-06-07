@@ -1,5 +1,4 @@
-#include "IComposition.h"
-#include "ITVControl.h"
+#include "definitions.h"
 
 namespace WPEFramework {
 
@@ -41,21 +40,18 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
-
     { Exchange::IStream::Stubbed, _TXT("Stubbed") },
     { Exchange::IStream::DVB,     _TXT("DVB")     },
-
+    { Exchange::IStream::ATSC,     _TXT("ATSC")     },
+    { Exchange::IStream::VOD,     _TXT("VOD")     },
 ENUM_CONVERSION_END(Exchange::IStream::streamtype)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
-
-    { Exchange::IStream::Idle,     _TXT("Idle")     },
     { Exchange::IStream::Loading,  _TXT("Loading")  },
     { Exchange::IStream::Prepared, _TXT("Prepared") },
     { Exchange::IStream::Paused,   _TXT("Paused")   },
     { Exchange::IStream::Playing,  _TXT("Playing")  },
     { Exchange::IStream::Error,    _TXT("Error")    },
-
 ENUM_CONVERSION_END(Exchange::IStream::state)
 
 namespace Exchange

@@ -100,6 +100,7 @@ set(PUBLIC_HEADERS
         SocketPort.h
         SocketServer.h
         StateTrigger.h
+        StopWatch.h
         Stream.h
         StreamJSON.h
         StreamText.h

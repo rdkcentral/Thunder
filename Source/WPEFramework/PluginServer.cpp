@@ -92,6 +92,11 @@ namespace PluginHost
                         result = CheckMessage(*body);
 					}	
 				}
+
+
+				// Temporary allow the API REST Full API to get security to be called directly.
+				// TODO: Remove this check if security is fully operational!!!
+                result = (result == true) || ((request.Verb == Web::Request::HTTP_POST) && (request.Path == "/Service/SecurityOfficer/Token"));
             }
             return (result);
         }
@@ -125,6 +130,7 @@ namespace PluginHost
         const string _jsonrpcPath;
         const string _controllerName;
     };
+
 
     static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
     {
@@ -241,52 +247,9 @@ namespace PluginHost
 
         ASSERT(_notifiers.size() == 0);
 
-        std::list<uint32_t> pidList;
+        _processAdministrator.Close(Core::infinite);
 
-        // See if there are still pending processes, we need to shoot and kill..
-        Processes(pidList);
-
-        if (pidList.size() > 0) {
-            uint16_t waitSlots = 50; /* each slot is 100ms, so we wait for 5 Seconds for all processes to terminte !!! */
-
-            std::list<uint32_t>::iterator index(pidList.begin());
-
-            while (index != pidList.end()) {
-                _processAdministrator.Destroy(*index);
-
-                SYSLOG(Logging::Shutdown, (_T("Process [%d] requested to be shutdown."), *index));
-
-                index++;
-            }
-
-            // Now it is time to wait, for a certain amount of time to see
-            // if all processes are killed.
-            while ((waitSlots-- != 0) && (pidList.size() > 0)) {
-                SleepMs(100);
-
-                // Now chek the process in the list if they are still alive..
-                std::list<uint32_t>::iterator check(pidList.begin());
-
-                while (check != pidList.end()) {
-                    Core::ProcessInfo process(*check);
-
-                    if (process.IsActive() == false) {
-                        check = pidList.erase(check);
-                    } else {
-                        check++;
-                    }
-                }
-            }
-
-            if (pidList.size() > 0) {
-                index = pidList.begin();
-
-                while (index != pidList.end()) {
-                    SYSLOG(Logging::Shutdown, (_T("Process [%d] could not be destroyed in time."), *index));
-                    index++;
-                }
-            }
-        }
+		_processAdministrator.Destroy();
     }
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
@@ -327,7 +290,7 @@ namespace PluginHost
     }
 
     // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-    /* virtual */ PluginHost::IShell::IProcess* Server::Service::Process()
+    /* virtual */ PluginHost::IShell::ICOMLink* Server::Service::COMLink()
     {
         return (&_administrator);
     }
@@ -335,7 +298,6 @@ namespace PluginHost
     // Methods to stop/start/update the service.
     uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
     {
-
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
@@ -386,8 +348,8 @@ namespace PluginHost
                         index++;
                     }
 
-                    Activity information(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(information);
+                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
+                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
                     Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
                 }
             } else {
@@ -412,6 +374,7 @@ namespace PluginHost
                     State(DEACTIVATED);
                     _administrator.StateChange(this);
                 } else {
+                    const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
                     if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
                         EnableWebServer(webUI, EMPTY_STRING);
@@ -428,7 +391,12 @@ namespace PluginHost
                     Lock();
                     State(ACTIVATED);
                     _administrator.StateChange(this);
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"activated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
+
+                    #ifdef RESTFULL_API
+                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+                    #endif
+
+                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
                     IStateControl* stateControl = nullptr;
                     if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
@@ -459,6 +427,8 @@ namespace PluginHost
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+
+            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             ASSERT(_handler != nullptr);
 
@@ -498,8 +468,12 @@ namespace PluginHost
             State(DEACTIVATED);
 
             _administrator.StateChange(this);
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
 
+            #ifdef RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));			
+            #endif
+
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
             if (State() != ACTIVATED) {
                 // We have no need for his module anymore..
                 ReleaseInterfaces();
@@ -523,12 +497,14 @@ namespace PluginHost
 
     /* virtual */ void Server::Service::Notify(const string& message)
     {
-        const string fullMessage("{\"callsign\":\"" + PluginHost::Service::Callsign() + "\", \"data\": " + message + " }");
+        const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
+		#ifdef RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
+		#endif
 
-        _administrator.Notification(fullMessage);
+        _administrator.Notification(forwarder);
     }
 
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall)
@@ -705,6 +681,16 @@ namespace PluginHost
 
     Server::~Server()
     {
+    }
+
+	void Server::Notification(const ForwardMessage& data)
+    {
+        _controller->ClassType<Plugin::Controller>()->Notification(data);
+		#ifdef RESTFULL_API
+        string result;
+        data.ToString(result);
+        _controller->Notification(result);
+		#endif
     }
 
     void Server::Open()

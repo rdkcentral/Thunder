@@ -108,14 +108,13 @@ namespace ProxyStubs {
             const uint32_t param0 = reader.Number<uint32_t>();
             const string param1 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRPCLink* implementation = input.Implementation<IRPCLink>();
             ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
             const uint32_t output = implementation->Start(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -124,14 +123,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRPCLink* implementation = input.Implementation<IRPCLink>();
             ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
             const uint32_t output = implementation->Stop();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 
@@ -140,14 +138,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IRPCLink* implementation = input.Implementation<IRPCLink>();
             ASSERT((implementation != nullptr) && "Null IRPCLink implementation pointer");
             const uint32_t output = implementation->ForceCallback();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Number<const uint32_t>(output);
         },
 

@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "MetaData.h"
 #include "IStateControl.h"
 #include "ISubSystem.h"
@@ -84,7 +85,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
+#ifdef RESTFULL_API
         Add(_T("observers"), &Observers);
+#endif
         Add(_T("module"), &Module);
         Add(_T("hash"), &Hash);
     }
@@ -95,7 +98,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         , ProcessedRequests(copy.ProcessedRequests)
         , ProcessedObjects(copy.ProcessedObjects)
 #endif
+#ifdef RESTFULL_API
         , Observers(copy.Observers)
+#endif
         , Module(copy.Module)
         , Hash(copy.Hash)
     {
@@ -104,7 +109,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         Add(_T("processedrequests"), &ProcessedRequests);
         Add(_T("processedobjects"), &ProcessedObjects);
 #endif
+#ifdef RESTFULL_API
         Add(_T("observers"), &Observers);
+#endif
         Add(_T("module"), &Module);
         Add(_T("hash"), &Hash);
     }

@@ -60,6 +60,7 @@ namespace ProxyStubs {
                 }
             }
 
+            // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
 
             if ((param0 == nullptr) || (param0_proxy != nullptr)) {
@@ -67,8 +68,6 @@ namespace ProxyStubs {
                 IGuide* implementation = input.Implementation<IGuide>();
                 ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
                 const uint32_t output = implementation->StartParser(param0_proxy);
-
-                // write return value
                 writer.Number<const uint32_t>(output);
             } else {
                 // return error code
@@ -85,14 +84,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const string output = implementation->GetChannels();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -101,14 +99,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const string output = implementation->GetPrograms();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -121,14 +118,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const string output = implementation->GetCurrentProgram(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -141,14 +137,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const uint32_t param0 = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const string output = implementation->GetAudioLanguages(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -161,14 +156,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const uint32_t param0 = reader.Number<uint32_t>();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const string output = implementation->GetSubtitleLanguages(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Text(output);
         },
 
@@ -182,14 +176,13 @@ namespace ProxyStubs {
             const string param0 = reader.Text();
             const string param1 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const bool output = implementation->SetParentalControlPin(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -203,14 +196,13 @@ namespace ProxyStubs {
             const string param0 = reader.Text();
             const bool param1 = reader.Boolean();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const bool output = implementation->SetParentalControl(param0, param1);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -219,14 +211,13 @@ namespace ProxyStubs {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const bool output = implementation->IsParentalControlled();
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -241,14 +232,13 @@ namespace ProxyStubs {
             const bool param1 = reader.Boolean();
             const string param2 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const bool output = implementation->SetParentalLock(param0, param1, param2);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 
@@ -261,14 +251,13 @@ namespace ProxyStubs {
             RPC::Data::Frame::Reader reader(input.Reader());
             const string param0 = reader.Text();
 
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
             // call implementation
             IGuide* implementation = input.Implementation<IGuide>();
             ASSERT((implementation != nullptr) && "Null IGuide implementation pointer");
             const bool output = implementation->IsParentalLocked(param0);
 
             // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
             writer.Boolean(output);
         },
 

@@ -186,7 +186,7 @@ namespace RPC {
             Init()
                 : _implementation(nullptr)
                 , _interfaceId(~0)
-                , _exchangeId(~0)
+                , _exchangeId(Core::ProcessInfo().Id())
             {
             }
             Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
@@ -216,11 +216,11 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
-            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            void Set(const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
             {
                 ASSERT(whatKind != AQUIRE);
 
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = exchangeId;
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
@@ -237,7 +237,7 @@ namespace RPC {
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
             }
-            void* Implementation()
+            void* Implementation() const
             {
                 return (_implementation);
             }
@@ -288,14 +288,17 @@ namespace RPC {
             void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
             {
                 _data.SetNumber<void*>(0, implementation);
-                uint16_t length = _data.SetText(4, proxyStubPath);
-                _data.SetText(4 + length, traceCategories);
+                uint16_t length = _data.SetText(sizeof(void*), proxyStubPath);
+                _data.SetText(sizeof(void*) + length, traceCategories);
             }
+			inline bool IsSet() const {
+                return (_data.Size() > 0);
+			}
             string ProxyStubPath() const
             {
                 string value;
 
-                _data.GetText(4, value);
+                _data.GetText(sizeof(void*), value);
 
                 return (value);
             }
@@ -303,7 +306,7 @@ namespace RPC {
             {
                 string value;
 
-                _data.GetText(4 + _data.GetText(4, value), value);
+                _data.GetText(sizeof(void*) + _data.GetText(sizeof(void*), value), value);
 
                 return (value);
             }

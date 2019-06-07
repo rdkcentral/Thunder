@@ -39,6 +39,40 @@ namespace PluginHost {
         static const TCHAR* CommunicatorConnector;
 
     public:
+        class ForwardMessage : public Core::JSON::Container {
+        private:
+            ForwardMessage(const ForwardMessage&) = delete;
+            ForwardMessage& operator=(const ForwardMessage&) = delete;
+
+        public:
+            ForwardMessage()
+                : Core::JSON::Container()
+                , Callsign(true)
+                , Data(false)
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("data"), &Data);
+            }
+            ForwardMessage(const string& callsign, const string& message)
+                : Core::JSON::Container()
+                , Callsign(true)
+                , Data(false)
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("data"), &Data);
+
+                Callsign = callsign;
+                Data = message;
+            }
+            ~ForwardMessage()
+            {
+            }
+
+        public:
+            Core::JSON::String Callsign;
+            Core::JSON::String Data;
+        };
+
         // Configuration to get a server (PluginHost server) up and running.
         class Config : public Core::JSON::Container {
         private:
@@ -677,6 +711,7 @@ namespace PluginHost {
             }
             inline bool Subscribe(Channel& channel)
             {
+#ifdef RESTFULL_API
                 bool result = PluginHost::Service::Subscribe(channel);
 
                 if ((result == true) && (_extended != nullptr)) {
@@ -684,11 +719,19 @@ namespace PluginHost {
                 }
 
                 return (result);
+#else
+                if (_extended != nullptr) {
+                    _extended->Attach(channel);
+                }
+
+                return (_extended != nullptr);
+#endif
             }
             inline void Unsubscribe(Channel& channel)
             {
+#ifdef RESTFULL_API
                 PluginHost::Service::Unsubscribe(channel);
-
+#endif
                 if (_extended != nullptr) {
                     _extended->Detach(channel);
                 }
@@ -951,7 +994,7 @@ namespace PluginHost {
             virtual void Unregister(IPlugin::INotification* sink) override;
 
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            virtual IProcess* Process() override;
+            virtual ICOMLink* COMLink() override;
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
@@ -1111,7 +1154,7 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
-        class EXTERNAL ServiceMap : public PluginHost::IShell::IProcess {
+        class EXTERNAL ServiceMap : public PluginHost::IShell::ICOMLink {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
 
@@ -1139,7 +1182,6 @@ namespace PluginHost {
 #else
                     , _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #endif
-                    , _offeredInterfaces()
                     , _adminLock()
                 {
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
@@ -1155,7 +1197,7 @@ namespace PluginHost {
                 }
 
             public:
-                Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
                 {
                     string persistentPath(_persistentPath);
                     string dataPath(_dataPath);
@@ -1167,76 +1209,16 @@ namespace PluginHost {
                         persistentPath += persistentExtension + '/';
                     }
 
-                    return (RPC::Communicator::Create(pid, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
-                }
-
-                void* Aquire(const uint32_t interfaceId, const uint32_t processId)
-                {
-
-                    void* result = nullptr;
-
-                    _adminLock.Lock();
-
-                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
-
-                    if (index != _offeredInterfaces.end()) {
-                        result = index->second->QueryInterface(interfaceId);
-                        index->second->Release();
-                        _offeredInterfaces.erase(index);
-                    } else {
-                        SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
-                    }
-
-                    _adminLock.Unlock();
-
-                    return result;
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
                 }
 
             private:
-                void Offer(const uint32_t processId, Core::IUnknown* remote, const uint32_t /* interfaceId */) override
-                {
-
-                    _adminLock.Lock();
-
-                    ASSERT(_offeredInterfaces.find(processId) == _offeredInterfaces.end()); // we don't expect an interface to still be available for this process
-
-                    _offeredInterfaces[processId] = remote;
-                    _offeredInterfaces[processId]->AddRef();
-
-                    _adminLock.Unlock();
-                }
-
-                // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed
-                void Revoke(const uint32_t processId, const Core::IUnknown* remote, const uint32_t /* interfaceId */) override
-                {
-
-                    // basicaly we don't expect anything needed to be done here as the offered interfaces should have been retrieved before they are revoked but in case that does not happen we don't want to leak
-
-                    ASSERT(remote != nullptr);
-
-                    _adminLock.Lock();
-
-                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
-
-                    if (index != _offeredInterfaces.end() && index->second == remote) {
-                        index->second->Release();
-                        _offeredInterfaces.erase(index);
-                    }
-
-                    _adminLock.Unlock();
-                }
-
-            private:
-                using OfferedInterfaceOnPID = std::map<uint32_t, Core::IUnknown*>;
-                using OfferedInterfaceOnPIDIterator = OfferedInterfaceOnPID::iterator;
-
                 const string _persistentPath;
                 const string _systemPath;
                 const string _dataPath;
                 const string _appPath;
                 const string _proxyStubPath;
                 const string _application;
-                OfferedInterfaceOnPID _offeredInterfaces;
                 mutable Core::CriticalSection _adminLock;
             };
 
@@ -1613,36 +1595,21 @@ namespace PluginHost {
                 return (result);
             }
 
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) override
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
             {
-                void* result = nullptr;
-
-                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign, waitTime));
-
-                if (process != nullptr) {
-                    result = _processAdministrator.Aquire(object.Interface(), pid);
-
-                    ASSERT(result != nullptr);
-
-                    if (result == nullptr) {
-                        TRACE_L1("RPC out-of-process server offer started but returned incorrect I/F. %d", object.Interface());
-                        process->Terminate();
-                        process->Release();
-                    }
-                }
-                return (result);
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
             }
-            virtual void Register(RPC::IRemoteProcess::INotification* sink) override
+            virtual void Register(RPC::IRemoteConnection::INotification* sink) override
             {
                 _processAdministrator.Register(sink);
             }
-            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) override
+            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) override
             {
                 _processAdministrator.Unregister(sink);
             }
-            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) override
+            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
-                return (_processAdministrator.Process(pid));
+                return (_processAdministrator.Connection(connectionId));
             }
             uint32_t Persist()
             {
@@ -1690,14 +1657,20 @@ namespace PluginHost {
             {
                 return (Iterator(_services));
             }
-            inline void Processes(std::list<uint32_t>& listOfPids) const
-            {
-                return (_processAdministrator.Processes(listOfPids));
-            }
-            inline void Notification(const string& message)
+            //inline void Processes(std::list<uint32_t>& listOfPids) const
+            //{
+            //    return (_processAdministrator.Connections(listOfPids));
+            //}
+            inline void Notification(const ForwardMessage& message)
             {
                 _server.Notification(message);
             }
+#ifdef RESTFULL_API
+            inline void Notification(const string& message)
+            {
+                _server._controller->Notification(message);
+            }
+#endif
             void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
             {
                 _adminLock.Lock();
@@ -1857,13 +1830,17 @@ namespace PluginHost {
                                 response = Factories::Instance().Response();
                                 Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
                                 Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
-                                response->Body(body);
-                                if (body->Error.IsSet() == false) {
-                                    response->ErrorCode = Web::STATUS_OK;
-                                    response->Message = _T("JSONRPC executed succesfully");
+                                if (body.IsValid() == false) {
+                                    response->ErrorCode = Web::STATUS_BAD_REQUEST;
                                 } else {
-                                    response->ErrorCode = Web::STATUS_NO_CONTENT;
-                                    response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                    response->Body(body);
+                                    if (body->Error.IsSet() == false) {
+                                        response->ErrorCode = Web::STATUS_OK;
+                                        response->Message = _T("JSONRPC executed succesfully");
+                                    } else {
+                                        response->ErrorCode = Web::STATUS_ACCEPTED;
+                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                    }
                                 }
                             } else {
                                 response = _service->Process(*_request);
@@ -2130,7 +2107,7 @@ namespace PluginHost {
                 }
 
                 // See if we are allowed to process this request..
-                if (security->Allowed(*request) == false) {
+                if ((security == nullptr) || (security->Allowed(*request) == false)) {
                     request->Unauthorized();
                 } else {
                     // If there was no body, we are still incomplete.
@@ -2149,8 +2126,10 @@ namespace PluginHost {
                     }
                 }
 
-                // We are done with the security related items, let go of the officer.
-                security->Release();
+                if (security != nullptr) {
+                    // We are done with the security related items, let go of the officer.
+                    security->Release();
+                }
 
                 switch (request->State()) {
                 case Request::OBLIVIOUS: {
@@ -2255,8 +2234,7 @@ namespace PluginHost {
                         securityClearance = _security->Allowed(*message);
                         PluginHost::Channel::Unlock();
 
-						if (securityClearance == false)
-                        {
+                        if (securityClearance == false) {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
                         }
@@ -2584,18 +2562,17 @@ namespace PluginHost {
         {
             return (_config);
         }
-        inline void Notification(const string& message)
-        {
-            _controller->Notification(message);
-        }
+        void Notification(const ForwardMessage& message);
         inline string ControllerName() const
         {
             return (_controller->Callsign());
         }
+#ifdef RESTFULL_API
         void Notify(const string& message)
         {
             _controller->Notification(message);
         }
+#endif
         void Open();
         void Close();
 
@@ -2608,7 +2585,6 @@ namespace PluginHost {
         {
             return (_config.Security());
         }
-
 
     private:
         Core::NodeId _accessor;
