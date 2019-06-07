@@ -7,7 +7,7 @@
     "description": "Controller JSON-RPC interface"
   },
   "common": {
-    "$ref": "common.json"
+    "$ref": "../../interfaces/json/common.json"
   },
   "definitions": {
     "state": {
