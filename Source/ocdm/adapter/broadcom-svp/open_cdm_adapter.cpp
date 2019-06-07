@@ -12,6 +12,7 @@ struct RPCSecureBufferInformation {
     uint32_t type;
     size_t size;
     void* token;
+    void* token_enc;
     uint32_t subSamplesCount;
     uint32_t subSamples[]; // Array of clear and encrypted pairs of subsamples.
 };
@@ -81,49 +82,66 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         }
 
         B_Secbuf_Info secureBufferInfo;
-        void* opaqueData;
+        void *opaqueData, *opaqueDataEnc;
 
         // If there is no subsample, only allocate one region for clear+enc, otherwise, number of subsamples.
         uint32_t rpcSubSampleTotalSize = (subSampleCount ? subSampleCount * 2 : 2) * sizeof(uint32_t);
         uint32_t sizeOfRPCInfo = sizeof(RPCSecureBufferInformation) + rpcSubSampleTotalSize;
         RPCSecureBufferInformation* rpcSecureBufferInformation = reinterpret_cast<RPCSecureBufferInformation*> (g_alloca(sizeOfRPCInfo));
 
-        B_Secbuf_Alloc(mappedDataSize, B_Secbuf_Type_eSecure, &opaqueData);
-        B_Secbuf_GetBufferInfo(opaqueData, &secureBufferInfo);
+        if(B_Secbuf_Alloc(mappedDataSize, B_Secbuf_Type_eGeneric, &opaqueDataEnc)) {
+            fprintf(stderr, "adapter_session_decrypt: Secbuf alloc failed!\n");
+            return (ERROR_INVALID_DECRYPT_BUFFER);
+        }
+        B_Secbuf_GetBufferInfo(opaqueDataEnc, &secureBufferInfo);
 
-        rpcSecureBufferInformation->type = secureBufferInfo.type;
-        rpcSecureBufferInformation->size = secureBufferInfo.size;
-        rpcSecureBufferInformation->token = secureBufferInfo.token;
+        rpcSecureBufferInformation->type      = secureBufferInfo.type;
+        rpcSecureBufferInformation->size      = secureBufferInfo.size;
+        rpcSecureBufferInformation->token_enc = secureBufferInfo.token;
+        rpcSecureBufferInformation->token     = NULL;
 
         if (mappedSubSample) {
 
             GstByteReader* reader = gst_byte_reader_new(mappedSubSample, mappedSubSampleSize);
             uint16_t inClear = 0;
             uint32_t inEncrypted = 0;
-            for (unsigned int position = 0; position < subSampleCount; position++) {
+            for (unsigned int position = 0, index = 0; position < subSampleCount; position++) {
                 gst_byte_reader_get_uint16_be(reader, &inClear);
                 gst_byte_reader_get_uint32_be(reader, &inEncrypted);
 
                 rpcSecureBufferInformation->subSamples[2*position] = static_cast<uint32_t>(inClear);
                 rpcSecureBufferInformation->subSamples[2*position + 1] = inEncrypted;
+
+                assert( sizeof(nalUnit) < (inClear+inEncrypted));
+                B_Secbuf_ImportData(opaqueDataEnc, index, const_cast<uint8_t*>(nalUnit), sizeof(nalUnit), false);
+                B_Secbuf_ImportData(opaqueDataEnc, index + sizeof(nalUnit), mappedData + index + sizeof(nalUnit), inClear + inEncrypted - sizeof(nalUnit), true);
+                index += inClear + inEncrypted;
             }
             gst_byte_reader_free(reader);
-
-            B_Secbuf_ImportData(opaqueData, 0, const_cast<uint8_t*>(nalUnit), sizeof(nalUnit), 0);
-            B_Secbuf_ImportData(opaqueData, sizeof(nalUnit), mappedData + sizeof(nalUnit), mappedDataSize - sizeof(nalUnit), 0);
-            B_Secbuf_ImportData(opaqueData, 0, nullptr, 0, 1);
 
             rpcSecureBufferInformation->subSamplesCount = subSampleCount * 2; // In order of clear+enc+clear+enc...
         } else {
 
-            B_Secbuf_ImportData(opaqueData, 0, mappedData, mappedDataSize, 1);
+            B_Secbuf_ImportData(opaqueDataEnc, 0, mappedData, mappedDataSize, true);
 
             rpcSecureBufferInformation->subSamples[0] = 0; // No clear.
             rpcSecureBufferInformation->subSamples[1] = mappedDataSize; // All encrypted.
             rpcSecureBufferInformation->subSamplesCount = 2; // One pair of clear_enc.
         }
+        // opaqueDataEnc no need as more. OCDM will acces it via its token
+        B_Secbuf_FreeDesc(opaqueDataEnc);
 
         result = opencdm_session_decrypt(session, reinterpret_cast<uint8_t*>(rpcSecureBufferInformation), sizeOfRPCInfo, mappedIV, mappedIVSize, mappedKeyID, mappedKeyIDSize);
+        if(result != ERROR_NONE) {
+            fprintf(stderr, "adapter_session_decrypt: opencdm_session_decrypt failed!\n");
+            return (ERROR_INVALID_DECRYPT_BUFFER);
+        }
+
+        // OCDM allocate opaqueData for secure decrypted buffer and will be freed in gstreamer
+        if(B_Secbuf_AllocWithToken(mappedDataSize, B_Secbuf_Type_eSecure,  rpcSecureBufferInformation->token, &opaqueData)) {
+            fprintf(stderr, "adapter_session_decrypt: Secbuf Alloc failed!\n");
+            return (ERROR_INVALID_DECRYPT_BUFFER);
+        }
 
         addSVPMetaData(buffer, reinterpret_cast<uint8_t*>(opaqueData));
     }
