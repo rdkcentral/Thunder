@@ -556,7 +556,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 emit.IndentInc()
 
                 if EMIT_TRACES:
-                    emit.Line('printf("*** [%s stub] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
+                    emit.Line('fprintf(stderr, "*** [%s stub] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
                     emit.Line()
 
                 emit.Line("RPC::Data::Input& input(message->Parameters());")
@@ -780,7 +780,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
 
                 if EMIT_TRACES:
                     emit.Line()
-                    emit.Line('printf("*** [%s stub] EXIT: %s()\\n");' % (iface.obj.full_name, m.name))
+                    emit.Line('fprintf(stderr, "*** [%s stub] EXIT: %s()\\n");' % (iface.obj.full_name, m.name))
 
                 emit.IndentDec()
                 emit.Line("},\n")
@@ -869,7 +869,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 emit.Line("{")
                 emit.IndentInc()
                 if EMIT_TRACES:
-                    emit.Line('printf("*** [%s proxy] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
+                    emit.Line('fprintf(stderr, "*** [%s proxy] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
                     emit.Line()
 
                 emit.Line("IPCMessage newMessage(BaseClass::Message(%i));" % count)
@@ -974,7 +974,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
 
                     if EMIT_TRACES:
                         emit.Line()
-                        emit.Line('printf("*** [%s proxy] EXIT: %s()\\n");' % (iface.obj.full_name, m.name))
+                        emit.Line('fprintf(stderr, "*** [%s proxy] EXIT: %s()\\n");' % (iface.obj.full_name, m.name))
 
                     if retval.has_output:
                         emit.Line()
