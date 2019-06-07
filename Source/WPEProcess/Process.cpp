@@ -204,12 +204,13 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
+            , Exchange(0)
             , PersistentPath(nullptr)
             , SystemPath(nullptr)
             , DataPath(nullptr)
@@ -232,6 +233,7 @@ namespace Process {
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
+        uint32_t Exchange;
         const TCHAR* PersistentPath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
@@ -284,6 +286,9 @@ namespace Process {
                 break;
             case 'v':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                break;
+            case 'x':
+                Exchange = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 't':
                 Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
@@ -398,11 +403,12 @@ int main(int argc, char** argv)
 
     Process::ConsoleOptions options(argc, argv);
 
-    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr)) {
+    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0) ) {
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
+        printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
         printf("        [-v <version>]\n");
@@ -430,10 +436,13 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
+		// Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
+		Trace::TraceUnit::Instance().Open(options.Exchange);
+
         // Time to open up the LOG tracings as specified by the caller.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000001) != 0);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000002) != 0);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+        Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
+        Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
+        Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
@@ -473,7 +482,7 @@ int main(int argc, char** argv)
                 uint32_t result;
 
                 // We have something to report back, do so...
-                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
+                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     _invokeServer->ProcessProcedures();
 

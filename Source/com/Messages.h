@@ -216,11 +216,22 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
+            void Set(const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
+            {
+                ASSERT(whatKind != AQUIRE);
+
+                _exchangeId = exchangeId;
+                _implementation = implementation;
+                _interfaceId = interfaceId;
+                _versionId = 0;
+                _className[0] = '\0';
+                _className[1] = whatKind;
+            }
             void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
             {
                 ASSERT(whatKind != AQUIRE);
 
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = static_cast<uint32_t>(~0);
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
@@ -229,7 +240,7 @@ namespace RPC {
             }
             void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = static_cast<uint32_t>(~0);
                 _implementation = nullptr;
                 _interfaceId = interfaceId;
                 _versionId = versionId;
@@ -237,7 +248,7 @@ namespace RPC {
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
             }
-            void* Implementation()
+            void* Implementation() const
             {
                 return (_implementation);
             }

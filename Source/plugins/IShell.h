@@ -16,12 +16,12 @@ namespace PluginHost {
         // This interface is only returned if the IShell is accessed in the main process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the main process, it will return a nullptr.
-        struct EXTERNAL IProcess {
-            virtual ~IProcess() {}
-            virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) = 0;
+        struct EXTERNAL ICOMLink {
+            virtual ~ICOMLink() {}
+            virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
         };
 
         virtual ~IShell()
@@ -197,11 +197,11 @@ namespace PluginHost {
 
         // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the main process.
-        virtual IProcess* Process() = 0;
+        virtual ICOMLink* COMLink() = 0;
 
-        inline void Register(RPC::IRemoteProcess::INotification* sink)
+        inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -210,9 +210,9 @@ namespace PluginHost {
                 handler->Register(sink);
             }
         }
-        inline void Unregister(RPC::IRemoteProcess::INotification* sink)
+        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -221,14 +221,14 @@ namespace PluginHost {
                 handler->Unregister(sink);
             }
         }
-        inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid)
+        inline RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
-            return (handler == nullptr ? nullptr : handler->RemoteProcess(pid));
+            return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
 
         template <typename REQUESTEDINTERFACE>
@@ -269,7 +269,7 @@ namespace PluginHost {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);

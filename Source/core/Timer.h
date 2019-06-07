@@ -87,12 +87,11 @@ namespace Core {
         };
 
         class TimeWorker : public Thread {
-        private:
-            TimeWorker();
-            TimeWorker(const TimeWorker&);
-            TimeWorker& operator=(const TimeWorker&);
-
         public:
+            TimeWorker() = delete;
+            TimeWorker(const TimeWorker&) = delete;
+            TimeWorker& operator=(const TimeWorker&) = delete;
+
             inline TimeWorker(TimerType& parent, const uint32_t stackSize, const TCHAR* timerName)
                 : Thread(stackSize, timerName)
                 , m_Parent(parent)

@@ -994,7 +994,7 @@ namespace PluginHost {
             virtual void Unregister(IPlugin::INotification* sink) override;
 
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-            virtual IProcess* Process() override;
+            virtual ICOMLink* COMLink() override;
 
             // Methods to Activate and Deactivate the aggregated Plugin to this shell.
             // These are Blocking calls!!!!!
@@ -1154,7 +1154,7 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
-        class EXTERNAL ServiceMap : public PluginHost::IShell::IProcess {
+        class EXTERNAL ServiceMap : public PluginHost::IShell::ICOMLink {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
 
@@ -1182,7 +1182,6 @@ namespace PluginHost {
 #else
                     , _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #endif
-                    , _offeredInterfaces()
                     , _adminLock()
                 {
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
@@ -1198,7 +1197,7 @@ namespace PluginHost {
                 }
 
             public:
-                Communicator::RemoteProcess* Create(uint32_t& pid, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
                 {
                     string persistentPath(_persistentPath);
                     string dataPath(_dataPath);
@@ -1210,76 +1209,16 @@ namespace PluginHost {
                         persistentPath += persistentExtension + '/';
                     }
 
-                    return (RPC::Communicator::Create(pid, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
-                }
-
-                void* Aquire(const uint32_t interfaceId, const uint32_t processId)
-                {
-
-                    void* result = nullptr;
-
-                    _adminLock.Lock();
-
-                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
-
-                    if (index != _offeredInterfaces.end()) {
-                        result = index->second->QueryInterface(interfaceId);
-                        index->second->Release();
-                        _offeredInterfaces.erase(index);
-                    } else {
-                        SYSLOG(Trace::Fatal, (_T("Failed to find a proxy for interface ID %08X"), interfaceId));
-                    }
-
-                    _adminLock.Unlock();
-
-                    return result;
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
                 }
 
             private:
-                void Offer(const uint32_t processId, Core::IUnknown* remote, const uint32_t /* interfaceId */) override
-                {
-
-                    _adminLock.Lock();
-
-                    ASSERT(_offeredInterfaces.find(processId) == _offeredInterfaces.end()); // we don't expect an interface to still be available for this process
-
-                    _offeredInterfaces[processId] = remote;
-                    _offeredInterfaces[processId]->AddRef();
-
-                    _adminLock.Unlock();
-                }
-
-                // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed
-                void Revoke(const uint32_t processId, const Core::IUnknown* remote, const uint32_t /* interfaceId */) override
-                {
-
-                    // basicaly we don't expect anything needed to be done here as the offered interfaces should have been retrieved before they are revoked but in case that does not happen we don't want to leak
-
-                    ASSERT(remote != nullptr);
-
-                    _adminLock.Lock();
-
-                    OfferedInterfaceOnPIDIterator index = _offeredInterfaces.find(processId);
-
-                    if (index != _offeredInterfaces.end() && index->second == remote) {
-                        index->second->Release();
-                        _offeredInterfaces.erase(index);
-                    }
-
-                    _adminLock.Unlock();
-                }
-
-            private:
-                using OfferedInterfaceOnPID = std::map<uint32_t, Core::IUnknown*>;
-                using OfferedInterfaceOnPIDIterator = OfferedInterfaceOnPID::iterator;
-
                 const string _persistentPath;
                 const string _systemPath;
                 const string _dataPath;
                 const string _appPath;
                 const string _proxyStubPath;
                 const string _application;
-                OfferedInterfaceOnPID _offeredInterfaces;
                 mutable Core::CriticalSection _adminLock;
             };
 
@@ -1656,39 +1595,21 @@ namespace PluginHost {
                 return (result);
             }
 
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) override
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
             {
-                void* result = nullptr;
-
-                RPC::Communicator::RemoteProcess* process(_processAdministrator.Create(pid, object, className, callsign, waitTime));
-
-                if (process != nullptr) {
-                    result = _processAdministrator.Aquire(object.Interface(), pid);
-
-                    ASSERT(result != nullptr);
-
-                    if (result == nullptr) {
-                        TRACE(Trace::Fatal, (_T("RPC out-of-process server offer started but returned incorrect I/F. %d"), object.Interface()));
-                        process->Terminate();
-                        process->Release();
-                    }
-                } else {
-                    TRACE(Trace::Fatal, (_T("Could not instantiate a process for: %s [%s]"), className.c_str(), callsign.c_str()));
-                }
-
-                return (result);
+                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
             }
-            virtual void Register(RPC::IRemoteProcess::INotification* sink) override
+            virtual void Register(RPC::IRemoteConnection::INotification* sink) override
             {
                 _processAdministrator.Register(sink);
             }
-            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) override
+            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) override
             {
                 _processAdministrator.Unregister(sink);
             }
-            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) override
+            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
-                return (_processAdministrator.Process(pid));
+                return (_processAdministrator.Connection(connectionId));
             }
             uint32_t Persist()
             {
@@ -1736,10 +1657,10 @@ namespace PluginHost {
             {
                 return (Iterator(_services));
             }
-            inline void Processes(std::list<uint32_t>& listOfPids) const
-            {
-                return (_processAdministrator.Processes(listOfPids));
-            }
+            //inline void Processes(std::list<uint32_t>& listOfPids) const
+            //{
+            //    return (_processAdministrator.Connections(listOfPids));
+            //}
             inline void Notification(const ForwardMessage& message)
             {
                 _server.Notification(message);
