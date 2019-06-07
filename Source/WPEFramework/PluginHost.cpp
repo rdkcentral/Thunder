@@ -333,7 +333,7 @@ namespace PluginHost {
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
         const string tracePath(serviceConfig.VolatilePath.Value());
-        Trace::TraceUnit::Instance().Open(tracePath);
+        Trace::TraceUnit::Instance().Open(tracePath, 0);
 
         Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
 

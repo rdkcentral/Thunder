@@ -403,7 +403,7 @@ int main(int argc, char** argv)
 
     Process::ConsoleOptions options(argc, argv);
 
-    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr)) {
+    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0) ) {
         printf("Process [-h] \n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
@@ -436,10 +436,13 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
+		// Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
+		Trace::TraceUnit::Instance().Open(options.Exchange);
+
         // Time to open up the LOG tracings as specified by the caller.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000001) != 0);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000002) != 0);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+        Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
+        Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
+        Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;

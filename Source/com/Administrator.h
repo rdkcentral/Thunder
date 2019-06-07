@@ -21,6 +21,8 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
+	typedef std::pair<const Core::IUnknown*, const uint32_t> ExposedInterface;
+
     class EXTERNAL Administrator {
     private:
         Administrator();
@@ -53,16 +55,24 @@ namespace RPC {
             {
                 return (!operator==(source));
             }
-            void Increment() {
+            void Increment()
+            {
                 _refCount++;
             }
-            bool Decrement(const uint32_t dropCount) {
+            bool Decrement(const uint32_t dropCount)
+            {
                 return (_refCount.fetch_sub(dropCount) == dropCount);
             }
-            uint32_t Id() const {
+            uint32_t Id() const
+            {
                 return (_id);
             }
-            uint32_t RefCount() const {
+            const Core::IUnknown* Source() const
+            {
+                return (_baseInterface);
+            }
+            uint32_t RefCount() const
+            {
                 return (_refCount.load());
             }
 
@@ -75,7 +85,7 @@ namespace RPC {
 
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
         typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list<ExternalReference> > ReferenceMap;
+        typedef std::map<const Core::IPCChannel*, std::list<ExternalReference>> ReferenceMap;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
@@ -126,7 +136,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
+        void DeleteChannel(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
         {
             _adminLock.Lock();
 
@@ -139,6 +149,16 @@ namespace RPC {
                     loop++;
                 }
                 _channelProxyMap.erase(index);
+            }
+            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel));
+
+            if (remotes != _channelReferenceMap.end()) {
+                std::list<ExternalReference>::iterator loop(remotes->second.begin());
+                while (loop != remotes->second.end()) {
+                    usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
+                    loop++;
+                }
+                _channelReferenceMap.erase(remotes);
             }
 
             _adminLock.Unlock();
@@ -195,12 +215,10 @@ namespace RPC {
                             _channelReferenceMap.erase(index);
                         }
                     }
-                }
-                else {
+                } else {
                     printf("Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
                 }
-            }
-            else {
+            } else {
                 printf("Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
             }
         }
@@ -210,7 +228,7 @@ namespace RPC {
         void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
         void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
         void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id);
- 
+
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
         Core::CriticalSection _adminLock;
