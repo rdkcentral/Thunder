@@ -186,7 +186,7 @@ namespace RPC {
             Init()
                 : _implementation(nullptr)
                 , _interfaceId(~0)
-                , _exchangeId(Core::ProcessInfo().Id())
+                , _exchangeId(~0)
             {
             }
             Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
@@ -227,9 +227,20 @@ namespace RPC {
                 _className[0] = '\0';
                 _className[1] = whatKind;
             }
+            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            {
+                ASSERT(whatKind != AQUIRE);
+
+                _exchangeId = static_cast<uint32_t>(~0);
+                _implementation = implementation;
+                _interfaceId = interfaceId;
+                _versionId = 0;
+                _className[0] = '\0';
+                _className[1] = whatKind;
+            }
             void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = static_cast<uint32_t>(~0);
                 _implementation = nullptr;
                 _interfaceId = interfaceId;
                 _versionId = versionId;

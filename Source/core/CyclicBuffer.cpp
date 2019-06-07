@@ -14,7 +14,9 @@ namespace Core {
         , _administration(_buffer.IsValid() ? reinterpret_cast<struct control*>(_buffer.Buffer()) : nullptr)
     {
 
-        if (_buffer.IsValid() == true) {
+        if (_buffer.IsValid() != true) {
+            TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
+		} else {
 #ifdef __WIN32__
             string strippedName(Core::File::PathName(fileName) + Core::File::FileName(fileName));
             _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());

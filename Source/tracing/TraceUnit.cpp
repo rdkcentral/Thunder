@@ -81,23 +81,17 @@ namespace Trace {
     {
         toString(dst, format, ap);
     }
+
     TraceUnit::TraceUnit()
         : m_Categories()
         , m_Admin()
         , m_OutputChannel(nullptr)
         , m_DirectOut(false)
     {
-        string pathName;
-
-        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
-
-        if (pathName.empty() == false) {
-            Open(pathName);
-        }
     }
 
     TraceUnit::TraceBuffer::TraceBuffer(const string& name)
-        : Core::CyclicBuffer(name + '.' + Core::NumberType<uint32_t>(Core::ProcessInfo().Id()).Text(), TRACE_CYCLIC_BUFFER_SIZE, true)
+        : Core::CyclicBuffer(name, TRACE_CYCLIC_BUFFER_SIZE, true)
         , _doorBell(TRACE_CYCLIC_BUFFER_PREFIX)
     {
     }
@@ -145,11 +139,22 @@ namespace Trace {
         m_Admin.Unlock();
     }
 
-    uint32_t TraceUnit::Open(const string& pathName)
+    uint32_t TraceUnit::Open(const uint32_t identifier)
+    {
+        string pathName;
+
+        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
+
+        ASSERT(pathName.empty() == false);
+
+        return (Open(pathName, identifier));
+    }
+
+    uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
     {
         ASSERT(m_OutputChannel == nullptr);
 
-        string actualPath(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX);
+        string actualPath(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX + '.' + Core::NumberType<uint32_t>(identifier).Text());
 
         m_OutputChannel = new TraceBuffer(actualPath);
 

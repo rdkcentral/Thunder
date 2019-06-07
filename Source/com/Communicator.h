@@ -220,7 +220,7 @@ namespace RPC {
     class EXTERNAL Communicator {
     private:
         class ChannelLink;
-\
+
         class EXTERNAL RemoteConnection : public IRemoteConnection {
         private:
             friend class RemoteConnectionMap;
@@ -261,7 +261,7 @@ namespace RPC {
 
                 return (_channel);
             }
-            void Announce(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel)
+            void Open(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel)
             {
                 ASSERT(_channel.IsValid() == false);
 
@@ -269,6 +269,12 @@ namespace RPC {
                 TRACE_L1("Link announced. All up and running %d, has announced itself.", Id());
 
                 _channel = channel;
+            }
+            void Close()
+            {
+                if (_channel.IsValid() == true) {
+                    _channel.Release();
+                }
             }
 
         private:
@@ -299,7 +305,9 @@ namespace RPC {
             inline void Launch(const Object& instance, const Config& config)
             {
                 Core::Process::Options options(config.HostApplication());
-                uint32_t loggingSettings = (Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x01 : 0) | (Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x02 : 0) | (Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x04 : 0);
+                uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled()      ? 0x01 : 0) | 
+					                       (Logging::LoggingType<Logging::Shutdown>::IsEnabled()     ? 0x02 : 0) | 
+					                       (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
 
                 ASSERT(instance.Locator().empty() == false);
                 ASSERT(instance.ClassName().empty() == false);
@@ -374,21 +382,13 @@ namespace RPC {
                     _observers.pop_front();
                 }
 
-				// All connections must be terminated if we end up here :-)
+                // All connections must be terminated if we end up here :-)
                 ASSERT(_connections.size() == 0);
 
-				Destroy();
+                Destroy();
             }
 
         public:
-            inline void Revoke(const Core::IUnknown* source, const uint32_t id)
-            {
-                _parent.Revoke(source, id);
-            }
-            inline void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t version)
-            {
-                return (_parent.Aquire(className, interfaceId, version));
-            }
             inline void Register(RPC::IRemoteConnection::INotification* sink)
             {
                 ASSERT(sink != nullptr);
@@ -501,28 +501,29 @@ namespace RPC {
 
                 std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(id));
 
-                if (index != _connections.end()) {
-                    // Release this entry, do not wait till it get's overwritten.
-                    _connections.erase(index);
+                if (index == _connections.end()) {
 
-                    std::list<ProxyStub::UnknownProxy*> deadProxies;
+                    _adminLock.Unlock();
 
-                    RPC::Administrator::Instance().DeleteChannel(index->second->Channel().operator->(), deadProxies);
+                } else {
+                    // Remove any channel associated, we had.
+                    Core::IPCChannel* destructed = index->second->Channel().operator->();
+                    index->second->Close();
 
-                    std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
-                    while (loop != deadProxies.end()) {
-                        Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
-                        Revoke(base, (*loop)->InterfaceId());
-                        if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                            TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
-                        }
-                        loop++;
+                    std::list<RPC::IRemoteConnection::INotification*>::iterator observer(_observers.begin());
+
+                    while (observer != _observers.end()) {
+                        (*observer)->Deactivated(index->second);
+                        observer++;
                     }
 
-                    index->second->Terminate();
+                    // Release this entry, do not wait till it get's overwritten.
                     index->second->Release();
+                    _connections.erase(index);
+                    _adminLock.Unlock();
+
+                    _parent.Closed(destructed);
                 }
-                _adminLock.Unlock();
             }
             inline Communicator::RemoteConnection* Connection(const uint32_t id)
             {
@@ -555,104 +556,124 @@ namespace RPC {
             }
             void* Announce(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
+                void* result = nullptr;
 
                 _adminLock.Lock();
 
-                std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(info.ExchangeId()));
+                if (info.IsRequested() == true) {
 
-                if (index == _connections.end()) {
-                    // This is an announce message from a process that wasn't created by us. So typically this is
-                    // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
-                    // listens for clients requesting service.
-                    Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel);
+                    Request(channel, info);
+                } else {
 
-                    ASSERT(remoteConnection != nullptr);
+                    if (channel->Extension().IsRegistered() == false) {
 
-                    // Add ref is done during the creation, no need to take another reference unless we also would release it after
-                    // insertion :-)
-                    auto newElement = _connections.insert(std::pair<uint32_t, Communicator::RemoteConnection*>(info.ExchangeId(), remoteConnection));
+                        // This is an announce message from a process that wasn't created by us. So typically this is
+                        // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
+                        // listens for clients requesting service.
+                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel);
 
-                    index = newElement.first;
+                        channel->Extension().Link(*this, remoteConnection->Id());
+                        ASSERT(remoteConnection != nullptr);
 
-                } else if (index->second->IsOperational() == false) {
-                    // This is when we started a process, than the connection al
-                    index->second->Announce(channel);
+                        // Add ref is done during the creation, no need to take another reference unless we also would release it after
+                        // insertion :-)
+                        _connections.insert(std::pair<uint32_t, Communicator::RemoteConnection*>(remoteConnection->Id(), remoteConnection));
 
-                    auto processConnection = _announcements.find(index->second->Id());
-
-                    ASSERT(processConnection != _announcements.end());
-                    ASSERT(result != nullptr);
-
-                    if (processConnection != _announcements.end()) {
-                        processConnection->second.second = result;
-                        processConnection->second.first.SetEvent();
+                        Activated(remoteConnection);
                     }
-                }
 
-                ASSERT(index != _connections.end());
-
-                if (info.IsOffer() == true) {
-
-                    ASSERT(result != nullptr);
-
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(index->second->Channel(), result, info.InterfaceId(), info.IsRequested());
-
-                    if (baseIUnknown != nullptr) {
-                        _parent.Offer(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
-                    }
-                } else if (info.IsRevoke() == true) {
-
-                    ASSERT(result != nullptr);
-
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(index->second->Channel(), result, info.InterfaceId());
-                    if (baseIUnknown != nullptr) {
-                        _parent.Revoke(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
-                    }
-                } else if ((info.IsRequested() == false) && (info.InterfaceId() != static_cast<uint32_t>(~0))) {
-
-                    ASSERT(result == nullptr);
-
-                    // See if we have something we can return right away, if it has been requested..
-                    result = Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
-
-                    if (result != nullptr) {
-                        Core::ProxyType<Core::IPCChannel> channel(index->second->Channel());
-                        Administrator::Instance().RegisterInterface(channel, result, info.InterfaceId());
-                    }
+                    Handle(channel, info);
                 }
 
                 _adminLock.Unlock();
 
                 return (result);
             }
-            void Activated(RPC::IRemoteConnection* process)
+            void Activated(RPC::IRemoteConnection* connection)
             {
                 _adminLock.Lock();
 
                 std::list<RPC::IRemoteConnection::INotification*>::iterator index(_observers.begin());
 
                 while (index != _observers.end()) {
-                    (*index)->Activated(process);
+                    (*index)->Activated(connection);
                     index++;
                 }
 
                 _adminLock.Unlock();
             }
-            void Deactivated(RPC::IRemoteConnection* process)
+
+        private:
+            void Request(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                _adminLock.Lock();
+                void* result = info.Implementation();
 
-                std::list<RPC::IRemoteConnection::INotification*>::iterator index(_observers.begin());
+                ASSERT(result != nullptr);
 
-                while (index != _observers.end()) {
-                    (*index)->Deactivated(process);
-                    index++;
+                std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(info.ExchangeId()));
+
+                ASSERT(index != _connections.end());
+                ASSERT(index->second->IsOperational() == false)
+
+                // This is when we requested this interface/object to be created, there must be already an
+                // administration, it is just not complete.... yet!!!!
+                index->second->Open(channel);
+                channel->Extension().Link(*this, index->second->Id());
+
+                Activated(index->second);
+
+                auto processConnection = _announcements.find(index->second->Id());
+
+                if (processConnection != _announcements.end()) {
+                    processConnection->second.second = result;
+                    processConnection->second.first.SetEvent();
+                } else {
+                    // No one picks it up, release it..
+                    // TODO: Release an object that will never be used...
+                }
+            }
+
+            void* Handle(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
+            {
+                void* result = info.Implementation();
+
+                if (info.IsOffer() == true) {
+
+                    ASSERT(result != nullptr);
+
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, result, info.InterfaceId(), info.IsRequested());
+
+                    if (baseIUnknown != nullptr) {
+                        _parent.Offer(baseIUnknown, info.InterfaceId());
+                        baseIUnknown->Release();
+                    }
+                    result = nullptr;
+
+                } else if (info.IsRevoke() == true) {
+
+                    ASSERT(result != nullptr);
+
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(channel, result, info.InterfaceId());
+                    if (baseIUnknown != nullptr) {
+                        _parent.Revoke(baseIUnknown, info.InterfaceId());
+                        baseIUnknown->Release();
+                    }
+                    result = nullptr;
+
+                } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
+
+                    ASSERT(result == nullptr);
+
+                    // See if we have something we can return right away, if it has been requested..
+                    result = _parent.Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
+
+                    if (result != nullptr) {
+                        Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+                        Administrator::Instance().RegisterInterface(baseChannel, result, info.InterfaceId());
+                    }
                 }
 
-                _adminLock.Unlock();
+                return (result);
             }
 
         private:
@@ -670,7 +691,7 @@ namespace RPC {
 
         public:
             ChannelLink(Core::IPCChannelType<Core::SocketPort, ChannelLink>* channel)
-                : _channel(*channel)
+                : _channel(channel->Source())
                 , _connectionMap(nullptr)
             {
                 // We are a composit of the Channel, no need (and do not for cyclic references) not maintain a reference...
@@ -689,14 +710,18 @@ namespace RPC {
             void StateChange()
             {
                 // If the connection closes, we need to clean up....
-                if ((_channel.Source().IsOpen() == false) && (_connectionMap != nullptr)) {
+                if ((_channel.IsOpen() == false) && (_connectionMap != nullptr)) {
                     _connectionMap->Closed(_id);
                 }
+            }
+            bool IsRegistered() const
+            {
+                return (_connectionMap != nullptr);
             }
 
         private:
             // Non ref-counted reference to our parent, of which we are a composit :-)
-            Core::IPCChannelType<Core::SocketPort, ChannelLink>& _channel;
+            Core::SocketPort& _channel;
             RemoteConnectionMap* _connectionMap;
             uint32_t _id;
         };
@@ -859,6 +884,36 @@ namespace RPC {
         }
 
     private:
+        void Closed(const Core::IPCChannel* channel)
+        {
+            std::list<ProxyStub::UnknownProxy*> deadProxies;
+            std::list<RPC::ExposedInterface> pendingInterfaces;
+
+            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies, pendingInterfaces);
+
+            std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
+            while (loop != deadProxies.end()) {
+                Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
+                Revoke(base, (*loop)->InterfaceId());
+                if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                    TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
+                }
+                loop++;
+            }
+
+            std::list<RPC::ExposedInterface>::const_iterator loop2(pendingInterfaces.begin());
+
+            while (loop2 != pendingInterfaces.end()) {
+                const Core::IUnknown* source = loop2->first; 
+                uint32_t count = loop2->second;
+                Cleanup(source, count);
+                while (count != 0) {
+                    source->Release();
+                    count--;
+                }
+                loop2++;
+            }
+        }
         virtual void* Aquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
         {
             return (nullptr);
@@ -868,6 +923,9 @@ namespace RPC {
         }
         // note: do NOT do a QueryInterface on the IUnknown pointer (or any other method for that matter), the object it points to might already be destroyed
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
+        {
+        }
+        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* refCount */)
         {
         }
 

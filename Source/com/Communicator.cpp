@@ -54,9 +54,9 @@ class ClosingInfo {
 
 static constexpr uint32_t DestructionStackSize = 64 * 1024;
 static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
-static Core::TimerType<ClosingInfo> _destructor(DestructionStackSize, "ProcessDestructor");
+static Core::TimerType<ClosingInfo>& _destructor = Core::SingletonType < Core::TimerType<ClosingInfo> >::Instance(DestructionStackSize, "ProcessDestructor");
 
-/* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId;
+/* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
 
 static void LoadProxyStubs(const string& pathName)
 {
@@ -91,9 +91,10 @@ static void LoadProxyStubs(const string& pathName)
     if (id == IRemoteConnection::ID) {
         AddRef();
         return (static_cast<IRemoteConnection*>(this));
-    } else {
-        assert(false);
-    }
+    } else if (id == Core::IUnknown::ID) {
+        AddRef();
+        return (static_cast<Core::IUnknown*>(this));		
+	}
     return (nullptr);
 }
 
