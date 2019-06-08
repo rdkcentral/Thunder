@@ -351,87 +351,11 @@ namespace RPC {
                 if (instance.Threads() > 1) {
                     options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
-                // Start the external process launch..
 
-                DoLaunch();
-            }
-
-            virtual DoLaunch() = 0;
-
-            virtual void Terminate() override;
-
-        private:
-            uint32_t _id;
-        };
-
-        class EXTERNAL RemoteProcess : public RemoteConnection {
-        private:
-            friend class Core::Service<RemoteProcess>;
-
-            RemoteProcess(const RemoteProcess&) = delete;
-            RemoteProcess& operator=(const RemoteProcess&) = delete;
-
-        private:
-            RemoteProcess()
-                : RemoteConnection()
-            {
-            }
-
-        public:
-            virtual ~RemoteProcess()
-            {
-                TRACE_L1("Destructor for RemoteProcess process for %d", Id());
-            }
-
-        public:
-            inline void Launch(const Object& instance, const Config& config)
-            {
-                Core::Process::Options options(config.HostApplication());
-                uint32_t loggingSettings = (Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x01 : 0) | (Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x02 : 0) | (Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x04 : 0);
-
-                ASSERT(instance.Locator().empty() == false);
-                ASSERT(instance.ClassName().empty() == false);
-                ASSERT(config.Connector().empty() == false);
-
-                options[_T("-l")] = instance.Locator();
-                options[_T("-c")] = instance.ClassName();
-                options[_T("-r")] = config.Connector();
-                options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-                options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
-                options[_T("-x")] = Core::NumberType<uint32_t>(Id()).Text();
-
-                if (instance.Version() != static_cast<uint32_t>(~0)) {
-                    options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
-                }
-                if (instance.User().empty() == false) {
-                    options[_T("-u")] = instance.User();
-                }
-                if (instance.Group().empty() == false) {
-                    options[_T("-g")] = instance.Group();
-                }
-                if (config.PersistentPath().empty() == false) {
-                    options[_T("-p")] = config.PersistentPath();
-                }
-                if (config.SystemPath().empty() == false) {
-                    options[_T("-s")] = config.SystemPath();
-                }
-                if (config.DataPath().empty() == false) {
-                    options[_T("-d")] = config.DataPath();
-                }
-                if (config.ApplicationPath().empty() == false) {
-                    options[_T("-a")] = config.ApplicationPath();
-                }
-                if (config.ProxyStubPath().empty() == false) {
-                    options[_T("-m")] = config.ProxyStubPath();
-                }
-                if (instance.Threads() > 1) {
-                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
-                }
                 // Start the external process launch..
                 Core::Process fork(false);
 
-                fork.Launch(options, &_id);
-            }
+                fork.Launch(options, &_id);            }
 
             virtual void Terminate() override;
 
@@ -514,6 +438,15 @@ namespace RPC {
                 if (instance.Threads() > 1) {
                     options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
+
+//                uint16_t size = options.LineSize();
+//                void* parameters = ::malloc(size);
+//                uint16_t argc = options.Line(parameters, size);
+
+
+//                printf("Huppel was here:%s\n", options.Command().c_str());
+//                printf("Huppel was here2:%s\n", (char*)parameters);
+
 
                 return (Core::Service<ContainerRemoteProcess>::Create<ContainerRemoteProcess>(&parent, &pid, &options, string()));
             }
@@ -634,17 +567,7 @@ namespace RPC {
 
                 _adminLock.Lock();
 
-<<<<<<< HEAD
-                Communicator::RemoteProcess* result = nullptr;
-
-                if( false ) {
-                    result = MasterRemoteProcess::Create(*this, pid, instance, config);
-                } else {
-                    result = ContainerRemoteProcess::Create(*this, pid, instance, config);
-                }
-=======
                 Communicator::RemoteProcess* result = Core::Service<RemoteProcess>::Create<RemoteProcess>();
->>>>>>> pwielders/lxc_remotehost
 
                 ASSERT(result != nullptr);
 
