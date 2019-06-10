@@ -55,7 +55,7 @@ public:
             return _name;
         }
 
-        void Start() override;
+        void Start(const string& command, const string parameters) override;
 
         void AddRef() const override {
             WPEFramework::Core::InterlockedIncrement(_referenceCount);
@@ -162,37 +162,54 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
     return myLXCContainerAdministrator;
 }
 
-void LXCContainerAdministrator::LCXContainer::Start() {
+void LXCContainerAdministrator::LCXContainer::Start(const string& command, const string parameters) {
 //    bool retval = _lxccontainer->stop(_lxccontainer);
 //    printf("Container stop: %i\n", retval);
 
 //    retval = _lxccontainer->shutdown(_lxccontainer, 5);
 //    printf("Container shutdown: %i\n", retval);
 
+
     bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
     printf("Container start: %i\n", retval);
 
-    lxc_attach_command_t command;
+    lxc_attach_command_t lxccommand;
 	pid_t pid;
 
     char* program = "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess";
-    char* argv[] = {NULL};
 
-    command.program = (char *)program;
-    command.argv = (char **)argv;
+    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
+    "-d", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l" ,"libWPEFrameworkWebServer.so", "-m" "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
+    "-p" ,"/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", "-x 1", NULL};
+    
+/*    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a /usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c WebServerImplementation", 
+    "-d /usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
+    "-p /root/WebServer/", "-r /tmp/communicator", "-s /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL};*/
 
+    lxccommand.program = (char *)program;
+    lxccommand.argv = argv;
+
+/*&    char* params[2];
+    params[0] = const_cast<char*>(parameters.c_str());
+    params[1] = NULL;
+
+    lxccommand.program = (char *)program;
+    lxccommand.argv = params;
+*/
     lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+//    options.uid = 1000;
+//    options.gid = 1000;
 
-    int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &command, &options, &pid);
+    int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
     printf("Attach to container: %i\n", ret);
 
- /*   bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a /usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c WebServerImplementation", 
-    "-d /usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
-    "-p /root/WebServer/", "-r /tmp/communicator ", "-s /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL);   */
-
+    /*bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
+    "-d",  "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l", "libWPEFrameworkWebServer.so", "-m", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
+    "-p", "/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL);   
+*/
 /*    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/WPEProcess", "-a /usr/bin/", "-c WebServerImplementation", 
     "-d /usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/lib/wpeframework/proxystubs/",
-    "-p /root/WebServer/", "-r /tmp/communicator ", "-s /usr/lib/wpeframework/plugins/", NULL);    */
+    "-p /root/WebServer/", "-r /tmp/communicator", "-s /usr/lib/wpeframework/plugins/", NULL);    */
 
 //     retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/Testapp", NULL);
 //    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/Testapp", NULL);

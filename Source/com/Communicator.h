@@ -17,6 +17,12 @@ namespace RPC {
 
     class EXTERNAL Object {
     public:
+        enum class HostType {
+            LOCAL,
+            REMOTE,
+            CONTAINER
+        };
+
         Object()
             : _locator()
             , _className()
@@ -25,6 +31,8 @@ namespace RPC {
             , _user()
             , _group()
             , _threads()
+            , _type(HostType::LOCAL)
+            , _configuration()
         {
         }
         Object(const Object& copy)
@@ -35,9 +43,19 @@ namespace RPC {
             , _user(copy._user)
             , _group(copy._group)
             , _threads(copy._threads)
+            , _type(copy._type)
+            , _configuration(copy._configuration)
         {
         }
-        Object(const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group, const uint8_t threads)
+        Object(const string& locator, 
+                const string& className, 
+                const uint32_t interface, 
+                const uint32_t version, 
+                const string& user, 
+                const string& group, 
+                const uint8_t threads,
+                const HostType type,
+                const string& configuration)
             : _locator(locator)
             , _className(className)
             , _interface(interface)
@@ -45,6 +63,8 @@ namespace RPC {
             , _user(user)
             , _group(group)
             , _threads(threads)
+            , _type(type)
+            , _configuration(configuration)
         {
         }
         ~Object()
@@ -60,6 +80,8 @@ namespace RPC {
             _user = RHS._user;
             _group = RHS._group;
             _threads = RHS._threads;
+            _type = RHS._type;
+            _configuration = RHS._configuration;
 
             return (*this);
         }
@@ -93,6 +115,14 @@ namespace RPC {
         {
             return (_threads);
         }
+        inline HostType Type() const
+        {
+            return (_type);
+        }
+        inline const string& Configuration() const
+        {
+            return (_configuration);
+        }
 
     private:
         string _locator;
@@ -102,6 +132,8 @@ namespace RPC {
         string _user;
         string _group;
         uint8_t _threads;
+        HostType _type;
+        string _configuration;
     };
 
     class EXTERNAL Config {
@@ -386,128 +418,74 @@ namespace RPC {
             uint32_t _id;
         };
 
-/*
+#ifdef PROCESSCONTAINERS_ENABLED 
 
-        class EXTERNAL ContainerRemoteProcess : public RemoteConnection {
-        private:
+        class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        public:
             friend class Core::Service<ContainerRemoteProcess>;
 
-            ContainerRemoteProcess() = delete;
-            ContainerRemoteProcess(const MasterRemoteProcess&) = delete;
+            ContainerRemoteProcess(const ContainerRemoteProcess&) = delete;
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
 
-        protected:
-            ContainerRemoteProcess(const string& configuration)
-                : RemoteProcess(parent)
-                , _container(nullptr)
-            {
+        private:
+            ContainerRemoteProcess(const string& configuration) {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 _container = admin.Container("webserver");
+            }
 
+            ~ContainerRemoteProcess() {
+//                if( _container != nullptr ) {
+//                    _container->Release();
+//                }
+            }
+ 
+        private:
+            void LaunchProcess(const Core::Process::Options& options) override
+            {
                 if( _container != nullptr ) {
-                    _container->Start();
+                    // Huppel todo: just to get it working for now create a char* and pass it as such...
+                    // didn't work, okay so just pass in the id for now...
+
+                    uint16_t size = options.LineSize();
+                    char* parameters = (char*)::malloc(size);
+                    options.Line(parameters, size);
+                    _container->Start(options.Command(), string(parameters));
+                    ::free(parameters);
                 }
             }
 
         public:
-
-            
-
-            inline static void ContainerInitialization() {
-                ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-                admin.ContainerDefinitionSearchPaths({string("/home/marcelf/.local/share/lxc/")}); //todo: replace by correct default searchpaths
-            }
-            inline static RemoteProcess* Create(RemoteProcessMap& parent, uint32_t& pid, const Object& instance, const Config& config)
-            {
-
-                uint32_t loggingSettings = (Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x01 : 0) | (Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x02 : 0) | (Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::IsEnabled() ? 0x04 : 0);
-
-                Core::Process::Options options(config.HostApplication());
-
-                ASSERT(instance.Locator().empty() == false);
-                ASSERT(instance.ClassName().empty() == false);
-                ASSERT(config.Connector().empty() == false);
-
-                options[_T("-l")] = instance.Locator();
-                options[_T("-c")] = instance.ClassName();
-                options[_T("-r")] = config.Connector();
-                options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-                options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
-                if (instance.Version() != static_cast<uint32_t>(~0)) {
-                    options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
-                }
-                if (instance.User().empty() == false) {
-                    options[_T("-u")] = instance.User();
-                }
-                if (instance.Group().empty() == false) {
-                    options[_T("-g")] = instance.Group();
-                }
-                if (config.PersistentPath().empty() == false) {
-                    options[_T("-p")] = config.PersistentPath();
-                }
-                if (config.SystemPath().empty() == false) {
-                    options[_T("-s")] = config.SystemPath();
-                }
-                if (config.DataPath().empty() == false) {
-                    options[_T("-d")] = config.DataPath();
-                }
-                if (config.ApplicationPath().empty() == false) {
-                    options[_T("-a")] = config.ApplicationPath();
-                }
-                if (config.ProxyStubPath().empty() == false) {
-                    options[_T("-m")] = config.ProxyStubPath();
-                }
-                if (instance.Threads() > 1) {
-                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
-                }
-
-//                uint16_t size = options.LineSize();
-//                void* parameters = ::malloc(size);
-//                uint16_t argc = options.Line(parameters, size);
-
-
-//                printf("Huppel was here:%s\n", options.Command().c_str());
-//                printf("Huppel was here2:%s\n", (char*)parameters);
-
-
-                return (Core::Service<ContainerRemoteProcess>::Create<ContainerRemoteProcess>(&parent, &pid, &options, string()));
-            }
-            ~ContainerRemoteProcess()
-            {
-                if( _container != nullptr ) {
-                    _container->Release();
-                }
-
-                TRACE_L1("Destructor for ContainerRemoteProcess process for %d", Id());
-            }
-
-        public:
-            uint32_t Id() const override
-            {
-                return 0;
-            }
-            inline bool IsActive() const
-            {
-                return true;
-            }
-            inline uint32_t ExitCode() const
-            {
-                return 0;
-            }
-            inline void Kill(const bool hardKill)
-            {
+            void Terminate() override {
+                // huppel todo: implement
             }
 
         private:
             ProcessContainers::IContainerAdministrator::IContainer* _container;
         };
+
+#endif 
+
+        static RemoteProcess* CreateProcess(const string& classname, const Object::HostType type, const string& configuration ) {
+            RemoteProcess* result = nullptr;
+
+            switch( type ) {
+                case Object::HostType::LOCAL :
+                    result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
+                    break;
+                case Object::HostType::REMOTE :
+                    SYSLOG(Trace::Error, (_T("Cannot create remote process for %s, not yet supported"), classname.c_str()));
+                    break;
+                case Object::HostType::CONTAINER :
+#ifdef PROCESSCONTAINERS_ENABLED 
+                    result = Core::Service<ContainerRemoteProcess>::Create<RemoteProcess>(configuration);
+#else
+                    SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), classname.c_str()));
 #endif
+                    break;
+            };
 
-*/
-
-        static RemoteProcess* CreateRemoteProcess() {
-            return Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
+            return result;
         }
 
         class EXTERNAL RemoteConnectionMap {
@@ -592,7 +570,7 @@ namespace RPC {
 
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = CreateRemoteProcess();
+                Communicator::RemoteProcess* result = CreateProcess(instance.ClassName(), instance.Type(), instance.Configuration());
 
                 ASSERT(result != nullptr);
 

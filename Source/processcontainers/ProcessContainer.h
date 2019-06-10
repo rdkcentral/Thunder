@@ -12,7 +12,7 @@ namespace ProcessContainers {
             virtual ~IContainer() = default;
 
             virtual const string& Id() const = 0;
-            virtual void Start() = 0;
+            virtual void Start(const string& command, const string parameters) = 0;
 
             virtual void AddRef() const = 0;
             virtual uint32_t Release() const = 0;

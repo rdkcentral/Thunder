@@ -49,54 +49,29 @@ namespace PluginHost
 
     public:
 
-        class EXTERNAL ContainerObject : public Core::JSON::Container {
-        public:
-            ContainerObject()
-                : AdditionalSearchpath()
-                , Config()
-            {
-                Add(_T("containerpath"), &AdditionalSearchpath);
-                Add(_T("config"), &Config);
-            }
-
-            ContainerObject(const ContainerObject& copy)
-                : AdditionalSearchpath(copy.AdditionalSearchpath)
-                , Config(copy.Config)
-            {
-                Add(_T("containerpath"), &AdditionalSearchpath);
-                Add(_T("config"), &Config);
-            }
-            ContainerObject& operator=(const ContainerObject& RHS)
-            {
-                if ( this != &RHS ) {
-                    AdditionalSearchpath = RHS.AdditionalSearchpath;
-                    Config = RHS.Config;
-                }
-
-                return (*this);
-            }
-            virtual ~ContainerObject() = default;
-
-        public:
-            Core::JSON::String AdditionalSearchpath;
-            Core::JSON::String Config;
+        enum class ModeType {
+            OFF,
+            LOCAL,
+            CONTAINER,
+            REMOTE
         };
 
-    public:
         Object()
             : Locator()
             , User()
             , Group()
             , Threads(1)
             , OutOfProcess(true)
-            , Container()
+            , Mode()
+            , Configuration()
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
-            Add(_T("container"), &Container);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
         }
         Object(const IShell* info)
             : Locator()
@@ -104,14 +79,16 @@ namespace PluginHost
             , Group()
             , Threads()
             , OutOfProcess(true)
-            , Container()
+            , Mode()
+            , Configuration()
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
-            Add(_T("container"), &Container);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
 
             RootObject config;
             config.FromString(info->ConfigLine());
@@ -134,14 +111,16 @@ namespace PluginHost
             , Group(copy.Group)
             , Threads(copy.Threads)
             , OutOfProcess(true)
-            , Container(copy.Container)
+            , Mode(copy.Mode)
+            , Configuration(copy.Configuration)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
-            Add(_T("container"), &Container);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
         }
         virtual ~Object()
         {
@@ -155,9 +134,26 @@ namespace PluginHost
             Group = RHS.Group;
             Threads = RHS.Threads;
             OutOfProcess = RHS.OutOfProcess;
-            Container = RHS.Container;
+            Mode = RHS.Mode;
+            Configuration = RHS.Configuration;
 
             return (*this);
+        }
+
+        RPC::Object::HostType HostType() const {
+            RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
+            switch( Mode.Value() ) {
+                case ModeType::CONTAINER :
+                    result = RPC::Object::HostType::CONTAINER;
+                    break;
+                case ModeType::REMOTE :
+                    result = RPC::Object::HostType::REMOTE;
+                    break;
+                default:
+                    result = RPC::Object::HostType::LOCAL;
+                    break;
+            }
+            return result;
         }
 
     public:
@@ -166,13 +162,18 @@ namespace PluginHost
         Core::JSON::String Group;
         Core::JSON::DecUInt8 Threads;
         Core::JSON::Boolean OutOfProcess;
-        ContainerObject Container;
+        Core::JSON::EnumType<ModeType> Mode; 
+        Core::JSON::String Configuration; 
     };
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
     {
         void* result = nullptr;
         Object rootObject(this);
+
+        Object::ModeType type = rootObject.Mode.Value();
+
+        // Huppel todo: update below after improved design, forst make it work
 
         if (rootObject.OutOfProcess.Value() == false) {
 
@@ -213,7 +214,9 @@ namespace PluginHost
                     version,
                     rootObject.User.Value(),
                     rootObject.Group.Value(),
-                    rootObject.Threads.Value());
+                    rootObject.Threads.Value(),
+                    rootObject.HostType(),
+                    rootObject.Configuration.Value());
 
                 result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
             }
@@ -222,4 +225,17 @@ namespace PluginHost
         return (result);
     }
 }
-} // namespace PluginHost
+
+ENUM_CONVERSION_BEGIN(PluginHost::Object::ModeType)
+
+    { PluginHost::Object::ModeType::OFF, _TXT("Off") },
+    { PluginHost::Object::ModeType::LOCAL, _TXT("Local") },
+    { PluginHost::Object::ModeType::CONTAINER, _TXT("Container") },
+    { PluginHost::Object::ModeType::REMOTE, _TXT("Remote") },
+
+ENUM_CONVERSION_END(PluginHost::Object::ModeType);
+
+} // namespace 
+
+
+
