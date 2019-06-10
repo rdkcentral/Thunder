@@ -54,7 +54,7 @@ class ClosingInfo {
 
 static constexpr uint32_t DestructionStackSize = 64 * 1024;
 static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
-static Core::TimerType<ClosingInfo>& _destructor = Core::SingletonType < Core::TimerType<ClosingInfo> >::Instance(DestructionStackSize, "ProcessDestructor");
+static Core::TimerType<ClosingInfo>& Destructor = Core::SingletonType < Core::TimerType<ClosingInfo> >::Instance(DestructionStackSize, "ProcessDestructor");
 
 /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
 
@@ -130,10 +130,9 @@ static void LoadProxyStubs(const string& pathName)
     }
 }
 
-/* virtual */ void Communicator::RemoteProcess::Terminate()
-{
-	// Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
-    _destructor.Schedule(Core::Time::Now().Add(10000), ClosingInfo(_id));
+/* virtual */ void Communicator::LocalRemoteProcess::Terminate() {
+    // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
+    Destructor.Schedule(Core::Time::Now().Add(10000), ClosingInfo(_id));
 }
 
 Communicator::Communicator(const Core::NodeId& node, Core::ProxyType<IHandler> handler, const string& proxyStubPath)

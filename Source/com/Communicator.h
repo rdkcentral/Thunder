@@ -286,14 +286,13 @@ namespace RPC {
             uint32_t _id;
             static std::atomic<uint32_t> _sequenceId;
         };
+
         class EXTERNAL RemoteProcess : public RemoteConnection {
         private:
-            friend class Core::Service<RemoteProcess>;
-
             RemoteProcess(const RemoteProcess&) = delete;
             RemoteProcess& operator=(const RemoteProcess&) = delete;
 
-        private:
+        protected:
             RemoteProcess()
                 : RemoteConnection()
             {
@@ -304,6 +303,9 @@ namespace RPC {
             {
                 TRACE_L1("Destructor for RemoteProcess process for %d", Id());
             }
+
+        private:
+            virtual void LaunchProcess(const Core::Process::Options& options) = 0;
 
         public:
             inline void Launch(const Object& instance, const Config& config)
@@ -352,12 +354,33 @@ namespace RPC {
                     options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
 
+                LaunchProcess(options);
+            }
+        };
+
+        class EXTERNAL LocalRemoteProcess : public RemoteProcess {
+        public:
+            friend class Core::Service<LocalRemoteProcess>;
+
+            LocalRemoteProcess(const LocalRemoteProcess&) = delete;
+            LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
+
+        private:
+            LocalRemoteProcess() = default;
+
+            ~LocalRemoteProcess() = default;
+ 
+        private:
+            void LaunchProcess(const Core::Process::Options& options) override
+            {
                 // Start the external process launch..
                 Core::Process fork(false);
 
-                fork.Launch(options, &_id);            }
+                fork.Launch(options, &_id);      
+            }
 
-            virtual void Terminate() override;
+        public:
+            void Terminate() override;
 
         private:
             uint32_t _id;
@@ -483,7 +506,9 @@ namespace RPC {
 
 */
 
-
+        static RemoteProcess* CreateRemoteProcess() {
+            return Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
+        }
 
         class EXTERNAL RemoteConnectionMap {
         private:
@@ -567,7 +592,7 @@ namespace RPC {
 
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = Core::Service<RemoteProcess>::Create<RemoteProcess>();
+                Communicator::RemoteProcess* result = CreateRemoteProcess();
 
                 ASSERT(result != nullptr);
 
@@ -809,6 +834,7 @@ namespace RPC {
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
         };
+
         class EXTERNAL ChannelLink {
         private:
             ChannelLink() = delete;
