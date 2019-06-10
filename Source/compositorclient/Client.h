@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <string.h>
 
 #if __cplusplus <= 199711L
 #define nullptr NULL
