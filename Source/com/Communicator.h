@@ -582,7 +582,7 @@ namespace RPC {
                         Activated(remoteConnection);
                     }
 
-                    Handle(channel, info);
+                    result = Handle(channel, info);
                 }
 
                 _adminLock.Unlock();

@@ -161,11 +161,10 @@ private:
 
         if (_remote != nullptr) {
             Register(&_sink);
+            _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
         } else {
             _client.Release();
         }
-
-        _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
     }
 
 public:
