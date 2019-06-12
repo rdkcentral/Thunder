@@ -432,32 +432,47 @@ namespace RPC {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 _container = admin.Container("webserver");
+
+                admin.Release();
             }
 
             ~ContainerRemoteProcess() {
-//                if( _container != nullptr ) {
-//                    _container->Release();
-//                }
+                if( _container != nullptr ) {
+                    _container->Release();
+                }
             }
  
         private:
             void LaunchProcess(const Core::Process::Options& options) override
             {
                 if( _container != nullptr ) {
-                    // Huppel todo: just to get it working for now create a char* and pass it as such...
-                    // didn't work, okay so just pass in the id for now...
+                    // Huppel todo: just to get it working for now: 
 
-                    uint16_t size = options.LineSize();
-                    char* parameters = (char*)::malloc(size);
-                    options.Line(parameters, size);
-                    _container->Start(options.Command(), string(parameters));
-                    ::free(parameters);
+                    Core::Process::Options::Iterator it(options.Get());
+
+                    std::vector<string> params;
+                    string command;
+                    while( it.Next() == true ) {
+                        params.emplace_back(string(it.Key()) + it.Current());
+                        // huppel todo: ugly hack to get this working for now in debug mode, remove if we discussed how to handle this
+                        if( it.Key() == _T("-a") ) {
+                            command = it.Current();
+                        }
+                    }
+
+                    Core::IteratorType<std::vector<string>, const string> temp(params);
+                    command += options.Command();
+                    _container->Start(command, temp);
                 }
             }
 
         public:
             void Terminate() override {
-                // huppel todo: implement
+                // Huppel todo: add to timer like done for local process
+                bool result = _container->Stop(10000, false);
+                if( result == false ) {
+                    _container->Stop(4000, true);
+                }
             }
 
         private:

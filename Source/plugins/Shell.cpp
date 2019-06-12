@@ -62,8 +62,8 @@ namespace PluginHost
             , Group()
             , Threads(1)
             , OutOfProcess(true)
-            , Mode()
-            , Configuration()
+            , Mode(ModeType::LOCAL)
+            , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
@@ -79,8 +79,8 @@ namespace PluginHost
             , Group()
             , Threads()
             , OutOfProcess(true)
-            , Mode()
-            , Configuration()
+            , Mode(ModeType::LOCAL)
+            , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
@@ -171,11 +171,10 @@ namespace PluginHost
         void* result = nullptr;
         Object rootObject(this);
 
-        Object::ModeType type = rootObject.Mode.Value();
+        bool inProcessOldConfiguration = ( !rootObject.Mode.IsSet() ) && ( rootObject.OutOfProcess.Value() == false ); //note: when both new and old not set this one will revert to the old default which was true
+        bool inProcessNewConfiguration = ( rootObject.Mode.IsSet() ) && ( rootObject.Mode == Object::ModeType::OFF ); // when both set the Old one is ignored
 
-        // Huppel todo: update below after improved design, forst make it work
-
-        if (rootObject.OutOfProcess.Value() == false) {
+        if ( inProcessNewConfiguration == true || inProcessOldConfiguration == true ) {
 
             string locator(rootObject.Locator.Value());
 
@@ -215,7 +214,7 @@ namespace PluginHost
                     rootObject.User.Value(),
                     rootObject.Group.Value(),
                     rootObject.Threads.Value(),
-                    rootObject.HostType(),
+                    rootObject.HostType(), 
                     rootObject.Configuration.Value());
 
                 result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());

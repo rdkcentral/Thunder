@@ -55,7 +55,8 @@ public:
             return _name;
         }
 
-        void Start(const string& command, const string parameters) override;
+        void Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
+        bool Stop(const uint32_t timeout /*ms*/, const bool kill) override;
 
         void AddRef() const override {
             WPEFramework::Core::InterlockedIncrement(_referenceCount);
@@ -82,10 +83,20 @@ public:
             LxcContainerType* _lxccontainer;
     };
 
-    void ContainerDefinitionSearchPaths(const std::vector<string>&& searchpaths) override {
+    void ContainerDefinitionSearchPaths(ProcessContainers::IStringIterator& searchpaths) override {
         _lock.Lock();
-        _searchpaths = std::move(searchpaths);
+        searchpaths.Reset(0);
+        while( searchpaths.Next() == true ) {
+            _searchpaths.emplace_back(searchpaths.Current());
+        }
         _lock.Unlock();
+    }
+
+    // Lifetime management
+     void AddRef() const override {
+    }
+    uint32_t Release() const override {
+        return Core::ERROR_NONE;
     }
 
     ProcessContainers::IContainerAdministrator::IContainer* Container(const string& name) override;
@@ -116,9 +127,7 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
 //                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s retreived from %s."), c->name, (*searchpath).c_str()));
-                c->set_config_item(c, "lxc.loglevel", "1");
-                c->set_config_item(c, "lxc.log.file", "/usr/src/container.log");
-
+                // huppel move config code code or remove (doesn't seem to work)
                 c->set_config_item(c, "lxc.console.buffer.size", "4096");
                 c->set_config_item(c, "lxc.console.logfile", "/usr/src/containerconsole.log");
                 container = new LXCContainerAdministrator::LCXContainer(name, c);
@@ -131,6 +140,7 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
         if( numberofcontainersfound > 0 ) {
             free(clist);
         }
+        ++searchpath;
     };
 
     _lock.Unlock();
@@ -162,7 +172,7 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
     return myLXCContainerAdministrator;
 }
 
-void LXCContainerAdministrator::LCXContainer::Start(const string& command, const string parameters) {
+void LXCContainerAdministrator::LCXContainer::Start(const string& command, ProcessContainers::IStringIterator& parameters) {
 //    bool retval = _lxccontainer->stop(_lxccontainer);
 //    printf("Container stop: %i\n", retval);
 
@@ -170,24 +180,24 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, const
 //    printf("Container shutdown: %i\n", retval);
 
 
-    bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
-    printf("Container start: %i\n", retval);
+//    bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
+//    printf("Container start: %i\n", retval);
 
-    lxc_attach_command_t lxccommand;
-	pid_t pid;
+//    lxc_attach_command_t lxccommand;
+//	pid_t pid;
 
-    char* program = "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess";
+//    char* program = "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess";
 
-    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
+/*    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
     "-d", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l" ,"libWPEFrameworkWebServer.so", "-m" "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
-    "-p" ,"/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", "-x 1", NULL};
+    "-p" ,"/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", "-x 1", NULL};*/
     
 /*    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a /usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c WebServerImplementation", 
     "-d /usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
     "-p /root/WebServer/", "-r /tmp/communicator", "-s /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL};*/
 
-    lxccommand.program = (char *)program;
-    lxccommand.argv = argv;
+//    lxccommand.program = (char *)program;
+//    lxccommand.argv = argv;
 
 /*&    char* params[2];
     params[0] = const_cast<char*>(parameters.c_str());
@@ -196,12 +206,12 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, const
     lxccommand.program = (char *)program;
     lxccommand.argv = params;
 */
-    lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+//    lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
 //    options.uid = 1000;
 //    options.gid = 1000;
 
-    int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
-    printf("Attach to container: %i\n", ret);
+ //   int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
+ //   printf("Attach to container: %i\n", ret);
 
     /*bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
     "-d",  "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l", "libWPEFrameworkWebServer.so", "-m", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
@@ -213,10 +223,47 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, const
 
 //     retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/Testapp", NULL);
 //    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/Testapp", NULL);
+
+/*
+    huppel: can only be used in single threaded app
+    bool retval = _lxccontainer->want_daemonize(_lxccontainer, false);
+    printf("container to daemonize: %i\n", retval);
+
+*/
+
+    std::vector<const char*> params(parameters.Count()+2);
+    parameters.Reset(0);
+    uint16_t pos = 0;
+    params[pos++] = command.c_str();
+
+    while( parameters.Next() == true ) {
+        params[pos++] = parameters.Current().c_str();
+    }
+    params[pos++] = nullptr;
+    ASSERT(pos == parameters.Count()+2);
+
     if(true) {
+        params.insert(params.begin(), command.c_str());
+        bool retval = _lxccontainer->start(_lxccontainer, 0, const_cast<char**>(params.data()));
+        printf("start command in container: %i\n", retval);
+    } else {
+        bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
+        printf("Container start: %i\n", retval);
+
+        lxc_attach_command_t lxccommand;
+        lxccommand.program = (char *)command.c_str();
+        lxccommand.argv = const_cast<char**>(params.data());
+
+        lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+	    pid_t pid;
+        int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
+        printf("Attach to container: %i\n", ret);
+    }
+
+    if(false) {
         ::SleepMs(2000);
         lxc_console_log log;
-        uint64_t sizeread = 0; // note will not allcate memory
+        uint64_t sizeread = 0; // note will not allocate memory
         log.read_max = &sizeread;
         log.read = true;
         log.clear = false;
@@ -230,28 +277,24 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, const
         log.clear = true;
         retint = _lxccontainer->console_log(_lxccontainer, &log);
         printf("Get console log: %i\n", retint);
-        lxc_container_put(_lxccontainer);
-    } else {
-        int ttynum = -1;
-        int masterfd = 0;
-        int resultfd = _lxccontainer->console_getfd(_lxccontainer, &ttynum, &masterfd);
-        printf("Container console fd: %i\n", resultfd);
-        if( resultfd >= 0 ) {
-            ::SleepMs(5000);
-            char buffer[50];
-            ssize_t result = read(masterfd, buffer, 49);
-            if( result > 0 ) {
-                buffer[result] = '\0';
-                printf("Container console fd read: %s\n", buffer);
-            }
-            else {
-                printf("Container console read failed\n");
-            }
-            close(resultfd);
-            close(masterfd);
+    } 
+}
 
+bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/, const bool kill) {
+    bool result = false;
+    if( kill == false ) {
+        int internaltimeout = timeout/1000;
+        if( timeout == Core::infinite ) {
+            internaltimeout = -1;
         }
+        result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
+    } else {
+        result = _lxccontainer->stop(_lxccontainer);
     }
+    return result;
 }
 
 } //namespace WPEFramework 
+
+
+
