@@ -34,8 +34,6 @@ namespace ProcessContainers {
 
         // Methods
         virtual IContainer* Container(const string& id) = 0;
-
-        virtual string  GetNames() const = 0; 
     };
 } // ProcessContainers
 } // WPEFramework
