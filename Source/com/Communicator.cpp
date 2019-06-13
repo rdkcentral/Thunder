@@ -105,7 +105,7 @@ static void LoadProxyStubs(const string& pathName)
     if (_channel.IsValid() == true) {
         Core::ProxyType<RPC::AnnounceMessage> message(AnnounceMessageFactory.Element());
 
-        message->Parameters().Set(className, interfaceId, version);
+        message->Parameters().Set(_id, className, interfaceId, version);
 
         uint32_t feedback = _channel->Invoke(message, waitTime);
 
@@ -125,20 +125,55 @@ static void LoadProxyStubs(const string& pathName)
 
 /* virtual */ void Communicator::RemoteConnection::Terminate()
 {
-    if (_channel.IsValid() == true) {
-        _channel->Source().Close(0);
-    }
+    Close();
+}
+
+/* virtual */ uint32_t Communicator::RemoteConnection::RemoteId() const  {
+    return (_remoteId);
 }
 
 /* virtual */ void Communicator::RemoteProcess::Terminate()
 {
-	// Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
-    _destructor.Schedule(Core::Time::Now().Add(10000), ClosingInfo(_id));
+    // Do not yet call the close on the connection, the otherside might close down decently and release all opened interfaces..
+    // Just submit our selves for destruction !!!!
+
+    // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
+    if (_id != 0) {
+        _destructor.Schedule(Core::Time::Now().Add(10000), ClosingInfo(_id));
+        _id = 0;
+    }
 }
 
-Communicator::Communicator(const Core::NodeId& node, Core::ProxyType<IHandler> handler, const string& proxyStubPath)
+/* virtual */ uint32_t Communicator::RemoteProcess::RemoteId() const  {
+    return (_id);
+}
+
+// static Core::ProxyMapType<Core::NodeId, CommunicatorClient>
+
+Communicator::RemoteHost::RemoteHost(const Core::NodeId& remoteNode)
+    : RemoteConnection()
+{
+}
+
+Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
     : _connectionMap(*this)
-    , _ipcServer(node, _connectionMap, handler, proxyStubPath)
+    , _ipcServer(node, _connectionMap, proxyStubPath)
+{
+    if (proxyStubPath.empty() == false) {
+        RPC::LoadProxyStubs(proxyStubPath);
+    }
+    // These are the elements we are expecting to receive over the IPC channels.
+    _ipcServer.CreateFactory<AnnounceMessage>(1);
+    _ipcServer.CreateFactory<InvokeMessage>(3);
+}
+
+Communicator::Communicator(
+    const Core::NodeId& node,
+    const string& proxyStubPath,
+    const Core::ProxyType<ServerType<InvokeMessage> >& invoke,
+    const Core::ProxyType<ServerType<AnnounceMessage> >& announcement) 
+    : _connectionMap(*this)
+    , _ipcServer(node, _connectionMap, proxyStubPath, invoke, announcement)
 {
     if (proxyStubPath.empty() == false) {
         RPC::LoadProxyStubs(proxyStubPath);
@@ -156,31 +191,62 @@ Communicator::Communicator(const Core::NodeId& node, Core::ProxyType<IHandler> h
     // Close all communication paths...
     _ipcServer.Close(Core::infinite);
 
-    _ipcServer.DestroyFactory<InvokeMessage>();
-    _ipcServer.DestroyFactory<AnnounceMessage>();
+    _ipcServer.DestroyFactory< InvokeMessage>();
+    _ipcServer.DestroyFactory< AnnounceMessage>();
 }
 
-CommunicatorClient::CommunicatorClient(const Core::NodeId& remoteNode, Core::ProxyType<IHandler> handler)
+CommunicatorClient::CommunicatorClient(
+    const Core::NodeId& remoteNode)
     : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
     , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
     , _announceEvent(false, true)
-    , _handler(handler)
-    , _announcements(*this)
+    , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create())
+    , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(this))
 {
     CreateFactory<RPC::AnnounceMessage>(1);
     CreateFactory<RPC::InvokeMessage>(2);
-    Register(_handler->InvokeHandler());
-    Register(_handler->AnnounceHandler());
-    _handler->AnnounceHandler(&_announcements);
+
+    Register(_invokeHandler);
+    Register(_announceHandler);
+}
+
+CommunicatorClient::CommunicatorClient(
+        const Core::NodeId& remoteNode,
+	    const Core::ProxyType< ServerType<InvokeMessage> >& invoke,
+	    const Core::ProxyType< ServerType<AnnounceMessage> >& announce)
+    : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
+    , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
+    , _announceEvent(false, true)
+    , _invokeHandler()
+    , _announceHandler()
+{
+    CreateFactory<RPC::AnnounceMessage>(1);
+    CreateFactory<RPC::InvokeMessage>(2);
+    Core::ProxyType<Core::IPCServerType<InvokeMessage>> invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create());
+    Core::ProxyType<Core::IPCServerType<AnnounceMessage>> announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(this));
+
+    if (invoke.IsValid() == true) {
+        _invokeHandler = invoke;
+        invoke->Handler(invokeHandler);
+    } else {
+        _invokeHandler = invokeHandler;
+    }
+
+    if (announce.IsValid() == true) {
+        _announceHandler = announce;
+        announce->Handler(announceHandler);
+    } else {
+        _announceHandler = announceHandler;
+    }
+
+    BaseClass::Register(_invokeHandler);
+    BaseClass::Register(_announceHandler);
 }
 
 CommunicatorClient::~CommunicatorClient()
 {
     BaseClass::Close(Core::infinite);
 
-    Unregister(_handler->AnnounceHandler());
-    Unregister(_handler->InvokeHandler());
-    _handler->AnnounceHandler(nullptr);
     DestroyFactory<RPC::InvokeMessage>();
     DestroyFactory<RPC::AnnounceMessage>();
 }
@@ -206,7 +272,7 @@ uint32_t CommunicatorClient::Open(const uint32_t waitTime, const string& classNa
     ASSERT(BaseClass::IsOpen() == false);
     _announceEvent.ResetEvent();
 
-    _announceMessage->Parameters().Set(className, interfaceId, version);
+    _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), className, interfaceId, version);
 
     uint32_t result = BaseClass::Open(waitTime);
 
@@ -222,7 +288,7 @@ uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interf
     ASSERT(BaseClass::IsOpen() == false);
     _announceEvent.ResetEvent();
 
-    _announceMessage->Parameters().Set(interfaceId, implementation, Data::Init::REQUEST, exchangeId);
+    _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, implementation, Data::Init::REQUEST, exchangeId);
 
     uint32_t result = BaseClass::Open(waitTime);
 
@@ -252,7 +318,7 @@ uint32_t CommunicatorClient::Close(const uint32_t waitTime)
             RPC::Data::Init& setupFrame(_announceMessage->Parameters());
 
             if (setupFrame.IsRequested() == true) {
-                Core::ProxyType<Core::IPCChannel> refChannel(dynamic_cast<Core::IReferenceCounted*>(this), this);
+                Core::ProxyType<Core::IPCChannel> refChannel(*this);
 
                 ASSERT(refChannel.IsValid());
 

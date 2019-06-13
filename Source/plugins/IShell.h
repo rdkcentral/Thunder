@@ -234,18 +234,14 @@ namespace PluginHost {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
         {
-            void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
+            void* baseInterface (Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version));
 
-            Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+            if (baseInterface != nullptr) {
 
-            REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-            if (result == nullptr) {
-
-                result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
-            return (result);
+            return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
@@ -253,15 +249,7 @@ namespace PluginHost {
             void* baseInterface(QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
 
             if (baseInterface != nullptr) {
-                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
-
-                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-                if (result == nullptr) {
-                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
-                }
-
-                return (result);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);

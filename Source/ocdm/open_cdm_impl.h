@@ -142,10 +142,8 @@ private:
 private:
     OpenCDMAccessor(const TCHAR domainName[])
         : _refCount(1)
-        , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(
-              Core::NodeId(domainName),
-              Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(
-                  Core::Thread::DefaultStackSize())))
+		, _engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()))
+        , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), _engine->InvokeHandler(), _engine->AnnounceHandler()))
         , _remote(nullptr)
         , _remoteExt(nullptr)
         , _adminLock()
@@ -154,8 +152,11 @@ private:
         , _sessionKeys()
         , _sink(this)
     {
+        printf("Trying to open an OCDM connection @ %s\n", domainName);
 
         _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
+
+        printf("Trying to open an OCDM connection result %p\n", _remote);
 
         ASSERT(_remote != nullptr);
 
@@ -538,6 +539,7 @@ public:
 
 private:
     mutable uint32_t _refCount;
+	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _client;
     OCDM::IAccessorOCDM* _remote;
     OCDM::IAccessorOCDMExt* _remoteExt;

@@ -94,6 +94,16 @@ typedef enum {
 #define EXTERNAL __declspec(dllimport)
 #pragma comment(lib, "ocdm.lib")
 #endif
+/**
+ * Sometimes the compiler would like to be smart, if we do not reference
+ * anything here
+ * and you enable the rightflags, the linker drops the dependency. Than
+ * Proxy/Stubs do
+ * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
+ */
+extern "C" {
+EXTERNAL void ForceLinkingOfOpenCDM();
+}
 #else
 #define EXTERNAL
 #endif
@@ -194,15 +204,6 @@ extern "C" {
 #endif
 
 /**
- * Sometimes the compiler would like to be smart, if we do not reference
- * anything here
- * and you enable the rightflags, the linker drops the dependency. Than
- * Proxy/Stubs do
- * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
- */
-EXTERNAL void* opencdm_announce_proxy_stubs();
-
-/**
  * OpenCDM error code. Zero always means success.
  */
 typedef enum {
@@ -258,14 +259,14 @@ typedef struct {
  *
  * \return \ref OpenCDMAccessor instance, NULL on error.
  */
-struct OpenCDMAccessor* opencdm_create_system();
+EXTERNAL struct OpenCDMAccessor* opencdm_create_system();
 
 /**
  * Destructs an \ref OpenCDMAccessor instance.
  * \param system \ref OpenCDMAccessor instance to desctruct.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
+EXTERNAL OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
 
 /**
  * \brief Checks if a DRM system is supported.
@@ -277,7 +278,7 @@ OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
  * \return Zero if supported, Non-zero otherwise.
  * \remark mimeType is currently ignored.
  */
-OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
+EXTERNAL OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
     const char keySystem[],
     const char mimeType[]);
 
@@ -291,7 +292,7 @@ OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
  * (Should as least be 64 chars long.)
  * \return Zero if successful, non-zero on error.
  */
-OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
+EXTERNAL OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
     const char keySystem[],
     char versionStr[]);
 
@@ -306,7 +307,7 @@ OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
  * \param time Output variable that will contain DRM system time.
  * \return Zero if successful, non-zero on error.
  */
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system,
+EXTERNAL OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system,
     const char keySystem[],
     uint64_t* time);
 
@@ -324,7 +325,7 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system,
  * timed out. This instance
  *         also needs to be destructed using \ref opencdm_session_destruct.
  */
-struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
+EXTERNAL struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
     const uint8_t keyId[],
     const uint8_t length,
     const uint32_t waitTime);
@@ -340,7 +341,7 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
  * \param serverCertificateLength Buffer length of certificate data.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_system_set_server_certificate(
+EXTERNAL OpenCDMError opencdm_system_set_server_certificate(
     struct OpenCDMAccessor* system, const char keySystem[],
     const uint8_t serverCertificate[], const uint16_t serverCertificateLength);
 
@@ -362,11 +363,11 @@ OpenCDMError opencdm_system_set_server_certificate(
  * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+EXTERNAL OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
     struct OpenCDMSession** session);
-OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+EXTERNAL OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
     struct OpenCDMSession** session);
@@ -376,14 +377,14 @@ OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char k
  * \param system \ref OpenCDMSession instance to desctruct.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session);
 
 /**
  * Loads the data stored for a specified OpenCDM session into the CDM context.
  * \param session \ref OpenCDMSession instance.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_load(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_load(struct OpenCDMSession* session);
 
 /**
  * Process a key message response.
@@ -392,7 +393,7 @@ OpenCDMError opencdm_session_load(struct OpenCDMSession* session);
  * \param keyLength Length of key message buffer (in bytes).
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_update(struct OpenCDMSession* session,
+EXTERNAL OpenCDMError opencdm_session_update(struct OpenCDMSession* session,
     const uint8_t keyMessage[],
     const uint16_t keyLength);
 
@@ -408,7 +409,7 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
  * \param session \ref OpenCDMSession instance.
  * \return Session ID, valid as long as \ref session is valid.
  */
-const char* opencdm_session_id(const struct OpenCDMSession* session);
+EXTERNAL const char* opencdm_session_id(const struct OpenCDMSession* session);
 
 /**
  * Returns status of a particular key assigned to a session.
@@ -417,7 +418,7 @@ const char* opencdm_session_id(const struct OpenCDMSession* session);
  * \param length Length of key ID buffer (in bytes).
  * \return key status.
  */
-KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
+EXTERNAL KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
     const uint8_t keyId[], const uint8_t length);
 
 /**
@@ -427,7 +428,7 @@ KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
  * \param length Length of key ID buffer (in bytes).
  * \return Key error (zero if no error, non-zero if error).
  */
-uint32_t opencdm_session_error(const struct OpenCDMSession* session,
+EXTERNAL uint32_t opencdm_session_error(const struct OpenCDMSession* session,
     const uint8_t keyId[], const uint8_t length);
 
 /**
@@ -435,21 +436,21 @@ uint32_t opencdm_session_error(const struct OpenCDMSession* session,
  * \param session \ref OpenCDMSession instance.
  * \return System error code, zero if no error.
  */
-OpenCDMError opencdm_session_system_error(const struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_system_error(const struct OpenCDMSession* session);
 
 /**
  * Gets buffer ID for a session.
  * \param session \ref OpenCDMSession instance.
  * \return Buffer ID, valid as long as \ref session is valid.
  */
-const char* opencdm_session_buffer_id(const struct OpenCDMSession* session);
+EXTERNAL const char* opencdm_session_buffer_id(const struct OpenCDMSession* session);
 
 /**
  * Closes a session.
  * \param session \ref OpenCDMSession instance.
  * \return zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
 
 /**
  * \brief Performs decryption.
@@ -473,14 +474,14 @@ OpenCDMError opencdm_session_close(struct OpenCDMSession* session);
  * \return Zero on success, non-zero on error.
  */
 #ifdef __cplusplus
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
+EXTERNAL OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     uint8_t encrypted[],
     const uint32_t encryptedLength,
     const uint8_t* IV, uint16_t IVLength,
     const uint8_t* keyId, const uint16_t keyIdLength,
     uint32_t initWithLast15 = 0);
 #else
-OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
+EXTERNAL OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     uint8_t encrypted[],
     const uint32_t encryptedLength,
     const uint8_t* IV, uint16_t IVLength,

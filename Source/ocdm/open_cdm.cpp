@@ -30,8 +30,14 @@ using namespace WPEFramework;
 Core::CriticalSection _systemLock;
 const char EmptyString[] = { '\0' };
 
-// TODO: figure out how to force linking of libocdm.so
-void ForceLinkingOfOpenCDM() {}
+#ifdef _MSVC_LANG
+extern "C" {
+	void ForceLinkingOfOpenCDM() 
+	{
+        printf("Forcefully linked in the OCDM library for the ProxyStubs in this library!!\n");
+	}
+}
+#endif
 
 KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
 {

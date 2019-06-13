@@ -570,16 +570,7 @@ namespace Core {
             void* baseInterface(QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
-
-                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-                if (result == nullptr) {
-
-                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
-                }
-
-                return (result);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
@@ -591,14 +582,7 @@ namespace Core {
             const void* baseInterface(const_cast<IUnknown*>(this)->QueryInterface(REQUESTEDINTERFACE::ID));
 
             if (baseInterface != nullptr) {
-                const Core::IUnknown* iuptr = reinterpret_cast<const Core::IUnknown*>(baseInterface);
-
-                const REQUESTEDINTERFACE* result = dynamic_cast<const REQUESTEDINTERFACE*>(iuptr);
-
-                if (result == nullptr) {
-                    result = reinterpret_cast<const REQUESTEDINTERFACE*>(baseInterface);
-                }
-                return (result);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
