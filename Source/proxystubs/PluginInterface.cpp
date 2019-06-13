@@ -348,10 +348,7 @@ namespace ProxyStubs {
             //
             // virtual ISubSystem* SubSystems() = 0;
             //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
             ISubSystem* output = message->Parameters().Implementation<IShell>()->SubSystems();
-
-            response.Number<ISubSystem*>(message->Parameters().Implementation<IShell>()->SubSystems());
 
             // write return value
             RPC::Data::Frame::Writer writer(message->Response().Writer());
