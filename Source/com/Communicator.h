@@ -579,7 +579,7 @@ namespace RPC {
                         // insertion :-)
                         _connections.insert(std::pair<uint32_t, Communicator::RemoteConnection*>(remoteConnection->Id(), remoteConnection));
 
-                        result = Activated(remoteConnection);
+                        Activated(remoteConnection);
                     }
 
                     result = Handle(channel, info);
