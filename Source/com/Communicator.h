@@ -145,6 +145,7 @@ namespace RPC {
             : _connector()
             , _hostApplication()
             , _persistent()
+            , _volatile()
             , _system()
             , _data()
             , _application()
@@ -155,6 +156,7 @@ namespace RPC {
             const string& connector,
             const string& hostApplication,
             const string& persistentPath,
+            const string& volatilePath,
             const string& systemPath,
             const string& dataPath,
             const string& applicationPath,
@@ -162,6 +164,7 @@ namespace RPC {
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
+            , _volatile(volatilePath)
             , _system(systemPath)
             , _data(dataPath)
             , _application(applicationPath)
@@ -172,6 +175,7 @@ namespace RPC {
             : _connector(copy._connector)
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
+            , _volatile(copy._volatile)
             , _system(copy._system)
             , _data(copy._data)
             , _application(copy._application)
@@ -195,6 +199,10 @@ namespace RPC {
         {
             return (_persistent);
         }
+        inline const string& VolatilePath() const
+        {
+            return (_volatile);
+        }
         inline const string& SystemPath() const
         {
             return (_system);
@@ -216,6 +224,7 @@ namespace RPC {
         string _connector;
         string _hostApplication;
         string _persistent;
+        string _volatile;
         string _system;
         string _data;
         string _application;
@@ -369,6 +378,9 @@ namespace RPC {
                 }
                 if (config.PersistentPath().empty() == false) {
                     options[_T("-p")] = config.PersistentPath();
+                }
+                if (config.VolatilePath().empty() == false) {
+                    options[_T("-o")] = config.VolatilePath();
                 }
                 if (config.SystemPath().empty() == false) {
                     options[_T("-s")] = config.SystemPath();

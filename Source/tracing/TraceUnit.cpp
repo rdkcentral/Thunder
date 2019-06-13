@@ -139,17 +139,6 @@ namespace Trace {
         m_Admin.Unlock();
     }
 
-    uint32_t TraceUnit::Open(const uint32_t identifier)
-    {
-        string pathName;
-
-        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
-
-        ASSERT(pathName.empty() == false);
-
-        return (Open(pathName, identifier));
-    }
-
     uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
     {
         ASSERT(m_OutputChannel == nullptr);

@@ -204,7 +204,7 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:o:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -212,6 +212,7 @@ namespace Process {
             , Version(~0)
             , Exchange(0)
             , PersistentPath(nullptr)
+            , VolatilePath(_T("/tmp/"))
             , SystemPath(nullptr)
             , DataPath(nullptr)
             , AppPath(nullptr)
@@ -235,6 +236,7 @@ namespace Process {
         uint32_t Version;
         uint32_t Exchange;
         const TCHAR* PersistentPath;
+        const TCHAR* VolatilePath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
         const TCHAR* AppPath;
@@ -259,6 +261,9 @@ namespace Process {
                 break;
             case 'p':
                 PersistentPath = argument;
+                break;
+            case 'o':
+                VolatilePath = argument;
                 break;
             case 's':
                 SystemPath = argument;
@@ -415,6 +420,7 @@ int main(int argc, char** argv)
         printf("        [-u <user>]\n");
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
+        printf("        [-o <volatile path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
         printf("        [-a <app path>]\n");
@@ -437,7 +443,7 @@ int main(int argc, char** argv)
         Core::NodeId remoteNode(options.RemoteChannel);
 
 		// Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
-		Trace::TraceUnit::Instance().Open(options.Exchange);
+		Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);

@@ -218,7 +218,6 @@ ENUM_CONVERSION_BEGIN(PluginHost::MetaData::Channel::state)
         Core::JSON::Container::Add(_T("channel"), &Channels);
         Core::JSON::Container::Add(_T("server"), &Process);
         Core::JSON::Container::Add(_T("bridges"), &Bridges);
-        Core::JSON::Container::Add(_T("containers"), &containers);
         Core::JSON::Container::Add(_T("value"), &Value);
         Core::JSON::Container::Add(_T("subsystems"), &SubSystems);
     }

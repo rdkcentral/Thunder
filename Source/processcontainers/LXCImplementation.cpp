@@ -127,9 +127,20 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
 //                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s retreived from %s."), c->name, (*searchpath).c_str()));
-                // huppel move config code code or remove (doesn't seem to work)
+                // huppel move config code code or remove 
                 c->set_config_item(c, "lxc.console.buffer.size", "4096");
+                c->set_config_item(c, "lxc.console.size", "auto"); // yes this one is important!!!!
                 c->set_config_item(c, "lxc.console.logfile", "/usr/src/containerconsole.log");
+
+/*                string pathName;
+                Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
+                string key(TRACE_CYCLIC_BUFFER_ENVIRONMENT);
+                key += "=";
+                key += pathName;
+                c->set_config_item(c, "lxc.environment", key.c_str());
+
+*/
+
                 container = new LXCContainerAdministrator::LCXContainer(name, c);
             }
             else {
@@ -173,63 +184,6 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
 }
 
 void LXCContainerAdministrator::LCXContainer::Start(const string& command, ProcessContainers::IStringIterator& parameters) {
-//    bool retval = _lxccontainer->stop(_lxccontainer);
-//    printf("Container stop: %i\n", retval);
-
-//    retval = _lxccontainer->shutdown(_lxccontainer, 5);
-//    printf("Container shutdown: %i\n", retval);
-
-
-//    bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
-//    printf("Container start: %i\n", retval);
-
-//    lxc_attach_command_t lxccommand;
-//	pid_t pid;
-
-//    char* program = "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess";
-
-/*    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
-    "-d", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l" ,"libWPEFrameworkWebServer.so", "-m" "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
-    "-p" ,"/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", "-x 1", NULL};*/
-    
-/*    char* argv[] = {"/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a /usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c WebServerImplementation", 
-    "-d /usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
-    "-p /root/WebServer/", "-r /tmp/communicator", "-s /usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL};*/
-
-//    lxccommand.program = (char *)program;
-//    lxccommand.argv = argv;
-
-/*&    char* params[2];
-    params[0] = const_cast<char*>(parameters.c_str());
-    params[1] = NULL;
-
-    lxccommand.program = (char *)program;
-    lxccommand.argv = params;
-*/
-//    lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-//    options.uid = 1000;
-//    options.gid = 1000;
-
- //   int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
- //   printf("Attach to container: %i\n", ret);
-
-    /*bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/WPEProcess", "-a", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/", "-c", "WebServerImplementation", 
-    "-d",  "/usr/src/HuppelWIP/CurrentVersion/staging/usr/share/WPEFramework/WebServer/", "-e", "7", "-i", "102", "-l", "libWPEFrameworkWebServer.so", "-m", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/proxystubs/",
-    "-p", "/root/WebServer/", "-r", "/tmp/communicator", "-s", "/usr/src/HuppelWIP/CurrentVersion/staging/usr/lib/wpeframework/plugins/", NULL);   
-*/
-/*    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/WPEProcess", "-a /usr/bin/", "-c WebServerImplementation", 
-    "-d /usr/share/WPEFramework/WebServer/", "-e 7", "-i 102", "-l libWPEFrameworkWebServer.so", "-m /usr/lib/wpeframework/proxystubs/",
-    "-p /root/WebServer/", "-r /tmp/communicator", "-s /usr/lib/wpeframework/plugins/", NULL);    */
-
-//     retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/bin/Testapp", NULL);
-//    bool retval = _lxccontainer->startl(_lxccontainer, 1, "/usr/src/HuppelWIP/CurrentVersion/staging/usr/bin/Testapp", NULL);
-
-/*
-    huppel: can only be used in single threaded app
-    bool retval = _lxccontainer->want_daemonize(_lxccontainer, false);
-    printf("container to daemonize: %i\n", retval);
-
-*/
 
     std::vector<const char*> params(parameters.Count()+2);
     parameters.Reset(0);
@@ -242,9 +196,8 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     params[pos++] = nullptr;
     ASSERT(pos == parameters.Count()+2);
 
-    if(true) {
-        params.insert(params.begin(), command.c_str());
-        bool retval = _lxccontainer->start(_lxccontainer, 0, const_cast<char**>(params.data()));
+    if(false) {
+        bool retval = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
         printf("start command in container: %i\n", retval);
     } else {
         bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
@@ -281,15 +234,17 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
 }
 
 bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/, const bool kill) {
-    bool result = false;
-    if( kill == false ) {
-        int internaltimeout = timeout/1000;
-        if( timeout == Core::infinite ) {
-            internaltimeout = -1;
+    bool result = true;
+    if( _lxccontainer->is_running(_lxccontainer)  == true ) {
+        if( kill == false ) {
+            int internaltimeout = timeout/1000;
+            if( timeout == Core::infinite ) {
+                internaltimeout = -1;
+            }
+            result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
+        } else {
+            result = _lxccontainer->stop(_lxccontainer);
         }
-        result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
-    } else {
-        result = _lxccontainer->stop(_lxccontainer);
     }
     return result;
 }

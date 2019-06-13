@@ -1170,9 +1170,10 @@ namespace PluginHost {
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
 
             public:
-                CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
+                CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& volatilePath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
                     : RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
+                    , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
@@ -1201,6 +1202,7 @@ namespace PluginHost {
                 {
                     string persistentPath(_persistentPath);
                     string dataPath(_dataPath);
+                    string volatilePath(_volatilePath);
 
                     if (dataExtension.empty() == false) {
                         dataPath += dataExtension + '/';
@@ -1208,12 +1210,16 @@ namespace PluginHost {
                     if (persistentExtension.empty() == false) {
                         persistentPath += persistentExtension + '/';
                     }
+                    if (volatilePath.empty() == false) {
+                        volatilePath += '/';
+                    }
 
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, volatilePath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
                 }
 
             private:
                 const string _persistentPath;
+                const string _volatilePath;
                 const string _systemPath;
                 const string _dataPath;
                 const string _appPath;
@@ -1469,7 +1475,7 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
+                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.VolatilePath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)

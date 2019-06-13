@@ -1,6 +1,5 @@
 #include "Controller.h"
 #include "SystemInfo.h"
-#include <ProcessContainer.h>
 
 namespace WPEFramework {
 
@@ -48,8 +47,6 @@ namespace Plugin {
    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
-
-//        Test t = Test::a | Test::b;
 
         ASSERT(_service == nullptr);
         ASSERT(_downloader == nullptr);
@@ -269,28 +266,6 @@ namespace Plugin {
                 PluginHost::MetaData::Bridge newElement((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
                 response->Bridges.Add(newElement);
             }
-
-            result->Body(Core::proxy_cast<Web::IBody>(response));
-        } else if (index.Current() == _T("ListLXCContainers")) {
-
-            Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
-
-            ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-            admin.ContainerDefinitionSearchPaths({string("/home/marcelf/.local/share/lxc/")});
-
-//            response->containers.Add(Core::JSON::String(admin.GetNames()));
-
-            ProcessContainers::IContainerAdministrator::IContainer* container( admin.Container("p2") );
-
-            if( container != nullptr ) {
-                container->Start();
-
-                container->Release();
-            }
-
-            Core::JSON::String s;
-            s = admin.GetNames();
-            response->containers.Add(s);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("SubSystems")) {

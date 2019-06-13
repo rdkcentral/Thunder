@@ -48,9 +48,66 @@ class ClosingInfo {
 			return (result);
 		}
 
+    private:
+
+        // Todo: maak basis met afgeleide voor deze en lxc, eh wacht de stop kan ik wel als als signal doen (hoeft niet op actieve thread) maar de kill niet en aangezier geen timeout op zit moet die wel na een tijdje gewoon gestopt worden...
+
 		private : Core::Process _process;
 		enumState _state;
 	};
+
+/*
+
+class ContainerClosingInfo {
+    private:
+        ContainerClosingInfo() = delete;
+        ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
+
+        enum enumState {
+            SOFTKILL,
+            HARDKILL
+        };
+
+    public:
+        ContainerClosingInfo(const uint32_t pid)
+            : _process(pid)
+            , _state(SOFTKILL)
+        {
+            _process.Kill(false);
+        }
+        ContainerClosingInfo(const ContainerClosingInfo& copy)
+            : _process(copy._process.Id())
+            , _state(copy._state)
+        {
+        }
+        ~ContainerClosingInfo()
+        {
+        }
+
+    public:
+        uint64_t Timed(const uint64_t scheduledTime)
+        {
+            uint64_t result = 0;
+
+            if (_process.IsActive() != false) {
+				if (_state == SOFTKILL) {
+					_state = HARDKILL;
+					_process.Kill(true);
+					result = Core::Time(scheduledTime).Add(4000).Ticks(); // Next check in 4S
+				} else {
+					// This should not happen. This is a very stubbern process. Can be killed.
+					ASSERT(false);
+				}
+			}
+
+			return (result);
+		}
+
+		private : Core::Process _process;
+		enumState _state;
+	};
+
+    */
 
 static constexpr uint32_t DestructionStackSize = 64 * 1024;
 static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
