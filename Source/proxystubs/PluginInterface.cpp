@@ -342,15 +342,18 @@ namespace ProxyStubs {
 
             response.Text(message->Parameters().Implementation<IShell>()->Model());
         },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // Careful, out of order.
             //
             // virtual ISubSystem* SubSystems() = 0;
             //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
+            ISubSystem* output = message->Parameters().Implementation<IShell>()->SubSystems();
 
-            response.Number<ISubSystem*>(message->Parameters().Implementation<IShell>()->SubSystems());
+            // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            writer.Number<ISubSystem*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
