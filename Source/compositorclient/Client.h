@@ -64,7 +64,7 @@ namespace Compositor {
                 const char* delimiter = strchr(overrides, ',');
 
                 if (delimiter != nullptr) {
-                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    std::ptrdiff_t delimiterPos = delimiter - overrides;
                     result.insert (0, overrides, delimiterPos);
                 }
                 else {
@@ -86,7 +86,7 @@ namespace Compositor {
                 const char* delimiter = strchr(overrides, ',');
 
                 if (delimiter != nullptr) {
-                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    std::ptrdiff_t delimiterPos = delimiter - overrides;
                     result.insert (0, overrides + delimiterPos + 1);
                 }
             }
