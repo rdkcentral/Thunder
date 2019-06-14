@@ -1074,9 +1074,9 @@ namespace Wayland {
                 _surfaces.erase(index);
             }
 
-            if (_clientHandler != nullptr) {
-                _clientHandler->Detached(id);
-            }
+        }
+        if (_clientHandler != nullptr) {
+            _clientHandler->Detached(id);
         }
         _adminLock.Unlock();
     }

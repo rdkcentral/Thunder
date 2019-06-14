@@ -155,7 +155,7 @@ namespace Nexus {
             NEXUS_DisplayHandle displayHandle(nullptr);
 
             std::string idOverride = IDisplay::Configuration();
-            if (idOverride.empty() == false)
+            if (idOverride.empty() == false) {
                 _nexusClientId = atoi(idOverride.c_str());
             }
 

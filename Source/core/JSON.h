@@ -57,7 +57,7 @@ namespace Core {
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset);
 
-                    ASSERT(loaded <= text.length());
+                    ASSERT(loaded <= (text.length()+1));
                     DEBUG_VARIABLE(loaded);
                 }
 

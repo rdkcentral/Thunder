@@ -171,6 +171,7 @@ class JsonEnum(JsonType):
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
             raise JsonParseError("Mismatch in enumeration values in enum '%s'" % self.JsonName())
+        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True 
         self.default = self.CppClass()+"::"+self.CppEnumerators()[0]
         self.duplicate = False
         self.origRef = None
@@ -212,6 +213,8 @@ class JsonEnum(JsonType):
         return len(self.refs)
     def CppStdClass(self):
         return self.CppClass()
+    def IsStronglyTyped(self):
+        return self.strongly_typed
 
 class JsonObject(JsonType):
     def __init__(self, name, parent, schema, origName=None, included=None):
@@ -939,7 +942,7 @@ def EmitObjects(root, emit, emitCommon = False):
             root = root.parent
         if enum.Description():
             emit.Line("// " + enum.Description())
-        emit.Line("enum class %s {" % enum.CppClass())
+        emit.Line("enum%s %s {" % (" class" if enum.IsStronglyTyped() else "", enum.CppClass()))
         emit.Indent()
         for c, item in enumerate(enum.CppEnumerators()):
             emit.Line("%s%s%s" % (item.upper(), (" = " + str(enum.CppEnumeratorValues()[c])) if enum.CppEnumeratorValues() else "", "," if not c == len(enum.CppEnumerators()) -1 else ""))

@@ -220,9 +220,16 @@
             "type": "string",
             "example": "Crash"
           },
-          "count": {
-            "description": "How many times a Crash command will be executed consecutively (applicable for \"CrashNTimes\" command)",
+          "delay": {
+            "description": "Delay (in seconds) before the crash attempt (applicable for *Crash* command)",
             "type": "number",
+            "size": 8,
+            "example": 1
+          },
+          "count": {
+            "description": "How many times a Crash command will be executed consecutively (applicable for *CrashNTimes* command)",
+            "type": "number",
+            "size": 8,
             "example": 1
           }
         },

@@ -2,8 +2,10 @@
 #define COMPOSITOR_CPP_ABSTRACTION_H
 
 #include <assert.h>
+#include <cstddef>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <string.h>
 
 #if __cplusplus <= 199711L
 #define nullptr NULL
@@ -64,7 +66,7 @@ namespace Compositor {
                 const char* delimiter = strchr(overrides, ',');
 
                 if (delimiter != nullptr) {
-                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    std::ptrdiff_t delimiterPos = delimiter - overrides;
                     result.insert (0, overrides, delimiterPos);
                 }
                 else {
@@ -86,7 +88,7 @@ namespace Compositor {
                 const char* delimiter = strchr(overrides, ',');
 
                 if (delimiter != nullptr) {
-                    ptrdiff_t delimiterPos = delimiter - overrides;
+                    std::ptrdiff_t delimiterPos = delimiter - overrides;
                     result.insert (0, overrides + delimiterPos + 1);
                 }
             }
