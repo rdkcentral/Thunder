@@ -1585,7 +1585,7 @@ if __name__ == "__main__":
         if IF_PATH == "./":
             IF_PATH = ""
     if args.if_dir:
-        args.if_dir = os.path.abspath(args.if_dir).split("/1")[0]
+        args.if_dir = os.path.abspath(args.if_dir)
         if not args.if_dir.endswith('/'):
             args.if_dir = args.if_dir + '/'
     generateCode = args.code
@@ -1604,7 +1604,7 @@ if __name__ == "__main__":
                 schema = LoadSchema(path, args.if_dir)
                 output_path = path
                 if args.output_dir:
-                    output_path = args.output_dir.strip("/") + "/" + output_path[output_path.rfind('/') + 1:]
+                    output_path = args.output_dir.rstrip("/") + "/" + output_path[output_path.rfind('/') + 1:]
                 output_path = output_path.replace(".json", "")
                 if generateCode or generateStubs:
                     CreateCode(schema, output_path, generateCode, generateStubs)
