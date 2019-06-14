@@ -20,6 +20,9 @@ endif()
 set(NAMESPACE "@NAMESPACE@")
 set(BUILD_TYPE "@BUILD_TYPE@")
 
+# TODO: install the generators to staging, for now just use absolute path to this project
+set(JSON_GENERATOR "@PROJECT_SOURCE_DIR@/Tools/JsonGenerator/JsonGenerator.py")
+
 if("${BUILD_TYPE}" STREQUAL "DebugOptimized" OR "${BUILD_TYPE}" STREQUAL "Debug")
     set(CMAKE_BUILD_TYPE "Debug")
 elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
