@@ -1170,8 +1170,18 @@ namespace PluginHost {
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
 
             public:
-                CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& volatilePath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
-                    : RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
+                CommunicatorServer(
+					const Core::NodeId& node, 
+					const string& persistentPath, 
+                    const string& volatilePath,
+					const string& systemPath, 
+					const string& dataPath, 
+					const string& appPath, 
+					const string& proxyStubPath, 
+					const uint32_t stackSize,
+                    const Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> >& invokeHandler,
+                    const Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> >& announceHandler)
+                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, invokeHandler, announceHandler)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
                     , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
@@ -1470,7 +1480,8 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.VolatilePath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
+                , _engine(Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize))
+                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.VolatilePath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize, _engine->InvokeHandler(), _engine->AnnounceHandler())
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
@@ -1758,6 +1769,7 @@ namespace PluginHost {
             Core::CriticalSection _notificationLock;
             std::map<const string, Core::ProxyType<Service>> _services;
             std::list<IPlugin::INotification*> _notifiers;
+            Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT> > _engine;
             CommunicatorServer _processAdministrator;
             Server& _server;
             Core::Sink<SubSystems> _subSystems;

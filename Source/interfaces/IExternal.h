@@ -165,7 +165,7 @@ namespace Exchange {
         public:
             inline void Load()
             {
-                _job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
+                _job = Core::ProxyType<Core::IDispatch>(*this);
                 _job.AddRef();
             }
             void Submit()
@@ -229,7 +229,7 @@ namespace Exchange {
         public:
             inline void Load()
             {
-                _job = Core::ProxyType<Core::IDispatch>(dynamic_cast<Core::IReferenceCounted*>(this), this);
+                _job = Core::ProxyType<Core::IDispatch>(*this);
                 _job.AddRef();
             }
             inline uint16_t Period() const

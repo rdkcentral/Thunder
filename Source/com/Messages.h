@@ -216,7 +216,7 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
-            void Set(const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
+            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
             {
                 ASSERT(whatKind != AQUIRE);
 
@@ -224,10 +224,11 @@ namespace RPC {
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
+                _id = myId;
                 _className[0] = '\0';
                 _className[1] = whatKind;
             }
-            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const type whatKind)
             {
                 ASSERT(whatKind != AQUIRE);
 
@@ -235,18 +236,24 @@ namespace RPC {
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
+                _id = myId;
                 _className[0] = '\0';
                 _className[1] = whatKind;
             }
-            void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
                 _exchangeId = static_cast<uint32_t>(~0);
                 _implementation = nullptr;
                 _interfaceId = interfaceId;
                 _versionId = versionId;
+                _id = myId;
                 _className[1] = AQUIRE;
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
+            }
+            uint32_t Id() const
+            {
+                return (_id);
             }
             void* Implementation() const
             {
@@ -270,6 +277,7 @@ namespace RPC {
             }
 
         private:
+            uint32_t _id;
             void* _implementation;
             uint32_t _interfaceId;
             uint32_t _exchangeId;
