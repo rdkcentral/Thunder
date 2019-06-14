@@ -1,8 +1,9 @@
 set(TARGET  ${NAMESPACE}ProcessContainers)
 
 # Construct a library object
-add_library(${TARGET} 
+add_library(${TARGET} SHARED
         LXCImplementation.cpp
+        Module.cpp
         )
 
 set(PUBLIC_HEADERS

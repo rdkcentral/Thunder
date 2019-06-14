@@ -1198,20 +1198,15 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime)
                 {
                     string persistentPath(_persistentPath);
                     string dataPath(_dataPath);
                     string volatilePath(_volatilePath);
 
-                    if (dataExtension.empty() == false) {
-                        dataPath += dataExtension + '/';
-                    }
-                    if (persistentExtension.empty() == false) {
-                        persistentPath += persistentExtension + '/';
-                    }
-                    if (volatilePath.empty() == false) {
-                        volatilePath += '/';
+                    if (callsign.empty() == false) {
+                        dataPath += callsign + '/';
+                        persistentPath += callsign + '/';
                     }
 
                     return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, volatilePath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));

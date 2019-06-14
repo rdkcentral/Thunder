@@ -134,7 +134,7 @@ namespace PluginHost {
             }
 
             // DataPath is a path, to a location (read-only to be used to store
-            // This path is build up from: DataPath / className /
+            // This path is build up from: DataPath / callSign /
             inline const string& DataPath() const
             {
                 return (_dataPath);

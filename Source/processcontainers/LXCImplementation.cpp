@@ -68,7 +68,7 @@ public:
             uint32_t lxcresult = lxc_container_put(_lxccontainer);
             if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
                 ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
-//                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s released"), _name));
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s released"), _name));
 
                 delete this;
                 retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -113,6 +113,7 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
     _lock.Lock();
 
     _searchpaths.push_back({string("/home/marcelf/.local/share/lxc/")});  // todo remove, after configuration in place. let's first get the container to work
+//    _searchpaths.push_back({string("/usr/src/HuppelWIP/Container")});  // todo remove, after configuration in place. let's first get the container to work
 
     ProcessContainers::IContainerAdministrator::IContainer* container { nullptr };
     SearchPathContainer::const_iterator searchpath { _searchpaths.cbegin() };
@@ -177,7 +178,7 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     params[pos++] = nullptr;
     ASSERT(pos == parameters.Count()+2);
 
-    if(false) {
+    if(true) {
         bool retval = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
         printf("start command in container: %i\n", retval);
     } else {
