@@ -202,8 +202,6 @@ namespace RPC {
         {
             ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
 
-            ASSERT(index != _channelReferenceMap.end());
-
             if (index != _channelReferenceMap.end()) {
                 std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), reference));
                 ASSERT(element != index->second.end());
