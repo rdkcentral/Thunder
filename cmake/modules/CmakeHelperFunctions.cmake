@@ -685,7 +685,7 @@ function(JsonGenerator)
     endif()
 
     if (Argument_IFDIR)
-        list(APPEND _execute_command  "--ifdir" "${Argument_IFDIR}")
+        list(APPEND _execute_command  "-i" "${Argument_IFDIR}")
     endif()
 
     if (Argument_OUTPUT)
