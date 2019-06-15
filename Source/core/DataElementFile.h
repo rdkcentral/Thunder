@@ -32,7 +32,11 @@ namespace Core {
             READABLE = 0x01,
             WRITABLE = 0x02,
             SHAREABLE = 0x04,
-            CREATE = 0x08
+            CREATE = 0x08,
+            GROUP_READABLE = 0x10,
+            GROUP_WRITABLE = 0x20,
+            OTHERS_READABLE = 0x40,
+            OTHERS_WRITABLE = 0x80
         };
 
         DataElementFile(File& fileName, const uint32_t type = READABLE);

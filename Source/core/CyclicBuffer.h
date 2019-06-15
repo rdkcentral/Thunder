@@ -31,6 +31,7 @@ namespace Core {
         CyclicBuffer& operator=(const CyclicBuffer&) = delete;
 
     public:
+        CyclicBuffer(const string& fileName, const DataElementFile::FileState state, const uint32_t bufferSize = 0, const bool overwrite = false);
         CyclicBuffer(const string& fileName, const uint32_t bufferSize = 0, const bool overwrite = false);
         virtual ~CyclicBuffer();
 

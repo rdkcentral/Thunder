@@ -1,117 +1,197 @@
 #include "Communicator.h"
 
+#include <limits>
+#include <memory>
+
 namespace WPEFramework {
 namespace RPC {
 
-class ClosingInfo {
-    private:
-        ClosingInfo() = delete;
-        ClosingInfo& operator=(const ClosingInfo& RHS) = delete;
-
-        enum enumState {
-            SOFTKILL,
-            HARDKILL
-        };
-
-    public:
-        ClosingInfo(const uint32_t pid)
-            : _process(pid)
-            , _state(SOFTKILL)
-        {
-            _process.Kill(false);
-        }
-        ClosingInfo(const ClosingInfo& copy)
-            : _process(copy._process.Id())
-            , _state(copy._state)
-        {
-        }
-        ~ClosingInfo()
-        {
-        }
-
-    public:
-        uint64_t Timed(const uint64_t scheduledTime)
-        {
-            uint64_t result = 0;
-
-            if (_process.IsActive() != false) {
-				if (_state == SOFTKILL) {
-					_state = HARDKILL;
-					_process.Kill(true);
-					result = Core::Time(scheduledTime).Add(4000).Ticks(); // Next check in 4S
-				} else {
-					// This should not happen. This is a very stubbern process. Can be killed.
-					ASSERT(false);
-				}
-			}
-
-			return (result);
-		}
-
-    private:
-
-        // Todo: maak basis met afgeleide voor deze en lxc, eh wacht de stop kan ik wel als als signal doen (hoeft niet op actieve thread) maar de kill niet en aangezier geen timeout op zit moet die wel na een tijdje gewoon gestopt worden...
-
-		private : Core::Process _process;
-		enumState _state;
-	};
-
-/*
-
-class ContainerClosingInfo {
-    private:
-        ContainerClosingInfo() = delete;
-        ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
-
-        enum enumState {
-            SOFTKILL,
-            HARDKILL
-        };
-
-    public:
-        ContainerClosingInfo(const uint32_t pid)
-            : _process(pid)
-            , _state(SOFTKILL)
-        {
-            _process.Kill(false);
-        }
-        ContainerClosingInfo(const ContainerClosingInfo& copy)
-            : _process(copy._process.Id())
-            , _state(copy._state)
-        {
-        }
-        ~ContainerClosingInfo()
-        {
-        }
-
-    public:
-        uint64_t Timed(const uint64_t scheduledTime)
-        {
-            uint64_t result = 0;
-
-            if (_process.IsActive() != false) {
-				if (_state == SOFTKILL) {
-					_state = HARDKILL;
-					_process.Kill(true);
-					result = Core::Time(scheduledTime).Add(4000).Ticks(); // Next check in 4S
-				} else {
-					// This should not happen. This is a very stubbern process. Can be killed.
-					ASSERT(false);
-				}
-			}
-
-			return (result);
-		}
-
-		private : Core::Process _process;
-		enumState _state;
-	};
-
-    */
+class ProcessShutdown;
 
 static constexpr uint32_t DestructionStackSize = 64 * 1024;
 static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
-static Core::TimerType<ClosingInfo>& _destructor = Core::SingletonType < Core::TimerType<ClosingInfo> >::Instance(DestructionStackSize, "ProcessDestructor");
+static Core::TimerType<ProcessShutdown>& _destructor = Core::SingletonType < Core::TimerType<ProcessShutdown> >::Instance(DestructionStackSize, "ProcessDestructor");
+
+class ClosingInfo {
+public:
+    ClosingInfo& operator=(const ClosingInfo& RHS) = delete;
+    ClosingInfo(const ClosingInfo& copy) = delete;
+
+    virtual ~ClosingInfo() = default;
+
+protected:
+    ClosingInfo() = default;
+
+public:
+    virtual uint32_t AttemptClose(const uint8_t iteration) = 0; //shoud return 0 if no more iterations needed
+};
+
+class ProcessShutdown  {
+public:
+    template<class IMPLEMENTATION, typename... Args>
+    static void Start(Args... args) {
+
+        std::unique_ptr<IMPLEMENTATION> handler( new IMPLEMENTATION(args...) );
+
+        uint32_t nextinterval = handler->AttemptClose(0);
+
+        if( nextinterval != 0 ) {
+            _destructor.Schedule(Core::Time::Now().Add(10000), ProcessShutdown(std::move(handler)));
+        }
+    }
+
+public:
+    ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
+    ProcessShutdown(const ProcessShutdown& copy) = delete;
+
+    ProcessShutdown(ProcessShutdown&& rhs)
+        : _handler(std::move(rhs._handler))
+        , _cycle(rhs._cycle) {
+    }
+
+    explicit ProcessShutdown(std::unique_ptr<ClosingInfo>&& handler) 
+        : _handler(std::move(handler))
+        , _cycle(1)
+    {
+    }
+
+    ~ProcessShutdown() = default;
+
+public:
+    uint64_t Timed(const uint64_t scheduledTime)
+    {
+        uint64_t result = 0;
+
+        uint32_t nextinterval = _handler->AttemptClose(_cycle++);
+
+        uint32_t test = std::numeric_limits<uint8_t>::max();
+
+        if ( nextinterval != 0 ) {
+            result = Core::Time(scheduledTime).Add(nextinterval).Ticks(); 
+        } 
+        else  {
+            ASSERT( _cycle != std::numeric_limits<uint8_t>::max() ); //too many attempts trying to kill the process
+        }
+
+        return (result);
+    }
+
+private:
+    std::unique_ptr<ClosingInfo> _handler;
+    uint8_t _cycle;
+};
+
+class LocalClosingInfo : public ClosingInfo {
+public:
+    LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
+    LocalClosingInfo(const LocalClosingInfo& copy) = delete;
+
+    virtual ~LocalClosingInfo() = default;
+
+private:
+    friend class ProcessShutdown;
+
+    explicit LocalClosingInfo(const uint32_t pid)
+        : ClosingInfo()
+        , _process(pid)
+    {
+    }
+
+protected:
+    uint32_t AttemptClose(const uint8_t iteration) override {
+        uint32_t nextinterval = 0;
+        if( _process.IsActive() != false ) {
+            switch( iteration ) {
+                case 0:
+                    _process.Kill(false);
+                    nextinterval = 10000;
+                break;
+                case 1:
+                    _process.Kill(true);
+                    nextinterval = 4000;
+                break;
+                default:
+                    // This should not happen. This is a very stubbern process. Can be killed.
+                    ASSERT(false);
+                break;
+            }
+        }
+        return nextinterval;
+    }
+
+private:
+    Core::Process _process;
+};
+
+#ifdef PROCESSCONTAINERS_ENABLED 
+
+class ContainerClosingInfo : public ClosingInfo {
+public:
+    ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
+    ContainerClosingInfo(const ContainerClosingInfo& copy) = delete;
+
+    virtual ~ContainerClosingInfo() {
+        _container->Release();
+    }
+
+private:
+    friend class ProcessShutdown;
+
+    explicit ContainerClosingInfo(ProcessContainers::IContainerAdministrator::IContainer* container)
+        : ClosingInfo()
+        , _pid(static_cast<uint32_t>(container->Pid()))
+        , _process(_pid)
+        , _container(container)
+    {
+        container->AddRef();
+    }
+
+protected:
+    uint32_t AttemptClose(const uint8_t iteration) override {
+        uint32_t nextinterval = 0;
+        if( _container->IsRunning() == true ) {
+            switch( iteration ) {
+                case 0:
+                    {
+                        if( _pid != 0 ) {
+                            _process.Kill(false);
+                        } else {
+                            _container->Stop(0);
+                        }
+                    }
+                    nextinterval = 10000;
+                break;
+                case 1:
+                    {
+                        if( _pid != 0 ) {
+                            _process.Kill(true);
+                            nextinterval = 4000;
+                        } else {
+                            ASSERT(false);
+                            nextinterval = 0;
+                        }
+                    }
+                break;
+                case 2:
+                    _container->Stop(0);
+                    nextinterval = 5000;
+                break;
+                default:
+                    // This should not happen. This is a very stubbern process. Can be killed.
+                    ASSERT(false);
+                break;
+            }
+        }
+        return nextinterval;
+    }
+
+private:
+    uint32_t _pid;
+    Core::Process _process;
+    ProcessContainers::IContainerAdministrator::IContainer* _container;
+};
+
+#endif
 
 /* static */ std::atomic<uint32_t> Communicator::RemoteConnection::_sequenceId(1);
 
@@ -196,7 +276,7 @@ static void LoadProxyStubs(const string& pathName)
 
     // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
     if (_id != 0) {
-        _destructor.Schedule(Core::Time::Now().Add(10000), ClosingInfo(_id));
+        ProcessShutdown::Start<LocalClosingInfo>(_id);
         _id = 0;
     }
 }
@@ -205,7 +285,17 @@ uint32_t Communicator::LocalRemoteProcess::RemoteId() const  {
     return (_id);
 }
 
-// static Core::ProxyMapType<Core::NodeId, CommunicatorClient>
+#ifdef PROCESSCONTAINERS_ENABLED 
+
+void Communicator::ContainerRemoteProcess::Terminate()
+{
+    ASSERT(_container != nullptr);
+    if( _container != nullptr ) {
+        ProcessShutdown::Start<ContainerClosingInfo>(_container);
+    }
+}
+
+#endif
 
 Communicator::RemoteHost::RemoteHost(const Core::NodeId& remoteNode)
     : RemoteProcess()

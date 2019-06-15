@@ -8,6 +8,7 @@
 #include "Sync.h"
 #include "Thread.h"
 #include "Time.h"
+#include <utility>
 
 // ---- Referenced classes and types ----
 
@@ -48,9 +49,21 @@ namespace Core {
             {
             }
 
+            inline TimedInfo(const uint64_t time, ACTIVECONTENT&& contents)
+                : m_ScheduleTime(time)
+                , m_Info(std::move(contents))
+            {
+            }
+
             inline TimedInfo(const TimedInfo& copy)
                 : m_ScheduleTime(copy.m_ScheduleTime)
                 , m_Info(copy.m_Info)
+            {
+            }
+
+            inline TimedInfo(TimedInfo&& copy)
+                : m_ScheduleTime(copy.m_ScheduleTime)
+                , m_Info(std::move(copy.m_Info))
             {
             }
 
@@ -62,6 +75,14 @@ namespace Core {
             {
                 m_ScheduleTime = RHS.m_ScheduleTime;
                 m_Info = RHS.m_Info;
+
+                return (*this);
+            }
+
+            inline TimedInfo& operator=(TimedInfo&& RHS)
+            {
+                m_ScheduleTime = RHS.m_ScheduleTime;
+                m_Info = std::move(RHS.m_Info);
 
                 return (*this);
             }
@@ -136,23 +157,39 @@ namespace Core {
             m_TimerThread.Wait(Thread::BLOCKED, Core::infinite);
         }
 
+        inline void Schedule(const Time& time, CONTENT&& info)
+        {
+            Schedule(time.Ticks(), std::move(info));
+        }
+
         inline void Schedule(const Time& time, const CONTENT& info)
         {
             Schedule(time.Ticks(), info);
         }
 
-        void Schedule(const uint64_t& time, const CONTENT& info)
+        inline void Schedule(const uint64_t& time, CONTENT&& info)
         {
-            TimedInfo<CONTENT> timeInfo(time, info);
+            Schedule(TimedInfo<CONTENT>(time, std::move(info)));
+        }
 
+        inline void Schedule(const uint64_t& time, const CONTENT& info)
+        {
+            Schedule(std::move(TimedInfo<CONTENT>(time, info)));
+        }
+
+    private:
+        void Schedule(TimedInfo<CONTENT>&& timeInfo)
+        {
             m_Admin.Lock();
 
-            if (ScheduleEntry(timeInfo) == true) {
+            if (ScheduleEntry(std::move(timeInfo)) == true) {
                 m_TimerThread.Run();
             }
 
             m_Admin.Unlock();
         }
+
+    public:
 
         void Trigger(const uint64_t& time, const CONTENT& info)
         {
@@ -170,7 +207,7 @@ namespace Core {
                 m_PendingQueue.erase(index);
             }
 
-            if (ScheduleEntry(newEntry) == true) {
+            if (ScheduleEntry(std::move(newEntry)) == true) {
                 m_TimerThread.Run();
             }
 
@@ -229,7 +266,7 @@ namespace Core {
             m_TimerThread.Block();
 
             while ((m_PendingQueue.empty() == false) && (m_PendingQueue.front().ScheduleTime() <= now)) {
-                TimedInfo<CONTENT> info(m_PendingQueue.front());
+                TimedInfo<CONTENT> info(std::move(m_PendingQueue.front()));
 
                 // Make sure we loose the current one before we do the call, that one might add ;-)
                 m_PendingQueue.pop_front();
@@ -244,7 +281,7 @@ namespace Core {
                     ASSERT(reschedule > now);
 
                     info.ScheduleTime(reschedule);
-                    ScheduleEntry(info);
+                    ScheduleEntry(std::move(info));
                 }
             }
 
@@ -272,7 +309,7 @@ namespace Core {
         }
 
     private:
-        bool ScheduleEntry(TimedInfo<CONTENT>& infoBlock)
+        bool ScheduleEntry(TimedInfo<CONTENT>&& infoBlock)
         {
             bool reevaluate = false;
             typename SubscriberList::iterator index = m_PendingQueue.begin();
@@ -282,14 +319,14 @@ namespace Core {
             }
 
             if (index == m_PendingQueue.begin()) {
-                m_PendingQueue.push_front(infoBlock);
+                m_PendingQueue.push_front(std::move(infoBlock));
 
                 // If we added the new time up front, retrigger the scheduler.
                 reevaluate = true;
             } else if (index == m_PendingQueue.end()) {
-                m_PendingQueue.push_back(infoBlock);
+                m_PendingQueue.push_back(std::move(infoBlock));
             } else {
-                m_PendingQueue.insert(index, infoBlock);
+                m_PendingQueue.insert(index, std::move(infoBlock));
             }
 
             return (reevaluate);

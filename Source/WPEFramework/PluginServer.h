@@ -1607,7 +1607,7 @@ namespace PluginHost {
                 return (result);
             }
 
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+            virtual void* Instantiate2(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
             {
                 return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
             }

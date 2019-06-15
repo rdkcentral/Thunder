@@ -47,6 +47,7 @@ public:
 
         LCXContainer(const string& name, LxcContainerType* lxccontainer)
             : _name(name)
+            , _pid(0)
             , _referenceCount(1)
             , _lxccontainer(lxccontainer) {
         }
@@ -55,8 +56,14 @@ public:
             return _name;
         }
 
-        void Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
-        bool Stop(const uint32_t timeout /*ms*/, const bool kill) override;
+        pid_t Pid() const override {
+            return _pid;
+        }
+
+        bool IsRunning() const override;
+
+        bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
+        bool Stop(const uint32_t timeout /*ms*/) override;
 
         void AddRef() const override {
             WPEFramework::Core::InterlockedIncrement(_referenceCount);
@@ -79,6 +86,7 @@ public:
 
         private:
             const string _name;
+            pid_t _pid;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
     };
@@ -131,14 +139,12 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
                 c->set_config_item(c, "lxc.console.size", "auto"); // yes this one is important!!!!
                 c->set_config_item(c, "lxc.console.logfile", "/usr/src/containerconsole.log");
 
-/*                string pathName;
-                Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
-                string key(TRACE_CYCLIC_BUFFER_ENVIRONMENT);
+                string pathName;
+                Core::SystemInfo::GetEnvironment("PATH", pathName);
+                string key("PATH");
                 key += "=";
                 key += pathName;
                 c->set_config_item(c, "lxc.environment", key.c_str());
-
-*/
 
                 container = new LXCContainerAdministrator::LCXContainer(name, c);
             }
@@ -165,7 +171,9 @@ ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdminis
     return myLXCContainerAdministrator;
 }
 
-void LXCContainerAdministrator::LCXContainer::Start(const string& command, ProcessContainers::IStringIterator& parameters) {
+bool LXCContainerAdministrator::LCXContainer::Start(const string& command, ProcessContainers::IStringIterator& parameters) {
+
+    bool result = false;
 
     std::vector<const char*> params(parameters.Count()+2);
     parameters.Reset(0);
@@ -178,9 +186,9 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     params[pos++] = nullptr;
     ASSERT(pos == parameters.Count()+2);
 
-    if(true) {
-        bool retval = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
-        printf("start command in container: %i\n", retval);
+    if(false) {
+        result = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
+
     } else {
         bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
         printf("Container start: %i\n", retval);
@@ -190,9 +198,9 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
         lxccommand.argv = const_cast<char**>(params.data());
 
         lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-	    pid_t pid;
-        int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &pid);
+        int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
         printf("Attach to container: %i\n", ret);
+        result = ret == 0;
     }
 
     if(false) {
@@ -213,23 +221,30 @@ void LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
         retint = _lxccontainer->console_log(_lxccontainer, &log);
         printf("Get console log: %i\n", retint);
     } 
+
+    if( result == true )  {
+        _pid = _lxccontainer->init_pid(_lxccontainer);
+    }
+
+    return result;
 }
 
-bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/, const bool kill) {
+bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/) {
     bool result = true;
     if( _lxccontainer->is_running(_lxccontainer)  == true ) {
-        if( kill == false ) {
-            int internaltimeout = timeout/1000;
-            if( timeout == Core::infinite ) {
-                internaltimeout = -1;
-            }
-            result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
-        } else {
-            result = _lxccontainer->stop(_lxccontainer);
+        int internaltimeout = timeout/1000;
+        if( timeout == Core::infinite ) {
+            internaltimeout = -1;
         }
+        result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
     }
     return result;
 }
+
+bool LXCContainerAdministrator::LCXContainer::IsRunning() const {
+    return _lxccontainer->is_running(_lxccontainer);
+}
+
 
 } //namespace WPEFramework 
 

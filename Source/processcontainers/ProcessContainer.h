@@ -14,8 +14,10 @@ namespace ProcessContainers {
             virtual ~IContainer() = default;
 
             virtual const string& Id() const = 0;
-            virtual void Start(const string& command, IStringIterator& parameters) = 0;
-            virtual bool Stop(const uint32_t timeout /*ms*/, const bool kill) = 0; //returns true on success
+            virtual pid_t Pid() const = 0;
+            virtual bool IsRunning() const = 0;
+            virtual bool Start(const string& command, IStringIterator& parameters) = 0; // returns true when started
+            virtual bool Stop(const uint32_t timeout /*ms*/) = 0; // returns true when stopped, note if timeout == 0 asynchronous
 
             virtual void AddRef() const = 0;
             virtual uint32_t Release() const = 0;

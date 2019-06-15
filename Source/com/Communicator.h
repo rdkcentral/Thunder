@@ -6,8 +6,10 @@
 #include "IUnknown.h"
 #include "Module.h"
 
+#define PROCESSCONTAINERS_ENABLED 
+
 #ifdef PROCESSCONTAINERS_ENABLED 
-    #include <ProcessContainer.h>
+    #include "../processcontainers/ProcessContainer.h"
 #endif
 
 #include "../tracing/TraceUnit.h"
@@ -462,33 +464,24 @@ namespace RPC {
             void LaunchProcess(const Core::Process::Options& options) override
             {
                 if( _container != nullptr ) {
-                    // Huppel todo: just to get it working for now: 
 
                     Core::Process::Options::Iterator it(options.Get());
 
                     std::vector<string> params;
-                    string command;
                     while( it.Next() == true ) {
                         params.emplace_back(string(it.Key()) + it.Current());
-                        // huppel todo: ugly hack to get this working for now in debug mode, remove if we discussed how to handle this
-                        if( it.Key() == _T("-a") ) {
-                            command = it.Current();
-                        }
                     }
 
                     Core::IteratorType<std::vector<string>, const string> temp(params);
-                    command += options.Command();
-                    _container->Start(command, temp);
+                    _container->Start(options.Command(), temp);
                 }
             }
 
         public:
-            void Terminate() override {
-                // Huppel todo: add to timer like done for local process
-                bool result = _container->Stop(10000, false);
-                if( result == false ) {
-                    _container->Stop(4000, true);
-                }
+            void Terminate() override;
+
+            uint32_t RemoteId() const override {
+                return _container->Pid();
             }
 
         private:
@@ -515,7 +508,7 @@ namespace RPC {
 
         private:
             void LaunchProcess(const Core::Process::Options& options) override {
-                
+
             }
  
         private:

@@ -6,7 +6,7 @@
 #endif
 
 #ifdef PROCESSCONTAINERS_ENABLED 
-    #include <ProcessContainer.h>
+    #include "../processcontainers/ProcessContainer.h"
 #endif
 
 namespace WPEFramework {

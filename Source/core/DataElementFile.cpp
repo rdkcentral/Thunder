@@ -19,7 +19,7 @@ namespace Core {
         : DataElement()
         , m_File(file)
         , m_MemoryMappedFile(INVALID_HANDLE_VALUE)
-        , m_Flags(type)
+        , m_Flags(type & 0x0F)
     {
         // What is the use of a file that is not readable nor writable ?
         ASSERT(m_Flags != 0);
@@ -37,13 +37,17 @@ namespace Core {
         : DataElement()
         , m_File(fileName, ((type & SHAREABLE) != 0))
         , m_MemoryMappedFile(INVALID_HANDLE_VALUE)
-        , m_Flags(type)
+        , m_Flags(type & 0x0F)
     {
         // What is the use of a file that is not readable nor writable ?
         ASSERT(m_Flags != 0);
 
         if ((type & CREATE) != 0) {
-            m_File.Create();
+            uint8_t user = (type & READABLE ? File::MODE_READ : 0) | (type & WRITABLE ? File::MODE_WRITE : 0) | File::MODE_EXECUTE;
+            uint8_t group = (type & GROUP_READABLE ? File::MODE_READ : 0) | (type & GROUP_WRITABLE ? File::MODE_WRITE : 0);
+            uint8_t others = (type & OTHERS_READABLE ? File::MODE_READ : 0) | (type & OTHERS_WRITABLE ? File::MODE_WRITE : 0);
+
+            m_File.Create(user, group, others);
         } else {
             m_File.Open((type & WRITABLE) == 0);
         }

@@ -12,6 +12,13 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL File {
     public:
+
+        typedef enum {
+            MODE_READ     = 0x01,
+            MODE_WRITE    = 0x02,
+            MODE_EXECUTE  = 0x04
+       } Mode;
+
 #ifdef __WIN32__
         typedef enum {
             // A file that is read-only. Applications can read the file, but cannot write to it or delete it. This attribute is not honored on directories. For more information, see You cannot view or change the Read-only or the System attributes of folders in Windows Server 2003, in Windows XP, in Windows Vista or in Windows 7.
@@ -271,6 +278,30 @@ namespace Core {
             LoadFileInfo();
             return (IsOpen());
         }
+
+        bool Create(const uint8_t user, const uint8_t group, const uint8_t others)
+        {
+#ifdef __POSIX__
+            mode_t modes = ((user   & MODE_READ)    ? S_IRUSR : 0) |
+                           ((user   & MODE_WRITE)   ? S_IWUSR : 0) |
+                           ((user   & MODE_EXECUTE) ? S_IXUSR : 0) |
+                           ((group  & MODE_READ)    ? S_IRGRP : 0) |
+                           ((group  & MODE_WRITE)   ? S_IWGRP : 0) |
+                           ((group  & MODE_EXECUTE) ? S_IXGRP : 0) |
+                           ((others & MODE_READ)    ? S_IROTH : 0) |
+                           ((others & MODE_WRITE)   ? S_IWOTH : 0) |
+                           ((others & MODE_EXECUTE) ? S_IXOTH : 0) ;
+
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), modes );
+            fchmod(_handle, modes );
+#endif
+#ifdef __WIN32__
+            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+#endif
+            LoadFileInfo();
+            return (IsOpen());
+        }
+
         bool Open() const
         {
 #ifdef __POSIX__
