@@ -1173,9 +1173,9 @@ namespace PluginHost {
                 CommunicatorServer(
 					const Core::NodeId& node, 
 					const string& persistentPath, 
-                    const string& volatilePath,
 					const string& systemPath, 
 					const string& dataPath, 
+					const string& volatilePath, 
 					const string& appPath, 
 					const string& proxyStubPath, 
 					const uint32_t stackSize,
@@ -1183,9 +1183,9 @@ namespace PluginHost {
                     const Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> >& announceHandler)
                     : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, invokeHandler, announceHandler)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
-                    , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
+                    , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
                     , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 #ifdef __WIN32__
@@ -1219,14 +1219,14 @@ namespace PluginHost {
                         persistentPath += callsign + '/';
                     }
 
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, volatilePath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _volatilePath, _appPath, _proxyStubPath), waitTime));
                 }
 
             private:
                 const string _persistentPath;
-                const string _volatilePath;
                 const string _systemPath;
                 const string _dataPath;
+                const string _volatilePath;
                 const string _appPath;
                 const string _proxyStubPath;
                 const string _application;
@@ -1481,7 +1481,7 @@ namespace PluginHost {
                 , _services()
                 , _notifiers()
                 , _engine(Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize))
-                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.VolatilePath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize, _engine->InvokeHandler(), _engine->AnnounceHandler())
+                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), stackSize, _engine->InvokeHandler(), _engine->AnnounceHandler())
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)

@@ -10,6 +10,12 @@ namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     ProxyStub::MethodHandler RemoteConnectionStubMethods[] = {
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            // virtual uint32_t Parent() const = 0;
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Number<uint32_t>(message->Parameters().Implementation<RPC::IRemoteConnection>()->Parent());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             // virtual uint32_t Id() const = 0;
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
@@ -147,19 +153,7 @@ namespace ProxyStub {
         }
 
     public:
-        virtual uint32_t Id() const
-        {
-            uint32_t id = ~0;
-
-            IPCMessage newMessage(BaseClass::Message(0));
-
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                id = newMessage->Response().Reader().Number<uint32_t>();
-            }
-
-            return (id);
-        }
-        virtual uint32_t RemoteId() const
+        virtual uint32_t Parent() const
         {
             uint32_t id = 0;
 
@@ -171,10 +165,34 @@ namespace ProxyStub {
 
             return (id);
         }
+        virtual uint32_t Id() const
+        {
+            uint32_t id = ~0;
+
+            IPCMessage newMessage(BaseClass::Message(1));
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                id = newMessage->Response().Reader().Number<uint32_t>();
+            }
+
+            return (id);
+        }
+        virtual uint32_t RemoteId() const
+        {
+            uint32_t id = 0;
+
+            IPCMessage newMessage(BaseClass::Message(2));
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                id = newMessage->Response().Reader().Number<uint32_t>();
+            }
+
+            return (id);
+        }
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
         {
             void* result = nullptr;
-            IPCMessage newMessage(BaseClass::Message(1));
+            IPCMessage newMessage(BaseClass::Message(3));
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
 
             writer.Number(waitTime);
@@ -189,7 +207,7 @@ namespace ProxyStub {
         }
         virtual void Terminate()
         {
-            IPCMessage newMessage(BaseClass::Message(2));
+            IPCMessage newMessage(BaseClass::Message(4));
 
             Invoke(newMessage);
         }

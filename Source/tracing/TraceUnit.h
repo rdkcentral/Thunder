@@ -16,7 +16,7 @@ namespace Trace {
     struct ITraceControl;
     struct ITrace;
 
-#define TRACE_CYCLIC_BUFFER_ENVIRONMENT _T("TRACE_PATH")
+#define TRACE_CYCLIC_BUFFER_FILENAME _T("TRACE_FILENAME")
 #define TRACE_CYCLIC_BUFFER_SIZE ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))) /* 8Kb */
 #define TRACE_CYCLIC_BUFFER_PREFIX _T("tracebuffer")
 
@@ -145,6 +145,16 @@ namespace Trace {
         }
 
     private:
+        inline uint32_t Open(const string& fileName) 
+        {
+            ASSERT(m_OutputChannel->IsValid() == false);
+
+            m_OutputChannel = new TraceBuffer(fileName);
+
+            ASSERT(m_OutputChannel->IsValid() == true);
+
+            return (Core::ERROR_NONE);
+        }
         void UpdateEnabledCategories();
 
         TraceControlList m_Categories;

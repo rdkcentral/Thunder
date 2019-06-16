@@ -132,7 +132,7 @@ namespace PluginHost {
         //! WebPrefix: First part of the pathname in the HTTP request to select the webbridge components.
         virtual string WebPrefix() const = 0;
 
-        //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
+        //! Locator: The name of the binary (so) that holds the given ClassName code.
         virtual string Locator() const = 0;
 
         //! ClassName: Name of the class to be instantiated for this IShell

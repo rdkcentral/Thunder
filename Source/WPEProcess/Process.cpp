@@ -188,7 +188,8 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:o:"))
+            : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
+            , Callsign(nullptr)
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -196,9 +197,9 @@ namespace Process {
             , Version(~0)
             , Exchange(0)
             , PersistentPath(nullptr)
-            , VolatilePath(_T("/tmp/"))
             , SystemPath(nullptr)
             , DataPath(nullptr)
+            , VolatilePath(nullptr)
             , AppPath(nullptr)
             , ProxyStubPath(nullptr)
             , User(nullptr)
@@ -213,6 +214,7 @@ namespace Process {
         }
 
     public:
+        const TCHAR* Callsign;
         const TCHAR* Locator;
         const TCHAR* ClassName;
         const TCHAR* RemoteChannel;
@@ -220,9 +222,9 @@ namespace Process {
         uint32_t Version;
         uint32_t Exchange;
         const TCHAR* PersistentPath;
-        const TCHAR* VolatilePath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
+        const TCHAR* VolatilePath;
         const TCHAR* AppPath;
         const TCHAR* ProxyStubPath;
         const TCHAR* User;
@@ -234,6 +236,9 @@ namespace Process {
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
+            case 'C':
+                Callsign = argument;
+                break;
             case 'l':
                 Locator = argument;
                 break;
@@ -246,14 +251,14 @@ namespace Process {
             case 'p':
                 PersistentPath = argument;
                 break;
-            case 'o':
-                VolatilePath = argument;
-                break;
             case 's':
                 SystemPath = argument;
                 break;
             case 'd':
                 DataPath = argument;
+                break;
+            case 'v':
+                VolatilePath = argument;
                 break;
             case 'a':
                 AppPath = argument;
@@ -273,7 +278,7 @@ namespace Process {
             case 'e':
                 EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
-            case 'v':
+            case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 'x':
@@ -394,19 +399,20 @@ int main(int argc, char** argv)
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0) ) {
         printf("Process [-h] \n");
+        printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
         printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
-        printf("        [-v <version>]\n");
+        printf("        [-V <version>]\n");
         printf("        [-u <user>]\n");
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
-        printf("        [-o <volatile path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
+        printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-e <enabled SYSLOG categories>]\n\n");
@@ -426,8 +432,11 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
-		// Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
-		Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
+        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
+        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
+
+        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
+        Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);

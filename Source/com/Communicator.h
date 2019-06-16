@@ -26,7 +26,8 @@ namespace RPC {
         };
 
         Object()
-            : _locator()
+            : _callsign()
+            , _locator()
             , _className()
             , _interface(~0)
             , _version(~0)
@@ -38,7 +39,8 @@ namespace RPC {
         {
         }
         Object(const Object& copy)
-            : _locator(copy._locator)
+            : _callsign(copy._callsign)
+            , _locator(copy._locator)
             , _className(copy._className)
             , _interface(copy._interface)
             , _version(copy._version)
@@ -49,7 +51,8 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(const string& locator, 
+        Object( const string callsign,
+                const string& locator, 
                 const string& className, 
                 const uint32_t interface, 
                 const uint32_t version, 
@@ -58,7 +61,8 @@ namespace RPC {
                 const uint8_t threads,
                 const HostType type,
                 const string& configuration)
-            : _locator(locator)
+            : _callsign(callsign)
+            , _locator(locator)
             , _className(className)
             , _interface(interface)
             , _version(version)
@@ -75,6 +79,7 @@ namespace RPC {
 
         Object& operator=(const Object& RHS)
         {
+            _callsign = RHS._callsign;
             _locator = RHS._locator;
             _className = RHS._className;
             _interface = RHS._interface;
@@ -89,6 +94,10 @@ namespace RPC {
         }
 
     public:
+        inline const string& Callsign() const
+        {
+            return (_callsign);
+        }
         inline const string& Locator() const
         {
             return (_locator);
@@ -127,6 +136,7 @@ namespace RPC {
         }
 
     private:
+        string _callsign;
         string _locator;
         string _className;
         uint32_t _interface;
@@ -147,9 +157,9 @@ namespace RPC {
             : _connector()
             , _hostApplication()
             , _persistent()
-            , _volatile()
             , _system()
             , _data()
+            , _volatile()
             , _application()
             , _proxyStub()
         {
@@ -158,17 +168,17 @@ namespace RPC {
             const string& connector,
             const string& hostApplication,
             const string& persistentPath,
-            const string& volatilePath,
             const string& systemPath,
             const string& dataPath,
+            const string& volatilePath,
             const string& applicationPath,
             const string& proxyStubPath)
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
-            , _volatile(volatilePath)
             , _system(systemPath)
             , _data(dataPath)
+            , _volatile(volatilePath)
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
         {
@@ -177,9 +187,9 @@ namespace RPC {
             : _connector(copy._connector)
             , _hostApplication(copy._hostApplication)
             , _persistent(copy._persistent)
-            , _volatile(copy._volatile)
             , _system(copy._system)
             , _data(copy._data)
+            , _volatile(copy._volatile)
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
         {
@@ -201,10 +211,6 @@ namespace RPC {
         {
             return (_persistent);
         }
-        inline const string& VolatilePath() const
-        {
-            return (_volatile);
-        }
         inline const string& SystemPath() const
         {
             return (_system);
@@ -212,6 +218,10 @@ namespace RPC {
         inline const string& DataPath() const
         {
             return (_data);
+        }
+        inline const string& VolatilePath() const
+        {
+            return (_volatile);
         }
         inline const string& ApplicationPath() const
         {
@@ -226,9 +236,9 @@ namespace RPC {
         string _connector;
         string _hostApplication;
         string _persistent;
-        string _volatile;
         string _system;
         string _data;
+        string _volatile;
         string _application;
         string _proxyStub;
     };
@@ -246,6 +256,7 @@ namespace RPC {
             virtual void Deactivated(IRemoteConnection* connection) = 0;
         };
 
+        virtual uint32_t Parent() const = 0;
         virtual uint32_t Id() const = 0;
         virtual uint32_t RemoteId() const = 0;
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
@@ -279,12 +290,14 @@ namespace RPC {
         protected:
             RemoteConnection()
                 : _channel()
+                , _parent(0)
                 , _id(_sequenceId++)
                 , _remoteId(0)
             {
             }
-            RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId)
+            RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId, const uint32_t parent = 0)
                 : _channel(channel)
+                , _parent(parent)
                 , _id(_sequenceId++)
                 , _remoteId(remoteId)
             {
@@ -297,6 +310,7 @@ namespace RPC {
 
         public:
             virtual void* QueryInterface(const uint32_t id) override;
+            virtual uint32_t Parent() const override;
             virtual uint32_t Id() const override;
             virtual uint32_t RemoteId() const override;
             virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
@@ -331,6 +345,7 @@ namespace RPC {
 
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
+            uint32_t _parent;
             uint32_t _id;
             uint32_t _remoteId;
             static std::atomic<uint32_t> _sequenceId;
@@ -366,6 +381,7 @@ namespace RPC {
                 ASSERT(instance.ClassName().empty() == false);
                 ASSERT(config.Connector().empty() == false);
 
+                options[_T("-C")] = instance.Callsign();
                 options[_T("-l")] = instance.Locator();
                 options[_T("-c")] = instance.ClassName();
                 options[_T("-r")] = config.Connector();
@@ -385,9 +401,6 @@ namespace RPC {
                 if (config.PersistentPath().empty() == false) {
                     options[_T("-p")] = config.PersistentPath();
                 }
-                if (config.VolatilePath().empty() == false) {
-                    options[_T("-o")] = config.VolatilePath();
-                }
                 if (config.SystemPath().empty() == false) {
                     options[_T("-s")] = config.SystemPath();
                 }
@@ -397,11 +410,14 @@ namespace RPC {
                 if (config.ApplicationPath().empty() == false) {
                     options[_T("-a")] = config.ApplicationPath();
                 }
+                if (config.VolatilePath().empty() == false) {
+                    options[_T("-t")] = config.VolatilePath();
+                }
                 if (config.ProxyStubPath().empty() == false) {
                     options[_T("-m")] = config.ProxyStubPath();
                 }
                 if (instance.Threads() > 1) {
-                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                    options[_T("-T")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
 
                 LaunchProcess(options);
@@ -753,7 +769,7 @@ namespace RPC {
                         // This is an announce message from a process that wasn't created by us. So typically this is
                         // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
                         // listens for clients requesting service.
-                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
+                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id(), info.ExchangeId());
 
                         channel->Extension().Link(*this, remoteConnection->Id());
                         ASSERT(remoteConnection != nullptr);
