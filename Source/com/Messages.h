@@ -173,6 +173,16 @@ namespace RPC {
         private:
             Init(const Init&) = delete;
             Init& operator=(const Init&) = delete;
+            uint32_t ParentId() const 
+            {
+                uint32_t exchangeId = 0;
+                string value; Core::SystemInfo::GetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), value);
+                if (value.empty() == false) {
+                    exchangeId = Core::NumberType<uint32_t>(value.c_str(), static_cast<uint32_t>(value.length())).Value();
+                }
+
+                return (exchangeId);
+            }
 
         public:
             enum type {
@@ -182,6 +192,8 @@ namespace RPC {
                 REQUEST = 3
             };
 
+        
+
         public:
             Init()
                 : _implementation(nullptr)
@@ -189,12 +201,14 @@ namespace RPC {
                 , _exchangeId(~0)
             {
             }
+            /*
             Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
                 : _implementation(implementation)
                 , _interfaceId(interfaceId)
                 , _exchangeId(exchangeId)
             {
             }
+            */
             ~Init()
             {
             }
@@ -216,23 +230,32 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
-            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const type whatKind, const uint32_t exchangeId)
+            void Set(const uint32_t myId)
             {
-                ASSERT(whatKind != AQUIRE);
-
+                _exchangeId = ParentId();
+                _implementation = nullptr;
+                _interfaceId = ~0;
+                _versionId = ~0;
+                _id = myId;
+                _className[0] = '\0';
+                _className[1] = AQUIRE;
+   
+            }
+            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId)
+            {
                 _exchangeId = exchangeId;
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
                 _id = myId;
                 _className[0] = '\0';
-                _className[1] = whatKind;
+                _className[1] = REQUEST;
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const type whatKind)
             {
-                ASSERT(whatKind != AQUIRE);
+                ASSERT((whatKind != AQUIRE) && (whatKind != REQUEST));
 
-                _exchangeId = static_cast<uint32_t>(~0);
+                _exchangeId = ParentId();
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
@@ -242,12 +265,11 @@ namespace RPC {
             }
             void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                _exchangeId = static_cast<uint32_t>(~0);
+                _exchangeId = ParentId();
                 _implementation = nullptr;
                 _interfaceId = interfaceId;
                 _versionId = versionId;
                 _id = myId;
-                _className[1] = AQUIRE;
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
             }

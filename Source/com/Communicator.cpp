@@ -81,10 +81,16 @@ static void LoadProxyStubs(const string& pathName)
     }
 }
 
+/* virtual */ uint32_t Communicator::RemoteConnection::Parent() const
+{
+    return (_parent);
+}
+
 /* virtual */ uint32_t Communicator::RemoteConnection::Id() const
 {
     return (_id);
 }
+
 
 /* virtual */ void* Communicator::RemoteConnection::QueryInterface(const uint32_t id)
 {
@@ -257,6 +263,7 @@ uint32_t CommunicatorClient::Open(const uint32_t waitTime)
     _announceEvent.ResetEvent();
 
     //do not set announce parameters, we do not know what side will offer the interface
+    _announceMessage->Parameters().Set(Core::ProcessInfo().Id());
 
     uint32_t result = BaseClass::Open(waitTime);
 
@@ -288,7 +295,7 @@ uint32_t CommunicatorClient::Open(const uint32_t waitTime, const uint32_t interf
     ASSERT(BaseClass::IsOpen() == false);
     _announceEvent.ResetEvent();
 
-    _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, implementation, Data::Init::REQUEST, exchangeId);
+    _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, implementation, exchangeId);
 
     uint32_t result = BaseClass::Open(waitTime);
 

@@ -432,10 +432,11 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
+        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
+        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
+
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
         Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
-
-
 
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
