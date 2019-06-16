@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME PROCESSCONTAINERS
+#define MODULE_NAME ProcessContainers
 #endif
 
 #include "../core/core.h"

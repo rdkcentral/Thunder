@@ -677,21 +677,6 @@ namespace PluginHost
 
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig);
-
-#ifdef PROCESSCONTAINERS_ENABLED 
-
-        // Huppel todo: just to get it working for now: 
-
-        ProcessContainers::IContainerAdministrator& processcontaineradmin = ProcessContainers::IContainerAdministrator::Instance();
-        std::vector<string> searchpaths(3);
-        searchpaths[0] = _config.VolatilePath();
-        searchpaths[1] = _config.PersistentPath();
-        searchpaths[2] = _config.DataPath();
-        Core::IteratorType<std::vector<string>, const string> temp(searchpaths);
-        processcontaineradmin.ContainerDefinitionSearchPaths(temp);
-        processcontaineradmin.Release();
-
-#endif
     }
 
 #ifdef __WIN32__

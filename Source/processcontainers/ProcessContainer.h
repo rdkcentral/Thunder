@@ -25,8 +25,6 @@ namespace ProcessContainers {
 
         static IContainerAdministrator& Instance();
 
-        virtual void ContainerDefinitionSearchPaths(IStringIterator& searchpaths) = 0;  //note will be searched in order in which they are iterated
-
         IContainerAdministrator() = default;
         virtual ~IContainerAdministrator() = default;
 
@@ -35,7 +33,10 @@ namespace ProcessContainers {
         virtual uint32_t Release() const = 0;
 
         // Methods
-        virtual IContainer* Container(const string& id) = 0;
+        virtual IContainer* Container(const string& id, 
+                                      IStringIterator& searchpaths, 
+                                      const string& logpath,
+                                      const string& configuration) = 0; //searchpaths will be searched in order in which they are iterated
     };
 } // ProcessContainers
 } // WPEFramework

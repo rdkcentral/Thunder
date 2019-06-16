@@ -455,6 +455,33 @@ namespace RPC {
 #ifdef PROCESSCONTAINERS_ENABLED 
 
         class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        private:
+
+            class Config : public Core::JSON::Container {
+            public:
+                Config(const Config&) = delete;
+                Config& operator=(const Config&) = delete;
+
+                Config()
+                    : Core::JSON::Container()
+#ifdef __DEBUG__
+                    , ContainerPath(true)
+#endif
+                    , Forward(false)
+                {
+#ifdef __DEBUG__
+                    Add(_T("containerpath"), &ContainerPath);
+#endif
+                    Add(_T("forward"), &Forward);
+                }
+                ~Config() = default;
+
+#ifdef __DEBUG__
+                Core::JSON::String ContainerPath;
+#endif
+                Core::JSON::String Forward;
+            };
+
         public:
             friend class Core::Service<ContainerRemoteProcess>;
 
@@ -462,10 +489,33 @@ namespace RPC {
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
 
         private:
-            ContainerRemoteProcess(const string& configuration) {
+            ContainerRemoteProcess(const string& callsign, 
+                                   const string& persistentpath,
+                                   const string& datapath,
+                                   const string& volatilepath,
+                                   const string& configuration) {
+
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
-                _container = admin.Container("webserver");
+                Config config;
+                config.FromString(configuration);
+
+                std::vector<string> searchpaths(3);
+                searchpaths[0] = volatilepath + callsign + _T('/');
+                searchpaths[1] = persistentpath;
+                searchpaths[2] = datapath;
+
+#ifdef __DEBUG__
+
+                if( config.ContainerPath.IsSet() == true ) {
+                    searchpaths.emplace( searchpaths.cbegin(), config.ContainerPath.Value() );
+                }
+
+#endif
+
+                Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
+
+                _container = admin.Container(callsign, searchpathsit, volatilepath, config.Forward.Value());
 
                 admin.Release();
             }
@@ -480,6 +530,8 @@ namespace RPC {
             void LaunchProcess(const Core::Process::Options& options) override
             {
                 if( _container != nullptr ) {
+
+                // Note: replace below code with something more efficient when Iterators redesigned
 
                     Core::Process::Options::Iterator it(options.Get());
 
@@ -531,10 +583,10 @@ namespace RPC {
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _hostChannel;
         };
 
-        static RemoteProcess* CreateProcess(const string& classname, const Object::HostType type, const string& configuration ) {
+        static RemoteProcess* CreateProcess(const Object& instance, const Config& config) {
             RemoteProcess* result = nullptr;
 
-            switch( type ) {
+            switch( instance.Type() ) {
                 case Object::HostType::LOCAL :
                     result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
                     break;
@@ -543,7 +595,11 @@ namespace RPC {
                     break;
                 case Object::HostType::CONTAINER :
 #ifdef PROCESSCONTAINERS_ENABLED 
-                    result = Core::Service<ContainerRemoteProcess>::Create<RemoteProcess>(configuration);
+                    result = Core::Service<ContainerRemoteProcess>::Create<RemoteProcess>(instance.Callsign(), 
+                                                                                          config.PersistentPath(), 
+                                                                                          config.DataPath(),
+                                                                                          config.VolatilePath(),
+                                                                                          instance.Configuration());
 #else
                     SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), classname.c_str()));
 #endif
@@ -636,7 +692,7 @@ namespace RPC {
 
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = CreateProcess(instance.ClassName(), instance.Type(), instance.Configuration());
+                Communicator::RemoteProcess* result = CreateProcess(instance, config);
 
                 ASSERT(result != nullptr);
 

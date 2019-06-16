@@ -11,29 +11,16 @@ namespace WPEFramework {
 
 class LXCContainerAdministrator : public ProcessContainers::IContainerAdministrator {
 private:
+
     using LxcContainerType = struct lxc_container;
+
 public:
     LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
     LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
 
     LXCContainerAdministrator() 
-        : _lock()
-        , _searchpaths() {
-
-
-            printf("LXC Version:%s\n", lxc_get_version());
-
-            lxc_log log;
-            log.name = "huppel";
-            log.lxcpath = "/home/marcelf/.local/share/lxc/";
-            log.file = "/usr/src/huppel.log";
-            log.level = "0";
-            log.prefix = "huppel";
-            log.quiet = false;
-
-            int result = lxc_log_init(&log);
-            printf("LXC log init: %i\n",result);
-
+        : _lock() {
+            TRACE(ProcessContainers::ProcessContainerization, (_T("LXC library initialization, version: %s"), lxc_get_version()));
         }
 
     virtual ~LXCContainerAdministrator() {
@@ -41,15 +28,133 @@ public:
     }
 
     class LCXContainer : public ProcessContainers::IContainerAdministrator::IContainer {
+    private:
+
+        class Config : public Core::JSON::Container {
+        public:
+            class ConfigItem : public Core::JSON::Container {
+            public:
+                ConfigItem& operator=(const ConfigItem&) = delete;
+
+                ConfigItem(const ConfigItem& rhs) 
+                    : Core::JSON::Container()
+                    , Key(rhs.Key)
+                    , Value(rhs.Value)
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value); 
+                }
+
+                ConfigItem()
+                    : Core::JSON::Container()
+                    , Key()
+                    , Value()
+                {
+                    Add(_T("key"), &Key);
+                    Add(_T("value"), &Value); 
+                }
+                
+                ~ConfigItem() = default;
+
+                Core::JSON::String Key;
+                Core::JSON::String Value;
+            };
+        public:
+            Config(const Config&) = delete;
+            Config& operator=(const Config&) = delete;
+
+            Config()
+                : Core::JSON::Container()
+                , LXCLogging(false)
+                , LXCLogLevel("ERROR")
+                , ConsoleLogging(false)
+                , ConsoleLogFileSize("auto")
+                , ConsoleBufferSize("0")
+#ifdef __DEBUG__
+                , DebugMode(false)
+#endif
+            {
+                Add(_T("lxclogging"), &LXCLogging);
+                Add(_T("lxcloglevel"), &LXCLogLevel); // 0 = trace, 1 = debug, 2 = info, 3 = notice, 4 = warn, 5 = error, 6 = critical, 7 = alert, and 8 = fatal, but also string is allowed:
+                                                      // (case insensitive) TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, CRIT, ALERT, FATAL
+
+                Add(_T("consolelogging"), &ConsoleLogging);
+                Add(_T("consolelogfilesize"), &ConsoleLogFileSize); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB'
+                Add(_T("consolelogbuffersize"), &ConsoleBufferSize); // NOt used yet, to later on enable getting the console using an interface, should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB'
+
+                Add(_T("configuration_items"), &ConfigItems);
+
+#ifdef __DEBUG__
+                Add(_T("debugmode"), &DebugMode);
+#endif
+            }
+            
+            ~Config() = default;
+
+            Core::JSON::Boolean LXCLogging;
+            Core::JSON::String LXCLogLevel;
+            Core::JSON::Boolean ConsoleLogging;
+            Core::JSON::String ConsoleLogFileSize;
+            Core::JSON::String ConsoleBufferSize;
+            Core::JSON::ArrayType<ConfigItem> ConfigItems;
+#ifdef __DEBUG__
+            Core::JSON::Boolean DebugMode;
+#endif
+        };
+
     public:
+
         LCXContainer(const LCXContainer&) = delete;
         LCXContainer& operator=(const LCXContainer&) = delete;
 
-        LCXContainer(const string& name, LxcContainerType* lxccontainer)
+        LCXContainer(const string& name, LxcContainerType* lxccontainer, const string& logpath, const string& configuration)
             : _name(name)
             , _pid(0)
             , _referenceCount(1)
-            , _lxccontainer(lxccontainer) {
+            , _lxccontainer(lxccontainer)
+#ifdef __DEBUG__
+            , _debugmode(false)
+#endif
+        {
+            Config config;
+            config.FromString(configuration);
+
+#ifdef __DEBUG__
+            _debugmode = config.DebugMode.Value();
+#endif
+            string pathName;
+            Core::SystemInfo::GetEnvironment("PATH", pathName);
+            string key("PATH");
+            key += "=";
+            key += pathName;
+            _lxccontainer->set_config_item(_lxccontainer, "lxc.environment", key.c_str());
+
+            // Huppel todo: check if below is the correct path, otherwise get it from where the container was found
+
+            const char* test = _lxccontainer->get_config_path(_lxccontainer);
+
+            if( config.LXCLogging.Value() == true ) {
+                // we need to move this probably to the admin, no possibility to set this per container, hippyware!!
+                lxc_log log;
+                log.name = name.c_str();
+                log.lxcpath = test;
+                log.file = (logpath + name + "/lxclogging.log").c_str();
+                log.level = config.LXCLogLevel.Value().c_str();
+                log.prefix = name.c_str();
+                log.quiet = false;
+                lxc_log_init(&log);
+            }
+
+            if( config.ConsoleLogging.Value() == true ) {
+                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.buffer.size", config.ConsoleBufferSize.Value().c_str());
+                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogFileSize.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
+                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", (logpath + name + "/console.log").c_str());
+            }
+
+            Core::JSON::ArrayType<Config::ConfigItem>::Iterator index(config.ConfigItems.Elements());
+            while( index.Next() == true ) {
+                _lxccontainer->set_config_item(_lxccontainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
+            };
         }
 
         const string& Id() const override {
@@ -75,7 +180,7 @@ public:
             uint32_t lxcresult = lxc_container_put(_lxccontainer);
             if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
                 ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
-                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s released"), _name));
+                TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
 
                 delete this;
                 retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -89,16 +194,10 @@ public:
             pid_t _pid;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
+#ifdef __DEBUG__
+            bool _debugmode;
+#endif
     };
-
-    void ContainerDefinitionSearchPaths(ProcessContainers::IStringIterator& searchpaths) override {
-        _lock.Lock();
-        searchpaths.Reset(0);
-        while( searchpaths.Next() == true ) {
-            _searchpaths.emplace_back(searchpaths.Current());
-        }
-        _lock.Unlock();
-    }
 
     // Lifetime management
      void AddRef() const override {
@@ -107,46 +206,33 @@ public:
         return Core::ERROR_NONE;
     }
 
-    ProcessContainers::IContainerAdministrator::IContainer* Container(const string& name) override;
+    ProcessContainers::IContainerAdministrator::IContainer* Container(const string& name, 
+                                                                      ProcessContainers::IStringIterator& searchpaths, 
+                                                                      const string& logpath,
+                                                                      const string& configuration) override;
 
 private:
-    using SearchPathContainer = std::vector<string>;
-
     mutable Core::CriticalSection _lock;
-    SearchPathContainer _searchpaths;
 };
 
-ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrator::Container(const string& name) {
+ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrator::Container(const string& name, 
+                                                                                             ProcessContainers::IStringIterator& searchpaths,
+                                                                                             const string& logpath,
+                                                                                             const string& configuration) {
+    searchpaths.Reset(0);
 
     _lock.Lock();
 
-    _searchpaths.push_back({string("/home/marcelf/.local/share/lxc/")});  // todo remove, after configuration in place. let's first get the container to work
-//    _searchpaths.push_back({string("/usr/src/HuppelWIP/Container")});  // todo remove, after configuration in place. let's first get the container to work
-
     ProcessContainers::IContainerAdministrator::IContainer* container { nullptr };
-    SearchPathContainer::const_iterator searchpath { _searchpaths.cbegin() };
 
-    while( ( container == nullptr ) && ( searchpath != _searchpaths.cend() ) )  {
+    while( ( container == nullptr ) && ( searchpaths.Next() == true ) )  {
         LxcContainerType **clist = nullptr;
-        int32_t numberofcontainersfound = list_defined_containers((*searchpath).c_str(), nullptr, &clist);
+        int32_t numberofcontainersfound = list_defined_containers(searchpaths.Current().c_str(), nullptr, &clist);
         int32_t index = 0;
         while( ( container == nullptr) && ( index < numberofcontainersfound ) ) {
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
-//                TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition with name %s retreived from %s."), c->name, (*searchpath).c_str()));
-                // huppel move config code code or remove 
-                c->set_config_item(c, "lxc.console.buffer.size", "4096");
-                c->set_config_item(c, "lxc.console.size", "auto"); // yes this one is important!!!!
-                c->set_config_item(c, "lxc.console.logfile", "/usr/src/containerconsole.log");
-
-                string pathName;
-                Core::SystemInfo::GetEnvironment("PATH", pathName);
-                string key("PATH");
-                key += "=";
-                key += pathName;
-                c->set_config_item(c, "lxc.environment", key.c_str());
-
-                container = new LXCContainerAdministrator::LCXContainer(name, c);
+                container = new LXCContainerAdministrator::LCXContainer(name, c, logpath, configuration);
             }
             else {
                 lxc_container_put(c);
@@ -156,10 +242,13 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
         if( numberofcontainersfound > 0 ) {
             free(clist);
         }
-        ++searchpath;
     };
 
     _lock.Unlock();
+
+    if( container == nullptr ) {
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));
+    }
 
     return container;
 }
@@ -186,12 +275,9 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     params[pos++] = nullptr;
     ASSERT(pos == parameters.Count()+2);
 
-    if(false) {
-        result = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
-
-    } else {
+#ifdef __DEBUG__
+    if( _debugmode == true ) {
         bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
-        printf("Container start: %i\n", retval);
 
         lxc_attach_command_t lxccommand;
         lxccommand.program = (char *)command.c_str();
@@ -199,31 +285,18 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
 
         lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
         int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
-        printf("Attach to container: %i\n", ret);
         result = ret == 0;
+    } else
+#endif
+    {
+        result = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
     }
-
-    if(false) {
-        ::SleepMs(2000);
-        lxc_console_log log;
-        uint64_t sizeread = 0; // note will not allocate memory
-        log.read_max = &sizeread;
-        log.read = true;
-        log.clear = false;
-        int retint = _lxccontainer->console_log(_lxccontainer, &log);
-        printf("Get console log: %i\n", retint);
-        if( retint == 0 && sizeread != 0 ) {
-            printf("Get console value: %s\n", log.data);
-        }
-        sizeread = 0;
-        log.read = false;
-        log.clear = true;
-        retint = _lxccontainer->console_log(_lxccontainer, &log);
-        printf("Get console log: %i\n", retint);
-    } 
 
     if( result == true )  {
         _pid = _lxccontainer->init_pid(_lxccontainer);
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] was started successfully! pid=%u"), _name.c_str(), _pid));
+    } else {
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] could not be started!"), _name.c_str()));
     }
 
     return result;
