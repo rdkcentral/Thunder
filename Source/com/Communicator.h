@@ -350,7 +350,7 @@ namespace RPC {
                 options[_T("-x")] = Core::NumberType<uint32_t>(Id()).Text();
 
                 if (instance.Version() != static_cast<uint32_t>(~0)) {
-                    options[_T("-v")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+                    options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
                 }
                 if (instance.User().empty() == false) {
                     options[_T("-u")] = instance.User();
@@ -371,13 +371,13 @@ namespace RPC {
                     options[_T("-a")] = config.ApplicationPath();
                 }
                 if (config.VolatilePath().empty() == false) {
-                    options[_T("-t")] = config.VolatilePath();
+                    options[_T("-v")] = config.VolatilePath();
                 }
                 if (config.ProxyStubPath().empty() == false) {
                     options[_T("-m")] = config.ProxyStubPath();
                 }
                 if (instance.Threads() > 1) {
-                    options[_T("-T")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
 
                 // Start the external process launch..
