@@ -102,7 +102,7 @@ namespace Core {
 
                     result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
-                printf("End wait. %d\n", result);
+                TRACE_L1("End wait. %d\n", result);
             }
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {

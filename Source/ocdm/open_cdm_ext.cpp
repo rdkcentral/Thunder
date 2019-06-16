@@ -398,6 +398,8 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
 {
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
+    TRACE_L1("Creating a Session for %s", keySystem);
+
     // TODO: Since we are passing key system name anyway, not need for if here.
     if (strcmp(keySystem, "com.netflix.playready") != 0) {
         if (system != nullptr) {
@@ -417,5 +419,6 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
         }
     }
 
+    TRACE_L1("Created a Session, result %p, %d", *session, result);
     return (result);
 }
