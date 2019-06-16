@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json
 from collections import OrderedDict
 
-VERSION="1.2"
+VERSION="1.2.1"
 
 class Trace:
     class Colors:
@@ -41,6 +41,7 @@ ALWAYS_COPYCTOR = False
 CLASSNAME_FROM_REF = True
 DEFAULT_EMPTY_STRING = ""
 DEFAULT_INT_SIZE = 32
+IF_PATH = "interfaces/json"
 
 GLOBAL_DEFINITIONS = "global.json"
 FRAMEWORK_NAMESPACE = "WPEFramework"
@@ -171,6 +172,7 @@ class JsonEnum(JsonType):
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
             raise JsonParseError("Mismatch in enumeration values in enum '%s'" % self.JsonName())
+        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True 
         self.default = self.CppClass()+"::"+self.CppEnumerators()[0]
         self.duplicate = False
         self.origRef = None
@@ -212,6 +214,8 @@ class JsonEnum(JsonType):
         return len(self.refs)
     def CppStdClass(self):
         return self.CppClass()
+    def IsStronglyTyped(self):
+        return self.strongly_typed
 
 class JsonObject(JsonType):
     def __init__(self, name, parent, schema, origName=None, included=None):
@@ -666,9 +670,9 @@ def EmitHelperCode(root, emit, header_file):
 
         emit.Line("#include \"Module.h\"")
         emit.Line("#include \"%s.h\"" % root.JsonName())
-        emit.Line("#include <interfaces/json/%s>" % header_file)
+        emit.Line("#include <%s%s>" % (IF_PATH, header_file))
         for inc in root.includes:
-            emit.Line("#include <interfaces/json/JsonData_%s.h>" % inc)
+            emit.Line("#include <%sJsonData_%s.h>" % (IF_PATH, inc))
         emit.Line()
 
         # Registration prototypes
@@ -939,7 +943,7 @@ def EmitObjects(root, emit, emitCommon = False):
             root = root.parent
         if enum.Description():
             emit.Line("// " + enum.Description())
-        emit.Line("enum class %s {" % enum.CppClass())
+        emit.Line("enum%s %s {" % (" class" if enum.IsStronglyTyped() else "", enum.CppClass()))
         emit.Indent()
         for c, item in enumerate(enum.CppEnumerators()):
             emit.Line("%s%s%s" % (item.upper(), (" = " + str(enum.CppEnumeratorValues()[c])) if enum.CppEnumeratorValues() else "", "," if not c == len(enum.CppEnumerators()) -1 else ""))
@@ -1560,7 +1564,8 @@ if __name__ == "__main__":
     argparser.add_argument("-d", "--docs", dest="docs", action="store_true", default=False, help="generate documentation")
     argparser.add_argument("-c", "--code", dest="code", action="store_true", default=False, help="generate JSON classes")
     argparser.add_argument("-s", "--stubs", dest="stubs", action="store_true", default=False, help="generate JSON-RPC stub code")
-    argparser.add_argument("-i", "--ifdir", dest="if_dir",  metavar="DIR", action="store", default=None, help="for 'include' directive, a directory with API interfaces (default: same directory as source file)")
+    argparser.add_argument("-p", dest="if_path",  metavar="PATH", action="store", type=str, default=IF_PATH, help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
+    argparser.add_argument("-i", dest="if_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
     argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory (default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--copy-ctor", dest="copy_ctor", action="store_true", default=False, help="always emit a copy constructor and assignment operator for a class (default: emit only when it appears to be needed)")
@@ -1575,8 +1580,14 @@ if __name__ == "__main__":
     CLASSNAME_FROM_REF = not args.no_ref_names
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
-    if args.if_dir and not args.if_dir.endswith('/'):
-        args.if_dir = args.if_dir + '/'
+    if args.if_path:
+        IF_PATH = args.if_path + ("/" if not args.if_path.endswith("/") else "")
+        if IF_PATH == "./":
+            IF_PATH = ""
+    if args.if_dir:
+        args.if_dir = os.path.abspath(args.if_dir)
+        if not args.if_dir.endswith('/'):
+            args.if_dir = args.if_dir + '/'
     generateCode = args.code
     generateDocs = args.docs
     generateStubs = args.stubs
@@ -1593,7 +1604,7 @@ if __name__ == "__main__":
                 schema = LoadSchema(path, args.if_dir)
                 output_path = path
                 if args.output_dir:
-                    output_path = args.output_dir.strip("/") + "/" + output_path[output_path.rfind('/') + 1:]
+                    output_path = args.output_dir.rstrip("/") + "/" + output_path[output_path.rfind('/') + 1:]
                 output_path = output_path.replace(".json", "")
                 if generateCode or generateStubs:
                     CreateCode(schema, output_path, generateCode, generateStubs)

@@ -49,6 +49,7 @@
               16,
               32
             ],
+            "enumtyped": false,
             "description": "Key modifiers",
             "default": "leftshift"
           }
@@ -178,6 +179,7 @@
                 16,
                 32
               ],
+              "enumtyped": false,
               "description": "Key modifiers",
               "default": "leftshift"
             }
