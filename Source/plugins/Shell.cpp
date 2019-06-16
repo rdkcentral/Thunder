@@ -164,7 +164,7 @@ namespace PluginHost
                 if (locator.empty() == true) {
                     locator = Locator();
                 }
-                RPC::Object definition(locator,
+                RPC::Object definition(Callsign(), locator,
                     className,
                     interface,
                     version,

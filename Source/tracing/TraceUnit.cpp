@@ -141,26 +141,29 @@ namespace Trace {
 
     uint32_t TraceUnit::Open(const uint32_t identifier)
     {
-        string pathName;
+        uint32_t result = Core::ERROR_UNAVAILABLE;
 
-        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
+        string fileName;
+        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
 
-        ASSERT(pathName.empty() == false);
+        ASSERT(fileName.empty() == false);
 
-        return (Open(pathName, identifier));
+        if (fileName.empty() == false) {
+       
+            fileName +=  '.' + Core::NumberType<uint32_t>(identifier).Text();
+            result = Open(fileName);
+        }
+
+        return (result);
     }
 
     uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
     {
-        ASSERT(m_OutputChannel == nullptr);
+        string fileName(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX + '.' + Core::NumberType<uint32_t>(identifier).Text());
 
-        string actualPath(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX + '.' + Core::NumberType<uint32_t>(identifier).Text());
+        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
 
-        m_OutputChannel = new TraceBuffer(actualPath);
-
-        ASSERT(m_OutputChannel->IsValid());
-
-        return (Core::ERROR_NONE);
+        return (Open(fileName));
     }
 
     uint32_t TraceUnit::Close()

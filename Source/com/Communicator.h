@@ -14,7 +14,8 @@ namespace RPC {
     class EXTERNAL Object {
     public:
         Object()
-            : _locator()
+            : _callsign()
+            , _locator()
             , _className()
             , _interface(~0)
             , _version(~0)
@@ -24,7 +25,8 @@ namespace RPC {
         {
         }
         Object(const Object& copy)
-            : _locator(copy._locator)
+            : _callsign(copy._callsign)
+            , _locator(copy._locator)
             , _className(copy._className)
             , _interface(copy._interface)
             , _version(copy._version)
@@ -33,8 +35,9 @@ namespace RPC {
             , _threads(copy._threads)
         {
         }
-        Object(const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group, const uint8_t threads)
-            : _locator(locator)
+        Object(const string callsign, const string& locator, const string& className, const uint32_t interface, const uint32_t version, const string& user, const string& group, const uint8_t threads)
+            : _callsign(callsign)
+            , _locator(locator)
             , _className(className)
             , _interface(interface)
             , _version(version)
@@ -49,6 +52,7 @@ namespace RPC {
 
         Object& operator=(const Object& RHS)
         {
+            _callsign = RHS._callsign;
             _locator = RHS._locator;
             _className = RHS._className;
             _interface = RHS._interface;
@@ -61,6 +65,10 @@ namespace RPC {
         }
 
     public:
+        inline const string& Callsign() const
+        {
+            return (_callsign);
+        }
         inline const string& Locator() const
         {
             return (_locator);
@@ -91,6 +99,7 @@ namespace RPC {
         }
 
     private:
+        string _callsign;
         string _locator;
         string _className;
         uint32_t _interface;
@@ -111,6 +120,7 @@ namespace RPC {
             , _persistent()
             , _system()
             , _data()
+            , _volatile()
             , _application()
             , _proxyStub()
         {
@@ -121,6 +131,7 @@ namespace RPC {
             const string& persistentPath,
             const string& systemPath,
             const string& dataPath,
+            const string& volatilePath,
             const string& applicationPath,
             const string& proxyStubPath)
             : _connector(connector)
@@ -128,6 +139,7 @@ namespace RPC {
             , _persistent(persistentPath)
             , _system(systemPath)
             , _data(dataPath)
+            , _volatile(volatilePath)
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
         {
@@ -138,6 +150,7 @@ namespace RPC {
             , _persistent(copy._persistent)
             , _system(copy._system)
             , _data(copy._data)
+            , _volatile(copy._volatile)
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
         {
@@ -167,6 +180,10 @@ namespace RPC {
         {
             return (_data);
         }
+        inline const string& VolatilePath() const
+        {
+            return (_volatile);
+        }
         inline const string& ApplicationPath() const
         {
             return (_application);
@@ -182,6 +199,7 @@ namespace RPC {
         string _persistent;
         string _system;
         string _data;
+        string _volatile;
         string _application;
         string _proxyStub;
     };
@@ -318,6 +336,7 @@ namespace RPC {
                 ASSERT(instance.ClassName().empty() == false);
                 ASSERT(config.Connector().empty() == false);
 
+                options[_T("-C")] = instance.Callsign();
                 options[_T("-l")] = instance.Locator();
                 options[_T("-c")] = instance.ClassName();
                 options[_T("-r")] = config.Connector();
@@ -346,11 +365,14 @@ namespace RPC {
                 if (config.ApplicationPath().empty() == false) {
                     options[_T("-a")] = config.ApplicationPath();
                 }
+                if (config.VolatilePath().empty() == false) {
+                    options[_T("-t")] = config.VolatilePath();
+                }
                 if (config.ProxyStubPath().empty() == false) {
                     options[_T("-m")] = config.ProxyStubPath();
                 }
                 if (instance.Threads() > 1) {
-                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                    options[_T("-T")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
 
                 // Start the external process launch..

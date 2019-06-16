@@ -58,8 +58,8 @@ namespace Exchange {
 
             virtual ~INotification() {}
 
-            virtual void Attached(IClient* client) = 0;
-            virtual void Detached(IClient* client) = 0;
+            virtual void Attached(const string& name, IClient* client) = 0;
+            virtual void Detached(const string& name) = 0;
         };
 
         virtual ~IComposition() {}

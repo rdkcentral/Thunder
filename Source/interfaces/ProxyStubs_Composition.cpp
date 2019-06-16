@@ -418,8 +418,8 @@ namespace ProxyStubs {
     // IComposition::INotification interface stub definitions
     //
     // Methods:
-    //  (0) virtual void Attached(IComposition::IClient*) = 0
-    //  (1) virtual void Detached(IComposition::IClient*) = 0
+    //  (0) virtual void Attached(const string&, IComposition::IClient*) = 0
+    //  (1) virtual void Detached(const string&) = 0
     //
 
     ProxyStub::MethodHandler CompositionNotificationStubMethods[] = {
@@ -430,6 +430,7 @@ namespace ProxyStubs {
 
             // read parameters
             RPC::Data::Frame::Reader reader(input.Reader());
+            string name = reader.Text();
             IComposition::IClient* param0 = reader.Number<IComposition::IClient*>();
             IComposition::IClient* param0_proxy = nullptr;
             ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
@@ -449,7 +450,7 @@ namespace ProxyStubs {
                 // call implementation
                 IComposition::INotification* implementation = input.Implementation<IComposition::INotification>();
                 ASSERT((implementation != nullptr) && "Null IComposition::INotification implementation pointer");
-                implementation->Attached(param0_proxy);
+                implementation->Attached(name, param0_proxy);
             }
 
             if (param0_proxy_inst != nullptr) {
@@ -457,38 +458,19 @@ namespace ProxyStubs {
             }
         },
 
-        // virtual void Detached(IComposition::IClient*) = 0
+        // virtual void Detached(const string& name) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // read parameters
             RPC::Data::Frame::Reader reader(input.Reader());
-            IComposition::IClient* param0 = reader.Number<IComposition::IClient*>();
-            IComposition::IClient* param0_proxy = nullptr;
-            ProxyStub::UnknownProxy* param0_proxy_inst = nullptr;
-            if (param0 != nullptr) {
-                param0_proxy_inst = RPC::Administrator::Instance().ProxyInstance(channel, param0, IComposition::IClient::ID, false, IComposition::IClient::ID, true);
-                if (param0_proxy_inst != nullptr) {
-                    param0_proxy = param0_proxy_inst->QueryInterface<IComposition::IClient>();
-                }
+            string name = reader.Text();
 
-                ASSERT((param0_proxy != nullptr) && "Failed to get instance of IComposition::IClient proxy");
-                if (param0_proxy == nullptr) {
-                    TRACE_L1("Failed to get instance of IComposition::IClient proxy");
-                }
-            }
-
-            if ((param0 == nullptr) || (param0_proxy != nullptr)) {
-                // call implementation
-                IComposition::INotification* implementation = input.Implementation<IComposition::INotification>();
-                ASSERT((implementation != nullptr) && "Null IComposition::INotification implementation pointer");
-                implementation->Detached(param0_proxy);
-            }
-
-            if (param0_proxy_inst != nullptr) {
-                RPC::Administrator::Instance().Release(param0_proxy_inst, message->Response());
-            }
+            // call implementation
+            IComposition::INotification* implementation = input.Implementation<IComposition::INotification>();
+            ASSERT((implementation != nullptr) && "Null IComposition::INotification implementation pointer");
+            implementation->Detached(name);
         },
 
         nullptr
@@ -829,8 +811,8 @@ namespace ProxyStubs {
     // IComposition::INotification interface proxy definitions
     //
     // Methods:
-    //  (0) virtual void Attached(IComposition::IClient*) = 0
-    //  (1) virtual void Detached(IComposition::IClient*) = 0
+    //  (0) virtual void Attached(const string&, IComposition::IClient*) = 0
+    //  (1) virtual void Detached(const string&) = 0
     //
 
     class CompositionNotificationProxy final : public ProxyStub::UnknownProxyType<IComposition::INotification> {
@@ -840,12 +822,13 @@ namespace ProxyStubs {
         {
         }
 
-        void Attached(IComposition::IClient* param0) override
+        void Attached(const string& name, IComposition::IClient* param0) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
             // write parameters
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Text(name);
             writer.Number<IComposition::IClient*>(param0);
 
             // invoke the method handler
@@ -856,20 +839,16 @@ namespace ProxyStubs {
             }
         }
 
-        void Detached(IComposition::IClient* param0) override
+        void Detached(const string& name) override
         {
             IPCMessage newMessage(BaseClass::Message(1));
 
             // write parameters
             RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IComposition::IClient*>(param0);
+            writer.Text(name);
 
             // invoke the method handler
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                // read return value
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                Complete(reader);
-            }
+            Invoke(newMessage);
         }
     }; // class CompositionNotificationProxy
 
