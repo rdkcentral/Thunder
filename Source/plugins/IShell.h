@@ -21,7 +21,7 @@ namespace PluginHost {
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
-            virtual void* Instantiate2(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
         };
 
         virtual ~IShell()
@@ -265,7 +265,7 @@ namespace PluginHost {
             if (handler != nullptr) {
                 RPC::Object definition(locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
 
-                void* baseptr = handler->Instantiate2(definition, waitTime, pid, ClassName(), Callsign());
+                void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
 
                 REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
 

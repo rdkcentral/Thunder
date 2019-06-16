@@ -217,7 +217,7 @@ namespace PluginHost
                     rootObject.HostType(), 
                     rootObject.Configuration.Value());
 
-                result = handler->Instantiate2(definition, waitTime, pid, ClassName(), Callsign());
+                result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
             }
         }
 

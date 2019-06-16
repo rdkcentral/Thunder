@@ -152,8 +152,8 @@ namespace PluginHost {
                 _config = config;
                 _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
                 _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
-                _dataPath = _baseConfig.DataPath() + config.ClassName.Value() + '/';
-                _volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
+                _dataPath = _baseConfig.DataPath() + callSign + '/';
+                _volatilePath = _baseConfig.VolatilePath() + callSign + '/';
 
                 // Volatile means that the path could not have been created, create it for now.
                 Core::Directory(_volatilePath.c_str()).CreatePath();
