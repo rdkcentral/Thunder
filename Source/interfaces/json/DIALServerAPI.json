@@ -1,0 +1,56 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "DIAL Server API",
+    "class": "DIALServer",
+    "description": "DIAL Server JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "events": {
+    "start": {
+      "summary": "Signals that application start was requested over DIAL *(passive mode only)*",
+      "params": {
+        "type": "object",
+        "properties": {
+          "application": {
+            "description": "Application name",
+            "type": "string",
+            "example": "YouTube"
+          },
+          "parameters": {
+            "description": "Additional application-specific parameters",
+            "type": "string",
+            "example": "watch?v=zpp045FBbQY"
+          }
+        },
+        "required": [
+          "application"
+        ]
+      }
+    },
+    "stop": {
+      "summary": "Signals that application stop was requested over DIAL *(passive mode only)*",
+      "params": {
+        "type": "object",
+        "properties": {
+          "application": {
+            "description": "Application name",
+            "type": "string",
+            "example": "YouTube"
+          },
+          "parameters": {
+            "description": "Additional application-specific parameters",
+            "type": "string",
+            "example": ""
+          }
+        },
+        "required": [
+          "application"
+        ]
+      }
+    }
+  }
+}

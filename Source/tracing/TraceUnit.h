@@ -147,13 +147,13 @@ namespace Trace {
     private:
         inline uint32_t Open(const string& fileName) 
         {
-            ASSERT(m_OutputChannel->IsValid() == false);
+            ASSERT(m_OutputChannel == nullptr);
 
             m_OutputChannel = new TraceBuffer(fileName);
 
             ASSERT(m_OutputChannel->IsValid() == true);
 
-            return (Core::ERROR_NONE);
+            return (m_OutputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
         void UpdateEnabledCategories();
 
