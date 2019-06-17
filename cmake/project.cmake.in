@@ -20,6 +20,8 @@ endif()
 set(NAMESPACE "@NAMESPACE@")
 set(BUILD_TYPE "@BUILD_TYPE@")
 
+set(JSON_GENERATOR "@JSON_GENERATOR@")
+
 if("${BUILD_TYPE}" STREQUAL "DebugOptimized" OR "${BUILD_TYPE}" STREQUAL "Debug")
     set(CMAKE_BUILD_TYPE "Debug")
 elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
