@@ -107,9 +107,10 @@ public:
         LCXContainer(const LCXContainer&) = delete;
         LCXContainer& operator=(const LCXContainer&) = delete;
 
-        LCXContainer(const string& name, LxcContainerType* lxccontainer, const string& logpath, const string& configuration)
+        LCXContainer(const string& name, LxcContainerType* lxccontainer, const string& logpath, const string& configuration, const string& lxcpath)
             : _name(name)
             , _pid(0)
+            , _lxcpath(lxcpath)
             , _referenceCount(1)
             , _lxccontainer(lxccontainer)
 #ifdef __DEBUG__
@@ -129,16 +130,15 @@ public:
             key += pathName;
             _lxccontainer->set_config_item(_lxccontainer, "lxc.environment", key.c_str());
 
-            // Huppel todo: check if below is the correct path, otherwise get it from where the container was found
-
-            const char* test = _lxccontainer->get_config_path(_lxccontainer);
+            // const char* test = _lxccontainer->get_config_path(_lxccontainer); Note: this does not give you the correct path!!
 
             if( config.LXCLogging.Value() == true ) {
                 // we need to move this probably to the admin, no possibility to set this per container, hippyware!!
+                string filename(logpath + name + "/lxclogging.log");
                 lxc_log log;
                 log.name = name.c_str();
-                log.lxcpath = test;
-                log.file = (logpath + name + "/lxclogging.log").c_str();
+                log.lxcpath = _lxcpath.c_str();
+                log.file = filename.c_str();
                 log.level = config.LXCLogLevel.Value().c_str();
                 log.prefix = name.c_str();
                 log.quiet = false;
@@ -146,9 +146,10 @@ public:
             }
 
             if( config.ConsoleLogging.Value() == true ) {
+                string filename(logpath + name + "/console.log");
                 _lxccontainer->set_config_item(_lxccontainer, "lxc.console.buffer.size", config.ConsoleBufferSize.Value().c_str());
                 _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogFileSize.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
-                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", (logpath + name + "/console.log").c_str());
+                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", filename.c_str());
             }
 
             Core::JSON::ArrayType<Config::ConfigItem>::Iterator index(config.ConfigItems.Elements());
@@ -192,6 +193,7 @@ public:
         private:
             const string _name;
             pid_t _pid;
+            string _lxcpath;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
 #ifdef __DEBUG__
@@ -232,7 +234,7 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
         while( ( container == nullptr) && ( index < numberofcontainersfound ) ) {
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
-                container = new LXCContainerAdministrator::LCXContainer(name, c, logpath, configuration);
+                container = new LXCContainerAdministrator::LCXContainer(name, c, logpath, configuration, searchpaths.Current());
             }
             else {
                 lxc_container_put(c);
@@ -277,15 +279,20 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
 
 #ifdef __DEBUG__
     if( _debugmode == true ) {
-        bool retval = _lxccontainer->start(_lxccontainer, 0, NULL);
+        result = _lxccontainer->start(_lxccontainer, 0, NULL);
+        if( result == true ) {
 
-        lxc_attach_command_t lxccommand;
-        lxccommand.program = (char *)command.c_str();
-        lxccommand.argv = const_cast<char**>(params.data());
+            lxc_attach_command_t lxccommand;
+            lxccommand.program = (char *)command.c_str();
+            lxccommand.argv = const_cast<char**>(params.data());
 
-        lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-        int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
-        result = ret == 0;
+            lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+            int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
+            if( ret != 0 ) {
+                _lxccontainer->shutdown(_lxccontainer, 0);
+            }
+            result = ret == 0;
+        }
     } else
 #endif
     {
@@ -305,6 +312,7 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
 bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/) {
     bool result = true;
     if( _lxccontainer->is_running(_lxccontainer)  == true ) {
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container name [%s] Stop activated"), _name.c_str()));
         int internaltimeout = timeout/1000;
         if( timeout == Core::infinite ) {
             internaltimeout = -1;

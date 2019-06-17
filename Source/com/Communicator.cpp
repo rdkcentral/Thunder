@@ -36,7 +36,7 @@ public:
         uint32_t nextinterval = handler->AttemptClose(0);
 
         if( nextinterval != 0 ) {
-            _destructor.Schedule(Core::Time::Now().Add(10000), ProcessShutdown(std::move(handler)));
+            _destructor.Schedule(Core::Time::Now().Add(nextinterval), ProcessShutdown(std::move(handler)));
         }
     }
 
@@ -63,8 +63,6 @@ public:
         uint64_t result = 0;
 
         uint32_t nextinterval = _handler->AttemptClose(_cycle++);
-
-        uint32_t test = std::numeric_limits<uint8_t>::max();
 
         if ( nextinterval != 0 ) {
             result = Core::Time(scheduledTime).Add(nextinterval).Ticks(); 
@@ -139,8 +137,7 @@ private:
 
     explicit ContainerClosingInfo(ProcessContainers::IContainerAdministrator::IContainer* container)
         : ClosingInfo()
-        , _pid(static_cast<uint32_t>(container->Pid()))
-        , _process(_pid)
+        , _process(static_cast<uint32_t>(container->Pid()))
         , _container(container)
     {
         container->AddRef();
@@ -149,11 +146,11 @@ private:
 protected:
     uint32_t AttemptClose(const uint8_t iteration) override {
         uint32_t nextinterval = 0;
-        if( _container->IsRunning() == true ) {
+        if( ( _process.Id() != 0 && _process.IsActive() == true ) || ( _process.Id() == 0 && _container->IsRunning() == true  ) ) {
             switch( iteration ) {
                 case 0:
                     {
-                        if( _pid != 0 ) {
+                        if( _process.Id() != 0 ) {
                             _process.Kill(false);
                         } else {
                             _container->Stop(0);
@@ -163,7 +160,7 @@ protected:
                 break;
                 case 1:
                     {
-                        if( _pid != 0 ) {
+                        if( _process.Id() != 0 ) {
                             _process.Kill(true);
                             nextinterval = 4000;
                         } else {
@@ -186,7 +183,6 @@ protected:
     }
 
 private:
-    uint32_t _pid;
     Core::Process _process;
     ProcessContainers::IContainerAdministrator::IContainer* _container;
 };
