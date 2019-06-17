@@ -50,6 +50,7 @@ add_library(${TARGET} SHARED
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
         ASN1.h
+        DoorBell.h
         Config.h
         core.h
         CyclicBuffer.h

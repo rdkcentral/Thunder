@@ -1,6 +1,9 @@
 #include "TraceUnit.h"
 #include "TraceCategories.h"
 
+#define TRACE_CYCLIC_BUFFER_FILENAME _T("TRACE_FILENAME")
+#define TRACE_CYCLIC_BUFFER_DOORBELL _T("TRACE_DOORBELL")
+
 namespace WPEFramework {
 namespace Trace {
 
@@ -82,6 +85,8 @@ namespace Trace {
         toString(dst, format, ap);
     }
 
+    /* static */ const TCHAR* CyclicBufferName = _T("tracebuffer");
+
     TraceUnit::TraceUnit()
         : m_Categories()
         , m_Admin()
@@ -90,9 +95,9 @@ namespace Trace {
     {
     }
 
-    TraceUnit::TraceBuffer::TraceBuffer(const string& name)
-        : Core::CyclicBuffer(name, TRACE_CYCLIC_BUFFER_SIZE, true)
-        , _doorBell(TRACE_CYCLIC_BUFFER_PREFIX)
+    TraceUnit::TraceBuffer::TraceBuffer(const string& doorBell, const string& name)
+        : Core::CyclicBuffer(name, CyclicBufferSize, true)
+        , _doorBell(doorBell.c_str())
     {
     }
 
@@ -144,14 +149,17 @@ namespace Trace {
         uint32_t result = Core::ERROR_UNAVAILABLE;
 
         string fileName;
+        string doorBell;
         Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
+        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
 
         ASSERT(fileName.empty() == false);
+        ASSERT(doorBell.empty() == false);
 
         if (fileName.empty() == false) {
        
             fileName +=  '.' + Core::NumberType<uint32_t>(identifier).Text();
-            result = Open(fileName);
+            result = Open(doorBell, fileName);
         }
 
         return (result);
@@ -159,11 +167,17 @@ namespace Trace {
 
     uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
     {
-        string fileName(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX + '.' + Core::NumberType<uint32_t>(identifier).Text());
+        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName + '.' + Core::NumberType<uint32_t>(identifier).Text());
+        #ifdef __WIN32__
+        string doorBell("127.0.0.1:61234");
+        #else
+        string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell" );
+        #endif
 
         Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
+        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
 
-        return (Open(fileName));
+        return (Open(doorBell, fileName));
     }
 
     uint32_t TraceUnit::Close()

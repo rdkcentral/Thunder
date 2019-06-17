@@ -16,9 +16,8 @@ namespace Trace {
     struct ITraceControl;
     struct ITrace;
 
-#define TRACE_CYCLIC_BUFFER_FILENAME _T("TRACE_FILENAME")
-#define TRACE_CYCLIC_BUFFER_SIZE ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))) /* 8Kb */
-#define TRACE_CYCLIC_BUFFER_PREFIX _T("tracebuffer")
+    constexpr uint32_t CyclicBufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
+    extern EXTERNAL const TCHAR* CyclicBufferName;
 
     // ---- Class Definition ----
     class EXTERNAL TraceUnit {
@@ -82,16 +81,20 @@ namespace Trace {
             TraceBuffer& operator=(const TraceBuffer&) = delete;
 
         public:
-            TraceBuffer(const string& name);
+            TraceBuffer(const string& doorBell, const string& name);
             ~TraceBuffer();
 
         public:
-            Core::DoorBell& DoorBell()
-            {
-                return (_doorBell);
-            }
-
             virtual uint32_t GetOverwriteSize(Cursor& cursor) override;
+            inline void Ring() {
+                _doorBell.Ring();
+            }
+            inline void Acknowledge() {
+                _doorBell.Acknowledge();
+            }
+            inline uint32_t Wait (const uint32_t waitTime) {
+                return (_doorBell.Wait(waitTime));
+            }
 
         private:
             virtual void DataAvailable() override;
@@ -125,12 +128,6 @@ namespace Trace {
 
         void Trace(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* const information);
 
-        inline Core::DoorBell& TraceAnnouncement()
-        {
-            ASSERT(m_OutputChannel != nullptr);
-            return (m_OutputChannel->DoorBell());
-        }
-
         inline Core::CyclicBuffer* CyclicBuffer()
         {
             return (m_OutputChannel);
@@ -143,13 +140,26 @@ namespace Trace {
         {
             m_DirectOut = enabled;
         }
+        inline void Announce() {
+            ASSERT (m_OutputChannel != nullptr);
+            m_OutputChannel->Ring();
+        }
+        inline void Acknowledge() {
+            ASSERT (m_OutputChannel != nullptr);
+            m_OutputChannel->Acknowledge();
+        }
+        inline uint32_t Wait (const uint32_t waitTime) {
+            ASSERT (m_OutputChannel != nullptr);
+            return (m_OutputChannel->Wait(waitTime));
+        }
+
 
     private:
-        inline uint32_t Open(const string& fileName) 
+        inline uint32_t Open(const string& doorBell, const string& fileName) 
         {
             ASSERT(m_OutputChannel == nullptr);
 
-            m_OutputChannel = new TraceBuffer(fileName);
+            m_OutputChannel = new TraceBuffer(doorBell, fileName);
 
             ASSERT(m_OutputChannel->IsValid() == true);
 
