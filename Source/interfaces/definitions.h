@@ -38,7 +38,7 @@ namespace WPEFramework {
 	ENUM_CONVERSION_HANDLER(Exchange::IStream::state);
 
 	ENUM_CONVERSION_HANDLER(JsonData::NetworkControl::NetworkResultData::ModeType);
-	ENUM_CONVERSION_HANDLER(JsonData::TestUtility::InputInfo::ParamType);
+	ENUM_CONVERSION_HANDLER(JsonData::TestUtility::InputInfo::TypeType);
 	ENUM_CONVERSION_HANDLER(JsonData::RemoteControl::ModifiersType);
 	ENUM_CONVERSION_HANDLER(JsonData::WifiControl::TypeType);
 	ENUM_CONVERSION_HANDLER(JsonData::Messenger::RoomupdateParamsData::ActionType);

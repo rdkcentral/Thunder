@@ -23,13 +23,13 @@ ENUM_CONVERSION_END(JsonData::RemoteControl::ModifiersType);
 
 // TestUtility
 
-ENUM_CONVERSION_BEGIN(JsonData::TestUtility::InputInfo::ParamType)
-    { JsonData::TestUtility::InputInfo::ParamType::NUMBER, _TXT("Number") },
-    { JsonData::TestUtility::InputInfo::ParamType::STRING, _TXT("String") },
-    { JsonData::TestUtility::InputInfo::ParamType::BOOLEAN, _TXT("Boolean") },
-    { JsonData::TestUtility::InputInfo::ParamType::OBJECT, _TXT("Object") },
-    { JsonData::TestUtility::InputInfo::ParamType::SYMBOL, _TXT("Symbol") },
-ENUM_CONVERSION_END(JsonData::TestUtility::InputInfo::ParamType);
+ENUM_CONVERSION_BEGIN(JsonData::TestUtility::InputInfo::TypeType)
+    { JsonData::TestUtility::InputInfo::TypeType::NUMBER, _TXT("Number") },
+    { JsonData::TestUtility::InputInfo::TypeType::STRING, _TXT("String") },
+    { JsonData::TestUtility::InputInfo::TypeType::BOOLEAN, _TXT("Boolean") },
+    { JsonData::TestUtility::InputInfo::TypeType::OBJECT, _TXT("Object") },
+    { JsonData::TestUtility::InputInfo::TypeType::SYMBOL, _TXT("Symbol") },
+ENUM_CONVERSION_END(JsonData::TestUtility::InputInfo::TypeType);
 
 // WifiControl
 
