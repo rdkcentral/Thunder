@@ -642,6 +642,14 @@ function(print_target_properties tgt)
 endfunction(print_target_properties)
 
 function(JsonGenerator)
+    if (NOT JSON_GENERATOR)
+        message(FATAL_ERROR "The path JSON_GENERATOR is not set!")
+    endif()
+
+    if(NOT EXISTS "${JSON_GENERATOR}" OR IS_DIRECTORY "${JSON_GENERATOR}")
+        message(FATAL_ERROR "JsonGenerator path ${JSON_GENERATOR} invalid.")
+    endif()
+
     set(optionsArgs CODE STUBS DOCS NO_WARNINGS COPY_CTOR NO_REF_NAMES)
     set(oneValueArgs OUTPUT IFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
     set(multiValueArgs INPUT)
