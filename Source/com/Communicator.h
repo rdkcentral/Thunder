@@ -6,7 +6,7 @@
 #include "IUnknown.h"
 #include "Module.h"
 
-#define PROCESSCONTAINERS_ENABLED 
+//#define PROCESSCONTAINERS_ENABLED 
 
 #ifdef PROCESSCONTAINERS_ENABLED 
     #include "../processcontainers/ProcessContainer.h"
