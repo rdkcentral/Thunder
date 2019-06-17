@@ -7,6 +7,7 @@
 #include <b_secbuf.h>
 #include <gst_brcm_svp_meta.h>
 #include <assert.h>
+#include "Trace.h"
 
 struct RPCSecureBufferInformation {
     uint32_t type;
@@ -55,30 +56,34 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         uint32_t mappedDataSize = 0;
         if (mappedBuffer(buffer, true, &mappedData, &mappedDataSize) == false) {
 
-            printf("Invalid buffer.\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: Invalid buffer.");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
 
         uint8_t *mappedSubSample = nullptr;
         uint32_t mappedSubSampleSize = 0;
         if (subSample != nullptr && mappedBuffer(subSample, false, &mappedSubSample, &mappedSubSampleSize) == false) {
 
-            printf("Invalid subsample buffer.\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: Invalid subsample buffer.");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
 
         uint8_t *mappedIV = nullptr;
         uint32_t mappedIVSize = 0;
         if (mappedBuffer(IV, false, &mappedIV, &mappedIVSize) == false) {
-            printf("Invalid IV buffer.\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: Secbuf alloc failed!");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
 
         uint8_t *mappedKeyID = nullptr;
         uint32_t mappedKeyIDSize = 0;
         if (mappedBuffer(keyID, false, &mappedKeyID, &mappedKeyIDSize) == false) {
-            printf("Invalid keyID buffer.\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("Invalid keyID buffer.");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
 
         B_Secbuf_Info secureBufferInfo;
@@ -90,8 +95,9 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         RPCSecureBufferInformation* rpcSecureBufferInformation = reinterpret_cast<RPCSecureBufferInformation*> (g_alloca(sizeOfRPCInfo));
 
         if(B_Secbuf_Alloc(mappedDataSize, B_Secbuf_Type_eGeneric, &opaqueDataEnc)) {
-            fprintf(stderr, "adapter_session_decrypt: Secbuf alloc failed!\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: Secbuf alloc failed!");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
         B_Secbuf_GetBufferInfo(opaqueDataEnc, &secureBufferInfo);
 
@@ -133,17 +139,19 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
 
         result = opencdm_session_decrypt(session, reinterpret_cast<uint8_t*>(rpcSecureBufferInformation), sizeOfRPCInfo, mappedIV, mappedIVSize, mappedKeyID, mappedKeyIDSize);
         if(result != ERROR_NONE) {
-            fprintf(stderr, "adapter_session_decrypt: opencdm_session_decrypt failed!\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: opencdm_session_decrypt failed!");
+            goto exit;
         }
 
         // OCDM allocate opaqueData for secure decrypted buffer and will be freed in gstreamer
         if(B_Secbuf_AllocWithToken(mappedDataSize, B_Secbuf_Type_eSecure,  rpcSecureBufferInformation->token, &opaqueData)) {
-            fprintf(stderr, "adapter_session_decrypt: Secbuf Alloc failed!\n");
-            return (ERROR_INVALID_DECRYPT_BUFFER);
+            TRACE_L1("adapter_session_decrypt: Secbuf Alloc failed!");
+            result = ERROR_INVALID_DECRYPT_BUFFER;
+            goto exit;
         }
 
         addSVPMetaData(buffer, reinterpret_cast<uint8_t*>(opaqueData));
     }
+exit:
     return (result);
 }
