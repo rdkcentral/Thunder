@@ -255,7 +255,7 @@ namespace PluginHost {
             return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator)
+        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
         {
             ICOMLink* handler(COMLink());
 
@@ -263,9 +263,9 @@ namespace PluginHost {
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
-                RPC::Object definition(locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
+                RPC::Object definition(Callsign(), locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1, RPC::Object::HostType::REMOTE, string());
 
-                void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                void* baseptr = handler->Instantiate(definition, waitTime, connecionId, ClassName(), Callsign());
 
                 REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
 

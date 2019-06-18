@@ -95,6 +95,10 @@ namespace Trace {
             inline uint32_t Wait (const uint32_t waitTime) {
                 return (_doorBell.Wait(waitTime));
             }
+            inline void Relinquish()
+            {
+                return (_doorBell.Relinquish());
+            }
 
         private:
             virtual void DataAvailable() override;
@@ -152,7 +156,10 @@ namespace Trace {
             ASSERT (m_OutputChannel != nullptr);
             return (m_OutputChannel->Wait(waitTime));
         }
-
+		inline void Relinquish() {
+            ASSERT(m_OutputChannel != nullptr);
+            return (m_OutputChannel->Relinquish());
+		}
 
     private:
         inline uint32_t Open(const string& doorBell, const string& fileName) 

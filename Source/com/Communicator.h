@@ -807,6 +807,7 @@ namespace RPC {
                 _adminLock.Lock();
 
                 while (_connections.size() > 0) {
+                    TRACE_L1("Forcefully closing open RPC Server connection: %d", _connections.begin()->second->Id());
                     _connections.begin()->second->Terminate();
                     _connections.erase(_connections.begin());
                 }

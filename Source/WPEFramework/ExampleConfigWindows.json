@@ -11,6 +11,12 @@
   "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
+  "tracing": [
+    {
+      "module": "Plugin_OCDM",
+      "enabled": true
+    }
+  ],
   "plugins": [
     {
       "callsign": "Controller",

@@ -90,7 +90,7 @@ namespace PluginHost {
                     , OOMAdjust(0)
                     , Policy()
                     , StackSize(0)
-                    , Umask(S_IXOTH)
+                    , Umask(1)
                 {
                     Add(_T("user"), &User);
                     Add(_T("group"), &Group);
