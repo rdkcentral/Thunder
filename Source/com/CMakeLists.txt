@@ -30,6 +30,16 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
+if(PROCESSCONTAINERS)
+    message("Hallo ik kom er door heen")
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            PROCESSCONTAINERS_ENABLED=1)
+endif(PROCESSCONTAINERS)
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
