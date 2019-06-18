@@ -601,7 +601,7 @@ namespace RPC {
                                                                                           config.VolatilePath(),
                                                                                           instance.Configuration());
 #else
-                    SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), classname.c_str()));
+                    SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
                     break;
             };
@@ -690,6 +690,8 @@ namespace RPC {
             {
                 void* interfaceReturned = nullptr;
 
+                id = 0;
+
                 _adminLock.Lock();
 
                 Communicator::RemoteProcess* result = CreateProcess(instance, config);
@@ -709,8 +711,6 @@ namespace RPC {
                         std::forward_as_tuple(result->Id()),
                         std::forward_as_tuple(std::pair<Core::Event&, void*>(trigger, nullptr)));
 
-                    id = result->Id();
-
                     _adminLock.Unlock();
 
                     // Start the process, and....
@@ -729,6 +729,10 @@ namespace RPC {
 
                         if (proxyStub != nullptr) {
                             interfaceReturned = proxyStub->QueryInterface(interfaceId);
+
+                            ASSERT (interfaceReturned != nullptr);
+
+                            id = result->Id();
                         }
 
                     } else {

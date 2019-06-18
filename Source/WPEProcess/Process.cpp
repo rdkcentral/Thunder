@@ -435,6 +435,8 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
+        TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
+
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
         Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
 

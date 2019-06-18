@@ -33,7 +33,15 @@ public:
     {
     }
     DataExchange(const string& name, const uint32_t bufferSize)
-        : WPEFramework::Core::SharedBuffer(name.c_str(), bufferSize,
+        : WPEFramework::Core::SharedBuffer(name.c_str(), 
+              WPEFramework::Core::File::USER_READ    |
+              WPEFramework::Core::File::USER_WRITE   |
+              WPEFramework::Core::File::USER_EXECUTE |
+              WPEFramework::Core::File::GROUP_READ   |
+              WPEFramework::Core::File::GROUP_WRITE  |
+              WPEFramework::Core::File::OTHERS_READ  |
+              WPEFramework::Core::File::OTHERS_WRITE,
+              bufferSize,
               sizeof(Administration))
     {
         Administration* admin = reinterpret_cast<Administration*>(AdministrationBuffer());

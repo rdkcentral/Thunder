@@ -97,14 +97,14 @@ namespace Trace {
 
     TraceUnit::TraceBuffer::TraceBuffer(const string& doorBell, const string& name)
         : Core::CyclicBuffer(name, 
-                             static_cast<Core::DataElementFile::FileState>(
-                                Core::DataElementFile::READABLE         | 
-                                Core::DataElementFile::WRITABLE         | 
-                                Core::DataElementFile::SHAREABLE        | 
-                                Core::DataElementFile::GROUP_READABLE   |
-                                Core::DataElementFile::GROUP_WRITABLE   |
-                                Core::DataElementFile::OTHERS_READABLE  |
-                                Core::DataElementFile::OTHERS_WRITABLE ), 
+                                Core::File::USER_READ    | 
+                                Core::File::USER_WRITE   | 
+                                Core::File::USER_EXECUTE | 
+                                Core::File::GROUP_READ   |
+                                Core::File::GROUP_WRITE  |
+                                Core::File::OTHERS_READ  |
+                                Core::File::OTHERS_WRITE | 
+                                Core::File::SHAREABLE,
                              CyclicBufferSize, true)
         , _doorBell(doorBell.c_str())
     {

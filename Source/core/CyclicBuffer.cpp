@@ -4,10 +4,10 @@
 namespace WPEFramework {
 namespace Core {
 
-    CyclicBuffer::CyclicBuffer(const string& fileName, const DataElementFile::FileState state, const uint32_t bufferSize, const bool overwrite)
+    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              (bufferSize > 0 ? ( state | DataElementFile::CREATE ) : ( state & ~DataElementFile::CREATE) ),
+              (bufferSize > 0 ? (mode | File::CREATE) : (mode & ~File::CREATE) ),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
         , _alert(false)
@@ -56,7 +56,7 @@ namespace Core {
 
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
         : CyclicBuffer( fileName, 
-                        static_cast<DataElementFile::FileState>(DataElementFile::WRITABLE | DataElementFile::READABLE | DataElementFile::SHAREABLE ),
+                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
                         bufferSize,
                         overwrite
                         ) 

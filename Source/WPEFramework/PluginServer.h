@@ -90,7 +90,7 @@ namespace PluginHost {
                     , OOMAdjust(0)
                     , Policy()
                     , StackSize(0)
-                    , Umask(0003)
+                    , Umask(S_IXOTH)
                 {
                     Add(_T("user"), &User);
                     Add(_T("group"), &Group);
@@ -1621,7 +1621,7 @@ namespace PluginHost {
             }
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
-                return (_processAdministrator.Connection(connectionId));
+                return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
             uint32_t Persist()
             {

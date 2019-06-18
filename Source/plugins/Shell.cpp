@@ -97,7 +97,6 @@ namespace PluginHost
                 // Yip we want to go out-of-process
                 Object settings;
                 settings.FromString(config.Config.Value());
-
                 *this = settings;
 
                 if (Locator.Value().empty() == true) {
@@ -174,7 +173,7 @@ namespace PluginHost
         bool inProcessOldConfiguration = ( !rootObject.Mode.IsSet() ) && ( rootObject.OutOfProcess.Value() == false ); //note: when both new and old not set this one will revert to the old default which was true
         bool inProcessNewConfiguration = ( rootObject.Mode.IsSet() ) && ( rootObject.Mode == Object::ModeType::OFF ); // when both set the Old one is ignored
 
-        if ( inProcessNewConfiguration == true || inProcessOldConfiguration == true ) {
+        if ( (inProcessNewConfiguration == true) || (inProcessOldConfiguration == true) ) {
 
             string locator(rootObject.Locator.Value());
 

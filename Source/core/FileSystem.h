@@ -12,13 +12,6 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL File {
     public:
-
-        typedef enum {
-            MODE_READ     = 0x01,
-            MODE_WRITE    = 0x02,
-            MODE_EXECUTE  = 0x04
-       } Mode;
-
 #ifdef __WIN32__
         typedef enum {
             // A file that is read-only. Applications can read the file, but cannot write to it or delete it. This attribute is not honored on directories. For more information, see You cannot view or change the Read-only or the System attributes of folders in Windows Server 2003, in Windows XP, in Windows Vista or in Windows 7.
@@ -41,6 +34,21 @@ namespace Core {
             FILE_ENCRYPTED = FILE_ATTRIBUTE_ENCRYPTED
 
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = 0x00000001,
+            USER_WRITE     = 0x00000002,
+            USER_EXECUTE   = 0x00000004,
+            GROUP_READ     = 0x00000008,
+            GROUP_WRITE    = 0x00000010,
+            GROUP_EXECUTE  = 0x00000020,
+            OTHERS_READ    = 0x00000040,
+            OTHERS_WRITE   = 0x00000080,
+            OTHERS_EXECUTE = 0x00000100,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
 #endif
 
 #ifdef __POSIX__
@@ -62,6 +70,22 @@ namespace Core {
             // A device
             FILE_DEVICE = 0x0010
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = S_IRUSR,
+            USER_WRITE     = S_IWUSR,
+            USER_EXECUTE   = S_IXUSR,
+            GROUP_READ     = S_IRGRP,
+            GROUP_WRITE    = S_IWGRP,
+            GROUP_EXECUTE  = S_IXGRP,
+            OTHERS_READ    = S_IROTH,
+            OTHERS_WRITE   = S_IWOTH,
+            OTHERS_EXECUTE = S_IXOTH,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
+
 #endif
 
     public:
@@ -269,31 +293,13 @@ namespace Core {
 
         bool Create()
         {
-#ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), S_IRWXU | S_IRGRP | S_IWGRP);
-#endif
-#ifdef __WIN32__
-            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-#endif
-            LoadFileInfo();
-            return (IsOpen());
+            return (Create(USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE));
         }
 
-        bool Create(const uint8_t user, const uint8_t group, const uint8_t others)
+        bool Create(const uint32_t mode)
         {
 #ifdef __POSIX__
-            mode_t modes = ((user   & MODE_READ)    ? S_IRUSR : 0) |
-                           ((user   & MODE_WRITE)   ? S_IWUSR : 0) |
-                           ((user   & MODE_EXECUTE) ? S_IXUSR : 0) |
-                           ((group  & MODE_READ)    ? S_IRGRP : 0) |
-                           ((group  & MODE_WRITE)   ? S_IWGRP : 0) |
-                           ((group  & MODE_EXECUTE) ? S_IXGRP : 0) |
-                           ((others & MODE_READ)    ? S_IROTH : 0) |
-                           ((others & MODE_WRITE)   ? S_IWOTH : 0) |
-                           ((others & MODE_EXECUTE) ? S_IXOTH : 0) ;
-
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), modes );
-            fchmod(_handle, modes );
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), mode);
 #endif
 #ifdef __WIN32__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
