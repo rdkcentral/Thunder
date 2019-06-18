@@ -35,16 +35,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
 
-if(PROCESSCONTAINERS)
-    target_link_libraries(${TARGET}
-        PRIVATE
-            ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
-    target_compile_definitions(${TARGET}
-        PUBLIC
-            PROCESSCONTAINERS_ENABLED=1)
-endif(PROCESSCONTAINERS)
-
-
 if (PROTOCOLS)
     target_link_libraries(${TARGET}
             PRIVATE
