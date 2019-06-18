@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json
 from collections import OrderedDict
 
-VERSION="1.2.1"
+VERSION="1.2.2"
 
 class Trace:
     class Colors:
@@ -172,7 +172,7 @@ class JsonEnum(JsonType):
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
             raise JsonParseError("Mismatch in enumeration values in enum '%s'" % self.JsonName())
-        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True 
+        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True
         self.default = self.CppClass()+"::"+self.CppEnumerators()[0]
         self.duplicate = False
         self.origRef = None
@@ -534,8 +534,15 @@ def SortByDependency(objects):
     # This will order objects by their relations
     for obj in sorted(objects, key=lambda x: x.CppClass(), reverse=False):
         found = filter(lambda sortedObj: obj.CppClass() in map(lambda x: x.CppClass(), sortedObj.Objects()), sortedObjects)
-        index = sortedObjects.index(found[0]) if found else len(sortedObjects)
-        sortedObjects.insert(index, obj)
+        if found:
+            index = min(map(lambda x: sortedObjects.index(x), found))
+            movelist = filter(lambda x: x.CppClass() in map(lambda x: x.CppClass(), sortedObjects), obj.Objects())
+            sortedObjects.insert(index, obj)
+            for m in movelist:
+                if m in sortedObjects:
+                    sortedObjects.insert(index, sortedObjects.pop(sortedObjects.index(m)))
+        else:
+            sortedObjects.append(obj)
     return sortedObjects
 
 class ObjectTracker:
@@ -936,7 +943,12 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line()
 
 def EmitObjects(root, emit, emitCommon = False):
+    global emittedItems
+    emittedItems = 0
+
     def EmitEnum(enum):
+        global emittedItems
+        emittedItems += 1
         print "Emitting enum %s" % enum.CppClass()
         root = enum.parent.parent
         while root.parent:
@@ -1006,6 +1018,8 @@ def EmitObjects(root, emit, emitCommon = False):
             EmitClass(obj)
 
         if not isinstance(jsonObj, (JsonRpcSchema, JsonMethod)):
+            global emittedItems
+            emittedItems += 1
             EmitCtor(jsonObj, jsonObj.NeedsCopyCtor())
             emit.Line()
             if jsonObj.NeedsCopyCtor():
@@ -1087,6 +1101,7 @@ def EmitObjects(root, emit, emitCommon = False):
     emit.Line()
     emit.Line("}")
     emit.Line()
+    return emittedItems
 
 def CreateCode(schema, path, generateClasses, generateStubs):
     directory = path.rsplit("/",1)[0]
@@ -1095,6 +1110,7 @@ def CreateCode(schema, path, generateClasses, generateStubs):
     if rpcObj:
         header_file = directory + "/" + DATA_NAMESPACE + "_" + filename + ".h"
         if generateClasses:
+            emitted = 0
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -1103,8 +1119,14 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                 emitter.Line()
                 emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
                 emitter.Line()
-                EmitObjects(rpcObj, emitter, True)
-                trace.Success("JSON data classes generated in '%s'." % output_file.name)
+                emitted = EmitObjects(rpcObj, emitter, True)
+                if emitted:
+                    trace.Success("JSON data classes generated in '%s'." % output_file.name)
+                else:
+                    trace.Success("No JSON data classes generated for '%s'." % filename)
+            if not emitted:
+                os.remove(header_file)
+
         if generateStubs:
             with open(directory + "/"  + filename + "JsonRpc.cpp", "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
