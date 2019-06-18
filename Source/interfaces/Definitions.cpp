@@ -40,10 +40,16 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
-    { Exchange::IStream::Stubbed, _TXT("Stubbed") },
-    { Exchange::IStream::DVB,     _TXT("DVB")     },
-    { Exchange::IStream::ATSC,     _TXT("ATSC")     },
-    { Exchange::IStream::VOD,     _TXT("VOD")     },
+    { Exchange::IStream::Undefined,   _TXT("Unknown")     },
+    { Exchange::IStream::Cable,       _TXT("Cable")       },
+    { Exchange::IStream::Handheld,    _TXT("Handheld")    },
+    { Exchange::IStream::Satellite,   _TXT("Satellite")   },
+    { Exchange::IStream::Terrestrial, _TXT("Terrestrial") },
+    { Exchange::IStream::DAB,         _TXT("DAB")         },
+    { Exchange::IStream::RF,          _TXT("RF")          },
+    { Exchange::IStream::Unicast,     _TXT("Unicast")     },
+    { Exchange::IStream::Multicast,   _TXT("Multicast")   },
+    { Exchange::IStream::IP,          _TXT("IP")          },
 ENUM_CONVERSION_END(Exchange::IStream::streamtype)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
