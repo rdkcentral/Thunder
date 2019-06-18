@@ -204,9 +204,15 @@ public:
         _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
 
         OpenCDMSession::Update(pbResponse, cbResponse);
+	// If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
+	#ifdef __DEBUG__
+	unsigned int a_Time = WPEFramework::Core::infinite;
+	#else
+	unsigned int a_Time = 20000;// Expect time in MS
+	#endif
 
         _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE,
-            WPEFramework::Core::infinite);
+            a_Time);
         if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
             response = "message:" + _message;
         }
