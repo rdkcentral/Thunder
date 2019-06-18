@@ -14,6 +14,7 @@ find_package(Threads REQUIRED)
 include(CompileSettings)
 
 add_library(${TARGET} SHARED
+	DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
