@@ -31,9 +31,8 @@ target_link_libraries(${TARGET}
         )
 
 if(PROCESSCONTAINERS)
-    message("Hallo ik kom er door heen")
     target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
             ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
     target_compile_definitions(${TARGET}
         PUBLIC

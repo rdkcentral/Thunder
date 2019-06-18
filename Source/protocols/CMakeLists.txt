@@ -109,9 +109,8 @@ set_target_properties(${TARGET} PROPERTIES
         )
 
 if(PROCESSCONTAINERS)
-   message("Hallo marcel was here!")
     target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
             ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
     target_compile_definitions(${TARGET}
         PUBLIC
