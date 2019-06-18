@@ -14,7 +14,7 @@
         "type": "object",
         "properties": {
           "version": {
-            "description": "Software version (in form \"version#hashtag\")",
+            "description": "Software version (in form *version#hashtag*)",
             "example": "1.0#14452f612c3747645d54974255d11b8f3b4faa54",
             "type": "string"
           },
@@ -43,10 +43,10 @@
           },
           "cpuload": {
             "description": "Current CPU load (percentage)",
-            "example": 2,
-            "type": "number"
+            "example": "2",
+            "type": "string"
           },
-          "togalgpuram": {
+          "totalgpuram": {
             "description": "Total GPU DRAM memory (in bytes)",
             "example": 381681664,
             "type": "number",
@@ -107,7 +107,7 @@
               "example": "00:00:00:00:00",
               "type": "string"
             },
-            "ips": {
+            "ip": {
               "type": "array",
               "items": {
                 "type": "string",
