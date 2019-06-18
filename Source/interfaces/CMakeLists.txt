@@ -13,7 +13,8 @@ list(APPEND PUBLIC_HEADERS definitions.h)
 ProxyStubGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR})
 JsonGenerator(CODE INPUT ${JSON_FILE})
 
-add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
+add_library(${TargetMarshalling} SHARED)
+target_sources(${TargetMarshalling} PRIVATE  ${PROXY_STUB_SOURCES})
 
 add_library(${TargetDefinitions} SHARED
         Definitions.cpp
