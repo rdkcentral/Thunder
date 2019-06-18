@@ -93,7 +93,10 @@ namespace Exchange {
         ID_DSGCC_CLIENT,
         ID_DSGCC_CLIENT_NOTIFICATION,
 
-		ID_PERFORMANCE
+        ID_PERFORMANCE,
+
+        ID_WEBPA,
+        ID_WEBPA_CLIENT
     };
 }
 }
