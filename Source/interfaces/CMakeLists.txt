@@ -3,8 +3,6 @@ set(TargetDefinitions ${NAMESPACE}Definitions)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 file(GLOB PUBLIC_HEADERS I*.h)
-file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
-file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
 file(GLOB JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/json/*API.json)
 
 list(APPEND PUBLIC_HEADERS Module.h)
@@ -13,12 +11,14 @@ list(APPEND PUBLIC_HEADERS definitions.h)
 ProxyStubGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR})
 JsonGenerator(CODE INPUT ${JSON_FILE})
 
-add_library(${TargetMarshalling} SHARED)
-target_sources(${TargetMarshalling} PRIVATE  ${PROXY_STUB_SOURCES})
+file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
+add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
+file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
+file(GLOB JSON_ENUM_SOURCES json/JsonEnum*.cpp)
 add_library(${TargetDefinitions} SHARED
         Definitions.cpp
-        json/Enumerations.cpp
+        ${JSON_ENUM_SOURCES}
         )
 
 target_link_libraries(${TargetMarshalling}
