@@ -1,0 +1,58 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Dropbear Server API",
+    "class": "DropbearServer",
+    "description": "Dropbear Server JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "DropbearServer.1.StartService": {
+      "summary": "Launch Dropbear SSH Server.",
+      "description": "With this method Dropbear SSH service can be launched.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "port": {
+            "description": "Dropbear SSH server listening port",
+            "type": "string",
+            "default": "22"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Failed to bind to the specified port",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "DropbearServer.1.StopService": {
+      "summary": "Close Dropbear SSH Service.",
+      "description": "With this method Dropbear SSH service can be closed.",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Failed to close Dropbear SSH Service",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}
