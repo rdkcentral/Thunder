@@ -160,7 +160,7 @@ namespace Trace {
         string fileName;
         string doorBell;
         Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
-        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
+        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
 
         ASSERT(fileName.empty() == false);
         ASSERT(doorBell.empty() == false);
