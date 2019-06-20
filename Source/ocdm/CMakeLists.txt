@@ -2,6 +2,8 @@ set(TARGET ocdm)
 
 option(CDMI_ADAPTER_IMPLEMENTATION "Defines which implementation is used." "None")
 
+ProxyStubGenerator(NAMESPACE "OCDM" INPUT ${CMAKE_CURRENT_SOURCE_DIR})
+
 add_library(${TARGET} SHARED
         open_cdm.cpp
         open_cdm_ext.cpp

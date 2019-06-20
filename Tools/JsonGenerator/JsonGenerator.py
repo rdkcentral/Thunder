@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json
 from collections import OrderedDict
 
-VERSION="1.2.1"
+VERSION="1.3"
 
 class Trace:
     class Colors:
@@ -172,7 +172,7 @@ class JsonEnum(JsonType):
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
             raise JsonParseError("Mismatch in enumeration values in enum '%s'" % self.JsonName())
-        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True 
+        self.strongly_typed = schema["enumtyped"] if "enumtyped" in schema else True
         self.default = self.CppClass()+"::"+self.CppEnumerators()[0]
         self.duplicate = False
         self.origRef = None
@@ -182,7 +182,8 @@ class JsonEnum(JsonType):
         if obj:
             self.duplicate = True
             self.origRef = obj
-            obj.AddRef(self)
+            if obj.parent != parent:
+                obj.AddRef(self)
         pass
     def CppType(self):
         return TypePrefix("EnumType<%s>" % self.CppClass())
@@ -234,7 +235,8 @@ class JsonObject(JsonType):
             if obj:
                 self.duplicate = True
                 self.origRef = obj
-                obj.AddRef(self)
+                if obj.parent != parent:
+                    obj.AddRef(self)
             for prop_name, prop in schema["properties"].iteritems():
                 newObject = JsonItem(prop_name, self, prop, included=included)
                 self.properties.append(newObject)
@@ -534,8 +536,15 @@ def SortByDependency(objects):
     # This will order objects by their relations
     for obj in sorted(objects, key=lambda x: x.CppClass(), reverse=False):
         found = filter(lambda sortedObj: obj.CppClass() in map(lambda x: x.CppClass(), sortedObj.Objects()), sortedObjects)
-        index = sortedObjects.index(found[0]) if found else len(sortedObjects)
-        sortedObjects.insert(index, obj)
+        if found:
+            index = min(map(lambda x: sortedObjects.index(x), found))
+            movelist = filter(lambda x: x.CppClass() in map(lambda x: x.CppClass(), sortedObjects), obj.Objects())
+            sortedObjects.insert(index, obj)
+            for m in movelist:
+                if m in sortedObjects:
+                    sortedObjects.insert(index, sortedObjects.pop(sortedObjects.index(m)))
+        else:
+            sortedObjects.append(obj)
     return sortedObjects
 
 class ObjectTracker:
@@ -622,6 +631,54 @@ class Emitter():
 # JSON OBJECT GENERATION
 #
 
+def GetNamespace(root, obj, full = True):
+    namespace = ""
+    if isinstance(obj, (JsonObject, JsonEnum, JsonArray)):
+        if isinstance(obj, JsonObject) and not obj.properties:
+            return namespace
+        fullname = ""
+        e = obj
+        while e.parent and not isinstance(e, JsonMethod) and (not e.IsDuplicate() or e.RefCount() > 1):
+            if not isinstance(e, (JsonEnum, JsonArray)):
+                fullname = e.CppClass()+ "::" + fullname
+            if e.RefCount() > 1:
+                break
+            e = e.parent
+        if full:
+            namespace = "%s::%s::" % (DATA_NAMESPACE, root.CppClass())
+        namespace = namespace + "%s" % fullname
+    return namespace
+
+
+def EmitEnumRegs(root, emit):
+    def EmitEnumRegistration(root, enum, full = True):
+        fullname = (GetNamespace(root, enum) if full else "%s::%s::" % (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
+        emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
+        emit.Indent()
+        for c, item in enumerate(enum.enumerators):
+            emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, item.upper(), item))
+        emit.Unindent()
+        emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
+
+    # Enumeration conversion code
+    emit.Line("#include <core/Enumerate.h>")
+    emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, root.CppClass()))
+    emit.Line()
+    emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
+    count = 0
+    if enumTracker.Objects():
+        for obj in enumTracker.Objects():
+            if not obj.IsDuplicate() and not obj.included_from:
+                count += 1
+        if count:
+            for obj in enumTracker.Objects():
+                if not obj.IsDuplicate() and not obj.included_from:
+                    emit.Line()
+                    EmitEnumRegistration(root, obj, obj.RefCount() == 1)
+    emit.Line()
+    emit.Line("}")
+    return count
+
 def EmitHelperCode(root, emit, header_file):
     if root.Objects():
         namespace = DATA_NAMESPACE + "::" + root.JsonName()
@@ -638,35 +695,6 @@ def EmitHelperCode(root, emit, header_file):
                         objName = objName[:p+1] + ns + "::" + objName[p+1:]
                     p = objName.find("<", p + 1)
             return objName
-
-        def GetNamespace(root, obj, full =-True):
-            namespace = ""
-            if isinstance(obj, (JsonObject, JsonEnum, JsonArray)):
-                if isinstance(obj, JsonObject) and not obj.properties:
-                    return namespace
-                fullname = ""
-                e = obj
-                while e.parent and not isinstance(e, JsonMethod) and (not e.IsDuplicate() or e.RefCount() > 1):
-                    if not isinstance(e, (JsonEnum, JsonArray)):
-                        fullname = e.CppClass()+ "::" + fullname
-                    e = e.parent
-                if full:
-                    namespace = "%s::%s::" % (DATA_NAMESPACE, root.CppClass())
-                namespace = namespace + "%s" % fullname
-            return namespace
-
-        def EmitEnumRegistration(root, enum, full = True):
-            fullname = (GetNamespace(root, enum) if full else "%s::%s::" % (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
-            emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
-            emit.Indent()
-            for c, item in enumerate(enum.enumerators):
-                emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, item.upper(), item))
-            emit.Unindent()
-            emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
-
-        def EmitEnumConversionHandler(root, enum):
-            fullname = GetNamespace(root, enum) + enum.CppClass()
-            emit.Line("ENUM_CONVERSION_HANDLER(%s);" % fullname)
 
         emit.Line("#include \"Module.h\"")
         emit.Line("#include \"%s.h\"" % root.JsonName())
@@ -730,36 +758,12 @@ def EmitHelperCode(root, emit, header_file):
 
         emit.Unindent()
         emit.Unindent()
-
-        # Enumeration conversion code
         emit.Line("*/")
         emit.Line()
-        emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
-        emit.Line()
-        if enumTracker.Objects():
-            count = 0
-            for obj in enumTracker.Objects():
-                if not obj.IsDuplicate() and not obj.included_from:
-                    count += 1
-            if count:
-                emit.Line("/*")
-                emit.Indent()
-                emit.Line("// Copy the code below to interfaces/json/Enumerations.cpp")
-                for obj in enumTracker.Objects():
-                    if not obj.IsDuplicate() and not obj.included_from:
-                        emit.Line()
-                        EmitEnumRegistration(root, obj, obj.RefCount() == 1)
-                emit.Line()
-                emit.Line("// Copy the code below to interfaces/definitions.h")
-                emit.Line()
-                for obj in enumTracker.Objects():
-                    if not obj.IsDuplicate() and not obj.included_from:
-                        EmitEnumConversionHandler(root, obj)
-                emit.Unindent()
-                emit.Line("*/")
-                emit.Line()
 
         # Registration code
+        emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
+        emit.Line()
         emit.Line("namespace %s {" % PLUGIN_NAMESPACE)
         emit.Indent()
         emit.Line()
@@ -935,8 +939,19 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line("}")
         emit.Line()
 
+
+
 def EmitObjects(root, emit, emitCommon = False):
+    global emittedItems
+    emittedItems = 0
+
+    def EmitEnumConversionHandler(root, enum):
+        fullname = GetNamespace(root, enum) + enum.CppClass()
+        emit.Line("ENUM_CONVERSION_HANDLER(%s);" % fullname)
+
     def EmitEnum(enum):
+        global emittedItems
+        emittedItems += 1
         print "Emitting enum %s" % enum.CppClass()
         root = enum.parent.parent
         while root.parent:
@@ -1006,6 +1021,8 @@ def EmitObjects(root, emit, emitCommon = False):
             EmitClass(obj)
 
         if not isinstance(jsonObj, (JsonRpcSchema, JsonMethod)):
+            global emittedItems
+            emittedItems += 1
             EmitCtor(jsonObj, jsonObj.NeedsCopyCtor())
             emit.Line()
             if jsonObj.NeedsCopyCtor():
@@ -1045,9 +1062,18 @@ def EmitObjects(root, emit, emitCommon = False):
             emit.Line("}; // class %s" % jsonObj.CppClass())
             emit.Line()
 
+    count = 0
+    if enumTracker.Objects():
+        count = 0
+        for obj in enumTracker.Objects():
+            if not obj.IsDuplicate() and not obj.included_from:
+                count += 1
+
     emit.Line("#pragma once")
     emit.Line()
     emit.Line("#include <core/JSON.h>")
+    if count:
+        emit.Line("#include <core/Enumerate.h>")
     emit.Line()
     emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
     emit.Line()
@@ -1085,8 +1111,15 @@ def EmitObjects(root, emit, emitCommon = False):
     emit.Line()
     emit.Line("} // namespace %s" % DATA_NAMESPACE)
     emit.Line()
+    if count:
+        emit.Line("// Enum conversion handlers")
+        for obj in enumTracker.Objects():
+            if not obj.IsDuplicate() and not obj.included_from:
+                EmitEnumConversionHandler(root, obj)
+        emit.Line()
     emit.Line("}")
     emit.Line()
+    return emittedItems
 
 def CreateCode(schema, path, generateClasses, generateStubs):
     directory = path.rsplit("/",1)[0]
@@ -1094,7 +1127,9 @@ def CreateCode(schema, path, generateClasses, generateStubs):
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
         header_file = directory + "/" + DATA_NAMESPACE + "_" + filename + ".h"
+        enum_file = directory + "/JsonEnum_" + filename + ".cpp"
         if generateClasses:
+            emitted = 0
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
@@ -1103,8 +1138,32 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                 emitter.Line()
                 emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
                 emitter.Line()
-                EmitObjects(rpcObj, emitter, True)
-                trace.Success("JSON data classes generated in '%s'." % output_file.name)
+                emitted = EmitObjects(rpcObj, emitter, True)
+                if emitted:
+                    trace.Success("JSON data classes generated in '%s'." % output_file.name)
+                else:
+                    trace.Success("No JSON data classes generated for '%s'." % filename)
+            if not emitted:
+                try:
+                    os.remove(header_file)
+                except:
+                    pass
+
+            with open(enum_file, "w") as output_file:
+                emitter = Emitter(output_file, INDENT_SIZE)
+                emitter.Line()
+                emitter.Line("// Enumeration code for %s JSON-RPC API." % rpcObj.info["title"].replace("API", "").replace("Plugin", "").strip())
+                emitter.Line("// Generated automatically from '%s.json'." % path.rsplit("/",1)[1])
+                emitter.Line()
+                emitted = EmitEnumRegs(rpcObj, emitter)
+                if emitted:
+                    trace.Success("JSON enumeration code generated in '%s'." % output_file.name)
+            if not emitted:
+                try:
+                    os.remove(enum_file)
+                except:
+                    pass
+
         if generateStubs:
             with open(directory + "/"  + filename + "JsonRpc.cpp", "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)

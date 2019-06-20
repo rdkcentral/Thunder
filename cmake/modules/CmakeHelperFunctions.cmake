@@ -677,7 +677,7 @@ function(JsonGenerator)
     endif()
 
     if(Argument_NO_WARNINGS)
-        ist(APPEND _execute_command  "--no-warnings")
+        list(APPEND _execute_command  "--no-warnings")
     endif()
 
     if(Argument_COPY_CTOR)
@@ -720,3 +720,70 @@ function(JsonGenerator)
         endif()
     endforeach(_input)
 endfunction(JsonGenerator)
+
+function(ProxyStubGenerator)
+    if (NOT PROXYSTUB_GENERATOR)
+        message(FATAL_ERROR "The path PROXYSTUB_GENERATOR is not set!")
+    endif()
+
+    if(NOT EXISTS "${PROXYSTUB_GENERATOR}" OR IS_DIRECTORY "${PROXYSTUB_GENERATOR}")
+        message(FATAL_ERROR "ProxyStubGenerator path ${PROXYSTUB_GENERATOR} invalid.")
+    endif()
+
+    set(optionsArgs SCAN_IDS TRACES OLD_CPP NO_WARNINGS KEEP VERBOSE)
+    set(oneValueArgs INCLUDE NAMESPACE INDENT)
+    set(multiValueArgs INPUT)
+
+    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    if(Argument_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR "Unknown keywords given to ProxyStubGenerator(): \"${Argument_UNPARSED_ARGUMENTS}\"")
+    endif()
+
+    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
+
+    set(_execute_command ${PROXYSTUB_GENERATOR})
+
+    if(Argument_SCAN_IDS)
+        list(APPEND _execute_command  "--scan-ids")
+    endif()
+
+    if(Argument_TRACES)
+        list(APPEND _execute_command  "--traces")
+    endif()
+
+    if(Argument_OLD_CPP)
+        list(APPEND _execute_command  "--old-cpp")
+    endif()
+
+    if(Argument_NO_WARNINGS)
+        list(APPEND _execute_command  "--no-warnings")
+    endif()
+
+    if(Argument_KEEP)
+        list(APPEND _execute_command  "--keep")
+    endif()
+
+    if(Argument_VERBOSE)
+        list(APPEND _execute_command  "--verbose")
+    endif()
+
+    if (Argument_INCLUDE)
+        list(APPEND _execute_command  "-i" "${Argument_INCLUDE}")
+    endif()
+
+    if (Argument_NAMESPACE)
+        list(APPEND _execute_command  "--namespace" "${Argument_NAMESPACE}")
+    endif()
+
+    if (Argument_INDENT)
+        list(APPEND _execute_command  "--indent" "${Argument_INDENT}")
+    endif()
+
+    foreach(_input ${Argument_INPUT})
+        execute_process(COMMAND ${_execute_command} ${_input} RESULT_VARIABLE rv)
+        if(NOT ${rv} EQUAL 0)
+            message(FATAL_ERROR "ProxyStubGenerator generator failed.")
+        endif()
+    endforeach(_input)
+endfunction(ProxyStubGenerator)

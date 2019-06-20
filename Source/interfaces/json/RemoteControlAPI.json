@@ -507,7 +507,7 @@
         },
         {
           "description": "Opening failed",
-          "$ref": "#/common/errors/openfailed"
+          "$ref": "#/common/errors/openingfailed"
         }
       ]
     },
