@@ -244,6 +244,8 @@ namespace RPC {
         if (_channel.IsValid() == true) {
             Core::ProxyType<RPC::AnnounceMessage> message(AnnounceMessageFactory.Element());
 
+            TRACE_L1("Aquiring object through RPC: %s, 0x%04X [%d]", className.c_str(), interfaceId, RemoteId());
+
             message->Parameters().Set(_id, className, interfaceId, version);
 
             uint32_t feedback = _channel->Invoke(message, waitTime);
