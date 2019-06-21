@@ -21,9 +21,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProxyStubs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs_AVNClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -70,6 +67,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProxyStubs_WebServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Performance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_TestUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_WebPA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
