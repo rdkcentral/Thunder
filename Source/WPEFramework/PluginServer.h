@@ -90,7 +90,7 @@ namespace PluginHost {
                     , OOMAdjust(0)
                     , Policy()
                     , StackSize(0)
-                    , Umask(0003)
+                    , Umask(1)
                 {
                     Add(_T("user"), &User);
                     Add(_T("group"), &Group);
@@ -1170,11 +1170,22 @@ namespace PluginHost {
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
 
             public:
-                CommunicatorServer(const Core::NodeId& node, const string& persistentPath, const string& systemPath, const string& dataPath, const string& appPath, const string& proxyStubPath, const uint32_t stackSize)
-                    : RPC::Communicator(node, Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize), proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
+                CommunicatorServer(
+					const Core::NodeId& node, 
+					const string& persistentPath, 
+					const string& systemPath, 
+					const string& dataPath, 
+					const string& volatilePath, 
+					const string& appPath, 
+					const string& proxyStubPath, 
+					const uint32_t stackSize,
+                    const Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> >& invokeHandler,
+                    const Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> >& announceHandler)
+                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, invokeHandler, announceHandler)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
+                    , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
                     , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
 #ifdef __WIN32__
@@ -1197,25 +1208,25 @@ namespace PluginHost {
                 }
 
             public:
-                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& dataExtension, const string& persistentExtension, const uint32_t waitTime)
+                void* Create(uint32_t& connectionId, const RPC::Object& instance, const string& classname, const string& callsign, const uint32_t waitTime)
                 {
                     string persistentPath(_persistentPath);
                     string dataPath(_dataPath);
+                    string volatilePath(_volatilePath);
 
-                    if (dataExtension.empty() == false) {
-                        dataPath += dataExtension + '/';
-                    }
-                    if (persistentExtension.empty() == false) {
-                        persistentPath += persistentExtension + '/';
+                    if (callsign.empty() == false) {
+                        dataPath += callsign + '/';
+                        persistentPath += callsign + '/';
                     }
 
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _appPath, _proxyStubPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _volatilePath, _appPath, _proxyStubPath), waitTime));
                 }
 
             private:
                 const string _persistentPath;
                 const string _systemPath;
                 const string _dataPath;
+                const string _volatilePath;
                 const string _appPath;
                 const string _proxyStubPath;
                 const string _application;
@@ -1469,7 +1480,8 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.AppPath(), config.ProxyStubPath(), stackSize)
+                , _engine(Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize))
+                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), stackSize, _engine->InvokeHandler(), _engine->AnnounceHandler())
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
@@ -1609,7 +1621,7 @@ namespace PluginHost {
             }
             virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
             {
-                return (_processAdministrator.Connection(connectionId));
+                return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
             }
             uint32_t Persist()
             {
@@ -1757,6 +1769,7 @@ namespace PluginHost {
             Core::CriticalSection _notificationLock;
             std::map<const string, Core::ProxyType<Service>> _services;
             std::list<IPlugin::INotification*> _notifiers;
+            Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT> > _engine;
             CommunicatorServer _processAdministrator;
             Server& _server;
             Core::Sink<SubSystems> _subSystems;

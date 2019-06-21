@@ -11,9 +11,18 @@
   "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
+  "tracing": [
+    {
+      "module": "Plugin_OCDM",
+      "enabled": true
+    }
+  ],
   "plugins": [
     {
-      "callsign": "Controller"
+      "callsign": "Controller",
+      "configuration": {
+        "subsystems":  ["Decryption"]
+      }
     },
     {
       "callsign": "OutOfProcessPlugin",
@@ -34,7 +43,7 @@
       "precondition": [
         "Platform"
       ],
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "acl": "data.json"
       }
@@ -43,13 +52,25 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": true
+      "autostart": false
+    },
+    {
+      "callsign": "OpenCDMi",
+      "locator": "libOpenCDMi.so",
+      "classname": "OCDM",
+      "autostart": true,
+      "configuration": {
+        "connector": "127.0.0.1:7912",
+        "root": {
+          "outofprocess": false
+        }
+      }
     },
     {
       "callsign": "WebServer",
-      "locator": "libwebserver.so",
+      "locator": "libWebServer.so",
       "classname": "WebServer",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
 
         "root": {

@@ -132,7 +132,7 @@ namespace PluginHost {
         //! WebPrefix: First part of the pathname in the HTTP request to select the webbridge components.
         virtual string WebPrefix() const = 0;
 
-        //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
+        //! Locator: The name of the binary (so) that holds the given ClassName code.
         virtual string Locator() const = 0;
 
         //! ClassName: Name of the class to be instantiated for this IShell
@@ -234,18 +234,14 @@ namespace PluginHost {
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
         {
-            void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
+            void* baseInterface (Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version));
 
-            Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+            if (baseInterface != nullptr) {
 
-            REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-            if (result == nullptr) {
-
-                result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
-            return (result);
+            return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
@@ -253,21 +249,13 @@ namespace PluginHost {
             void* baseInterface(QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
 
             if (baseInterface != nullptr) {
-                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
-
-                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-                if (result == nullptr) {
-                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
-                }
-
-                return (result);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator)
+        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
         {
             ICOMLink* handler(COMLink());
 
@@ -275,9 +263,9 @@ namespace PluginHost {
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
-                RPC::Object definition(locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
+                RPC::Object definition(Callsign(), locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1, RPC::Object::HostType::REMOTE, string());
 
-                void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                void* baseptr = handler->Instantiate(definition, waitTime, connecionId, ClassName(), Callsign());
 
                 REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
 

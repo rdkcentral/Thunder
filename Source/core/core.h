@@ -21,6 +21,7 @@
 #include "IObserver.h"
 
 #include "ASN1.h"
+#include "DoorBell.h"
 #include "CyclicBuffer.h"
 #include "DataBuffer.h"
 #include "DataElement.h"

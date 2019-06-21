@@ -134,7 +134,7 @@ namespace PluginHost {
             }
 
             // DataPath is a path, to a location (read-only to be used to store
-            // This path is build up from: DataPath / className /
+            // This path is build up from: DataPath / callSign /
             inline const string& DataPath() const
             {
                 return (_dataPath);
@@ -152,8 +152,8 @@ namespace PluginHost {
                 _config = config;
                 _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
                 _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
-                _dataPath = _baseConfig.DataPath() + config.ClassName.Value() + '/';
-                _volatilePath = _baseConfig.VolatilePath() + config.ClassName.Value() + '/';
+                _dataPath = _baseConfig.DataPath() + callSign + '/';
+                _volatilePath = _baseConfig.VolatilePath() + callSign + '/';
 
                 // Volatile means that the path could not have been created, create it for now.
                 Core::Directory(_volatilePath.c_str()).CreatePath();

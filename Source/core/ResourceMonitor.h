@@ -158,8 +158,12 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
+#ifdef __WIN32__
+                _resourceList.erase(index);
+#else
                 *index = nullptr;
                 Break();
+#endif
             }
 
             _adminLock.Unlock();

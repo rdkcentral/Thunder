@@ -94,7 +94,7 @@ namespace Core {
 
         // This is the Producer constructor. It sets up all the information and locks the
         // Semaphore by default.
-        SharedBuffer(const TCHAR name[], const uint32_t bufferSize, const uint16_t administrationSize);
+        SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administrationSize);
 
         inline uint32_t RequestProduce(const uint32_t waitTime)
         {

@@ -34,6 +34,21 @@ namespace Core {
             FILE_ENCRYPTED = FILE_ATTRIBUTE_ENCRYPTED
 
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = 0x00000001,
+            USER_WRITE     = 0x00000002,
+            USER_EXECUTE   = 0x00000004,
+            GROUP_READ     = 0x00000008,
+            GROUP_WRITE    = 0x00000010,
+            GROUP_EXECUTE  = 0x00000020,
+            OTHERS_READ    = 0x00000040,
+            OTHERS_WRITE   = 0x00000080,
+            OTHERS_EXECUTE = 0x00000100,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
 #endif
 
 #ifdef __POSIX__
@@ -55,6 +70,22 @@ namespace Core {
             // A device
             FILE_DEVICE = 0x0010
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = S_IRUSR,
+            USER_WRITE     = S_IWUSR,
+            USER_EXECUTE   = S_IXUSR,
+            GROUP_READ     = S_IRGRP,
+            GROUP_WRITE    = S_IWGRP,
+            GROUP_EXECUTE  = S_IXGRP,
+            OTHERS_READ    = S_IROTH,
+            OTHERS_WRITE   = S_IWOTH,
+            OTHERS_EXECUTE = S_IXOTH,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
+
 #endif
 
     public:
@@ -262,8 +293,13 @@ namespace Core {
 
         bool Create()
         {
+            return (Create(USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE));
+        }
+
+        bool Create(const uint32_t mode)
+        {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), S_IRWXU | S_IRGRP | S_IWGRP);
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), mode);
 #endif
 #ifdef __WIN32__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -271,6 +307,7 @@ namespace Core {
             LoadFileInfo();
             return (IsOpen());
         }
+
         bool Open() const
         {
 #ifdef __POSIX__

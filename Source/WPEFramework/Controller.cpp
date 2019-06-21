@@ -44,9 +44,10 @@ namespace Plugin {
         }
     }
 
-    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
+   // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
+
         ASSERT(_service == nullptr);
         ASSERT(_downloader == nullptr);
         ASSERT(_probe == nullptr);

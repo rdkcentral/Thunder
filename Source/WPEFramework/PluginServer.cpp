@@ -5,6 +5,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef PROCESSCONTAINERS_ENABLED 
+    #include "../processcontainers/ProcessContainer.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)

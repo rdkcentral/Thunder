@@ -36,6 +36,8 @@ option(COMPOSITORCLIENT
         "Include a graphics backend abstraction for external applications." OFF)
 option(JSONRPC
         "Include JSONRPC C++ utility library for external applications." ON)
+option(PROCESSCONTAINERS
+        "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
 option(UNIT_TESTS
@@ -64,6 +66,10 @@ endif()
 
 if(CRYPTALGO)
     add_subdirectory(cryptalgo)
+endif()
+
+if(PROCESSCONTAINERS)
+    add_subdirectory(processcontainers)
 endif()
 
 if(BROADCAST)

@@ -1048,10 +1048,11 @@ namespace Core {
 
     private:
         typedef ProxyObjectType<PROXYPOOLELEMENT> ProxyPoolElement;
-        ProxyPoolType(const ProxyPoolType<PROXYPOOLELEMENT>&);
-        ProxyPoolType<PROXYPOOLELEMENT>& operator=(const ProxyPoolType<PROXYPOOLELEMENT>&);
 
     public:
+        ProxyPoolType(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
+        ProxyPoolType<PROXYPOOLELEMENT>& operator=(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
+
         ProxyPoolType(const uint32_t initialQueueSize)
             : _createdElements(0)
             , _queue(initialQueueSize)
@@ -1201,10 +1202,10 @@ namespace Core {
 
     private:
         typedef ProxyObjectType<PROXYKEY, PROXYELEMENT> ProxyMapElement;
-        ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&);
-        ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&);
 
     public:
+        ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
+        ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
         ProxyMapType()
             : _map()
             , _lock()
@@ -1215,7 +1216,7 @@ namespace Core {
         }
 
     public:
-        Core::ProxyType<PROXYELEMENT> Create(const PROXYKEY& key)
+        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key)
         {
             Core::ProxyType<PROXYELEMENT> result;
 

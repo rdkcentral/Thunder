@@ -108,6 +108,14 @@ set_target_properties(${TARGET} PROPERTIES
         SOVERSION ${VERSION_MAJOR}
         )
 
+if(PROCESSCONTAINERS)
+    target_link_libraries(${TARGET}
+        PUBLIC
+            ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            PROCESSCONTAINERS_ENABLED=1)
+endif(PROCESSCONTAINERS)
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies

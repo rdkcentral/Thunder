@@ -8,7 +8,7 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 namespace WPEFramework {
 namespace Process {
 
-    class InvokeServer : public RPC::IHandler {
+    class InvokeServer {
     private:
         InvokeServer() = delete;
         InvokeServer(const InvokeServer&) = delete;
@@ -49,7 +49,7 @@ namespace Process {
             InvokeServer& _parent;
         };
 
-        class InvokeHandlerImplementation : public Core::IPCServerType<RPC::InvokeMessage> {
+        class InvokeHandlerImplementation : public RPC::ServerType<RPC::InvokeMessage> {
         private:
             InvokeHandlerImplementation() = delete;
             InvokeHandlerImplementation(const InvokeHandlerImplementation&) = delete;
@@ -86,7 +86,7 @@ namespace Process {
             MessageQueue& _handleQueue;
             std::atomic<uint8_t>& _runningFree;
         };
-        class AnnounceHandlerImplementation : public Core::IPCServerType<RPC::AnnounceMessage> {
+        class AnnounceHandlerImplementation : public RPC::ServerType<RPC::AnnounceMessage> {
         private:
             AnnounceHandlerImplementation() = delete;
             AnnounceHandlerImplementation(const AnnounceHandlerImplementation&) = delete;
@@ -102,7 +102,7 @@ namespace Process {
             }
 
         public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::AnnounceMessage>& data)
+            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::AnnounceMessage>& data) override
             {
                 // Oke, see if we can reference count the IPCChannel
                 Info newElement;
@@ -122,10 +122,8 @@ namespace Process {
         InvokeServer(const uint8_t threads)
             : _handleQueue(64)
             , _runningFree(threads)
-            , _handler(RPC::Administrator::Instance())
             , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue, &_runningFree))
             , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(&_handleQueue))
-            , _announcements(nullptr)
             , _minions()
         {
             for (uint8_t index = 1; index < threads; index++) {
@@ -140,26 +138,13 @@ namespace Process {
             _handleQueue.Disable();
             _minions.clear();
         }
-
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override
+        inline const Core::ProxyType<RPC::ServerType<RPC::InvokeMessage> >& InvokeHandler()
         {
             return (_invokeHandler);
         }
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override
+        inline const Core::ProxyType<RPC::ServerType<RPC::AnnounceMessage> >& AnnouncementHandler()
         {
             return (_announceHandler);
-        }
-        virtual void AnnounceHandler(Core::IPCServerType<RPC::AnnounceMessage>* handler) override
-        {
-
-            // Concurrency aspect is out of scope as the implementation of this interface is currently limited
-            // to the RPC::COmmunicator and RPC::CommunicatorClient. Both of these implementations will first
-            // set this callback before any communication is happeing (Open happens after this)
-            // Also the announce handler will not be removed until the line is closed and the server (or client)
-            // is destructed!!!
-            ASSERT((handler == nullptr) ^ (_announcements == nullptr));
-
-            _announcements = handler;
         }
         void ProcessProcedures()
         {
@@ -167,22 +152,23 @@ namespace Process {
             Info newRequest;
 
             while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
+
                 _runningFree--;
+
                 if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
+
                     Core::ProxyType<RPC::InvokeMessage> message(Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
 
-                    _handler.Invoke(newRequest.channel, message);
+                    _invokeHandler->Handle(*(newRequest.channel), message);
                 } else {
                     ASSERT(newRequest.message->Label() == RPC::AnnounceMessage::Id());
-                    ASSERT(_announcements != nullptr);
 
                     Core::ProxyType<RPC::AnnounceMessage> message(Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
 
-                    _announcements->Procedure(*(newRequest.channel), message);
+                    _announceHandler->Handle(*(newRequest.channel), message);
                 }
 
                 _runningFree++;
-                newRequest.channel->ReportResponse(newRequest.message);
 
                 // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
                 Core::ServiceAdministrator::Instance().FlushLibraries();
@@ -194,17 +180,16 @@ namespace Process {
     private:
         MessageQueue _handleQueue;
         std::atomic<uint8_t> _runningFree;
-        RPC::Administrator& _handler;
-        Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage>> _invokeHandler;
-        Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage>> _announceHandler;
-        Core::IPCServerType<RPC::AnnounceMessage>* _announcements;
+        Core::ProxyType<RPC::ServerType<RPC::InvokeMessage>> _invokeHandler;
+        Core::ProxyType<RPC::ServerType<RPC::AnnounceMessage>> _announceHandler;
         std::list<Minion> _minions;
     };
 
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:"))
+            : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
+            , Callsign(nullptr)
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -214,6 +199,7 @@ namespace Process {
             , PersistentPath(nullptr)
             , SystemPath(nullptr)
             , DataPath(nullptr)
+            , VolatilePath(nullptr)
             , AppPath(nullptr)
             , ProxyStubPath(nullptr)
             , User(nullptr)
@@ -228,6 +214,7 @@ namespace Process {
         }
 
     public:
+        const TCHAR* Callsign;
         const TCHAR* Locator;
         const TCHAR* ClassName;
         const TCHAR* RemoteChannel;
@@ -237,6 +224,7 @@ namespace Process {
         const TCHAR* PersistentPath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
+        const TCHAR* VolatilePath;
         const TCHAR* AppPath;
         const TCHAR* ProxyStubPath;
         const TCHAR* User;
@@ -248,6 +236,9 @@ namespace Process {
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
+            case 'C':
+                Callsign = argument;
+                break;
             case 'l':
                 Locator = argument;
                 break;
@@ -265,6 +256,9 @@ namespace Process {
                 break;
             case 'd':
                 DataPath = argument;
+                break;
+            case 'v':
+                VolatilePath = argument;
                 break;
             case 'a':
                 AppPath = argument;
@@ -284,7 +278,7 @@ namespace Process {
             case 'e':
                 EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
-            case 'v':
+            case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 'x':
@@ -405,18 +399,20 @@ int main(int argc, char** argv)
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0) ) {
         printf("Process [-h] \n");
+        printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
         printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
-        printf("        [-v <version>]\n");
+        printf("        [-V <version>]\n");
         printf("        [-u <user>]\n");
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
+        printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-e <enabled SYSLOG categories>]\n\n");
@@ -436,8 +432,13 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
-		// Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
-		Trace::TraceUnit::Instance().Open(options.Exchange);
+        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
+        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
+
+        TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
+
+        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
+        Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.
         Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
@@ -460,7 +461,7 @@ int main(int argc, char** argv)
 
             // Seems like we have enough information, open up the Process communcication Channel.
             _invokeServer = Core::ProxyType<Process::InvokeServer>::Create(options.Threads);
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer->InvokeHandler(), _invokeServer->AnnouncementHandler()));
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {

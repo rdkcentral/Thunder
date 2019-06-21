@@ -1525,7 +1525,7 @@ namespace Core {
             EnumType<ENUMERATE>& operator=(const EnumType<ENUMERATE>& RHS)
             {
                 _value = RHS._value;
-                _state = SET;
+                _state = RHS._state;
                 return (*this);
             }
             EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)

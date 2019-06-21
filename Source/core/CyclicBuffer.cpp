@@ -4,16 +4,15 @@
 namespace WPEFramework {
 namespace Core {
 
-    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
+    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              static_cast<DataElementFile::FileState>(DataElementFile::WRITABLE | DataElementFile::READABLE | DataElementFile::SHAREABLE | (bufferSize > 0 ? DataElementFile::CREATE : 0)),
+              (bufferSize > 0 ? (mode | File::CREATE) : (mode & ~File::CREATE) ),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
         , _alert(false)
         , _administration(_buffer.IsValid() ? reinterpret_cast<struct control*>(_buffer.Buffer()) : nullptr)
     {
-
         if (_buffer.IsValid() != true) {
             TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
 		} else {
@@ -53,6 +52,15 @@ namespace Core {
 
             _maxSize = _administration->_size;
         }
+    }
+
+    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
+        : CyclicBuffer( fileName, 
+                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
+                        bufferSize,
+                        overwrite
+                        ) 
+    {
     }
 
     CyclicBuffer::~CyclicBuffer()
@@ -102,7 +110,7 @@ namespace Core {
 
                     result = (nowTime.tv_sec - structTime.tv_sec - 1) * 1000 + ((1000000000 - (structTime.tv_nsec - nowTime.tv_nsec)) / 1000000);
                 }
-                printf("End wait. %d\n", result);
+                TRACE_L1("End wait. %d\n", result);
             }
 #else
             if (::WaitForSingleObjectEx(_signal, waitTime, FALSE) == WAIT_OBJECT_0) {

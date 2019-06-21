@@ -26,6 +26,7 @@
     <ClInclude Include="DataBuffer.h" />
     <ClInclude Include="DataElement.h" />
     <ClInclude Include="DataElementFile.h" />
+    <ClInclude Include="DoorBell.h" />
     <ClInclude Include="Enumerate.h" />
     <ClInclude Include="Factory.h" />
     <ClInclude Include="FileSystem.h" />
@@ -94,6 +95,7 @@
     <ClCompile Include="DataElement.cpp" />
     <ClCompile Include="DataElementFile.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="DoorBell.cpp" />
     <ClCompile Include="FileSystem.cpp" />
     <ClCompile Include="ISO639.cpp" />
     <ClCompile Include="JSON.cpp" />

@@ -236,6 +236,7 @@ private:
     void* _virtualkeyboard;
     const DisplaySize _displaysize;
     std::list<SurfaceImplementation*> _surfaces;
+    Core::ProxyType<RPC::InvokeServerType<2, 1> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _compositerServerRPCConnection;
 };
 
@@ -357,7 +358,8 @@ Display::Display(const string& name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
-    , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create()))
+    , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create())
+    , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), _engine->InvokeHandler(), _engine->AnnounceHandler()))
 {
     uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
     if (result != Core::ERROR_NONE) {

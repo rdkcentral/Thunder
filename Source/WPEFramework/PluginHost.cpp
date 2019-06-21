@@ -332,13 +332,9 @@ namespace PluginHost {
 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
-        const string tracePath(serviceConfig.VolatilePath.Value());
-        Trace::TraceUnit::Instance().Open(tracePath, 0);
+        Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
 
         Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
-
-        // Set the path for the out-of-process thingies
-        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, tracePath);
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));

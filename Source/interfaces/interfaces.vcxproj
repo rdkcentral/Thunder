@@ -25,7 +25,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ProxyStubs.cpp" />
     <ClCompile Include="ProxyStubs_AVNClient.cpp" />
     <ClCompile Include="ProxyStubs_Browser.cpp" />
     <ClCompile Include="ProxyStubs_Composition.cpp" />
@@ -34,13 +33,17 @@
     <ClCompile Include="ProxyStubs_Guide.cpp" />
     <ClCompile Include="ProxyStubs_Netflix.cpp" />
     <ClCompile Include="ProxyStubs_Packager.cpp" />
+    <ClCompile Include="ProxyStubs_Performance.cpp" />
     <ClCompile Include="ProxyStubs_PlayGiga.cpp" />
     <ClCompile Include="ProxyStubs_Power.cpp" />
     <ClCompile Include="ProxyStubs_Provisioning.cpp" />
     <ClCompile Include="ProxyStubs_RPCLink.cpp" />
     <ClCompile Include="ProxyStubs_RtspClient.cpp" />
+    <ClCompile Include="ProxyStubs_Stream.cpp" />
     <ClCompile Include="ProxyStubs_TestController.cpp" />
+    <ClCompile Include="ProxyStubs_TestUtility.cpp" />
     <ClCompile Include="ProxyStubs_WebDriver.cpp" />
+    <ClCompile Include="ProxyStubs_WebPA.cpp" />
     <ClCompile Include="ProxyStubs_WebServer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -174,6 +177,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -189,6 +198,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -204,6 +219,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -223,6 +244,12 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

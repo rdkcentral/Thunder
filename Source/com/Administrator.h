@@ -23,6 +23,40 @@ namespace RPC {
 
 	typedef std::pair<const Core::IUnknown*, const uint32_t> ExposedInterface;
 
+    template <typename MESSAGE>
+    class ServerType : public Core::IPCServerType<MESSAGE> {
+    public:
+        ServerType(const ServerType<MESSAGE>&) = delete;
+        ServerType<MESSAGE>& operator=(const ServerType<MESSAGE>&) = delete;
+
+        ServerType()
+            : _nextHop()
+        {
+        }
+        virtual ~ServerType()
+        {
+        }
+
+    public:
+        virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<MESSAGE>& data) = 0;
+
+        inline void Handle(Core::IPCChannel& channel, Core::ProxyType<MESSAGE>& data) {
+            ASSERT(_nextHop.IsValid() == true);
+            _nextHop->Procedure(channel, data);
+        }
+
+    private:
+        friend class Communicator;
+        friend class CommunicatorClient;
+        inline void Handler(Core::ProxyType<Core::IPCServerType<MESSAGE>>& handler)
+        {
+            _nextHop = handler;
+        }
+
+    private:
+        Core::ProxyType<Core::IPCServerType<MESSAGE>> _nextHop;
+    };
+
     class EXTERNAL Administrator {
     private:
         Administrator();
@@ -136,11 +170,11 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
         {
             _adminLock.Lock();
 
-            ChannelMap::iterator index(_channelProxyMap.find(channel));
+            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
             if (index != _channelProxyMap.end()) {
                 ProxyList::iterator loop(index->second.begin());
@@ -150,7 +184,7 @@ namespace RPC {
                 }
                 _channelProxyMap.erase(index);
             }
-            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel));
+            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
 
             if (remotes != _channelReferenceMap.end()) {
                 std::list<ExternalReference>::iterator loop(remotes->second.begin());
@@ -237,16 +271,8 @@ namespace RPC {
         ReferenceMap _channelReferenceMap;
     };
 
-    struct IHandler {
-        virtual ~IHandler() {}
-
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() = 0;
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() = 0;
-        virtual void AnnounceHandler(Core::IPCServerType<AnnounceMessage>* handler) = 0;
-    };
-
     template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>
-    class InvokeServerType : public IHandler {
+    class InvokeServerType {
     private:
         class Info {
         public:
@@ -388,15 +414,15 @@ namespace RPC {
         }
 
     public:
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override
+        const Core::ProxyType< ServerType<InvokeMessage> >& InvokeHandler()
         {
             return (_invokeHandler);
         }
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override
+        const Core::ProxyType< ServerType<AnnounceMessage> >& AnnounceHandler()
         {
             return (_announceHandler);
         }
-        virtual void AnnounceHandler(Core::IPCServerType<AnnounceMessage>* handler) override
+        void ActualHandlers(Core::IPCServerType<AnnounceMessage>* handler)
         {
 
             // Concurrency aspect is out of scope as the implementation of this interface is currently limited
@@ -428,8 +454,8 @@ namespace RPC {
 
     private:
         Core::ThreadPoolType<Info, THREADPOOLCOUNT, MESSAGESLOTS> _threadPoolEngine;
-        Core::ProxyType<Core::IPCServerType<InvokeMessage>> _invokeHandler;
-        Core::ProxyType<Core::IPCServerType<AnnounceMessage>> _announceHandler;
+        Core::ProxyType<ServerType<InvokeMessage> > _invokeHandler;
+        Core::ProxyType<ServerType<AnnounceMessage> > _announceHandler;
         Core::IPCServerType<AnnounceMessage>* _handler;
     };
 }
