@@ -31,7 +31,7 @@ endif()
 target_compile_definitions(CompileSettings INTERFACE PLATFORM_${PLATFORM}=1)
 message(STATUS "Selected platform ${PLATFORM}")
 
-target_compile_options(CompileSettings INTERFACE -std=c++11)
+target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
 #
 # Build type specific options

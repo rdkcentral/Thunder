@@ -1416,7 +1416,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::OFFER);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::OFFER);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1440,7 +1440,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(INTERFACE::ID, offer, Data::Init::REVOKE);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::REVOKE);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
