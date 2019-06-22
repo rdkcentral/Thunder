@@ -6,6 +6,7 @@
 #include <lxc/lxccontainer.h>
 #include <vector>
 #include <utility>
+#include <cctype>
 
 namespace WPEFramework {
 
@@ -47,8 +48,8 @@ public:
 
                 ConfigItem()
                     : Core::JSON::Container()
-                    , Key()
-                    , Value()
+                    , Key(false)
+                    , Value(false)
                 {
                     Add(_T("key"), &Key);
                     Add(_T("value"), &Value); 
@@ -65,40 +66,27 @@ public:
 
             Config()
                 : Core::JSON::Container()
-                , LXCLogging(false)
-                , LXCLogLevel("ERROR")
-                , ConsoleLogging(false)
-                , ConsoleLogFileSize("auto")
-                , ConsoleBufferSize("0")
+                , ConsoleLogging("0", false)
+                , ConfigItems()
 #ifdef __DEBUG__
-                , DebugMode(false)
+                , Attach(false)
 #endif
             {
-                Add(_T("lxclogging"), &LXCLogging);
-                Add(_T("lxcloglevel"), &LXCLogLevel); // 0 = trace, 1 = debug, 2 = info, 3 = notice, 4 = warn, 5 = error, 6 = critical, 7 = alert, and 8 = fatal, but also string is allowed:
-                                                      // (case insensitive) TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, CRIT, ALERT, FATAL
+                Add(_T("console"), &ConsoleLogging); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB', 0 is off, auto is auto determined
 
-                Add(_T("consolelogging"), &ConsoleLogging);
-                Add(_T("consolelogfilesize"), &ConsoleLogFileSize); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB'
-                Add(_T("consolelogbuffersize"), &ConsoleBufferSize); // NOt used yet, to later on enable getting the console using an interface, should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB'
-
-                Add(_T("configuration_items"), &ConfigItems);
+                Add(_T("items"), &ConfigItems);
 
 #ifdef __DEBUG__
-                Add(_T("debugmode"), &DebugMode);
+                Add(_T("attach"), &Attach);
 #endif
             }
             
             ~Config() = default;
 
-            Core::JSON::Boolean LXCLogging;
-            Core::JSON::String LXCLogLevel;
-            Core::JSON::Boolean ConsoleLogging;
-            Core::JSON::String ConsoleLogFileSize;
-            Core::JSON::String ConsoleBufferSize;
+            Core::JSON::String ConsoleLogging;
             Core::JSON::ArrayType<ConfigItem> ConfigItems;
 #ifdef __DEBUG__
-            Core::JSON::Boolean DebugMode;
+            Core::JSON::Boolean Attach;
 #endif
         };
 
@@ -114,14 +102,14 @@ public:
             , _referenceCount(1)
             , _lxccontainer(lxccontainer)
 #ifdef __DEBUG__
-            , _debugmode(false)
+            , _attach(false)
 #endif
         {
             Config config;
             config.FromString(configuration);
 
 #ifdef __DEBUG__
-            _debugmode = config.DebugMode.Value();
+            _attach = config.Attach.Value();
 #endif
             string pathName;
             Core::SystemInfo::GetEnvironment("PATH", pathName);
@@ -130,25 +118,9 @@ public:
             key += pathName;
             _lxccontainer->set_config_item(_lxccontainer, "lxc.environment", key.c_str());
 
-            // const char* test = _lxccontainer->get_config_path(_lxccontainer); Note: this does not give you the correct path!!
-
-            if( config.LXCLogging.Value() == true ) {
-                // we need to move this probably to the admin, no possibility to set this per container, hippyware!!
-                string filename(logpath + name + "/lxclogging.log");
-                lxc_log log;
-                log.name = name.c_str();
-                log.lxcpath = _lxcpath.c_str();
-                log.file = filename.c_str();
-                log.level = config.LXCLogLevel.Value().c_str();
-                log.prefix = name.c_str();
-                log.quiet = false;
-                lxc_log_init(&log);
-            }
-
-            if( config.ConsoleLogging.Value() == true ) {
+            if( config.ConsoleLogging.Value() != _T("0") ) {
                 string filename(logpath + name + "/console.log");
-                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.buffer.size", config.ConsoleBufferSize.Value().c_str());
-                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogFileSize.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
+                _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogging.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
                 _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", filename.c_str());
             }
 
@@ -197,7 +169,7 @@ public:
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
 #ifdef __DEBUG__
-            bool _debugmode;
+            bool _attach;
 #endif
     };
 
@@ -212,6 +184,9 @@ public:
                                                                       ProcessContainers::IStringIterator& searchpaths, 
                                                                       const string& logpath,
                                                                       const string& configuration) override;
+
+    void Logging(const string& logpath, const string& logging) override;
+
 
 private:
     mutable Core::CriticalSection _lock;
@@ -255,6 +230,31 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
     return container;
 }
 
+void LXCContainerAdministrator::Logging(const string& logpath, const string& logging) {
+
+// Valid logging values: NONE and the ones below
+// 0 = trace, 1 = debug, 2 = info, 3 = notice, 4 = warn, 5 = error, 6 = critical, 7 = alert, and 8 = fatal, but also string is allowed:
+// (case insensitive) TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, CRIT, ALERT, FATAL
+
+    const char* logstring = logging.c_str();
+
+    if( ( logging.size() == 4 ) && ( std::toupper(logstring[0]) == _T('N') ) 
+                                && ( std::toupper(logstring[1]) == _T('O') ) 
+                                && ( std::toupper(logstring[2]) == _T('N') ) 
+                                && ( std::toupper(logstring[3]) == _T('E') ) 
+        ) {
+        string filename(logpath + "/lxclogging.log");
+        lxc_log log;
+        log.name = "WPEFramework";
+        log.lxcpath = logpath.c_str(); //we don't have a correct lxcpath were all containers are stored...
+        log.file = filename.c_str();
+        log.level = logstring;
+        log.prefix = "WPEFramework";
+        log.quiet = false;
+        lxc_log_init(&log);
+    }
+}
+
 ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
 {
     static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
@@ -278,7 +278,7 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     ASSERT(pos == parameters.Count()+2);
 
 #ifdef __DEBUG__
-    if( _debugmode == true ) {
+    if( _attach == true ) {
         result = _lxccontainer->start(_lxccontainer, 0, NULL);
         if( result == true ) {
 
@@ -296,7 +296,7 @@ bool LXCContainerAdministrator::LCXContainer::Start(const string& command, Proce
     } else
 #endif
     {
-        result = _lxccontainer->start(_lxccontainer, 1, const_cast<char**>(params.data()));
+        result = _lxccontainer->start(_lxccontainer, 0, const_cast<char**>(params.data()));
     }
 
     if( result == true )  {

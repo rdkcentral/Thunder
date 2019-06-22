@@ -465,19 +465,16 @@ namespace RPC {
 #ifdef __DEBUG__
                     , ContainerPath(true)
 #endif
-                    , Forward(false)
                 {
 #ifdef __DEBUG__
                     Add(_T("containerpath"), &ContainerPath);
 #endif
-                    Add(_T("forward"), &Forward);
                 }
                 ~Config() = default;
 
 #ifdef __DEBUG__
                 Core::JSON::String ContainerPath;
 #endif
-                Core::JSON::String Forward;
             };
 
         public:
@@ -485,13 +482,16 @@ namespace RPC {
 
             ContainerRemoteProcess(const ContainerRemoteProcess&) = delete;
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
-
+            
         private:
+
             ContainerRemoteProcess(const string& callsign, 
                                    const string& persistentpath,
                                    const string& datapath,
                                    const string& volatilepath,
                                    const string& configuration) {
+
+                static constexpr TCHAR ContainerSuffix[] = _T("Container");
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
@@ -513,7 +513,7 @@ namespace RPC {
 
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
-                _container = admin.Container(callsign, searchpathsit, volatilepath, config.Forward.Value());
+                _container = admin.Container(callsign + ContainerSuffix, searchpathsit, volatilepath, configuration);
 
                 admin.Release();
             }

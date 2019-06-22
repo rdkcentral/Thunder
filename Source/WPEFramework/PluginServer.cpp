@@ -677,6 +677,16 @@ namespace PluginHost
 
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig);
+
+#ifdef PROCESSCONTAINERS_ENABLED 
+
+        // turn on ProcessContainer logging
+        ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
+        admin.Logging(configuration.VolatilePath.Value(), configuration.ProcessContainers.Logging.Value());
+        admin.Release();
+
+#endif
+
     }
 
 #ifdef __WIN32__

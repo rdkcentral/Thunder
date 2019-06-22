@@ -4,6 +4,10 @@
 #include "Module.h"
 #include "SystemInfo.h"
 
+#ifdef PROCESSCONTAINERS_ENABLED 
+    #include "../processcontainers/ProcessContainer.h"
+#endif
+
 #ifndef HOSTING_COMPROCESS
 #error "Please define the name of the COM process!!!"
 #endif
@@ -180,6 +184,35 @@ namespace PluginHost {
                 Core::JSON::EnumType<PluginHost::InputHandler::type> Type;
             };
 
+#ifdef PROCESSCONTAINERS_ENABLED 
+
+            class ProcessContainerConfig : public Core::JSON::Container {
+            public:
+                ProcessContainerConfig()
+                    : Logging(_T("NONE"), false)
+                {
+
+                    Add(_T("logging"), &Logging);
+                }
+                ProcessContainerConfig(const ProcessContainerConfig& copy)
+                    : Logging(copy.Logging)
+                {
+                    Add(_T("logging"), &Logging);
+                }
+                ~ProcessContainerConfig()
+                {
+                }
+                ProcessContainerConfig& operator=(const ProcessContainerConfig& RHS)
+                {
+                    Logging = RHS.Logging;
+                    return (*this);
+                }
+
+                Core::JSON::String Logging;
+            };
+
+#endif
+
         public:
             Config()
                 : Version()
@@ -211,6 +244,9 @@ namespace PluginHost {
                 , Process()
                 , Input()
                 , Configs()
+#ifdef PROCESSCONTAINERS_ENABLED 
+                ,ProcessContainers()
+#endif
             {
                 // No IdleTime
                 Add(_T("version"), &Version);
@@ -234,6 +270,9 @@ namespace PluginHost {
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
+#ifdef PROCESSCONTAINERS_ENABLED 
+                Add(_T("processcontainers"), &ProcessContainers);
+#endif
             }
             ~Config()
             {
@@ -262,6 +301,9 @@ namespace PluginHost {
             InputConfig Input;
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
+#ifdef PROCESSCONTAINERS_ENABLED 
+            ProcessContainerConfig ProcessContainers;
+#endif
         };
 
         class EXTERNAL WorkerPoolImplementation : public PluginHost::WorkerPool {
