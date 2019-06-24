@@ -734,10 +734,14 @@ public:
     {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
         if (_decryptSession != nullptr) {
-            result = OpenCDMError::ERROR_NONE;
-            _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData,
+            result = _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData,
                 ivDataLength, keyId, keyIdLength,
                 initWithLast15);
+            if(result)
+            {
+                TRACE_L1("Decrypt() failed with return code: %x", result);
+                result = OpenCDMError::ERROR_UNKNOWN;
+            }
         }
         return (result);
     }
