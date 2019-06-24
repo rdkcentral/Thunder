@@ -7,7 +7,7 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.4"
+VERSION = "1.4.1"
 
 # runtime changeable configuration
 INDENT_SIZE = 4
@@ -23,7 +23,8 @@ EMIT_COMMENT_WITH_PROTOTYPE = True
 EMIT_COMMENT_WITH_STUB_ORDER = True
 STUB_NAMESPACE = "::WPEFramework::ProxyStubs"
 INTERFACE_NAMESPACE = "::WPEFramework::Exchange"
-CLASS_IUNKNOWN =  "::WPEFramework::Core::IUnknown"
+CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
+PROXYSTUB_CPP_NAME = "ProxyStubs_%s.cpp"
 
 MIN_INTERFACE_ID = 64
 
@@ -123,9 +124,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
 
     print "\nParsing '%s'..." % source_file
 
-    ids = source_file.rsplit('/', 1)[0]
-    if '/' not in ids: ids = "."
-    ids += '/' + IDS_DEFINITIONS_FILE
+    ids = os.path.join(os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
     tree = CppParser.ParseFiles([defaults, ids, source_file])
     if not isinstance(tree, CppParser.Namespace):
@@ -142,7 +141,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
     if scan_only:
         return interfaces
 
-    interface_header_name = re.split(r"/|\\", source_file)[-1]
+    interface_header_name = os.path.basename(source_file)
 
     with open(output_file, "w") as file:
         print "Creating file '%s'..." % output_file
@@ -303,9 +302,10 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         raise GeneratorError("unable to serialise '%s %s': a non-const reference to pointer requires in/out tag" % (self.str_otype, self.origname))
                     if self.obj and self.is_nonconstref and self.is_nonconstptr and self.is_inputref:
                         raise GeneratorError("unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.str_otype, self.origname))
-                    for t in self.type:
-                        if t in ["std::string"]:
-                            log.Warn("'%s' used instead of 'string' (see class %s)" % (t, face.obj.full_name), source_file)
+                    if BE_VERBOSE:
+                        for t in self.type:
+                            if t in ["std::string"]:
+                                log.Warn("'%s' used instead of 'string' (see class %s)" % (t, face.obj.full_name), source_file)
 
                 def CheckRpcType(self):
                     if self.str_rpctype == None:
@@ -1122,9 +1122,9 @@ if __name__ == "__main__":
         if interface_files:
             for source_file in interface_files:
                 try:
-                    output_file = source_file.rsplit("/", 1)[0] + "/ProxyStubs_" + CreateName(re.split(r"/|\\", source_file)[-1].split(".", 1)[0]) + ".cpp"
+                    output_file = os.path.join(os.path.dirname(source_file), PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
 
-                    output = GenerateStubs(output_file, source_file, os.path.realpath(__file__).rsplit('/', 1)[0] + '/' + DEFAULT_DEFINITIONS_FILE, scan_only)
+                    output = GenerateStubs(output_file, source_file, os.path.join(os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE), scan_only)
                     faces += output
 
                     # dump interfaces if only scanning
@@ -1156,11 +1156,11 @@ if __name__ == "__main__":
                         print "%s (%s) - '%s'" % (hex(f.id) if isinstance(f.id, (int, long)) else "?", str(f.id), f.obj.full_name)
                     if i and sorted_faces[i - 1].id == f.id:
                         log.Error("duplicate interface ID %s (%s) of %s" % (hex(f.id) if isinstance(f.id, (int, long)) else "?", str(f.id), f.obj.full_name), f.file)
-                else:
+                elif BE_VERBOSE:
                     log.Warn("can't evaluate interface ID \"%s\" of %s" % (str(f.id), f.obj.full_name), f.file)
 
             print ""
-            print ("All done. %i file%s processed" % (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) + \
+            print ("ProxyStubGenerator: All done. %i file%s processed" % (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) + \
                 ((" (%i file%s skipped)" % (len(skipped), "s" if len(skipped) > 1 else "")) if skipped else "") + \
                 (". %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) + \
                 ((" %i error%s" % (len(log.errors), "s" if len(log.errors) > 1 else "")) if log.errors else " no errors") + \
