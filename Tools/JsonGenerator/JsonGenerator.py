@@ -1,30 +1,24 @@
 #!/usr/bin/env python
 
-import argparse, sys, re, os, json
+import argparse, sys, re, os, json, posixpath, urllib
 from collections import OrderedDict
 
-VERSION="1.3"
+VERSION="1.3.1"
 
 class Trace:
-    class Colors:
-        Purple = '\033[95m'
-        Yellow = '\033[93m'
-        Red = '\033[91m'
-        Green = '\033[92m'
-        END = '\033[0m'
     def __init__(self):
         self.errors = 0
-    def __Print(self, text, color):
-        print color + text + self.Colors.END
+    def __Print(self, text):
+        print text
     def Header(self, text):
-        self.__Print(text, self.Colors.Purple)
+        self.__Print(text)
     def Warn(self, text):
-         self.__Print("Warning: " + text, self.Colors.Yellow)
+         self.__Print("Warning: " + text)
     def Error(self, text):
         self.errors += 1
-        self.__Print("Error: " + text, self.Colors.Red)
+        self.__Print("Error: " + text)
     def Success(self, text):
-         self.__Print("Success: " + text, self.Colors.Green)
+        self.__Print("Success: " + text)
 
 trace = Trace()
 
@@ -278,7 +272,7 @@ class JsonObject(JsonType):
                     return TypePrefix("Container")
                 elif CLASSNAME_FROM_REF and isinstance(self.schema, jsonref.JsonRef):
                     # NOTE: Abuse the ref feature to construct a name for the class!
-                    classname = MakeObject(self.schema.__reference__["$ref"].rsplit("/",1)[1].capitalize())
+                    classname = MakeObject(self.schema.__reference__["$ref"].rsplit(posixpath.sep,1)[1].capitalize())
                 else:
                     # Make the name out of properties, but not for params/result types
                     if len(self.Properties()) == 1 and not isinstance(self.parent, JsonMethod):
@@ -500,21 +494,22 @@ def LoadSchema(file, include_path):
             # Remove comments from the JSON
             tokens = [s for s in tokens if (s and (s[:2] != '/*' and s[:2] != '//'))]
             return tokens
-        path = os.path.abspath(file.rsplit("/",1)[0])
-        if path:
-            path += '/'
+        path = os.path.abspath(os.path.dirname(file))
         tokens = __Tokenize(string)
         # BUG?: jsonref (urllib) needs file:// and absolute path to a ref'd file
         for c, t in enumerate(tokens):
             if t == '"$ref"' and tokens[c + 1] == ":" and tokens[c + 2][:2] != '"#':
                 ref_file = tokens[c + 2].strip('"')
+                ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
                 if "{interfacedir}/" in ref_file:
-                    ref_file = ref_file.replace("{interfacedir}/", include_path if include_path else "")
+                    ref_tok[0] = ref_tok[0].replace("{interfacedir}/", (include_path + os.sep) if include_path else "")
                     if not include_path:
-                        ref_file = path + ref_file
+                        ref_tok[0] = os.path.join(path, ref_tok[0])
                 else:
-                    ref_file = path + ref_file
-                ref_file = '"file://%s"' % ref_file
+                    ref_tok[0] = os.path.join(path, ref_tok[0])
+                if not os.path.isfile(ref_tok[0]):
+                    raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
+                ref_file = '"file:%s#%s"' % (urllib.pathname2url(ref_tok[0]), ref_tok[1])
                 tokens[c + 2] = ref_file
         # Return back the preprocessed JSON as a string
         return " ".join(tokens)
@@ -524,6 +519,8 @@ def LoadSchema(file, include_path):
 def ParseJsonRpcSchema(schema):
     objTracker.Reset()
     enumTracker.Reset()
+    if "interface" in schema:
+        schema = schema["interface"]
     if "class" in schema["info"]:
         pluginClass = schema["info"]["class"]
     else:
@@ -1122,19 +1119,20 @@ def EmitObjects(root, emit, emitCommon = False):
     return emittedItems
 
 def CreateCode(schema, path, generateClasses, generateStubs):
-    directory = path.rsplit("/",1)[0]
-    filename = path.replace("Plugin", "").replace("API", "").rsplit("/",1)[1]
+    directory = os.path.dirname(path)
+    print directory
+    filename = os.path.basename(path.replace("Plugin", "").replace("API", ""))
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
-        header_file = directory + "/" + DATA_NAMESPACE + "_" + filename + ".h"
-        enum_file = directory + "/JsonEnum_" + filename + ".cpp"
+        header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
+        enum_file = os.path.join(directory, "JsonEnum_" + filename + ".cpp")
         if generateClasses:
             emitted = 0
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("API", "").replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s.json'." % path.rsplit("/",1)[1])
+                emitter.Line("// Generated automatically from '%s.json'." % os.path.basename(path))
                 emitter.Line()
                 emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
                 emitter.Line()
@@ -1153,7 +1151,7 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
                 emitter.Line("// Enumeration code for %s JSON-RPC API." % rpcObj.info["title"].replace("API", "").replace("Plugin", "").strip())
-                emitter.Line("// Generated automatically from '%s.json'." % path.rsplit("/",1)[1])
+                emitter.Line("// Generated automatically from '%s.json'." % os.path.basename(path))
                 emitter.Line()
                 emitted = EmitEnumRegs(rpcObj, emitter)
                 if emitted:
@@ -1165,10 +1163,10 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                     pass
 
         if generateStubs:
-            with open(directory + "/"  + filename + "JsonRpc.cpp", "w") as output_file:
+            with open(os.path.join(directory, filename + "JsonRpc.cpp"), "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
-                EmitHelperCode(rpcObj, emitter, header_file.rsplit("/",1)[1])
+                EmitHelperCode(rpcObj, emitter, os.path.basename(header_file))
                 trace.Success("JSON-RPC stubs generated in '%s'." % output_file.name)
     else:
         trace.Success("No code to generate.")
@@ -1390,7 +1388,7 @@ def CreateDocument(schema, path):
 
         MdBody("<!-- Generated automatically, DO NOT EDIT! -->")
         commons = dict()
-        with open(os.path.realpath(__file__).rsplit('/', 1)[0] + '/' + GLOBAL_DEFINITIONS) as f:
+        with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), GLOBAL_DEFINITIONS)) as f:
             commons = json.load(f)
 
         info = schema["info"]
@@ -1639,14 +1637,11 @@ if __name__ == "__main__":
     CLASSNAME_FROM_REF = not args.no_ref_names
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
-    if args.if_path:
-        IF_PATH = args.if_path + ("/" if not args.if_path.endswith("/") else "")
-        if IF_PATH == "./":
-            IF_PATH = ""
+    if args.if_path and args.if_path != ".":
+        IF_PATH = args.if_path
+    IF_PATH = posixpath.normpath(IF_PATH + os.sep)
     if args.if_dir:
-        args.if_dir = os.path.abspath(args.if_dir)
-        if not args.if_dir.endswith('/'):
-            args.if_dir = args.if_dir + '/'
+        args.if_dir = os.path.normpath(args.if_dir)
     generateCode = args.code
     generateDocs = args.docs
     generateStubs = args.stubs
@@ -1660,22 +1655,24 @@ if __name__ == "__main__":
         for path in args.path:
             try:
                 trace.Header("\nProcessing file '%s'" % path)
-                schema = LoadSchema(path, args.if_dir)
+                schema = LoadSchema(path, os.path.abspath(args.if_dir) if args.if_dir else "")
                 output_path = path
                 if args.output_dir:
-                    output_path = args.output_dir.rstrip("/") + "/" + output_path[output_path.rfind('/') + 1:]
+                    output_path = os.path.join(args.output_dir, os.path.basename(output_path))
                 output_path = output_path.replace(".json", "")
                 if generateCode or generateStubs:
                     CreateCode(schema, output_path, generateCode, generateStubs)
                 if generateDocs:
-                    title = schema["info"]["title"] if "title" in schema else schema["info"]["class"] if "class" in schema else output_path.rsplit("/",1)[1]
-                    CreateDocument(schema, output_path.rsplit("/",1)[0] + "/" + title.replace(" ",""))
+                    title = schema["info"]["title"] if "title" in schema else schema["info"]["class"] if "class" in schema else os.path.basename(output_path)
+                    CreateDocument(schema, os.path.join(os.path.dirname(output_path), title.replace(" ","")))
+            except JsonParseError as err:
+                trace.Error(str(err))
             except RuntimeError as err:
                 trace.Error(str(err))
             except IOError as err:
                 trace.Error(str(err))
             except ValueError as err:
                 trace.Error(str(err))
-        print "\nAll done. %s error%s." % (trace.errors if trace.errors else "No", "" if trace.errors == 1 else "s")
+        print "\nJsonGenerator: All done. %s error%s." % (trace.errors if trace.errors else "No", "" if trace.errors == 1 else "s")
         if trace.errors:
             sys.exit(1)
