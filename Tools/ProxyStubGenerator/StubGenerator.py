@@ -450,7 +450,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             def __ParseLength(length, maxlength, target, length_name):
                                 parsed = []
                                 has_param_ref = False
-                                sizeof_parsing =- False
+                                sizeof_parsing = False
+                                param_ref = None
                                 par_count = 0
                                 param_type = None
                                 for token in length:
@@ -468,6 +469,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                         raise GeneratorError(("unable to serialise '%s': %slength variable '%s' type mismatch" % (p.origname, "max" if maxlength else "", token)))
                                                     param_type = q.str_typename
                                                     has_param_ref = True
+                                                    param_ref = q
                                                 break
                                         if not t:
                                             if token == "void":
@@ -507,16 +509,16 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                 param_type = "uint8_t"
                                         except:
                                             pass
-                                return joined, param_type, not has_param_ref
+                                return joined, param_type, not has_param_ref, param_ref
 
                             if p.is_output and p.ptr_maxlength and p.ptr_maxlength != p.ptr_length:
                                 if p.ptr_length:
-                                    p.maxlength_expr, p.length_type, p.maxlength_constant = __ParseLength(p.ptr_maxlength, True, c, "param%i_maxlength" % c)
+                                    p.maxlength_expr, p.length_type, p.maxlength_constant, p.length_ref = __ParseLength(p.ptr_maxlength, True, c, "param%i_maxlength" % c)
                                     p.maxlength_var = "param%i_maxlength" % c
                                 else:
                                     p.ptr_length = p.ptr_maxlength
                             if p.ptr_length:
-                                p.length_expr, p.length_type, p.length_constant = __ParseLength(p.ptr_length, False, c, "param%i_length" % c)
+                                p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(p.ptr_length, False, c, "param%i_length" % c)
                                 p.length_var = "param%i_length" % c
                             if not p.ptr_length:
                                 raise GeneratorError("unable to serialise '%s': length variable not defined" % (p.origname))
@@ -739,7 +741,13 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                     temp.type.remove("*")
                                     emit.Line("writer.%s(%s);" % (EmitType(temp).RpcType(), p.name))
                                 else:
+                                    if p.length_var and p.length_ref and  p.length_ref.is_output:
+                                        emit.Line("writer.%s(%s);" % (p.length_ref.RpcType(), p.length_var))
+                                    emit.Line("if ((%s != %s) && (%s != 0)) {" % (p.name, NULLPTR, p.length_var))
+                                    emit.IndentInc()
                                     emit.Line("writer.%s(%s, %s);" % (p.RpcType(), p.length_var if p.length_var else p.maxlength_var, p.name))
+                                    emit.IndentDec()
+                                    emit.Line("}")
                             elif p.is_nonconstref:
                                 if not p.is_length:
                                     emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
@@ -815,7 +823,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
             emit.Line("// %s interface proxy definitions" % (iface_name))
             emit.Line("//")
 
-            #emit stub order comnment
+            #emit stub order comment
             if EMIT_COMMENT_WITH_STUB_ORDER:
                 EmitFunctionOrder(emit_methods)
 
@@ -957,7 +965,13 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         if p.is_nonconstref and p.obj:
                             emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<void*>(), %s::ID));" % (p.name, p.str_nocvref, p.str_typename))
                         elif not p.obj and p.is_outputptr:
+                            if p.length_var and p.length_ref and p.length_ref.is_output:
+                                emit.Line("%s = reader.%s();" % (p.length_ref.name, p.length_ref.RpcType()))
+                            emit.Line("if ((%s != %s) && (%s != 0)) {" % (p.name, NULLPTR, p.length_expr))
+                            emit.IndentInc()
                             emit.Line("reader.%s(%s, %s);" % (p.RpcType(), p.length_expr, p.name))
+                            emit.IndentDec()
+                            emit.Line("}")
                         elif p.is_nonconstref and not p.is_length:
                             emit.Line("%s = reader.%s();" % (p.name, p.RpcTypeNoCV()))
 
