@@ -259,7 +259,11 @@ namespace ProxyStub {
 
             if (result != Core::ERROR_NONE) {
                 TRACE_L1("Could not remote release the Proxy.");
+            } else {
+                // Pass the remote release return value through
+                result = message->Response().Reader().Number<uint32_t>();
             }
+
             return result;
         }
 
@@ -335,7 +339,7 @@ namespace ProxyStub {
         virtual uint32_t Release() const override
         {
             uint32_t result = _unknown.DropReference();
-            if((result != Core::ERROR_NONE) && (result != Core::ERROR_TIMEDOUT)) {
+            if((result != Core::ERROR_NONE) && (result != Core::ERROR_TIMEDOUT) && (result != Core::ERROR_DESTRUCTION_SUCCEEDED)) {
                 result = Core::ERROR_DESTRUCTION_FAILED;
             }
 
