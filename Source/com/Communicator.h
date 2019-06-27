@@ -895,7 +895,7 @@ namespace RPC {
 
                     ASSERT(result != nullptr);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, result, info.InterfaceId(), info.IsRequested());
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, result, info.InterfaceId(), true);
 
                     if (baseIUnknown != nullptr) {
                         _parent.Offer(baseIUnknown, info.InterfaceId());
