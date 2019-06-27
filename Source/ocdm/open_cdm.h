@@ -81,9 +81,11 @@ typedef enum {
     Expired,
     Released,
     OutputRestricted,
+    OutputRestrictedHDCP22,
     OutputDownscaled,
     StatusPending,
-    InternalError
+    InternalError,
+    HWError
 } KeyStatus;
 
 #ifdef _MSVC_LANG

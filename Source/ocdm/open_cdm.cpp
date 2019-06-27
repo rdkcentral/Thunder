@@ -83,6 +83,14 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
         return KeyStatus::Released;
     case OCDM::ISession::Expired:
         return KeyStatus::Expired;
+    case OCDM::ISession::OutputRestricted:
+        return KeyStatus::OutputRestricted;
+    case OCDM::ISession::OutputRestrictedHDCP22:
+        return KeyStatus::OutputRestrictedHDCP22;
+    case OCDM::ISession::OutputDownscaled:
+        return KeyStatus::OutputDownscaled;
+    case OCDM::ISession::HWError:
+        return KeyStatus::HWError;
     default:
         assert(false);
     }

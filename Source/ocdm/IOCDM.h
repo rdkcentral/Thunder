@@ -48,9 +48,11 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
         Expired,
         Released,
         OutputRestricted,
+        OutputRestrictedHDCP22,
         OutputDownscaled,
         StatusPending,
-        InternalError
+        InternalError,
+        HWError
     };
 
     // ICallback defines the callback interface to receive
