@@ -187,11 +187,22 @@ public:
 
     virtual void AddRef() const
     {
+        if (Core::InterlockedIncrement(_refCount) == 1) {
+            const_cast<Display*>(this)->Initialize();
+        }
+        return;
     }
+
     virtual uint32_t Release() const
     {
-        return (0);
+        if (Core::InterlockedDecrement(_refCount) == 0) {
+            const_cast<Display*>(this)->Deinitialize();
+
+            return (Core::ERROR_CONNECTION_CLOSED);
+        }
+        return (Core::ERROR_NONE);
     }
+
     virtual EGLNativeDisplayType Native() const override
     {
         return (static_cast<EGLNativeDisplayType>(EGL_DEFAULT_DISPLAY));
@@ -231,6 +242,32 @@ private:
         return displaysize;
     }
 
+    inline void Initialize()
+    {
+        _isRunning = true;
+        if (pipe(g_pipefd) == -1) {
+            g_pipefd[0] = -1;
+            g_pipefd[1] = -1;
+        }
+
+    }
+
+    inline void Deinitialize()
+    {
+        _isRunning = false;
+        for_each(_surfaces.begin(), _surfaces.end(), [&](SurfaceImplementation* surface) {
+
+            Unregister(surface);
+        });
+
+        close(g_pipefd[0]);
+        Message message;
+        message.code = 0;
+        write(g_pipefd[1], &message, sizeof(message));
+        close(g_pipefd[1]);
+    }
+
+    bool _isRunning;
     std::string _displayName;
     mutable Core::CriticalSection _adminLock;
     void* _virtualkeyboard;
@@ -238,6 +275,8 @@ private:
     std::list<SurfaceImplementation*> _surfaces;
     Core::ProxyType<RPC::InvokeServerType<2, 1> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _compositerServerRPCConnection;
+
+    mutable uint32_t _refCount;
 };
 
 Display::SurfaceImplementation::SurfaceImplementation(
@@ -297,8 +336,6 @@ Display::SurfaceImplementation::~SurfaceImplementation()
     vc_dispmanx_element_remove(_dispmanUpdate, _dispmanElement);
     vc_dispmanx_update_submit_sync(_dispmanUpdate);
     vc_dispmanx_display_close(_dispmanDisplay);
-
-    _display.Unregister(this);
 }
 
 void Display::SurfaceImplementation::Opacity(
@@ -354,45 +391,46 @@ void Display::SurfaceImplementation::ChangedZOrder(const uint8_t zorder)
 }
 
 Display::Display(const string& name)
-    : _displayName(name)
+    : _isRunning(true)
+    , _displayName(name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
     , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create())
     , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), _engine->InvokeHandler(), _engine->AnnounceHandler()))
+    , _refCount(0)
 {
+
+    ASSERT(_compositerServerRPCConnection != nullptr);
+
     uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
     if (result != Core::ERROR_NONE) {
         TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
         _compositerServerRPCConnection.Release();
     }
 
-    if (pipe(g_pipefd) == -1) {
-        g_pipefd[0] = -1;
-        g_pipefd[1] = -1;
-    }
-    _virtualkeyboard = Construct(
-        name.c_str(), connectorName, VirtualKeyboardCallback);
+    _virtualkeyboard = Construct(_displayName.c_str(), connectorName, VirtualKeyboardCallback);
     if (_virtualkeyboard == nullptr) {
-        TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
+         TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
     }
+
+    AddRef();
 }
 
 Display::~Display()
 {
-
-    for_each(_surfaces.begin(), _surfaces.end(), [&](SurfaceImplementation* surface) {
+    for (auto surface : _surfaces) {
         string name = surface->Name();
 
         if (static_cast<Core::IUnknown*>(surface)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
             TRACE(CompositorClient, (_T("Compositor Surface [%s] is not properly destructed"), name.c_str()));
         }
-    });
+        _surfaces.remove(surface);
+    }
 
     if (_virtualkeyboard != nullptr) {
         Destruct(_virtualkeyboard);
     }
-
     if (_compositerServerRPCConnection.IsValid() == true) {
         _compositerServerRPCConnection.Release();
     }
@@ -402,10 +440,9 @@ int Display::Process(const uint32_t data)
 {
     Message message;
     if ((data != 0) && (g_pipefd[0] != -1) && (read(g_pipefd[0], &message, sizeof(message)) > 0)) {
-
         _adminLock.Lock();
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
-        while (index != _surfaces.end()) {
+        while (index != _surfaces.end() && (_isRunning == true)) {
             // RELEASED  = 0,
             // PRESSED   = 1,
             // REPEAT    = 2,
@@ -451,17 +488,13 @@ inline void Display::Register(Display::SurfaceImplementation* surface)
 
 inline void Display::Unregister(Display::SurfaceImplementation* surface)
 {
-
     ASSERT(surface != nullptr);
 
     _adminLock.Lock();
 
     std::list<SurfaceImplementation*>::iterator index(
         std::find(_surfaces.begin(), _surfaces.end(), surface));
-    if (index != _surfaces.end()) {
-        _surfaces.erase(index);
-    }
-
+    ASSERT(index != _surfaces.end());
     _adminLock.Unlock();
 
     RevokeClientInterface(surface);
