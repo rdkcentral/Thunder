@@ -190,6 +190,9 @@ class JsonEnum(JsonType):
             if "class" in self.schema:
                 # Override class name if "class" property present
                 classname = self.schema["class"].capitalize()
+            elif CLASSNAME_FROM_REF and isinstance(self.schema, jsonref.JsonRef):
+                # NOTE: Abuse the ref feature to construct a name for the enum!
+                classname = MakeEnum(self.schema.__reference__["$ref"].rsplit(posixpath.sep,1)[1].capitalize())
             elif isinstance(self.parent, JsonProperty):
                 classname = MakeEnum(self.parent.name.capitalize())
             else:

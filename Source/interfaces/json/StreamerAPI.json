@@ -10,7 +10,7 @@
     "$ref": "common.json"
   },
   "definitions": {
-    "streamtype": {
+    "stream": {
       "type": "string",
       "enum": [
         "stubbed",
@@ -228,7 +228,7 @@
         "type": "object",
         "properties": {
           "stream": {
-            "$ref": "#/definitions/streamtype"
+            "$ref": "#/definitions/stream"
           }
         }
       },
@@ -307,7 +307,7 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/definitions/streamtype"
+            "$ref": "#/definitions/stream"
           },
           "state": {
             "$ref": "#/definitions/state"
@@ -349,7 +349,7 @@
         "type": "object",
         "properties": {
           "type": {
-            "$ref": "#/definitions/streamtype"
+            "$ref": "#/definitions/stream"
           }
         }
       },
