@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-import argparse, sys, re, os, json, posixpath, urllib
+import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.1"
+VERSION="1.3.2"
 
 class Trace:
     def __init__(self):
@@ -661,6 +661,7 @@ def EmitEnumRegs(root, emit):
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
     # Enumeration conversion code
+    emit.Line("#include \"../definitions.h\"")
     emit.Line("#include <core/Enumerate.h>")
     emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, root.CppClass()))
     emit.Line()
@@ -1618,7 +1619,7 @@ enumTracker = EnumTracker()
 
 if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description='Generate JSON C++ classes, stub code and API documentation from JSON definition files.', formatter_class=argparse.RawTextHelpFormatter )
-    argparser.add_argument('path', nargs="*", help="JSON file(s)")
+    argparser.add_argument('path', nargs="*", help="JSON file(s), wildcards are allowed")
     argparser.add_argument("--version", dest="version", action="store_true", default=False, help="display version")
     argparser.add_argument("-d", "--docs", dest="docs", action="store_true", default=False, help="generate documentation")
     argparser.add_argument("-c", "--code", dest="code", action="store_true", default=False, help="generate JSON classes")
@@ -1654,7 +1655,10 @@ if __name__ == "__main__":
     elif not args.path or (not generateCode and not generateStubs and not generateDocs):
         argparser.print_help()
     else:
-        for path in args.path:
+        files = []
+        for p in args.path:
+            files.extend(glob.glob(p))
+        for path in files:
             try:
                 trace.Header("\nProcessing file '%s'" % path)
                 schema = LoadSchema(path, os.path.abspath(args.if_dir) if args.if_dir else "")
