@@ -137,6 +137,14 @@ private:
     size_t pos_;
 };
 
+namespace WPEFramework
+{
+   namespace PluginHost
+   {
+      struct IShell;
+   }
+}
+
 namespace CDMi {
 
 // EME error code to which CDMi errors are mapped. Please
@@ -410,7 +418,7 @@ struct ISystemFactory {
     virtual IMediaKeys* Instance() = 0;
     virtual const char* KeySystem() const = 0;
     virtual const std::vector<std::string>& MimeTypes() const = 0;
-    virtual void SystemConfig(const std::string& configline) = 0;
+    virtual void SystemConfig(const WPEFramework::PluginHost::IShell * shell, const std::string& configline) = 0;
 };
 
 template <typename IMPLEMENTATION>
@@ -444,9 +452,13 @@ public:
         return (typeid(IMPLEMENTATION).name());
     }
 
-    virtual void SystemConfig(const std::string& configline)
+    virtual void SystemConfig(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
-        OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+        if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
+           OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+        } else {
+           OnSystemConfig(shell, configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable2<IMPLEMENTATION>::Has>());
+        }
     }
 
 private:
@@ -468,6 +480,27 @@ private:
     }
 
     void OnSystemConfig(const std::string&, std::false_type)
+    {
+    }
+
+    template <typename T>
+    struct HasOnSystemConfigurationAvailable2 {
+        template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
+        struct SFINAE {
+        };
+        template <typename U>
+        static uint8_t Test(SFINAE<U, &U::OnSystemConfigurationAvailable>*);
+        template <typename U>
+        static uint32_t Test(...);
+        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
+    };
+
+    void OnSystemConfig(const WPEFramework::PluginHost::IShell * service, const std::string& configline, std::true_type)
+    {
+        _instance.OnSystemConfigurationAvailable(service, configline);
+    }
+
+    void OnSystemConfig(const WPEFramework::PluginHost::IShell * service, const std::string&, std::false_type)
     {
     }
 
