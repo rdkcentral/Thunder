@@ -88,7 +88,7 @@ class JsonType():
                     trace.Warn("Item '%s' description ends with a dot (\"%s\")" % (self.name, self.description))
                 if self.description.endswith(" "):
                     trace.Warn("Item '%s' description ends with a whitespace" % self.name)
-                if not self.description[0].isupper() and not self.description[0].isdigit():
+                if not self.description[0].isupper() and self.description[0].isalpha():
                     trace.Warn("Item '%s' description does not start with a capital letter (\"%s\")" % (self.name, self.description))
         if "default" in schema:
             self.default = schema["default"]
@@ -875,12 +875,11 @@ def EmitHelperCode(root, emit, header_file):
                         emit.Line("// Property: %s - %s" % (method.JsonName(), method.Summary().split(".",1)[0]))
                     emit.Line("// Return codes:")
                     emit.Line("//  - ERROR_NONE: Success")
-                    if not getter:
-                        for e in method.Errors():
-                            description = e["description"] if "description" in e else ""
-                            if isinstance(e, jsonref.JsonRef) and "description" in e.__reference__:
-                                description = e.__reference__["description"]
-                            emit.Line("//  - %s: %s" % (e["message"], description))
+                    for e in method.Errors():
+                        description = e["description"] if "description" in e else ""
+                        if isinstance(e, jsonref.JsonRef) and "description" in e.__reference__:
+                            description = e.__reference__["description"]
+                        emit.Line("//  - %s: %s" % (e["message"], description))
                     line = "uint32_t %s::%s(%s%s%s& %s)%s" % (root.JsonName(), name, "const string& index, " if method.has_index else "", "const " if not getter else "", params, "response" if getter else "param", " const" if getter else "")
                     if method.included_from:
                         line += " /* %s */" % method.included_from
@@ -1089,7 +1088,7 @@ def EmitObjects(root, emit, emitCommon = False):
         emit.Line("//")
         emit.Line()
         for obj in enumTracker.CommonObjects():
-            if not obj.included_from:
+            if not obj.IsDuplicate() and not obj.included_from:
                 EmitEnum(obj)
     if emitCommon and objTracker.CommonObjects():
         print "Emitting common classes..."
