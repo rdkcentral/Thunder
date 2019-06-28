@@ -68,7 +68,7 @@ namespace Plugin {
                 {
                     if (_schedule == false) {
                         _schedule = true;
-                        PluginHost::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
+                        RPC::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
                     }
                 }
                 virtual void Dispatch()
@@ -91,7 +91,7 @@ namespace Plugin {
             }
             virtual ~Sink()
             {
-                PluginHost::WorkerPool::Instance().Revoke(_decoupled);
+                RPC::WorkerPool::Instance().Revoke(_decoupled);
             }
 
         private:
@@ -276,6 +276,20 @@ namespace Plugin {
 
             return (service);
         }
+		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+		{
+            const RPC::WorkerPool::Metadata& snapshot = RPC::WorkerPool::Instance().Snapshot();
+
+            data.PendingRequests = snapshot.Pending;
+            data.PoolOccupation = snapshot.Occupation;
+
+            for (uint8_t teller = 0; teller < snapshot.Slots; teller++) {
+                // Example of why copy-constructor and assignment constructor should be equal...
+                Core::JSON::DecUInt32 newElement;
+                newElement = snapshot.Slot[teller];
+                data.ThreadPoolRuns.Add(newElement);
+            }
+		}
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;

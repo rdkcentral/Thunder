@@ -3,6 +3,7 @@
 
 namespace WPEFramework {
 namespace RPC {
+
     Administrator::Administrator()
         : _adminLock()
         , _stubs()
@@ -262,6 +263,23 @@ namespace RPC {
     {
         std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
+    }
+
+    /* static */ Administrator& Job::_administrator= Administrator::Instance();
+	/* static */ Core::ProxyPoolType<InvokeServer::DispatchJob> InvokeServer::_factory(3);
+
+	static WorkerPool* _singleton = nullptr;
+
+    /* static */ void WorkerPool::Instance(WorkerPool& instance)
+    {
+        ASSERT (_singleton == nullptr);
+        _singleton = &instance;
+    }
+
+    /* static */ WorkerPool& WorkerPool::Instance()
+    {
+        ASSERT (_singleton != nullptr);
+        return (*_singleton);
     }
 }
 } // namespace Core

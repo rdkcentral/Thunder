@@ -143,7 +143,7 @@ private:
     OpenCDMAccessor(const TCHAR domainName[])
         : _refCount(1)
 		, _engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()))
-        , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), _engine->InvokeHandler(), _engine->AnnounceHandler()))
+        , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), _engine))
         , _remote(nullptr)
         , _remoteExt(nullptr)
         , _adminLock()

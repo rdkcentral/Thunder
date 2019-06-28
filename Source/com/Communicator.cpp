@@ -323,10 +323,9 @@ namespace RPC {
     Communicator::Communicator(
         const Core::NodeId& node,
         const string& proxyStubPath,
-        const Core::ProxyType<ServerType<InvokeMessage>>& invoke,
-        const Core::ProxyType<ServerType<AnnounceMessage>>& announcement)
+        const Core::ProxyType<Core::IIPCServer>& handler)
         : _connectionMap(*this)
-        , _ipcServer(node, _connectionMap, proxyStubPath, invoke, announcement)
+        , _ipcServer(node, _connectionMap, proxyStubPath, handler)
     {
         if (proxyStubPath.empty() == false) {
             RPC::LoadProxyStubs(proxyStubPath);
@@ -353,52 +352,36 @@ namespace RPC {
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
-        , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create())
-        , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(this))
+        , _handler(this)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
 
-        Register(_invokeHandler);
-        Register(_announceHandler);
+        Register(RPC::InvokeMessage::Id(), Core::ProxyType<InvokeHandlerImplementation>::Create());
+        Register(RPC::AnnounceMessage::Id(), Core::ProxyType<AnnounceHandlerImplementation>::Create(this));
     }
 
     CommunicatorClient::CommunicatorClient(
         const Core::NodeId& remoteNode,
-        const Core::ProxyType<ServerType<InvokeMessage>>& invoke,
-        const Core::ProxyType<ServerType<AnnounceMessage>>& announce)
+        const Core::ProxyType<Core::IIPCServer>& handler)
         : Core::IPCChannelClientType<Core::Void, false, true>(remoteNode, CommunicationBufferSize)
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
-        , _invokeHandler()
-        , _announceHandler()
+        , _handler(this)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
-        Core::ProxyType<Core::IPCServerType<InvokeMessage>> invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create());
-        Core::ProxyType<Core::IPCServerType<AnnounceMessage>> announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(this));
 
-        if (invoke.IsValid() == true) {
-            _invokeHandler = invoke;
-            invoke->Handler(invokeHandler);
-        } else {
-            _invokeHandler = invokeHandler;
-        }
-
-        if (announce.IsValid() == true) {
-            _announceHandler = announce;
-            announce->Handler(announceHandler);
-        } else {
-            _announceHandler = announceHandler;
-        }
-
-        BaseClass::Register(_invokeHandler);
-        BaseClass::Register(_announceHandler);
+        BaseClass::Register(RPC::InvokeMessage::Id(), handler);
+        BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
 
     CommunicatorClient::~CommunicatorClient()
     {
         BaseClass::Close(Core::infinite);
+
+        BaseClass::Unregister(RPC::InvokeMessage::Id());
+        BaseClass::Unregister(RPC::AnnounceMessage::Id());
 
         DestroyFactory<RPC::InvokeMessage>();
         DestroyFactory<RPC::AnnounceMessage>();

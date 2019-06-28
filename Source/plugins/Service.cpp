@@ -2,21 +2,8 @@
 #include "Channel.h"
 
 namespace WPEFramework {
+
 namespace PluginHost {
-
-    static WorkerPool* _singleton = nullptr;
-
-    /* static */ void WorkerPool::Instance(WorkerPool& instance)
-    {
-        ASSERT(_singleton == nullptr);
-        _singleton = &instance;
-    }
-
-    /* static */ WorkerPool& WorkerPool::Instance()
-    {
-        ASSERT(_singleton != nullptr);
-        return (*_singleton);
-    }
 
     PluginHost::Request::Request()
         : Web::Request()

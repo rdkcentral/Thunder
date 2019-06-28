@@ -13,6 +13,18 @@ target_link_libraries(${TARGET}
         ${EGL_LIBRARIES}
 )
 
+if(PROTOCOLS)
+    target_link_libraries(${TARGET}
+            PUBLIC
+              ${NAMESPACE}Protocols::${NAMESPACE}Protocols
+            )
+else()
+    target_link_libraries(${TARGET}
+            PUBLIC
+              ${NAMESPACE}COM::${NAMESPACE}COM
+            )
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES

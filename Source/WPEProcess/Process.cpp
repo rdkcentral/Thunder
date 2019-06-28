@@ -8,18 +8,85 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 namespace WPEFramework {
 namespace Process {
 
-    class InvokeServer {
+    class WorkerPoolImplementation : public Core::IIPCServer, public RPC::WorkerPool {
     private:
-        InvokeServer() = delete;
-        InvokeServer(const InvokeServer&) = delete;
-        InvokeServer& operator=(const InvokeServer&) = delete;
+        WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-        struct Info {
-            Core::ProxyType<Core::IIPC> message;
-            Core::ProxyType<Core::IPCChannel> channel;
+        class Info {
+        public:
+            Info()
+                : _message()
+                , _channel()
+                , _job()
+            {
+            }
+            Info(const Core::ProxyType<Core::IPCChannel> channel, const Core::ProxyType<Core::IIPC>& message)
+                : _message(message)
+                , _channel(channel)
+                , _job()
+            {
+            }
+			Info(const Info& copy)
+                : _message(copy._message)
+                , _channel(copy._channel)
+                , _job(copy._job)
+            {
+			}
+            Info(const Core::ProxyType<Core::IDispatch>& job)
+                : _message()
+                , _channel()
+                , _job()
+            {
+            }
+            ~Info()
+            {
+            }
+
+			Info& operator=(const Info& RHS) 
+			{
+                _message = RHS._message;
+                _channel = RHS._channel;
+                _job = RHS._job;
+ 
+				return (*this);
+			}
+
+        public:
+            bool operator==(const Info& RHS) const
+            {
+                return (_channel.IsValid() ? ((_channel == RHS._channel) && (_message == RHS._message)) : _job == RHS._job);
+            }
+            bool operator!=(const Info& RHS) const
+            {
+                return (!operator==(RHS));
+            }
+
+            void Dispatch(Core::IIPCServer* announceHandler)
+            {
+                if (_channel.IsValid() == true) {
+                    if (_message->Label() == RPC::InvokeMessage::Id()) {
+
+                        RPC::Job::Invoke(_channel, _message);
+                    } else {
+                        ASSERT(_message->Label() == RPC::AnnounceMessage::Id());
+
+                        announceHandler->Procedure(*(_channel), _message);
+                    }
+                    _channel.Release();
+                    _message.Release();
+                } else {
+                    _job->Dispatch();
+                    _job.Release();
+                }
+            }
+
+        private:
+            Core::ProxyType<Core::IIPC> _message;
+            Core::ProxyType<Core::IPCChannel> _channel;
+            Core::ProxyType<Core::IDispatch> _job;
         };
-        typedef Core::QueueType<Info> MessageQueue;
-
         class Minion : public Core::Thread {
         private:
             Minion() = delete;
@@ -27,8 +94,9 @@ namespace Process {
             Minion& operator=(const Minion&) = delete;
 
         public:
-            Minion(InvokeServer& parent)
-                : _parent(parent)
+            Minion(WorkerPoolImplementation& parent, const uint32_t stackSize)
+                : Core::Thread(stackSize, nullptr)
+                , _parent(parent)
             {
             }
             virtual ~Minion()
@@ -46,105 +114,78 @@ namespace Process {
             }
 
         private:
-            InvokeServer& _parent;
+            WorkerPoolImplementation& _parent;
+        };
+        class TimedJob {
+        public:
+            TimedJob()
+                : _job()
+            {
+            }
+            TimedJob(const Core::ProxyType<Core::IDispatch>& job)
+                : _job(job)
+            {
+            }
+            TimedJob(const TimedJob& copy)
+                : _job(copy._job)
+            {
+            }
+            ~TimedJob()
+            {
+            }
+
+            TimedJob& operator=(const TimedJob& RHS)
+            {
+                _job = RHS._job;
+                return (*this);
+            }
+            bool operator==(const TimedJob& RHS) const
+            {
+                return (_job == RHS._job);
+            }
+            bool operator!=(const TimedJob& RHS) const
+            {
+                return (_job != RHS._job);
+            }
+
+        public:
+            uint64_t Timed(const uint64_t /* scheduledTime */)
+            {
+                WorkerPoolImplementation::Instance().Submit(_job);
+                _job.Release();
+
+                // No need to reschedule, just drop it..
+                return (0);
+            }
+
+        private:
+            Core::ProxyType<Core::IDispatchType<void>> _job;
         };
 
-        class InvokeHandlerImplementation : public RPC::ServerType<RPC::InvokeMessage> {
-        private:
-            InvokeHandlerImplementation() = delete;
-            InvokeHandlerImplementation(const InvokeHandlerImplementation&) = delete;
-            InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
-
-        public:
-            InvokeHandlerImplementation(MessageQueue* queue, std::atomic<uint8_t>* runningFree)
-                : _handleQueue(*queue)
-                , _runningFree(*runningFree)
-            {
-            }
-            virtual ~InvokeHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::InvokeMessage>& data)
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Info newElement;
-                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
-                newElement.message = data;
-
-                ASSERT(newElement.channel.IsValid() == true);
-
-                if (_runningFree == 0) {
-                    SYSLOG(Logging::Notification, ("Possible DEADLOCK in the hosting"));
-                }
-
-                _handleQueue.Insert(newElement, Core::infinite);
-            }
-
-        private:
-            MessageQueue& _handleQueue;
-            std::atomic<uint8_t>& _runningFree;
-        };
-        class AnnounceHandlerImplementation : public RPC::ServerType<RPC::AnnounceMessage> {
-        private:
-            AnnounceHandlerImplementation() = delete;
-            AnnounceHandlerImplementation(const AnnounceHandlerImplementation&) = delete;
-            AnnounceHandlerImplementation& operator=(const AnnounceHandlerImplementation&) = delete;
-
-        public:
-            AnnounceHandlerImplementation(MessageQueue* queue)
-                : _handleQueue(*queue)
-            {
-            }
-            virtual ~AnnounceHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::AnnounceMessage>& data) override
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Info newElement;
-                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
-                newElement.message = data;
-
-                ASSERT(newElement.channel.IsValid() == true);
-
-                _handleQueue.Insert(newElement, Core::infinite);
-            }
-
-        private:
-            MessageQueue& _handleQueue;
-        };
+        typedef Core::QueueType<Info> MessageQueue;
 
     public:
-        InvokeServer(const uint8_t threads)
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
             : _handleQueue(64)
             , _runningFree(threads)
-            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue, &_runningFree))
-            , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(&_handleQueue))
             , _minions()
+            , _timer(stackSize, _T("WorkerPool::Timer"))
+            , _announceHandler(nullptr)
         {
             for (uint8_t index = 1; index < threads; index++) {
-                _minions.emplace_back(*this);
+                _minions.emplace_back(*this, stackSize);
             }
             if (threads > 1) {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
+
+            // Register tis as being the worker pool.
+            RPC::WorkerPool::Instance(*this);
         }
-        ~InvokeServer()
+        ~WorkerPoolImplementation()
         {
             _handleQueue.Disable();
             _minions.clear();
-        }
-        inline const Core::ProxyType<RPC::ServerType<RPC::InvokeMessage> >& InvokeHandler()
-        {
-            return (_invokeHandler);
-        }
-        inline const Core::ProxyType<RPC::ServerType<RPC::AnnounceMessage> >& AnnouncementHandler()
-        {
-            return (_announceHandler);
         }
         void ProcessProcedures()
         {
@@ -155,18 +196,7 @@ namespace Process {
 
                 _runningFree--;
 
-                if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
-
-                    Core::ProxyType<RPC::InvokeMessage> message(Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
-
-                    _invokeHandler->Handle(*(newRequest.channel), message);
-                } else {
-                    ASSERT(newRequest.message->Label() == RPC::AnnounceMessage::Id());
-
-                    Core::ProxyType<RPC::AnnounceMessage> message(Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
-
-                    _announceHandler->Handle(*(newRequest.channel), message);
-                }
+                newRequest.Dispatch(_announceHandler);
 
                 _runningFree++;
 
@@ -177,12 +207,51 @@ namespace Process {
             _handleQueue.Disable();
         }
 
+        void Announcements(Core::IIPCServer* announces)
+        {
+            ASSERT((announces != nullptr) ^ (_announceHandler != nullptr));
+            _announceHandler = announces;
+        }
+
+        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            _handleQueue.Insert(Info(job), Core::infinite);
+        }
+        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            _timer.Schedule(time, TimedJob(job));
+        }
+        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) override
+        {
+            return (_handleQueue.Remove(Info(job)) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
+        }
+        virtual const RPC::WorkerPool::Metadata& Snapshot() const
+        {
+            return (_metadata);
+        }
+
+    private:
+        virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
+        {
+            // Oke, see if we can reference count the IPCChannel
+            Core::ProxyType<Core::IPCChannel> newrefChannel(channel);
+
+            ASSERT(newrefChannel.IsValid() == true);
+
+            if (_runningFree == 0) {
+                SYSLOG(Logging::Notification, ("Possible DEADLOCK in the hosting"));
+            }
+
+            _handleQueue.Insert(Info(newrefChannel, data), Core::infinite);
+        }
+
     private:
         MessageQueue _handleQueue;
         std::atomic<uint8_t> _runningFree;
-        Core::ProxyType<RPC::ServerType<RPC::InvokeMessage>> _invokeHandler;
-        Core::ProxyType<RPC::ServerType<RPC::AnnounceMessage>> _announceHandler;
         std::list<Minion> _minions;
+        Core::TimerType<TimedJob> _timer;
+        Core::IIPCServer* _announceHandler;
+        RPC::WorkerPool::Metadata _metadata;
     };
 
     class ConsoleOptions : public Core::Options {
@@ -350,7 +419,7 @@ namespace Process {
 using namespace WPEFramework;
 
 static std::list<Core::Library> _proxyStubs;
-static Core::ProxyType<Process::InvokeServer> _invokeServer;
+static Core::ProxyType<Process::WorkerPoolImplementation> _invokeServer;
 static Core::ProxyType<RPC::CommunicatorClient> _server;
 
 //
@@ -397,7 +466,7 @@ int main(int argc, char** argv)
 
     Process::ConsoleOptions options(argc, argv);
 
-    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0) ) {
+    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");
         printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
@@ -437,7 +506,7 @@ int main(int argc, char** argv)
 
         TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
 
-        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID. 
+        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
         Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
 
         // Time to open up the LOG tracings as specified by the caller.
@@ -460,8 +529,9 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create(options.Threads);
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer->InvokeHandler(), _invokeServer->AnnouncementHandler()));
+            _invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
+            _invokeServer->Announcements(_server->Announcement());
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {

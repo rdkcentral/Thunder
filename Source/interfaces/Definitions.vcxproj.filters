@@ -1,10 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="json\Enumerations.cpp">
+    <ClCompile Include="Definitions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Definitions.cpp">
+    <ClCompile Include="json\JsonEnum_Browser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Messenger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_NetworkControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_RemoteControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_StateControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_Streamer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_TestUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="json\JsonEnum_WifiControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

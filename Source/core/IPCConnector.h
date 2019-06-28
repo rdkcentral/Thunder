@@ -240,8 +240,6 @@ namespace Core {
         inline IIPCServer() {}
         virtual ~IIPCServer();
 
-        virtual uint32_t Id() const = 0;
-
         // ================================== CALLED ON COMMUNICATION THREAD =====================================
         // Procedure is always called on the communication thread. so it means that during the context of this
         // call, no state changes on the communication channel can happen. That in turn allows us to "check" for
@@ -696,75 +694,6 @@ namespace Core {
         RawSerializedType<RESPONSE, ((IDENTIFIER << 1) | 0x1)> _response;
     };
 
-    template <typename RPCMESSAGE>
-    class IPCServerType : public IIPCServer {
-    private:
-        template <typename ACTUALDATA>
-        class RPCData : public ACTUALDATA {
-        private:
-            RPCData() = delete;
-            RPCData(const RPCData<ACTUALDATA>&) = delete;
-            RPCData<ACTUALDATA>& operator=(const RPCData<ACTUALDATA>&) = delete;
-
-        public:
-            inline RPCData(IPCServerType<RPCMESSAGE>& parent)
-                : _parent(parent)
-            {
-            }
-            template <typename Arg1>
-            inline RPCData(IPCServerType<RPCMESSAGE>& parent, const Arg1& arg1)
-                : ACTUALDATA(arg1)
-                , _parent(parent)
-            {
-            }
-            virtual ~RPCData()
-            {
-            }
-
-        public:
-            // Make sure you created the final class as a ProxyType
-            virtual void AddRef() const
-            {
-                _parent.AddRef();
-            }
-            virtual uint32_t Release() const
-            {
-                return (_parent.Release());
-            }
-
-        private:
-            IPCServerType<RPCMESSAGE>& _parent;
-        };
-
-    private:
-        IPCServerType(const IPCServerType<RPCMESSAGE>&) = delete;
-        IPCServerType<RPCMESSAGE>& operator=(const IPCServerType<RPCMESSAGE>&) = delete;
-
-    public:
-        typedef RPCMESSAGE RPCMessage;
-
-    public:
-        inline IPCServerType() {}
-        virtual ~IPCServerType() {}
-
-    public:
-        virtual uint32_t Id() const
-        {
-            return (RPCMESSAGE::Id());
-        }
-        //This has to be a deterministic "short" call. It blocks RPC progress on channel level.
-        virtual void Procedure(IPCChannel& source, Core::ProxyType<IIPC>& data)
-        {
-            Core::ProxyType<RPCMESSAGE> param(proxy_cast<RPCMESSAGE>(data));
-
-            if (param.IsValid()) {
-                Procedure(source, param);
-            }
-        }
-
-        virtual void Procedure(IPCChannel& source, Core::ProxyType<RPCMESSAGE>& data) = 0;
-    };
-
     class EXTERNAL IPCChannel {
     private:
         IPCChannel(const IPCChannel&) = delete;
@@ -823,22 +752,22 @@ namespace Core {
             }
 
         public:
-            inline void Register(const ProxyType<IIPCServer>& handler)
+            inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
             {
                 _lock.Lock();
 
-                ASSERT(_handlers.find(handler->Id()) == _handlers.end());
+                ASSERT(_handlers.find(id) == _handlers.end());
 
-                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(handler->Id(), handler));
+                _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));
 
                 _lock.Unlock();
             }
 
-            inline void Unregister(const ProxyType<IIPCServer>& handler)
+            inline void Unregister(const uint32_t id)
             {
                 _lock.Lock();
 
-                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(handler->Id()));
+                std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
 
                 ASSERT(index != _handlers.end());
 
@@ -1008,14 +937,14 @@ namespace Core {
         virtual ~IPCChannel();
 
     public:
-        inline void Register(const ProxyType<IIPCServer>& handler)
+        inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
-            _administration.Register(handler);
+            _administration.Register(id, handler);
         }
 
-        inline void Unregister(const ProxyType<IIPCServer>& handler)
+        inline void Unregister(const uint32_t id)
         {
-            _administration.Unregister(handler);
+            _administration.Unregister(id);
         }
 
         inline void Abort()

@@ -20,7 +20,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Definitions.cpp" />
-    <ClCompile Include="json\Enumerations.cpp" />
+    <ClCompile Include="json\JsonEnum_Browser.cpp" />
+    <ClCompile Include="json\JsonEnum_Messenger.cpp" />
+    <ClCompile Include="json\JsonEnum_NetworkControl.cpp" />
+    <ClCompile Include="json\JsonEnum_RemoteControl.cpp" />
+    <ClCompile Include="json\JsonEnum_StateControl.cpp" />
+    <ClCompile Include="json\JsonEnum_Streamer.cpp" />
+    <ClCompile Include="json\JsonEnum_TestUtility.cpp" />
+    <ClCompile Include="json\JsonEnum_WifiControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="definitions.h" />
@@ -82,21 +89,25 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -113,6 +124,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c $(SolutionDir)interfaces\json\DeviceInfoAPI.json $(SolutionDir)interfaces\json\NetworkControlAPI.json $(SolutionDir)interfaces\json\RemoteControlAPI.json $(SolutionDir)interfaces\json\TestUtilityAPI.json $(SolutionDir)interfaces\json\WifiControlAPI.json $(SolutionDir)interfaces\json\MessengerAPI.json $(SolutionDir)interfaces\json\StreamerAPI.json $(SolutionDir)interfaces\json\StateControlAPI.json $(SolutionDir)interfaces\json\BrowserAPI.json $(SolutionDir)interfaces\json\OpenCDMiAPI.json</Command>
+      <Message>Generate the JSON header files</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -129,6 +144,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c $(SolutionDir)interfaces\json\DeviceInfoAPI.json $(SolutionDir)interfaces\json\NetworkControlAPI.json $(SolutionDir)interfaces\json\RemoteControlAPI.json $(SolutionDir)interfaces\json\TestUtilityAPI.json $(SolutionDir)interfaces\json\WifiControlAPI.json $(SolutionDir)interfaces\json\MessengerAPI.json $(SolutionDir)interfaces\json\StreamerAPI.json $(SolutionDir)interfaces\json\StateControlAPI.json $(SolutionDir)interfaces\json\BrowserAPI.json $(SolutionDir)interfaces\json\OpenCDMiAPI.json</Command>
+      <Message>Generate the JSON header files</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -149,6 +168,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c $(SolutionDir)interfaces\json\DeviceInfoAPI.json $(SolutionDir)interfaces\json\NetworkControlAPI.json $(SolutionDir)interfaces\json\RemoteControlAPI.json $(SolutionDir)interfaces\json\TestUtilityAPI.json $(SolutionDir)interfaces\json\WifiControlAPI.json $(SolutionDir)interfaces\json\MessengerAPI.json $(SolutionDir)interfaces\json\StreamerAPI.json $(SolutionDir)interfaces\json\StateControlAPI.json $(SolutionDir)interfaces\json\BrowserAPI.json $(SolutionDir)interfaces\json\OpenCDMiAPI.json</Command>
+      <Message>Generate the JSON header files</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -169,6 +192,10 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c $(SolutionDir)interfaces\json\DeviceInfoAPI.json $(SolutionDir)interfaces\json\NetworkControlAPI.json $(SolutionDir)interfaces\json\RemoteControlAPI.json $(SolutionDir)interfaces\json\TestUtilityAPI.json $(SolutionDir)interfaces\json\WifiControlAPI.json $(SolutionDir)interfaces\json\MessengerAPI.json $(SolutionDir)interfaces\json\StreamerAPI.json $(SolutionDir)interfaces\json\StateControlAPI.json $(SolutionDir)interfaces\json\BrowserAPI.json $(SolutionDir)interfaces\json\OpenCDMiAPI.json</Command>
+      <Message>Generate the JSON header files</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

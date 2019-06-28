@@ -162,19 +162,18 @@ namespace Core {
     // Server connection for the IPC
     template <typename EXTENSION, const bool INTERNALFACTORY>
     class IPCChannelServerType : public SocketListner {
-
     public:
         typedef IPCChannelClientType<EXTENSION, false, false> Client;
 
     private:
-        IPCChannelServerType();
-        IPCChannelServerType(const IPCChannelServerType<EXTENSION, INTERNALFACTORY>&);
-        IPCChannelServerType<EXTENSION, INTERNALFACTORY>& operator=(IPCChannelServerType<EXTENSION, INTERNALFACTORY>&);
-
         typedef IPCChannelServerType<EXTENSION, INTERNALFACTORY> ThisClass;
         typedef std::map<EXTENSION*, ProxyType<Client>> ClientMap;
 
     public:
+        IPCChannelServerType() = delete;
+        IPCChannelServerType(const IPCChannelServerType<EXTENSION, INTERNALFACTORY>&) = delete;
+        IPCChannelServerType<EXTENSION, INTERNALFACTORY>& operator=(IPCChannelServerType<EXTENSION, INTERNALFACTORY>&) = delete;
+
         template <const bool FACTORY = INTERNALFACTORY, EnableIfParameter<FACTORY == true> = 0>
         IPCChannelServerType(const NodeId& node, const uint32_t bufferSize)
             : SocketListner(node)
@@ -289,22 +288,22 @@ namespace Core {
             return (_connector);
         }
 
-        inline void Register(const ProxyType<IIPCServer>& handler)
+        inline void Register(const uint32_t id, const ProxyType<IIPCServer>& handler)
         {
             _adminLock.Lock();
 
-            ASSERT(FindHandler(handler->Id()) == _handlers.end());
+            ASSERT(_handlers.find(id) == _handlers.end());
 
-            _handlers.push_back(handler);
+            _handlers.emplace(id, handler);
 
             _adminLock.Unlock();
         }
 
-        inline void Unregister(const ProxyType<IIPCServer>& handler)
+        inline void Unregister(const uint32_t id)
         {
             _adminLock.Lock();
 
-            std::list<ProxyType<IIPCServer>>::iterator index(FindHandler(handler->Id()));
+            std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
 
             ASSERT(index != _handlers.end());
 
@@ -401,10 +400,10 @@ namespace Core {
                 if (cleaner->second->IsClosed() == true) {
 
                     // Make sure all handlers form the server are attached to the client...
-                    std::list<ProxyType<IIPCServer>>::iterator index(_handlers.begin());
+                    std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
                     while (index != _handlers.end()) {
-                        cleaner->second->Unregister(*index);
+                        cleaner->second->Unregister(index->first);
                         index++;
                     }
 
@@ -468,10 +467,10 @@ namespace Core {
             _clients.insert(std::pair<EXTENSION*, ProxyType<Client>>(&(newLink->Extension()), newLink));
 
             // Make sure all handlers form the server are attached to the client...
-            std::list<ProxyType<IIPCServer>>::iterator index(_handlers.begin());
+            std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
             while (index != _handlers.end()) {
-                newLink->Register(*index);
+                newLink->Register(index->first, index->second);
                 index++;
             }
 
@@ -505,20 +504,11 @@ namespace Core {
             }
             return (result);
         }
-        inline std::list<ProxyType<IIPCServer>>::iterator FindHandler(const uint32_t id)
-        {
-            std::list<ProxyType<IIPCServer>>::iterator result(_handlers.begin());
-
-            while ((result != _handlers.end()) && ((*result)->Id() != id)) {
-                ++result;
-            }
-            return (result);
-        }
 
     private:
         mutable CriticalSection _adminLock;
         ProxyType<FactoryType<IIPC, uint32_t>> _factory;
-        std::list<ProxyType<IIPCServer>> _handlers;
+        std::map<uint32_t, ProxyType<IIPCServer>> _handlers;
         ClientMap _clients;
         string _connector;
         const uint32_t _bufferSize;

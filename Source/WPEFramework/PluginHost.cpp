@@ -372,7 +372,7 @@ namespace PluginHost {
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
         // Assign a worker pool in this process!!
-        PluginHost::WorkerPool::Instance(_dispatcher->WorkerPool());
+        RPC::WorkerPool::Instance(_dispatcher->WorkerPool());
 
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
@@ -430,10 +430,8 @@ namespace PluginHost {
                 }
                 case 'S': {
                     uint32_t count = 0;
-                    MetaData::Server metaData;
-                    PluginHost::WorkerPool::Instance().GetMetaData(metaData);
+                    const RPC::WorkerPool::Metadata metaData = RPC::WorkerPool::Instance().Snapshot();
                     PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
-                    Core::JSON::ArrayType<Core::JSON::DecUInt32>::Iterator index(metaData.ThreadPoolRuns.Elements());
 
                     printf("\nServer statistics:\n");
                     printf("============================================================\n");
@@ -531,11 +529,11 @@ namespace PluginHost {
                         printf("SystemState: UNKNOWN\n");
                         printf("------------------------------------------------------------\n");
                     }
-                    printf("Pending:     %d\n", metaData.PendingRequests.Value());
-                    printf("Occupation:  %d\n", metaData.PoolOccupation.Value());
+                    printf("Pending:     %d\n", metaData.Pending);
+                    printf("Occupation:  %d\n", metaData.Occupation);
                     printf("Poolruns:\n");
-                    while (index.Next() == true) {
-                        printf("  Thread%02d:  %d\n", count++, index.Current().Value());
+                    for (uint8_t index = 0; index < metaData.Slots; index++) {
+                        printf("  Thread%02d:  %d\n", (index + 1), metaData.Slot[index]);
                     }
                     status->Release();
                     break;

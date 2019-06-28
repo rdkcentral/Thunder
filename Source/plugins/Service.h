@@ -48,19 +48,6 @@ namespace PluginHost {
         Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
     };
 
-    struct EXTERNAL WorkerPool {
-
-        static WorkerPool& Instance();
-        static void Instance(WorkerPool& instance);
-
-        virtual ~WorkerPool() = default;
-
-        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
-        virtual void GetMetaData(MetaData::Server& metaData) const = 0;
-    };
-
     class EXTERNAL Service : public IShell {
         // This object is created by the instance that instantiates the plugins. As the lifetime
         // of this object is controlled by the server, instantiating this object, do not allow

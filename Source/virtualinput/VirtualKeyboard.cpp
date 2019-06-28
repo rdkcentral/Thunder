@@ -14,7 +14,7 @@ namespace VirtualKeyboard {
         typedef Core::IPCMessageType<0, KeyData, Core::IPC::Void> KeyMessage;
         typedef Core::IPCMessageType<1, Core::IPC::Void, Core::IPC::Text<20>> NameMessage;
 
-        class KeyEventHandler : public Core::IPCServerType<KeyMessage> {
+        class KeyEventHandler : public Core::IIPCServer {
         private:
             KeyEventHandler() = delete;
             KeyEventHandler(const KeyEventHandler&) = delete;
@@ -30,19 +30,19 @@ namespace VirtualKeyboard {
             }
 
         public:
-            virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<KeyMessage>& data)
+            virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
             {
+                Core::ProxyType<KeyMessage> message(data);
                 ASSERT(_callback != nullptr);
-                _callback(data->Parameters().Action, data->Parameters().Code);
-                Core::ProxyType<Core::IIPC> returnData(Core::proxy_cast<Core::IIPC>(data));
-                source.ReportResponse(returnData);
+                _callback(message->Parameters().Action, message->Parameters().Code);              
+                source.ReportResponse(data);
             }
 
         private:
             FNKeyEvent _callback;
         };
 
-        class NameEventHandler : public Core::IPCServerType<NameMessage> {
+        class NameEventHandler : public Core::IIPCServer {
         private:
             NameEventHandler() = delete;
             NameEventHandler(const NameEventHandler&) = delete;
@@ -58,13 +58,13 @@ namespace VirtualKeyboard {
             }
 
         public:
-            virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<NameMessage>& data)
+            virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
             {
                 TRACE_L1("In NameEventHandler::Procedure -- %d", __LINE__);
-
-                data->Response() = _name;
-                Core::ProxyType<Core::IIPC> returnData(Core::proxy_cast<Core::IIPC>(data));
-                source.ReportResponse(returnData);
+                
+                Core::ProxyType<NameMessage> message(data);
+                message->Response() = _name;
+                source.ReportResponse(data);
             }
 
         private:
@@ -79,14 +79,12 @@ namespace VirtualKeyboard {
     public:
         Controller(const string& name, const Core::NodeId& source, FNKeyEvent callback)
             : _channel(source, 32)
-            , _keyHandler(Core::ProxyType<KeyEventHandler>::Create(callback))
-            , _nameHandler(Core::ProxyType<NameEventHandler>::Create(name))
         {
             _channel.CreateFactory<KeyMessage>(1);
             _channel.CreateFactory<NameMessage>(1);
 
-            _channel.Register(_keyHandler);
-            _channel.Register(_nameHandler);
+            _channel.Register(KeyMessage::Id(), Core::ProxyType<KeyEventHandler>::Create(callback));
+            _channel.Register(NameMessage::Id(), Core::ProxyType<NameEventHandler>::Create(name));
 
             _channel.Open(2000); // Try opening this channel for 2S
         }
@@ -94,8 +92,8 @@ namespace VirtualKeyboard {
         {
             _channel.Close(Core::infinite);
 
-            _channel.Unregister(_keyHandler);
-            _channel.Unregister(_nameHandler);
+            _channel.Unregister(KeyMessage::Id());
+            _channel.Unregister(NameMessage::Id());
 
             _channel.DestroyFactory<KeyMessage>();
             _channel.DestroyFactory<NameMessage>();
@@ -103,8 +101,6 @@ namespace VirtualKeyboard {
 
     private:
         Core::IPCChannelClientType<Core::Void, false, true> _channel;
-        Core::ProxyType<Core::IIPCServer> _keyHandler;
-        Core::ProxyType<Core::IIPCServer> _nameHandler;
     };
 }
 }

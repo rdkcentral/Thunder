@@ -301,7 +301,7 @@ namespace Plugin {
     //  - ERROR_NONE: Success
     uint32_t Controller::get_processinfo(PluginHost::MetaData::Server& response) const
     {
-        PluginHost::WorkerPool::Instance().GetMetaData(response);
+        WorkerPoolMetaData(response);
 
         return Core::ERROR_NONE;
     }

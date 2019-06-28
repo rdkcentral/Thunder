@@ -306,124 +306,7 @@ namespace PluginHost {
 #endif
         };
 
-        class EXTERNAL WorkerPoolImplementation : public PluginHost::WorkerPool {
-        private:
-            class TimedJob {
-            public:
-                TimedJob()
-                    : _job()
-                {
-                }
-                TimedJob(const Core::ProxyType<Core::IDispatchType<void>>& job)
-                    : _job(job)
-                {
-                }
-                TimedJob(const TimedJob& copy)
-                    : _job(copy._job)
-                {
-                }
-                ~TimedJob()
-                {
-                }
-
-                TimedJob& operator=(const TimedJob& RHS)
-                {
-                    _job = RHS._job;
-                    return (*this);
-                }
-                bool operator==(const TimedJob& RHS) const
-                {
-                    return (_job == RHS._job);
-                }
-                bool operator!=(const TimedJob& RHS) const
-                {
-                    return (_job != RHS._job);
-                }
-
-            public:
-                uint64_t Timed(const uint64_t /* scheduledTime */)
-                {
-                    WorkerPoolImplementation::Instance().Submit(_job);
-                    _job.Release();
-
-                    // No need to reschedule, just drop it..
-                    return (0);
-                }
-
-            private:
-                Core::ProxyType<Core::IDispatchType<void>> _job;
-            };
-
-            typedef Core::ThreadPoolType<Core::Job, THREADPOOL_COUNT> ThreadPool;
-
-        private:
-            WorkerPoolImplementation() = delete;
-            WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
-            WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
-
-        public:
-            WorkerPoolImplementation(const uint32_t stackSize)
-                : _workers(stackSize, _T("WorkerPoolImplementation"))
-                , _timer(stackSize, _T("WorkerTimer"))
-            {
-            }
-            ~WorkerPoolImplementation()
-            {
-            }
-
-        public:
-            // A-synchronous calls. If the method returns, the workers are accepting and handling work.
-            inline void Run()
-            {
-                _workers.Run();
-            }
-            // A-synchronous calls. If the method returns, the workers are all blocked, no new work will
-            // be accepted. Work in progress will be completed. Use the WaitState to wait for the actual block.
-            inline void Block()
-            {
-                _workers.Block();
-            }
-            inline void Wait(const uint32_t waitState, const uint32_t time)
-            {
-                _workers.Wait(waitState, time);
-            }
-            virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) override
-            {
-                _workers.Submit(Core::Job(job), Core::infinite);
-            }
-            virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
-            {
-                _timer.Schedule(time, TimedJob(job));
-            }
-            virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) override
-            {
-                // First check the timer if it can be removed from there.
-                _timer.Revoke(TimedJob(job));
-
-                // Also make sure it is taken of the WorkerPoolImplementation, if applicable.
-                return (_workers.Revoke(Core::Job(job), waitTime));
-            }
-            virtual void GetMetaData(MetaData::Server& metaData) const override
-            {
-                metaData.PendingRequests = _workers.Pending();
-                metaData.PoolOccupation = _workers.Active();
-
-                for (uint8_t teller = 0; teller < _workers.Count(); teller++) {
-                    // Example of why copy-constructor and assignment constructor should be equal...
-                    Core::JSON::DecUInt32 newElement;
-                    newElement = _workers[teller].Runs();
-                    metaData.ThreadPoolRuns.Add(newElement);
-                }
-            }
-            inline ::ThreadId ThreadId(const uint8_t index) const
-            {
-                return (index == 0 ? _timer.ThreadId() : _workers.ThreadId(index - 1));
-            }
-
-        private:
-            ThreadPool _workers;
-            Core::TimerType<TimedJob> _timer;
-        };
+		typedef RPC::WorkerPoolType<THREADPOOL_COUNT> WorkerPoolImplementation;
 
     private:
         class ServiceMap;
@@ -1219,11 +1102,9 @@ namespace PluginHost {
 					const string& dataPath, 
 					const string& volatilePath, 
 					const string& appPath, 
-					const string& proxyStubPath, 
-					const uint32_t stackSize,
-                    const Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage> >& invokeHandler,
-                    const Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage> >& announceHandler)
-                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, invokeHandler, announceHandler)
+					const string& proxyStubPath,
+				    const Core::ProxyType<RPC::InvokeServer>& handler)
+                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, handler)
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
@@ -1237,6 +1118,9 @@ namespace PluginHost {
 #endif
                     , _adminLock()
                 {
+					// Make sure the engine knows how to call the Announcment handler..
+                    handler->Announcements(Announcement());
+
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
                         TRACE_L1("We can not open the RPC server. No out-of-process communication available. %d", __LINE__);
                     } else {
@@ -1505,7 +1389,7 @@ namespace PluginHost {
                 {
                     _parent.Evaluate();
                 }
-                inline PluginHost::WorkerPool& WorkerPool()
+                inline RPC::WorkerPool& WorkerPool()
                 {
                     return (_parent.WorkerPool());
                 }
@@ -1522,8 +1406,8 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _engine(Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT>>::Create(stackSize))
-                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), stackSize, _engine->InvokeHandler(), _engine->AnnounceHandler())
+                , _engine(Core::ProxyType<RPC::InvokeServer>::Create())
+                , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), _engine)
                 , _server(server)
                 , _subSystems(this)
                 , _authenticationHandler(nullptr)
@@ -1799,7 +1683,7 @@ namespace PluginHost {
 
                 RecursiveNotification(index);
             }
-            inline PluginHost::WorkerPool& WorkerPool()
+            inline RPC::WorkerPool& WorkerPool()
             {
                 return (_server.WorkerPool());
             }
@@ -1811,7 +1695,7 @@ namespace PluginHost {
             Core::CriticalSection _notificationLock;
             std::map<const string, Core::ProxyType<Service>> _services;
             std::list<IPlugin::INotification*> _notifiers;
-            Core::ProxyType<RPC::InvokeServerType<16, RPCPOOL_COUNT> > _engine;
+            Core::ProxyType<RPC::InvokeServer> _engine;
             CommunicatorServer _processAdministrator;
             Server& _server;
             Core::Sink<SubSystems> _subSystems;
