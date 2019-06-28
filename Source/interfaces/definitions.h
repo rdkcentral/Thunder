@@ -9,15 +9,6 @@
 #include "IComposition.h"
 #include "IStream.h"
 
-#include "json/JsonData_NetworkControl.h"
-#include "json/JsonData_RemoteControl.h"
-#include "json/JsonData_TestUtility.h"
-#include "json/JsonData_WifiControl.h"
-#include "json/JsonData_Messenger.h"
-#include "json/JsonData_Streamer.h"
-#include "json/JsonData_StateControl.h"
-#include "json/JsonData_Browser.h"
-
 #undef EXTERNAL
 
 #ifdef __WIN32__
