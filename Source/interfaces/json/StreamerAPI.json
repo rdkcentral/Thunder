@@ -10,6 +10,17 @@
     "$ref": "common.json"
   },
   "definitions": {
+    "id": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stream ID",
+          "type": "number",
+          "size": 8,
+          "example": 0
+        }
+      }
+    },
     "stream": {
       "type": "string",
       "enum": [
@@ -101,8 +112,9 @@
     "speed": {
       "summary": "Playback speed",
       "description": "Speed (in percentage)",
+      "events": "statechange",
       "params": {
-        "description": "Speed percentage; e.g.: 0 - pause, 100 - normal playback, -100 - rewind, -200 - reverse at twice the speed, 50 - forward at half speed, etc.",
+        "description": "Speed percentage; e.g.: 0 - pause, 100 - normal playback, -100 - rewind, -200 - reverse at twice the speed, 50 - forward at half speed, etc. Must be one of the speeds supported by the player",
         "type": "number",
         "signed": true,
         "example": 100
@@ -148,12 +160,7 @@
     "window": {
       "summary": "Stream playback window",
       "params": {
-        "type": "object",
-        "properties": {
-          "window": {
-            "$ref": "#/definitions/window"
-          }
-        }
+       "$ref": "#/definitions/window"
       },
       "index": {
         "name": "Stream ID",
@@ -228,12 +235,7 @@
       "summary": "Type of a stream",
       "readonly": true,
       "params": {
-        "type": "object",
-        "properties": {
-          "stream": {
-            "$ref": "#/definitions/stream"
-          }
-        }
+        "$ref": "#/definitions/stream"
       },
       "index": {
         "name": "Stream ID",
@@ -253,12 +255,7 @@
         "drmchange"
       ],
       "params": {
-        "type": "object",
-        "properties": {
-          "drm": {
-            "$ref": "#/definitions/drm"
-          }
-        }
+        "$ref": "#/definitions/drm"
       },
       "index": {
         "name": "Stream ID",
@@ -278,12 +275,26 @@
         "statechange"
       ],
       "params": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "$ref": "#/definitions/state"
-          }
+        "$ref": "#/definitions/state"
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
         }
+      ]
+    },
+    "metadata": {
+      "readonly": true,
+      "summary": "Metadata associated with the stream",
+      "params": {
+        "type": "string",
+        "description": "Custom player-specific metadata",
+        "example": ""
       },
       "index": {
         "name": "Stream ID",
@@ -298,53 +309,6 @@
     }
   },
   "methods": {
-    "Streamer.1.status": {
-      "summary": "Retrieves the status of a stream.",
-      "params": {
-        "description": "Stream ID",
-        "type": "number",
-        "size": 8,
-        "example": 0
-      },
-      "result": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "$ref": "#/definitions/stream"
-          },
-          "state": {
-            "$ref": "#/definitions/state"
-          },
-          "metadata": {
-            "description": "Custom metadata associated with the stream",
-            "type": "string"
-          },
-          "drm": {
-            "$ref": "#/definitions/drm"
-          },
-          "position": {
-            "description": "Stream position (in milliseconds)",
-            "type": "number",
-            "example": 60000,
-            "size": 64
-          },
-          "window": {
-            "$ref": "#/definitions/window"
-          }
-        },
-        "required": [
-          "type",
-          "state",
-          "drm"
-        ]
-      },
-      "errors": [
-        {
-          "description": "Unknown stream ID given",
-          "$ref": "#/common/errors/unknownkey"
-        }
-      ]
-    },
     "Streamer.1.create": {
       "summary": "Creates a stream instance.",
       "params": {
@@ -356,10 +320,7 @@
         }
       },
       "result": {
-        "type": "number",
-        "size": 8,
-        "description": "Stream ID",
-        "example": 0
+        "$ref": "#/definitions/id/properties/id"
       },
       "errors": [
         {
@@ -375,10 +336,7 @@
     "Streamer.1.destroy": {
       "summary": "Destroys a stream instance.",
       "params": {
-        "description": "ID of the streamer instance to be destroyed",
-        "type": "number",
-        "size": 8,
-        "example": 0
+        "$ref": "#/definitions/id"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -392,14 +350,12 @@
     },
     "Streamer.1.load": {
       "summary": "Loads a source into a stream.",
+      "events": "statechange",
       "params": {
         "type": "object",
         "properties": {
-          "index": {
-            "description": "ID of the streamer instance",
-            "type": "number",
-            "size": 8,
-            "example": 0
+          "id": {
+            "$ref": "#/definitions/id/properties/id"
           },
           "location": {
             "description": "Location of the source to load",
@@ -437,10 +393,7 @@
     "Streamer.1.attach": {
       "summary": "Attaches a decoder to the streamer.",
       "params": {
-        "description": "ID of the streamer instance to attach a decoder to",
-        "type": "number",
-        "size": 8,
-        "example": 0
+        "$ref": "#/definitions/id"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -467,10 +420,7 @@
     "Streamer.1.detach": {
       "summary": "Detaches a decoder from the streamer.",
       "params": {
-        "description": "ID of the streamer instance to detach the decoder from",
-        "type": "number",
-        "size": 8,
-        "example": 0
+        "$ref": "#/definitions/id"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -496,7 +446,7 @@
       "summary": "Notifies of stream state change.",
       "example": "1.*",
       "id": {
-        "name": "Streamr ID",
+        "name": "Stream ID",
         "example": "0"
       },
       "params": {
