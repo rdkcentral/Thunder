@@ -185,7 +185,7 @@ public:
                                                                       const string& logpath,
                                                                       const string& configuration) override;
 
-    void Logging(const string& logpath, const string& logging) override;
+    void Logging(const string& logpath, const string& logid, const string& logging) override;
 
 
 private:
@@ -230,26 +230,26 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
     return container;
 }
 
-void LXCContainerAdministrator::Logging(const string& logpath, const string& logging) {
+void LXCContainerAdministrator::Logging(const string& logpath, const string& logid, const string& loggingoptions) {
 
 // Valid logging values: NONE and the ones below
 // 0 = trace, 1 = debug, 2 = info, 3 = notice, 4 = warn, 5 = error, 6 = critical, 7 = alert, and 8 = fatal, but also string is allowed:
 // (case insensitive) TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, CRIT, ALERT, FATAL
 
-    const char* logstring = logging.c_str();
+    const char* logstring = loggingoptions.c_str();
 
-    if( ( logging.size() == 4 ) && ( std::toupper(logstring[0]) == _T('N') ) 
-                                && ( std::toupper(logstring[1]) == _T('O') ) 
-                                && ( std::toupper(logstring[2]) == _T('N') ) 
-                                && ( std::toupper(logstring[3]) == _T('E') ) 
+    if( ( loggingoptions.size() == 4 ) && ( std::toupper(logstring[0]) == _T('N') ) 
+                                       && ( std::toupper(logstring[1]) == _T('O') ) 
+                                       && ( std::toupper(logstring[2]) == _T('N') ) 
+                                       && ( std::toupper(logstring[3]) == _T('E') ) 
         ) {
         string filename(logpath + "/lxclogging.log");
         lxc_log log;
-        log.name = "WPEFramework";
+        log.name = logid.c_str();
         log.lxcpath = logpath.c_str(); //we don't have a correct lxcpath were all containers are stored...
         log.file = filename.c_str();
         log.level = logstring;
-        log.prefix = "WPEFramework";
+        log.prefix = logid.c_str();
         log.quiet = false;
         lxc_log_init(&log);
     }

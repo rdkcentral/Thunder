@@ -491,7 +491,7 @@ namespace RPC {
                                    const string& volatilepath,
                                    const string& configuration) {
 
-                static constexpr TCHAR ContainerSuffix[] = _T("Container");
+                static constexpr TCHAR ContainerName[] = _T("Container");
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
@@ -513,7 +513,7 @@ namespace RPC {
 
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
-                _container = admin.Container(callsign + ContainerSuffix, searchpathsit, volatilepath, configuration);
+                _container = admin.Container(ContainerName, searchpathsit, volatilepath, configuration);
 
                 admin.Release();
             }

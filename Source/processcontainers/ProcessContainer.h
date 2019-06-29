@@ -38,7 +38,7 @@ namespace ProcessContainers {
                                       const string& logpath,
                                       const string& configuration) = 0; //searchpaths will be searched in order in which they are iterated
 
-        virtual void Logging(const string& logpath, const string& logging) = 0;
+        virtual void Logging(const string& logpath, const string& logid, const string& loggingoptions) = 0;
     };
 } // ProcessContainers
 } // WPEFramework
