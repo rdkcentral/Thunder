@@ -1,7 +1,7 @@
 {
   "port": 80,
-  "binding": "0.0.0.0",
-  "interface_org": "LAN",
+  "binding_": "0.0.0.0",
+  "interface": "NETWORK",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
@@ -62,7 +62,7 @@
       "configuration": {
         "connector": "127.0.0.1:7912",
         "root": {
-          "outofprocess": false
+          "outofprocess": true
         }
       }
     },

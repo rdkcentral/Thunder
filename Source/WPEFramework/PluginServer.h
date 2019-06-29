@@ -4,8 +4,8 @@
 #include "Module.h"
 #include "SystemInfo.h"
 
-#ifdef PROCESSCONTAINERS_ENABLED 
-    #include "../processcontainers/ProcessContainer.h"
+#ifdef PROCESSCONTAINERS_ENABLED
+#include "../processcontainers/ProcessContainer.h"
 #endif
 
 #ifndef HOSTING_COMPROCESS
@@ -184,7 +184,7 @@ namespace PluginHost {
                 Core::JSON::EnumType<PluginHost::InputHandler::type> Type;
             };
 
-#ifdef PROCESSCONTAINERS_ENABLED 
+#ifdef PROCESSCONTAINERS_ENABLED
 
             class ProcessContainerConfig : public Core::JSON::Container {
             public:
@@ -244,8 +244,8 @@ namespace PluginHost {
                 , Process()
                 , Input()
                 , Configs()
-#ifdef PROCESSCONTAINERS_ENABLED 
-                ,ProcessContainers()
+#ifdef PROCESSCONTAINERS_ENABLED
+                , ProcessContainers()
 #endif
             {
                 // No IdleTime
@@ -270,7 +270,7 @@ namespace PluginHost {
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
-#ifdef PROCESSCONTAINERS_ENABLED 
+#ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
             }
@@ -301,12 +301,26 @@ namespace PluginHost {
             InputConfig Input;
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
-#ifdef PROCESSCONTAINERS_ENABLED 
+#ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
         };
 
-		typedef RPC::WorkerPoolType<THREADPOOL_COUNT> WorkerPoolImplementation;
+        class WorkerPoolImplementation : public RPC::WorkerPoolType<THREADPOOL_COUNT> {
+        public:
+            WorkerPoolImplementation() = delete;
+            WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+            WorkerPoolImplementation& operator= (const WorkerPoolImplementation&) = delete;
+
+            WorkerPoolImplementation(const uint32_t stackSize)
+                : RPC::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
+            {
+                RPC::WorkerPool::Instance(*this);
+            }
+            virtual ~WorkerPoolImplementation()
+            {
+            }
+        };
 
     private:
         class ServiceMap;
@@ -1096,15 +1110,15 @@ namespace PluginHost {
 
             public:
                 CommunicatorServer(
-					const Core::NodeId& node, 
-					const string& persistentPath, 
-					const string& systemPath, 
-					const string& dataPath, 
-					const string& volatilePath, 
-					const string& appPath, 
-					const string& proxyStubPath,
-				    const Core::ProxyType<RPC::InvokeServer>& handler)
-                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, handler)
+                    const Core::NodeId& node,
+                    const string& persistentPath,
+                    const string& systemPath,
+                    const string& dataPath,
+                    const string& volatilePath,
+                    const string& appPath,
+                    const string& proxyStubPath,
+                    const Core::ProxyType<RPC::InvokeServer>& handler)
+                    : RPC::Communicator(node, proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath, Core::ProxyType<Core::IIPCServer>(handler))
                     , _persistentPath(persistentPath.empty() == false ? Core::Directory::Normalize(persistentPath) : persistentPath)
                     , _systemPath(systemPath.empty() == false ? Core::Directory::Normalize(systemPath) : systemPath)
                     , _dataPath(dataPath.empty() == false ? Core::Directory::Normalize(dataPath) : dataPath)
@@ -1118,7 +1132,7 @@ namespace PluginHost {
 #endif
                     , _adminLock()
                 {
-					// Make sure the engine knows how to call the Announcment handler..
+                    // Make sure the engine knows how to call the Announcment handler..
                     handler->Announcements(Announcement());
 
                     if (RPC::Communicator::Open(RPC::CommunicationTimeOut) != Core::ERROR_NONE) {
@@ -1376,7 +1390,7 @@ namespace PluginHost {
                 }
                 virtual ~SubSystems()
                 {
-                    _parent.WorkerPool().Revoke(_decoupling);
+                    _parent.WorkerPool().Revoke(Core::ProxyType<Core::IDispatch>(_decoupling));
                 }
 
             private:
@@ -1877,7 +1891,7 @@ namespace PluginHost {
                                 ASSERT(message.IsValid() == true);
 
                                 if ((dispatcher != nullptr) && (message.IsValid() == true)) {
-                                    _element = dispatcher->Invoke(_ID, *message);
+                                    _element = Core::ProxyType<Core::JSON::IElement>(dispatcher->Invoke(_ID, *message));
                                 }
                             } else {
                                 _element = _service->Inbound(_ID, *_element);
@@ -2146,7 +2160,7 @@ namespace PluginHost {
 
                 if (_service.IsValid() == true) {
                     if (State() == JSONRPC) {
-                        result = Factories::Instance().JSONRPC();
+                        result = Core::ProxyType<Core::JSON::IElement>(Factories::Instance().JSONRPC());
                     } else {
                         result = _service->Inbound(identifier);
                     }

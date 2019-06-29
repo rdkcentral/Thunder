@@ -509,7 +509,7 @@ namespace RPC {
             Core::ProxyType<DispatchJob> job(_factory.Element());
 
             job->Set(source, message, _handler);
-            _threadPoolEngine.Submit(job);
+            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
         }
 
     private:

@@ -371,9 +371,6 @@ namespace PluginHost {
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
 
-        // Assign a worker pool in this process!!
-        RPC::WorkerPool::Instance(_dispatcher->WorkerPool());
-
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
 

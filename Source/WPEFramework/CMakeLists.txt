@@ -13,8 +13,7 @@ target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
-          THREADPOOL_COUNT=3
-          RPCPOOL_COUNT=3
+          THREADPOOL_COUNT=4
         )
 
 if (TREE_REFERENCE)

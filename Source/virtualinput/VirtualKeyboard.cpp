@@ -83,8 +83,8 @@ namespace VirtualKeyboard {
             _channel.CreateFactory<KeyMessage>(1);
             _channel.CreateFactory<NameMessage>(1);
 
-            _channel.Register(KeyMessage::Id(), Core::ProxyType<KeyEventHandler>::Create(callback));
-            _channel.Register(NameMessage::Id(), Core::ProxyType<NameEventHandler>::Create(name));
+            _channel.Register(KeyMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(callback)));
+            _channel.Register(NameMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<NameEventHandler>::Create(name)));
 
             _channel.Open(2000); // Try opening this channel for 2S
         }

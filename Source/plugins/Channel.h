@@ -69,7 +69,7 @@ namespace PluginHost {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
-                    _current = _parent.Element();
+                    _current = Core::ProxyType<const Core::JSON::IElement>(_parent.Element());
 				}
 
 				if (_current.IsValid() == true) {

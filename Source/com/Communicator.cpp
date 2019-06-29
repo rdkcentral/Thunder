@@ -255,7 +255,7 @@ namespace RPC {
 
                 if (implementation != nullptr) {
                     // From what is returned, we need to create a proxy
-                    ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_channel, implementation, interfaceId, true, interfaceId, false);
+                    ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(Core::ProxyType<Core::IPCChannel>(_channel), implementation, interfaceId, true, interfaceId, false);
                     result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
                 }
             }
@@ -357,8 +357,8 @@ namespace RPC {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
 
-        Register(RPC::InvokeMessage::Id(), Core::ProxyType<InvokeHandlerImplementation>::Create());
-        Register(RPC::AnnounceMessage::Id(), Core::ProxyType<AnnounceHandlerImplementation>::Create(this));
+        Register(RPC::InvokeMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<InvokeHandlerImplementation>::Create()));
+        Register(RPC::AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandlerImplementation>::Create(this)));
     }
 
     CommunicatorClient::CommunicatorClient(

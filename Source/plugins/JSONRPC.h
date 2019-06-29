@@ -87,7 +87,7 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         Core::ProxyType<Core::JSONRPC::Message> Message() const
         {
-            return (_jsonRPCMessageFactory.Element());
+            return (Core::ProxyType<Core::JSONRPC::Message>(_jsonRPCMessageFactory.Element()));
         }
 
         //
@@ -212,7 +212,7 @@ namespace PluginHost {
             message->Id = channel.Sequence();
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
-            return (_service->Submit(channel.ChannelId(), message));
+            return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
         uint32_t Response(const Core::JSONRPC::Connection& channel, const Core::JSONRPC::Error& result)
         {
@@ -224,7 +224,7 @@ namespace PluginHost {
             message->Id = channel.Sequence();
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
-            return (_service->Submit(channel.ChannelId(), message));
+            return (_service->Submit(channel.ChannelId(), Core::ProxyType<Core::JSON::IElement>(message)));
         }
 
     protected:
@@ -353,7 +353,7 @@ namespace PluginHost {
             message->Designator = designator;
             message->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
 
-            _service->Submit(id, message);
+            _service->Submit(id, Core::ProxyType<Core::JSON::IElement>(message));
         }
         virtual void Activate(IShell* service) override
         {

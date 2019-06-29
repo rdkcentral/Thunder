@@ -658,7 +658,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
             if (current->Name() == linkName) {
                 current->Reload();
             }
-            current = _service[index++];
+            current = Core::ProxyType<KeyboardLink>(_service[index++]);
         }
     }
 }

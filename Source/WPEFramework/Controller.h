@@ -91,7 +91,7 @@ namespace Plugin {
             }
             virtual ~Sink()
             {
-                RPC::WorkerPool::Instance().Revoke(_decoupled);
+                RPC::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(_decoupled));
             }
 
         private:

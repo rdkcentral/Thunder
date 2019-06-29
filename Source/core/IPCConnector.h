@@ -756,6 +756,7 @@ namespace Core {
             {
                 _lock.Lock();
 
+				ASSERT(handler.IsValid() == true);
                 ASSERT(_handlers.find(id) == _handlers.end());
 
                 _handlers.insert(std::pair<uint32_t, ProxyType<IIPCServer>>(id, handler));

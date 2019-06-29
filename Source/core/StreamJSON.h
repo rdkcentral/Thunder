@@ -110,7 +110,7 @@ namespace Core {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
-                    _current = _factory.Element(EMPTY_STRING);
+                    _current = Core::ProxyType<Core::JSON::IElement>(_factory.Element(EMPTY_STRING));
                     _offset = 0;
             }
                 if (_current.IsValid() == true) {

@@ -575,7 +575,7 @@ namespace PluginHost {
 
                             _replacement->Parameters().Action = copy.Parameters().Action;
                             _replacement->Parameters().Code = index->second;
-                            result = _replacement;
+                            result = Core::ProxyType<Core::IIPC>(_replacement);
                         }
                     }
                 }

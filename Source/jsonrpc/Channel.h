@@ -811,7 +811,7 @@ namespace JSONRPC {
 
                     _adminLock.Unlock();
 
-                    _channel->Submit(message);
+                    _channel->Submit(Core::ProxyType<Core::JSON::IElement>(message));
 
                     message.Release();
 
@@ -865,7 +865,7 @@ namespace JSONRPC {
 
                 if (newElement.second == true) {
 
-                    _channel->Submit(message);
+                    _channel->Submit(Core::ProxyType<Core::JSON::IElement>(message));
 
                     result = Core::ERROR_NONE;
 

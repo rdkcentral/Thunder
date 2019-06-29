@@ -218,7 +218,7 @@ namespace Core {
             m_RefCount->AddRef();
         }
         template <typename DERIVEDTYPE>
-        ProxyType(const ProxyType<DERIVEDTYPE>& theObject)
+        explicit ProxyType(const ProxyType<DERIVEDTYPE>& theObject)
             : m_RefCount(theObject)
             , _realObject(nullptr)
         {

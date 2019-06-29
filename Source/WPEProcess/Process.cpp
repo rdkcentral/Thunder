@@ -530,7 +530,7 @@ int main(int argc, char** argv)
 
             // Seems like we have enough information, open up the Process communcication Channel.
             _invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(_invokeServer)));
             _invokeServer->Announcements(_server->Announcement());
 
             // Register an interface to handle incoming requests for interfaces.

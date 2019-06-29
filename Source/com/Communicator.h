@@ -322,7 +322,7 @@ namespace RPC {
             {
                 ASSERT(_channel.IsValid() == true);
 
-                return (_channel);
+                return (Core::ProxyType<Core::IPCChannel> (_channel));
             }
             void Open(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t id)
             {
@@ -891,7 +891,7 @@ namespace RPC {
 
                     ASSERT(result != nullptr);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(channel, result, info.InterfaceId(), true);
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId(), true);
 
                     if (baseIUnknown != nullptr) {
                         _parent.Offer(baseIUnknown, info.InterfaceId());
@@ -903,7 +903,7 @@ namespace RPC {
 
                     ASSERT(result != nullptr);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(channel, result, info.InterfaceId());
+                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId());
                     if (baseIUnknown != nullptr) {
                         _parent.Revoke(baseIUnknown, info.InterfaceId());
                         baseIUnknown->Release();
@@ -1056,14 +1056,14 @@ namespace RPC {
                 , _connections(processes)
                 , _announceHandler(this)
             {
-                BaseClass::Register(InvokeMessage::Id(), Core::ProxyType<InvokeHandlerImplementation>::Create());
-                BaseClass::Register(AnnounceMessage::Id(), Core::ProxyType<AnnounceHandlerImplementation>::Create(this));
+                BaseClass::Register(InvokeMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<InvokeHandlerImplementation>::Create()));
+                BaseClass::Register(AnnounceMessage::Id(), Core::ProxyType<Core::IIPCServer>(Core::ProxyType<AnnounceHandlerImplementation>::Create(this)));
             }
             ChannelServer(
                 const Core::NodeId& remoteNode,
                 RemoteConnectionMap& processes,
                 const string& proxyStubPath,
-                const Core::ProxyType<Core::IIPC>& handler)
+                const Core::ProxyType<Core::IIPCServer>& handler)
                 : BaseClass(remoteNode, CommunicationBufferSize)
                 , _proxyStubPath(proxyStubPath)
                 , _connections(processes)

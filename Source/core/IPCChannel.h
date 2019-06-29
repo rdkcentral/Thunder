@@ -292,6 +292,7 @@ namespace Core {
         {
             _adminLock.Lock();
 
+			ASSERT(handler.IsValid() == true);
             ASSERT(_handlers.find(id) == _handlers.end());
 
             _handlers.emplace(id, handler);
