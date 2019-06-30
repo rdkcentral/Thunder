@@ -396,12 +396,14 @@ Display::Display(const string& name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
-    , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create())
-    , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), _engine->InvokeHandler(), _engine->AnnounceHandler()))
+    , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()))
+    , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine)))
     , _refCount(0)
 {
 
     ASSERT(_compositerServerRPCConnection != nullptr);
+
+    _engine->Announcements(_compositerServerRPCConnection->Announcement());
 
     uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
     if (result != Core::ERROR_NONE) {

@@ -11,6 +11,8 @@
 namespace WPEFramework {
 namespace PluginHost {
 
+   typedef RPC::WorkerPool WorkerPool;
+
     class EXTERNAL Factories {
     private:
         Factories();

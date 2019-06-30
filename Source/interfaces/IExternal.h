@@ -246,7 +246,7 @@ namespace Exchange {
 
                     _parent.Revoke(_job);
                 } else if (periodicity != 0) {
-                    _job = Core::ProxyType<Timed>(*this);
+                    _job = Core::ProxyType<Core::IDispatch>(*this);
                 }
 
                 _parent.Unlock();
@@ -269,7 +269,7 @@ namespace Exchange {
                 _parent.Lock();
                 if (_periodicity != 0) {
 
-                    Core::ProxyType<Core::IDispatchType<void>> job(*this);
+                    Core::ProxyType<Core::IDispatch> job(*this);
 
                     _nextTime += _periodicity;
                     _parent.Schedule(Core::Time(_nextTime), job);
@@ -281,7 +281,7 @@ namespace Exchange {
             ExternalBase& _parent;
             uint64_t _nextTime;
             uint32_t _periodicity;
-            Core::ProxyType<Timed> _job;
+            Core::ProxyType<Core::IDispatch> _job;
         };
 
     public:

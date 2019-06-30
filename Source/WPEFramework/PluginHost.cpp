@@ -426,7 +426,6 @@ namespace PluginHost {
                     break;
                 }
                 case 'S': {
-                    uint32_t count = 0;
                     const RPC::WorkerPool::Metadata metaData = RPC::WorkerPool::Instance().Snapshot();
                     PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
 
