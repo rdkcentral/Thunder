@@ -244,6 +244,7 @@ private:
 
     inline void Initialize()
     {
+        _adminLock.Lock();
         _isRunning = true;
 
         _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine));
@@ -266,11 +267,12 @@ private:
             g_pipefd[0] = -1;
             g_pipefd[1] = -1;
         }
-
+        _adminLock.Unlock();
     }
 
     inline void Deinitialize()
     {
+        _adminLock.Lock();
         _isRunning = false;
 
         close(g_pipefd[0]);
@@ -295,7 +297,7 @@ private:
             _compositerServerRPCConnection.Release();
         }
 
-
+        _adminLock.Unlock();
     }
 
     bool _isRunning;
