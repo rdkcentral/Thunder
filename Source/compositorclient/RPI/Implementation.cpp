@@ -245,6 +245,23 @@ private:
     inline void Initialize()
     {
         _isRunning = true;
+
+        _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine));
+        ASSERT(_compositerServerRPCConnection != nullptr);
+
+        ASSERT(_engine != nullptr);
+        _engine->Announcements(_compositerServerRPCConnection->Announcement());
+
+        uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
+        if (result != Core::ERROR_NONE) {
+            TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
+            _compositerServerRPCConnection.Release();
+        }
+        _virtualkeyboard = Construct(_displayName.c_str(), connectorName, VirtualKeyboardCallback);
+        if (_virtualkeyboard == nullptr) {
+            TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
+        }
+
         if (pipe(g_pipefd) == -1) {
             g_pipefd[0] = -1;
             g_pipefd[1] = -1;
@@ -255,16 +272,30 @@ private:
     inline void Deinitialize()
     {
         _isRunning = false;
-        for_each(_surfaces.begin(), _surfaces.end(), [&](SurfaceImplementation* surface) {
-
-            Unregister(surface);
-        });
 
         close(g_pipefd[0]);
         Message message;
         message.code = 0;
         write(g_pipefd[1], &message, sizeof(message));
         close(g_pipefd[1]);
+
+        if (_virtualkeyboard != nullptr) {
+            Destruct(_virtualkeyboard);
+        }
+
+        for (auto surface : _surfaces) {
+            string name = surface->Name();
+
+            if (static_cast<Core::IUnknown*>(surface)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
+                TRACE(CompositorClient, (_T("Compositor Surface [%s] is not properly destructed"), name.c_str()));
+            }
+            _surfaces.remove(surface);
+        }
+        if (_compositerServerRPCConnection.IsValid() == true) {
+            _compositerServerRPCConnection.Release();
+        }
+
+
     }
 
     bool _isRunning;
@@ -332,6 +363,7 @@ Display::SurfaceImplementation::~SurfaceImplementation()
 
     TRACE(CompositorClient, (_T("Destructing client named: %s"), _name.c_str()));
 
+    _display.Unregister(this);
     _dispmanUpdate = vc_dispmanx_update_start(0);
     vc_dispmanx_element_remove(_dispmanUpdate, _dispmanElement);
     vc_dispmanx_update_submit_sync(_dispmanUpdate);
@@ -397,45 +429,13 @@ Display::Display(const string& name)
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
     , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()))
-    , _compositerServerRPCConnection(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine)))
+    , _compositerServerRPCConnection()
     , _refCount(0)
 {
-
-    ASSERT(_compositerServerRPCConnection != nullptr);
-
-    _engine->Announcements(_compositerServerRPCConnection->Announcement());
-
-    uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
-    if (result != Core::ERROR_NONE) {
-        TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
-        _compositerServerRPCConnection.Release();
-    }
-
-    _virtualkeyboard = Construct(_displayName.c_str(), connectorName, VirtualKeyboardCallback);
-    if (_virtualkeyboard == nullptr) {
-         TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
-    }
-
-    AddRef();
 }
 
 Display::~Display()
 {
-    for (auto surface : _surfaces) {
-        string name = surface->Name();
-
-        if (static_cast<Core::IUnknown*>(surface)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
-            TRACE(CompositorClient, (_T("Compositor Surface [%s] is not properly destructed"), name.c_str()));
-        }
-        _surfaces.remove(surface);
-    }
-
-    if (_virtualkeyboard != nullptr) {
-        Destruct(_virtualkeyboard);
-    }
-    if (_compositerServerRPCConnection.IsValid() == true) {
-        _compositerServerRPCConnection.Release();
-    }
 }
 
 int Display::Process(const uint32_t data)
@@ -526,6 +526,7 @@ Compositor::IDisplay* Compositor::IDisplay::Instance(const string& displayName)
 {
     static BCMHostInit bcmhostinit; // must be done before Display constructor
     static Display& myDisplay = Core::SingletonType<Display>::Instance(displayName);
+    myDisplay.AddRef();
 
     return (&myDisplay);
 }
