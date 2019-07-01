@@ -507,7 +507,11 @@ inline void Display::Unregister(Display::SurfaceImplementation* surface)
 void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
+
+    _adminLock.Lock();
     uint32_t result = _compositerServerRPCConnection->Offer(client);
+    _adminLock.Unlock();
+
     if (result != Core::ERROR_NONE) {
         TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
     }
@@ -517,7 +521,9 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
 
+    _adminLock.Lock();
     uint32_t result = _compositerServerRPCConnection->Revoke(client);
+    _adminLock.Unlock();
 
     if (result != Core::ERROR_NONE) {
         TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
