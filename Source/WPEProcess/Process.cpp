@@ -229,10 +229,6 @@ namespace Process {
         {
             return (_metadata);
         }
-        virtual bool IsAvailable() override
-        {
-            return false;
-        }
 
     private:
         virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override

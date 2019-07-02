@@ -434,7 +434,7 @@ Display::Display(const string& name)
     , _compositerServerRPCConnection()
     , _refCount(0)
 {
-    bool workerPool = ((RPC::WorkerPool::Instance().IsAvailable() == true)? true: false);
+    bool workerPool = ((RPC::WorkerPool::IsAvailable() == true)? true: false);
 
     if (workerPool != true) {
         _engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());

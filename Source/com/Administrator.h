@@ -322,14 +322,14 @@ namespace RPC {
 
         virtual ~WorkerPool() = default;
 
-		static WorkerPool& Instance();
+        static WorkerPool& Instance();
         static void Instance(WorkerPool& instance);
+        static bool IsAvailable();
 
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
         virtual const Metadata& Snapshot() const = 0;
-        virtual bool IsAvailable() = 0;
     };
 
 	template <const uint8_t THREAD_COUNT>
