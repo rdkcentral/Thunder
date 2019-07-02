@@ -37,7 +37,7 @@ namespace Process {
             Info(const Core::ProxyType<Core::IDispatch>& job)
                 : _message()
                 , _channel()
-                , _job()
+                , _job(job)
             {
             }
             ~Info()
