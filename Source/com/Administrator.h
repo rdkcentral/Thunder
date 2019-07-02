@@ -329,6 +329,7 @@ namespace RPC {
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
         virtual const Metadata& Snapshot() const = 0;
+        virtual bool IsAvailable() = 0;
     };
 
 	template <const uint8_t THREAD_COUNT>
@@ -445,6 +446,10 @@ namespace RPC {
         inline ::ThreadId ThreadId(const uint8_t index) const
         {
             return (index == 0 ? _timer.ThreadId() : _workers.ThreadId(index - 1));
+        }
+        virtual bool IsAvailable() override
+        {
+            return true;
         }
 
     private:

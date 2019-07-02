@@ -430,10 +430,15 @@ Display::Display(const string& name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
-    , _engine(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()))
+    , _engine()
     , _compositerServerRPCConnection()
     , _refCount(0)
 {
+    bool workerPool = ((RPC::WorkerPool::Instance().IsAvailable() == true)? true: false);
+
+    if (workerPool != true) {
+        _engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
+    }
 }
 
 Display::~Display()
