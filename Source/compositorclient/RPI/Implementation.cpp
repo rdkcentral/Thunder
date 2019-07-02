@@ -247,11 +247,20 @@ private:
         _adminLock.Lock();
         _isRunning = true;
 
-        _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine));
-        ASSERT(_compositerServerRPCConnection != nullptr);
+        bool workerPool = ((RPC::WorkerPool::IsAvailable() == true)? true: false);
 
-        ASSERT(_engine != nullptr);
-        _engine->Announcements(_compositerServerRPCConnection->Announcement());
+        if (workerPool != true) {
+            _engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
+            ASSERT(_engine != nullptr);
+
+            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine));
+            ASSERT(_compositerServerRPCConnection != nullptr);
+
+            _engine->Announcements(_compositerServerRPCConnection->Announcement());
+        } else {
+            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector());
+            ASSERT(_compositerServerRPCConnection != nullptr);
+        }
 
         uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
         if (result != Core::ERROR_NONE) {
@@ -434,11 +443,6 @@ Display::Display(const string& name)
     , _compositerServerRPCConnection()
     , _refCount(0)
 {
-    bool workerPool = ((RPC::WorkerPool::IsAvailable() == true)? true: false);
-
-    if (workerPool != true) {
-        _engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
-    }
 }
 
 Display::~Display()
