@@ -36,10 +36,69 @@
     <Filter Include="Header Files">
       <UniqueIdentifier>{d8766ed9-560a-4d34-bb7a-8e5bef37cb80}</UniqueIdentifier>
     </Filter>
+    <Filter Include="JSON Files">
+      <UniqueIdentifier>{8139956b-eaee-4eae-aa11-3535f6b92f95}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="definitions.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="json\BrowserAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\common.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\DeviceInfoAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\DIALServerAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\LocationSyncAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\MessengerAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\MonitorAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\NetworkControlAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\OpenCDMiAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\RemoteControlAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\SparkAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\StateControlAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\StreamerAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\SystemCommandsAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\TestUtilityAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\TimeSyncAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\WebKitBrowserAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\WifiControlAPI.json">
+      <Filter>JSON Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
