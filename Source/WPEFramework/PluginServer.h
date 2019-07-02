@@ -189,7 +189,7 @@ namespace PluginHost {
             class ProcessContainerConfig : public Core::JSON::Container {
             public:
                 ProcessContainerConfig()
-                    : Logging(_T("NONE"), false)
+                    : Logging(_T("NONE"))
                 {
 
                     Add(_T("logging"), &Logging);

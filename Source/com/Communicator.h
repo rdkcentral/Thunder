@@ -459,7 +459,7 @@ namespace RPC {
                 Config()
                     : Core::JSON::Container()
 #ifdef __DEBUG__
-                    , ContainerPath(true)
+                    , ContainerPath()
 #endif
                 {
 #ifdef __DEBUG__
@@ -491,11 +491,13 @@ namespace RPC {
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
+                string volatilecallsignpath(volatilepath + callsign + _T('/'));
+
                 Config config;
                 config.FromString(configuration);
 
                 std::vector<string> searchpaths(3);
-                searchpaths[0] = volatilepath + callsign + _T('/');
+                searchpaths[0] = volatilecallsignpath;
                 searchpaths[1] = persistentpath;
                 searchpaths[2] = datapath;
 
@@ -509,7 +511,7 @@ namespace RPC {
 
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
-                _container = admin.Container(ContainerName, searchpathsit, volatilepath, configuration);
+                _container = admin.Container(ContainerName, searchpathsit, volatilecallsignpath, configuration);
 
                 admin.Release();
             }

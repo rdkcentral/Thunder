@@ -48,8 +48,8 @@ public:
 
                 ConfigItem()
                     : Core::JSON::Container()
-                    , Key(false)
-                    , Value(false)
+                    , Key()
+                    , Value()
                 {
                     Add(_T("key"), &Key);
                     Add(_T("value"), &Value); 
@@ -66,7 +66,7 @@ public:
 
             Config()
                 : Core::JSON::Container()
-                , ConsoleLogging("0", false)
+                , ConsoleLogging("0")
                 , ConfigItems()
 #ifdef __DEBUG__
                 , Attach(false)
@@ -119,7 +119,12 @@ public:
             _lxccontainer->set_config_item(_lxccontainer, "lxc.environment", key.c_str());
 
             if( config.ConsoleLogging.Value() != _T("0") ) {
-                string filename(logpath + name + "/console.log");
+
+                Core::Directory logdirectory(logpath.c_str());
+                logdirectory.CreatePath(); //note: lxc API does not create the complate path for logging, it must exist
+
+                string filename(logpath + "console.log");
+
                 _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogging.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
                 _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", filename.c_str());
             }
@@ -238,12 +243,13 @@ void LXCContainerAdministrator::Logging(const string& logpath, const string& log
 
     const char* logstring = loggingoptions.c_str();
 
-    if( ( loggingoptions.size() == 4 ) && ( std::toupper(logstring[0]) == _T('N') ) 
-                                       && ( std::toupper(logstring[1]) == _T('O') ) 
-                                       && ( std::toupper(logstring[2]) == _T('N') ) 
-                                       && ( std::toupper(logstring[3]) == _T('E') ) 
+    if( ( loggingoptions.size() != 4 ) || ( std::toupper(logstring[0]) != _T('N') ) 
+                                       || ( std::toupper(logstring[1]) != _T('O') ) 
+                                       || ( std::toupper(logstring[2]) != _T('N') ) 
+                                       || ( std::toupper(logstring[3]) != _T('E') ) 
         ) {
         string filename(logpath + "/lxclogging.log");
+
         lxc_log log;
         log.name = logid.c_str();
         log.lxcpath = logpath.c_str(); //we don't have a correct lxcpath were all containers are stored...
