@@ -49,7 +49,6 @@ namespace WPEFramework {
 
 static Core::NodeId Connector()
 {
-
     string connector;
     if ((Core::SystemInfo::GetEnvironment(_T("COMPOSITOR"), connector) == false) || (connector.empty() == true)) {
         connector = _T("/tmp/compositor");
@@ -247,22 +246,33 @@ private:
         _adminLock.Lock();
         _isRunning = true;
 
-        bool workerPool = ((RPC::WorkerPool::IsAvailable() == true)? true: false);
+        if (RPC::WorkerPool::IsAvailable() == true) {
+			// If we are in the same process space as where a WorkerPool is registered (Main Process or
+			// hosting ptocess) use, it!
+            Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServer>::Create());
+            ASSERT(engine != nullptr);
 
-        if (workerPool != true) {
-            _engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
-            ASSERT(_engine != nullptr);
-
-            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(_engine));
+            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
             ASSERT(_compositerServerRPCConnection != nullptr);
 
-            _engine->Announcements(_compositerServerRPCConnection->Announcement());
-        } else {
-            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector());
+            engine->Announcements(_compositerServerRPCConnection->Announcement());
+        }
+		else
+		{
+			// Seems we are not in a process space initiated from the Main framework process or its hosting process.
+			// Nothing more to do than to create a workerpool for RPC our selves !
+            Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()));
+
+            ASSERT(engine != nullptr);
+
+            _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
             ASSERT(_compositerServerRPCConnection != nullptr);
+
+            engine->Announcements(_compositerServerRPCConnection->Announcement());
         }
 
-        uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
+		uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
+
         if (result != Core::ERROR_NONE) {
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
             _compositerServerRPCConnection.Release();
@@ -315,7 +325,6 @@ private:
     void* _virtualkeyboard;
     const DisplaySize _displaysize;
     std::list<SurfaceImplementation*> _surfaces;
-    Core::ProxyType<RPC::InvokeServerType<2, 1> > _engine;
     Core::ProxyType<RPC::CommunicatorClient> _compositerServerRPCConnection;
 
     mutable uint32_t _refCount;
@@ -439,7 +448,6 @@ Display::Display(const string& name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
     , _displaysize(RetrieveDisplaySize())
-    , _engine()
     , _compositerServerRPCConnection()
     , _refCount(0)
 {
