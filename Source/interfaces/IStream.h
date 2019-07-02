@@ -1,5 +1,4 @@
-#ifndef _ISTREAM_H
-#define _ISTREAM_H
+#pragma once
 
 #include "Module.h"
 
@@ -21,11 +20,17 @@ namespace Exchange {
         };
 
         enum streamtype {
-            Stubbed = 0,
-            DVB,
-            ATSC,
-            VOD
-        };
+            Undefined = 0,
+            Cable = 1,
+            Handheld = 2,
+            Satellite = 4,
+            Terrestrial = 8,
+            DAB = 16,
+            RF = 31,
+            Unicast = 32,
+            Multicast = 64,
+            IP = 96
+       };
 
         enum drmtype {
             None = 0,
@@ -98,26 +103,6 @@ namespace Exchange {
         virtual IStream* CreateStream(const IStream::streamtype streamType) = 0;
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
     };
+
 } // namespace Exchange
-
-namespace Player {
-    namespace Implementation {
-
-        struct Rectangle {
-            uint32_t X;
-            uint32_t Y;
-            uint32_t Width;
-            uint32_t Height;
-        };
-
-        struct ICallback {
-            virtual ~ICallback() {}
-
-            virtual void TimeUpdate(uint64_t position) = 0;
-            virtual void DRM(uint32_t state) = 0;
-            virtual void StateChange(Exchange::IStream::state newState) = 0;
-        };
-    }
-} // // namespace Player::Implementation
-} // namespace WPEFramework
-#endif //_ISTREAM_H
+}
