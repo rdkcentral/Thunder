@@ -187,25 +187,6 @@ namespace Process {
             _handleQueue.Disable();
             _minions.clear();
         }
-        void ProcessProcedures()
-        {
-            Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-            Info newRequest;
-
-            while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
-
-                _runningFree--;
-
-                newRequest.Dispatch(_announceHandler);
-
-                _runningFree++;
-
-                // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
-                Core::ServiceAdministrator::Instance().FlushLibraries();
-            }
-
-            _handleQueue.Disable();
-        }
 
         void Announcements(Core::IIPCServer* announces)
         {
@@ -229,11 +210,12 @@ namespace Process {
         {
             return (_metadata);
         }
-        void RunWorkerPool()
+        void Run()
         {
             for (auto& minion : _minions) {
                 minion.Run();
             }
+            ProcessProcedures();
         }
     private:
         virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
@@ -248,6 +230,26 @@ namespace Process {
             }
 
             _handleQueue.Insert(Info(newrefChannel, data), Core::infinite);
+        }
+
+        void ProcessProcedures()
+        {
+            Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
+            Info newRequest;
+
+            while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
+
+                _runningFree--;
+
+                newRequest.Dispatch(_announceHandler);
+
+                _runningFree++;
+
+                // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
+                Core::ServiceAdministrator::Instance().FlushLibraries();
+            }
+
+            _handleQueue.Disable();
         }
 
     private:
@@ -560,8 +562,7 @@ int main(int argc, char** argv)
                 // We have something to report back, do so...
                 if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
-                    invokeServer->RunWorkerPool();
-                    invokeServer->ProcessProcedures();
+                    invokeServer->Run();
 
                     _server->Close(Core::infinite);
                 } else {
