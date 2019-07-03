@@ -322,8 +322,9 @@ namespace RPC {
 
         virtual ~WorkerPool() = default;
 
-		static WorkerPool& Instance();
+        static WorkerPool& Instance();
         static void Instance(WorkerPool& instance);
+        static bool IsAvailable();
 
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;

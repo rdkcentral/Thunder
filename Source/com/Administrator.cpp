@@ -281,5 +281,9 @@ namespace RPC {
         ASSERT (_singleton != nullptr);
         return (*_singleton);
     }
+    /* static */ bool WorkerPool::IsAvailable()
+    {
+        return ((_singleton != nullptr)? true: false);
+    }
 }
 } // namespace Core

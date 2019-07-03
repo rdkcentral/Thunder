@@ -173,7 +173,8 @@ namespace Process {
             , _announceHandler(nullptr)
         {
             for (uint8_t index = 1; index < threads; index++) {
-                _minions.emplace_back(*this, stackSize);
+				_minions.emplace_back(*this, stackSize);
+                _minions.back().Run();
             }
             if (threads > 1) {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
@@ -419,7 +420,6 @@ namespace Process {
 using namespace WPEFramework;
 
 static std::list<Core::Library> _proxyStubs;
-static Core::ProxyType<Process::WorkerPoolImplementation> _invokeServer;
 static Core::ProxyType<RPC::CommunicatorClient> _server;
 
 //
@@ -433,12 +433,13 @@ void CloseDown()
     TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
 
     if (_server.IsValid() == true) {
-        ASSERT(_invokeServer.IsValid() == true);
-
+ 
         // We are done, close the channel and unregister all shit we added...
         _server->Close(2 * RPC::CommunicationTimeOut);
 
         _proxyStubs.clear();
+
+		_server.Release();
     }
 
     // Now clear all singeltons we created.
@@ -529,9 +530,9 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(_invokeServer)));
-            _invokeServer->Announcements(_server->Announcement());
+            Core::ProxyType<Process::WorkerPoolImplementation>  invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(invokeServer)));
+            invokeServer->Announcements(_server->Announcement());
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
@@ -555,7 +556,7 @@ int main(int argc, char** argv)
                 // We have something to report back, do so...
                 if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
-                    _invokeServer->ProcessProcedures();
+                    invokeServer->ProcessProcedures();
 
                     _server->Close(Core::infinite);
                 } else {
