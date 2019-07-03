@@ -303,7 +303,7 @@ private:
         }
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
-        while (index != _surfaces.end())
+        while (index != _surfaces.end()) {
             string name = (*index)->Name();
 
             if (static_cast<Core::IUnknown*>(*index)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
