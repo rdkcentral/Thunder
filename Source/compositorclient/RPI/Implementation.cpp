@@ -249,7 +249,7 @@ private:
         if (RPC::WorkerPool::IsAvailable() == true) {
             // If we are in the same process space as where a WorkerPool is registered (Main Process or
             // hosting ptocess) use, it!
-            Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServer>::Create());
+            Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<RPC::InvokeServer>::Create();
             ASSERT(engine != nullptr);
 
             _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
@@ -259,7 +259,7 @@ private:
         } else {
             // Seems we are not in a process space initiated from the Main framework process or its hosting process.
             // Nothing more to do than to create a workerpool for RPC our selves !
-            Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()));
+            Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
 
             ASSERT(engine != nullptr);
 
