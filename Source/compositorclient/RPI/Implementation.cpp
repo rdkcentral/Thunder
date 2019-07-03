@@ -247,8 +247,8 @@ private:
         _isRunning = true;
 
         if (RPC::WorkerPool::IsAvailable() == true) {
-			// If we are in the same process space as where a WorkerPool is registered (Main Process or
-			// hosting ptocess) use, it!
+            // If we are in the same process space as where a WorkerPool is registered (Main Process or
+            // hosting ptocess) use, it!
             Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServer>::Create());
             ASSERT(engine != nullptr);
 
@@ -256,11 +256,9 @@ private:
             ASSERT(_compositerServerRPCConnection != nullptr);
 
             engine->Announcements(_compositerServerRPCConnection->Announcement());
-        }
-		else
-		{
-			// Seems we are not in a process space initiated from the Main framework process or its hosting process.
-			// Nothing more to do than to create a workerpool for RPC our selves !
+        } else {
+            // Seems we are not in a process space initiated from the Main framework process or its hosting process.
+            // Nothing more to do than to create a workerpool for RPC our selves !
             Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize()));
 
             ASSERT(engine != nullptr);
@@ -271,7 +269,7 @@ private:
             engine->Announcements(_compositerServerRPCConnection->Announcement());
         }
 
-		uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
+        uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
 
         if (result != Core::ERROR_NONE) {
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));

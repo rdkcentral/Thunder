@@ -447,10 +447,6 @@ namespace RPC {
         {
             return (index == 0 ? _timer.ThreadId() : _workers.ThreadId(index - 1));
         }
-        virtual bool IsAvailable() override
-        {
-            return true;
-        }
 
     private:
         ThreadPool _workers;
