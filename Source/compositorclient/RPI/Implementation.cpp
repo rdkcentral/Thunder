@@ -302,13 +302,15 @@ private:
             Destruct(_virtualkeyboard);
         }
 
-        for (auto surface : _surfaces) {
-            string name = surface->Name();
+        std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
+        while (index != _surfaces.end() && _surfaces.size() != 0) {
+            string name = (*index)->Name();
 
-            if (static_cast<Core::IUnknown*>(surface)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
+            if (static_cast<Core::IUnknown*>(*index)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
                 TRACE(CompositorClient, (_T("Compositor Surface [%s] is not properly destructed"), name.c_str()));
             }
-            _surfaces.remove(surface);
+            _surfaces.remove(*index);
+            index++;
         }
         if (_compositerServerRPCConnection.IsValid() == true) {
             _compositerServerRPCConnection.Release();
