@@ -19,7 +19,6 @@ namespace Plugin {
         Register<ActivateParamsInfo,void>(_T("deactivate"), &Controller::endpoint_deactivate, this);
         Register<StartdiscoveryParamsData,void>(_T("startdiscovery"), &Controller::endpoint_startdiscovery, this);
         Register<void,void>(_T("storeconfig"), &Controller::endpoint_storeconfig, this);
-        Register<Download,void>(_T("download"), &Controller::endpoint_download, this);
         Register<DeleteParamsData,void>(_T("delete"), &Controller::endpoint_delete, this);
         Register<void,void>(_T("harakiri"), &Controller::endpoint_harakiri, this);
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Service>>(_T("status"), &Controller::get_status, nullptr, this);
@@ -35,7 +34,6 @@ namespace Plugin {
     {
         Unregister(_T("harakiri"));
         Unregister(_T("delete"));
-        Unregister(_T("download"));
         Unregister(_T("storeconfig"));
         Unregister(_T("startdiscovery"));
         Unregister(_T("deactivate"));
@@ -155,57 +153,6 @@ namespace Plugin {
         // Normalise return code
         if (result != Core::ERROR_NONE) {
             result = Core::ERROR_GENERAL;
-        }
-
-        return result;
-    }
-
-    // Method: download - Downloads a file to the persistent memory
-    // Return codes:
-    //  - ERROR_NONE: Success
-    //  - ERROR_INPROGRESS: A download is currently in progress
-    //  - ERROR_INCORRECT_URL: The source URL was invalid
-    //  - ERROR_BAD_REQUEST: The given destination path or hash was invalid
-    //  - ERROR_WRITE_ERROR: Failed to save the file to the persistent storage (e.g. the file already exists)
-    uint32_t Controller::endpoint_download(const Download& params)
-    {
-        uint32_t result = Core::ERROR_BAD_REQUEST;
-        const string& source = params.Source.Value();
-        const string& destination = params.Destination.Value();
-        const string& hash = params.Hash.Value();
-
-        if (source.empty() == false) {
-            if (destination.empty() == false) {
-                ASSERT(_service != nullptr);
-
-                string path(_service->PersistentPath() + destination);
-                uint8_t digest[Crypto::HASH_SHA256];
-                uint16_t length = sizeof(digest);
-
-                Core::FromString(hash, digest, length);
-                if (length == sizeof(digest)) {
-
-                    if (Core::File(path).Create() == true) {
-                        ASSERT(_downloader != nullptr);
-
-                        result = _downloader->Start(source, destination, digest);
-
-                        // Normalise the result
-                        if (result == Core::ERROR_COULD_NOT_SET_ADDRESS ) {
-                            result = Core::ERROR_INCORRECT_URL;
-                        }
-                        else if ((result != Core::ERROR_NONE) && (result != Core::ERROR_INPROGRESS) && (result != Core::ERROR_INCORRECT_URL)) {
-                            result = Core::ERROR_WRITE_ERROR;
-                        }
-                    }
-                    else {
-                        result = Core::ERROR_WRITE_ERROR;
-                    }
-                }
-            }
-        }
-        else {
-            result = Core::ERROR_INCORRECT_URL;
         }
 
         return result;
@@ -418,17 +365,6 @@ namespace Plugin {
         params.Reason = reason;
 
         Notify(_T("statechange"), params);
-    }
-
-    // Event: downloadcompleted - Signals that a file download has completed
-    void Controller::event_downloadcompleted(const uint32_t& result, const string& source, const string& destination)
-    {
-        DownloadcompletedParamsData params;
-        params.Result = result;
-        params.Source = source;
-        params.Destination = destination;
-
-        Notify(_T("downloadcompleted"), params);
     }
 
 } // namespace Plugin

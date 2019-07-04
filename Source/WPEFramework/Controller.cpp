@@ -10,12 +10,10 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     // typedef Web::SignedJSONBodyType<Plugin::Config, Crypto::SHA256HMAC> SignedConfig;
-    // typedef Web::SignedJSONBodyType<Controller::Download, Crypto::SHA256HMAC> SignedDownload;
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
-    static Core::ProxyPoolType<Web::JSONBodyType<Controller::Download>> jsonBodyDownloadFactory(1);
 
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
     {
@@ -48,7 +46,6 @@ namespace Plugin {
     {
 
         ASSERT(_service == nullptr);
-        ASSERT(_downloader == nullptr);
         ASSERT(_probe == nullptr);
 
         _resumes.clear();
@@ -57,13 +54,6 @@ namespace Plugin {
 
         Config config;
         config.FromString(_service->ConfigLine());
-
-        if (config.DownloadStore.IsSet() == false) {
-
-            _downloader = new Downloader(*this, _service->PersistentPath() + _T("DownloadStore"));
-        } else {
-            _downloader = new Downloader(*this, config.DownloadStore.Value());
-        }
 
         _probe = new Probe(_service->Accessor(), config.TTL.Value(), service->Model());
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
@@ -88,7 +78,6 @@ namespace Plugin {
     /* virtual */ void Controller::Deinitialize(PluginHost::IShell* service)
     {
         ASSERT(_service == service);
-        ASSERT(_downloader != nullptr);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
@@ -98,9 +87,6 @@ namespace Plugin {
         if (subSystems != nullptr) {
             subSystems->Unregister(&_systemInfoReport);
         }
-
-        delete _downloader;
-        _downloader = nullptr;
 
         delete _probe;
         _probe = nullptr;
@@ -129,13 +115,8 @@ namespace Plugin {
             // Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
             index.Next();
 
-            // We might be receiving a plugin download request.
-            if (index.Next() == true) {
-                if (index.Remainder() == _T("Download")) {
-                    request.Body(Core::proxy_cast<Web::IBody>(jsonBodyDownloadFactory.Element()));
-                } else if (index.Current() == _T("Configuration")) {
-                    request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
-                }
+            if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
+                request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
             }
         }
     }
@@ -367,48 +348,6 @@ namespace Plugin {
                         }
                     }
                 }
-            } else if (index.Current() == _T("Download")) {
-                if (request.HasBody() == true) {
-                    Core::ProxyType<const Web::JSONBodyType<Controller::Download>> data(request.Body<const Web::JSONBodyType<Controller::Download>>());
-
-                    if (data.IsValid() == true) {
-                        string destination(_service->PersistentPath() + data->Destination.Value());
-
-                        if (Core::File(destination).Create() == false) {
-
-                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("Could not open destination file: ") + data->Destination.Value();
-                        } else {
-                            uint8_t hash[Crypto::HASH_SHA256];
-                            uint16_t length = (sizeof(hash));
-
-                            if (Core::FromString(data->Hash.Value(), hash, length) != data->Hash.Value().length()) {
-                                // Oops could not open the destination
-                                result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                result->Message = _T("The hash was longer than what we expect.");
-                            } else {
-                                uint32_t code = _downloader->Start(data->Source.Value(), destination, hash);
-
-                                if (code == Core::ERROR_INPROGRESS) {
-                                    // Oops could not open the destination
-                                    result->ErrorCode = Web::STATUS_MOVED_TEMPORARY;
-                                    result->Message = _T("A transfer is currently in progress, so please be patient.");
-                                } else if (code == Core::ERROR_INCORRECT_URL) {
-                                    // Oops do not understand the URL
-                                    result->ErrorCode = Web::STATUS_NOT_FOUND;
-                                    result->Message = _T("The URL for the source is incorrect.");
-                                } else if (code != Core::ERROR_NONE) {
-                                    // Uhhhh whatever.. this is unknown
-                                    result->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
-                                    result->Message = _T("oops, have no clue what this error [") + Core::NumberType<uint32_t>(code).Text() + _T("] means");
-                                } else {
-                                    // Download started, add it to the
-                                    result->ErrorCode = Web::STATUS_OK;
-                                }
-                            }
-                        }
-                    }
-                }
             } else if (index.Current() == _T("Discovery")) {
                 ASSERT(_probe != nullptr);
                 Core::URL::KeyValue options(request.Query.Value());
@@ -466,12 +405,6 @@ namespace Plugin {
             }
         }
         return (result);
-    }
-
-    void Controller::Transfered(const uint32_t result, const string& source, const string& destination)
-    {
-        // Report over a socket a download is completed with its state.
-        event_downloadcompleted(result, source, destination);
     }
 
     void Controller::StateChange(PluginHost::IShell* plugin)

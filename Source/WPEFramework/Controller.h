@@ -1,7 +1,6 @@
 #ifndef __CONTROLLER_H
 #define __CONTROLLER_H
 
-#include "DownloadEngine.h"
 #include "Module.h"
 #include "PluginServer.h"
 #include "Probe.h"
@@ -13,32 +12,6 @@ namespace Plugin {
 
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
-        class Downloader : public PluginHost::DownloadEngine {
-        private:
-            Downloader() = delete;
-            Downloader(const Downloader&) = delete;
-            Downloader& operator=(const Downloader&) = delete;
-
-        public:
-            Downloader(Controller& parent, const string& key)
-                : PluginHost::DownloadEngine(key)
-                , _parent(parent)
-            {
-            }
-            virtual ~Downloader()
-            {
-            }
-
-        private:
-            virtual void Transfered(const uint32_t result, const string& source, const string& destination) override
-            {
-                _parent.Transfered(result, source, destination);
-            }
-
-        private:
-            Controller& _parent;
-        };
-
         class Sink : public PluginHost::IPlugin::INotification,
                      public PluginHost::ISubSystem::INotification {
         private:
@@ -118,7 +91,6 @@ namespace Plugin {
         // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Deactivate/<Callsign>
         // DELETE -> URL /<MetaDataCallsign>/Plugin/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Download
     public:
         class Config : public Core::JSON::Container {
         private:
@@ -128,12 +100,10 @@ namespace Plugin {
         public:
             Config()
                 : Core::JSON::Container()
-                , DownloadStore()
                 , TTL(1)
                 , Resumes()
                 , SubSystems()
             {
-                Add(_T("downloadstore"), &DownloadStore);
                 Add(_T("ttl"), &TTL);
                 Add(_T("resumes"), &Resumes);
                 Add(_T("subsystems"), &SubSystems);
@@ -143,32 +113,9 @@ namespace Plugin {
             }
 
         public:
-            Core::JSON::String DownloadStore;
             Core::JSON::DecUInt8 TTL;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
-        };
-        class Download : public Core::JSON::Container {
-        private:
-            Download(const Download&);
-            Download& operator=(const Download&);
-
-        public:
-            Download()
-                : Core::JSON::Container()
-            {
-                Add(_T("source"), &Source);
-                Add(_T("destination"), &Destination);
-                Add(_T("hash"), &Hash);
-            }
-            ~Download()
-            {
-            }
-
-        public:
-            Core::JSON::String Source;
-            Core::JSON::String Destination;
-            Core::JSON::String Hash;
         };
 
     private:
@@ -182,7 +129,6 @@ namespace Plugin {
             , _webPath()
             , _pluginServer(nullptr)
             , _service(nullptr)
-            , _downloader(nullptr)
             , _probe(nullptr)
             , _systemInfoReport(this)
             , _resumes()
@@ -295,7 +241,6 @@ namespace Plugin {
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
         virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
         void DeleteDirectory(const string& directory);
@@ -306,7 +251,6 @@ namespace Plugin {
         uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
         uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
         uint32_t endpoint_storeconfig();
-        uint32_t endpoint_download(const Download& params);
         uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
         uint32_t endpoint_harakiri();
         uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
@@ -319,7 +263,6 @@ namespace Plugin {
         uint32_t set_configuration(const string& index, const Core::JSON::String& params);
         void event_all(const string& callsign, const Core::JSON::String& data);
         void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
-        void event_downloadcompleted(const uint32_t& result, const string& source, const string& destination);
 
     private:
         Core::CriticalSection _adminLock;
@@ -327,7 +270,6 @@ namespace Plugin {
         string _webPath;
         PluginHost::Server* _pluginServer;
         PluginHost::IShell* _service;
-        Downloader* _downloader;
         Probe* _probe;
         Core::Sink<Sink> _systemInfoReport;
         std::list<string> _resumes;
