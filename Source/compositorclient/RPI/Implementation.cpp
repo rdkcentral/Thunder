@@ -46,6 +46,7 @@ public:
 }
 
 namespace WPEFramework {
+namespace RPI {
 
 static Core::NodeId Connector()
 {
@@ -201,7 +202,6 @@ public:
         }
         return (Core::ERROR_NONE);
     }
-
     virtual EGLNativeDisplayType Native() const override
     {
         return (static_cast<EGLNativeDisplayType>(EGL_DEFAULT_DISPLAY));
@@ -310,7 +310,7 @@ private:
                 TRACE(CompositorClient, (_T("Compositor Surface [%s] is not properly destructed"), name.c_str()));
             }
 
-            _surfaces.erase(index++);
+            index = _surfaces.erase(index);
         }
         if (_compositerServerRPCConnection.IsValid() == true) {
             _compositerServerRPCConnection.Release();
@@ -547,12 +547,14 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
     }
 }
 
+} // RPI
+
 Compositor::IDisplay* Compositor::IDisplay::Instance(const string& displayName)
 {
     static BCMHostInit bcmhostinit; // must be done before Display constructor
-    static Display& myDisplay = Core::SingletonType<Display>::Instance(displayName);
+    static RPI::Display& myDisplay = Core::SingletonType<RPI::Display>::Instance(displayName);
     myDisplay.AddRef();
 
     return (&myDisplay);
 }
-}
+} // WPEFramework
