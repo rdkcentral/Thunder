@@ -15,7 +15,6 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-        PRIVATE
           libprovision::libprovision
         )
 
