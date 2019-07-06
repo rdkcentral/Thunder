@@ -8,7 +8,7 @@ add_library(${TARGET} STATIC
         )
 
 set(PUBLIC_HEADERS
-        AccesProvision.h
+        AccessProvision.h
         IPCProvision.h
         )
 

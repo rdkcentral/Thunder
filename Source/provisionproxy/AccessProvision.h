@@ -1,5 +1,5 @@
-#ifndef __ACCES_PROVISION_H__
-#define __ACCES_PROVISION_H__
+#ifndef __ACCESS_PROVISION_H__
+#define __ACCESS_PROVISION_H__
 
 extern "C" {
 
@@ -38,4 +38,4 @@ int GetDeviceId(unsigned short MaxIdLength, char Id[]);
 int GetDRMId(const char label[], const unsigned short MaxIdLength, char Id[]);
 }
 
-#endif // __ACCES_PROVISION_H__
+#endif // __ACCESS_PROVISION_H__
