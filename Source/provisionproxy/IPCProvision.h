@@ -6,6 +6,13 @@
 using namespace WPEFramework;
 
 namespace IPC {
+
+#ifdef __DEBUG__
+    enum { CommunicationTimeOut = Core::infinite }; // Time in ms. Forever
+#else
+    enum { CommunicationTimeOut = 2000 }; // Time in ms. 2 Seconds
+#endif
+
 namespace Provisioning {
 
     class KeyValue {

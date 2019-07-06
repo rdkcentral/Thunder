@@ -40,7 +40,7 @@ int GetDeviceId(unsigned short MaxIdLength, char Id[])
     if (_channel.Open(1000) == Core::ERROR_NONE) { // Wait for 1 Second.
 
         Core::ProxyType<Core::IIPC> message(Core::proxy_cast<Core::IIPC>(_deviceId));
-        uint32_t error = _channel.Invoke(message, Core::infinite);
+        uint32_t error = _channel.Invoke(message, IPC::CommunicationTimeOut);
 
         result = -error;
 
@@ -91,7 +91,7 @@ int GetDRMId(const char label[], const unsigned short MaxIdLength, char Id[])
         _drmId->Parameters() = string(label);
         Core::ProxyType<Core::IIPC> message(Core::proxy_cast<Core::IIPC>(_drmId));
 
-        uint32_t error = _channel.Invoke(message, Core::infinite);
+        uint32_t error = _channel.Invoke(message, IPC::CommunicationTimeOut);
         result = -error;
 
         if (error == Core::ERROR_NONE) {
