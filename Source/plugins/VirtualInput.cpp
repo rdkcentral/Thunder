@@ -332,7 +332,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
                     }
                 }
 
-                AdministerAndSendKey((pressed ? PRESSED : RELEASED), sendCode);
+                SendKey((pressed ? PRESSED : RELEASED), sendCode);
 
                 if (pressed == false) {
                     if (sendModifiers != 0) {
@@ -351,37 +351,10 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     void VirtualInput::RepeatKey(const uint32_t code)
     {
-        AdministerAndSendKey(REPEAT, code);
+        SendKey(REPEAT, code);
         _repeatCounter--;
         if (!_repeatCounter)
             KeyEvent(false, _pressedCode, _keyTable);
-    }
-
-    void VirtualInput::AdministerAndSendKey(const actiontype type, const uint32_t code)
-    {
-        bool trigger;
-
-        if (code == KeyMap::modifier::LEFTSHIFT) {
-            trigger = SendModifier(type, enumModifier::LEFTSHIFT);
-        } else if (code == KeyMap::modifier::RIGHTSHIFT) {
-            trigger = SendModifier(type, enumModifier::RIGHTSHIFT);
-        } else if (code == KeyMap::modifier::LEFTALT) {
-            trigger = SendModifier(type, enumModifier::LEFTALT);
-        } else if (code == KeyMap::modifier::RIGHTALT) {
-            trigger = SendModifier(type, enumModifier::RIGHTALT);
-        } else if (code == KeyMap::modifier::LEFTCTRL) {
-            trigger = SendModifier(type, enumModifier::LEFTCTRL);
-        } else if (code == KeyMap::modifier::RIGHTCTRL) {
-            trigger = SendModifier(type, enumModifier::RIGHTCTRL);
-        } else {
-            trigger = true;
-        }
-
-        if (trigger == true) {
-            SendKey(type, code);
-        }
-
-        DispatchRegisteredKey(type, code);
     }
 
     bool VirtualInput::SendModifier(const actiontype type, const enumModifier mode)
@@ -643,7 +616,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
 
         TRACE_L1("Sending keycode to all clients: %d", code);
-        _service.Invoke(base, Core::infinite);
+        _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
     /* virtual */ void IPCKeyboardInput::MapChanges(ChangeIterator&) {}
