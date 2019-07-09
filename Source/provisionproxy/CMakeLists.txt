@@ -8,14 +8,13 @@ add_library(${TARGET} STATIC
         )
 
 set(PUBLIC_HEADERS
-        AccesProvision.h
+        AccessProvision.h
         IPCProvision.h
         )
 
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
-        PRIVATE
           libprovision::libprovision
         )
 
