@@ -3,7 +3,7 @@ set(TargetDefinitions ${NAMESPACE}Definitions)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 file(GLOB PUBLIC_HEADERS I*.h)
-file(GLOB JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/json/*API.json)
+file(GLOB JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
 
 list(APPEND PUBLIC_HEADERS Module.h)
 list(APPEND PUBLIC_HEADERS definitions.h)

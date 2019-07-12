@@ -11,10 +11,10 @@
   },
   "include": {
     "browser": {
-      "$ref": "BrowserAPI.json#"
+      "$ref": "Browser.json#"
     },
     "statecontrol": {
-      "$ref": "StateControlAPI.json#"
+      "$ref": "StateControl.json#"
     }
   }
 }

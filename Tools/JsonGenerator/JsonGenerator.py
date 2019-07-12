@@ -524,12 +524,15 @@ def ParseJsonRpcSchema(schema):
     enumTracker.Reset()
     if "interface" in schema:
         schema = schema["interface"]
-    if "class" in schema["info"]:
-        pluginClass = schema["info"]["class"]
+    if "info" in schema:
+        if "class" in schema["info"]:
+            pluginClass = schema["info"]["class"]
+        else:
+            pluginClass = "undefined_class"
+            trace.Error("no \"class\" defined in \"info\"")
+        return JsonRpcSchema(pluginClass, schema)
     else:
-        pluginClass = "undefined_class"
-        trace.Error("no \"class\" defined in \"info\"")
-    return JsonRpcSchema(pluginClass, schema)
+        return None
 
 def SortByDependency(objects):
     sortedObjects = []
@@ -1124,7 +1127,7 @@ def EmitObjects(root, emit, emitCommon = False):
 def CreateCode(schema, path, generateClasses, generateStubs):
     directory = os.path.dirname(path)
     print directory
-    filename = os.path.basename(path.replace("Plugin", "").replace("API", ""))
+    filename = os.path.basename(path.replace("Plugin", ""))
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
         header_file = os.path.join(directory, DATA_NAMESPACE + "_" + filename + ".h")
@@ -1134,7 +1137,7 @@ def CreateCode(schema, path, generateClasses, generateStubs):
             with open(header_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
-                emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("API", "").replace("Plugin", "").strip())
+                emitter.Line("// C++ classes for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s.json'." % os.path.basename(path))
                 emitter.Line()
                 emitter.Line("// Note: This code is inherently not thread safe. If required, proper synchronisation must be added.")
@@ -1153,7 +1156,7 @@ def CreateCode(schema, path, generateClasses, generateStubs):
             with open(enum_file, "w") as output_file:
                 emitter = Emitter(output_file, INDENT_SIZE)
                 emitter.Line()
-                emitter.Line("// Enumeration code for %s JSON-RPC API." % rpcObj.info["title"].replace("API", "").replace("Plugin", "").strip())
+                emitter.Line("// Enumeration code for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s.json'." % os.path.basename(path))
                 emitter.Line()
                 emitted = EmitEnumRegs(rpcObj, emitter)
