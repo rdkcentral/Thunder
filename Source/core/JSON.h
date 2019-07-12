@@ -57,7 +57,7 @@ namespace Core {
                     // Deserialize object
                     uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset);
 
-                    ASSERT(loaded <= (text.length()+1));
+                    ASSERT(loaded <= (text.length() + 1));
                     DEBUG_VARIABLE(loaded);
                 }
 
@@ -2631,22 +2631,12 @@ namespace Core {
             {
                 String::operator=(text);
             }
-            Variant(const ArrayType<Variant>& array)
-                : JSON::String(false)
-                , _type(type::ARRAY)
-                , _array(Core::ProxyType<ArrayType<Variant>>::Create())
-            {
-                *_array = array;
-            }
-            //Variant(const VariantContainer& object);
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
-                , _array(copy._array)
-                , _object(copy._object)
             {
             }
-            inline Variant(const VariantContainer& object);
+            Variant(const VariantContainer& object);
             virtual ~Variant()
             {
             }
@@ -2654,8 +2644,6 @@ namespace Core {
             {
                 JSON::String::operator=(RHS);
                 _type = RHS._type;
-                _array = RHS._array;
-                _object = RHS._object;
                 return (*this);
             }
 
@@ -2680,23 +2668,20 @@ namespace Core {
                 }
                 return result;
             }
-            const TCHAR* String() const
+            const string String() const
             {
-                if (_type == type::STRING) {
-                    const_cast<Variant*>(this)->_string = Value();
-                }
-                return _string.c_str();
+                return Value();
             }
-            const ArrayType<Variant>& Array() const
+            ArrayType<Variant> Array() const
             {
-                if (_type == type::ARRAY) {
-                    return *_array;
-                } else {
-                    static ArrayType<Variant> empty;
-                    return empty;
-                }
+                ArrayType<Variant> result;
+
+                result.FromString(Value());
+
+                return result;
             }
-            const VariantContainer& Object() const;
+            inline VariantContainer Object() const;
+
             void Boolean(const bool value)
             {
                 _type = type::BOOLEAN;
@@ -2716,11 +2701,13 @@ namespace Core {
                 String::SetQuoted(true);
                 String::operator=(value);
             }
-            void Array(const ArrayType<Variant>& array)
+            void Array(const ArrayType<Variant>& value)
             {
                 _type = type::ARRAY;
-                _array = Core::ProxyType<ArrayType<Variant>>::Create();
-                *_array = array;
+                string data;
+                value.ToString(data);
+                String::SetQuoted(false);
+                String::operator=(data);
             }
             inline void Object(const VariantContainer& object);
 
@@ -2755,17 +2742,10 @@ namespace Core {
                 Object(value);
                 return (*this);
             }
-            const JSON::Variant& operator[](uint32_t index) const;
-            const JSON::Variant& operator[](const TCHAR fieldName[]) const;
             inline void ToString(string& result) const;
             virtual bool IsSet() const override
             {
-                if (_type == type::ARRAY)
-                    return _array->IsSet();
-                else if (_type == type::OBJECT)
-                    return true;
-                else
-                    return String::IsSet();
+                return String::IsSet();
             }
             string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
 
@@ -2799,9 +2779,6 @@ namespace Core {
 
         private:
             type _type;
-            string _string;
-            Core::ProxyType<ArrayType<Variant>> _array;
-            Core::ProxyType<VariantContainer> _object;
         };
 
         class EXTERNAL VariantContainer : public Container {
@@ -3063,52 +3040,24 @@ namespace Core {
         inline Variant::Variant(const VariantContainer& object)
             : JSON::String(false)
             , _type(type::OBJECT)
-            , _object(Core::ProxyType<VariantContainer>::Create())
         {
-            *_object = object;
+            string value;
+            object.ToString(value);
+            String::operator=(value);
         }
+
         inline void Variant::Object(const VariantContainer& object)
         {
             _type = type::OBJECT;
-            _object = Core::ProxyType<VariantContainer>::Create();
-            *_object = object;
+            string value;
+            object.ToString(value);
+            String::operator=(value);
         }
-        inline const VariantContainer& Variant::Object() const
+        inline VariantContainer Variant::Object() const
         {
-            if (_type == type::OBJECT) {
-                return *_object;
-            } else {
-                static VariantContainer empty;
-                return empty;
-            }
-        }
-        inline const JSON::Variant& Variant::operator[](uint32_t index) const
-        {
-            if (_type == type::ARRAY) {
-                ASSERT(index < _array->Length());
-                return _array->operator[](index);
-            } else {
-                static Variant empty;
-                return empty;
-            }
-        }
-        inline const JSON::Variant& Variant::operator[](const TCHAR fieldName[]) const
-        {
-            if (_type == type::OBJECT) {
-                return _object->operator[](fieldName);
-            } else {
-                static Variant empty;
-                return empty;
-            }
-        }
-        inline void Variant::ToString(string& result) const
-        {
-            if (_type == type::ARRAY)
-                _array->ToString(result);
-            else if (_type == type::OBJECT)
-                _object->ToString(result);
-            else
-                String::ToString(result);
+            VariantContainer result;
+            result.FromString(Value());
+            return (result);
         }
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
         {
@@ -3117,15 +3066,14 @@ namespace Core {
                 uint16_t endIndex = FindEndOfScope(stream, maxLength);
                 if (endIndex > 0 && endIndex < maxLength) {
                     result = endIndex + 1;
+                    SetQuoted(false);
                     string str(stream, endIndex + 1);
                     if (stream[0] == '{') {
-                        VariantContainer object;
-                        object.FromString(str);
-                        Object(object);
+                        _type = type::OBJECT;
+                        String::operator=(str);
                     } else {
-                        ArrayType<Variant> array;
-                        array.FromString(str);
-                        Array(array);
+                        _type = type::ARRAY;
+                        String::operator=(str);
                     }
                 }
             } else {
