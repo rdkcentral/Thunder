@@ -910,6 +910,77 @@ namespace Core {
     typedef NumberType<int32_t, true> Signed32;
     typedef NumberType<uint64_t, false> Unsigned64;
     typedef NumberType<int64_t, true> Signed64;
+
+
+    // BitArray
+
+    template<uint8_t MAXBITS>
+    class BitArrayType
+    {
+    public:
+        static_assert(MAXBITS <= 64, "MAXBITS is too big");
+        using T = typename std::conditional<MAXBITS <= 8, std::uint8_t,
+                        typename std::conditional<MAXBITS <= 16, std::uint16_t,
+                                typename std::conditional<MAXBITS <= 32, std::uint32_t, std::uint64_t>::type>::type>::type;
+
+        BitArrayType(uint8_t max = 0, T initial = 0)
+        {
+            Reset(max, initial);
+        }
+
+        void Set(uint8_t index)
+        {
+            ASSERT(index < Size());
+            _value |= ((1 << index) & ((1 << Size()) - 1));
+        }
+
+        void Clr(uint8_t index)
+        {
+            ASSERT(index < Size());
+            _value &= ~(1 << index);
+        }
+
+        bool IsSet(uint8_t index) const
+        {
+            ASSERT(index < Size());
+            return (_value & (1 << index));
+        }
+
+        uint8_t Size() const
+        {
+            return _max;
+        }
+
+        bool Empty() const
+        {
+            return (_value == 0);
+        }
+
+        void Reset(uint8_t max = 0, T initial = 0)
+        {
+            ASSERT(max <= MAXBITS);
+            _max = max;
+            if ((max == 0) ||  (max > MAXBITS)) {
+                _max = MAXBITS;
+            }
+            _value = (initial & ((1 << _max) - 1));
+        }
+
+        uint8_t Find() const
+        {
+            for (uint8_t i = 0; i < Size(); i++) {
+                if (!IsSet(i)) {
+                    return i;
+                }
+            }
+            return (~0);
+        }
+
+    private:
+        T _value;
+        uint8_t _max;
+    };
+
 }
 } // namespace Core
 
