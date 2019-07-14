@@ -8,6 +8,13 @@
 #include "open_cdm_impl.h"
 using namespace WPEFramework;
 
+// If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
+#ifdef __DEBUG__
+unsigned int a_Time = WPEFramework::Core::infinite;
+#else
+unsigned int a_Time = 5000;// Expect time in MS
+#endif
+
 extern Core::CriticalSection _systemLock;
 extern const char EmptyString[];
 
@@ -156,12 +163,6 @@ public:
     {
 
         ASSERT(IsValid() == true);
-	// If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
-        #ifdef __DEBUG__
-        unsigned int a_Time = WPEFramework::Core::infinite;
-        #else
-        unsigned int a_Time = 5000;// Expect time in MS
-        #endif	
 
         _state.WaitState(SESSION_MESSAGE | SESSION_READY,
             a_Time);
@@ -190,12 +191,6 @@ public:
         response.clear();
 
         if (OpenCDMSession::Load() == 0) {
-  	     // If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
-             #ifdef __DEBUG__
-             unsigned int a_Time = WPEFramework::Core::infinite;
-             #else
-             unsigned int a_Time = 5000;// Expect time in MS
-             #endif
 
             _state.WaitState(SESSION_UPDATE, a_Time);
 
@@ -216,12 +211,6 @@ public:
         _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
 
         OpenCDMSession::Update(pbResponse, cbResponse);
-	// If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
-	#ifdef __DEBUG__
-	unsigned int a_Time = WPEFramework::Core::infinite;
-	#else
-	unsigned int a_Time = 5000;// Expect time in MS
-	#endif
 
         _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE | SESSION_ERROR,
             a_Time);
@@ -238,12 +227,6 @@ public:
         _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
 
         if (OpenCDMSession::Remove() == 0) {
-	    // If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
-             #ifdef __DEBUG__
-             unsigned int a_Time = WPEFramework::Core::infinite;
-             #else
-             unsigned int a_Time = 5000;// Expect time in MS
-             #endif
 
             _state.WaitState(SESSION_UPDATE, a_Time);
 
