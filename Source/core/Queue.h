@@ -257,12 +257,10 @@ namespace Core {
         {
             m_State.WaitState(false, DISABLED | ENTRIES | EMPTY, Core::infinite);
         }
-
         inline bool IsEmpty() const
         {
             return (m_Queue.empty());
         }
-
         inline bool IsFull() const
         {
             return (m_Queue.size() >= m_MaxSlots);

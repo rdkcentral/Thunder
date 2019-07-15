@@ -246,10 +246,10 @@ private:
         _adminLock.Lock();
         _isRunning = true;
 
-        if (RPC::WorkerPool::IsAvailable() == true) {
+        if (Core::WorkerPool::IsAvailable() == true) {
             // If we are in the same process space as where a WorkerPool is registered (Main Process or
             // hosting ptocess) use, it!
-            Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<RPC::InvokeServer>::Create();
+            Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<RPC::InvokeServer>::Create(&Core::WorkerPool::Instance());
             ASSERT(engine != nullptr);
 
             _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));

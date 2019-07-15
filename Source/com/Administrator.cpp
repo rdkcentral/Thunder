@@ -266,24 +266,7 @@ namespace RPC {
     }
 
     /* static */ Administrator& Job::_administrator= Administrator::Instance();
-	/* static */ Core::ProxyPoolType<InvokeServer::DispatchJob> InvokeServer::_factory(3);
+	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
 
-	static WorkerPool* _singleton = nullptr;
-
-    /* static */ void WorkerPool::Instance(WorkerPool& instance)
-    {
-        ASSERT (_singleton == nullptr);
-        _singleton = &instance;
-    }
-
-    /* static */ WorkerPool& WorkerPool::Instance()
-    {
-        ASSERT (_singleton != nullptr);
-        return (*_singleton);
-    }
-    /* static */ bool WorkerPool::IsAvailable()
-    {
-        return ((_singleton != nullptr)? true: false);
-    }
 }
 } // namespace Core

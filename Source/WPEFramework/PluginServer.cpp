@@ -735,6 +735,7 @@ namespace PluginHost
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
 
+        _dispatcher.Run();
 
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());
@@ -756,13 +757,12 @@ namespace PluginHost
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        _dispatcher.Block();
+        _dispatcher.Stop();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();
         destructor->Release();
         _inputHandler.Deinitialize();
-        _dispatcher.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
     }
 }
 }

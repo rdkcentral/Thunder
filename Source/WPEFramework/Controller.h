@@ -41,7 +41,7 @@ namespace Plugin {
                 {
                     if (_schedule == false) {
                         _schedule = true;
-                        RPC::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
+                        Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
                     }
                 }
                 virtual void Dispatch()
@@ -64,7 +64,7 @@ namespace Plugin {
             }
             virtual ~Sink()
             {
-                RPC::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(_decoupled));
+                Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(_decoupled));
             }
 
         private:
@@ -224,7 +224,7 @@ namespace Plugin {
         }
 		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
 		{
-            const RPC::WorkerPool::Metadata& snapshot = RPC::WorkerPool::Instance().Snapshot();
+            const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
 
             data.PendingRequests = snapshot.Pending;
             data.PoolOccupation = snapshot.Occupation;

@@ -225,6 +225,9 @@
     <ClInclude Include="DoorBell.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="WorkerPool.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CyclicBuffer.cpp">
@@ -318,6 +321,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DoorBell.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WorkerPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

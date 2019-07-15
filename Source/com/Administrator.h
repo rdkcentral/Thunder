@@ -237,7 +237,7 @@ namespace RPC {
         ReferenceMap _channelReferenceMap;
     };
 
-    class EXTERNAL Job {
+    class EXTERNAL Job : public Core::IDispatch {
     public:
         Job()
             : _message()
@@ -257,40 +257,23 @@ namespace RPC {
             , _handler(copy._handler)
         {
         }
-        ~Job()
+        virtual ~Job()
         {
         }
 
-        Job& operator=(const Job& rhs)
-        {
+        Job& operator=(const Job& rhs) {
             _message = rhs._message;
             _channel = rhs._channel;
             _handler = rhs._handler;
 
             return (*this);
-		}
+        }
 
     public:
-        void Dispatch()
+        static Core::ProxyType<Job> Instance()
         {
-            if (_message->Label() == InvokeMessage::Id()) {
-                Invoke(_channel, _message);
-            } else {
-                ASSERT(_message->Label() == AnnounceMessage::Id());
-                ASSERT(_handler != nullptr);
-
-                _handler->Procedure(*_channel, _message);
-            }
+            return (_factory.Element());
         }
-        static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
-        {
-            Core::ProxyType<InvokeMessage> message(data);
-            ASSERT(message.IsValid() == true);
-            _administrator.Invoke(channel, message);
-            channel->ReportResponse(data);
-        }
-
-    protected:
         void Clear()
         {
             _message.Release();
@@ -303,196 +286,46 @@ namespace RPC {
             _channel = Core::ProxyType<Core::IPCChannel>(channel);
             _handler = handler;
         }
+        virtual void Dispatch() override
+        {
+            if (_message->Label() == InvokeMessage::Id()) {
+                Invoke(_channel, _message);
+            } else {
+                ASSERT(_message->Label() == AnnounceMessage::Id());
+                ASSERT(_handler != nullptr);
+
+                _handler->Procedure(*_channel, _message);
+            }
+        }
+
+		static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
+		{
+            Core::ProxyType<InvokeMessage> message(data);
+            ASSERT(message.IsValid() == true);
+            _administrator.Invoke(channel, message);
+            channel->ReportResponse(data);
+
+		}
 
     private:
         Core::ProxyType<Core::IIPC> _message;
         Core::ProxyType<Core::IPCChannel> _channel;
         Core::IIPCServer* _handler;
+
+        static Core::ProxyPoolType<Job> _factory;
         static Administrator& _administrator;
     };
 
-    struct EXTERNAL WorkerPool {
-
-	    struct Metadata {
-		    uint32_t Pending;
-            uint32_t Occupation;
-            uint32_t Slots;
-            uint32_t* Slot;
-        };
-
-        virtual ~WorkerPool() = default;
-
-        static WorkerPool& Instance();
-        static void Instance(WorkerPool& instance);
-        static bool IsAvailable();
-
-        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
-        virtual const Metadata& Snapshot() const = 0;
-    };
-
-	template <const uint8_t THREAD_COUNT>
-	class WorkerPoolType : public WorkerPool {
-    private:
-        class TimedJob {
-        public:
-            TimedJob()
-                : _job()
-            {
-            }
-            TimedJob(const Core::ProxyType<Core::IDispatch>& job)
-                : _job(job)
-            {
-            }
-            TimedJob(const TimedJob& copy)
-                : _job(copy._job)
-            {
-            }
-            ~TimedJob()
-            {
-            }
-
-            TimedJob& operator=(const TimedJob& RHS)
-            {
-                _job = RHS._job;
-                return (*this);
-            }
-            bool operator==(const TimedJob& RHS) const
-            {
-                return (_job == RHS._job);
-            }
-            bool operator!=(const TimedJob& RHS) const
-            {
-                return (_job != RHS._job);
-            }
-
-        public:
-            uint64_t Timed(const uint64_t /* scheduledTime */)
-            {
-                WorkerPoolType <THREAD_COUNT>::Instance().Submit(_job);
-                _job.Release();
-
-                // No need to reschedule, just drop it..
-                return (0);
-            }
-
-        private:
-            Core::ProxyType<Core::IDispatchType<void>> _job;
-        };
-
-        typedef Core::ThreadPoolType<Core::Job, THREAD_COUNT> ThreadPool;
-
-    public:
-        WorkerPoolType() = delete;
-        WorkerPoolType(const WorkerPoolType<THREAD_COUNT>&) = delete;
-        WorkerPoolType<THREAD_COUNT>& operator=(const WorkerPoolType<THREAD_COUNT>&) = delete;
-
-        WorkerPoolType(const uint32_t stackSize)
-            : _workers(stackSize, _T("WorkerPool::Implementation"))
-            , _timer(stackSize, _T("WorkerPool::Timer"))
-        {
-        }
-        virtual ~WorkerPoolType()
-        {
-        }
-
-    public:
-        // A-synchronous calls. If the method returns, the workers are accepting and handling work.
-        inline void Run()
-        {
-            _workers.Run();
-        }
-        // A-synchronous calls. If the method returns, the workers are all blocked, no new work will
-        // be accepted. Work in progress will be completed. Use the WaitState to wait for the actual block.
-        inline void Block()
-        {
-            _workers.Block();
-        }
-        inline void Wait(const uint32_t waitState, const uint32_t time)
-        {
-            _workers.Wait(waitState, time);
-        }
-        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) override
-        {
-            _workers.Submit(Core::Job(job), Core::infinite);
-        }
-        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
-        {
-            _timer.Schedule(time, TimedJob(job));
-        }
-        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) override
-        {
-            // First check the timer if it can be removed from there.
-            _timer.Revoke(TimedJob(job));
-
-            // Also make sure it is taken of the WorkerPoolImplementation, if applicable.
-            return (_workers.Revoke(Core::Job(job), waitTime));
-        }
-        virtual const Metadata& Snapshot() const override
-        {
-            _snapshot.Pending = _workers.Pending();
-            _snapshot.Occupation = _workers.Active();
-            _snapshot.Slots = THREAD_COUNT;
-            _snapshot.Slot = _slots;
-
-            for (uint8_t teller = 0; (teller < THREAD_COUNT); teller++) {
-                // Example of why copy-constructor and assignment constructor should be equal...
-                _slots[teller] = _workers[teller].Runs();
-            }
-
-			return (_snapshot);
-        }
-        inline ::ThreadId ThreadId(const uint8_t index) const
-        {
-            return (index == 0 ? _timer.ThreadId() : _workers.ThreadId(index - 1));
-        }
-
-    private:
-        ThreadPool _workers;
-        Core::TimerType<TimedJob> _timer;
-        mutable Metadata _snapshot;
-        mutable uint32_t _slots[THREAD_COUNT];
-    };
-
     class EXTERNAL InvokeServer : public Core::IIPCServer {
-    private:
-        class DispatchJob : public Core::IDispatch, public RPC::Job {
-        public:
-            DispatchJob(const DispatchJob&) = delete;
-            DispatchJob& operator=(const DispatchJob&) = delete;
-
-            DispatchJob()
-                : RPC::Job()
-            {
-            }
-            virtual ~DispatchJob()
-            {
-            }
-
-        public:
-            inline void Clear()
-            {
-                RPC::Job::Clear();
-            }
-            inline void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message, Core::IIPCServer* handler)
-            {
-                RPC::Job::Set(channel, message, handler);
-            }
-            virtual void Dispatch() override
-            {
-                RPC::Job::Dispatch();
-            }
-        };
-
     public:
         InvokeServer(const InvokeServer&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
-        InvokeServer()
-            : _threadPoolEngine(RPC::WorkerPool::Instance())
+        InvokeServer(Core::WorkerPool* workers)
+            : _threadPoolEngine(*workers)
             , _handler(nullptr)
         {
+            ASSERT(workers != nullptr);
         }
         ~InvokeServer()
         {
@@ -507,16 +340,15 @@ namespace RPC {
     private:
         virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
         {
-            Core::ProxyType<DispatchJob> job(_factory.Element());
+            Core::ProxyType<Job> job(Job::Instance());
 
             job->Set(source, message, _handler);
             _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
         }
 
     private:
-        RPC::WorkerPool& _threadPoolEngine;
+        Core::WorkerPool& _threadPoolEngine;
         Core::IIPCServer* _handler;
-        static Core::ProxyPoolType<DispatchJob> _factory;
     };
 
     template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>

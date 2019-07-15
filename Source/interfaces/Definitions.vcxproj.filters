@@ -4,30 +4,6 @@
     <ClCompile Include="Definitions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="json\JsonEnum_Browser.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_Messenger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_NetworkControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_RemoteControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_StateControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_Streamer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_TestUtility.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="json\JsonEnum_WifiControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
@@ -46,58 +22,26 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <CustomBuild Include="json\BrowserAPI.json" />
+    <CustomBuild Include="json\DeviceInfoAPI.json" />
+    <CustomBuild Include="json\DIALServerAPI.json" />
+    <CustomBuild Include="json\LocationSyncAPI.json" />
+    <CustomBuild Include="json\MessengerAPI.json" />
+    <CustomBuild Include="json\MonitorAPI.json" />
+    <CustomBuild Include="json\NetworkControlAPI.json" />
+    <CustomBuild Include="json\OpenCDMiAPI.json" />
+    <CustomBuild Include="json\RemoteControlAPI.json" />
+    <CustomBuild Include="json\SparkAPI.json" />
+    <CustomBuild Include="json\StateControlAPI.json" />
+    <CustomBuild Include="json\StreamerAPI.json" />
+    <CustomBuild Include="json\SystemCommandsAPI.json" />
+    <CustomBuild Include="json\TestUtilityAPI.json" />
+    <CustomBuild Include="json\TimeSyncAPI.json" />
+    <CustomBuild Include="json\WebKitBrowserAPI.json" />
+    <CustomBuild Include="json\WifiControlAPI.json" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="json\BrowserAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\common.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\DeviceInfoAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\DIALServerAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\LocationSyncAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\MessengerAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\MonitorAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\NetworkControlAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\OpenCDMiAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\RemoteControlAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\SparkAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\StateControlAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\StreamerAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\SystemCommandsAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\TestUtilityAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\TimeSyncAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\WebKitBrowserAPI.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\WifiControlAPI.json">
       <Filter>JSON Files</Filter>
     </None>
   </ItemGroup>

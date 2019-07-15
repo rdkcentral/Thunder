@@ -79,6 +79,7 @@
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
 #include "XGetopt.h"
+#include "WorkerPool.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "core.lib")

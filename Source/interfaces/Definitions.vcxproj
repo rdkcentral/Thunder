@@ -20,294 +20,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Definitions.cpp" />
-    <ClCompile Include="json\JsonEnum_Browser.cpp" />
-    <ClCompile Include="json\JsonEnum_Messenger.cpp" />
-    <ClCompile Include="json\JsonEnum_NetworkControl.cpp" />
-    <ClCompile Include="json\JsonEnum_RemoteControl.cpp" />
-    <ClCompile Include="json\JsonEnum_StateControl.cpp" />
-    <ClCompile Include="json\JsonEnum_Streamer.cpp" />
-    <ClCompile Include="json\JsonEnum_TestUtility.cpp" />
-    <ClCompile Include="json\JsonEnum_WifiControl.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="definitions.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="json\BrowserAPI.json">
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
       <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
-    </CustomBuild>
-    <None Include="json\common.json" />
-    <CustomBuild Include="json\DeviceInfoAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\DIALServerAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\LocationSyncAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\MessengerAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\MonitorAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\NetworkControlAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)JsonData_NetworkControl.h;%(RelativeDir)JsonEnum_NetworkControl.cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RelativeDir)JsonData_NetworkControl.h;%(RelativeDir)JsonEnum_NetworkControl.cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RelativeDir)JsonData_NetworkControl.h;%(RelativeDir)JsonEnum_NetworkControl.cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RelativeDir)JsonData_NetworkControl.h;%(RelativeDir)JsonEnum_NetworkControl.cpp</Outputs>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
-      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ClCompile</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ClCompile</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">ClCompile</OutputItemType>
-      <OutputItemType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">ClCompile</OutputItemType>
-      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</TreatOutputAsContent>
-      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</TreatOutputAsContent>
-      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</TreatOutputAsContent>
-      <TreatOutputAsContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</TreatOutputAsContent>
-    </CustomBuild>
-    <CustomBuild Include="json\OpenCDMiAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-    </CustomBuild>
-    <CustomBuild Include="json\RemoteControlAPI.json">
-      <FileType>Document</FileType>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </DeploymentContent>
-      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </DeploymentContent>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\SparkAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\StateControlAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\StreamerAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\SystemCommandsAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\TestUtilityAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\TimeSyncAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\WebKitBrowserAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-    </CustomBuild>
-    <CustomBuild Include="json\WifiControlAPI.json">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </CustomBuild>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -368,28 +91,40 @@
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
-    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
-    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
-    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
-    <CustomBuildBeforeTargets>Build</CustomBuildBeforeTargets>
+    <CustomBuildBeforeTargets>
+    </CustomBuildBeforeTargets>
+    <CustomBuildAfterTargets>
+    </CustomBuildAfterTargets>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -420,7 +155,19 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Message>JSONGenerator</Message>
     </CustomBuildStep>
+    <CustomBuild>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSONGenerator</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>%(RootDir)%(directory)JsonEnum_%(Filename).cpp</Outputs>
+      <OutputItemType>ClCompile</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -451,7 +198,19 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Message>JSONGenerator</Message>
     </CustomBuildStep>
+    <CustomBuild>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSONGenerator</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>%(RootDir)%(directory)JsonEnum_%(Filename).cpp</Outputs>
+      <OutputItemType>ClCompile</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -486,7 +245,19 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Message>JSONGenerator</Message>
     </CustomBuildStep>
+    <CustomBuild>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSONGenerator</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>%(RootDir)%(directory)JsonEnum_%(Filename).cpp</Outputs>
+      <OutputItemType>ClCompile</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -521,7 +292,19 @@
     </CustomBuildStep>
     <CustomBuildStep>
       <TreatOutputAsContent>true</TreatOutputAsContent>
+      <Message>JSONGenerator</Message>
     </CustomBuildStep>
+    <CustomBuild>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+    </CustomBuild>
+    <CustomBuild>
+      <Message>JSONGenerator</Message>
+    </CustomBuild>
+    <CustomBuild>
+      <Outputs>%(RootDir)%(directory)JsonEnum_%(Filename).cpp</Outputs>
+      <OutputItemType>ClCompile</OutputItemType>
+      <TreatOutputAsContent>true</TreatOutputAsContent>
+    </CustomBuild>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

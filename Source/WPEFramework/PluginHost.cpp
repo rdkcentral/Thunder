@@ -56,7 +56,6 @@ namespace PluginHost {
     extern "C" {
 
 #ifndef __WIN32__
-    static Core::Event g_QuitEvent(false, true);
 
     void ExitDaemonHandler(int signo)
     {
@@ -67,7 +66,9 @@ namespace PluginHost {
         }
 
         if (signo == SIGTERM) {
-            g_QuitEvent.SetEvent();
+            if (Core::WorkerPool::IsAvailable() == true) {
+				Core::WorkerPool::Instance().Stop();
+			}
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
@@ -374,9 +375,10 @@ namespace PluginHost {
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
 
+
 #ifndef __WIN32__
         if (_background == true) {
-            g_QuitEvent.Lock(Core::infinite);
+            Core::WorkerPool::Instance().Join();
         } else
 #endif
         {
@@ -426,7 +428,7 @@ namespace PluginHost {
                     break;
                 }
                 case 'S': {
-                    const RPC::WorkerPool::Metadata metaData = RPC::WorkerPool::Instance().Snapshot();
+                    const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
                     PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
 
                     printf("\nServer statistics:\n");
@@ -556,7 +558,7 @@ namespace PluginHost {
 
                     printf("\nThreadPool thread[%c] callstack:\n", keyPress);
                     printf("============================================================\n");
-                    PublishCallstack(_dispatcher->WorkerPool().ThreadId((keyPress - '0')));
+                    PublishCallstack(_dispatcher->WorkerPool().Index(keyPress - '0').ThreadId());
                     break;
 #endif
 

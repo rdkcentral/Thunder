@@ -306,16 +306,15 @@ namespace PluginHost {
 #endif
         };
 
-        class WorkerPoolImplementation : public RPC::WorkerPoolType<THREADPOOL_COUNT> {
+        class WorkerPoolImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
-            WorkerPoolImplementation& operator= (const WorkerPoolImplementation&) = delete;
+            WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : RPC::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
+                : Core::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
             {
-                RPC::WorkerPool::Instance(*this);
             }
             virtual ~WorkerPoolImplementation()
             {
@@ -1403,7 +1402,7 @@ namespace PluginHost {
                 {
                     _parent.Evaluate();
                 }
-                inline RPC::WorkerPool& WorkerPool()
+                inline Core::WorkerPool& WorkerPool()
                 {
                     return (_parent.WorkerPool());
                 }
@@ -1420,7 +1419,7 @@ namespace PluginHost {
                 , _notificationLock()
                 , _services()
                 , _notifiers()
-                , _engine(Core::ProxyType<RPC::InvokeServer>::Create())
+                , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
                 , _processAdministrator(config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), _engine)
                 , _server(server)
                 , _subSystems(this)
@@ -1697,7 +1696,7 @@ namespace PluginHost {
 
                 RecursiveNotification(index);
             }
-            inline RPC::WorkerPool& WorkerPool()
+            inline Core::WorkerPool& WorkerPool()
             {
                 return (_server.WorkerPool());
             }
