@@ -554,12 +554,13 @@ namespace PluginHost {
                 case '5':
                 case '6':
                 case '7':
-                case '8':
-
-                    printf("\nThreadPool thread[%c] callstack:\n", keyPress);
+                case '8': {
+                    uint32_t threadId = _dispatcher->WorkerPool().Index(keyPress - '0').ThreadId();
+                    printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
-                    PublishCallstack(_dispatcher->WorkerPool().Index(keyPress - '0').ThreadId());
+                    PublishCallstack(threadId);
                     break;
+                }
 #endif
 
                 case '?':

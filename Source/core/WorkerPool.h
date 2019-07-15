@@ -121,7 +121,7 @@ namespace Core {
             uint32_t* Slot;
         };
 
-	public:
+    public:
 	static WorkerPool& Instance() {
             ASSERT(_instance != nullptr);
             return (*_instance);

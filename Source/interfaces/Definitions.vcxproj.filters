@@ -23,25 +23,57 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="json\BrowserAPI.json" />
-    <CustomBuild Include="json\DeviceInfoAPI.json" />
-    <CustomBuild Include="json\DIALServerAPI.json" />
-    <CustomBuild Include="json\LocationSyncAPI.json" />
-    <CustomBuild Include="json\MessengerAPI.json" />
-    <CustomBuild Include="json\MonitorAPI.json" />
-    <CustomBuild Include="json\NetworkControlAPI.json" />
-    <CustomBuild Include="json\OpenCDMiAPI.json" />
-    <CustomBuild Include="json\RemoteControlAPI.json" />
-    <CustomBuild Include="json\SparkAPI.json" />
-    <CustomBuild Include="json\StateControlAPI.json" />
-    <CustomBuild Include="json\StreamerAPI.json" />
-    <CustomBuild Include="json\SystemCommandsAPI.json" />
-    <CustomBuild Include="json\TestUtilityAPI.json" />
-    <CustomBuild Include="json\TimeSyncAPI.json" />
-    <CustomBuild Include="json\WebKitBrowserAPI.json" />
-    <CustomBuild Include="json\WifiControlAPI.json" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="json\BrowserAPI.json">
+    <None Include="json\Browser.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\DeviceInfo.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\DIALServer.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\LocationSync.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\Messenger.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\Monitor.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\NetworkControl.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\OpenCDMi.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\RemoteControl.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\Spark.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\StateControl.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\Streamer.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\SystemCommands.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\TestUtility.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\TimeSync.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\WebKitBrowser.json">
+      <Filter>JSON Files</Filter>
+    </None>
+    <None Include="json\WifiControl.json">
       <Filter>JSON Files</Filter>
     </None>
   </ItemGroup>
