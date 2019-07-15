@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.2"
+VERSION="1.3.3"
 
 class Trace:
     def __init__(self):
@@ -32,6 +32,7 @@ except:
 INDENT_SIZE = 4
 VERIFY = True
 ALWAYS_COPYCTOR = False
+KEEP_EMPTY = False
 CLASSNAME_FROM_REF = True
 DEFAULT_EMPTY_STRING = ""
 DEFAULT_INT_SIZE = 32
@@ -653,7 +654,7 @@ def GetNamespace(root, obj, full = True):
     return namespace
 
 
-def EmitEnumRegs(root, emit):
+def EmitEnumRegs(root, emit, header_file):
     def EmitEnumRegistration(root, enum, full = True):
         fullname = (GetNamespace(root, enum) if full else "%s::%s::" % (DATA_NAMESPACE, root.CppClass())) + enum.CppClass()
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
@@ -666,7 +667,7 @@ def EmitEnumRegs(root, emit):
     # Enumeration conversion code
     emit.Line("#include \"../definitions.h\"")
     emit.Line("#include <core/Enumerate.h>")
-    emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, root.CppClass()))
+    emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line()
     emit.Line("namespace %s {" % FRAMEWORK_NAMESPACE)
     count = 0
@@ -704,7 +705,7 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line("#include \"%s.h\"" % root.JsonName())
         emit.Line("#include <%s%s>" % (IF_PATH, header_file))
         for inc in root.includes:
-            emit.Line("#include <%sJsonData_%s.h>" % (IF_PATH, inc))
+            emit.Line("#include <%s%s_%s.h>" % (IF_PATH, DATA_NAMESPACE, inc))
         emit.Line()
 
         # Registration prototypes
@@ -1147,7 +1148,7 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                     trace.Success("JSON data classes generated in '%s'." % output_file.name)
                 else:
                     trace.Success("No JSON data classes generated for '%s'." % filename)
-            if not emitted:
+            if not emitted and not KEEP_EMPTY:
                 try:
                     os.remove(header_file)
                 except:
@@ -1159,10 +1160,12 @@ def CreateCode(schema, path, generateClasses, generateStubs):
                 emitter.Line("// Enumeration code for %s JSON-RPC API." % rpcObj.info["title"].replace("Plugin", "").strip())
                 emitter.Line("// Generated automatically from '%s.json'." % os.path.basename(path))
                 emitter.Line()
-                emitted = EmitEnumRegs(rpcObj, emitter)
+                emitted = EmitEnumRegs(rpcObj, emitter, filename)
                 if emitted:
                     trace.Success("JSON enumeration code generated in '%s'." % output_file.name)
-            if not emitted:
+                else:
+                    trace.Success("No JSON enumeration code generated for '%s'." % filename)
+            if not emitted and not KEEP_EMPTY:
                 try:
                     os.remove(enum_file)
                 except:
@@ -1632,6 +1635,7 @@ if __name__ == "__main__":
     argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory (default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--copy-ctor", dest="copy_ctor", action="store_true", default=False, help="always emit a copy constructor and assignment operator for a class (default: emit only when it appears to be needed)")
+    argparser.add_argument("--keep-empty", dest="keep_empty", action="store_true", default=False, help="keep generated files that have no content (default: remove empty cpp/h files)")
     argparser.add_argument("--no-ref-names", dest="no_ref_names", action="store_true", default=False, help="do not derive class names from $refs (default: derive class names from $ref)")
     argparser.add_argument("--def-string", dest="def_string", metavar="STRING", type=str, action="store", default=DEFAULT_EMPTY_STRING, help="default string initialisation (default: \"%s\")" % DEFAULT_EMPTY_STRING)
     argparser.add_argument("--def-int-size", dest="def_int_size", metavar="SIZE", type=int, action="store", default=DEFAULT_INT_SIZE, help="default integer size in bits (default: %i)" % DEFAULT_INT_SIZE)
@@ -1640,6 +1644,7 @@ if __name__ == "__main__":
     VERIFY = not args.no_warnings
     INDENT_SIZE = args.indent_size
     ALWAYS_COPYCTOR = args.copy_ctor
+    KEEP_EMPTY = args.keep_empty
     CLASSNAME_FROM_REF = not args.no_ref_names
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
