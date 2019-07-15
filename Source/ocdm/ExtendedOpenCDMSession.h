@@ -8,6 +8,13 @@
 #include "open_cdm_impl.h"
 using namespace WPEFramework;
 
+// If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
+#ifdef __DEBUG__
+unsigned int a_Time = WPEFramework::Core::infinite;
+#else
+unsigned int a_Time = 5000;// Expect time in MS
+#endif
+
 extern Core::CriticalSection _systemLock;
 extern const char EmptyString[];
 
@@ -158,7 +165,7 @@ public:
         ASSERT(IsValid() == true);
 
         _state.WaitState(SESSION_MESSAGE | SESSION_READY,
-            WPEFramework::Core::infinite);
+            a_Time);
 
         if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
             challenge = _message;
@@ -185,7 +192,7 @@ public:
 
         if (OpenCDMSession::Load() == 0) {
 
-            _state.WaitState(SESSION_UPDATE, WPEFramework::Core::infinite);
+            _state.WaitState(SESSION_UPDATE, a_Time);
 
             if (_key == OCDM::ISession::Usable) {
                 ret = 0;
@@ -205,8 +212,8 @@ public:
 
         OpenCDMSession::Update(pbResponse, cbResponse);
 
-        _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE,
-            WPEFramework::Core::infinite);
+        _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE | SESSION_ERROR,
+            a_Time);
         if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
             response = "message:" + _message;
         }
@@ -221,7 +228,7 @@ public:
 
         if (OpenCDMSession::Remove() == 0) {
 
-            _state.WaitState(SESSION_UPDATE, WPEFramework::Core::infinite);
+            _state.WaitState(SESSION_UPDATE, a_Time);
 
             if (_key == OCDM::ISession::StatusPending) {
                 ret = 0;
