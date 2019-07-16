@@ -9,7 +9,7 @@ namespace WPEFramework {
 
 namespace Core {
 
-    class WorkerPool {
+    class EXTERNAL WorkerPool {
     private:
         WorkerPool() = delete;
         WorkerPool(const WorkerPool&) = delete;
@@ -66,7 +66,7 @@ namespace Core {
             Core::ProxyType<Core::IDispatch> _job;
         };
 
-    public:
+    protected:
         class Minion : public Core::Thread {
         private:
             Minion(const Minion&) = delete;
@@ -156,6 +156,7 @@ namespace Core {
 	}
         void Run()
         {
+            _handleQueue.Enable();
             for (uint8_t index = 1; index < _metadata.Slots; index++) {
                 Minion& minion = Index(index);
                 minion.Set(*this, index);
@@ -164,11 +165,28 @@ namespace Core {
         }
         void Stop()
         {
+            _handleQueue.Disable();
             for (uint8_t index = 1; index < _metadata.Slots; index++) {
                 Minion& minion = Index(index);
                 minion.Block();
                 minion.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
             }
+        }
+
+        inline ThreadId Id(const uint8_t index) const {
+            ThreadId result = 0;
+
+            if (index == 0) {
+                result = _timer.ThreadId();
+            }
+            else if (index == 1) {
+                result = 0;
+            }
+            else if (index < _metadata.Slots) {
+                result = const_cast<WorkerPool&>(*this).Index(index - 1).ThreadId();
+            }
+
+            return (result);
         }
 
     protected:
@@ -177,15 +195,6 @@ namespace Core {
         virtual Minion& Index(const uint8_t index) = 0;
         virtual bool Running() = 0;
 
-        inline void Mode(const bool enabled)
-        {
-            if (enabled == true) {
-                _handleQueue.Enable();
-            }
-            else {
-                _handleQueue.Disable();
-            }
-        }
         void Process(const uint8_t index)
         {
             Job newRequest;
@@ -225,20 +234,19 @@ namespace Core {
         }
         virtual ~WorkerPoolType()
         {
-            WorkerPool::Mode(false);
-
-            for (uint8_t index = 1; index < THREAD_COUNT; index++) {
-                _minions[index].Stop();
-                _minions[index].Wait(Core::Thread::STOPPED, Core::infinite);
-            }
+            Stop();
         }
 
+        inline uint32_t ThreadId(const uint8_t index) const 
+        {
+            return (((index > 0) && (index < THREAD_COUNT)) ? _minions[index-1].ThreadId() : static_cast<uint32_t>(~0));
+        }
+
+    private:
         virtual Minion& Index(const uint8_t index) override 
         {
             return (_minions[index-1]);
         }
-
-    private:
         virtual bool Running() override
         {
             return (true);

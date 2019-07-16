@@ -21,7 +21,7 @@
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems":  ["Decryption"]
+        "subsystems": [ "Decryption" ]
       }
     },
     {
@@ -64,6 +64,15 @@
         "root": {
           "outofprocess": true
         }
+      }
+    },
+    {
+      "callsign": "Monitor",
+      "locator": "libMonitor.so",
+      "classname": "Monitor",
+      "autostart": true,
+      "configuration": {
+
       }
     },
     {

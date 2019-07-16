@@ -555,7 +555,7 @@ namespace PluginHost {
                 case '6':
                 case '7':
                 case '8': {
-                    uint32_t threadId = _dispatcher->WorkerPool().Index(keyPress - '0').ThreadId();
+                    uint32_t threadId = _dispatcher->WorkerPool().ThreadId(keyPress - '0');
                     printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
                     PublishCallstack(threadId);

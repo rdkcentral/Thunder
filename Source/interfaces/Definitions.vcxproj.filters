@@ -22,59 +22,22 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="json\BrowserAPI.json" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="json\Browser.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\DeviceInfo.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\DIALServer.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\LocationSync.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\Messenger.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\Monitor.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\NetworkControl.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\OpenCDMi.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\RemoteControl.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\Spark.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\StateControl.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\Streamer.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\SystemCommands.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\TestUtility.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\TimeSync.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\WebKitBrowser.json">
-      <Filter>JSON Files</Filter>
-    </None>
-    <None Include="json\WifiControl.json">
-      <Filter>JSON Files</Filter>
-    </None>
+    <CustomBuild Include="json\Browser.json" />
+    <CustomBuild Include="json\DeviceInfo.json" />
+    <CustomBuild Include="json\DIALServer.json" />
+    <CustomBuild Include="json\LocationSync.json" />
+    <CustomBuild Include="json\Messenger.json" />
+    <CustomBuild Include="json\Monitor.json" />
+    <CustomBuild Include="json\NetworkControl.json" />
+    <CustomBuild Include="json\OpenCDMi.json" />
+    <CustomBuild Include="json\RemoteControl.json" />
+    <CustomBuild Include="json\Spark.json" />
+    <CustomBuild Include="json\StateControl.json" />
+    <CustomBuild Include="json\Streamer.json" />
+    <CustomBuild Include="json\SystemCommands.json" />
+    <CustomBuild Include="json\TestUtility.json" />
+    <CustomBuild Include="json\TimeSync.json" />
+    <CustomBuild Include="json\WebKitBrowser.json" />
+    <CustomBuild Include="json\WifiControl.json" />
   </ItemGroup>
 </Project>

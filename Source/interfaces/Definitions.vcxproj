@@ -270,7 +270,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -313,7 +313,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -360,7 +360,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -407,7 +407,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>

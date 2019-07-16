@@ -46,7 +46,7 @@ namespace Process {
             Core::WorkerPool::Join();
         }
         void Stop() {
-            Core::WorkerPool::Mode(false);
+            Core::WorkerPool::Stop();
 	}
 
     protected:
