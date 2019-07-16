@@ -10,9 +10,9 @@ using namespace WPEFramework;
 
 // If we build in release, we do not want to "hang" forever, forcefull close after 5S waiting...
 #ifdef __DEBUG__
-unsigned int a_Time = WPEFramework::Core::infinite;
+const unsigned int a_Time = WPEFramework::Core::infinite;
 #else
-unsigned int a_Time = 5000;// Expect time in MS
+const unsigned int a_Time = 5000;// Expect time in MS
 #endif
 
 extern Core::CriticalSection _systemLock;
