@@ -16,12 +16,27 @@
       "params": {
         "type": "object",
         "properties": {
+          "hostkeys": {
+            "description": "Dropbear SSH service - generate host keys",
+            "type": "string",
+            "default": "-R"
+          },
+          "portflag": {
+            "description": "Dropbear SSH server listening port",
+            "type": "string",
+            "default": "-p"
+          },
           "port": {
             "description": "Dropbear SSH server listening port",
             "type": "string",
             "default": "22"
           }
-        }
+        },
+	"required": [
+          "hostkeys",
+          "portflag",
+          "port"
+        ]
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -46,6 +61,116 @@
       "errors": [
         {
           "description": "Failed to close Dropbear SSH Service",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "DropbearServer.1.get_total_sessions_served": {
+      "summary": "Get count of total number of successful SSH client sessions handled by Dropbear SSH Service.",
+      "description": "With this method Dropbear SSH service shall provide the total number SSH client sessions.",
+      "result": {
+	"type": "number",
+        "size": 8,
+        "description": "Total Number of client sessions",
+        "example": 0
+      },
+      "errors": [
+        {
+          "description": "Failed to get client sessions count",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "DropbearServer.1.get_active_sessions_count": {
+      "summary": "Get count of currently active SSH client sessions maintained by Dropbear SSH Service.",
+      "description": "With this method Dropbear SSH service shall provide the count of active SSH client sessions.",
+      "result": {
+	"type": "number",
+        "size": 8,
+        "description": "Number of client sessions count",
+        "example": 0
+      },
+      "errors": [
+        {
+          "description": "Failed to get client sessions count",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "DropbearServer.1.get_active_sessions_info": {
+      "summary": "Get details of currently active SSH client sessions maintained by Dropbear SSH Service.",
+      "description": "With this method Dropbear SSH service shall provide the full details of active SSH client sessions.",
+      "readonly": true,
+      "result": {
+	"type": "array",
+	"items": {
+          "type": "object",
+          "properties": {
+            "pid": {
+              "description": "SSH client process ID",
+              "type": "number",
+              "example": 268,
+              "size": 64
+            },
+            "ipaddress": {
+              "description": "SSH client connected from this IP address",
+              "type": "string",
+              "example": "192.168.33.57",
+              "size": 128
+            },
+            "timestamp": {
+              "description": "SSH client connected at this timestamp",
+              "type": "string",
+              "example": "Sun Jun 30 21:49:08 2019",
+              "size": 128
+            }
+          },
+          "required": [
+            "pid",
+            "ipaddress",
+            "timestamp"
+          ]
+	}
+      },
+      "errors": [
+        {
+          "description": "Failed to get client sessions details",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unknown error",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "DropbearServer.1.close_client_session": {
+      "summary": "Close and active SSH client session.",
+      "description": "With this method Dropbear an active SSH client session shall be closed.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "clientpid": {
+            "description": "SSH client process id",
+            "type": "number",
+            "default": "268"
+          }
+        }
+      },
+      "errors": [
+        {
+          "description": "Failed to close SSH client session",
           "$ref": "#/common/errors/general"
         },
         {
