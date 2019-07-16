@@ -15,42 +15,61 @@
       "properties": {
         "limit": {
           "type": "number",
-          "signed": true,
+          "size": 8,
+          "signed": false,
           "example": 3,
           "description": "Maximum number or restarts to be attempted"
         },
-        "windowseconds": {
+        "window": {
           "type": "number",
-          "signed": true,
+          "size": 16,
+          "signed": false,
           "example": 60,
           "description": "Time period within which failures must happen for the limit to be considered crossed"
         }
       },
       "required": [
         "limit",
-        "windowseconds"
+        "window"
       ]
+    },
+    "restart": {
+      "type": "object",
+      "properties": {
+        "memory": {
+          "$ref": "#/definitions/restartsettings",
+          "description": "Restart limits for memory consumption related failures applying to the plugin"
+        },
+        "operational": {
+          "$ref": "#/definitions/restartsettings",
+          "description": "Restart limits for stability failures applying to the plugin"
+        }
+      }
     },
     "measurement": {
       "type": "object",
       "properties": {
         "min": {
           "type": "number",
+          "size": 64,
           "example": 0,
           "description": "Minimal value measured"
         },
         "max": {
           "type": "number",
+          "size": 64,
           "example": 100,
           "description": "Maximal value measured"
         },
         "average": {
           "type": "number",
+          "size": 64,
           "example": 50,
           "description": "Average of all measurements"
         },
         "last": {
           "type": "number",
+          "size": 64,
           "example": 100,
           "description": "Last measured value"
         }
@@ -113,13 +132,9 @@
           "example": "callsign",
           "type": "string"
         },
-        "memoryrestartsettings": {
-          "$ref": "#/definitions/restartsettings",
-          "description": "Restart limits for memory consumption related failures applying to the plugin"
-        },
-        "operationalrestartsettings": {
-          "$ref": "#/definitions/restartsettings",
-          "description": "Restart limits for stability failures applying to the plugin"
+        "restart": {
+          "$ref": "#/definitions/restart",
+          "description": "Restart limits for memory/operational failures applying to the plugin"
         }
       },
       "required": [
@@ -146,7 +161,7 @@
       "result": {
         "type": "array",
         "items": {
-            "$ref": "#/definitions/info"
+          "$ref": "#/definitions/info"
         }
       }
     },
@@ -177,19 +192,19 @@
             "type": "string",
             "example": "WebServer"
           },
-          "operationalrestartsettings": {
+          "operational": {
             "description": "Restart setting for memory consumption type of failures",
             "$ref": "#/definitions/restartsettings"
           },
-          "memoryrestartsettings": {
+          "memory": {
             "description": "Restart setting for stability type of failures",
             "$ref": "#/definitions/restartsettings"
           }
         },
         "required": [
           "callsign",
-          "operationalrestartsettings",
-          "memoryrestartsettings"
+          "operational",
+          "memory"
         ]
       },
       "result": {
