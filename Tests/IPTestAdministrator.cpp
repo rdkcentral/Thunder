@@ -37,7 +37,8 @@ IPTestAdministrator::IPTestAdministrator(OtherSideMain otherSideMain)
       // In child process
       otherSideMain(*this);
 
-      WPEFramework::Core::Singleton::Dispose();
+      // TODO: should we clean up stuff here or not?
+      //WPEFramework::Core::Singleton::Dispose();
 
       // Make sure no gtest cleanup code is called (summary etc).
       abort();
