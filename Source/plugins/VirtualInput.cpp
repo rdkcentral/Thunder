@@ -16,9 +16,11 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
 
-        namespace PluginHost
+namespace PluginHost
 {
-    /*static */ VirtualInput* InputHandler::_inputHandler;
+    /*static */ VirtualInput* InputHandler::_keyHandler;
+    /*static */ VirtualInput* InputHandler::_mouseHandler;
+    /*static */ VirtualInput* InputHandler::_touchHandler;
 
     uint32_t VirtualInput::KeyMap::Load(const string& keyMap)
     {
@@ -269,6 +271,46 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
             _lock.Unlock();
         }
+    }
+
+    uint32_t VirtualInput::AxisEvent(const int16_t x, const int16_t y)
+    {
+        if (x != 0) {
+            SendKey(AXIS_HORIZONTAL_MOTION, x);
+        }
+        if (y != 0) {
+            SendKey(AXIS_VERTICAL_MOTION, y);
+        }
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::PointerMotionEvent(const int16_t x, const int16_t y)
+    {
+        if (x != 0) {
+            SendKey(POINTER_HORIZONTAL_MOTION, x);
+        }
+        if (y != 0) {
+            SendKey(POINTER_VERTICAL_MOTION, y);
+        }
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::PointerButtonEvent(const bool pressed, const uint8_t button)
+    {
+        SendKey((pressed? POINTER_PRESSED : POINTER_RELEASED), button);
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::TouchEvent(const uint8_t index, uint16_t state, uint16_t x, uint16_t y)
+    {
+        SendKey(TOUCH_INDEX, index);
+        SendKey(TOUCH_HORIZONTAL_POSITION, x);
+        SendKey(TOUCH_VERTICAL_POSITION, y);
+        if (state != 0) {
+            SendKey((state == 1? TOUCH_RELEASED : TOUCH_PRESSED), index);
+        }
+        SendKey(TOUCH_COMPLETED, 0);
+        return (Core::ERROR_NONE);
     }
 
     uint32_t VirtualInput::KeyEvent(const bool pressed, const uint32_t code, const string& table)
@@ -585,6 +627,8 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
 #endif
 
+    // Keyboard input
+
     IPCKeyboardInput::IPCKeyboardInput(const Core::NodeId& sourceName)
         : _service(*this, sourceName)
     {
@@ -608,22 +652,25 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     /* virtual */ void IPCKeyboardInput::SendKey(const actiontype type, const uint32_t code)
     {
-        static Core::ProxyType<KeyMessage> message(Core::ProxyType<KeyMessage>::Create());
+        if (type >= KEY_RELEASED && type <= KEY_COMPLETED) {
+            static Core::ProxyType<KeyMessage> message(Core::ProxyType<KeyMessage>::Create());
 
-        message->Parameters().Action = type;
-        message->Parameters().Code = code;
+            message->Parameters().Action = type;
+            message->Parameters().Code = code;
 
-        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+            Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
 
-        TRACE_L1("Sending keycode to all clients: %d", code);
-        _service.Invoke(base, RPC::CommunicationTimeOut);
+            TRACE_L1("Sending keycode to all clients: %d", code);
+            _service.Invoke(base, RPC::CommunicationTimeOut);
+        } else {
+            ASSERT(!"Invalid keyboard event");
+        }
     }
 
     /* virtual */ void IPCKeyboardInput::MapChanges(ChangeIterator&) {}
 
     /* virtual */ void IPCKeyboardInput::LookupChanges(const string& linkName)
     {
-
         uint16_t index = 0;
         Core::ProxyType<KeyboardLink> current(_service[index++]);
 
@@ -634,5 +681,128 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
             current = Core::ProxyType<KeyboardLink>(_service[index++]);
         }
     }
-}
+
+    // Mouse input
+
+    IPCMouseInput::IPCMouseInput(const Core::NodeId& sourceName)
+        : _service(*this, sourceName)
+    {
+        TRACE_L1("Constructing IPCMouseInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
+    }
+
+    /* virtual */ IPCMouseInput::~IPCMouseInput()
+    {
+    }
+
+    /* virtual */ uint32_t IPCMouseInput::Open()
+    {
+        return (_service.Open(2000));
+    }
+
+    /* virtual */ uint32_t IPCMouseInput::Close()
+    {
+        _service.Close(2000);
+        return (Core::ERROR_NONE);
+    }
+
+    /* virtual */ void IPCMouseInput::SendKey(const actiontype type, const uint32_t code)
+    {
+        static Core::ProxyType<MouseMessage> message(Core::ProxyType<MouseMessage>::Create());
+        const int16_t delta = static_cast<int16_t>(code);
+        switch (type) {
+        case POINTER_HORIZONTAL_MOTION:
+            message->Parameters().Action = mouseactiontype::MOUSE_MOTION;
+            message->Parameters().Horizontal = delta;
+            message->Parameters().Vertical = 0;
+            break;
+        case POINTER_VERTICAL_MOTION:
+            message->Parameters().Action = mouseactiontype::MOUSE_MOTION;
+            message->Parameters().Horizontal = 0;
+            message->Parameters().Vertical = delta;
+            break;
+        case AXIS_HORIZONTAL_MOTION:
+            message->Parameters().Action = mouseactiontype::MOUSE_SCROLL;
+            message->Parameters().Horizontal = delta;
+            message->Parameters().Vertical = 0;
+            break;
+        case AXIS_VERTICAL_MOTION:
+            message->Parameters().Action = mouseactiontype::MOUSE_SCROLL;
+            message->Parameters().Horizontal = 0;
+            message->Parameters().Vertical = delta;
+            break;
+        case POINTER_RELEASED:
+        case POINTER_PRESSED:
+            message->Parameters().Action = ((type == POINTER_RELEASED)? mouseactiontype::MOUSE_RELEASED : mouseactiontype::MOUSE_PRESSED);
+            message->Parameters().Button = code;
+            break;
+        default:
+            ASSERT(!"Invalid mouse event");
+            break;
+        }
+        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        _service.Invoke(base, RPC::CommunicationTimeOut);
+    }
+
+
+    // Touch screen input
+
+    IPCTouchScreenInput::IPCTouchScreenInput(const Core::NodeId& sourceName)
+        : _service(*this, sourceName)
+        , _latch_index(0)
+        , _latch_action(touchactiontype::TOUCH_MOTION)
+        , _latch_x(0)
+        , _latch_y(0)
+    {
+        TRACE_L1("Constructing IPCTouchScreenInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
+    }
+
+    /* virtual */ IPCTouchScreenInput::~IPCTouchScreenInput()
+    {
+    }
+
+    /* virtual */ uint32_t IPCTouchScreenInput::Open()
+    {
+        return (_service.Open(2000));
+    }
+
+    /* virtual */ uint32_t IPCTouchScreenInput::Close()
+    {
+        _service.Close(2000);
+        return (Core::ERROR_NONE);
+    }
+
+    /* virtual */ void IPCTouchScreenInput::SendKey(const actiontype type, const uint32_t data)
+    {
+        static Core::ProxyType<TouchMessage> message(Core::ProxyType<TouchMessage>::Create());
+
+        switch(type) {
+        case TOUCH_INDEX:
+            message->Parameters().Index = data;
+            break;
+        case TOUCH_RELEASED:
+        case TOUCH_PRESSED:
+            message->Parameters().Action = ((type == TOUCH_RELEASED)? touchactiontype::TOUCH_RELEASED : touchactiontype::TOUCH_PRESSED);
+            break;
+        case TOUCH_HORIZONTAL_POSITION:
+            message->Parameters().X = data;
+            break;
+        case TOUCH_VERTICAL_POSITION:
+            message->Parameters().Y = data;
+            break;
+        case TOUCH_COMPLETED:
+            {
+                Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+                _service.Invoke(base, RPC::CommunicationTimeOut);
+                message->Parameters().Action = touchactiontype::TOUCH_MOTION;
+                break;
+            }
+        default:
+            ASSERT(!"Invalid touch screen event");
+            break;
+        }
+    }
+
 } // Namespace PluginHost
+}
+
+

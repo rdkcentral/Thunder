@@ -669,7 +669,9 @@ namespace PluginHost
         _services.Load();
 
         // Create input handle
-        _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
+        _inputHandler.InitializeKeyboard(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
+        _inputHandler.InitializeMouse(InputHandler::VIRTUAL, "/tmp/mousehandler");
+        _inputHandler.InitializeTouchScreen(InputHandler::VIRTUAL, "/tmp/touchhandler");
 
         // Initialize static message.
         Service::Initialize();
@@ -730,8 +732,8 @@ namespace PluginHost
             SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
         }
 
-	securityProvider->Release();
-        
+        securityProvider->Release();
+
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
 
@@ -762,7 +764,9 @@ namespace PluginHost
         destructor->Stopped();
         _services.Destroy();
         destructor->Release();
-        _inputHandler.Deinitialize();
+        _inputHandler.DeinitializeTouchScreen();
+        _inputHandler.DeinitializeMouse();
+        _inputHandler.DeinitializeKeyboard();
     }
 }
 }

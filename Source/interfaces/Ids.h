@@ -96,7 +96,14 @@ namespace Exchange {
         ID_PERFORMANCE,
 
         ID_WEBPA,
-        ID_WEBPA_CLIENT
+        ID_WEBPA_CLIENT,
+
+        ID_WHEELHANDLER,
+        ID_WHEELPRODUCER,
+        ID_POINTERHANDLER,
+        ID_POINTERPRODUCER,
+        ID_TOUCHHANDLER,
+        ID_TOUCHPRODUCER
     };
 }
 }

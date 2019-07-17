@@ -8,7 +8,7 @@ namespace VirtualKeyboard {
 
     private:
         struct KeyData {
-            actiontype Action;
+            keyactiontype Action;
             uint32_t Code;
         };
         typedef Core::IPCMessageType<0, KeyData, Core::IPC::Void> KeyMessage;
@@ -34,7 +34,7 @@ namespace VirtualKeyboard {
             {
                 Core::ProxyType<KeyMessage> message(data);
                 ASSERT(_callback != nullptr);
-                _callback(message->Parameters().Action, message->Parameters().Code);              
+                _callback(message->Parameters().Action, message->Parameters().Code);
                 source.ReportResponse(data);
             }
 
@@ -61,7 +61,7 @@ namespace VirtualKeyboard {
             virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
             {
                 TRACE_L1("In NameEventHandler::Procedure -- %d", __LINE__);
-                
+
                 Core::ProxyType<NameMessage> message(data);
                 message->Response() = _name;
                 source.ReportResponse(data);
@@ -114,17 +114,28 @@ using namespace WPEFramework;
 // Producer, Consumer, We produce the virtual keyboard, the receiver needs
 // to destruct it once the done with the virtual keyboard.
 // Use the Destruct, to destruct it.
-void* Construct(const char listenerName[], const char connector[], FNKeyEvent callback)
+void* ConstructKeyboard(const char listenerName[], const char connector[], FNKeyEvent callback)
 {
     Core::NodeId remoteId(connector);
 
     return (new VirtualKeyboard::Controller(listenerName, remoteId, callback));
 }
 
-void Destruct(void* handle)
+void DestructKeyboard(void* handle)
 {
     delete reinterpret_cast<VirtualKeyboard::Controller*>(handle);
 }
+
+void* Construct(const char listenerName[], const char connector[], FNKeyEvent callback)
+{
+    return ConstructKeyboard(listenerName, connector, callback);
+}
+
+void Destruct(void* handle)
+{
+    DestructKeyboard(handle);
+}
+
 
 #ifdef __cplusplus
 }
