@@ -1,8 +1,8 @@
-# WPEFRAMEWORK
+# Thunder
 
 A C++ platform abstraction layer for generic functionality.
 
-### WPEFRAMEWORK Options
+### Thunder Options
 **Platforms:**
 * INTELCE
 * RPI
@@ -12,7 +12,7 @@ A C++ platform abstraction layer for generic functionality.
 * DAWN
 * Xi5
 
-**WPEFRAMEWORK options:**
+**Thunder options:**
 *  -DCORE=ON ,Include the generics library.
 *  -DCRYPTALGO=ON ,Include the encyption algorithm library.
 *  -DPROTOCOLS=ON ,Include the protocols library.
