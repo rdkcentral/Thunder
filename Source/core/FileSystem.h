@@ -299,7 +299,7 @@ namespace Core {
         bool Create(const uint32_t mode)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), mode);
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, mode);
 #endif
 #ifdef __WIN32__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
