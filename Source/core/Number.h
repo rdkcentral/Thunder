@@ -914,61 +914,48 @@ namespace Core {
 
     // BitArray
 
-    template<uint8_t MAXBITS>
-    class BitArrayType
-    {
+    template<uint8_t MAXBITS, typename DERIVED>
+    class BitArrayBaseType  {
     public:
         static_assert(MAXBITS <= 64, "MAXBITS is too big");
         using T = typename std::conditional<MAXBITS <= 8, std::uint8_t,
                         typename std::conditional<MAXBITS <= 16, std::uint16_t,
                                 typename std::conditional<MAXBITS <= 32, std::uint32_t, std::uint64_t>::type>::type>::type;
 
-        BitArrayType(uint8_t max = 0, T initial = 0)
+        uint8_t MaxSize() const
         {
-            Reset(max, initial);
+            return (MAXBITS);
         }
-
         void Set(uint8_t index)
         {
-            ASSERT(index < Size());
-            _value |= ((1 << index) & ((1 << Size()) - 1));
+            ASSERT(index < _Derived()->Size());
+            _value |= ((1 << index) & ((1 << _Derived()->Size()) - 1));
         }
-
         void Clr(uint8_t index)
         {
-            ASSERT(index < Size());
+            ASSERT(index < _Derived()->Size());
             _value &= ~(1 << index);
         }
-
         bool IsSet(uint8_t index) const
         {
-            ASSERT(index < Size());
+            ASSERT(index < _Derived()->Size());
             return (_value & (1 << index));
         }
-
-        uint8_t Size() const
-        {
-            return _max;
-        }
-
         bool Empty() const
         {
             return (_value == 0);
         }
-
-        void Reset(uint8_t max = 0, T initial = 0)
+        bool Full() const
         {
-            ASSERT(max <= MAXBITS);
-            _max = max;
-            if ((max == 0) ||  (max > MAXBITS)) {
-                _max = MAXBITS;
-            }
-            _value = (initial & ((1 << _max) - 1));
+            return (_value == ((1 << _Derived()->Size()) - 1));
         }
-
+        void Reset(T initial = 0)
+        {
+            _value = (initial & ((1 << _Derived()->Size()) - 1));
+        }
         uint8_t Find() const
         {
-            for (uint8_t i = 0; i < Size(); i++) {
+            for (uint8_t i = 0; i < _Derived()->Size(); i++) {
                 if (!IsSet(i)) {
                     return i;
                 }
@@ -977,8 +964,55 @@ namespace Core {
         }
 
     private:
+        DERIVED* _Derived() { return static_cast<DERIVED*>(this); }
+        const DERIVED* _Derived() const { return static_cast<const DERIVED*>(this); }
+
+    protected:
+        BitArrayBaseType()
+        { /* leave construction to the deriving class */ }
+
         T _value;
-        uint8_t _max;
+    };
+
+    template<uint8_t MAXBITS>
+    class BitArrayType : public BitArrayBaseType<MAXBITS,BitArrayType<MAXBITS>>  {
+    public:
+        using BASE = BitArrayBaseType<MAXBITS,BitArrayType<MAXBITS>>;
+        using T = typename BASE::T;
+
+        BitArrayType(T initial = 0)
+        {
+            BASE::Reset(initial);
+        }
+        uint8_t Size() const
+        {
+            return (BASE::MaxSize());
+        }
+    };
+
+    template<uint8_t MAXBITS>
+    class BitArrayFlexType : public BitArrayBaseType<MAXBITS,BitArrayFlexType<MAXBITS>>  {
+    public:
+        using BASE = BitArrayBaseType<MAXBITS,BitArrayFlexType<MAXBITS>>;
+        using T = typename BASE::T;
+
+        BitArrayFlexType(uint8_t size = 0, T initial = 0)
+        {
+            Reset(size);
+        }
+        uint8_t Size() const
+        {
+            return _size;
+        }
+        void Reset(uint8_t size = 0, T initial = 0) /* shadows */
+        {
+            ASSERT(size <= BASE::MaxSize());
+            _size = (size != 0? size : BASE::MaxSize());
+            BASE::Reset(initial);
+        }
+
+    private:
+        uint8_t _size;
     };
 
 }
