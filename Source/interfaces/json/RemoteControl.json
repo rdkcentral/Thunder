@@ -10,6 +10,50 @@
     "$ref": "common.json"
   },
   "definitions": {
+    "key":{
+        "type": "object",
+        "properties": {
+        "device": {
+          "description": "Device name",
+          "type": "string",
+          "default": "DevInput"
+        },
+        "code": {
+          "description": "Key code",
+          "type": "number",
+          "default": 1
+        }
+      },
+      "required": [
+        "device",
+        "code"
+      ]    
+    },
+    "modifiers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "leftshift",
+          "rightshift",
+          "leftalt",
+          "rightalt",
+          "leftctrl",
+          "rightctrl"
+        ],
+        "enumvalues": [
+          1,
+          2,
+          4,
+          8,
+          16,
+          32
+        ],
+        "enumtyped": false,
+        "description": "Key modifiers",
+        "default": "leftshift"
+      }
+    }, 
     "rcinfo": {
       "type": "object",
       "properties": {
@@ -30,29 +74,7 @@
           "default": 103
         },
         "modifiers": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "leftshift",
-              "rightshift",
-              "leftalt",
-              "rightalt",
-              "leftctrl",
-              "rightctrl"
-            ],
-            "enumvalues": [
-              1,
-              2,
-              4,
-              8,
-              16,
-              32
-            ],
-            "enumtyped": false,
-            "description": "Key modifiers",
-            "default": "leftshift"
-          }
+          "$ref": "#/definitions/modifiers"
         }
       },
       "required": [
@@ -61,13 +83,23 @@
         "key",
         "modifiers"
       ]
-    }
+    },
+    "device": {
+      "type": "object",
+      "properties": {
+        "device": {
+          "description": "Device name",
+          "type": "string",
+          "default": "DevInput"
+        }
+      }
+    }    
   },
-  "methods": {
-    "RemoteControl.1.devices": {
-      "summary": "General information.",
-      "description": "Retrieves the names of all available devices.",
-      "result": {
+  "properties": {
+    "devices": {
+      "summary": "Names of all available devices",
+      "readonly": true,
+      "params": {
         "type": "array",
         "items": {
           "type": "string",
@@ -76,20 +108,10 @@
         }
       }
     },
-    "RemoteControl.1.device": {
-      "summary": "Get device.",
-      "description": "Retrieves the metadata of specific devices.",
+    "device": {
+      "summary": "Metadata of specific devices",
+      "readonly": true,
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          }
-        }
-      },
-      "result": {
         "type": "object",
         "properties": {
           "name": {
@@ -108,6 +130,10 @@
           "metadata"
         ]
       },
+      "index": {
+        "name": "Device name",
+        "example": "0"
+      },
       "errors": [
         {
           "description": "Virtual device is loaded",
@@ -122,28 +148,13 @@
           "$ref": "#/common/errors/badrequest"
         }
       ]
-    },
-    "RemoteControl.1.key": {
-      "summary": "Key action.",
-      "description": "Retrieves the key code details.",
+    }
+  },
+  "methods": {
+    "key": {
+      "summary": "Gets key code details",
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          },
-          "code": {
-            "description": "Key code",
-            "type": "number",
-            "default": 1
-          }
-        },
-        "required": [
-          "device",
-          "code"
-        ]
+        "$ref": "#/definitions/key"
       },
       "result": {
         "type": "object",
@@ -160,29 +171,7 @@
             "default": 103
           },
           "modifiers": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "leftshift",
-                "rightshift",
-                "leftalt",
-                "rightalt",
-                "leftctrl",
-                "rightctrl"
-              ],
-              "enumvalues": [
-                1,
-                2,
-                4,
-                8,
-                16,
-                32
-              ],
-              "enumtyped": false,
-              "description": "Key modifiers",
-              "default": "leftshift"
-            }
+            "$ref": "#/definitions/modifiers"
           }
         },
         "required": [
@@ -206,27 +195,10 @@
         }
       ]
     },
-    "RemoteControl.1.delete": {
-      "summary": "Key mapping actions.",
-      "description": "Deletes the key code from map.",
+    "delete": {
+      "summary": "Deletes the key code from map.",
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          },
-          "code": {
-            "description": "Key code",
-            "type": "number",
-            "default": 1
-          }
-        },
-        "required": [
-          "device",
-          "code"
-        ]
+        "$ref": "#/definitions/key"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -246,9 +218,8 @@
         }
       ]
     },
-    "RemoteControl.1.modify": {
-      "summary": "Key mapping actions.",
-      "description": "Modifies the key code in the map.",
+    "modify": {
+      "summary": "Modifies the key code in the map.",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -270,18 +241,10 @@
         }
       ]
     },
-    "RemoteControl.1.pair": {
-      "summary": "Pairing device.",
-      "description": "Activates pairing mode of specific device.",
+    "pair": {
+      "summary": "Activates pairing mode of specific device.",
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          }
-        }
+        "$ref": "#/definitions/device"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -301,9 +264,8 @@
         }
       ]
     },
-    "RemoteControl.1.unpair": {
-      "summary": "Pairing device.",
-      "description": "Unpairs of specific device.",
+    "unpair": {
+      "summary": "Unpairs of specific device.",
       "params": {
         "type": "object",
         "properties": {
@@ -341,9 +303,8 @@
         }
       ]
     },
-    "RemoteControl.1.send": {
-      "summary": "Key mapping actions.",
-      "description": "Sends a code to a device.",
+    "send": {
+      "summary": "Sends a code to a device.",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -373,9 +334,8 @@
         }
       ]
     },
-    "RemoteControl.1.press": {
-      "summary": "Key mapping actions.",
-      "description": "Sends a code 'Press' to a device.",
+    "press": {
+      "summary": "Sends a code 'Press' to a device.",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -405,9 +365,8 @@
         }
       ]
     },
-    "RemoteControl.1.release": {
-      "summary": "Key mapping actions.",
-      "description": "Sends a code 'Release' to a device.",
+    "release": {
+      "summary": "Sends a code 'Release' to a device.",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -437,18 +396,10 @@
         }
       ]
     },
-    "RemoteControl.1.save": {
-      "summary": "Key mapping actions.",
-      "description": "Saves the loaded key map as DEVICE_NAME.json into persistent path.",
+    "save": {
+      "summary": "Saves the loaded key map as DEVICE_NAME.json into persistent path.",
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          }
-        }
+        "$ref": "#/definitions/device"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -472,18 +423,10 @@
         }
       ]
     },
-    "RemoteControl.1.load": {
-      "summary": "Key mapping actions.",
-      "description": "Re-loads DEVICE_NAME.json key map into memory.",
+    "load": {
+      "summary": "Re-loads DEVICE_NAME.json key map into memory.",
       "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Device name",
-            "type": "string",
-            "default": "DevInput"
-          }
-        }
+        "$ref": "#/definitions/device"
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -511,9 +454,8 @@
         }
       ]
     },
-    "RemoteControl.1.add": {
-      "summary": "Key mapping actions.",
-      "description": "Adds the key code in the map.",
+    "add": {
+      "summary": "Adds the key code in the map.",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
