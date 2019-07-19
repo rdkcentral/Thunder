@@ -1450,7 +1450,7 @@ def CreateDocument(schema, path):
         else:
             raise RuntimeError("missing class in info or interface/info")
 
-        MdParagraph("%s plugin for WPEFramework." % plugin_class)
+        MdParagraph("%s plugin for Thunder framework." % plugin_class)
 
         MdHeader("Table of Contents",3)
         MdBody("- " + link("head.Introduction"))
@@ -1512,7 +1512,7 @@ def CreateDocument(schema, path):
         if "description" in info:
             MdHeader("Description")
             MdParagraph(" ".join(info["description"]) if isinstance(info["description"], list) else info["description"])
-            MdParagraph("The plugin is designed to be loaded and executed within the WPEFramework. For more information on WPEFramework refer to [[WPEF](#ref.WPEF)].")
+            MdParagraph("The plugin is designed to be loaded and executed within the Thunder framework. For more information about the framework refer to [[Thunder](#ref.Thunder)].")
 
         MdHeader("Configuration")
         commonConfig = OrderedDict()
