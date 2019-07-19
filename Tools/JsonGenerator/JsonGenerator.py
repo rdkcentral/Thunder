@@ -1650,7 +1650,8 @@ if __name__ == "__main__":
     DEFAULT_INT_SIZE = args.def_int_size
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
-    IF_PATH = posixpath.normpath(IF_PATH + os.sep)
+    IF_PATH = posixpath.normpath(IF_PATH) + os.sep
+
     if args.if_dir:
         args.if_dir = os.path.normpath(args.if_dir)
     generateCode = args.code
