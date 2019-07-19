@@ -1,0 +1,243 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Compositor API",
+    "class": "Compositor",
+    "description": "Compositor JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "clients": {
+      "summary": "List of compositor clients",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Client callsign",
+          "example": "Netflix"
+        }
+      }
+    },
+    "resolution": {
+      "summary": "Output resolution",
+      "params": {
+        "type": "string",
+        "enum": [
+          "screenresolution_unknown",
+          "screenresolution_480i",
+          "screenresolution_480p",
+          "screenresolution_720p",
+          "screenresolution_720p50hz",
+          "screenresolution_1080p24hz",
+          "screenresolution_1080i50hz",
+          "screenresolution_1080p50hz ",
+          "screenresolution_1080p60hz",
+          "screenresolution_2160p50hz",
+          "screenresolution_2160p60hz"
+        ],
+        "example": "screenresolution_480i"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/unknowntable",
+          "description": "Unknown resolution"
+        }
+      ]
+    },
+    "zorder": {
+      "summary": "List of compositor clients sorted by z-order",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Client name",
+          "example": "Netflix"
+        }
+      }
+    },
+    "geometry": {
+      "summary": "Property describing nanoservice window on screen",
+      "description": "Use this property to update or retrive the geometry of the client surface.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "description": "X position on screen",
+            "type": "number",
+            "example": "0"
+          },
+          "y": {
+            "description": "Y position on screen",
+            "type": "number",
+            "example": "0"
+          },
+          "width": {
+            "description": "Width of space taken by nanoservice",
+            "type": "number",
+            "example": "1280"
+          },
+          "height": {
+            "description": "Height of space taken by nanoservice",
+            "type": "number",
+            "example": "720"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ]
+      },
+      "index": {
+        "name": "Nanoservice callsign",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Callsign not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        }, 
+        {
+          "description": "Failed to set/get geometry",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "visible": {
+      "summary": "Determines if client's surface is visible",
+      "writeonly": true,
+      "params": {
+        "type": "boolean",
+        "example": "true"
+      },
+      "index": {
+        "name": "Nanoservice callsign",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Callsign not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        }
+      ]
+    },
+    "opacity": {
+      "summary": "Opacity of client",
+      "description": "The opacity of a client surface can range from 0 till 255, that will represent an opacity of the surface from 0% till 100%.",
+      "writeonly": true,
+      "params": {
+        "type": "number",
+        "example": "64"
+      },
+      "index": {
+        "name": "Nanoservice callsign",
+        "example": "Netflix"
+      },
+      "errors": [
+        {
+          "description": "Callsign not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "totop": {
+      "summary": "Put client on top.",
+      "description": "Whenever you put client on top, it will shown on the screen and it will be in focus.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "type": "string",
+            "description": "Client's callsign"
+          }
+        },
+        "required": [
+          "callsign"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        },
+        {
+          "description": "Compositor couldn't put service on top",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "putbelow": {
+      "summary": "Slide <below> just behind <above>",
+      "description": "Whenever you want to reorder the client-list, you can slide a <client-a> just below a <client-b> in the client-list.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "below": {
+            "type": "string",
+            "description": "Client that will be put below second one",
+            "example": "Netflix"
+          },
+          "above": {
+            "type": "string",
+            "description": "Client that will be put above fist one",
+            "example": "WebKitBrowser"
+          }
+        },
+        "required": [
+          "client_a",
+          "client_b"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "At least one of clients not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        },
+        {
+          "description": "Compositor failed to put service on top",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "kill": {
+      "summary": "Use this method to kill the client",
+      "description": "Whenever a client is killed, the execution of the client is stopped and all its resources will be released..",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "type": "string",
+            "description": "Callsign of killed client",
+            "example": "Netflix"
+          }
+        },
+        "required": [
+          "callsign"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Client not found",
+          "$ref": "#/common/errors/firstresourcenotfound"
+        }
+      ]
+    }
+  }
+}

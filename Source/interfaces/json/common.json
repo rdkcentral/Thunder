@@ -62,6 +62,10 @@
       "code": 31,
       "message": "ERROR_PENDING_CONDITIONS"
     },
+    "firstresourcenotfound": {
+      "code": 34,
+      "message": "ERROR_FIRST_RESOURCE_NOT_FOUND"
+    },
     "alreadyreleased": {
       "code": 36,
       "message": "ERROR_ALREADY_RELEASED"
