@@ -4,9 +4,9 @@
 
 **Version: 1.0**
 
-**Status: :black_circle::black_circle::black_circle:**
+**Status: :black_circle::white_circle::white_circle:**
 
-Controller plugin for WPEFramework.
+Controller plugin for Thunder framework.
 
 ### Table of Contents
 
@@ -59,14 +59,14 @@ The table below provides and overview of terms and abbreviations used in this do
 | <a name="ref.HTTP">[HTTP](http://www.w3.org/Protocols)</a> | HTTP specification |
 | <a name="ref.JSON-RPC">[JSON-RPC](https://www.jsonrpc.org/specification)</a> | JSON-RPC 2.0 specification |
 | <a name="ref.JSON">[JSON](http://www.json.org/)</a> | JSON specification |
-| <a name="ref.WPEF">[WPEF](https://github.com/WebPlatformForEmbedded/WPEFramework/blob/master/doc/WPE%20-%20API%20-%20WPEFramework.docx)</a> | WPEFramework API Reference |
+| <a name="ref.Thunder">[Thunder](https://github.com/WebPlatformForEmbedded/Thunder/blob/master/doc/WPE%20-%20API%20-%20WPEFramework.docx)</a> | Thunder API Reference |
 
 <a name="head.Description"></a>
 # Description
 
 The Controller plugin controls (activates and deactivates) the configured plugins. The plugin is part of the framework and cannot be activated or deactivated itself, thus as well cannot not be unloaded.
 
-The plugin is designed to be loaded and executed within the WPEFramework. For more information on WPEFramework refer to [[WPEF](#ref.WPEF)].
+The plugin is designed to be loaded and executed within the Thunder framework. For more information about the framework refer to [[Thunder](#ref.Thunder)].
 
 <a name="head.Configuration"></a>
 # Configuration
@@ -98,7 +98,6 @@ Controller interface methods:
 | [deactivate](#method.deactivate) | Deactivates a plugin |
 | [startdiscovery](#method.startdiscovery) | Starts the network discovery |
 | [storeconfig](#method.storeconfig) | Stores the configuration |
-| [download](#method.download) | Downloads a file to the persistent memory |
 | [delete](#method.delete) | Removes contents of a directory from the persistent storage |
 | [harakiri](#method.harakiri) | Reboots the device |
 
@@ -296,62 +295,6 @@ This method takes no parameters.
     "jsonrpc": "2.0", 
     "id": 1234567890, 
     "method": "Controller.1.storeconfig"
-}
-```
-#### Response
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "result": null
-}
-```
-<a name="method.download"></a>
-## *download <sup>method</sup>*
-
-Downloads a file to the persistent memory
-
-Also see: [downloadcompleted](#event.downloadcompleted)
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.source | string | Source URL pointing to the file to download |
-| params.destination | string | Path within the persistent storage where to save the file |
-| params.hash | string | Base64-encoded binary SHA256 signature for authenticity verification |
-
-### Result
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| result | null | Always null |
-
-### Errors
-
-| Code | Message | Description |
-| :-------- | :-------- | :-------- |
-| 12 | ```ERROR_INPROGRESS``` | A download is currently in progress |
-| 15 | ```ERROR_INCORRECT_URL``` | The source URL was invalid |
-| 30 | ```ERROR_BAD_REQUEST``` | The given destination path or hash was invalid |
-| 40 | ```ERROR_WRITE_ERROR``` | Failed to save the file to the persistent storage (e.g. the file already exists) |
-
-### Example
-
-#### Request
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "id": 1234567890, 
-    "method": "Controller.1.download", 
-    "params": {
-        "source": "http://example.com/test.txt", 
-        "destination": "test", 
-        "hash": "ODE5NjNFMEEzM0VDQ0JBOTI0MDRFOTY4QzY2NTAwNkQ="
-    }
 }
 ```
 #### Response
@@ -840,7 +783,6 @@ Controller interface events:
 | :-------- | :-------- |
 | [all](#event.all) | Signals each and every event in the system |
 | [statechange](#event.statechange) | Signals a plugin state change |
-| [downloadcompleted](#event.downloadcompleted) | Signals that a file download has completed |
 
 <a name="event.all"></a>
 ## *all <sup>event</sup>*
@@ -891,33 +833,6 @@ Signals a plugin state change
         "callsign": "WebKitBrowser", 
         "state": "activated", 
         "reason": "Requested"
-    }
-}
-```
-<a name="event.downloadcompleted"></a>
-## *downloadcompleted <sup>event</sup>*
-
-Signals that a file download has completed
-
-### Parameters
-
-| Name | Type | Description |
-| :-------- | :-------- | :-------- |
-| params | object |  |
-| params.result | number | Download operation result (0: success) |
-| params.source | string | Source URL identifying the downloaded file |
-| params.destination | string | Path to the downloaded file in the persistent storage |
-
-### Example
-
-```json
-{
-    "jsonrpc": "2.0", 
-    "method": "client.events.1.downloadcompleted", 
-    "params": {
-        "result": 0, 
-        "source": "http://example/com/test.txt", 
-        "destination": "test.txt"
     }
 }
 ```

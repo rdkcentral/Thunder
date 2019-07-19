@@ -311,58 +311,6 @@
         }
       ]
     },
-    "Controller.1.download": {
-      "summary": "Downloads a file to the persistent memory",
-      "events": [
-        "downloadcompleted"
-      ],
-      "params": {
-        "type": "object",
-        "properties": {
-          "source": {
-            "type": "string",
-            "description": "Source URL pointing to the file to download",
-            "example": "http://example.com/test.txt"
-          },
-          "destination": {
-            "type": "string",
-            "description": "Path within the persistent storage where to save the file",
-            "example": "test"
-          },
-          "hash": {
-            "type": "string",
-            "description": "Base64-encoded binary SHA256 signature for authenticity verification",
-            "example": "ODE5NjNFMEEzM0VDQ0JBOTI0MDRFOTY4QzY2NTAwNkQ="
-          }
-        },
-        "required": [
-          "source",
-          "destination",
-          "hash"
-        ]
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "A download is currently in progress",
-          "$ref": "#/common/errors/inprogress"
-        },
-        {
-          "description": "The source URL was invalid",
-          "$ref": "#/common/errors/incorrecturl"
-        },
-        {
-          "description": "The given destination path or hash was invalid",
-          "$ref": "#/common/errors/badrequest"
-        },
-        {
-          "description": "Failed to save the file to the persistent storage (e.g. the file already exists)",
-          "$ref": "#/common/errors/writeerror"
-        }
-      ]
-    },
     "Controller.1.delete": {
       "summary": "Removes contents of a directory from the persistent storage",
       "description": "Use this method to recursively delete contents of a directory",
@@ -621,34 +569,6 @@
           "callsign",
           "state",
           "reason"
-        ]
-      }
-    },
-    "downloadcompleted": {
-      "summary": "Signals that a file download has completed",
-      "params": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "type": "number",
-            "description": "Download operation result (0: success)",
-            "example": 0
-          },
-          "source": {
-            "type": "string",
-            "description": "Source URL identifying the downloaded file",
-            "example": "http://example/com/test.txt"
-          },
-          "destination": {
-            "type": "string",
-            "description": "Path to the downloaded file in the persistent storage",
-            "example": "test.txt"
-          }
-        },
-        "required": [
-          "result",
-          "source",
-          "destination"
         ]
       }
     }
