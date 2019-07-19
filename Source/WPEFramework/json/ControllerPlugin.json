@@ -5,6 +5,7 @@
     "version": "1.0",
     "callsign": "Controller",
     "description": "The Controller plugin controls (activates and deactivates) the configured plugins. The plugin is part of the framework and cannot be activated or deactivated itself, thus as well cannot not be unloaded.",
+    "status": "production",
     "class": {
       "$ref": "ControllerAPI.json#/info/class"
     },

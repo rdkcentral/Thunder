@@ -4,7 +4,7 @@
 
 **Version: 1.0**
 
-**Status: :black_circle::white_circle::white_circle:**
+**Status: :black_circle::black_circle::black_circle:**
 
 Controller plugin for Thunder framework.
 
