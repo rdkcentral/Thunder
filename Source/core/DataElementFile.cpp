@@ -26,7 +26,6 @@ namespace Core {
 
         // The file needs to be prepared in the same way as we request the Memoerymapped file...
         ASSERT(m_File.IsOpen() == false);
-        ASSERT(m_File.IsShared() == ((type & File::SHAREABLE) != 0));
 
         if (IsValid()) {
             OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));

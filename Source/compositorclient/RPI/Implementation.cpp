@@ -250,7 +250,7 @@ private:
             // If we are in the same process space as where a WorkerPool is registered (Main Process or
             // hosting ptocess) use, it!
             Core::ProxyType<RPC::InvokeServer> engine = Core::ProxyType<RPC::InvokeServer>::Create(&Core::WorkerPool::Instance());
-            ASSERT(engine != nullptr);
+            ASSERT(static_cast<Core::IReferenceCounted*>(engine) != nullptr);
 
             _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
             ASSERT(_compositerServerRPCConnection != nullptr);
