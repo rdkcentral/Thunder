@@ -72,7 +72,23 @@
       "classname": "Monitor",
       "autostart": true,
       "configuration": {
-
+        "observables": [
+        {
+          "callsign":"WebKitBrowser",
+          "memory":5,
+          "memorylimit":850000,
+          "operational":1,
+          "restart": {
+            "memory": {
+              "window":0,
+              "limit":0
+            },
+            "operational": {
+              "window":60,
+              "limit":3
+            }
+          }
+        }]
       }
     },
     {

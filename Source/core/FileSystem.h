@@ -183,10 +183,6 @@ namespace Core {
         {
             return (_attributes != 0);
         }
-        inline bool IsShared() const
-        {
-            return (_sharable);
-        }
         inline bool IsReadOnly() const
         {
             return ((_attributes & FILE_READONLY) != 0);
@@ -291,18 +287,18 @@ namespace Core {
 #endif
         }
 
-        bool Create()
+        bool Create(const bool exclusive = false)
         {
-            return (Create(USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE));
+            return (Create(USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE), exclusive);
         }
 
-        bool Create(const uint32_t mode)
+        bool Create(const uint32_t mode, const bool exclusive = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC, mode);
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WIN32__
-            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
             return (IsOpen());
@@ -325,7 +321,7 @@ namespace Core {
             _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
 #endif
 #ifdef __WIN32__
-            _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE)) : 0), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
             return (IsOpen());
@@ -559,7 +555,6 @@ namespace Core {
         Core::Time _creation;
         Core::Time _modification;
         Core::Time _access;
-        bool _sharable;
         mutable Handle _handle;
     };
 

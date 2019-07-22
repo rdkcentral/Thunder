@@ -110,6 +110,7 @@ set(PUBLIC_HEADERS
         StreamTypeLengthValue.h
         Sync.h
         Synchronize.h
+        SynchronousChannel.h
         SystemInfo.h
         TextFragment.h
         TextReader.h

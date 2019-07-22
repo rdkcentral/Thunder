@@ -68,6 +68,7 @@
 #include "StreamTypeLengthValue.h"
 #include "Sync.h"
 #include "Synchronize.h"
+#include "SynchronousChannel.h"
 #include "SystemInfo.h"
 #include "TextFragment.h"
 #include "TextReader.h"

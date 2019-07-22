@@ -9,7 +9,6 @@ namespace Core {
         , _creation()
         , _modification()
         , _access()
-        , _sharable(sharable)
         , _handle(INVALID_HANDLE_VALUE)
     {
     }
@@ -20,7 +19,6 @@ namespace Core {
         , _creation()
         , _modification()
         , _access()
-        , _sharable(sharable)
         , _handle(INVALID_HANDLE_VALUE)
     {
         LoadFileInfo();
@@ -32,7 +30,6 @@ namespace Core {
         , _creation(copy._creation)
         , _modification(copy._modification)
         , _access(copy._access)
-        , _sharable(copy._sharable)
         , _handle(copy.DuplicateHandle())
     {
     }
