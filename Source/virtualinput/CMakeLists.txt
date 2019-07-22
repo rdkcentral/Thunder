@@ -5,11 +5,15 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 add_library(${TARGET} SHARED
         Module.cpp
         VirtualKeyboard.cpp
+        VirtualMouse.cpp
+        VirtualTouchScreen.cpp
         )
 
 set(PUBLIC_HEADERS
         virtualinput.h
         VirtualKeyboard.h
+        VirtualMouse.h
+        VirtualTouchScreen.h
         Module.h
         )
 
@@ -35,7 +39,6 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include/${NAMESPACE}/virtualinput>
         )
 
-        
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib

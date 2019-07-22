@@ -494,7 +494,7 @@ namespace Core {
                 realCommand = InvokeAllowed(*thisClient, command);
 
                 if (realCommand.IsValid() == true) {
-                    TRACE_L1("Invoked %d client.", 1);
+                    //TRACE_L1("Invoked %d client.", 1);
                     status = thisClient->Invoke(realCommand, waitTime);
                     if (status != Core::ERROR_NONE) {
                         result = status;

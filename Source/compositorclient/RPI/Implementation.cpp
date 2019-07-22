@@ -4,26 +4,78 @@
 #include <EGL/eglext.h>
 #include <bcm_host.h>
 
+#include <algorithm>
+
 #include "../../core/core.h"
 #include "../../interfaces/IComposition.h"
 #include "../../virtualinput/virtualinput.h"
 #include "../Client.h"
 
 int g_pipefd[2];
-struct Message {
-    uint32_t code;
-    actiontype type;
+
+enum inputtype {
+    KEYBOARD,
+    MOUSE,
+    TOUCHSCREEN
 };
 
-static const char* connectorName = "/tmp/keyhandler";
-static void VirtualKeyboardCallback(actiontype type, unsigned int code)
+struct Message {
+    inputtype type;
+    union {
+        struct {
+            keyactiontype type;
+            uint32_t code;
+        } keyData;
+        struct {
+            mouseactiontype type;
+            uint16_t button;
+            int16_t horizontal;
+            int16_t vertical;
+        } mouseData;
+        struct {
+            touchactiontype type;
+            uint16_t index;
+            uint16_t x;
+            uint16_t y;
+        } touchData;
+    };
+};
+
+static const char* connectorNameKeyboard = "/tmp/keyhandler";
+static const char* connectorNameMouse = "/tmp/mousehandler";
+static const char* connectorNameTouchScreen = "/tmp/touchhandler";
+
+static void VirtualKeyboardCallback(keyactiontype type, unsigned int code)
 {
-    if (type != COMPLETED) {
+    if (type != KEY_COMPLETED) {
         Message message;
-        message.code = code;
-        message.type = type;
+        message.type = KEYBOARD;
+        message.keyData.type = type;
+        message.keyData.code = code;
         write(g_pipefd[1], &message, sizeof(message));
     }
+}
+
+static void VirtualMouseCallback(mouseactiontype type, unsigned short button, signed short horizontal, signed short vertical)
+{
+    Message message;
+    message.type = MOUSE;
+    message.mouseData.type = type;
+    message.mouseData.button = button;
+    message.mouseData.horizontal = horizontal;
+    message.mouseData.vertical = vertical;
+    write(g_pipefd[1], &message, sizeof(message));
+}
+
+static void VirtualTouchScreenCallback(touchactiontype type, unsigned short index, unsigned short x, unsigned short y)
+{
+    Message message;
+    message.type = TOUCHSCREEN;
+    message.touchData.type = type;
+    message.touchData.index = index;
+    message.touchData.x = x;
+    message.touchData.y = y;
+    write(g_pipefd[1], &message, sizeof(message));
 }
 
 namespace {
@@ -141,11 +193,25 @@ private:
         {
             return _height;
         }
-        inline void Keyboard(
-            Compositor::IDisplay::IKeyboard* keyboard)
+        inline void Keyboard(Compositor::IDisplay::IKeyboard* keyboard) override
         {
             assert((_keyboard == nullptr) ^ (keyboard == nullptr));
             _keyboard = keyboard;
+        }
+        inline void Wheel(Compositor::IDisplay::IWheel* wheel) override
+        {
+            assert((_wheel == nullptr) ^ (wheel == nullptr));
+            _wheel = wheel;
+        }
+        inline void Pointer(Compositor::IDisplay::IPointer* pointer) override
+        {
+            assert((_pointer == nullptr) ^ (pointer == nullptr));
+            _pointer = pointer;
+        }
+        inline void TouchPanel(Compositor::IDisplay::ITouchPanel* touchpanel) override
+        {
+            assert((_touchpanel == nullptr) ^ (touchpanel == nullptr));
+            _touchpanel = touchpanel;
         }
         inline void SendKey(
             const uint32_t key,
@@ -153,6 +219,30 @@ private:
         {
             if (_keyboard != nullptr) {
                 _keyboard->Direct(key, action);
+            }
+        }
+        inline void SendWheelMotion(const int16_t x, const int16_t y, const uint32_t time)
+        {
+            if (_wheel != nullptr) {
+                _wheel->Direct(x, y);
+            }
+        }
+        inline void SendPointerButton(const uint8_t button, const IPointer::state state, const uint32_t time)
+        {
+            if (_pointer != nullptr) {
+                _pointer->Direct(button, state);
+            }
+        }
+        inline void SendPointerPosition(const int16_t x, const int16_t y, const uint32_t time)
+        {
+            if (_pointer != nullptr) {
+                _pointer->Direct(x, y);
+            }
+        }
+        inline void SendTouch(const uint8_t index, const ITouchPanel::state state, const uint16_t x, const uint16_t y, const uint32_t time)
+        {
+            if (_touchpanel != nullptr) {
+                _touchpanel->Direct(index, state, x, y);
             }
         }
 
@@ -179,6 +269,9 @@ private:
         VC_RECT_T _srcRect;
 
         IKeyboard* _keyboard;
+        IWheel* _wheel;
+        IPointer* _pointer;
+        ITouchPanel* _touchpanel;
     };
 
 public:
@@ -260,7 +353,6 @@ private:
             // Seems we are not in a process space initiated from the Main framework process or its hosting process.
             // Nothing more to do than to create a workerpool for RPC our selves !
             Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
-
             ASSERT(engine != nullptr);
 
             _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
@@ -275,9 +367,17 @@ private:
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
             _compositerServerRPCConnection.Release();
         }
-        _virtualkeyboard = Construct(_displayName.c_str(), connectorName, VirtualKeyboardCallback);
+        _virtualkeyboard = ConstructKeyboard(_displayName.c_str(), connectorNameKeyboard, VirtualKeyboardCallback);
         if (_virtualkeyboard == nullptr) {
             TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
+        }
+        _virtualmouse = ConstructMouse(_displayName.c_str(), connectorNameMouse, VirtualMouseCallback);
+        if (_virtualmouse == nullptr) {
+            TRACE(CompositorClient, (_T("Initialization of virtual mouse failed for Display %s!"), Name()));
+        }
+        _virtualtouchscreen = ConstructTouchScreen(_displayName.c_str(), connectorNameTouchScreen, VirtualTouchScreenCallback);
+        if (_virtualtouchscreen == nullptr) {
+            TRACE(CompositorClient, (_T("Initialization of virtual touch screen failed for Display %s!"), Name()));
         }
 
         if (pipe(g_pipefd) == -1) {
@@ -294,12 +394,18 @@ private:
 
         close(g_pipefd[0]);
         Message message;
-        message.code = 0;
+        memset(&message, 0, sizeof(message));
         write(g_pipefd[1], &message, sizeof(message));
         close(g_pipefd[1]);
 
+        if (_virtualtouchscreen != nullptr) {
+            DestructTouchScreen(_virtualtouchscreen);
+        }
+        if (_virtualmouse != nullptr) {
+            DestructMouse(_virtualmouse);
+        }
         if (_virtualkeyboard != nullptr) {
-            Destruct(_virtualkeyboard);
+            DestructKeyboard(_virtualkeyboard);
         }
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
@@ -323,9 +429,16 @@ private:
     std::string _displayName;
     mutable Core::CriticalSection _adminLock;
     void* _virtualkeyboard;
+    void* _virtualmouse;
+    void* _virtualtouchscreen;
     const DisplaySize _displaysize;
     std::list<SurfaceImplementation*> _surfaces;
     Core::ProxyType<RPC::CommunicatorClient> _compositerServerRPCConnection;
+    uint16_t _pointer_x;
+    uint16_t _pointer_y;
+    uint16_t _touch_x;
+    uint16_t _touch_y;
+    uint16_t _touch_state;
 
     mutable uint32_t _refCount;
 };
@@ -342,6 +455,9 @@ Display::SurfaceImplementation::SurfaceImplementation(
     , _opacity(255)
     , _layer(0)
     , _keyboard(nullptr)
+    , _wheel(nullptr)
+    , _pointer(nullptr)
+    , _touchpanel(nullptr)
 {
 
     TRACE(CompositorClient, (_T("Created client named: %s"), _name.c_str()));
@@ -447,8 +563,14 @@ Display::Display(const string& name)
     , _displayName(name)
     , _adminLock()
     , _virtualkeyboard(nullptr)
+    , _virtualtouchscreen(nullptr)
     , _displaysize(RetrieveDisplaySize())
     , _compositerServerRPCConnection()
+    , _pointer_x(0)
+    , _pointer_y(0)
+    , _touch_x(-1)
+    , _touch_y(-1)
+    , _touch_state(0)
     , _refCount(0)
 {
 }
@@ -462,15 +584,50 @@ int Display::Process(const uint32_t data)
     Message message;
     if ((data != 0) && (g_pipefd[0] != -1) && (read(g_pipefd[0], &message, sizeof(message)) > 0)) {
         _adminLock.Lock();
-        std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
-        while (index != _surfaces.end() && (_isRunning == true)) {
-            // RELEASED  = 0,
-            // PRESSED   = 1,
-            // REPEAT    = 2,
 
-            (*index)->SendKey(message.code, (message.type == 0 ? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed), time(nullptr));
-            index++;
+        time_t timestamp = time(nullptr);
+        std::function<void(SurfaceImplementation*)> action = nullptr;
+
+        if (message.type == KEYBOARD) {
+            const IDisplay::IKeyboard::state state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed);
+            action = [&](SurfaceImplementation* s) { s->SendKey(message.keyData.code, state, timestamp); };
+        } else if (message.type == MOUSE) {
+            // Clamp movement to display size
+            // TODO: Handle surfaces that are not full screen
+            _pointer_x = std::max(0, std::min(static_cast<int32_t>(_pointer_x) + message.mouseData.horizontal, static_cast<int32_t>(DisplaySizeWidth() - 1)));
+            _pointer_y = std::max(0, std::min(static_cast<int32_t>(_pointer_y) + message.mouseData.vertical, static_cast<int32_t>(DisplaySizeHeight() - 1)));
+            switch (message.mouseData.type)
+            {
+            case MOUSE_MOTION:
+                action = [&](SurfaceImplementation* s) { s->SendPointerPosition(_pointer_x, _pointer_y, timestamp); };
+                break;
+            case MOUSE_SCROLL:
+                action = [&](SurfaceImplementation* s) { s->SendWheelMotion(message.mouseData.horizontal, message.mouseData.vertical, timestamp); };
+                break;
+            case MOUSE_RELEASED:
+            case MOUSE_PRESSED:
+                action = [&](SurfaceImplementation* s) { s->SendPointerButton(message.mouseData.button, message.mouseData.type == MOUSE_RELEASED? IDisplay::IPointer::released : IDisplay::IPointer::pressed , timestamp); };
+                break;
+            }
+        } else if (message.type == TOUCHSCREEN) {
+            // Get touch position in pixels
+            // TODO: Handle surfaces that are not full screen
+            const uint16_t x = (DisplaySizeWidth() * (message.touchData.x)) >> 16;
+            const uint16_t y = (DisplaySizeHeight() * (message.touchData.y)) >> 16;
+            const IDisplay::ITouchPanel::state state = ((message.touchData.type == TOUCH_RELEASED)? ITouchPanel::released : ((message.touchData.type == TOUCH_PRESSED)? ITouchPanel::pressed : ITouchPanel::motion));
+            // Reduce IPC traffic. The physical touch coordinates might be different, but when scaled to screen position, they may be same as previous.
+            if ((x != _touch_x) || (y != _touch_y) || (state != _touch_state)) {
+                action = [&](SurfaceImplementation* s) { s->SendTouch(message.touchData.index, state, x, y, timestamp); };
+                _touch_state = state;
+                _touch_x = x;
+                _touch_y = y;
+            }
         }
+
+        if ((action != nullptr) && (_isRunning == true)) {
+            std::for_each(begin(_surfaces), end(_surfaces), action);
+        }
+
         _adminLock.Unlock();
     }
     return (0);

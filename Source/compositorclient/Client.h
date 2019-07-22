@@ -34,6 +34,52 @@ namespace Compositor {
             virtual void Repeat(int32_t rate, int32_t delay) = 0;
             virtual void Direct(const uint32_t key, const state action) = 0;
         };
+
+        struct IPointer {
+            virtual ~IPointer() {}
+
+            enum state {
+                released = 0,
+                pressed
+            };
+
+            // Lifetime management
+            virtual void AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
+
+            // Methods
+            virtual void Direct(const uint8_t button, const state action) = 0;
+            virtual void Direct(const uint16_t x, const uint16_t y) = 0;
+        };
+
+        struct IWheel {
+            virtual ~IWheel() {}
+
+            // Lifetime management
+            virtual void AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
+
+            // Methods
+            virtual void Direct(const int16_t horizontal, const int16_t vertical) = 0;
+        };
+
+        struct ITouchPanel {
+            virtual ~ITouchPanel() {}
+
+            enum state {
+                released = 0,
+                pressed,
+                motion
+            };
+
+            // Lifetime management
+            virtual void AddRef() const = 0;
+            virtual uint32_t Release() const = 0;
+
+            // Methods
+            virtual void Direct(const uint8_t index, const ITouchPanel::state state, const uint16_t x, const uint16_t y) = 0;
+        };
+
         struct ISurface {
             virtual ~ISurface(){};
 
@@ -44,7 +90,10 @@ namespace Compositor {
             // Methods
             virtual EGLNativeWindowType Native() const = 0;
             virtual std::string Name() const = 0;
-            virtual void Keyboard(IKeyboard* keyboard) = 0;
+            virtual void Keyboard(IKeyboard* keyboard) { }
+            virtual void Pointer(IPointer* pointer) { }
+            virtual void Wheel(IWheel* wheel) { }
+            virtual void TouchPanel(ITouchPanel* touchpanel) { }
             virtual int32_t Width() const = 0;
             virtual int32_t Height() const = 0;
         };
