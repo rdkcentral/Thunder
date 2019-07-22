@@ -457,7 +457,7 @@ public:
         if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
            OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
         } else {
-           OnSystemConfig(shell, configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable2<IMPLEMENTATION>::Has>());
+           OnSystemConfig(shell, configline, std::integral_constant<bool, HasOnShellAndSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
         }
     }
 
@@ -484,7 +484,7 @@ private:
     }
 
     template <typename T>
-    struct HasOnSystemConfigurationAvailable2 {
+    struct HasOnShellAndSystemConfigurationAvailable {
         template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
         struct SFINAE {
         };
