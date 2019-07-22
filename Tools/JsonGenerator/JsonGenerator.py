@@ -510,7 +510,8 @@ def LoadSchema(file, include_path):
                     if not include_path:
                         ref_tok[0] = os.path.join(path, ref_tok[0])
                 else:
-                    ref_tok[0] = os.path.join(path, ref_tok[0])
+                    if os.path.isfile(os.path.join(path, ref_tok[0])):
+                        ref_tok[0] = os.path.join(path, ref_tok[0])
                 if not os.path.isfile(ref_tok[0]):
                     raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
                 ref_file = '"file:%s#%s"' % (urllib.pathname2url(ref_tok[0]), ref_tok[1])
