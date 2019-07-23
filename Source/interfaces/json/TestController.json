@@ -1,0 +1,144 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Test Controller API",
+    "class": "TestController",
+    "description": "TestController JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+ "properties": {
+    "categories": {
+      "summary": "List of test categories.",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Test category name",
+          "example": "JSONRPC"
+        }
+      }
+    },
+    "tests": {
+      "summary": "List of test for selected category.",
+      "readonly": true,
+      "index": {
+        "name": "The test category name",
+        "example": "JSONRPC"
+      },
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "The test name",
+          "example": "JSONRPCTest"
+        }
+      },
+      "errors": [
+        {
+          "description": "Unknown category",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "description": {
+      "summary": "Description of the selected test from particular category.",
+      "readonly": true,
+      "index": {
+        "name": "The test name",
+        "example": "JSONRPC"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "The test description",
+            "example": "Tests JSONRPC functionality"
+          }
+        },
+        "required": [
+          "description"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Unknown category/test",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad JSON param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }    
+  },
+  "methods": {
+    "run": {
+      "summary": "Run all tests - no arguments; <br /> A selected category group of test - specify category;<br /> A selected test - specify category and test name;<br />",
+      "params": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "description": "The test category name",
+            "type": "string",
+            "example": "JSONRPC"
+          },
+          "test": {
+            "description": "The test name",
+            "type": "string",
+            "example": "JSONRPCTest"
+          },
+          "args": {
+            "description": "The test arguments in JSON format",
+            "type": "string",
+            "example": "sample JSON format arg for a test"
+          }
+        },
+        "required": [
+          "category",
+          "test"
+        ]
+      },
+      "result": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "test": {
+              "description": "The test name",
+              "type": "string",
+              "example": "JSONRPCTest"
+            },
+            "status": {
+              "description": "The test status",
+              "type": "string",
+              "example": "Success"
+            }
+          },
+          "required": [
+            "test",
+            "status"
+          ]
+        }
+      },
+      "errors": [
+        {
+          "description": "Unknown category/test",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Bad json param data format",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  }
+}
