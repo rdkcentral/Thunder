@@ -747,8 +747,7 @@ namespace PluginHost
             Core::ProxyType<Service> service(*iterator);
 
             if (service->AutoStart() == true) {
-
-                _dispatcher.Submit(PluginHost::IShell::Job::Create(&(*service), PluginHost::IShell::ACTIVATED, PluginHost::IShell::STARTUP));
+		service->Activate(PluginHost::IShell::STARTUP);
             } else {
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
             }
