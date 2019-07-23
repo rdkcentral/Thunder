@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.3"
+VERSION="1.3.4"
 
 class Trace:
     def __init__(self):
@@ -552,6 +552,13 @@ def SortByDependency(objects):
             sortedObjects.append(obj)
     return sortedObjects
 
+def IsInRef(obj):
+    while obj:
+        if (isinstance(obj.Schema(), jsonref.JsonRef)):
+            return True
+        obj = obj.parent
+    return False
+
 class ObjectTracker:
     def __init__(self):
         self.objects = []
@@ -572,10 +579,11 @@ class ObjectTracker:
             return True
         if "properties" in newObj.Schema() and not isinstance(newObj, JsonMethod):
             self.objects.append(newObj)
+            is_ref = IsInRef(newObj)
             props = newObj.Schema()["properties"]
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema()["properties"], props):
-                    if not (isinstance(newObj.Schema(), jsonref.JsonRef) and isinstance(obj.Schema(), jsonref.JsonRef)):
+                    if not is_ref or not IsInRef(obj):
                         trace.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" % (newObj.OrigName(), obj.OrigName()))
                     return obj
     def Objects(self):
@@ -589,7 +597,7 @@ class EnumTracker(ObjectTracker):
     def Add(self, newObj):
         def __Compare(lhs, rhs):
             # NOTE: Two enums are considered identical if they have the same enumeration names and types
-            if lhs["enum"] == rhs["enum"] and lhs["type"] == rhs["type"]:
+            if (lhs["enum"] == rhs["enum"]) and (lhs["type"] == rhs["type"]):
                 if "enumvalues" in lhs:
                     if "enumvalues" not in rhs:
                         return False
@@ -602,9 +610,10 @@ class EnumTracker(ObjectTracker):
                 return False
         if "enum" in newObj.Schema() and not isinstance(newObj, JsonMethod):
             self.objects.append(newObj)
+            is_ref = IsInRef(newObj)
             for obj in self.Objects()[:-1]:
                 if __Compare(obj.Schema(), newObj.Schema()):
-                    if not (isinstance(newObj.Schema(), jsonref.JsonRef) and isinstance(obj.Schema(), jsonref.JsonRef)):
+                    if not is_ref or not IsInRef(obj):
                         trace.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" % (newObj.OrigName(), obj.OrigName()))
                     return obj
     def CommonObjects(self):
@@ -827,13 +836,14 @@ def EmitHelperCode(root, emit, header_file):
         emit.Line("}")
         emit.Line()
 
-        # Method/event stubs
-        print "Emitting method/event stubs..."
+        # Method/property/event stubs
+        print "Emitting stubs..."
         emit.Line("// API implementation")
         emit.Line("//")
         emit.Line()
         for method in root.Properties():
             if not isinstance(method, JsonNotification) and not isinstance(method, JsonProperty):
+                print "Emitting method '%s'" % method.JsonName()
                 params = method.Properties()[0].CppType()
                 if method.Summary():
                     emit.Line("// Method: %s - %s" % (method.JsonName(), method.Summary().split(".",1)[0]))
@@ -903,6 +913,7 @@ def EmitHelperCode(root, emit, header_file):
                     emit.Unindent()
                     emit.Line("}")
                     emit.Line()
+                print "Emitting property '%s'%s" % (method.JsonName(), " (write-only)" if method.writeonly else " (read-only)" if method.readonly else "")
                 if not method.writeonly:
                     EmitPropertyFc(method, method.GetMethodName(), True)
                 if not method.readonly:
@@ -910,6 +921,7 @@ def EmitHelperCode(root, emit, header_file):
 
         for method in root.Properties():
             if isinstance(method, JsonNotification):
+                print "Emitting notification '%s'" % method.JsonName()
                 params = method.Properties()[0].CppType()
                 if method.Summary():
                     emit.Line("// Event: %s - %s" % (method.JsonName(), method.Summary().split(".",1)[0]))
@@ -1018,8 +1030,6 @@ def EmitObjects(root, emit, emitCommon = False):
             if isinstance(jsonObj, JsonMethod):
                 if jsonObj.included_from:
                     return
-            if jsonObj.JsonName():
-                print "Emitting '%s' code..." % jsonObj.JsonName()
 
         # Handle nested classes!
         for obj in SortByDependency(jsonObj.Objects()):
@@ -1128,7 +1138,6 @@ def EmitObjects(root, emit, emitCommon = False):
 
 def CreateCode(schema, path, generateClasses, generateStubs):
     directory = os.path.dirname(path)
-    print directory
     filename = os.path.basename(path.replace("Plugin", ""))
     rpcObj = ParseJsonRpcSchema(schema)
     if rpcObj:
