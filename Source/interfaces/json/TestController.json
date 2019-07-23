@@ -9,10 +9,11 @@
   "common": {
     "$ref": "common.json"
   },
-  "methods": {
-    "TestController.1.categories": {
-      "summary": "Retrieves the list of test categories.",
-      "result": {
+ "properties": {
+    "categories": {
+      "summary": "List of test categories.",
+      "readonly": true,
+      "params": {
         "type": "array",
         "items": {
           "type": "string",
@@ -21,22 +22,14 @@
         }
       }
     },
-    "TestController.1.tests": {
-      "summary": "Retrieves the list of test for selected category.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "category": {
-            "description": "The test category name",
-            "type": "string",
-            "example": "JSONRPC"
-          }
-        },
-        "required": [
-          "category"
-        ]
+    "tests": {
+      "summary": "List of test for selected category.",
+      "readonly": true,
+      "index": {
+        "name": "The test category name",
+        "example": "JSONRPC"
       },
-      "result": {
+      "params": {
         "type": "array",
         "items": {
           "type": "string",
@@ -55,28 +48,14 @@
         }
       ]
     },
-    "TestController.1.description": {
-      "summary": "Retrieves the description of the selected test from particular category.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "category": {
-            "description": "The test category name",
-            "type": "string",
-            "example": "JSONRPC"
-          },
-          "test": {
-            "description": "The test name",
-            "type": "string",
-            "example": "JSONRPCTest"
-          }
-        },
-        "required": [
-          "category",
-          "test"
-        ]
+    "description": {
+      "summary": "Description of the selected test from particular category.",
+      "readonly": true,
+      "index": {
+        "name": "The test name",
+        "example": "JSONRPC"
       },
-      "result": {
+      "params": {
         "type": "object",
         "properties": {
           "description": {
@@ -99,8 +78,10 @@
           "$ref": "#/common/errors/badrequest"
         }
       ]
-    },
-    "TestController.1.run": {
+    }    
+  },
+  "methods": {
+    "run": {
       "summary": "Run all tests - no arguments; <br /> A selected category group of test - specify category;<br /> A selected test - specify category and test name;<br />",
       "params": {
         "type": "object",
@@ -114,6 +95,11 @@
             "description": "The test name",
             "type": "string",
             "example": "JSONRPCTest"
+          },
+          "args": {
+            "description": "The test arguments in JSON format",
+            "type": "string",
+            "example": "sample JSON format arg for a test"
           }
         },
         "required": [
