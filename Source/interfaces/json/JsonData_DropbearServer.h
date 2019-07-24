@@ -71,7 +71,7 @@ namespace JsonData {
             SessioninfoResultData& operator=(const SessioninfoResultData& rhs)
             {
                 Pid = rhs.Pid;
-                IpAdress = rhs.IpAddress;
+                IpAddress = rhs.IpAddress;
                 TimeStamp = rhs.TimeStamp;
                 return (*this);
             }
