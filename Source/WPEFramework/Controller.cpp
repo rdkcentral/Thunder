@@ -444,8 +444,8 @@ namespace Plugin {
 
     void Controller::SubSystems()
     {
-#ifdef RESTFULL_API
         string message;
+#ifdef RESTFULL_API
         PluginHost::MetaData response;
 #endif
         Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData> responseJsonRpc;
@@ -490,6 +490,7 @@ namespace Plugin {
             response.ToString(message);
 
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
+
 #ifdef RESTFULL_API
             _pluginServer->_controller->Notification(message);
 #endif

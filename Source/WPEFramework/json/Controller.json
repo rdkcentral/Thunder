@@ -22,7 +22,7 @@
         "Resumed",
         "Precondition"
       ],
-      "example": "activated"
+      "example": "Activated"
     },
     "plugin": {
       "type": "object",
@@ -185,6 +185,39 @@
         "state",
         "activity",
         "id"
+      ]
+    },
+    "subsystemstatus": {
+      "type": "object",
+      "properties": {
+        "subsystem": {
+          "description": "Subsystem name",
+          "type": "string",
+          "enum": [
+            "Platform",
+            "Network",
+            "Security",
+            "Identifier",
+            "Internet",
+            "Location",
+            "Time",
+            "Provisioning",
+            "Decryption,",
+            "Graphics",
+            "WebSource",
+            "Streaming"
+          ],
+          "example": "Platform"
+        },
+        "active": {
+          "description": "Denotes whether the subsystem is active (true)",
+          "type": "boolean",
+          "example": true
+        }
+      },
+      "required": [
+        "subsystem",
+        "active"
       ]
     }
   },
@@ -409,33 +442,7 @@
       "params": {
         "type": "array",
         "items": {
-          "type": "object",
-          "properties": {
-            "subsystem": {
-              "description": "Subsystem name",
-              "type": "string",
-              "enum": [
-                "Platform",
-                "Network",
-                "Security",
-                "Identifier",
-                "Internet",
-                "Location",
-                "Time",
-                "Provisioning",
-                "Decryption,",
-                "Graphics",
-                "WebSource",
-                "Streaming"
-              ],
-              "example": "Platform"
-            },
-            "active": {
-              "description": "Denotes whether the subsystem is active (true)",
-              "type": "boolean",
-              "example": true
-            }
-          }
+          "$ref": "#/definitions/subsystemstatus"
         }
       }
     },
@@ -570,6 +577,15 @@
           "state",
           "reason"
         ]
+      }
+    },
+    "subsystemchange": {
+      "summary": "Signals a subsystem state change",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/subsystemstatus"
+        }
       }
     }
   }

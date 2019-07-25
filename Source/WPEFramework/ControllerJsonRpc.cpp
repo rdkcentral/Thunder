@@ -367,6 +367,8 @@ namespace Plugin {
         Notify(_T("statechange"), params);
     }
 
+    // Note: event_all and event_subsytemchange are handled internally within the Controller
+
 } // namespace Plugin
 
 }

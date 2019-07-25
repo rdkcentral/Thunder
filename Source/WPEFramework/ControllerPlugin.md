@@ -484,7 +484,7 @@ Provides access to the information about plugins, including their configurations
                 "Platform"
             ], 
             "configuration": {}, 
-            "state": "activated", 
+            "state": "Activated", 
             "processedrequests": 2, 
             "processedobjects": 0, 
             "observers": 0, 
@@ -597,8 +597,8 @@ Provides access to the status of the subsystems.
 | :-------- | :-------- | :-------- |
 | (property) | array | Status of the subsystems |
 | (property)[#] | object |  |
-| (property)[#]?.subsystem | string | <sup>*(optional)*</sup> Subsystem name (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
-| (property)[#]?.active | boolean | <sup>*(optional)*</sup> Denotes whether the subsystem is active (true) |
+| (property)[#].subsystem | string | Subsystem name (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
+| (property)[#].active | boolean | Denotes whether the subsystem is active (true) |
 
 ### Example
 
@@ -783,6 +783,7 @@ Controller interface events:
 | :-------- | :-------- |
 | [all](#event.all) | Signals each and every event in the system |
 | [statechange](#event.statechange) | Signals a plugin state change |
+| [subsystemchange](#event.subsystemchange) | Signals a subsystem state change |
 
 <a name="event.all"></a>
 ## *all <sup>event</sup>*
@@ -831,8 +832,36 @@ Signals a plugin state change
     "method": "client.events.1.statechange", 
     "params": {
         "callsign": "WebKitBrowser", 
-        "state": "activated", 
+        "state": "Activated", 
         "reason": "Requested"
     }
+}
+```
+<a name="event.subsystemchange"></a>
+## *subsystemchange <sup>event</sup>*
+
+Signals a subsystem state change
+
+### Parameters
+
+| Name | Type | Description |
+| :-------- | :-------- | :-------- |
+| params | array |  |
+| params[#] | object |  |
+| params[#].subsystem | string | Subsystem name (must be one of the following: *Platform*, *Network*, *Security*, *Identifier*, *Internet*, *Location*, *Time*, *Provisioning*, *Decryption,*, *Graphics*, *WebSource*, *Streaming*) |
+| params[#].active | boolean | Denotes whether the subsystem is active (true) |
+
+### Example
+
+```json
+{
+    "jsonrpc": "2.0", 
+    "method": "client.events.1.subsystemchange", 
+    "params": [
+        {
+            "subsystem": "Platform", 
+            "active": true
+        }
+    ]
 }
 ```

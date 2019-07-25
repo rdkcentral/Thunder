@@ -65,6 +65,6 @@
     ]
   },
   "interface": {
-    "$ref": "ControllerAPI.json#"
+    "$ref": "Controller.json#"
   }
 }
