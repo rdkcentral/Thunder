@@ -41,9 +41,7 @@ struct Message {
     };
 };
 
-static const char* connectorNameKeyboard = "/tmp/keyhandler";
-static const char* connectorNameMouse = "/tmp/mousehandler";
-static const char* connectorNameTouchScreen = "/tmp/touchhandler";
+static const char* connectorNameVirtualInput = "/tmp/keyhandler";
 
 static void VirtualKeyboardCallback(keyactiontype type, unsigned int code)
 {
@@ -367,17 +365,14 @@ private:
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
             _compositerServerRPCConnection.Release();
         }
-        _virtualkeyboard = ConstructKeyboard(_displayName.c_str(), connectorNameKeyboard, VirtualKeyboardCallback);
-        if (_virtualkeyboard == nullptr) {
-            TRACE(CompositorClient, (_T("Initialization of virtual keyboard failed for Display %s!"), Name()));
-        }
-        _virtualmouse = ConstructMouse(_displayName.c_str(), connectorNameMouse, VirtualMouseCallback);
-        if (_virtualmouse == nullptr) {
-            TRACE(CompositorClient, (_T("Initialization of virtual mouse failed for Display %s!"), Name()));
-        }
-        _virtualtouchscreen = ConstructTouchScreen(_displayName.c_str(), connectorNameTouchScreen, VirtualTouchScreenCallback);
-        if (_virtualtouchscreen == nullptr) {
-            TRACE(CompositorClient, (_T("Initialization of virtual touch screen failed for Display %s!"), Name()));
+        callback_keyboard(VirtualKeyboardCallback);
+        callback_mouse(VirtualMouseCallback);
+        callback_touch(VirtualTouchScreenCallback);
+
+        _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput);
+
+        if (_virtualinput == nullptr) {
+            TRACE(CompositorClient, (_T("Initialization of virtual input failed for Display %s!"), Name()));
         }
 
         if (pipe(g_pipefd) == -1) {
@@ -398,14 +393,12 @@ private:
         write(g_pipefd[1], &message, sizeof(message));
         close(g_pipefd[1]);
 
-        if (_virtualtouchscreen != nullptr) {
-            DestructTouchScreen(_virtualtouchscreen);
-        }
-        if (_virtualmouse != nullptr) {
-            DestructMouse(_virtualmouse);
-        }
-        if (_virtualkeyboard != nullptr) {
-            DestructKeyboard(_virtualkeyboard);
+        callback_keyboard(nullptr);
+        callback_mouse(nullptr);
+        callback_touch(nullptr);
+
+        if (_virtualinput != nullptr) {
+            virtualinput_close(_virtualinput);
         }
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
@@ -428,9 +421,7 @@ private:
     bool _isRunning;
     std::string _displayName;
     mutable Core::CriticalSection _adminLock;
-    void* _virtualkeyboard;
-    void* _virtualmouse;
-    void* _virtualtouchscreen;
+    void* _virtualinput;
     const DisplaySize _displaysize;
     std::list<SurfaceImplementation*> _surfaces;
     Core::ProxyType<RPC::CommunicatorClient> _compositerServerRPCConnection;
@@ -562,8 +553,7 @@ Display::Display(const string& name)
     : _isRunning(true)
     , _displayName(name)
     , _adminLock()
-    , _virtualkeyboard(nullptr)
-    , _virtualtouchscreen(nullptr)
+    , _virtualinput(nullptr)
     , _displaysize(RetrieveDisplaySize())
     , _compositerServerRPCConnection()
     , _pointer_x(0)
