@@ -136,56 +136,7 @@
     }
   },
   "methods": {
-    "WifiControl.1.status": {
-      "summary": "Returns the current status information",
-      "result": {
-        "type": "object",
-        "properties": {
-          "connected": {
-            "example": "MyCorporateNetwork",
-            "type": "string",
-            "description": "Identifier of the connected network (32-bytes long)"
-          },
-          "scanning": {
-            "example": false,
-            "type": "boolean",
-            "description": "Indicates whether a scanning for available network is in progress"
-          }
-        },
-        "required": [
-          "connected",
-          "scanning"
-        ]
-      }
-    },
-    "WifiControl.1.networks": {
-      "summary": "Returns information about available networks",
-      "result": {
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/network"
-        }
-      }
-    },
-    "WifiControl.1.config": {
-      "summary": "Returns information about configuration of the specified network(s) (FIXME!!!)",
-      "params": {
-        "type": "object",
-        "properties": {
-          "ssid": {
-            "$ref": "#/definitions/ssid",
-            "description": "Identifier of a network (32-bytes long). If not specified all configs are returned."
-          }
-        }
-      },
-      "result": {
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/config"
-        }
-      }
-    },
-    "WifiControl.1.delete": {
+    "delete": {
       "summary": "Forgets configuration of the specified network",
       "params": {
         "type": "object",
@@ -199,38 +150,7 @@
         "$ref": "#/common/results/void"
       }
     },
-    "WifiControl.1.setconfig": {
-      "summary": "Updates or creates a configuration for the specified network",
-      "params": {
-        "type": "object",
-        "properties": {
-          "ssid": {
-            "$ref": "#/definitions/ssid"
-          },
-          "config": {
-            "$ref": "#/definitions/config"
-          }
-        },
-        "required": [
-          "ssid",
-          "config"
-        ]
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "Config does not exist",
-          "$ref": "#/common/errors/unknownkey"
-        },
-        {
-          "description": "Passed in config is invalid",
-          "$ref": "#/common/errors/incompleteconfig"
-        }
-      ]
-    },
-    "WifiControl.1.store": {
+    "store": {
       "summary": "Stores configurations in the permanent storage",
       "result": {
         "$ref": "#/common/results/void"
@@ -242,7 +162,7 @@
         }
       ]
     },
-    "WifiControl.1.scan": {
+    "scan": {
       "summary": "Searches for an available networks",
       "events": [
         "scanresults"
@@ -261,7 +181,7 @@
         }
       ]
     },
-    "WifiControl.1.connect": {
+    "connect": {
       "summary": "Attempt connection to the specified network",
       "events": [
         "connectionchange"
@@ -288,7 +208,7 @@
         }
       ]
     },
-    "WifiControl.1.disconnect": {
+    "disconnect": {
       "summary": "Disconnects from the specified network",
       "events": [
         "connectionchange"
@@ -314,21 +234,86 @@
           "$ref": "#/common/errors/asyncaborted"
         }
       ]
-    },
-    "WifiControl.1.debug": {
-      "summary": "Sets specified debug level",
+    }
+  },
+  "properties": {
+    "status": {
+      "summary": "Returns the current status information",
+      "readonly": true,
       "params": {
         "type": "object",
         "properties": {
-          "level": {
-            "type": "number",
-            "example": 0,
-            "description": "Debul level"
+          "connected": {
+            "example": "MyCorporateNetwork",
+            "type": "string",
+            "description": "Identifier of the connected network (32-bytes long)"
+          },
+          "scanning": {
+            "example": false,
+            "type": "boolean",
+            "description": "Indicates whether a scanning for available network is in progress"
           }
+        },
+        "required": [
+          "connected",
+          "scanning"
+        ]
+      }
+    },
+    "networks": {
+      "readonly": true,
+      "summary": "Returns information about available networks",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/network"
+        }
+      }
+    },
+    "configs": {
+      "summary": "Returns all saved configurations (FIXME!!!)",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/config"
         }
       },
-      "result": {
-        "$ref": "#/common/results/void"
+      "errors": [
+        {
+          "description": "Config does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "config": {
+      "summary": "Create, get or set wifi configuration (FIXME!!!)",
+      "params": {
+        "$ref": "#/definitions/config"
+      },
+      "index": {
+        "name": "SSID",
+        "example": "MyCorporateNetwork",
+        "description": "Identifier of a network (32-bytes long). If not specified all configs are returned if reading."
+      },
+      "errors": [
+        {
+          "description": "Config does not exist",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Passed in config is invalid",
+          "$ref": "#/common/errors/incompleteconfig"
+        }
+      ]      
+    },
+    "debug": {
+      "summary": "Sets specified debug level",
+      "writeonly": true,
+      "params": {
+        "type": "number",
+        "example": 0,
+        "description": "Debul level"
       },
       "errors": [
         {
