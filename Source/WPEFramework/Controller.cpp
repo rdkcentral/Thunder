@@ -444,8 +444,11 @@ namespace Plugin {
 
     void Controller::SubSystems()
     {
+#ifdef RESTFULL_API
         string message;
         PluginHost::MetaData response;
+#endif
+        Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         // Now prepare a message for the Javascript world.
@@ -463,7 +466,14 @@ namespace Plugin {
                 reportMask |= (subSystem->IsActive(current) ? bit : 0);
 
                 if (((reportMask & bit) != 0) ^ ((_lastReported & bit) != 0)) {
+                    JsonData::Controller::SubsystemsParamsData status;
+                    status.Subsystem = current;
+                    status.Active = ((reportMask & bit) != 0);
+                    responseJsonRpc.Add(status);
+
+#ifdef RESTFULL_API
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
+#endif
                     sendReport = true;
                 }
                 ++index;
@@ -483,7 +493,7 @@ namespace Plugin {
 #ifdef RESTFULL_API
             _pluginServer->_controller->Notification(message);
 #endif
-            Notify("subsytem", response);
+            Notify("subsystemchange", responseJsonRpc);
         }
     }
     /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
