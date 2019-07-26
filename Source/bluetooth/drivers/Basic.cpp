@@ -1,12 +1,8 @@
-#include "BlueDriver.h"
+#include "../IDriver.h"
 
-namespace WPEFramework {
-
-namespace Bluetooth {
-
-    /* static */ Driver* Driver::Instance(const string& /* configuration */)
-    {
-        return (new Driver());
-    }
+uint32_t contruct_bluetooth_driver(const char* /* config */) {
+    return (Core::ERROR_NONE);
 }
-} // namespace WPEFramework::Bluetooth
+
+void destruct_bluetooth_driver() {
+}

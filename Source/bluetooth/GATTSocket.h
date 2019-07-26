@@ -12,70 +12,69 @@ namespace Bluetooth {
         GATTSocket& operator=(const GATTSocket&) = delete;
 
     public:
+        class UUID {
+        public:
+            // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
+
+        public:
+            UUID(const uint16_t uuid)
+            {
+                _uuid[0] = 2;
+                _uuid[1] = (uuid & 0xFF);
+                _uuid[2] = (uuid >> 8) & 0xFF;
+            }
+            UUID(const uint8_t uuid[16])
+            {
+                _uuid[0] = 16;
+                ::memcpy(&(_uuid[1]), uuid, 16);
+            }
+            UUID(const UUID& copy)
+            {
+                ::memcpy(_uuid, copy._uuid, copy._uuid[0] + 1);
+            }
+            ~UUID()
+            {
+            }
+
+            UUID& operator=(const UUID& rhs)
+            {
+                ::memcpy(_uuid, rhs._uuid, rhs._uuid[0] + 1);
+                return (*this);
+            }
+
+        public:
+            uint16_t Short() const
+            {
+                ASSERT(_uuid[0] == 2);
+                return ((_uuid[2] << 8) | _uuid[1]);
+            }
+            bool operator==(const UUID& rhs) const
+            {
+                return (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0);
+            }
+            bool operator!=(const UUID& rhs) const
+            {
+                return !(operator==(rhs));
+            }
+            bool HasShort() const
+            {
+                return (_uuid[0] == 2);
+            }
+            uint8_t Length() const
+            {
+                return (_uuid[0]);
+            }
+            const uint8_t& Data() const
+            {
+                return (_uuid[1]);
+            }
+
+        private:
+            uint8_t _uuid[17];
+        };
+
         class Attribute {
         public:
-            class UUID {
-            public:
-                // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
-
-            public:
-                UUID(const uint16_t uuid)
-                {
-                    _uuid[0] = 2;
-                    _uuid[1] = (uuid & 0xFF);
-                    _uuid[2] = (uuid >> 8) & 0xFF;
-                }
-                UUID(const uint8_t uuid[16])
-                {
-                    _uuid[0] = 16;
-                    ::memcpy(&(_uuid[1]), uuid, 16);
-                }
-                UUID(const UUID& copy)
-                {
-                    ::memcpy(_uuid, copy._uuid, copy._uuid[0] + 1);
-                }
-                ~UUID()
-                {
-                }
-
-                UUID& operator=(const UUID& rhs)
-                {
-                    ::memcpy(_uuid, rhs._uuid, rhs._uuid[0] + 1);
-                    return (*this);
-                }
-
-            public:
-                uint16_t Short() const
-                {
-                    ASSERT(_uuid[0] == 2);
-                    return ((_uuid[2] << 8) | _uuid[1]);
-                }
-                bool operator==(const UUID& rhs) const
-                {
-                    return (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0);
-                }
-                bool operator!=(const UUID& rhs) const
-                {
-                    return !(operator==(rhs));
-                }
-                bool HasShort() const
-                {
-                    return (_uuid[0] == 2);
-                }
-                uint8_t Length() const
-                {
-                    return (_uuid[0]);
-                }
-                const uint8_t& Data() const
-                {
-                    return (_uuid[1]);
-                }
-
-            private:
-                uint8_t _uuid[17];
-            };
-
-       public:
             enum type {
                 NIL = 0x00,
                 INTEGER_UNSIGNED = 0x08,

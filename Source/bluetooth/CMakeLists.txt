@@ -1,4 +1,8 @@
-set(TARGET  ${NAMESPACE}Bluetooth)
+set(TARGET ${NAMESPACE}Bluetooth)
+
+find_package(Bluez REQUIRED)
+find_package(BCM_HOST QUIET)
+find_package(NEXUS QUIET)
 
 add_library(${TARGET} SHARED
         HCISocket.cpp
@@ -10,10 +14,18 @@ set(PUBLIC_HEADERS
         Module.h
         )
 
+if (BCM_HOST_FOUND)
+    target_sources(${TARGET} PRIVATE drivers/BCM43XX.cpp)
+else ()
+    target_sources(${TARGET} PRIVATE drivers/Basic.cpp)
+endif ()
+
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+        PRIVATE
+          ${BLUEZ_LIBRARIES}
         )
 
 set_target_properties(${TARGET} PROPERTIES
@@ -30,6 +42,9 @@ target_include_directories( ${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
+        PRIVATE
+          "${CMAKE_CURRENT_SOURCE_DIR}/drivers"
+          ${BLUEZ_INCLUDE_DIRS}
         )
 
 install(

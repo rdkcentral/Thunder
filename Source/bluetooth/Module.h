@@ -8,10 +8,11 @@
 #include "../core/core.h"
 #include "../tracing/tracing.h"
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
-#include <bluetooth/hci_lib.h>
-#include <bluetooth/mgmt.h>
+#include <../include/bluetooth/bluetooth.h>
+#include <../include/bluetooth/hci.h>
+#include <../include/bluetooth/hci_lib.h>
+#include <../include/bluetooth/mgmt.h>
+#include <../include/bluetooth/l2cap.h>
 
 #undef EXTERNAL
 

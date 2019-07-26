@@ -1,6 +1,4 @@
-#pragma once
-
-#include "Module.h"
+#include "GATTSocket.h"
 
 namespace WPEFramework {
 
@@ -70,7 +68,7 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
     return (result);
 }
 
-/* virtual */ uint16_t GATTSocket::Command::Deserialize(const uint8_t stream[], const uint16_t length) override
+/* virtual */ uint16_t GATTSocket::Command::Deserialize(const uint8_t stream[], const uint16_t length)
 {
     uint16_t result = 0;
 
@@ -190,7 +188,7 @@ bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
     return (result);
 }
 
-/* virtual */ void GATTSocket::StateChange() override
+/* virtual */ void GATTSocket::StateChange() 
 {
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
 

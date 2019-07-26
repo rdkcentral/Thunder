@@ -1,6 +1,6 @@
 #define _TRACE_LEVEL 2
 
-#include "BlueDriver.h"
+#include "SerialDriver.h"
 
 namespace WPEFramework {
 
@@ -281,22 +281,35 @@ namespace Bluetooth {
         uint8_t _MACAddress[6];
         uint32_t _baudRate;
     };
+}
+} // namespace WPEFramework::Bluetooth
 
-    /* static */ Driver* Driver::Instance(const string& input)
-    {
-        Broadcom43XX::Config config;
+WPEFramework::Bluetooth::Broadcom43XX* g_driver = nullptr;
+
+unsigned int contruct_bluetooth_driver(const char* input) {
+    uint32_t result = WPEFramework::Core::ERROR_ALREADY_CONNECTED;
+    if (g_driver == nullptr) {
+        WPEFramework::Bluetooth::Broadcom43XX::Config config;
         config.FromString(input);
-        Broadcom43XX* driver = new Broadcom43XX(config);
+        WPEFramework::Bluetooth::Broadcom43XX* driver = new WPEFramework::Bluetooth::Broadcom43XX(config);
 
         uint32_t result = driver->Initialize();
 
-        if (result != Core::ERROR_NONE) {
-
+        if (result == WPEFramework::Core::ERROR_NONE) {
+            g_driver = driver;
+        }
+        else {
             TRACE_L1("Failed to start the Bluetooth driver.");
             delete driver;
-            driver = nullptr;
         }
-        return (driver);
+    }
+    return (result);
+}
+
+void destruct_bluetooth_driver() {
+    if (g_driver != nullptr) {
+        delete g_driver;
+        g_driver = nullptr;
     }
 }
-} // namespace WPEFramework::Bluetooth
+

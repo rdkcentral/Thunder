@@ -1,16 +1,10 @@
-#include "Module.h"
-
-// Don't think self-including header files was a concept BLUEZ got, so
-// we solve it for them. First include Bleutooth, otherwise hci include
-// will fail.
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/hci.h>
+#include "../Module.h"
 
 namespace WPEFramework {
 
 namespace Bluetooth {
 
-    // #define DUMP_FRAMES 1
+// #define DUMP_FRAMES 1
 
 #define HCIUARTSETPROTO _IOW('U', 200, int)
 #define HCIUARTGETPROTO _IOR('U', 201, int)
@@ -31,112 +25,7 @@ namespace Bluetooth {
 #define HCI_UART_NOKIA 10
 #define HCI_UART_MRVL 11
 
-    class EXTERNAL Driver {
-    private:
-        Driver(const Driver&) = delete;
-        Driver& operator=(const Driver&) = delete;
-
-    protected:
-        Driver()
-        {
-        }
-
-    public:
-        class Interface {
-
-        public:
-            Interface()
-                : _descriptor(-1)
-            {
-            }
-            Interface(const uint32_t id)
-            {
-                /* Open HCI socket  */
-                if ((_descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) >= 0) {
-                    _info.dev_id = id;
-                    if (ioctl(_descriptor, HCIGETDEVINFO, (void*)&_info) != 0) {
-                        close(_descriptor);
-                        _descriptor = -1;
-                    }
-                }
-            }
-            Interface(const Interface& copy)
-                : _descriptor(-1)
-            {
-                if (copy._descriptor >= 0) {
-                    _descriptor = ::dup(copy._descriptor);
-                    ::memcpy(&_info, &(copy._info), sizeof(_info));
-                }
-            }
-            ~Interface()
-            {
-                if (_descriptor >= 0) {
-                    ::close(_descriptor);
-                    _descriptor = -1;
-                }
-            }
-
-            Interface& operator=(const Interface& rhs)
-            {
-                if (_descriptor >= 0) {
-                    ::close(_descriptor);
-                    _descriptor = -1;
-                }
-                if (rhs._descriptor >= 0) {
-                    _descriptor = ::dup(rhs._descriptor);
-                    ::memcpy(&_info, &(rhs._info), sizeof(_info));
-                }
-
-                return (*this);
-            }
-
-        public:
-            bool IsValid() const
-            {
-                return (_descriptor >= 0);
-            }
-            bool Up()
-            {
-                bool result = false;
-
-                if (_descriptor >= 0) {
-                    if (::ioctl(_descriptor, HCIDEVUP, _info.dev_id) < 0) {
-                        result = (errno == EALREADY);
-                    } else {
-                        result = true;
-                    }
-                }
-
-                return (result);
-            }
-            bool Down()
-            {
-                bool result = true;
-
-                if (_descriptor >= 0) {
-                    if (::ioctl(_descriptor, HCIDEVDOWN, _info.dev_id) < 0) {
-                        result = false;
-                    }
-                }
-
-                return (result);
-            }
-
-        private:
-            struct hci_dev_info _info;
-            int _descriptor;
-        };
-
-    public:
-        virtual ~Driver()
-        {
-        }
-
-    public:
-        static Driver* Instance(const string& config);
-    };
-
-    class EXTERNAL SerialDriver : public Driver {
+    class EXTERNAL SerialDriver {
     private:
         SerialDriver() = delete;
         SerialDriver(const SerialDriver&) = delete;
@@ -462,8 +351,7 @@ namespace Bluetooth {
 
     protected:
         SerialDriver(const string& port, const uint32_t baudRate, const Core::SerialPort::FlowControl flowControl, const bool sendBreak)
-            : Driver()
-            , _port(*this, port)
+            : _port(*this, port)
         {
             if (_port.Open(100) == Core::ERROR_NONE) {
 
@@ -498,7 +386,7 @@ namespace Bluetooth {
             if (::ioctl(static_cast<Core::IResource&>(_port.Link()).Descriptor(), TIOCSETD, &ttyValue) < 0) {
                 TRACE_L1("Failed direct IOCTL to TIOCSETD, %d", errno);
             } else if (::ioctl(static_cast<Core::IResource&>(_port.Link()).Descriptor(), HCIUARTSETFLAGS, flags) < 0) {
-                TRACE_L1("Failed HCIUARTSETFLAGS. [flags:%d]", flags);
+                TRACE_L1("Failed HCIUARTSETFLAGS. [flags:%lu]", flags);
             } else if (::ioctl(static_cast<Core::IResource&>(_port.Link()).Descriptor(), HCIUARTSETPROTO, protocol) < 0) {
                 TRACE_L1("Failed HCIUARTSETPROTO. [protocol:%d]", protocol);
             } else {

@@ -1,6 +1,4 @@
-#pragma once
-
-#include "Module.h"
+#include "HCISocket.h"
 
 namespace WPEFramework {
 
@@ -224,18 +222,6 @@ namespace Bluetooth {
             uint16_t _error;
         };
 
-        static constexpr uint32_t MAX_ACTION_TIMEOUT = 2000; /* 2 Seconds for commands to complete ? */
-        static constexpr uint16_t ACTION_MASK = 0x3FFF;
-
-    public:
-        enum state : uint16_t {
-            IDLE = 0x0000,
-            SCANNING = 0x0001,
-            PAIRING = 0x0002,
-            ADVERTISING = 0x4000,
-            ABORT = 0x8000
-        };
-
 // ------------------------------------------------------------------------
 // Create definitions for the HCI commands
 // ------------------------------------------------------------------------
@@ -295,7 +281,7 @@ struct Management {
     typedef ManagementType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device> Unpair;
 };
 
-uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode = 0)
+uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
 {
     uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
@@ -444,7 +430,7 @@ void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const bool li
     _state.Unlock();
 }
 
-uint32_t HCISocket::Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT)
+uint32_t HCISocket::Pair(const Address& remote, const uint8_t type, const capabilities cap)
 {
     uint32_t result = Core::ERROR_INPROGRESS;
 
@@ -477,7 +463,7 @@ uint32_t HCISocket::Pair(const Address& remote, const uint8_t type = BDADDR_BRED
     return (result);
 }
 
-uint32_t HCISocket::Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR)
+uint32_t HCISocket::Unpair(const Address& remote, const uint8_t type)
 {
     uint32_t result = Core::ERROR_INPROGRESS;
 

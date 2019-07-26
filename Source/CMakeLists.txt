@@ -4,6 +4,8 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
+option(BLUETOOTH
+        "Include the bluetooth library." OFF)
 option(BROADCAST
         "Include the broadcasting library." OFF)
 option(WEBSOCKET
@@ -74,6 +76,10 @@ endif()
 
 if(BROADCAST)
     add_subdirectory(broadcast)
+endif()
+
+if(BLUETOOTH)
+    add_subdirectory(bluetooth)
 endif()
 
 if(PROVISIONPROXY)
