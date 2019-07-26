@@ -41,14 +41,14 @@ namespace JsonData {
             CloseclientsessionParamsData()
                 : Core::JSON::Container()
             {
-                Add(_T("pid"), &Pid);
+                Add(_T("clientpid"), &ClientPid);
             }
 
             CloseclientsessionParamsData(const CloseclientsessionParamsData&) = delete;
             CloseclientsessionParamsData& operator=(const CloseclientsessionParamsData&) = delete;
 
         public:
-            Core::JSON::String Pid; // Port on which DHCP service shall run
+            Core::JSON::String ClientPid;
         }; // class CloseclientsessionParamsData
 
         class SessioninfoResultData : public Core::JSON::Container {

@@ -163,7 +163,7 @@
         "properties": {
           "clientpid": {
             "description": "SSH client process id",
-            "type": "number",
+            "type": "string",
             "default": "268"
           }
         }

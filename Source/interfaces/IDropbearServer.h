@@ -14,8 +14,6 @@ namespace Exchange {
         virtual uint32_t StopService() = 0;
         virtual uint32_t GetTotalSessions() = 0;
         virtual uint32_t GetSessionsCount() = 0;
-        //virtual uint32_t GetSessionsInfo(Core::JSON::ArrayType<JsonData::DropbearServer::SessioninfoResultData>& response) = 0;
-        virtual uint32_t CloseClientSession(uint32_t client_pid) = 0;
     };
 }
 }
