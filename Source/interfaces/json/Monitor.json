@@ -146,43 +146,7 @@
     }
   },
   "methods": {
-    "Monitor.1.status": {
-      "summary": "Returns the memory and process statistics either for a single plugin or all plugins watched by the Monitor",
-      "params": {
-        "type": "object",
-        "properties": {
-          "callsign": {
-            "description": "The callsing of a plugin to get measurements snapshot of, if set empty then all observed objects will be returned",
-            "type": "string",
-            "example": ""
-          }
-        }
-      },
-      "result": {
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/info"
-        }
-      }
-    },
-    "Monitor.1.resetstats": {
-      "summary": "Resets memory and process statistics for a single plugin watched by the Monitor",
-      "params": {
-        "type": "object",
-        "properties": {
-          "callsign": {
-            "description": "The callsign of a plugin to reset statistics of",
-            "type": "string",
-            "example": "WebServer"
-          }
-        }
-      },
-      "result": {
-        "description": "Measurements for the plugin before reset",
-        "$ref": "#/definitions/info"
-      }
-    },
-    "Monitor.1.restartlimits": {
+    "restartlimits": {
       "summary": "Sets new restart limits for a plugin",
       "params": {
         "type": "object",
@@ -209,6 +173,39 @@
       },
       "result": {
         "$ref": "#/common/results/void"
+      }
+    },
+    "resetstats": {
+      "summary": "Resets memory and process statistics for a single plugin watched by the Monitor",
+      "params": {
+        "type": "object",
+        "properties": {
+          "callsign": {
+            "description": "The callsign of a plugin to reset statistics of",
+            "type": "string",
+            "example": "WebServer"
+          }
+        }
+      },
+      "result": {
+        "description": "Measurements for the plugin before reset",
+        "$ref": "#/definitions/info"
+      }
+    }
+  },
+  "properties": {
+    "status": {
+      "summary": "The memory and process statistics either for a single plugin or all plugins watched by the Monitor",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/info"
+        }
+      },
+      "index": {
+        "name": "The callsing of a plugin to get measurements snapshot of, if set empty then all observed objects will be returned",
+        "example": ""
       }
     }
   },
