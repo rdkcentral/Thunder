@@ -50,6 +50,10 @@
       "code": 28,
       "message": "ERROR_UNKNOWN_TABLE"
     },
+    "duplicatekey": {
+      "code": 29,
+      "message": "ERROR_DUPLICATE_KEY"
+    },
     "badrequest": {
       "code": 30,
       "message": "ERROR_BAD_REQUEST"
