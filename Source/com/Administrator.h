@@ -380,7 +380,11 @@ namespace RPC {
                 TRACE_L1("_threadPoolEngine.Pending() == %d", _threadPoolEngine.Pending());
             }
 
-            _threadPoolEngine.Submit(Job(source, message, _handler), Core::infinite);
+            if (message->Label() == AnnounceMessage::Id()) {
+	            _handler->Procedure(source, message);
+	        } else {
+                _threadPoolEngine.Submit(Job(source, message, _handler), Core::infinite);
+            }        
         }
 
     private:
