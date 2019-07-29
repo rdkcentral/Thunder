@@ -10,7 +10,7 @@
     "$ref": "common.json"
   },
   "methods": {
-    "TimeSync.1.synchronize": {
+    "synchronize": {
       "summary": "Synchronizes time",
       "description": "Use this method to synchronize the system time with the currently configured time source. If automatic time synchronization is initially disabled or stopped, it will be restarted.",
       "result": {
@@ -29,7 +29,7 @@
     }
   },
   "properties": {
-    "TimeSync.1.synctime": {
+    "synctime": {
       "summary": "Most recent synchronized time",
       "readonly": true,
       "params": {

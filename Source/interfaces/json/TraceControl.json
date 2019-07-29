@@ -8,7 +8,8 @@
   },
   "common": {
     "$ref": "common.json"
-  },"definitions": {
+  },
+  "definitions": {
     "module": {
       "description": "Module name",
       "type": "string",
@@ -112,7 +113,7 @@
     },
     "set": {
       "summary": "Sets traces",
-      "description": "Disables/Enables all/select category traces for particular module.",
+      "description": "Disables/enables all/select category traces for particular module.",
       "params": {
         "$ref": "#/definitions/trace"
       },

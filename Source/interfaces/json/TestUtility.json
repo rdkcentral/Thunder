@@ -11,17 +11,17 @@
   },
   "methods": {
     "runmemory": {
-      "summary": "Runs a memory test command.",
+      "summary": "Runs a memory test command",
       "params": {
         "type": "object",
         "properties": {
           "command": {
-            "description": "The test command name",
+            "description": "Test command name",
             "type": "string",
             "example": "Malloc"
           },
           "size": {
-            "description": "The amount of memory in KB for allocation (applicable for \"Malloc\" commands)",
+            "description": "The amount of memory in KB for allocation (applicable for *Malloc* commands)",
             "type": "number",
             "example": 0
           }
@@ -67,12 +67,12 @@
       ]
     },
     "runcrash": {
-      "summary": "Runs a crash test command.",
+      "summary": "Runs a crash test command",
       "params": {
         "type": "object",
         "properties": {
           "command": {
-            "description": "The test command name",
+            "description": "Test command name",
             "type": "string",
             "example": "Crash"
           },
@@ -110,7 +110,7 @@
   },
   "properties": {
     "commands": {
-      "summary": "Retrieves the list of test commands.",
+      "summary": "List of test commands",
       "readonly": true,
       "params": {
         "type": "array",
@@ -122,7 +122,7 @@
       }
     },
     "description": {
-      "summary": "Retrieves the description of selected test command.",
+      "summary": "Description of a test command",
       "readonly": true,
       "params": {
         "type": "object",
@@ -138,7 +138,7 @@
         ]
       },
       "index": {
-        "name": "Command Name",
+        "name": "Command",
         "example": "Malloc"
       },
       "errors": [
@@ -153,7 +153,7 @@
       ]
     },
     "parameters": {
-      "summary": "Retrieves parameters of the selected test command.",
+      "summary": "Parameters of a test command",
       "readonly": true,
       "params": {
         "type": "object",
@@ -165,7 +165,7 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "description": "The test command input parameter",
+                  "description": "Test command input parameter",
                   "example": "memory"
                 },
                 "type": {
@@ -177,12 +177,12 @@
                     "Object",
                     "Symbol"
                   ],
-                  "description": "The test command input parameter type",
+                  "description": "Test command input parameter type",
                   "example": "Number"
                 },
                 "comment": {
                   "type": "string",
-                  "description": "The test command input parameter description",
+                  "description": "Test command input parameter description",
                   "example": "Memory statistics in KB"
                 }
               },
@@ -198,17 +198,17 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "The test command output parameter",
+                "description": "Test command output parameter",
                 "example": "memory"
               },
               "type": {
                 "type": "string",
-                "description": "The test command output parameter type",
+                "description": "Test command output parameter type",
                 "example": "Number"
               },
               "comment": {
                 "type": "string",
-                "description": "The test command output parameter description",
+                "description": "Test command output parameter description",
                 "example": "Memory statistics in KB"
               }
             },
@@ -224,7 +224,7 @@
         ]
       },
       "index": {
-        "name": "Command Name",
+        "name": "Command",
         "example": "Malloc"
       },
       "errors": [

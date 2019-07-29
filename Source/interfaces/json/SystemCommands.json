@@ -10,8 +10,8 @@
     "$ref": "common.json"
   },
   "methods": {
-    "SystemCommands.1.usbreset": {
-      "summary": "Resets a USB device.",
+    "usbreset": {
+      "summary": "Resets a USB device",
       "description": "With this method a USB device can be reset using USBFS_RESET ioctl command.",
       "params": {
         "type": "object",

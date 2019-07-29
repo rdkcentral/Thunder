@@ -16,18 +16,18 @@
         "device": {
           "description": "Device name",
           "type": "string",
-          "default": "DevInput"
+          "example": "DevInput"
         },
         "code": {
           "description": "Key code",
           "type": "number",
-          "default": 1
+          "example": 1
         }
       },
       "required": [
         "device",
         "code"
-      ]    
+      ]
     },
     "modifiers": {
       "type": "array",
@@ -51,27 +51,27 @@
         ],
         "enumtyped": false,
         "description": "Key modifiers",
-        "default": "leftshift"
+        "example": "leftshift"
       }
-    }, 
+    },
     "rcinfo": {
       "type": "object",
       "properties": {
         "device": {
           "description": "Device name",
           "type": "string",
-          "default": "DevInput"
+          "example": "DevInput"
         },
         "code": {
           "description": "Key code",
           "type": "number",
-          "default": 1
+          "example": 1
         },
         "key": {
           "description": "Key ingest code",
           "type": "number",
           "size": 16,
-          "default": 103
+          "example": 103
         },
         "modifiers": {
           "$ref": "#/definitions/modifiers"
@@ -90,10 +90,10 @@
         "device": {
           "description": "Device name",
           "type": "string",
-          "default": "DevInput"
+          "example": "DevInput"
         }
       }
-    }    
+    }
   },
   "properties": {
     "devices": {
@@ -104,12 +104,12 @@
         "items": {
           "type": "string",
           "description": "Available device name",
-          "default": "Web"
+          "example": "Web"
         }
       }
     },
     "device": {
-      "summary": "Metadata of specific devices",
+      "summary": "Metadata of a specific device",
       "readonly": true,
       "params": {
         "type": "object",
@@ -117,12 +117,12 @@
           "name": {
             "description": "Device name",
             "type": "string",
-            "default": "DevInput"
+            "example": "DevInput"
           },
           "metadata": {
             "description": "Device metadata",
             "type": "string",
-            "default": "It is based on protocol A"
+            "example": "It is based on protocol A"
           }
         },
         "required": [
@@ -130,9 +130,9 @@
           "metadata"
         ]
       },
-      "index": {
-        "name": "Device name",
-        "example": "0"
+      "s": {
+        "name": "Device",
+        "example": "DevInput"
       },
       "errors": [
         {
@@ -162,13 +162,13 @@
           "code": {
             "description": "Key code",
             "type": "number",
-            "default": 1
+            "example": 1
           },
           "key": {
             "description": "Key ingest code",
             "type": "number",
             "size": 16,
-            "default": 103
+            "example": 103
           },
           "modifiers": {
             "$ref": "#/definitions/modifiers"
@@ -196,7 +196,7 @@
       ]
     },
     "delete": {
-      "summary": "Deletes the key code from map.",
+      "summary": "Deletes a key code from the key map",
       "params": {
         "$ref": "#/definitions/key"
       },
@@ -219,7 +219,7 @@
       ]
     },
     "modify": {
-      "summary": "Modifies the key code in the map.",
+      "summary": "Modifies a key code in the key map",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -242,7 +242,7 @@
       ]
     },
     "pair": {
-      "summary": "Activates pairing mode of specific device.",
+      "summary": "Activates pairing mode of a device",
       "params": {
         "$ref": "#/definitions/device"
       },
@@ -265,19 +265,19 @@
       ]
     },
     "unpair": {
-      "summary": "Unpairs of specific device.",
+      "summary": "Unpairs a device",
       "params": {
         "type": "object",
         "properties": {
           "device": {
             "description": "Device name",
             "type": "string",
-            "default": "DevInput"
+            "example": "DevInput"
           },
           "bindid": {
             "description": "Binding id",
             "type": "string",
-            "default": "id"
+            "example": "id"
           }
         },
         "required": [
@@ -304,7 +304,7 @@
       ]
     },
     "send": {
-      "summary": "Sends a code to a device.",
+      "summary": "Sends a key code to a device",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -335,7 +335,7 @@
       ]
     },
     "press": {
-      "summary": "Sends a code 'Press' to a device.",
+      "summary": "Sends a 'Press' code to a device",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -366,7 +366,7 @@
       ]
     },
     "release": {
-      "summary": "Sends a code 'Release' to a device.",
+      "summary": "Sends a 'Release' code to a device",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },
@@ -397,7 +397,7 @@
       ]
     },
     "save": {
-      "summary": "Saves the loaded key map as DEVICE_NAME.json into persistent path.",
+      "summary": "Saves the loaded key map as *DEVICE_NAME.json* into persistent path",
       "params": {
         "$ref": "#/definitions/device"
       },
@@ -424,7 +424,7 @@
       ]
     },
     "load": {
-      "summary": "Re-loads DEVICE_NAME.json key map into memory.",
+      "summary": "Re-loads *DEVICE_NAME.json* key map",
       "params": {
         "$ref": "#/definitions/device"
       },
@@ -455,7 +455,7 @@
       ]
     },
     "add": {
-      "summary": "Adds the key code in the map.",
+      "summary": "Adds a key code to the key map",
       "params": {
         "$ref": "#/definitions/rcinfo"
       },

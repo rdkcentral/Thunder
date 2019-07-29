@@ -11,7 +11,7 @@
   },
  "properties": {
     "categories": {
-      "summary": "List of test categories.",
+      "summary": "List of test categories",
       "readonly": true,
       "params": {
         "type": "array",
@@ -23,17 +23,17 @@
       }
     },
     "tests": {
-      "summary": "List of test for selected category.",
+      "summary": "List of tests for a category",
       "readonly": true,
       "index": {
-        "name": "The test category name",
+        "name": "Category",
         "example": "JSONRPC"
       },
       "params": {
         "type": "array",
         "items": {
           "type": "string",
-          "description": "The test name",
+          "description": "Test name",
           "example": "JSONRPCTest"
         }
       },
@@ -49,10 +49,10 @@
       ]
     },
     "description": {
-      "summary": "Description of the selected test from particular category.",
+      "summary": "Description of a test",
       "readonly": true,
       "index": {
-        "name": "The test name",
+        "name": "Test",
         "example": "JSONRPC"
       },
       "params": {
@@ -60,7 +60,7 @@
         "properties": {
           "description": {
             "type": "string",
-            "description": "The test description",
+            "description": "Test description",
             "example": "Tests JSONRPC functionality"
           }
         },
@@ -78,47 +78,44 @@
           "$ref": "#/common/errors/badrequest"
         }
       ]
-    }    
+    }
   },
   "methods": {
     "run": {
-      "summary": "Run all tests - no arguments; <br /> A selected category group of test - specify category;<br /> A selected test - specify category and test name;<br />",
+      "summary": "Runs a single test or multiple tests",
       "params": {
         "type": "object",
         "properties": {
           "category": {
-            "description": "The test category name",
+            "description": "Test category name, if omitted: all tests are executed",
             "type": "string",
             "example": "JSONRPC"
           },
           "test": {
-            "description": "The test name",
+            "description": "Test name, if omitted: all tests of category are executed",
             "type": "string",
             "example": "JSONRPCTest"
           },
           "args": {
             "description": "The test arguments in JSON format",
             "type": "string",
-            "example": "sample JSON format arg for a test"
+            "example": "{ }"
           }
-        },
-        "required": [
-          "category",
-          "test"
-        ]
+        }
       },
       "result": {
+        "description": "List of test results",
         "type": "array",
         "items": {
           "type": "object",
           "properties": {
             "test": {
-              "description": "The test name",
+              "description": "Test name",
               "type": "string",
               "example": "JSONRPCTest"
             },
             "status": {
-              "description": "The test status",
+              "description": "Test status",
               "type": "string",
               "example": "Success"
             }

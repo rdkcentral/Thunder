@@ -10,15 +10,37 @@
     "$ref": "common.json"
   },
   "methods": {
-    "NetworkControl.1.reload": {
-      "summary": "Reload static and non-static network interface adapter.",
+    "reload": {
+      "summary": "Reloads a static and non-static network interface adapter",
       "params": {
         "type": "object",
         "properties": {
           "device": {
             "description": "Network interface",
             "type": "string",
-            "default": "eth0"
+            "example": "eth0"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unavailable network interface",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "request": {
+      "summary": "Reloads a non-static network interface adapter",
+      "params": {
+        "type": "object",
+        "properties": {
+          "device": {
+            "description": "Network interface",
+            "type": "string",
+            "example": "eth0"
           }
         }
       },
@@ -32,15 +54,15 @@
         }
       ]
     },
-    "NetworkControl.1.request": {
-      "summary": "Reload non-static network interface adapter.",
+    "assign": {
+      "summary": "Reloads a static network interface adapter",
       "params": {
         "type": "object",
         "properties": {
           "device": {
             "description": "Network interface",
             "type": "string",
-            "default": "eth0"
+            "example": "eth0"
           }
         }
       },
@@ -54,37 +76,15 @@
         }
       ]
     },
-    "NetworkControl.1.assign": {
-      "summary": "Reload static network interface adapter.",
+    "flush": {
+      "summary": "Flushes a network interface adapter",
       "params": {
         "type": "object",
         "properties": {
           "device": {
             "description": "Network interface",
             "type": "string",
-            "default": "eth0"
-          }
-        }
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "Unavaliable network interface",
-          "$ref": "#/common/errors/unavailable"
-        }
-      ]
-    },
-    "NetworkControl.1.flush": {
-      "summary": "Flush network interface adapter.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "device": {
-            "description": "Network interface",
-            "type": "string",
-            "default": "eth0"
+            "example": "eth0"
           }
         }
       },
@@ -101,7 +101,7 @@
   },
   "properties": {
     "network": {
-      "summary": "The actual network information for targeted network interface, if network interface is not given, all network interfaces are returned.",
+      "summary": "Current network information",
       "readonly": true,
       "params": {
         "type": "array",
@@ -111,10 +111,10 @@
             "interface": {
               "description": "Interface name",
               "type": "string",
-              "default": "eth0"
+              "example": "eth0"
             },
             "mode": {
-              "description": "Mode type",
+              "description": "Mode",
               "type": "string",
               "enum": [
                 "Manual",
@@ -122,50 +122,51 @@
                 "Dynamic"
               ],
               "enumtyped": false,
-              "default": "dynamic"
+              "example": "dynamic"
             },
             "address": {
               "description": "IP address",
               "type": "string",
-              "default": "192.168.1.158"
+              "example": "192.168.1.158"
             },
             "mask": {
-              "description": "Network inteface mask",
+              "description": "Network interface mask",
               "type": "number",
               "size": 8,
-              "default": "24"
+              "example": "24"
             },
             "gateway": {
               "description": "Gateway address",
               "type": "string",
-              "default": "192.168.1.1"
+              "example": "192.168.1.1"
             },
             "broadcast": {
               "description": "Broadcast IP",
               "type": "string",
-              "default": "192.168.1.255"
+              "example": "192.168.1.255"
             }
           }
         }
       },
       "index": {
-        "name": "Interface Name",
+        "name": "Interface",
+        "description": "If network interface is not given, all network interfaces are returned.",
         "example": "eth0"
       },
       "errors": [
         {
-          "description": "Unavaliable network interface",
+          "description": "Unavailable network interface",
           "$ref": "#/common/errors/unavailable"
         }
       ]
     },
     "up": {
-      "summary": "Determines if interface is up.",
+      "summary": "Interface up status",
       "params": {
         "type": "boolean"
       },
       "index": {
-        "name": "Interface Name",
+        "name": "Interface",
         "example": "eth0"
       },
       "result": {
@@ -173,7 +174,7 @@
       },
       "errors": [
         {
-          "description": "Unavaliable network interface",
+          "description": "Unavailable network interface",
           "$ref": "#/common/errors/unavailable"
         }
       ]

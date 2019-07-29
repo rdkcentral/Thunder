@@ -13,7 +13,7 @@
     "ssid": {
       "type": "string",
       "example": "MyCorporateNetwork",
-      "description": "Identifier of a network (32-bytes long)"
+      "description": "Identifier of a network"
     },
     "key": {
       "type": "string",
@@ -24,7 +24,7 @@
       "type": "object",
       "properties": {
         "method": {
-          "description": "Encryption method used by a network",
+          "description": "Encryption method used by the network",
           "example": "WPA",
           "type": "string"
         },
@@ -57,7 +57,7 @@
         "bssid": {
           "type": "string",
           "example": "94:b4:0f:77:cc:71",
-          "description": "48-bits long BSS' identifier (might be MAC format)"
+          "description": "48-bits long BSS identifier (might be MAC format)"
         },
         "frequency": {
           "type": "number",
@@ -137,7 +137,7 @@
   },
   "methods": {
     "delete": {
-      "summary": "Forgets configuration of the specified network",
+      "summary": "Forgets the configuration of a network",
       "params": {
         "type": "object",
         "properties": {
@@ -151,7 +151,7 @@
       }
     },
     "store": {
-      "summary": "Stores configurations in the permanent storage",
+      "summary": "Stores the configurations in persistent storage",
       "result": {
         "$ref": "#/common/results/void"
       },
@@ -163,7 +163,7 @@
       ]
     },
     "scan": {
-      "summary": "Searches for an available networks",
+      "summary": "Searches for available networks",
       "events": [
         "scanresults"
       ],
@@ -182,7 +182,7 @@
       ]
     },
     "connect": {
-      "summary": "Attempt connection to the specified network",
+      "summary": "Attempts connection to a network",
       "events": [
         "connectionchange"
       ],
@@ -209,7 +209,7 @@
       ]
     },
     "disconnect": {
-      "summary": "Disconnects from the specified network",
+      "summary": "Disconnects from a network",
       "events": [
         "connectionchange"
       ],
@@ -238,7 +238,7 @@
   },
   "properties": {
     "status": {
-      "summary": "Returns the current status information",
+      "summary": "Network status",
       "readonly": true,
       "params": {
         "type": "object",
@@ -246,7 +246,7 @@
           "connected": {
             "example": "MyCorporateNetwork",
             "type": "string",
-            "description": "Identifier of the connected network (32-bytes long)"
+            "description": "Identifier of the connected network"
           },
           "scanning": {
             "example": false,
@@ -262,7 +262,7 @@
     },
     "networks": {
       "readonly": true,
-      "summary": "Returns information about available networks",
+      "summary": "Available networks",
       "params": {
         "type": "array",
         "items": {
@@ -271,7 +271,7 @@
       }
     },
     "configs": {
-      "summary": "Returns all saved configurations (FIXME!!!)",
+      "summary": "All WiFi configurations",
       "readonly": true,
       "params": {
         "type": "array",
@@ -281,39 +281,39 @@
       },
       "errors": [
         {
-          "description": "Config does not exist",
+          "description": "Configuration does not exist",
           "$ref": "#/common/errors/unknownkey"
         }
       ]
     },
     "config": {
-      "summary": "Create, get or set wifi configuration (FIXME!!!)",
+      "summary": "Single WiFi conifguration",
       "params": {
         "$ref": "#/definitions/config"
       },
       "index": {
         "name": "SSID",
         "example": "MyCorporateNetwork",
-        "description": "Identifier of a network (32-bytes long). If not specified all configs are returned if reading."
+        "description": "If not specified all configurations are returned."
       },
       "errors": [
         {
-          "description": "Config does not exist",
+          "description": "Configuration does not exist",
           "$ref": "#/common/errors/unknownkey"
         },
         {
-          "description": "Passed in config is invalid",
+          "description": "Passed in configuration is invalid",
           "$ref": "#/common/errors/incompleteconfig"
         }
-      ]      
+      ]
     },
     "debug": {
-      "summary": "Sets specified debug level",
+      "summary": "Sets debug level",
       "writeonly": true,
       "params": {
         "type": "number",
         "example": 0,
-        "description": "Debul level"
+        "description": "Debug level"
       },
       "errors": [
         {
@@ -325,7 +325,7 @@
   },
   "events": {
     "scanresults": {
-      "summary": "Signals that the scan operation has finished and carries results of it",
+      "summary": "Signals that the scan operation has finished",
       "params": {
         "type": "array",
         "items": {
@@ -334,10 +334,10 @@
       }
     },
     "networkchange": {
-      "summary": "Informs that something has changed with the network e.g. frequency"
+      "summary": "Signals that a network property has changed (e.g. frequency)"
     },
     "connectionchange": {
-      "summary": "Notifies about connection state change i.e. connected/disconnected",
+      "summary": "Notifies about connection state change (i.e. connected/disconnected)",
       "params": {
         "type": "string",
         "description": "SSID of the connected network in case of connect or empty in case of disconnect",

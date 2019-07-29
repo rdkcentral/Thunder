@@ -11,13 +11,13 @@
   },
   "methods": {
     "LocationSync.1.sync": {
-      "summary": "Runs sync command",
+      "summary": "Synchronizes the location",
       "result": {
         "$ref": "#/common/results/void"
       },
       "errors": [
         {
-          "description": "General error",
+          "description": "Failed to synchdonize the location",
           "$ref": "#/common/errors/general"
         },
         {
