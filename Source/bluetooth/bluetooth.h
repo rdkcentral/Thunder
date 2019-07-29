@@ -1,5 +1,6 @@
 #pragma once
 
+#include "IDriver.h"
 #include "HCISocket.h"
 #include "GATTSocket.h"
 

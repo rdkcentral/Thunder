@@ -35,10 +35,11 @@ namespace Bluetooth {
             {
                 return (reinterpret_cast<OUTBOUND*>(&(_buffer[6])));
             }
-            Core::IOutbound& OpCode(const uint16_t opCode)
+            Core::IOutbound& OpCode(const uint16_t opCode, const OUTBOUND& value)
             {
                 _buffer[0] = (opCode & 0xFF);
                 _buffer[1] = ((opCode >> 8) & 0xFF);
+                ::memcpy(reinterpret_cast<OUTBOUND*>(&(_buffer[6])), &value, sizeof(OUTBOUND));
                 return (*this);
             }
 
@@ -68,218 +69,58 @@ namespace Bluetooth {
             uint8_t _buffer[6 + sizeof(OUTBOUND)];
         };
 
-        template <const uint16_t OPCODE, typename OUTBOUND>
-        class CommandType : public Core::IOutbound {
-        private:
-            CommandType(const CommandType<OPCODE, OUTBOUND>&) = delete;
-            CommandType<OPCODE, OUTBOUND>& operator=(const CommandType<OPCODE, OUTBOUND>&) = delete;
-
-        public:
-            enum : uint16_t { ID = OPCODE };
-
-        public:
-            CommandType()
-                : _offset(sizeof(_buffer))
-            {
-                _buffer[0] = HCI_COMMAND_PKT;
-                _buffer[1] = (OPCODE & 0xFF);
-                _buffer[2] = ((OPCODE >> 8) & 0xFF);
-                _buffer[3] = static_cast<uint8_t>(sizeof(OUTBOUND));
-            }
-            virtual ~CommandType()
-            {
-            }
-
-        public:
-            OUTBOUND* operator->()
-            {
-                return (reinterpret_cast<OUTBOUND*>(&(_buffer[4])));
-            }
-            void Clear()
-            {
-                ::memset(&(_buffer[4]), 0, sizeof(_buffer) - 4);
-            }
-
-        private:
-            virtual uint16_t Id() const override
-            {
-                return (ID);
-            }
-            virtual void Reload() const override
-            {
-                _offset = 0;
-            }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const override
-            {
-                uint16_t result = std::min(static_cast<uint16_t>(sizeof(_buffer) - _offset), length);
-                if (result > 0) {
-
-                    ::memcpy(stream, &(_buffer[_offset]), result);
-                    for (uint8_t index = 0; index < result; index++) {
-                        printf("%02X:", stream[index]);
-                    }
-                    printf("\n");
-                    _offset += result;
-                }
-                return (result);
-            }
-
-        private:
-            mutable uint16_t _offset;
-            uint8_t _buffer[1 + 3 + sizeof(OUTBOUND)];
-        };
-
-        template <const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint16_t RESPONSECODE>
-        class ExchangeType : public CommandType<OPCODE, OUTBOUND>, public Core::IInbound {
-        private:
-            ExchangeType(const ExchangeType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
-            ExchangeType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& operator=(const ExchangeType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
-
-        public:
-            ExchangeType()
-                : CommandType<OPCODE, OUTBOUND>()
-                , _error(~0)
-            {
-            }
-            virtual ~ExchangeType()
-            {
-            }
-
-        public:
-            uint32_t Error() const
-            {
-                return (_error);
-            }
-            const INBOUND& Response() const
-            {
-                return (_response);
-            }
-
-        private:
-            virtual Core::IInbound::state IsCompleted() const override
-            {
-                return (_error != static_cast<uint16_t>(~0) ? Core::IInbound::COMPLETED : Core::IInbound::INPROGRESS);
-            }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
-            {
-                uint16_t result = 0;
-                if (length >= (HCI_EVENT_HDR_SIZE + 1)) {
-                    const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(stream[1]));
-                    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(stream[1 + HCI_EVENT_HDR_SIZE]));
-                    uint16_t len = (length - (1 + HCI_EVENT_HDR_SIZE));
-
-                    if (hdr->evt == EVT_CMD_STATUS) {
-                        const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
-                        if (cs->opcode == CommandType<OPCODE, OUTBOUND>::ID) {
-
-                            if (RESPONSECODE == EVT_CMD_STATUS) {
-                                _error = (cs->status != 0 ? Core::ERROR_GENERAL : Core::ERROR_NONE);
-                            } else if (cs->status != 0) {
-                                _error = cs->status;
-                            }
-                            result = length;
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X expected: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status ));
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X unexpected: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status));
-                        }
-                    } else if (hdr->evt == EVT_CMD_COMPLETE) {
-                        const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
-                        ;
-                        if (cc->opcode == CommandType<OPCODE, OUTBOUND>::ID) {
-                            if (len <= EVT_CMD_COMPLETE_SIZE) {
-                                _error = Core::ERROR_GENERAL;
-                            } else {
-                                uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
-                                ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
-                                _error = Core::ERROR_NONE;
-                            }
-                            result = length;
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X expected: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X unexpected: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
-                        }
-                    } else if ((((CommandType<OPCODE, OUTBOUND>::ID >> 10) & 0x3F) == OGF_LE_CTL) && (hdr->evt == EVT_LE_META_EVENT)) {
-                        const evt_le_meta_event* eventMetaData = reinterpret_cast<const evt_le_meta_event*>(ptr);
-
-                        if (eventMetaData->subevent == RESPONSECODE) {
-                            TRACE(Trace::Information, (_T(">>EVT_COMPLETE: expected")));
-
-                            uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_LE_META_EVENT_SIZE));
-                            ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_LE_META_EVENT_SIZE]), toCopy);
-
-                            _error = Core::ERROR_NONE;
-                            result = length;
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_COMPLETE: unexpected [%d]"), eventMetaData->subevent));
-                        }
-                    }
-                }
-                return (result);
-            }
-
-        private:
-            INBOUND _response;
-            uint16_t _error;
-        };
-
-// ------------------------------------------------------------------------
-// Create definitions for the HCI commands
-// ------------------------------------------------------------------------
-struct Command {
-    typedef ExchangeType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete, EVT_CONN_COMPLETE>
-                Connect;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete, EVT_AUTH_COMPLETE>
-                Authenticate;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete, EVT_DISCONN_COMPLETE>
-                Disconnect;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
-                ConnectLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t, EVT_LE_CONN_COMPLETE>
-                EncryptLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, evt_remote_name_req_complete, EVT_REMOTE_NAME_REQ_COMPLETE>
-                RemoteName;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t, EVT_CMD_COMPLETE>
-                ScanParametersLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE), le_set_scan_enable_cp, uint8_t, EVT_CMD_COMPLETE>
-                ScanEnableLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Core::Void, Core::Void, EVT_CMD_STATUS>
-                ClearWhiteList;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Core::Void, le_read_white_list_size_rp, EVT_CMD_STATUS>
-                ReadWhiteListSize;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Core::Void, EVT_CMD_STATUS>
-                AddDeviceToWhiteList;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_REMOVE_DEVICE_FROM_WHITE_LIST), le_remove_device_from_white_list_cp, uint8_t, EVT_CMD_STATUS>
-                RemoveDeviceFromWhiteList;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_REMOTE_USED_FEATURES), le_read_remote_used_features_cp, evt_le_read_remote_used_features_complete, EVT_LE_READ_REMOTE_USED_FEATURES_COMPLETE>
-                RemoteFeaturesLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISING_PARAMETERS), le_set_advertising_parameters_cp, uint8_t, EVT_CMD_COMPLETE>
-                AdvertisingParametersLE;
-
-    typedef ExchangeType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISE_ENABLE), le_set_advertise_enable_cp, uint8_t, EVT_CMD_COMPLETE>
-                AdvertisingEnableLE;
-};
-
 // ------------------------------------------------------------------------
 // Create definitions for the Management commands
 // ------------------------------------------------------------------------
+
+static constexpr mgmt_mode DISABLE_MODE = { 0x00 };
+static constexpr mgmt_mode ENABLE_MODE  = { 0x01 };
+
 struct Management {
     typedef ManagementType<~0, mgmt_mode> OperationalMode;
     typedef ManagementType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device> Pair;
     typedef ManagementType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device> Unpair;
 };
+
+
+uint32_t HCISocket::Config(const bool powered, const bool bondable, const bool advertising, const bool simplePairing, const bool lowEnergy, const bool secure)
+{
+    uint32_t result = Core::ERROR_GENERAL;
+
+    Management::OperationalMode command(SocketPort::LocalNode().PortNumber());
+
+    ASSERT (IsOpen() == true);
+
+    if (Exchange(500, command.OpCode(MGMT_OP_SET_POWERED, powered ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to power on bluetooth adaptor");
+    }
+    // Enable/Disable Bondable on adaptor.
+    else if (Exchange(500, command.OpCode(MGMT_OP_SET_BONDABLE, bondable ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to enable Bondable");
+    }
+    // Enable/Disable Simple Secure Simple Pairing.
+    else if (Exchange(500, command.OpCode(MGMT_OP_SET_SSP, simplePairing ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to enable Simple Secure Simple Pairing");
+    }
+    // Enable/Disable Low Energy
+    else if (Exchange(500, command.OpCode(MGMT_OP_SET_LE, lowEnergy ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to enable Low Energy");
+    }
+    // Enable/Disable Secure Connections
+    else if (Exchange(500, command.OpCode(MGMT_OP_SET_SECURE_CONN, secure ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to enable Secure Connections");
+    }
+    // Enable/Disable Advertising
+    else if (Exchange(500, command.OpCode(MGMT_OP_SET_ADVERTISING, advertising ? ENABLE_MODE : DISABLE_MODE)) != Core::ERROR_NONE) {
+        TRACE_L1("Failed to enable Advertising");
+    }
+    else {
+        result = Core::ERROR_NONE;
+    }
+
+    return (result);
+}
+
 
 uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
 {
@@ -324,7 +165,7 @@ uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
     return (result);
 }
 
-void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const uint32_t type, const uint8_t flags)
+void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags)
 {
     ASSERT(scanTime <= 326);
 
@@ -365,7 +206,7 @@ void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const uint32_
 
                 if (finder == reported.end()) {
                     reported.push_back(newSource);
-                    callback->DiscoveredDevice(false, newSource, _T("[Unknown]"));
+                    Discovered(false, newSource, _T("[Unknown]"));
                 }
             }
 
@@ -383,7 +224,7 @@ void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const uint32_
     _state.Unlock();
 }
 
-void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const bool limited, const bool passive)
+void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool passive)
 {
     _state.Lock();
 
@@ -400,8 +241,6 @@ void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const bool li
         if ((Exchange(MAX_ACTION_TIMEOUT, parameters, parameters) == Core::ERROR_NONE) && (parameters.Response() == 0)) {
 
             Command::ScanEnableLE scanner;
-            _callback = callback;
-
             scanner.Clear();
             scanner->enable = 1;
             scanner->filter_dup = SCAN_FILTER_DUPLICATES;
@@ -416,8 +255,6 @@ void HCISocket::Scan(IScanning* callback, const uint16_t scanTime, const bool li
                 _state.WaitState(ABORT, scanTime * 1000);
 
                 _state.Lock();
-
-                _callback = nullptr;
 
                 scanner->enable = 0;
                 Exchange(MAX_ACTION_TIMEOUT, scanner, scanner);
@@ -525,68 +362,43 @@ void HCISocket::Abort()
     const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(dataFrame[1]));
     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(dataFrame[1 + HCI_EVENT_HDR_SIZE]));
 
-    switch (hdr->evt) {
-        case EVT_CMD_STATUS: {
-             const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
-             TRACE(Trace::Information, (_T("==EVT_CMD_STATUS: %X-%03X status: %d"), (((cs->opcode >> 10) & 0xF), (cs->opcode & 0x3FF), cs->status)));
-             break;
+    if ( (hdr->evt != EVT_LE_META_EVENT) || (reinterpret_cast<const evt_le_meta_event*>(ptr)->subevent != EVT_LE_ADVERTISING_REPORT) ) {
+        Update(*hdr);
+    }
+    else {
+        const le_advertising_info* advertisingInfo = reinterpret_cast<const le_advertising_info*>(&(reinterpret_cast<const evt_le_meta_event*>(ptr)->data[1]));
+        uint16_t offset = 0;
+        const uint8_t* buffer = advertisingInfo->data;
+        const char* name = nullptr;
+        uint8_t pos = 0;
+
+        while (((offset + buffer[offset]) <= advertisingInfo->length) && (buffer[offset] != 0)) {
+
+            if (((buffer[offset + 1] == EIR_NAME_SHORT) && (name == nullptr)) || (buffer[offset + 1] == EIR_NAME_COMPLETE)) {
+                name = reinterpret_cast<const char*>(&(buffer[offset + 2]));
+                pos = buffer[offset] - 1;
+            }
+            offset += (buffer[offset] + 1);
         }
-        case EVT_CMD_COMPLETE: {
-             const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
-             TRACE(Trace::Information, (_T("==EVT_CMD_COMPLETE: %X-%03X"), (((cc->opcode >> 10) & 0xF), (cc->opcode & 0x3FF))));
-             break;
+
+        if ((name == nullptr) || (pos == 0)) {
+            TRACE_L1("Entry[%s] has no name.", Address(advertisingInfo->bdaddr).ToString());
+            Discovered(false, Address(advertisingInfo->bdaddr), _T("[Unknown]"));
+        } else {
+            Discovered(true, Address(advertisingInfo->bdaddr), string(name, pos));
         }
-        case EVT_LE_META_EVENT: {
-             const evt_le_meta_event* eventMetaData = reinterpret_cast<const evt_le_meta_event*>(ptr);
-
-             if (eventMetaData->subevent == EVT_LE_CONN_COMPLETE) {
-                 TRACE(Trace::Information, (_T("==EVT_LE_CONN_COMPLETE: unexpected")));
-             } else if (eventMetaData->subevent == EVT_LE_READ_REMOTE_USED_FEATURES_COMPLETE) {
-                 TRACE(Trace::Information, (_T("==EVT_LE_READ_REMOTE_USED_FEATURES_COMPLETE: unexpected")));
-             } else if (eventMetaData->subevent == EVT_DISCONNECT_PHYSICAL_LINK_COMPLETE) {
-                 TRACE(Trace::Information, (_T("==EVT_DISCONNECT_PHYSICAL_LINK_COMPLETE: unexpected")));
-             } else if (eventMetaData->subevent == EVT_LE_ADVERTISING_REPORT) {
-                 string shortName;
-                 string longName;
-                 const le_advertising_info* advertisingInfo = reinterpret_cast<const le_advertising_info*>(&(eventMetaData->data[1]));
-                 uint16_t offset = 0;
-                 const uint8_t* buffer = advertisingInfo->data;
-                 const char* name = nullptr;
-                 uint8_t pos = 0;
-
-                 while (((offset + buffer[offset]) <= advertisingInfo->length) && (buffer[offset] != 0)) {
-
-                     if (((buffer[offset + 1] == EIR_NAME_SHORT) && (name == nullptr)) || (buffer[offset + 1] == EIR_NAME_COMPLETE)) {
-                         name = reinterpret_cast<const char*>(&(buffer[offset + 2]));
-                         pos = buffer[offset] - 1;
-                     }
-                     offset += (buffer[offset] + 1);
-                 }
-
-                 if ((name == nullptr) || (pos == 0)) {
-                     TRACE_L1("Entry[%s] has no name. Do not report it.", Address(advertisingInfo->bdaddr).ToString());
-                 } else {
-                     _state.Lock();
-                     if (_callback != nullptr) {
-                         _callback->DiscoveredDevice(true, Address(advertisingInfo->bdaddr), string(name, pos));
-                     }
-                     _state.Unlock();
-                 }
-             } else {
-                 TRACE(Trace::Information, (_T("==EVT_LE_META_EVENT: unexpected subevent: %d"), eventMetaData->subevent));
-             }
-             break;
-        }
-        case 0:
-            break;
-        default:
-            TRACE(Trace::Information, (_T("==UNKNOWN: event %X"), hdr->evt));
-            break;
     }
 
     return (availableData);
 }
 
+/* virtual */ void HCISocket::Update(const hci_event_hdr& eventData)
+{
+}
+
+/* virtual */ void HCISocket::Discovered(const bool lowEnergy, const Bluetooth::Address& address, const string& name)
+{
+}
 void HCISocket::SetOpcode(const uint16_t opcode)
 {
     hci_filter_set_opcode(opcode, &_filter);

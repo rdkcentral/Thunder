@@ -78,10 +78,6 @@ if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
 
-if(BLUETOOTH)
-    add_subdirectory(bluetooth)
-endif()
-
 if(PROVISIONPROXY)
     add_subdirectory(provisionproxy)
 endif()
@@ -96,6 +92,10 @@ endif()
 
 if(TRACING)
     add_subdirectory(tracing)
+endif()
+
+if(BLUETOOTH)
+    add_subdirectory(bluetooth)
 endif()
 
 if(PROFILER)

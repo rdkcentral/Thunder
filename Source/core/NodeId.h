@@ -141,7 +141,11 @@ namespace Core {
         }
         inline uint16_t PortNumber() const
         {
+#ifdef CORE_BLUETOOTH
+            return (Type() == TYPE_BLUETOOTH ? m_structInfo.BTSocket.hci_dev : ntohs(m_structInfo.IPV4Socket.sin_port));
+#else
             return (ntohs(m_structInfo.IPV4Socket.sin_port));
+#endif
         }
         inline void PortNumber(const uint16_t portNumber)
         {

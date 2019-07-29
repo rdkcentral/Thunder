@@ -6,12 +6,15 @@ find_package(NEXUS QUIET)
 
 add_library(${TARGET} SHARED
         HCISocket.cpp
-        GATTSocket.cpp)
+        GATTSocket.cpp
+        Definitions.cpp)
 
 set(PUBLIC_HEADERS
+        IDriver.h
         HCISocket.h
         GATTSocket.h
         Module.h
+        bluetooth.h
         )
 
 if (BCM_HOST_FOUND)
@@ -57,4 +60,9 @@ install(
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
 
-InstallCMakeConfig(TARGETS ${TARGET})
+InstallPackageConfig(
+        TARGETS ${TARGET}
+        DESCRIPTION "Bluetooth library" )
+
+InstallCMakeConfig(
+        TARGETS ${TARGET})
