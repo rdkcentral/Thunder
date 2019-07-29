@@ -1256,13 +1256,16 @@ def CreateDocument(schema, path):
                 if parent and prefix and parent["type"] == "object":
                     prefix += "?." if optional else "."
                 prefix += name
-                description = obj["description"] if "description" in obj else ""
+                description = obj["description"] if "description" in obj else obj["summary"] if "summary" in obj else ""
                 if isinstance(obj, jsonref.JsonRef) and "description" in obj.__reference__:
                     description = obj.__reference__["description"]
                 if name or prefix:
                     if "type" not in obj:
                         raise RuntimeError("missing 'type' for object %s" % (parentName+"/"+name))
-                    MdRow([prefix, obj["type"], (("<sup>"+italics("(optional)") + "</sup>" +" ") if optional else "") + description + enum])
+                    row = (("<sup>"+italics("(optional)") + "</sup>" +" ") if optional else "") + description + enum
+                    if row.endswith('.'):
+                        row = row[:-1]
+                    MdRow([prefix, obj["type"], row])
                 if obj["type"] == "object":
                     if "required" not in obj and name and len(obj["properties"]) > 1:
                         trace.Warn('No "required" field for object "%s"' % name)
@@ -1316,7 +1319,9 @@ def CreateDocument(schema, path):
             if "summary" in props:
                 text = props["summary"]
                 if is_property:
-                    text = "Provides access to the " + (text[0].lower() if text[1].islower() else text[0]) + text[1:] + "."
+                    text = "Provides access to the " + (text[0].lower() if text[1].islower() else text[0]) + text[1:]
+                if not text.endswith('.'):
+                    text += '.'
                 MdParagraph(text)
             if is_property:
                 if "readonly" in props and props["readonly"] == True:
@@ -1338,7 +1343,10 @@ def CreateDocument(schema, path):
                 if "index" in props:
                     if "name" not in props["index"] or "example" not in props["index"]:
                         raise RuntimeError("in %s: index field needs 'name' and 'example' properties" % method)
-                    MdParagraph("> The *%s* shall be passed as the index to the property, e.g. *%s.1.%s@%s*.%s" % (props["index"]["name"], classname, method, props["index"]["example"], (" " + props["index"]["description"]) if "description" in props["index"] else ""))
+                    extra_paragraph = "> The *%s* shall be passed as the index to the property, e.g. *%s.1.%s@%s*.%s" % (props["index"]["name"].lower(), classname, method, props["index"]["example"], (" " + props["index"]["description"]) if "description" in props["index"] else "")
+                    if not extra_paragraph.endswith('.'):
+                        extra_paragraph += '.'
+                    MdParagraph(extra_paragraph)
             else:
                 MdHeader("Parameters", 3)
                 if "params" in props:
@@ -1621,7 +1629,7 @@ def CreateDocument(schema, path):
             SectionDump("Properties", "properties", "property", prop=True)
 
         if event_count:
-            SectionDump("Notifications", "events", "event", "Notifications are autonomous events, triggered by the internals of the plugin, and broadcasted via JSON-RPC to all registered observers. Refer to [[WPEF](#ref.WPEF)] for information on how to register for a notification.", event=True)
+            SectionDump("Notifications", "events", "event", "Notifications are autonomous events, triggered by the internals of the plugin, and broadcasted via JSON-RPC to all registered observers. Refer to [[Thunder](#ref.Thunder)] for information on how to register for a notification.", event=True)
 
         trace.Success("Document created: %s" % output_path)
 
