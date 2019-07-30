@@ -30,7 +30,7 @@
         ],
         "enumtyped": false,
         "description": "Power state",
-        "default": "on"
+        "example": "on"
     },
     "power":{
         "type": "object",
@@ -42,9 +42,13 @@
               "description": "Time to wait for power state change",
               "type": "number",
               "size": 32,
-              "default": 0
+              "example": 0
             }
-      }   
+      },
+      "required": [
+        "powerstate",
+        "timeout"
+      ]    
     }   
   },
   "properties": {
@@ -52,12 +56,7 @@
       "summary": "Power state",
       "readonly": true,
       "params": {
-        "type": "object",
-        "properties": {
-          "state": {
-            "$ref": "#/definitions/state"
-          }
-        }
+        "$ref": "#/definitions/state"
       }
     }
   },
