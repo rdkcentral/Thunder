@@ -116,7 +116,7 @@ namespace Wayland {
             }
             virtual EGLNativeWindowType Native() const override
             {
-                return (static_cast<EGLNativeWindowType>(_native));
+                return (reinterpret_cast<EGLNativeWindowType>(_native));
             }
             virtual std::string Name() const override
             {
@@ -267,6 +267,7 @@ namespace Wayland {
             uint32_t _refcount;
             EGLImageKHR _eglImageKHR;
             Display* _display;
+            const char* _eglExtension;
         };
 
         typedef std::map<const uint32_t, SurfaceImplementation*> SurfaceMap;
@@ -562,7 +563,7 @@ namespace Wayland {
         // Methods
         virtual EGLNativeDisplayType Native() const override
         {
-            return (static_cast<EGLNativeDisplayType>(_display));
+            return (reinterpret_cast<EGLNativeDisplayType>(_display));
         }
         virtual const std::string& Name() const override
         {
