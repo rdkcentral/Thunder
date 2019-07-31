@@ -87,12 +87,6 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
             _error = stream[4];
             break;
         }
-        case ATT_OP_MTU_RESP: {
-            _bufferSize = ((stream[2] << 8) | stream[1]);
-            _response.SetMTU(_bufferSize);
-            _error = Core::ERROR_NONE;
-            break;
-        }
         case ATT_OP_READ_BY_GROUP_RESP: {
             TRACE(Trace::Information, (_T("L2CapSocket Read By Group Type")));
             _error = Core::ERROR_NONE;
@@ -157,10 +151,10 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
             } else {
                 _response.Extend(length - 1, &(stream[1]));
             }
-            TRACE(Trace::Information, (_T("Received a blob of length %d, BufferSize %d"),length, _bufferSize));
-            if (length == _bufferSize) {
+            TRACE(Trace::Information, (_T("Received a blob of length %d"), length));
+            if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
-                TRACE(Trace::Information, (_T("Now we need to see a send....")));
+                TRACE(Trace::Information, (_T("Now we need to send another send....")));
             } else {
                 ASSERT(length < _bufferSize);
                 _error = Core::ERROR_NONE;
@@ -195,9 +189,7 @@ bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
     if (IsOpen() == true) {
         socklen_t len = sizeof(_connectionInfo);
         ::getsockopt(Handle(), SOL_L2CAP, L2CAP_CONNINFO, &_connectionInfo, &len);
-        _command.GetMTU();
-        // Within 1S we should get a response on the MTU.
-        Send(1000, _command, &_command, &_command);
+        Send(CommunicationTimeOut, _sink, &_sink, &_sink);
     }
 }
 

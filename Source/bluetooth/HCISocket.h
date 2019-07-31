@@ -172,10 +172,6 @@ namespace Bluetooth {
             {
                 return (_error);
             }
-            virtual uint16_t Id() const override
-            {
-                return (ID);
-            }
             virtual void Reload() const override
             {
                 _offset = 0;

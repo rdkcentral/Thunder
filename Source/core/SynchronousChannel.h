@@ -16,7 +16,6 @@ namespace Core {
 
         virtual ~IOutbound(){};
 
-        virtual uint16_t Id() const = 0;
         virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const = 0;
         virtual void Reload() const = 0;
     };

@@ -11,7 +11,94 @@ namespace Bluetooth {
         GATTSocket(const GATTSocket&) = delete;
         GATTSocket& operator=(const GATTSocket&) = delete;
 
+
+        static constexpr uint8_t ATT_OP_ERROR = 0x01;
+        static constexpr uint8_t ATT_OP_MTU_REQ = 0x02;
+        static constexpr uint8_t ATT_OP_MTU_RESP = 0x03;
+        static constexpr uint8_t ATT_OP_FIND_INFO_REQ = 0x04;
+        static constexpr uint8_t ATT_OP_FIND_INFO_RESP = 0x05;
+        static constexpr uint8_t ATT_OP_FIND_BY_TYPE_REQ = 0x06;
+        static constexpr uint8_t ATT_OP_FIND_BY_TYPE_RESP = 0x07;
+        static constexpr uint8_t ATT_OP_READ_BY_TYPE_REQ = 0x08;
+        static constexpr uint8_t ATT_OP_READ_BY_TYPE_RESP = 0x09;
+        static constexpr uint8_t ATT_OP_READ_REQ = 0x0A;
+        static constexpr uint8_t ATT_OP_READ_RESP = 0x0B;
+        static constexpr uint8_t ATT_OP_READ_BLOB_REQ = 0x0C;
+        static constexpr uint8_t ATT_OP_READ_BLOB_RESP = 0x0D;
+        static constexpr uint8_t ATT_OP_READ_MULTI_REQ = 0x0E;
+        static constexpr uint8_t ATT_OP_READ_MULTI_RESP = 0x0F;
+        static constexpr uint8_t ATT_OP_READ_BY_GROUP_REQ = 0x10;
+        static constexpr uint8_t ATT_OP_READ_BY_GROUP_RESP = 0x11;
+        static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;
+        static constexpr uint8_t ATT_OP_WRITE_RESP = 0x13;
+
+        class CommandSink : public Core::IOutbound::ICallback, public Core::IOutbound, public Core::IInbound
+        {
+        public:
+            CommandSink() = delete;
+            CommandSink(const CommandSink&) = delete;
+            CommandSink& operator= (const CommandSink&) = delete;
+
+            CommandSink(GATTSocket& parent, const uint32_t preferredMTU) : _parent(parent), _mtu(preferredMTU) {
+                Reload();
+            }
+            virtual ~CommandSink() {
+            }
+
+        public:
+            inline uint16_t MTU () const {
+                return (_mtu & 0xFFFF);
+            }
+            inline bool HasMTU() const {
+                return (_mtu <= 0xFFFF);
+            }
+            virtual void Updated(const Core::IOutbound& data, const uint32_t error_code) override
+            {
+                _parent.Completed(data, error_code);
+            }
+                
+            virtual void Reload() const override
+            {
+               _mtu = ((_mtu & 0xFFFF) | 0xFF000000);
+            }
+            virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const override
+            {
+                if ((_mtu >> 24) == 0xFF) {
+                    ASSERT(length <= 3);
+                    stream[0] = ATT_OP_MTU_REQ;
+                    stream[1] = (_mtu & 0xFF);
+                    stream[2] = ((_mtu >> 8) & 0xFF);
+                    _mtu = ((_mtu & 0xFFFF) | 0xF0000000);
+                }
+                return (3);
+            }
+            virtual Core::IInbound::state IsCompleted() const override
+            {
+                return ((_mtu >> 24) == 0x80 ? Core::IInbound::COMPLETED : Core::IInbound::INPROGRESS);
+            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override {
+                uint16_t result = length;
+
+                // See if we need to retrigger..
+                if (stream[0] == ATT_OP_MTU_RESP) {
+                    _mtu = ((stream[2] << 8) | stream[1]);
+                } else if ((stream[0] == ATT_OP_ERROR) && (stream[1] == ATT_OP_MTU_RESP)) {
+                    TRACE(Trace::Error, (_T("Error on receiving MTU: [%d]"), stream[2]));
+                } else {
+                    TRACE(Trace::Error, (_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), ATT_OP_MTU_RESP, stream[0], stream[1]));
+                    result = 0;
+                } 
+                return (result);
+            }
+ 
+        private:
+            GATTSocket& _parent;
+            mutable uint32_t _mtu;
+        };
+
     public:
+        static constexpr uint32_t CommunicationTimeOut = 2000; /* 2 seconds. */
+
         class UUID {
         public:
             // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
@@ -64,9 +151,9 @@ namespace Bluetooth {
             {
                 return (_uuid[0]);
             }
-            const uint8_t& Data() const
+            const uint8_t* Data() const
             {
-                return (_uuid[1]);
+                return &(_uuid[1]);
             }
 
         private:
@@ -148,30 +235,10 @@ namespace Bluetooth {
             uint8_t* _buffer;
         };
 
-        class Command : public Core::IOutbound::ICallback, public Core::IOutbound, public Core::IInbound {
+        class Command : public Core::IOutbound, public Core::IInbound {
         private:
             Command(const Command&) = delete;
             Command& operator=(const Command&) = delete;
-
-            static constexpr uint8_t ATT_OP_ERROR = 0x01;
-            static constexpr uint8_t ATT_OP_MTU_REQ = 0x02;
-            static constexpr uint8_t ATT_OP_MTU_RESP = 0x03;
-            static constexpr uint8_t ATT_OP_FIND_INFO_REQ = 0x04;
-            static constexpr uint8_t ATT_OP_FIND_INFO_RESP = 0x05;
-            static constexpr uint8_t ATT_OP_FIND_BY_TYPE_REQ = 0x06;
-            static constexpr uint8_t ATT_OP_FIND_BY_TYPE_RESP = 0x07;
-            static constexpr uint8_t ATT_OP_READ_BY_TYPE_REQ = 0x08;
-            static constexpr uint8_t ATT_OP_READ_BY_TYPE_RESP = 0x09;
-            static constexpr uint8_t ATT_OP_READ_REQ = 0x0A;
-            static constexpr uint8_t ATT_OP_READ_RESP = 0x0B;
-            static constexpr uint8_t ATT_OP_READ_BLOB_REQ = 0x0C;
-            static constexpr uint8_t ATT_OP_READ_BLOB_RESP = 0x0D;
-            static constexpr uint8_t ATT_OP_READ_MULTI_REQ = 0x0E;
-            static constexpr uint8_t ATT_OP_READ_MULTI_RESP = 0x0F;
-            static constexpr uint8_t ATT_OP_READ_BY_GROUP_REQ = 0x10;
-            static constexpr uint8_t ATT_OP_READ_BY_GROUP_RESP = 0x11;
-            static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;
-            static constexpr uint8_t ATT_OP_WRITE_RESP = 0x13;
 
             class Exchange {
             private:
@@ -191,19 +258,11 @@ namespace Bluetooth {
             public:
                 bool IsSend() const
                 {
-                    return (_offset != 0);
+                    return (_offset >= _size);
                 }
                 void Reload() const
                 {
                     _offset = 0;
-                }
-                uint8_t GetMTU(const uint16_t mySize)
-                {
-                    _buffer[0] = ATT_OP_MTU_REQ;
-                    _buffer[1] = (mySize & 0xFF);
-                    _buffer[2] = (mySize >> 8) & 0xFF;
-                    _size = 3;
-                    return (ATT_OP_MTU_RESP);
                 }
                 uint8_t ReadByGroupType(const uint16_t start, const uint16_t end, const UUID& id)
                 {
@@ -212,7 +271,7 @@ namespace Bluetooth {
                     _buffer[2] = (start >> 8) & 0xFF;
                     _buffer[3] = (end & 0xFF);
                     _buffer[4] = (end >> 8) & 0xFF;
-                    ::memcpy(&(_buffer[5]), &id.Data(), id.Length());
+                    ::memcpy(&(_buffer[5]), id.Data(), id.Length());
                     _size = id.Length() + 5;
                     return (ATT_OP_READ_BY_GROUP_RESP);
                 }
@@ -227,6 +286,20 @@ namespace Bluetooth {
                     _buffer[6] = (id.Short() >> 8) & 0xFF;
                     ::memcpy(&(_buffer[7]), data, length);
                     _size = 7 + length;
+                    return (ATT_OP_FIND_BY_TYPE_RESP);
+                }
+                uint8_t FindByType(const uint16_t start, const uint16_t end, const UUID& id, const uint16_t handle)
+                {
+                    _buffer[0] = ATT_OP_FIND_BY_TYPE_REQ;
+                    _buffer[1] = (start & 0xFF);
+                    _buffer[2] = (start >> 8) & 0xFF;
+                    _buffer[3] = (end & 0xFF);
+                    _buffer[4] = (end >> 8) & 0xFF;
+                    _buffer[5] = (id.Short() & 0xFF);
+                    _buffer[6] = (id.Short() >> 8) & 0xFF;
+                    _buffer[7] = (handle & 0xFF);
+                    _buffer[8] = (handle >> 8) & 0xFF;
+                    _size = 9;
                     return (ATT_OP_FIND_BY_TYPE_RESP);
                 }
                 uint8_t Write(const UUID& id, const uint8_t length, const uint8_t data[])
@@ -245,7 +318,7 @@ namespace Bluetooth {
                     _buffer[2] = (start >> 8) & 0xFF;
                     _buffer[3] = (end & 0xFF);
                     _buffer[4] = (end >> 8) & 0xFF;
-                    ::memcpy(&(_buffer[5]), &id.Data(), id.Length());
+                    ::memcpy(&(_buffer[5]), id.Data(), id.Length());
                     _size = id.Length() + 5;
                     return (ATT_OP_READ_BY_TYPE_RESP);
                 }
@@ -309,18 +382,12 @@ namespace Bluetooth {
             };
 
         public:
-            struct ICallback {
-                virtual ~ICallback() {}
-
-                virtual void Completed(const uint32_t result) = 0;
-            };
-
             class Response {
             private:
                 Response(const Response&) = delete;
                 Response& operator=(const Response&) = delete;
 
-                static constexpr uint16_t BLOCKSIZE = 255;
+                static constexpr uint16_t BLOCKSIZE = 64;
                 typedef std::pair<uint16_t, uint16_t> Entry;
 
             public:
@@ -454,13 +521,13 @@ namespace Bluetooth {
                 uint16_t _max;
             };
 
+
         public:
-            Command(ICallback* completed, const uint16_t bufferSize)
-                : _frame()
-                , _callback(completed)
-                , _id(~0)
-                , _error(~0)
-                , _bufferSize(bufferSize)
+            Command()
+                : _error(~0)
+                , _mtu(0)
+                , _id(0)
+                , _frame()
                 , _response()
             {
             }
@@ -469,14 +536,17 @@ namespace Bluetooth {
             }
 
         public:
-            void SetMTU(const uint16_t bufferSize)
-            {
-                _bufferSize = bufferSize;
+            Response& Result() {
+                return (_response);
             }
-            void GetMTU()
-            {
-                _error = ~0;
-                _id = _frame.GetMTU(_bufferSize);
+            const Response& Result() const {
+                return (_response);
+            }
+            uint8_t Id() const {
+                return(_id);
+            }
+            uint16_t Error() const {
+                return(_error);
             }
             void ReadByGroupType(const uint16_t min, const uint16_t max, const UUID& uuid)
             {
@@ -510,22 +580,23 @@ namespace Bluetooth {
                 _error = ~0;
                 _id = _frame.FindByType(min, max, uuid, length, data);
             }
-            Response& Result()
+            void FindByType(const uint16_t min, const uint16_t max, const UUID& uuid, const uint16_t handle)
             {
-                return (_response);
+                ASSERT(uuid.HasShort() == true);
+                _response.Clear();
+                _error = ~0;
+                _id = _frame.FindByType(min, max, uuid, handle);
             }
-
+ 
+            void Error(const uint32_t error_code) {
+                _error = error_code;
+            }
+            void MTU(const uint16_t mtu) {
+                _mtu = mtu;
+            }
+ 
         private:
-            virtual void Updated(const Core::IOutbound& data, const uint32_t error_code)
-            {
-                ASSERT(&data == this);
-
-                _callback->Completed(error_code);
-            }
-            virtual uint16_t Id() const override
-            {
-                return (_id);
-            }
+            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override;
             virtual void Reload() const override
             {
                 _frame.Reload();
@@ -538,70 +609,62 @@ namespace Bluetooth {
             {
                 return (_error != static_cast<uint16_t>(~0) ? Core::IInbound::COMPLETED : (_frame.IsSend() ? Core::IInbound::INPROGRESS : Core::IInbound::RESEND));
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override;
 
         private:
-            Exchange _frame;
-            ICallback* _callback;
-            uint16_t _id;
             uint16_t _error;
-            uint16_t _bufferSize;
+            uint16_t _mtu;
+            uint8_t  _id;
+            Exchange _frame;
             Response _response;
         };
 
-        static constexpr uint8_t LE_ATT_CID = 4;
-        static constexpr uint8_t ATT_OP_HANDLE_NOTIFY = 0x1B;
-
     private:
-        class LocalCommand : public Command, public Command::ICallback {
-        private:
-            LocalCommand() = delete;
-            LocalCommand(const LocalCommand&) = delete;
-            LocalCommand& operator=(const LocalCommand&) = delete;
+        typedef std::function<void(const Command&)> Handler;
+
+        class Entry {
+        public:
+            Entry() = delete;
+            Entry(const Entry&) = delete;
+            Entry& operator= (const Entry&) = delete;
+            Entry(const uint32_t waitTime, Command& cmd, const Handler& handler)
+                : _waitTime(waitTime)
+                , _cmd(cmd)
+                , _handler(handler) {
+            }
+            ~Entry() {
+                ASSERT(_cmd.IsValid() == false);
+            }
 
         public:
-            LocalCommand(GATTSocket& parent, const uint16_t bufferSize)
-                : Command(this, bufferSize)
-                , _parent(parent)
-                , _callback(reinterpret_cast<Command::ICallback*>(~0))
-            {
+            Command& Cmd() {
+                return(_cmd);
             }
-            virtual ~LocalCommand()
-            {
+            uint32_t WaitTime() const {
+                return(_waitTime);
             }
-
-            void SetCallback(Command::ICallback* callback)
-            {
-                ASSERT((callback == nullptr) ^ (_callback == nullptr));
-                _callback = callback;
+            bool operator== (const Core::IOutbound* rhs) const {
+                return (rhs == &_cmd);
             }
-
-        private:
-            virtual void Completed(const uint32_t result) override
-            {
-                if (_callback == reinterpret_cast<Command::ICallback*>(~0)) {
-                    if (result != Core::ERROR_NONE) {
-                        TRACE_L1("Could not receive the MTU size correctly. Can not reach Operationl.");
-                    } else {
-                        _callback = nullptr;
-                        _parent.Operational();
-                    }
-                } else if (_callback != nullptr) {
-                    Command::ICallback* callback = _callback;
-                    _callback = nullptr;
-                    callback->Completed(result);
-                }
+            bool operator!= (const Core::IOutbound* rhs) const {
+                return(!operator==(rhs));
+            }
+            void Completed(const uint32_t error_code) {
+                _cmd.Error(error_code);
+                _handler(_cmd);
             }
 
         private:
-            GATTSocket& _parent;
-            Command::ICallback* _callback;
+            uint32_t _waitTime;
+            Command& _cmd;
+            Handler _handler;
         };
 
     public:
-        GATTSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode, const uint16_t bufferSize)
-            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, bufferSize, bufferSize)
-            , _command(*this, bufferSize)
+        GATTSocket(const Core::NodeId& localNode, const Core::NodeId& remoteNode, const uint16_t maxMTU)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::SEQUENCED, localNode, remoteNode, maxMTU, maxMTU)
+            , _adminLock()
+            , _sink(*this, maxMTU)
+            , _queue()
         {
         }
         virtual ~GATTSocket()
@@ -611,62 +674,58 @@ namespace Bluetooth {
     public:
         bool Security(const uint8_t level, const uint8_t keySize);
 
-        void ReadByGroupType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, Command::ICallback* completed)
+        void Execute(const uint32_t waitTime, Command& cmd, const Handler& handler)
         {
-            _command.ReadByGroupType(min, max, uuid);
-            _command.SetCallback(completed);
-            Send(waitTime, _command, &_command, &_command);
+            cmd.MTU(_sink.MTU());
+            _adminLock.Lock();
+            _queue.emplace_back(waitTime, cmd, handler);
+            if (_queue.size() ==  1) {
+                Send(waitTime, cmd, &_sink, &cmd);
+            }
+            _adminLock.Lock();
         }
-        void ReadByType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, Command::ICallback* completed)
+        void Revoke(const Command& cmd)
         {
-            _command.ReadByType(min, max, uuid);
-            _command.SetCallback(completed);
-            Send(waitTime, _command, &_command, &_command);
-        }
-        void ReadBlob(const uint32_t waitTime, const uint16_t& handle, Command::ICallback* completed)
-        {
-            _command.ReadBlob(handle);
-            _command.SetCallback(completed);
-            Send(waitTime, _command, &_command, &_command);
-        }
-        void FindByType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, const UUID& type, Command::ICallback* completed)
-        {
-            FindByType(waitTime, min, max, uuid, type.Length(), &(type.Data()), completed);
-        }
-        void FindByType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, const uint8_t length, const uint8_t data[], Command::ICallback* completed)
-        {
-            _command.FindByType(min, max, uuid, length, data);
-            _command.SetCallback(completed);
-            Send(waitTime, _command, &_command, &_command);
-        }
-        void WriteByType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, const UUID& type, Command::ICallback* completed)
-        {
-            WriteByType(waitTime, min, max, uuid, type.Length(), &(type.Data()), completed);
-        }
-        void WriteByType(const uint32_t waitTime, const uint16_t min, const uint16_t max, const UUID& uuid, const uint8_t length, const uint8_t data[], Command::ICallback* completed)
-        {
-            _command.WriteByType(min, max, uuid, length, data);
-            _command.SetCallback(completed);
-            Send(waitTime, _command, &_command, &_command);
-        }
-        void Abort()
-        {
-            Revoke(_command);
-        }
-        Command::Response& Result()
-        {
-            return (_command.Result());
+            Revoke(cmd);
         }
 
+    private:
         virtual void Operational() = 0;
-        virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData) = 0;
-
-    private:
         virtual void StateChange() override;
+        void Completed(const Core::IOutbound& data, const uint32_t error_code) 
+        {
+            if ( (&data == &_sink) && (_sink.HasMTU() == true) ) {
+                Operational();
+            }
+            else {
+                _adminLock.Lock();
+
+                if ((_queue.size() == 0) || (*(_queue.begin()) != &data)) {
+                    ASSERT (false && _T("Always the first one should be the one to be handled!!"));
+                }
+                else {
+                    // Command completion...
+                    _queue.begin()->Completed(error_code);
+                    _queue.erase(_queue.begin());
+
+                    if (_queue.size() > 0) {
+                        Entry& entry(*(_queue.begin()));
+                        Command& cmd (entry.Cmd());
+
+                        Send(entry.WaitTime(), cmd, &_sink, &cmd);
+                    }
+                }
+            }
+
+            _adminLock.Unlock();
+        }
 
     private:
+        Core::CriticalSection _adminLock;
+        CommandSink _sink;
+        std::list<Entry> _queue;
+        uint32_t _mtuSize;
         struct l2cap_conninfo _connectionInfo;
-        LocalCommand _command;
     };
 
 } // namespace Bluetooth
