@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.4"
+VERSION="1.3.5"
 
 class Trace:
     def __init__(self):
@@ -200,7 +200,7 @@ class JsonEnum(JsonType):
                 classname = MakeEnum(self.CppName())
             return classname
     def CppEnumerators(self):
-        return map(lambda x: x.upper(), self.enumerators)
+        return map(lambda x: ("E" if x[0].isdigit() else "") + x.upper(), self.enumerators)
     def CppEnumeratorValues(self):
         return self.values
     def IsDuplicate(self):
@@ -670,7 +670,7 @@ def EmitEnumRegs(root, emit, header_file):
         emit.Line("ENUM_CONVERSION_BEGIN(%s)" % fullname)
         emit.Indent()
         for c, item in enumerate(enum.enumerators):
-            emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, item.upper(), item))
+            emit.Line("{ %s::%s, _TXT(\"%s\") }," % (fullname, enum.CppEnumerators()[c], item))
         emit.Unindent()
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
@@ -1424,22 +1424,23 @@ def CreateDocument(schema, path):
         event_count = 0
         interface = dict()
 
+        interface = schema
         if "interface" in schema:
             interface = schema["interface"]
-            if "methods" in interface:
-                method_count = len(interface["methods"])
-            if "properties" in interface:
-                property_count = len(interface["properties"])
-            if "events" in interface:
-                event_count = len(interface["events"])
-            if "include" in interface:
-                for name, iface in interface["include"].iteritems():
-                    if "methods" in iface:
-                        method_count += len(iface["methods"])
-                    if "properties" in iface:
-                        property_count += len(iface["properties"])
-                    if "events" in iface:
-                        event_count += len(iface["events"])
+        if "methods" in interface:
+            method_count = len(interface["methods"])
+        if "properties" in interface:
+            property_count = len(interface["properties"])
+        if "events" in interface:
+            event_count = len(interface["events"])
+        if "include" in interface:
+            for name, iface in interface["include"].iteritems():
+                if "methods" in iface:
+                    method_count += len(iface["methods"])
+                if "properties" in iface:
+                    property_count += len(iface["properties"])
+                if "events" in iface:
+                    event_count += len(iface["events"])
 
         if "title" in info:
             MdHeader(info["title"])
