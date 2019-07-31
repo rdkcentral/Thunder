@@ -10,46 +10,40 @@
     "$ref": "common.json"
   },
   "properties": {
-    "clients": {
-      "summary": "List of compositor clients",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "description": "Client callsign",
-          "example": "Netflix"
-        }
-      }
-    },
     "resolution": {
-      "summary": "Output resolution",
+      "summary": "Screen resolution",
+      "description": "Use this property to set or retrieve the current resolution of the screen.",
       "params": {
         "type": "string",
         "enum": [
-          "screenresolution_unknown",
-          "screenresolution_480i",
-          "screenresolution_480p",
-          "screenresolution_720p",
-          "screenresolution_720p50hz",
-          "screenresolution_1080p24hz",
-          "screenresolution_1080i50hz",
-          "screenresolution_1080p50hz ",
-          "screenresolution_1080p60hz",
-          "screenresolution_2160p50hz",
-          "screenresolution_2160p60hz"
+          "unknown",
+          "480i",
+          "480p",
+          "720p50",
+          "720p60",
+          "1080p24",
+          "1080i50",
+          "1080p50",
+          "1080p60",
+          "2160p50",
+          "2160p60"
         ],
-        "example": "screenresolution_480i"
+        "example": "1080p24"
       },
       "errors": [
         {
-          "$ref": "#/common/errors/unknowntable",
+          "$ref": "#/common/errors/unknownkey",
           "description": "Unknown resolution"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to set resolution"
         }
       ]
     },
-    "zorder": {
-      "summary": "List of compositor clients sorted by z-order",
+    "clients": {
+      "summary": "List of compositor clients",
+      "description": "Use this property to retrieve the information of actual running clients.",
       "readonly": true,
       "params": {
         "type": "array",
@@ -60,31 +54,50 @@
         }
       }
     },
+    "zorder": {
+      "summary": "List of compositor clients sorted by z-order",
+      "description": "Use this property to retrieve the list of all clients in z-order. Each client has an z-order-value that determines its position with respect to the screen. The ordering is that the top position is closest to the screen, the next z-order-value first behind the top, and so on.",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "description": "Client name",
+          "example": "Netflix"
+        }
+      },
+      "errors": [
+        {
+          "description": "Failed to get z-order",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
     "geometry": {
-      "summary": "Property describing nanoservice window on screen",
-      "description": "Use this property to update or retrive the geometry of the client surface.",
+      "summary": "Client surface geometry",
+      "description": "Use this property to update or retrieve the geometry of a client's surface.",
       "params": {
         "type": "object",
         "properties": {
           "x": {
-            "description": "X position on screen",
+            "description": "Horizontal coordinate of the surface",
             "type": "number",
-            "example": "0"
+            "example": 0
           },
           "y": {
-            "description": "Y position on screen",
+            "description": "Vertical coordinate of the surface",
             "type": "number",
-            "example": "0"
+            "example": 0
           },
           "width": {
-            "description": "Width of space taken by nanoservice",
+            "description": "Surface width",
             "type": "number",
-            "example": "1280"
+            "example": 1280
           },
           "height": {
-            "description": "Height of space taken by nanoservice",
+            "description": "Surface height",
             "type": "number",
-            "example": "720"
+            "example": 720
           }
         },
         "required": [
@@ -95,72 +108,76 @@
         ]
       },
       "index": {
-        "name": "Nanoservice callsign",
+        "name": "Client",
         "example": "Netflix"
       },
       "errors": [
         {
-          "description": "Callsign not found",
+          "description": "Client not found",
           "$ref": "#/common/errors/firstresourcenotfound"
-        }, 
-        {
-          "description": "Failed to set/get geometry",
-          "$ref": "#/common/errors/general"
         }
       ]
     },
-    "visible": {
-      "summary": "Determines if client's surface is visible",
-      "writeonly": true,
+    "visiblity": {
+      "summary": "Client surface visibility",
+      "description": "Use this property to set the client's surface visibility.",
+      "writeonly":true,
       "params": {
-        "type": "boolean",
-        "example": "true"
+        "type": "string",
+        "enum": [
+          "visible",
+          "hidden"
+        ],
+        "example": "visible"
       },
       "index": {
-        "name": "Nanoservice callsign",
+        "name": "Client",
         "example": "Netflix"
       },
       "errors": [
         {
-          "description": "Callsign not found",
+          "description": "Client not found",
           "$ref": "#/common/errors/firstresourcenotfound"
         }
       ]
     },
     "opacity": {
-      "summary": "Opacity of client",
-      "description": "The opacity of a client surface can range from 0 till 255, that will represent an opacity of the surface from 0% till 100%.",
-      "writeonly": true,
+      "summary": "Client surface opacity",
+      "description": "Use this property to set the client's surface opacity level.",
+      "writeonly":true,
       "params": {
+        "description": "Opacity level (0 to 255; 0: fully transparent, 255: fully opaque)",
         "type": "number",
-        "example": "64"
+        "size": 8,
+        "example": 127
       },
       "index": {
-        "name": "Nanoservice callsign",
+        "name": "Client",
         "example": "Netflix"
       },
       "errors": [
         {
-          "description": "Callsign not found",
+          "description": "Client not found",
           "$ref": "#/common/errors/firstresourcenotfound"
         }
       ]
     }
   },
   "methods": {
-    "totop": {
-      "summary": "Put client on top.",
-      "description": "Whenever you put client on top, it will shown on the screen and it will be in focus.",
+    "putontop": {
+      "summary": "Puts client surface on top in z-order",
+      "description": "Use this method to get a client's surface to the top position.",
       "params": {
         "type": "object",
         "properties": {
-          "callsign": {
+          "client": {
             "type": "string",
-            "description": "Client's callsign"
+            "description": "Client name",
+            "example": "Netflix"
           }
         },
         "required": [
-          "callsign"
+          "client"
         ]
       },
       "result": {
@@ -170,33 +187,29 @@
         {
           "description": "Client not found",
           "$ref": "#/common/errors/firstresourcenotfound"
-        },
-        {
-          "description": "Compositor couldn't put service on top",
-          "$ref": "#/common/errors/general"
         }
       ]
     },
     "putbelow": {
-      "summary": "Slide <below> just behind <above>",
-      "description": "Whenever you want to reorder the client-list, you can slide a <client-a> just below a <client-b> in the client-list.",
+      "summary": "Puts client surface below another surface",
+      "description": "Use this method to reorder client surfaces in the z-order list.",
       "params": {
         "type": "object",
         "properties": {
-          "below": {
+          "client": {
             "type": "string",
-            "description": "Client that will be put below second one",
+            "description": "Client name to change z-order position",
             "example": "Netflix"
           },
-          "above": {
+          "relative": {
             "type": "string",
-            "description": "Client that will be put above fist one",
+            "description": "Client to put the other surface below",
             "example": "WebKitBrowser"
           }
         },
         "required": [
-          "client_a",
-          "client_b"
+          "client",
+          "relative"
         ]
       },
       "result": {
@@ -204,29 +217,25 @@
       },
       "errors": [
         {
-          "description": "At least one of clients not found",
+          "description": "Client(s) not found",
           "$ref": "#/common/errors/firstresourcenotfound"
-        },
-        {
-          "description": "Compositor failed to put service on top",
-          "$ref": "#/common/errors/general"
         }
       ]
     },
     "kill": {
-      "summary": "Use this method to kill the client",
-      "description": "Whenever a client is killed, the execution of the client is stopped and all its resources will be released..",
+      "summary": "Kills a client",
+      "description": "Use this method to kill a client. Whenever a client is killed, the execution of the client is stopped and all its resources are released.",
       "params": {
         "type": "object",
         "properties": {
-          "callsign": {
+          "client": {
             "type": "string",
-            "description": "Callsign of killed client",
+            "description": "Client name",
             "example": "Netflix"
           }
         },
         "required": [
-          "callsign"
+          "client"
         ]
       },
       "result": {
