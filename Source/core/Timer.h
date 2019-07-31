@@ -148,13 +148,13 @@ namespace Core {
         {
             m_Admin.Lock();
 
-            m_TimerThread.Block();
+            m_TimerThread.Stop();
 
             // Force kill on all pending stuff...
             m_PendingQueue.clear();
             m_Admin.Unlock();
 
-            m_TimerThread.Wait(Thread::BLOCKED, Core::infinite);
+            m_TimerThread.Wait(Thread::BLOCKED|Thread::STOPPED, Core::infinite);
         }
 
         inline void Schedule(const Time& time, CONTENT&& info)
