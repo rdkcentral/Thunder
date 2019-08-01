@@ -1,10 +1,10 @@
 set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
-   ../IPTestAdministrator.cpp
-   test_rpc.cpp
-   test_jsonparser.cpp
-   test_sharedbuffer.cpp
+    ../IPTestAdministrator.cpp
+    test_rpc.cpp
+    test_sharedbuffer.cpp
+    test_cyclicbuffer.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
