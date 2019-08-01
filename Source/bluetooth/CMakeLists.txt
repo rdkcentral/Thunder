@@ -7,7 +7,8 @@ find_package(NEXUS QUIET)
 add_library(${TARGET} SHARED
         HCISocket.cpp
         GATTSocket.cpp
-        Definitions.cpp)
+        Definitions.cpp
+        Module.cpp)
 
 set(PUBLIC_HEADERS
         IDriver.h

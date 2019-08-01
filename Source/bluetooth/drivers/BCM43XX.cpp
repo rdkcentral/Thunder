@@ -284,9 +284,14 @@ namespace Bluetooth {
 }
 } // namespace WPEFramework::Bluetooth
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 WPEFramework::Bluetooth::Broadcom43XX* g_driver = nullptr;
 
-unsigned int contruct_bluetooth_driver(const char* input) {
+unsigned int construct_bluetooth_driver(const char* input) {
     uint32_t result = WPEFramework::Core::ERROR_ALREADY_CONNECTED;
     if (g_driver == nullptr) {
         WPEFramework::Bluetooth::Broadcom43XX::Config config;
@@ -312,4 +317,10 @@ void destruct_bluetooth_driver() {
         g_driver = nullptr;
     }
 }
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
