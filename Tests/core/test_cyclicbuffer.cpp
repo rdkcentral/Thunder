@@ -3,165 +3,45 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
-namespace Tests {
+using namespace WPEFramework;
 
-    const char g_bufferName[] = "cyclicbuffer01";
+const char g_bufferName[] = "cyclicbuffer01";
+const char g_defaultText[] = "Default text.";
 
-    TEST(Core_CyclicBuffer, WithoutOverwrite)
-    {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            uint32_t result;
-            string data;
-            uint32_t bufferSize = 10;
-            uint8_t loadBuffer[bufferSize + 1];
-            Core::CyclicBuffer buffer(g_bufferName, bufferSize, false);
-
-            testAdmin.Sync("setup server");
-
-            testAdmin.Sync("setup client");
-
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
-
-            data = "abcdefghi";
-            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            EXPECT_EQ(result, data.size());
-
-            testAdmin.Sync("server wrote");
-
-            testAdmin.Sync("client read");
-
-            testAdmin.Sync("client wrote");
-
-            result = buffer.Peek(loadBuffer, buffer.Used());
-            loadBuffer[result] = '\0';
-            EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
-
-            testAdmin.Sync("server peek");
-
-            result = buffer.Read(loadBuffer, buffer.Used());
-            loadBuffer[result] = '\0';
-            EXPECT_EQ(result, 5u);
-            EXPECT_STREQ((char*)loadBuffer, "efghi");
-
-            testAdmin.Sync("server read");
-        };
-
-        // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide);
-
-        {
-            testAdmin.Sync("setup server");
-
-            uint32_t result;
-            string data;
-            uint32_t bufferSize = 10;
-            uint8_t loadBuffer[bufferSize + 1];
-            Core::CyclicBuffer buffer(g_bufferName, bufferSize, false);
-
-            testAdmin.Sync("setup client");
-
-            testAdmin.Sync("server wrote");
-
-            result = buffer.Read(loadBuffer, 4);
-            loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "abcd");
-
-            testAdmin.Sync("client read");
-
-            data = "klmnopq";
-            result = buffer.Reserve(data.size());
-            EXPECT_EQ(result, Core::ERROR_INVALID_INPUT_LENGTH);
-            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            EXPECT_EQ(result, 0u);
-
-            testAdmin.Sync("client wrote");
-
-            testAdmin.Sync("server peek");
-
-            testAdmin.Sync("server read");
-        }
-        Core::Singleton::Dispose();
-    }
-
-    TEST(Core_CyclicBuffer, WithOverwrite)
-    {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            uint32_t result;
-            string data;
-            uint32_t bufferSize = 10;
-            uint8_t loadBuffer[bufferSize + 1];
-            Core::CyclicBuffer buffer(g_bufferName, bufferSize, true);
-
-            testAdmin.Sync("setup server");
-
-            testAdmin.Sync("setup client");
-
-            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
-
-            data = "abcdefghi";
-            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            EXPECT_EQ(result, data.size());
-
-            testAdmin.Sync("server wrote");
-
-            testAdmin.Sync("client read");
-
-            testAdmin.Sync("client wrote");
-
-            result = buffer.Peek(loadBuffer, buffer.Used());
-            loadBuffer[result] = '\0';
-            EXPECT_EQ(result, 9u);
-            EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
-
-            testAdmin.Sync("server peek");
-
-            result = buffer.Read(loadBuffer, buffer.Used());
-            loadBuffer[result] = '\0';
-            EXPECT_EQ(result, 9u);
-            EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
-
-            testAdmin.Sync("server read");
-        };
-
-        // This side (tested) acts as client
-        IPTestAdministrator testAdmin(otherSide);
-        
-        {
-            testAdmin.Sync("setup server");
-
-            uint32_t result;
-            string data;
-            uint32_t bufferSize = 10;
-            uint8_t loadBuffer[bufferSize + 1];
-            Core::CyclicBuffer buffer(g_bufferName, bufferSize, true);
-
-            testAdmin.Sync("setup client");
-
-            testAdmin.Sync("server wrote");
-
-            result = buffer.Read(loadBuffer, 4);
-            loadBuffer[result] = '\0';
-            EXPECT_STREQ((char*)loadBuffer, "abcd");
-
-            testAdmin.Sync("client read");
-
-            data = "j";
-            result = buffer.Reserve(8);
-            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            EXPECT_EQ(result, data.size());
-            data = "klmnopq";
-            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-            EXPECT_EQ(result, data.size());
-
-            testAdmin.Sync("client wrote");
-
-            testAdmin.Sync("server peek");
-
-            testAdmin.Sync("server read");
-        }
-        Core::Singleton::Dispose();
-    }
+void CleanUpCyclicBuffer()
+{
+   // TODO: shouldn't this be done producer-side?
+   char systemCmd[1024];
+   sprintf(systemCmd, "rm -f %s", g_bufferName);
+   system(systemCmd);
 }
+
+TEST(Core_CyclicBuffer, simpleSet)
+{
+    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+        CleanUpCyclicBuffer();
+        Core::CyclicBuffer buffer(g_bufferName, 256, true);
+        testAdmin.Sync("setup server");
+        testAdmin.Sync("setup client");
+        buffer.Write(reinterpret_cast<const uint8_t*>(g_defaultText), sizeof(g_defaultText));
+        testAdmin.Sync("server wrote");
+        testAdmin.Sync("client read");
+    };
+
+    // This side (tested) acts as client
+    IPTestAdministrator testAdmin(otherSide);
+    
+    {
+        testAdmin.Sync("setup server");
+
+        Core::CyclicBuffer buffer(g_bufferName, 0, true);
+        testAdmin.Sync("setup client");
+        testAdmin.Sync("server wrote");
+        uint8_t loadBuffer[128];
+        uint32_t result = buffer.Read(loadBuffer, buffer.Used());
+        ASSERT_EQ(result, sizeof(g_defaultText));
+        ASSERT_STREQ(g_defaultText, (const char*)loadBuffer);
+    }
+    testAdmin.Sync("client read");
+    Core::Singleton::Dispose();
 }
