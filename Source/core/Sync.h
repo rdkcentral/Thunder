@@ -262,7 +262,7 @@ namespace Core {
         SafeSyncType<SYNCOBJECT>& operator=(const SafeSyncType<SYNCOBJECT>&) = delete;
 
     public:
-        SafeSyncType(SYNCOBJECT& _cs)
+        explicit SafeSyncType(SYNCOBJECT& _cs)
             : m_Lock(_cs)
         {
             m_Lock.Lock();
