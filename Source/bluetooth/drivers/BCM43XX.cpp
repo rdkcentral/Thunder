@@ -27,6 +27,7 @@ namespace Bluetooth {
                 : Core::JSON::Container()
                 , Port(_T("/dev/ttyAMA0"))
                 , Firmware(_T("/etc/firmware/"))
+                , SetupRate(115200)
                 , BaudRate(921600)
                 , MACAddress()
                 , Break(false)
@@ -34,6 +35,7 @@ namespace Bluetooth {
                 Add(_T("port"), &Port);
                 Add(_T("firmware"), &Firmware);
                 Add(_T("baudrate"), &BaudRate);
+                Add(_T("setup"), &SetupRate);
                 Add(_T("address"), &MACAddress);
                 Add(_T("break"), &Break);
             }
@@ -44,6 +46,7 @@ namespace Bluetooth {
         public:
             Core::JSON::String Port;
             Core::JSON::String Firmware;
+            Core::JSON::DecUInt32 SetupRate;
             Core::JSON::DecUInt32 BaudRate;
             Core::JSON::String MACAddress;
             Core::JSON::Boolean Break;
@@ -51,10 +54,11 @@ namespace Bluetooth {
 
     public:
         Broadcom43XX(const Config& config)
-            : SerialDriver(config.Port.Value(), 115200, Core::SerialPort::OFF, config.Break.Value())
+            : SerialDriver(config.Port.Value(), config.SetupRate.Value(), Core::SerialPort::OFF, config.Break.Value())
             , _directory(config.Firmware.Value())
             , _name()
             , _MACLength(0)
+            , _setupRate(config.SetupRate.Value())
             , _baudRate(config.BaudRate.Value())
         {
         }
@@ -63,52 +67,75 @@ namespace Bluetooth {
         }
 
     public:
-        uint32_t Initialize()
+        const char* Initialize()
         {
-            uint32_t result = Reset();
-
-            if (result == Core::ERROR_NONE) {
-                result = LoadName();
+            const char* result = nullptr;
+            
+            if (Reset() != Core::ERROR_NONE) {
+                ::SleepMs(500);
+                SetBaudRate(_baudRate);
+                result = "Initial reset failed!!!";
             }
-
-            if (result == Core::ERROR_NONE) {
-                result = SetSpeed(_baudRate);
+ 
+            if ((result != nullptr) && (Reset() != Core::ERROR_NONE)) {
+                result = "Could not reset the chip to a defined state";
             }
-
-            if (result == Core::ERROR_NONE) {
+            else if (LoadName() != Core::ERROR_NONE) {
+                result = "Could not load the drivers name.";
+            }
+            else if (SetSpeed(_baudRate) != Core::ERROR_NONE) {
+                result = "Could not set the BaudRate (first time)";
+            }
+            else {
                 uint16_t index = 0;
-                while (isalnum(_name[index++])) /* INTENTIONALLY LEFT EMPTY */
-                    ;
-                result = Firmware(_directory, _name.substr(0, index - 1));
-            }
+                while (isalnum(_name[index++])) /* INTENTIONALLY LEFT EMPTY */ ;
+                uint32_t loaded = Firmware(_directory, _name.substr(0, index - 1));
 
-            // It has been observed that once the firmware is loaded the name of
-            // the device changes from BCM43430A1 to BCM43438A1, this is due to
-            // a previous load, that is not nessecarely an issue :-)
-            if (result == Core::ERROR_ALREADY_CONNECTED) {
-                result = Core::ERROR_NONE;
-            } else if (result == Core::ERROR_NONE) {
-                // Controller speed has been reset to default speed!!!
-                SetBaudRate(115200);
+                result = nullptr;
 
-                result = Reset();
+                // It has been observed that once the firmware is loaded the name of
+                // the device changes from BCM43430A1 to BCM43438A1, this is due to
+                // a previous load, that is not nessecarely an issue :-)
+                if (loaded == Core::ERROR_NONE) {
+                    // Controller speed has been reset to default speed!!!
+                    SetBaudRate(_setupRate);
 
-                if (result == Core::ERROR_NONE) {
-                    result = SetSpeed(_baudRate);
+                    if (Reset() != Core::ERROR_NONE) {
+                        result = "Could not reset the device after the firmware upload";
+                    }
+                    else if (SetSpeed(_baudRate) != Core::ERROR_NONE) {
+                        result = "Could not set the BaudRate (second time)";
+                    }
+                } else if (loaded != Core::ERROR_ALREADY_CONNECTED) {
+                    result = "Could not upload firmware.";
                 }
-            }
 
-            if ((result == Core::ERROR_NONE) && (_MACLength > 0)) {
-                result = MACAddress(_MACLength, _MACAddress);
-            }
+                if ((result == nullptr) && (_MACLength > 0)) {
+                    if (MACAddress(_MACLength, _MACAddress) != Core::ERROR_NONE) {
+                        result = "Could not set the MAC Address specified.";
+                    }
+                }
 
-            if (result == Core::ERROR_NONE) {
-                result = SerialDriver::Setup(0, HCI_UART_H4);
+                if ( (result == nullptr) && (SerialDriver::Setup(0, HCI_UART_H4) != Core::ERROR_NONE) ) {
+                    result = "Could not set up the driver in H4 mode.";
+                }
             }
 
             return (result);
         }
+        uint32_t Reset()
+        {
+            Exchange::Response response(Exchange::COMMAND_PKT, 0x030C);
+            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x030C, 0, nullptr), response, 1000);
 
+            if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
+                TRACE_L1("Failed to reset chip, command failure\n");
+                result = Core::ERROR_GENERAL;
+            }
+
+            return result;
+        }
+ 
     private:
         string FindFirmware(const string& directory, const string& chipName)
         {
@@ -127,19 +154,7 @@ namespace Bluetooth {
 
             return (result);
         }
-        uint32_t Reset()
-        {
-            Exchange::Response response(Exchange::COMMAND_PKT, 0x030C);
-            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x030C, 0, nullptr), response, 500);
-
-            if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
-                TRACE_L1("Failed to reset chip, command failure\n");
-                result = Core::ERROR_GENERAL;
-            }
-
-            return result;
-        }
-        uint32_t LoadName()
+       uint32_t LoadName()
         {
             Exchange::Response response(Exchange::COMMAND_PKT, 0x140C);
             uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x140C, 0, nullptr), response, 500);
@@ -279,6 +294,7 @@ namespace Bluetooth {
         string _name;
         uint8_t _MACLength;
         uint8_t _MACAddress[6];
+        uint32_t _setupRate;
         uint32_t _baudRate;
     };
 }
@@ -291,20 +307,21 @@ extern "C" {
 
 WPEFramework::Bluetooth::Broadcom43XX* g_driver = nullptr;
 
-unsigned int construct_bluetooth_driver(const char* input) {
-    uint32_t result = WPEFramework::Core::ERROR_ALREADY_CONNECTED;
+const char* construct_bluetooth_driver(const char* input) {
+    const char* result = "Driver already loaded.";
+    
     if (g_driver == nullptr) {
         WPEFramework::Bluetooth::Broadcom43XX::Config config;
         config.FromString(input);
         WPEFramework::Bluetooth::Broadcom43XX* driver = new WPEFramework::Bluetooth::Broadcom43XX(config);
 
-        uint32_t result = driver->Initialize();
 
-        if (result == WPEFramework::Core::ERROR_NONE) {
+        result = driver->Initialize();
+
+        if (result == nullptr) {
             g_driver = driver;
         }
         else {
-            TRACE_L1("Failed to start the Bluetooth driver.");
             delete driver;
         }
     }

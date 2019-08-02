@@ -257,6 +257,11 @@ namespace Bluetooth {
                 }
 
             public:
+                inline void Flush() {
+                    _used = 0;
+                    Length(0);
+                    Offset(0);
+                }
                 inline bool Next()
                 {
                     bool result = false;
@@ -306,9 +311,11 @@ namespace Bluetooth {
                     }
                     DumpFrame("IN: ", result, stream);
                     if (result < length) {
+                        // TODO: This needs furhter investigation in case of failures ......
                         uint16_t copyLength = std::min(static_cast<uint16_t>((2 * BUFFERSIZE) - (Offset() - 4) - _used), static_cast<uint16_t>(length - result));
                         ::memcpy(&(_value[Offset() - 4 + _used]), &stream[result], copyLength);
                         _used += copyLength;
+                        printf("Bytes in store: %d\n", _used);
                     }
 
                     return ((Offset() >= 4) && ((Offset() - 4) == Length()));
@@ -352,19 +359,21 @@ namespace Bluetooth {
     protected:
         SerialDriver(const string& port, const uint32_t baudRate, const Core::SerialPort::FlowControl flowControl, const bool sendBreak)
             : _port(*this, port)
+            , _flowControl(flowControl)
         {
             if (_port.Open(100) == Core::ERROR_NONE) {
 
                 ToTerminal();
+                _port.Link().Configuration(Convert(baudRate), flowControl, 64, 64);
+                _port.Flush();
 
                 if (sendBreak == true) {
                     _port.Link().SendBreak();
                     SleepMs(500);
                 }
-
-                _port.Link().Configuration(Convert(baudRate), flowControl, 64, 64);
-
-                _port.Link().Flush();
+            }
+            else {
+                printf("Could not open serialport.\n");
             }
         }
 
@@ -373,14 +382,14 @@ namespace Bluetooth {
         {
             if (_port.IsOpen() == true) {
                 ToTerminal();
+                _port.Close(Core::infinite);
             }
-            _port.Close(Core::infinite);
         }
 
     public:
         uint32_t Setup(const unsigned long flags, const int protocol)
         {
-            _port.Link().Flush();
+            _port.Flush();
 
             int ttyValue = N_HCI;
             if (::ioctl(static_cast<Core::IResource&>(_port.Link()).Descriptor(), TIOCSETD, &ttyValue) < 0) {
@@ -399,13 +408,30 @@ namespace Bluetooth {
         {
             return (_port.Exchange(request, response, allowedTime));
         }
-        void Flush()
+        void Reconfigure(const uint32_t baudRate)
         {
-            _port.Link().Flush();
+            if (_port.IsOpen() == true) {
+                ToTerminal();
+                _port.Close(Core::infinite);
+            }
+            if (_port.Open(100) == Core::ERROR_NONE) {
+
+                ToTerminal();
+                _port.Link().Configuration(Convert(baudRate), _flowControl, 64, 64);
+                _port.Flush();
+            }
+            else {
+                printf("Could not open serialport.\n");
+            }
         }
         void SetBaudRate(const uint32_t baudRate)
         {
             _port.Link().SetBaudRate(Convert(baudRate));
+            _port.Flush();
+        }
+        void Flush() 
+        {
+            _port.Flush();
         }
         virtual void Received(const Exchange::Request& element)
         {
@@ -415,8 +441,9 @@ namespace Bluetooth {
         inline void ToTerminal()
         {
             int ttyValue = N_TTY;
+            _port.Link().Flush();
             if (::ioctl(static_cast<Core::IResource&>(_port.Link()).Descriptor(), TIOCSETD, &ttyValue) < 0) {
-                TRACE_L1("Failed direct IOCTL to TIOCSETD, %d", errno);
+                printf("Failed direct IOCTL to TIOCSETD, %d\n", errno);
             }
         }
         Core::SerialPort::BaudRate Convert(const uint32_t baudRate)
@@ -478,6 +505,7 @@ namespace Bluetooth {
 
     private:
         Channel _port;
+        Core::SerialPort::FlowControl _flowControl;
     };
 }
 } // namespace WPEFramework::Bluetooth

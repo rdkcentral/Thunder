@@ -60,11 +60,18 @@ namespace Bluetooth {
         {
             _length = 0;
             int deviceId = hci_get_route(nullptr);
-            if ((deviceId >= 0) && (hci_devba(deviceId, &_address) >= 0)) {
+          
+            return ((deviceId >= 0) ? Default(static_cast<uint16_t>(deviceId)) : false);
+        }
+        bool Default(const uint16_t deviceId)
+        {
+            _length = 0;
+            if (hci_devba(deviceId, &_address) >= 0) {
                 _length = sizeof(_address);
             }
             return (IsValid());
         }
+ 
         Address AnyInterface() const
         {
             static bdaddr_t g_anyAddress;
@@ -182,10 +189,6 @@ namespace Bluetooth {
                 if (result > 0) {
 
                     ::memcpy(stream, &(_buffer[_offset]), result);
-                    for (uint8_t index = 0; index < result; index++) {
-                        printf("%02X:", stream[index]);
-                    }
-                    printf("\n");
                     _offset += result;
                 }
                 return (result);
@@ -429,13 +432,40 @@ namespace Bluetooth {
         }
 
     public:
-        bool Up()
+        static bool Up(const uint16_t deviceId)
         {
-            return ( (IsOpen() == true) &&  (::ioctl(Handle(), HCIDEVUP, SocketPort::LocalNode().PortNumber()) >= 0) ); 
+            int descriptor;
+
+            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
+                TRACE_L1("Could not open a socket. Error: %d", errno);
+            }
+            else {
+                if ( (::ioctl(descriptor, HCIDEVUP, deviceId) == 0) || (errno == EALREADY) ) {
+                    return (true);
+                }
+                else {
+                    TRACE_L1("Could not bring up the interface [%d]. Error: %d", deviceId, errno);
+                }
+                ::close(descriptor);
+            }
+            return (false);
         }
-        bool Down()
+        static bool Down(const uint16_t deviceId)
         {
-            return ( (IsOpen() == true) &&  (::ioctl(Handle(), HCIDEVDOWN, SocketPort::LocalNode().PortNumber()) >= 0) ); 
+            int descriptor;
+            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
+                TRACE_L1("Could not open a socket. Error: %d", errno);
+            }
+            else {
+                if ( (::ioctl(descriptor, HCIDEVDOWN, deviceId) == 0) || (errno == EALREADY) ) {
+                    return (true);
+                }
+                else {
+                    TRACE_L1("Could not bring up the interface [%d]. Error: %d\n", deviceId, errno);
+                }
+                ::close(descriptor);
+            }
+            return (false);
         }
         bool IsScanning() const
         {

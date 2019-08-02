@@ -216,6 +216,9 @@ namespace Core {
                 if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
                     TRACE_L1("Error setting a new speed: %d", -errno);
                 }
+                else {
+                    ::tcflush(m_Descriptor, TCIOFLUSH);
+                }
             }
 #endif
         }

@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-unsigned int construct_bluetooth_driver(const char* config);
+const char* construct_bluetooth_driver(const char* config);
 void destruct_bluetooth_driver();
 
 #ifdef __cplusplus

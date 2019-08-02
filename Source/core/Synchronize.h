@@ -44,6 +44,7 @@ namespace Core {
         inline void Flush()
         {
             _signal.SetEvent();
+            _response = nullptr;
         }
         void Load(MESSAGE& response)
         {

@@ -4,8 +4,8 @@
 extern "C" {
 #endif
 
-uint32_t construct_bluetooth_driver(const char* /* config */) {
-    return (Core::ERROR_NONE);
+const char* construct_bluetooth_driver(const char* /* config */) {
+    return (nullptr);
 }
 
 void destruct_bluetooth_driver() {
