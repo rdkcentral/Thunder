@@ -4,6 +4,7 @@ add_executable(${TEST_RUNNER_NAME}
     ../IPTestAdministrator.cpp
     test_rpc.cpp
     test_cyclicbuffer.cpp
+    test_ipc.cpp
     test_sharedbuffer.cpp
     test_timer.cpp
 )
