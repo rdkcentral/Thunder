@@ -308,6 +308,13 @@ namespace Core {
 
             ASSERT(index != _handlers.end());
 
+            typename ClientMap::iterator cleaner(_clients.begin());
+            while (cleaner != _clients.end()) {
+                if (cleaner->second->IsClosed() == true)
+                    cleaner->second->Unregister(index->first);
+                cleaner++;
+            }
+
             if (index != _handlers.end()) {
                 _handlers.erase(index);
             }
