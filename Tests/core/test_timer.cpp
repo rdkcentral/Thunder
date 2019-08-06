@@ -3,75 +3,41 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-namespace WPEFramework {
-namespace Tests {
+using namespace WPEFramework;
 
-    int g_done = 0;
+bool g_done = false;
+std::string g_scheduledTime = "";
+std::string g_currentTime = "";
 
-    class TimeHandler {
-        public:
-            TimeHandler(Core::Time& tick)
-                : _nextTick(tick)
-            {
-            }
-            ~TimeHandler()
-            {
-            }
+class TimeHandler {
+    public:
+        TimeHandler(Core::Time& Tick)
+            :_tick(Tick)
+        {
+        }
+        ~TimeHandler()
+        {
+        }
 
-        public:
-            uint64_t Timed(const uint64_t scheduledTime)
-            {
-                if (!g_done) {
-                    _nextTick = Core::Time::Now();
-                    uint32_t time = 100; // 0.1 second
-                    _nextTick.Add(time);
-                    g_done++;
-                    return _nextTick.Ticks();
-                }
-                g_done++;
-                return 0;
-            }
-    private:
-        Core::Time _nextTick;
-    };
+    public:
+        uint64_t Timed(const uint64_t scheduledTime)
+        {
+            g_currentTime = Core::Time::Now().ToRFC1123();
+            g_done = true;
+            return 0;
+        }
+private:
+    Core::Time _tick;
+};
 
-    TEST(Core_Timer, PastTime)
-    {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
-        uint32_t time = 100; // 0.1 second
-
-        Core::Time pastTime = Core::Time::Now();
-        pastTime.Sub(time);
-        timer.Schedule(pastTime.Ticks(), TimeHandler(pastTime));
-        usleep(100);
-    }
-
-    TEST(Core_Timer, LoopedTimer)
-    {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
-        uint32_t time = 100;
-
-        Core::Time nextTick = Core::Time::Now();
-        nextTick.Add(time);
-        timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
-        while(!(g_done == 2));
-    }
-
-    TEST(Core_Timer, QueuedTimer)
-    {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
-        uint32_t time = 100;
-
-        Core::Time nextTick = Core::Time::Now();
-        nextTick.Add(time);
-        timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
-
-        nextTick.Add(2 * time);
-        timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
-
-        nextTick.Add(3 * time);
-        timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
-        while(!(g_done == 5));
-    }
-}
+TEST(Core_Timer, simpleSet)
+{
+    Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
+    uint32_t time = 2000; // 2 seconds
+    Core::Time NextTick = Core::Time::Now();
+    NextTick.Add(time);
+    g_scheduledTime = NextTick.ToRFC1123();
+    timer.Schedule(NextTick.Ticks(), TimeHandler(NextTick));
+    while(!g_done);
+    ASSERT_STREQ(g_scheduledTime.c_str(), g_currentTime.c_str());
 }
