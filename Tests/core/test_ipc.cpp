@@ -172,11 +172,7 @@ public:
     virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
     {
         Core::ProxyType<Messages::TextText> message(data);
-<<<<<<< HEAD
-        string text = message->Parameters().Value();
-=======
         std::string text = message->Parameters().Value();
->>>>>>> [Tests] Added IPC tests.
 
         message->Response() = Core::IPC::Text<2048>(text);
         source.ReportResponse(data);
@@ -288,7 +284,6 @@ TEST(Core_IPC, simpleSet)
         string text = "test text";
         Core::ProxyType<Messages::TextText> textTextData(Core::ProxyType<Messages::TextText>::Create(Core::IPC::Text<2048>(text)));
 
-<<<<<<< HEAD
         uint16_t display = 1;;
         uint32_t surface = 2;
         uint64_t context = 3;
@@ -303,17 +298,6 @@ TEST(Core_IPC, simpleSet)
         ASSERT_EQ(voidTripletData->Response().Display(), display);
         ASSERT_EQ(voidTripletData->Response().Surface(), surface);
         ASSERT_EQ(voidTripletData->Response().Context(), context);
-=======
-        error = continousChannel.Invoke(tripletResponseData, 5000);
-        ASSERT_EQ(error, Core::ERROR_NONE);
-        ASSERT_EQ(tripletResponseData->Response().Result(), 6);
-
-        error = continousChannel.Invoke(voidTripletData, 2000);
-        ASSERT_EQ(error, Core::ERROR_NONE);
-        ASSERT_EQ(voidTripletData->Response().Display(), 1);
-        ASSERT_EQ(voidTripletData->Response().Surface(), 2);
-        ASSERT_EQ(voidTripletData->Response().Context(), 3);
->>>>>>> [Tests] Added IPC tests.
 
         error = continousChannel.Invoke(textTextData, 2000);
         ASSERT_EQ(error, Core::ERROR_NONE);
@@ -324,11 +308,8 @@ TEST(Core_IPC, simpleSet)
         ASSERT_EQ(error, Core::ERROR_NONE);
         error = flashChannel.Invoke(tripletResponseData, 2000);
         ASSERT_EQ(error, Core::ERROR_NONE);
-<<<<<<< HEAD
-        ASSERT_EQ(tripletResponseData->Response().Result(), result);
-=======
         ASSERT_EQ(tripletResponseData->Response().Result(), 6);
->>>>>>> [Tests] Added IPC tests.
+        ASSERT_EQ(tripletResponseData->Response().Result(), result);
         error = flashChannel.Source().Close(1000); // Wait for 1 Second
         ASSERT_EQ(error, Core::ERROR_NONE);
 
@@ -336,15 +317,12 @@ TEST(Core_IPC, simpleSet)
         ASSERT_EQ(error, Core::ERROR_NONE);
         error = flashChannel.Invoke(voidTripletData, 2000);
         ASSERT_EQ(error, Core::ERROR_NONE);
-<<<<<<< HEAD
-        ASSERT_EQ(voidTripletData->Response().Display(), display);
-        ASSERT_EQ(voidTripletData->Response().Surface(), surface);
-        ASSERT_EQ(voidTripletData->Response().Context(), context);
-=======
         ASSERT_EQ(voidTripletData->Response().Display(), 1);
         ASSERT_EQ(voidTripletData->Response().Surface(), 2);
         ASSERT_EQ(voidTripletData->Response().Context(), 3);
->>>>>>> [Tests] Added IPC tests.
+        ASSERT_EQ(voidTripletData->Response().Display(), display);
+        ASSERT_EQ(voidTripletData->Response().Surface(), surface);
+        ASSERT_EQ(voidTripletData->Response().Context(), context);
         error = flashChannel.Source().Close(1000); // Wait for 1 Second
         ASSERT_EQ(error, Core::ERROR_NONE);
 
@@ -359,15 +337,6 @@ TEST(Core_IPC, simpleSet)
 
         error = multiChannel.Invoke(tripletResponseData, 2000);
         ASSERT_EQ(error, Core::ERROR_NONE);
-<<<<<<< HEAD
-        ASSERT_EQ(tripletResponseData->Response().Result(), result);
-
-        error = multiChannel.Invoke(voidTripletData, 2000);
-        ASSERT_EQ(error, Core::ERROR_NONE);
-        ASSERT_EQ(voidTripletData->Response().Display(), display);
-        ASSERT_EQ(voidTripletData->Response().Surface(), surface);
-        ASSERT_EQ(voidTripletData->Response().Context(), context);
-=======
         ASSERT_EQ(tripletResponseData->Response().Result(), 6);
 
         error = multiChannel.Invoke(voidTripletData, 2000);
@@ -375,7 +344,13 @@ TEST(Core_IPC, simpleSet)
         ASSERT_EQ(voidTripletData->Response().Display(), 1);
         ASSERT_EQ(voidTripletData->Response().Surface(), 2);
         ASSERT_EQ(voidTripletData->Response().Context(), 3);
->>>>>>> [Tests] Added IPC tests.
+        ASSERT_EQ(tripletResponseData->Response().Result(), result);
+
+        error = multiChannel.Invoke(voidTripletData, 2000);
+        ASSERT_EQ(error, Core::ERROR_NONE);
+        ASSERT_EQ(voidTripletData->Response().Display(), display);
+        ASSERT_EQ(voidTripletData->Response().Surface(), surface);
+        ASSERT_EQ(voidTripletData->Response().Context(), context);
 
         error = multiChannel.Invoke(textTextData, 2000);
         ASSERT_EQ(error, Core::ERROR_NONE);
