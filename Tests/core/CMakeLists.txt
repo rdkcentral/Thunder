@@ -6,6 +6,7 @@ add_executable(${TEST_RUNNER_NAME}
     test_cyclicbuffer.cpp
     test_doorbell.cpp
     test_ipc.cpp
+    test_json.cpp
     test_sharedbuffer.cpp
     test_timer.cpp
 )
