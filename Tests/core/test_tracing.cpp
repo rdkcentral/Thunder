@@ -15,17 +15,6 @@ constexpr uint32_t CyclicBufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicB
 
 unsigned int g_maxBufferValue = 256;
 
-void waitUntilAfterStart(time_t secs)
-{
-   time_t target = g_startTime + secs;
-
-   // Check every 0.1 second if we can continue.
-   while (time(nullptr) < target) {
-      const useconds_t miliSec = 1000;
-      usleep(100 * miliSec);
-   }
-}
-
 #pragma pack(push)
 #pragma pack(1)
 struct TraceHeader
@@ -57,7 +46,7 @@ class ServerCyclicBuffer01 : public Core::CyclicBuffer
 {
 public:
     ServerCyclicBuffer01(const string& fileName)
-        : CyclicBuffer(fileName, 255, true)
+        : CyclicBuffer(fileName, 0, true)
     {
     }
 
@@ -148,26 +137,6 @@ bool ParseTraceData(const uint8_t buffer[], uint32_t length, uint32_t& offset, T
     return true;
 }
 
-string GetCyclicBufferName()
-{
-    Core::Directory dir(g_tracingPathName.c_str());
-
-    uint32_t bufferCount = 0;
-    string bufferPath;
-
-    while(dir.Next()) {
-        string triedPath = dir.Current();
-        // Skip "." and ".."
-        if(triedPath[triedPath.size() - 1] != '.') {
-            bufferCount++;
-            bufferPath = triedPath;
-        }
-    }
-
-    ASSERT(bufferCount == 1);
-    
-    return bufferPath;
-}
 void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuffer& cycBuffer)
 {
     uint entryCount = 0;
@@ -188,23 +157,21 @@ void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuff
     ASSERT(index == length);
 }
 
-
 TEST(Core_tracing, simpleTracing)
 {
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-       testAdmin.Sync("server start");
-
-       string cycBufferName = GetCyclicBufferName();
-       Core::DoorBell doorBell("tracebuffer");
-       ServerCyclicBuffer01 cycBuffer(cycBufferName+".0");
-       testAdmin.Sync("server setup");
-       testAdmin.Sync("client done");
+       std::string db = (g_tracingPathName + "/tracebuffer.doorbell");
+       string cycBufferName = (g_tracingPathName + "/tracebuffer.0");
+       Core::DoorBell doorBell(db.c_str());
+       ServerCyclicBuffer01 cycBuffer(cycBufferName);
 
        // TODO: maximum running time?
-       while (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+       if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+           doorBell.Acknowledge();
            uint32_t bufferLength = CyclicBufferSize;
            uint8_t buffer[bufferLength];
            uint32_t actuallyRead = cycBuffer.Read(buffer, sizeof(buffer));
+           testAdmin.Sync("server done");
 
            ASSERT(actuallyRead < cycBuffer.Size());
 
@@ -214,27 +181,24 @@ TEST(Core_tracing, simpleTracing)
            int traceCount = 0;
            while(offset < actuallyRead) {
                TraceData traceData;
-               ASSERT(!ParseTraceData(buffer, actuallyRead, offset, traceData));
+               ASSERT(ParseTraceData(buffer, actuallyRead, offset, traceData));
                string time(Core::Time::Now().ToRFC1123(true));
 
                fprintf(stderr, "[%s]:[%s:%d]:[%s] %s: %s\n", time.c_str(), traceData._File.c_str(), traceData._Header._LineNumber, traceData._Class.c_str(), traceData._Category.c_str(), traceData._Text.c_str());
 
                traceCount++;
+
            }
        }
-       testAdmin.Sync("server done");
-
+       doorBell.Relinquish();
     };
 
-   // This side (tested) acts as client (consumer).
+   // This side (tested) acts as client.
    IPTestAdministrator testAdmin(otherSide);
    {
-        system("mkdir -p /tmp/tracebuffer01");
-        system("rm -f /tmp/tracebuffer01/*");
         Trace::TraceUnit::Instance().Open(g_tracingPathName,0);
-        testAdmin.Sync("server start");
+        sleep(2);
         Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);
-        testAdmin.Sync("server setup");
 
         // Build too long trace statement.
         const int longBufferSize = CyclicBufferSize * 4 / 3;
@@ -244,7 +208,6 @@ TEST(Core_tracing, simpleTracing)
         longBuffer[longBufferSize - 1] = '\0';
         // One long trace.
         TRACE_GLOBAL(Trace::Information, (longBuffer));
-
         int traceCount = rand() % 100 + 50;
         for (int i = 0; i < traceCount; i++) {
             int traceLength = 50 + rand() % 200;
@@ -256,9 +219,7 @@ TEST(Core_tracing, simpleTracing)
 
             TRACE_GLOBAL(Trace::Information, (buffer));
         }
-        testAdmin.Sync("client done");
         testAdmin.Sync("server done");
-
         Trace::TraceUnit::Instance().Close();
    }
    Core::Singleton::Dispose();
