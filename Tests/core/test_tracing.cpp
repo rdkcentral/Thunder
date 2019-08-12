@@ -157,9 +157,18 @@ void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuff
     ASSERT(index == length);
 }
 
+void CreateTraceBuffer()
+{
+   char systemCmd[1024];
+   sprintf(systemCmd, "mkdir -p %s", g_tracingPathName.c_str());
+   system(systemCmd);
+}
+
 TEST(Core_tracing, simpleTracing)
 {
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+
+       testAdmin.Sync("client start");
        std::string db = (g_tracingPathName + "/tracebuffer.doorbell");
        string cycBufferName = (g_tracingPathName + "/tracebuffer.0");
        Core::DoorBell doorBell(db.c_str());
@@ -196,7 +205,9 @@ TEST(Core_tracing, simpleTracing)
    // This side (tested) acts as client.
    IPTestAdministrator testAdmin(otherSide);
    {
+        CreateTraceBuffer();
         Trace::TraceUnit::Instance().Open(g_tracingPathName,0);
+        testAdmin.Sync("client start");
         sleep(2);
         Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);
 
