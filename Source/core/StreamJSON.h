@@ -56,10 +56,10 @@ namespace Core {
                 if (_sendQueue.Count() > 0) {
                     loaded = _sendQueue[0]->Serialize(stream, length, _offset);
                     if ((_offset == 0) || (loaded != length)) {
+                        Core::ProxyType<JSON::IElement> current = _sendQueue[0];
+                        _parent.Send(current);
 
-                        Core::ProxyType<JSON::IElement> current;
-
-                        _sendQueue.Remove(0, current);
+                        _sendQueue.Remove(0);
                         _offset = 0;
                     }
                 }
