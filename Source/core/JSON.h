@@ -46,6 +46,7 @@ namespace Core {
 
                 return (offset == 0);
             }
+
             template <typename INSTANCEOBJECT>
             static bool FromString(const string& text, INSTANCEOBJECT& realObject)
             {
@@ -68,6 +69,7 @@ namespace Core {
             {
                 return (Core::JSON::IElement::ToString(*this, text));
             }
+
             inline bool FromString(const string& text)
             {
                 return (Core::JSON::IElement::FromString(text, *this));
@@ -97,6 +99,7 @@ namespace Core {
 
                 return (completed);
             }
+
             template <typename INSTANCEOBJECT>
             static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject)
             {
@@ -139,6 +142,7 @@ namespace Core {
             {
                 return (Core::JSON::IElement::ToFile(fileObject, *this));
             }
+
             bool FromFile(Core::File& fileObject)
             {
                 return (Core::JSON::IElement::FromFile(fileObject, *this));
@@ -149,7 +153,6 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-
             virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
         };
@@ -164,7 +167,6 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
         };
@@ -190,19 +192,22 @@ namespace Core {
                 , _default(0)
             {
             }
+
             NumberType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
             {
             }
+
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
-            virtual ~NumberType()
+
+            ~NumberType() override
             {
             }
 
@@ -213,6 +218,7 @@ namespace Core {
 
                 return (*this);
             }
+
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const TYPE& RHS)
             {
                 _value = RHS;
@@ -220,18 +226,22 @@ namespace Core {
 
                 return (*this);
             }
+
             inline TYPE Default() const
             {
                 return _default;
             }
+
             inline TYPE Value() const
             {
                 return ((_set & SET) != 0 ? _value : _default);
             }
+
             inline operator TYPE() const
             {
                 return _value;
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -239,23 +249,28 @@ namespace Core {
                 else
                     _set &= ~UNDEFINED;
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_set & (SET | UNDEFINED)) != 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 return ((_set & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _set = 0;
                 _value = 0;
             }
 
         private:
+            // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -315,7 +330,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -437,7 +453,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_set & UNDEFINED) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -445,7 +463,8 @@ namespace Core {
                 }
                 return (Convert(stream, maxLength, offset, TemplateIntToType<SIGNED>()));
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint8_t loaded = 0;
                 if (offset == 0) {
@@ -477,6 +496,7 @@ namespace Core {
                 }
                 return (loaded);
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TYPE serialize) const
             {
                 uint8_t parsed = 4;
@@ -511,14 +531,17 @@ namespace Core {
 
                 return (loaded);
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, _value));
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, ::abs(_value)));
             }
+
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
@@ -557,6 +580,7 @@ namespace Core {
 
                 return (loaded);
             }
+
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
@@ -642,14 +666,17 @@ namespace Core {
                 : _value(None)
             {
             }
+
             Boolean(const bool Value)
                 : _value(Value ? DefaultBit : None)
             {
             }
+
             Boolean(const Boolean& copy)
                 : _value(copy._value)
             {
             }
+
             ~Boolean()
             {
             }
@@ -661,6 +688,7 @@ namespace Core {
 
                 return (*this);
             }
+
             Boolean& operator=(const bool& RHS)
             {
                 // Do not overwrite the default
@@ -668,18 +696,22 @@ namespace Core {
 
                 return (*this);
             }
+
             inline bool Value() const
             {
                 return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
             }
+
             inline bool Default() const
             {
                 return (_value & DefaultBit) != 0;
             }
+
             inline operator bool() const
             {
                 return (_value & ValueBit);
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -687,21 +719,26 @@ namespace Core {
                 else
                     _value &= ~NullBit;
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_value & (SetBit | NullBit)) != 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 return ((_value & NullBit) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _value = (_value & DefaultBit);
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 static constexpr char trueBuffer[] = "true";
                 static constexpr char falseBuffer[] = "false";
@@ -731,7 +768,8 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 static constexpr char trueBuffer[] = "true";
@@ -782,7 +820,9 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_value & NullBit) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -793,7 +833,8 @@ namespace Core {
                 }
                 return (1);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
@@ -822,12 +863,13 @@ namespace Core {
             static constexpr uint32_t NullBit = 0x10000000;
 
         public:
-            String(const bool quoted = true)
+            explicit String(const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
                 , _value()
             {
             }
+
             explicit String(const string& Value, const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
@@ -835,6 +877,7 @@ namespace Core {
             {
                 Core::ToString(Value.c_str(), _default);
             }
+
             explicit String(const char Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
@@ -842,6 +885,7 @@ namespace Core {
             {
                 Core::ToString(Value, _default);
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
@@ -851,13 +895,15 @@ namespace Core {
                 Core::ToString(Value, _default);
             }
 #endif // __NO_WCHAR_SUPPORT__
+
             String(const String& copy)
                 : _default(copy._default)
                 , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
                 , _value(copy._value)
             {
             }
-            virtual ~String()
+
+            ~String() override
             {
             }
 
@@ -868,6 +914,7 @@ namespace Core {
 
                 return (*this);
             }
+
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
@@ -875,6 +922,7 @@ namespace Core {
 
                 return (*this);
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             String& operator=(const wchar_t RHS[])
             {
@@ -884,6 +932,7 @@ namespace Core {
                 return (*this);
             }
 #endif // __NO_WCHAR_SUPPORT__
+
             String& operator=(const String& RHS)
             {
                 _default = RHS._default;
@@ -892,14 +941,17 @@ namespace Core {
 
                 return (*this);
             }
+
             inline bool operator==(const String& RHS) const
             {
                 return (Value() == RHS.Value());
             }
+
             inline bool operator!=(const String& RHS) const
             {
                 return (!operator==(RHS));
             }
+
             inline bool operator==(const char RHS[]) const
             {
                 return (Value() == RHS);
@@ -909,6 +961,7 @@ namespace Core {
             {
                 return (!operator==(RHS));
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             inline bool operator==(const wchar_t RHS[]) const
             {
@@ -921,20 +974,23 @@ namespace Core {
             {
                 return (!operator==(RHS));
             }
-
 #endif // __NO_WCHAR_SUPPORT__
+
             inline bool operator<(const String& RHS) const
             {
                 return (Value() < RHS.Value());
             }
+
             inline bool operator>(const String& RHS) const
             {
                 return (Value() > RHS.Value());
             }
+
             inline bool operator>=(const String& RHS) const
             {
                 return (!operator<(RHS));
             }
+
             inline bool operator<=(const String& RHS) const
             {
                 return (!operator>(RHS));
@@ -947,10 +1003,12 @@ namespace Core {
                 }
                 return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
+
             inline const string& Default() const
             {
                 return (_default);
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -958,23 +1016,28 @@ namespace Core {
                 else
                     _scopeCount &= ~NullBit;
             }
-            // IElement interface methods
-            virtual bool IsNull() const override
+
+            // IElement iface:
+            bool IsNull() const override
             {
                 return (_scopeCount & NullBit) != 0;
             }
-            virtual bool IsSet() const override
+
+            bool IsSet() const override
             {
                 return ((_scopeCount & (SetBit | NullBit)) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
+
             inline bool IsQuoted() const
             {
                 return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
+
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
@@ -989,7 +1052,9 @@ namespace Core {
             {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 bool quoted = IsQuoted();
                 uint16_t result = 0;
@@ -1039,7 +1104,8 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 bool finished = false;
                 uint16_t result = 0;
@@ -1108,7 +1174,9 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1148,7 +1216,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1214,7 +1283,8 @@ namespace Core {
                 , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
             {
             }
-            virtual ~Buffer()
+
+            ~Buffer() override
             {
                 if (_buffer != nullptr) {
                     ::free(_buffer);
@@ -1228,23 +1298,27 @@ namespace Core {
                 else
                     _state &= ~UNDEFINED;
             }
-            // IElement interface methods
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_length > 0) && ((_state & SET) != 0));
             }
-            virtual bool IsNull() const
+
+            bool IsNull() const
             {
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
                 _length = 0;
             }
 
         protected:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                     "abcdefghijklmnopqrstuvwxyz"
@@ -1303,7 +1377,8 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -1401,7 +1476,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1432,7 +1509,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1506,19 +1584,22 @@ namespace Core {
                 , _default(static_cast<ENUMERATE>(0))
             {
             }
+
             EnumType(const ENUMERATE Value)
                 : _state(0)
                 , _value()
                 , _default(Value)
             {
             }
+
             EnumType(const EnumType<ENUMERATE>& copy)
                 : _state(copy._state)
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
-            virtual ~EnumType()
+
+            ~EnumType() override
             {
             }
 
@@ -1528,6 +1609,7 @@ namespace Core {
                 _state = RHS._state;
                 return (*this);
             }
+
             EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)
             {
                 _value = RHS;
@@ -1535,22 +1617,27 @@ namespace Core {
 
                 return (*this);
             }
+
             inline const ENUMERATE Default() const
             {
                 return (_default);
             }
+
             inline const ENUMERATE Value() const
             {
                 return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
             }
+
             inline operator const ENUMERATE() const
             {
                 return _value;
             }
+
             const TCHAR* Data() const
             {
                 return (Core::EnumerateType<ENUMERATE>(Value()).Data());
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -1558,21 +1645,25 @@ namespace Core {
                 else
                     _state &= ~UNDEFINED;
             }
-            virtual bool IsSet() const override
+
+            bool IsSet() const override
             {
                 return ((_state & SET) != 0);
             }
+
             bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if (offset == 0) {
                     if ((_state & UNDEFINED) != 0) {
@@ -1583,7 +1674,8 @@ namespace Core {
                 }
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset);
 
@@ -1608,7 +1700,9 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -1622,7 +1716,8 @@ namespace Core {
 
                 return (loaded == 0 ? static_cast<const IMessagePack&>(_package).Serialize(stream, maxLength, offset) : loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t result = 0;
 
@@ -1684,18 +1779,21 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ConstIteratorType(const ArrayContainer& container)
                     : _container(&container)
                     , _iterator(container.begin())
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ConstIteratorType(const ConstIteratorType<ARRAYELEMENT>& copy)
                     : _container(copy._container)
                     , _iterator(copy._iterator)
                     , _state(copy._state)
                 {
                 }
+
                 ~ConstIteratorType()
                 {
                 }
@@ -1714,6 +1812,7 @@ namespace Core {
                 {
                     return (_state == AT_ELEMENT);
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -1721,6 +1820,7 @@ namespace Core {
                     }
                     _state = AT_BEGINNING;
                 }
+
                 virtual bool Next()
                 {
                     if (_container != nullptr) {
@@ -1740,12 +1840,14 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 const ARRAYELEMENT& Current() const
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator);
                 }
+
                 inline uint32_t Count() const
                 {
                     return (_container == nullptr ? 0 : _container->size());
@@ -1756,6 +1858,7 @@ namespace Core {
                 typename ArrayContainer::const_iterator _iterator;
                 State _state;
             };
+
             template <typename ARRAYELEMENT>
             class IteratorType {
             private:
@@ -1773,18 +1876,21 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 IteratorType(ArrayContainer& container)
                     : _container(&container)
                     , _iterator(container.begin())
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 IteratorType(const IteratorType<ARRAYELEMENT>& copy)
                     : _container(copy._container)
                     , _iterator(copy._iterator)
                     , _state(copy._state)
                 {
                 }
+
                 ~IteratorType()
                 {
                 }
@@ -1803,6 +1909,7 @@ namespace Core {
                 {
                     return (_state == AT_ELEMENT);
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -1810,6 +1917,7 @@ namespace Core {
                     }
                     _state = AT_BEGINNING;
                 }
+
                 bool Next()
                 {
                     if (_container != nullptr) {
@@ -1829,18 +1937,21 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 IElement* Element()
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (&(*_iterator));
                 }
+
                 ARRAYELEMENT& Current()
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator);
                 }
+
                 inline uint32_t Count() const
                 {
                     return (_container == nullptr ? 0 : _container->size());
@@ -1861,46 +1972,55 @@ namespace Core {
                 , _iterator(_data)
             {
             }
+
             ArrayType(const ArrayType<ELEMENT>& copy)
                 : _data(copy._data)
                 , _iterator(_data)
             {
             }
-            virtual ~ArrayType()
+
+            ~ArrayType() override
             {
             }
 
         public:
-            virtual bool IsSet() const override
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return (Length() > 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
                 _data.clear();
             }
+
             inline uint16_t Length() const
             {
                 return static_cast<uint16_t>(_data.size());
             }
+
             inline ELEMENT& Add()
             {
                 _data.push_back(ELEMENT());
 
                 return (_data.back());
             }
+
             inline ELEMENT& Add(const ELEMENT& element)
             {
                 _data.push_back(element);
 
                 return (_data.back());
             }
+
             ELEMENT& operator[](const uint32_t index)
             {
                 uint32_t skip = index;
@@ -1917,6 +2037,7 @@ namespace Core {
 
                 return (*locator);
             }
+
             const ELEMENT& operator[](const uint32_t index) const
             {
                 uint32_t skip = index;
@@ -1933,18 +2054,22 @@ namespace Core {
 
                 return (*locator);
             }
+
             const ELEMENT& Get(const uint32_t index) const
             {
                 return operator[](index);
             }
+
             inline Iterator Elements()
             {
                 return (Iterator(_data));
             }
+
             inline ConstIterator Elements() const
             {
                 return (ConstIterator(_data));
             }
+
             ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
             {
                 _state = RHS._state;
@@ -1953,12 +2078,14 @@ namespace Core {
 
                 return (*this);
             }
+
             inline operator string() const
             {
                 string result;
                 ToString(result);
                 return (result);
             }
+
             inline ArrayType<ELEMENT>& operator=(const string& RHS)
             {
                 FromString(RHS);
@@ -1966,7 +2093,8 @@ namespace Core {
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -1992,7 +2120,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if ((offset == 0) || (offset == BEGIN_MARKER)) {
@@ -2045,7 +2174,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2082,7 +2213,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -2172,6 +2304,7 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ~Iterator()
                 {
                 }
@@ -2182,6 +2315,7 @@ namespace Core {
                     _iterator = _container.begin();
                     _state = AT_BEGINNING;
                 }
+
                 bool Next()
                 {
                     if (_state != AT_END) {
@@ -2193,12 +2327,14 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 const TCHAR* Label() const
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator).first;
                 }
+
                 IElement* Element()
                 {
                     ASSERT(_state == AT_ELEMENT);
@@ -2217,6 +2353,7 @@ namespace Core {
         public:
             Container(const Container& copy) = delete;
             Container& operator=(const Container& RHS) = delete;
+
             Container()
                 : _state(0)
                 , _data()
@@ -2224,7 +2361,8 @@ namespace Core {
                 , _fieldName(true)
             {
             }
-            virtual ~Container()
+
+            ~Container() override
             {
             }
 
@@ -2239,7 +2377,9 @@ namespace Core {
 
                 return (index != _data.end());
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 JSONElementList::const_iterator index = _data.begin();
 
@@ -2250,12 +2390,14 @@ namespace Core {
 
                 return (index != _data.end());
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 // TODO: Implement null for conrtainers
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 JSONElementList::const_iterator index = _data.begin();
 
@@ -2270,6 +2412,7 @@ namespace Core {
             {
                 _data.push_back(JSONLabelValue(label, element));
             }
+
             void Remove(const TCHAR label[])
             {
                 JSONElementList::iterator index(_data.begin());
@@ -2284,7 +2427,8 @@ namespace Core {
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2328,7 +2472,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if ((offset == 0) || (offset == BEGIN_MARKER)) {
@@ -2408,7 +2553,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2465,7 +2612,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -2519,6 +2667,7 @@ namespace Core {
 
                 return (loaded);
             }
+
             IElement* Find(const char label[])
             {
                 IElement* result = nullptr;
@@ -2544,6 +2693,7 @@ namespace Core {
                 }
                 return (result);
             }
+
             bool FindNext() const
             {
                 _iterator++;
@@ -2552,6 +2702,7 @@ namespace Core {
                 }
                 return (_iterator != _data.end());
             }
+
             virtual bool Request(const TCHAR label[])
             {
                 return (false);
@@ -2589,57 +2740,68 @@ namespace Core {
             {
                 String::operator=("null");
             }
+
             Variant(const int32_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<int32_t, true, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const int64_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<int64_t, true, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const uint32_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<uint32_t, false, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const uint64_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const bool value)
                 : JSON::String(false)
                 , _type(type::BOOLEAN)
             {
                 String::operator=(value ? _T("true") : _T("false"));
             }
+
             Variant(const string& text)
                 : JSON::String(true)
                 , _type(type::STRING)
             {
                 String::operator=(text);
             }
+
             Variant(const TCHAR* text)
                 : JSON::String(true)
                 , _type(type::STRING)
             {
                 String::operator=(text);
             }
+
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
             {
             }
+
             Variant(const VariantContainer& object);
-            virtual ~Variant()
+
+            ~Variant() override
             {
             }
+
             Variant& operator=(const Variant& RHS)
             {
                 JSON::String::operator=(RHS);
@@ -2652,6 +2814,7 @@ namespace Core {
             {
                 return _type;
             }
+
             bool Boolean() const
             {
                 bool result = false;
@@ -2660,6 +2823,7 @@ namespace Core {
                 }
                 return result;
             }
+
             int64_t Number() const
             {
                 int64_t result = 0;
@@ -2668,10 +2832,12 @@ namespace Core {
                 }
                 return result;
             }
+
             const string String() const
             {
                 return Value();
             }
+
             ArrayType<Variant> Array() const
             {
                 ArrayType<Variant> result;
@@ -2680,6 +2846,7 @@ namespace Core {
 
                 return result;
             }
+
             inline VariantContainer Object() const;
 
             void Boolean(const bool value)
@@ -2688,6 +2855,7 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(value ? _T("true") : _T("false"));
             }
+
             template <typename TYPE>
             void Number(const TYPE value)
             {
@@ -2695,12 +2863,14 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(Core::NumberType<TYPE>(value).Text());
             }
+
             void String(const TCHAR* value)
             {
                 _type = type::STRING;
                 String::SetQuoted(true);
                 String::operator=(value);
             }
+
             void Array(const ArrayType<Variant>& value)
             {
                 _type = type::ARRAY;
@@ -2709,6 +2879,7 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(data);
             }
+
             inline void Object(const VariantContainer& object);
 
             template <typename VALUE>
@@ -2717,40 +2888,51 @@ namespace Core {
                 Number(value);
                 return (*this);
             }
+
             Variant& operator=(const bool& value)
             {
                 Boolean(value);
                 return (*this);
             }
+
             Variant& operator=(const string& value)
             {
                 String(value.c_str());
                 return (*this);
             }
+
             Variant& operator=(const TCHAR value[])
             {
                 String(value);
                 return (*this);
             }
+
             Variant& operator=(const ArrayType<Variant>& value)
             {
                 Array(value);
                 return (*this);
             }
+
             Variant& operator=(const VariantContainer& value)
             {
                 Object(value);
                 return (*this);
             }
+
             inline void ToString(string& result) const;
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return String::IsSet();
             }
+
             string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
 
         private:
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
+            // IElement iface:
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
+
             static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
             {
                 ASSERT(maxLength > 0 && (stream[0] == '{' || stream[0] == '['));
@@ -2794,12 +2976,14 @@ namespace Core {
                     , _start(true)
                 {
                 }
+
                 Iterator(const Elements& container)
                     : _container(&container)
                     , _index(_container->begin())
                     , _start(true)
                 {
                 }
+
                 Iterator(const Iterator& copy)
                     : _container(copy._container)
                     , _index()
@@ -2809,6 +2993,7 @@ namespace Core {
                         _index = _container->begin();
                     }
                 }
+
                 ~Iterator()
                 {
                 }
@@ -2827,6 +3012,7 @@ namespace Core {
                 {
                     return ((_container != nullptr) && (_start == false) && (_index != _container->end()));
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -2834,6 +3020,7 @@ namespace Core {
                         _index = _container->begin();
                     }
                 }
+
                 bool Next()
                 {
                     if (_container != nullptr) {
@@ -2847,10 +3034,12 @@ namespace Core {
 
                     return (false);
                 }
+
                 const TCHAR* Label() const
                 {
                     return (_index->first.c_str());
                 }
+
                 const JSON::Variant& Current() const
                 {
                     return (_index->second);
@@ -2868,18 +3057,21 @@ namespace Core {
                 , _elements()
             {
             }
+
             VariantContainer(const TCHAR serialized[])
                 : Container()
                 , _elements()
             {
                 Container::FromString(serialized);
             }
+
             VariantContainer(const string& serialized)
                 : Container()
                 , _elements()
             {
                 Container::FromString(serialized);
             }
+
             VariantContainer(const VariantContainer& copy)
                 : Container()
                 , _elements(copy._elements)
@@ -2892,6 +3084,7 @@ namespace Core {
                     index++;
                 }
             }
+
             VariantContainer(const Elements& values)
                 : Container()
             {
@@ -2905,7 +3098,8 @@ namespace Core {
                     index++;
                 }
             }
-            virtual ~VariantContainer()
+
+            ~VariantContainer() override
             {
             }
 
@@ -2946,6 +3140,7 @@ namespace Core {
 
                 return (*this);
             }
+
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
                 Elements::iterator index(Find(fieldName));
@@ -2958,6 +3153,7 @@ namespace Core {
                     Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
                 }
             }
+
             Variant Get(const TCHAR fieldName[]) const
             {
                 JSON::Variant result;
@@ -2970,6 +3166,7 @@ namespace Core {
 
                 return (result);
             }
+
             JSON::Variant& operator[](const TCHAR fieldName[])
             {
                 Elements::iterator index(Find(fieldName));
@@ -2985,6 +3182,7 @@ namespace Core {
 
                 return (index->second);
             }
+
             const JSON::Variant& operator[](const TCHAR fieldName[]) const
             {
                 static const JSON::Variant emptyVariant;
@@ -2993,14 +3191,17 @@ namespace Core {
 
                 return (index == _elements.end() ? emptyVariant : index->second);
             }
+
             bool HasLabel(const TCHAR labelName[]) const
             {
                 return (Find(labelName) != _elements.end());
             }
+
             Iterator Variants() const
             {
                 return (Iterator(_elements));
             }
+
             string GetDebugString(int indent = 0) const;
 
         private:
@@ -3012,6 +3213,7 @@ namespace Core {
                 }
                 return (index);
             }
+
             Elements::const_iterator Find(const TCHAR fieldName[]) const
             {
                 Elements::const_iterator index(_elements.begin());
@@ -3020,7 +3222,9 @@ namespace Core {
                 }
                 return (index);
             }
-            virtual bool Request(const TCHAR label[])
+
+            // Container iface:
+            bool Request(const TCHAR label[]) override
             {
                 // Whetever comes in and has no counter part, we need to create a Variant for it, so
                 // it can be filled.
@@ -3053,12 +3257,14 @@ namespace Core {
             object.ToString(value);
             String::operator=(value);
         }
+
         inline VariantContainer Variant::Object() const
         {
             VariantContainer result;
             result.FromString(Value());
             return (result);
         }
+
         inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
         {
             uint16_t result = 0;
@@ -3111,6 +3317,7 @@ namespace Core {
             Tester()
             {
             }
+
             ~Tester()
             {
             }
