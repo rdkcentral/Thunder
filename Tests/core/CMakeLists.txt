@@ -9,6 +9,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rpc.cpp
    test_jsonparser.cpp
    test_sharedbuffer.cpp
+   test_thread.cpp
    test_timer.cpp
 )
 

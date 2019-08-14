@@ -172,7 +172,7 @@ public:
     virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& data)
     {
         Core::ProxyType<Messages::TextText> message(data);
-        std::string text = message->Parameters().Value();
+        string text = message->Parameters().Value();
 
         message->Response() = Core::IPC::Text<2048>(text);
         source.ReportResponse(data);
