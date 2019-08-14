@@ -5,9 +5,8 @@
 
 using namespace WPEFramework;
 
-bool g_done = false;
-std::string g_scheduledTime = "";
-std::string g_currentTime = "";
+bool g_timerDone = false;
+string g_currentTime = "";
 
 class TimeHandler {
     public:
@@ -23,7 +22,7 @@ class TimeHandler {
         uint64_t Timed(const uint64_t scheduledTime)
         {
             g_currentTime = Core::Time::Now().ToRFC1123();
-            g_done = true;
+            g_timerDone = true;
             return 0;
         }
 private:
@@ -36,9 +35,9 @@ TEST(Core_Timer, simpleSet)
     uint32_t time = 2000; // 2 seconds
     Core::Time NextTick = Core::Time::Now();
     NextTick.Add(time);
-    g_scheduledTime = NextTick.ToRFC1123();
+    string scheduledTime = NextTick.ToRFC1123();
     timer.Schedule(NextTick.Ticks(), TimeHandler(NextTick));
-    while(!g_done);
-    ASSERT_STREQ(g_scheduledTime.c_str(), g_currentTime.c_str());
+    while(!g_timerDone);
+    ASSERT_STREQ(scheduledTime.c_str(), g_currentTime.c_str());
 }
 
