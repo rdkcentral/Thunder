@@ -11,6 +11,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_tracing.cpp
    Module.cpp
    test_logging.cpp
+   test_textfragment.cpp
 #   test_sharedbuffer.cpp
 )
 
