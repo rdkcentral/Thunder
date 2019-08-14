@@ -681,7 +681,7 @@ namespace Bluetooth {
             if (_queue.size() ==  1) {
                 Send(waitTime, cmd, &_sink, &cmd);
             }
-            _adminLock.Lock();
+            _adminLock.Unlock();
         }
         void Revoke(const Command& cmd)
         {
@@ -714,9 +714,9 @@ namespace Bluetooth {
                         Send(entry.WaitTime(), cmd, &_sink, &cmd);
                     }
                 }
-            }
 
-            _adminLock.Unlock();
+                _adminLock.Unlock();
+            }
         }
 
     private:

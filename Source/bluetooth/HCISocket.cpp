@@ -316,6 +316,8 @@ uint32_t HCISocket::Unpair(const Address& remote, const uint8_t type)
 
         result = Exchange(MAX_ACTION_TIMEOUT, command);
 
+        _state.Lock();
+
         _state.SetState(static_cast<state>(_state.GetState() & (~(ABORT | PAIRING))));
     }
 
@@ -379,7 +381,7 @@ void HCISocket::Abort()
 
         if ((name == nullptr) || (pos == 0)) {
             TRACE_L1("Entry[%s] has no name.", Address(advertisingInfo->bdaddr).ToString().c_str());
-            Discovered(false, Address(advertisingInfo->bdaddr), _T("[Unknown]"));
+            Discovered(true, Address(advertisingInfo->bdaddr), _T("[Unknown]"));
         } else {
             Discovered(true, Address(advertisingInfo->bdaddr), string(name, pos));
         }
