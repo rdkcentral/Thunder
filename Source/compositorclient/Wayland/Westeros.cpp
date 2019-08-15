@@ -2,6 +2,7 @@
 
 #define EGL_EGLEXT_PROTOTYPES 1
 
+#include <wayland-egl.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 
@@ -18,7 +19,6 @@
 #include <simpleshell-client-protocol.h>
 #include <wayland-client-core.h>
 #include <wayland-client.h>
-#include <wayland-egl.h>
 
 #include <poll.h>
 #include <pthread.h>
