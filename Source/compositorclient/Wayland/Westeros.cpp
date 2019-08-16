@@ -341,8 +341,8 @@ namespace Wayland {
     /*static*/ Display::DisplayMap Display::_displays;
     /*static*/ Display::WaylandSurfaceMap Display::_waylandSurfaces;
     /*static*/ EGLenum Display::ImageImplementation::_eglTarget;
-    /*static*/ PFNEGLCREATEIMAGEKHRPROC Display::ImageImplementation::_eglCreateImagePtr;
-    /*static*/ PFNEGLDESTROYIMAGEKHRPROC Display::ImageImplementation::_eglDestroyImagePtr;
+    /*static*/ PFNEGLCREATEIMAGEKHRPROC Display::ImageImplementation::_eglCreateImagePtr = nullptr;
+    /*static*/ PFNEGLDESTROYIMAGEKHRPROC Display::ImageImplementation::_eglDestroyImagePtr = nullptr;
 
     static void printEGLConfiguration(EGLDisplay dpy, EGLConfig config)
     {
@@ -699,7 +699,7 @@ namespace Wayland {
                 // Keep Destroy pointer for later reference.
                 _eglDestroyImagePtr = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
             } else {
-#if !defined(EGL_GL_TEXTURE_2D) // To build for not supporting platform too
+#if !defined(EGL_GL_TEXTURE_2D) // FIXME: Added to build for not supporting platform too, but has to be removed once support is ready
 #define EGL_GL_TEXTURE_2D EGL_GL_TEXTURE_2D_KHR
 #endif
                 _eglTarget = EGL_GL_TEXTURE_2D;
