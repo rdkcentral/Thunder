@@ -31,6 +31,9 @@
 // logical xor
 #define XOR(a, b) ((!a && b) || (a && !b))
 
+static PFNEGLCREATEIMAGEKHRPROC eglCreateImagePtr;
+static PFNEGLDESTROYIMAGEKHRPROC eglDestroyImagePtr;
+
 using namespace WPEFramework;
 
 #define Trace(fmt, args...) fprintf(stderr, "[pid=%d][Client %s:%d] : " fmt, getpid(), __FILE__, __LINE__, ##args)
@@ -650,7 +653,7 @@ namespace Wayland {
                     _eglSurfaceWindow = eglCreateWindowSurface(
                         _display->_eglDisplay,
                         _display->_eglConfig,
-                        static_cast<EGLNativeWindowType>(nullptr),
+                        reinterpret_cast<EGLNativeWindowType>(nullptr),
                         nullptr);
                 }
 
@@ -686,15 +689,29 @@ namespace Wayland {
         : _refcount(1)
         , _display(&display)
     {
-        _eglImageKHR = eglCreateImageKHR(_display->_eglDisplay, _display->_eglContext, EGL_GL_TEXTURE_2D_KHR,
+       EGLenum target;
+       _eglExtension = eglQueryString(_display->_eglDisplay, EGL_EXTENSIONS);
+       if (strstr(_eglExtension, "EGL_KHR_image_base")) {
+               eglCreateImagePtr = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImageKHR"));
+               target = EGL_GL_TEXTURE_2D_KHR;
+       } else {
+               eglCreateImagePtr = reinterpret_cast<PFNEGLCREATEIMAGEKHRPROC>(eglGetProcAddress("eglCreateImage"));
+               target = EGL_GL_TEXTURE_2D;
+        }
+        _eglImageKHR = eglCreateImagePtr(_display->_eglDisplay, _display->_eglContext, target,
             reinterpret_cast<EGLClientBuffer>(texture), 0);
     }
 
     Display::ImageImplementation::~ImageImplementation()
     {
         if (_display != nullptr) {
-            eglDestroyImageKHR(_display->_eglDisplay, _eglImageKHR);
-        }
+                if (strstr(_eglExtension, "EGL_KHR_image_base")) {
+                        eglDestroyImagePtr = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImageKHR"));
+                } else {
+                        eglDestroyImagePtr = reinterpret_cast<PFNEGLDESTROYIMAGEKHRPROC>(eglGetProcAddress("eglDestroyImage"));
+                }
+        eglDestroyImagePtr(_display->_eglDisplay, _eglImageKHR);
+	}
     }
 
     static void* Processor(void* data)
