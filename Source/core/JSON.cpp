@@ -6,6 +6,19 @@ namespace WPEFramework {
 namespace Core {
     namespace JSON {
 
+        string ErrorDisplayMessage(const Error& err)
+        {
+            string msg;
+            msg += err.Message();
+            string context = err.Context();
+            if (!context.empty())
+                msg += "\nAt character " + std::to_string(err.Position()) + ": " + context;
+
+            return msg;
+        }
+
+        /* static */ constexpr size_t Error::kContextMaxLength;
+
         /* static */ char IElement::NullTag[] = "null";
 
         string Variant::GetDebugString(const TCHAR name[], int indent, int arrayIndex) const
