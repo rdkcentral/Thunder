@@ -13,7 +13,7 @@ set(PROXYSTUB_PATH "${CMAKE_INSTALL_PREFIX}/lib/${NAMESPACE_LIB}/proxystubs" CAC
 set(CONFIG_INSTALL_PATH "/etc/${NAMESPACE}" CACHE STRING "Install location of the configuration")
 set(IPV6_SUPPORT false CACHE STRING "Controls if should application supports ipv6")
 set(PRIORITY 0 CACHE STRING "Change the nice level [-20 - 20]")
-set(POLICY 0 CACHE STRING "NA")
+set(POLICY "OTHER" CACHE STRING "NA")
 set(OOMADJUST 0 CACHE STRING "Adapt the OOM score [-15 - 15]")
 set(STACKSIZE 0 CACHE STRING "Default stack size per thread")
 

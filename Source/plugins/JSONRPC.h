@@ -243,11 +243,10 @@ namespace PluginHost {
         virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
         {
             Registration info;
-            Core::ProxyType<Core::JSONRPC::Message> response;
+            Core::ProxyType<Core::JSONRPC::Message> response(Message());
             Core::JSONRPC::Handler* source = nullptr;
 
             if (inbound.Id.IsSet() == true) {
-                response = Message();
                 response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
                 response->Id = inbound.Id.Value();
             }
