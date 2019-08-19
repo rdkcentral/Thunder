@@ -6,7 +6,7 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-string g_connectorName = _T("/tmp/wperpc01");
+static string g_connectorName = _T("/tmp/wperpc01");
 
 namespace WPEFramework {
 namespace Exchange {
@@ -201,6 +201,7 @@ namespace WPEFramework {
     } // namespace
 }
 
+namespace {
 class ExternalAccess : public RPC::Communicator
 {
 private:
@@ -233,6 +234,7 @@ private:
         return result;
     }
 };
+}
 
 TEST(Core_RPC, adder)
 {
@@ -279,9 +281,8 @@ TEST(Core_RPC, adder)
       adder->Release();
 
       client->Close(Core::infinite);
-      WPEFramework::Core::Singleton::Dispose();
    }
 
    testAdmin.Sync("done testing");
+   Core::Singleton::Dispose();
 }
-

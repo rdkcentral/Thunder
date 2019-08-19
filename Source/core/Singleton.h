@@ -38,7 +38,7 @@ namespace Core {
         Singleton& operator=(const Singleton&);
 
     public:
-        inline Singleton()
+        inline Singleton(void** realDeal) : _realDeal(realDeal)
         {
             ListInstance().Register(this);
         }
@@ -46,6 +46,7 @@ namespace Core {
         virtual ~Singleton()
         {
             ListInstance().Unregister(this);
+            (*_realDeal) = nullptr;
         }
 
         inline static void Dispose()
@@ -55,6 +56,7 @@ namespace Core {
         virtual string ImplementationName() const = 0;
 
     private:
+        void** _realDeal;
         static SingletonList& ListInstance();
     };
 
@@ -66,18 +68,19 @@ namespace Core {
 
     protected:
         SingletonType()
-            : Singleton()
+            : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
+            , SINGLETON()
         {
         }
         template <typename ARG1>
         SingletonType(ARG1 arg1)
-            : Singleton()
+            : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
             , SINGLETON(arg1)
         {
         }
         template <typename ARG1, typename ARG2>
         SingletonType(ARG1 arg1, ARG2 arg2)
-            : Singleton()
+            : Singleton(reinterpret_cast<void**>(&g_TypedSingleton))
             , SINGLETON(arg1, arg2)
         {
         }
@@ -85,6 +88,7 @@ namespace Core {
     public:
         virtual ~SingletonType()
         {
+           ASSERT(g_TypedSingleton != nullptr);
         }
 
     public:
@@ -95,7 +99,6 @@ namespace Core {
 
         static SINGLETON& Instance()
         {
-            static SingletonType<SINGLETON>* g_TypedSingleton = nullptr;
             static CriticalSection g_AdminLock;
 
             // Hmm Double Lock syndrom :-)
@@ -104,18 +107,17 @@ namespace Core {
 
                 if (g_TypedSingleton == nullptr) {
                     // Create a singleton
-                    g_TypedSingleton = new SingletonType<SINGLETON>();
+                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>());
                 }
 
                 g_AdminLock.Unlock();
             }
 
-            return *(static_cast<SINGLETON*>(g_TypedSingleton));
+            return *(g_TypedSingleton);
         }
         template <typename ARG1>
         static SINGLETON& Instance(ARG1 arg1)
         {
-            static SingletonType<SINGLETON>* g_TypedSingleton = nullptr;
             static CriticalSection g_AdminLock;
 
             // Hmm Double Lock syndrom :-)
@@ -124,7 +126,7 @@ namespace Core {
 
                 if (g_TypedSingleton == nullptr) {
                     // Create a singleton
-                    g_TypedSingleton = new SingletonType<SINGLETON>(arg1);
+                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(arg1));
                 }
 
                 g_AdminLock.Unlock();
@@ -133,12 +135,11 @@ namespace Core {
                 ASSERT(false);
             }
 
-            return *(static_cast<SINGLETON*>(g_TypedSingleton));
+            return *(g_TypedSingleton);
         }
         template <typename ARG1, typename ARG2>
         static SINGLETON& Instance(ARG1 arg1, ARG2 arg2)
         {
-            static SingletonType<SINGLETON>* g_TypedSingleton = nullptr;
             static CriticalSection g_AdminLock;
 
             // Hmm Double Lock syndrom :-)
@@ -147,7 +148,7 @@ namespace Core {
 
                 if (g_TypedSingleton == nullptr) {
                     // Create a singleton
-                    g_TypedSingleton = new SingletonType<SINGLETON>(arg1, arg2);
+                    g_TypedSingleton = static_cast<SINGLETON*>(new SingletonType<SINGLETON>(arg1, arg2));
                 }
 
                 g_AdminLock.Unlock();
@@ -156,9 +157,15 @@ namespace Core {
                 ASSERT(false);
             }
 
-            return *(static_cast<SINGLETON*>(g_TypedSingleton));
+            return *(g_TypedSingleton);
         }
+
+      private:
+        static SINGLETON* g_TypedSingleton;
     };
+
+    template <typename SINGLETONTYPE>
+    EXTERNAL_HIDDEN SINGLETONTYPE*  SingletonType<SINGLETONTYPE>::g_TypedSingleton = nullptr;
 }
 } // namespace Core
 

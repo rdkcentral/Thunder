@@ -83,6 +83,7 @@ namespace Core {
 #endif
         {
         }
+
         ~ResourceMonitorType()
         {
 
@@ -90,12 +91,14 @@ namespace Core {
             ASSERT(_resourceList.size() == 0);
 
             if (_monitor != nullptr) {
+
+                _monitor->Stop();
+                Break();
+                _monitor->Wait(Thread::STOPPED, Core::infinite);
+
                 _adminLock.Lock();
 
                 _resourceList.clear();
-
-                _monitor->Block();
-                Break();
 
                 _adminLock.Unlock();
 

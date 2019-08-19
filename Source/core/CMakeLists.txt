@@ -132,6 +132,10 @@ if(DISABLE_TRACING)
     message(STATUS "Force trace level to 0")
 endif()
 
+if(BUILD_TESTS)
+    target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)
+endif()
+
 if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
