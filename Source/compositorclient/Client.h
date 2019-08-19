@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include <string.h>
+#include <string>
 
 #if __cplusplus <= 199711L
 #define nullptr NULL
