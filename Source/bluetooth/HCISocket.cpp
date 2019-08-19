@@ -378,7 +378,7 @@ void HCISocket::Abort()
         }
 
         if ((name == nullptr) || (pos == 0)) {
-            TRACE_L1("Entry[%s] has no name.", Address(advertisingInfo->bdaddr).ToString());
+            TRACE_L1("Entry[%s] has no name.", Address(advertisingInfo->bdaddr).ToString().c_str());
             Discovered(false, Address(advertisingInfo->bdaddr), _T("[Unknown]"));
         } else {
             Discovered(true, Address(advertisingInfo->bdaddr), string(name, pos));
