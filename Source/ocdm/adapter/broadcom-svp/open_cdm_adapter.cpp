@@ -45,6 +45,39 @@ static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
+static void replaceLengthprefixWithStartcodepreix(uint8_t *buffer, int bufsz) {
+    uint8_t *curr, *end;
+    uint32_t remain, slice_size = 0;
+
+    curr =  buffer;
+    end = buffer + bufsz;
+    remain = bufsz;
+
+    while (curr < end) {
+
+        slice_size = (*curr) << 24;
+        slice_size += (*(curr + 1)) << 16;
+        slice_size += (*(curr + 2)) << 8;
+        slice_size += (*(curr + 3)) ;
+
+        if ((curr == buffer) && (*curr == 0x00) && (*(curr + 1) == 0x00) && (*(curr + 2)  == 0x00) && (*(curr + 3)) == 0x01) {
+            return;
+        }
+
+        if (slice_size > remain) {
+            return;
+        }
+
+        *curr       = 0x00;
+        *(curr + 1) = 0x00;
+        *(curr + 2) = 0x00;
+        *(curr + 3) = 0x01;
+
+        curr += slice_size+4;
+        remain -= slice_size+4;
+    }
+}
+
 OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, GstBuffer* buffer, GstBuffer* subSample, const uint32_t subSampleCount,
                                                GstBuffer* IV, GstBuffer* keyID, uint32_t initWithLast15)
 {
@@ -119,8 +152,9 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
                 rpcSecureBufferInformation->subSamples[2*position + 1] = inEncrypted;
 
                 assert( sizeof(nalUnit) < (inClear+inEncrypted));
-                B_Secbuf_ImportData(opaqueDataEnc, index, const_cast<uint8_t*>(nalUnit), sizeof(nalUnit), false);
-                B_Secbuf_ImportData(opaqueDataEnc, index + sizeof(nalUnit), mappedData + index + sizeof(nalUnit), inClear + inEncrypted - sizeof(nalUnit), true);
+                // replace length prefiex NALU length into startcode prefix
+                replaceLengthprefixWithStartcodepreix(mappedData+index, inClear+inEncrypted);
+                B_Secbuf_ImportData(opaqueDataEnc, index, mappedData + index, inClear + inEncrypted, true);
                 index += inClear + inEncrypted;
             }
             gst_byte_reader_free(reader);
