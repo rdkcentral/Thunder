@@ -156,7 +156,6 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
                 TRACE(Trace::Information, (_T("Now we need to send another send....")));
             } else {
-                ASSERT(length < _bufferSize);
                 _error = Core::ERROR_NONE;
             }
             break;

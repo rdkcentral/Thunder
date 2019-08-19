@@ -12,6 +12,12 @@ namespace Bluetooth {
         Broadcom43XX(const Broadcom43XX&) = delete;
         Broadcom43XX& operator=(const Broadcom43XX&) = delete;
 
+        // Vendor-specyfic HCI commands
+        static constexpr uint16_t BCM43XX_WRITE_LOCAL_CLOCK = 0x0045;
+        static constexpr uint16_t BCM43XX_WRITE_LOCAL_SPEED = 0x0018;
+        static constexpr uint16_t BCM43XX_WRITE_LOCAL_ADDRESS = 0x0001;
+        static constexpr uint16_t BCM43XX_WRITE_LOCAL_FIRMWARE = 0x002e;
+
         static constexpr uint8_t BCM43XX_CLOCK_48 = 1;
         static constexpr uint8_t BCM43XX_CLOCK_24 = 2;
         static constexpr uint8_t CMD_SUCCESS = 0;
@@ -125,8 +131,9 @@ namespace Bluetooth {
         }
         uint32_t Reset()
         {
-            Exchange::Response response(Exchange::COMMAND_PKT, 0x030C);
-            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x030C, 0, nullptr), response, 1000);
+            const uint16_t command = cmd_opcode_pack(OGF_HOST_CTL, OCF_RESET);
+            Exchange::Response response(Exchange::COMMAND_PKT, command);
+            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, 0, nullptr), response, 1000);
 
             if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
                 TRACE_L1("Failed to reset chip, command failure\n");
@@ -156,8 +163,9 @@ namespace Bluetooth {
         }
        uint32_t LoadName()
         {
-            Exchange::Response response(Exchange::COMMAND_PKT, 0x140C);
-            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x140C, 0, nullptr), response, 500);
+            const uint16_t command = cmd_opcode_pack(OGF_HOST_CTL, OCF_READ_LOCAL_NAME);
+            Exchange::Response response(Exchange::COMMAND_PKT, command);
+            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, 0, nullptr), response, 500);
 
             if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
                 TRACE_L1("Failed to read local name, command failure\n");
@@ -170,8 +178,9 @@ namespace Bluetooth {
         }
         uint32_t SetClock(const uint8_t clock)
         {
-            Exchange::Response response(Exchange::COMMAND_PKT, 0x45fc);
-            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x45fc, 1, &clock), response, 500);
+            const uint16_t command = cmd_opcode_pack(OGF_VENDOR_CMD, BCM43XX_WRITE_LOCAL_CLOCK);
+            Exchange::Response response(Exchange::COMMAND_PKT, command);
+            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, 1, &clock), response, 500);
 
             if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
                 TRACE_L1("Failed to read local name, command failure\n");
@@ -183,6 +192,7 @@ namespace Bluetooth {
         uint32_t SetSpeed(const uint32_t baudrate)
         {
             uint32_t result = Core::ERROR_NONE;
+            const uint16_t command = cmd_opcode_pack(OGF_VENDOR_CMD, BCM43XX_WRITE_LOCAL_SPEED);
 
             if (baudrate > 3000000) {
                 result = SetClock(BCM43XX_CLOCK_48);
@@ -199,8 +209,8 @@ namespace Bluetooth {
                 data[4] = static_cast<uint8_t>((baudrate >> 16) & 0xFF);
                 data[5] = static_cast<uint8_t>((baudrate >> 24) & 0xFF);
 
-                Exchange::Response response(Exchange::COMMAND_PKT, 0x18fc);
-                uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x18fc, sizeof(data), data), response, 500);
+                Exchange::Response response(Exchange::COMMAND_PKT, command);
+                uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, sizeof(data), data), response, 500);
 
                 if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
                     TRACE_L1("Failed to read local name, command failure\n");
@@ -217,9 +227,10 @@ namespace Bluetooth {
             uint8_t data[6];
             ::memcpy(data, address, std::min(length, static_cast<uint8_t>(sizeof(data))));
             ::memset(&(data[length]), 0, sizeof(data) - std::min(length, static_cast<uint8_t>(sizeof(data))));
+            const uint16_t command = cmd_opcode_pack(OGF_VENDOR_CMD, BCM43XX_WRITE_LOCAL_ADDRESS);
 
-            Exchange::Response response(Exchange::COMMAND_PKT, 0x01fc);
-            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x01fc, sizeof(data), address), response, 500);
+            Exchange::Response response(Exchange::COMMAND_PKT, command);
+            uint32_t result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, sizeof(data), address), response, 500);
 
             if ((result == Core::ERROR_NONE) && (response[3] != CMD_SUCCESS)) {
                 TRACE_L1("Failed to set the MAC address\n");
@@ -233,6 +244,7 @@ namespace Bluetooth {
             uint32_t result = Core::ERROR_UNAVAILABLE;
             string searchPath = Core::Directory::Normalize(directory);
             string firmwareName = FindFirmware(searchPath, name + ".hcd");
+            const uint16_t command = cmd_opcode_pack(OGF_VENDOR_CMD, BCM43XX_WRITE_LOCAL_FIRMWARE);
 
             if (firmwareName.empty() == true) {
                 // It has been observed that once the firmware is loaded the name of
@@ -243,8 +255,8 @@ namespace Bluetooth {
                 int fd = open(firmwareName.c_str(), O_RDONLY);
 
                 if (fd >= 0) {
-                    Exchange::Response response(Exchange::COMMAND_PKT, 0x2efc);
-                    result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, 0x2efc, 0, nullptr), response, 500);
+                    Exchange::Response response(Exchange::COMMAND_PKT, command);
+                    result = Exchange(Exchange::Request(Exchange::COMMAND_PKT, command, 0, nullptr), response, 500);
 
                     Flush();
 
@@ -262,7 +274,7 @@ namespace Bluetooth {
                         Flush();
 
                         while ((result == Core::ERROR_NONE) && ((loaded = read(fd, tx_buf, 3)) > 0)) {
-                            uint16_t code = (tx_buf[0] << 8) | tx_buf[1];
+                            uint16_t code = tx_buf[0] | (tx_buf[1] << 8);
                             uint8_t len = tx_buf[2];
 
                             if (read(fd, tx_buf, len) < 0) {

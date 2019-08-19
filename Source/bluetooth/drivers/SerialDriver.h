@@ -124,7 +124,7 @@ namespace Bluetooth {
                 }
                 inline uint16_t Acknowledge() const
                 {
-                    return (_command != EVENT_PKT ? _sequence : (_length > 2 ? ((_value[1] << 8) | _value[2]) : ~0));
+                    return (_command != EVENT_PKT ? _sequence : (_length > 2 ? (_value[1] | (_value[2] << 8)) : ~0));
                 }
                 inline command Response() const
                 {
@@ -149,12 +149,12 @@ namespace Bluetooth {
                     }
                     if ((_offset == 1) && ((length - result) > 0)) {
                         _offset++;
-                        stream[result++] = static_cast<uint8_t>((_sequence >> 8) & 0xFF);
+                        stream[result++] = static_cast<uint8_t>((_sequence) & 0xFF);
                     }
                     if ((_offset == 2) && ((length - result) > 0)) {
                         _offset++;
                         if (_command != EVENT_PKT) {
-                            stream[result++] = static_cast<uint8_t>(_sequence & 0xFF);
+                            stream[result++] = static_cast<uint8_t>((_sequence >> 8) & 0xFF);
                         }
                     }
                     if ((_offset == 3) && ((length - result) > 0)) {
@@ -292,7 +292,7 @@ namespace Bluetooth {
                     }
                     if ((Offset() < 3) && ((length - result) > 0)) {
                         if (Command() != EVENT_PKT) {
-                            uint16_t sequence = (Sequence() << 8) | stream[result++];
+                            uint16_t sequence = (stream[result++] << 8) | Sequence();
                             Sequence(sequence);
                         }
                         Offset(3);
