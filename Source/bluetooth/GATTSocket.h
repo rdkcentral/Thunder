@@ -632,7 +632,6 @@ namespace Bluetooth {
                 , _handler(handler) {
             }
             ~Entry() {
-                ASSERT(_cmd.IsValid() == false);
             }
 
         public:
