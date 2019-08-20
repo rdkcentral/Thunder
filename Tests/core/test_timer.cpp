@@ -5,13 +5,12 @@
 
 using namespace WPEFramework;
 
-bool g_timerDone = false;
-string g_currentTime = "";
+static int g_done = 0;
 
 class TimeHandler {
     public:
-        TimeHandler(Core::Time& Tick)
-            :_tick(Tick)
+        TimeHandler(Core::Time& tick)
+            : _nextTick(tick)
         {
         }
         ~TimeHandler()
@@ -21,22 +20,28 @@ class TimeHandler {
     public:
         uint64_t Timed(const uint64_t scheduledTime)
         {
-            g_currentTime = Core::Time::Now().ToRFC1123();
-            g_timerDone = true;
+            ASSERT(Core::Time::Now().ToRFC1123() == _nextTick.ToRFC1123());
+            if (!g_done) {
+                _nextTick = Core::Time::Now();
+                uint32_t time = 1000; // 1 second
+                _nextTick.Add(time);
+                g_done++;
+                return _nextTick.Ticks();
+            }
+            g_done++;
             return 0;
         }
 private:
-    Core::Time _tick;
+    Core::Time _nextTick;
 };
 
 TEST(Core_Timer, simpleSet)
 {
     Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
-    uint32_t time = 2000; // 2 seconds
-    Core::Time NextTick = Core::Time::Now();
-    NextTick.Add(time);
-    string scheduledTime = NextTick.ToRFC1123();
-    timer.Schedule(NextTick.Ticks(), TimeHandler(NextTick));
-    while(!g_timerDone);
-    ASSERT_STREQ(scheduledTime.c_str(), g_currentTime.c_str());
+    uint32_t time = 1000; // 1 second
+    Core::Time nextTick = Core::Time::Now();
+    nextTick.Add(time);
+    timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
+    while(!(g_done == 2));
+    Core::Singleton::Dispose();
 }
