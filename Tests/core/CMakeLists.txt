@@ -2,11 +2,12 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
     ../IPTestAdministrator.cpp
-    test_rpc.cpp
     test_cyclicbuffer.cpp
+    test_databuffer.cpp
     test_doorbell.cpp
     test_ipc.cpp
     test_json.cpp
+    test_rpc.cpp
     test_sharedbuffer.cpp
     test_thread.cpp
     test_timer.cpp
