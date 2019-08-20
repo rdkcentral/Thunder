@@ -1718,7 +1718,7 @@ namespace Web {
         }
         inline bool IsOpen() const
         {
-            return (_channel.IsWebSocket());
+            return (_channel.IsOpen() && _channel.IsWebSocket());
         }
         inline bool IsClosed() const
         {
