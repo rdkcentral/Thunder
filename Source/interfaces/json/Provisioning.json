@@ -1,0 +1,90 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Provisioning API",
+    "class": "Provisioning",
+    "description": "Provisioning JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "id": {
+      "summary": "Provision ID",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "example": "WPE00000uCfrLF45"
+      }    
+    },
+    "state": {
+      "summary": "Platform provision state",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "description": "Provision ID value",
+            "type": "string",
+            "example": "WPE00000uCfrLF45"
+          },
+          "status": {
+            "description": "Provision status",
+            "type": "number",
+            "example": 200
+          },
+          "tokens": {
+              "type": "array",
+              "description": "List of provisioned systems",
+              "items": {
+                "type": "string",
+                "example": "netflix, playready"
+              }
+            }
+        },
+        "required": [
+          "id",
+          "status",
+          "tokens"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Provisioning Back Office Client not available",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "provision": {
+      "summary": "Trigers platform provision process",
+      "errors": [
+        {
+          "description": "Provisioning in progress",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "Provisioning Back Office Client not available",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "events": {
+    "provisioningchange": {
+      "summary": "Signals a provisioning change",
+      "params": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "description": "Provision status",
+            "type": "number",
+            "example": 200
+          }
+        }
+      }
+    }
+  }
+}
