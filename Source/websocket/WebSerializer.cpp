@@ -306,7 +306,6 @@ namespace Web
     } extensionLookupTable[] = {
         { Web::MIME_HTML, _TXT("html") },
         { Web::MIME_HTML, _TXT("htm") },
-        { Web::MIME_BINARY, _TXT("png") },
         { Web::MIME_JSON, _TXT("json") },
         { Web::MIME_CSS, _TXT("css") },
         { Web::MIME_IMAGE_TIFF, _TXT("tif") },
