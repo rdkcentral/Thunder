@@ -28,4 +28,8 @@ TEST(test_textfragment, simple_textfragement)
     Core::TextFragment textFragment1(buffer_new);
     Core::TextFragment textFragment2(buffer_new,21);
     Core::TextFragment textFragment3(buffer_new,16,5);
+
+    const TCHAR buffer_check[] = "/Service-testing/test";
+    char delimiter[] = {'/','-'};
+    ASSERT_EQ(textFragment1.ForwardFind(delimiter, 1),1);
 }
