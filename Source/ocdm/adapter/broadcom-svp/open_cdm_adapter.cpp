@@ -45,11 +45,12 @@ static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
-static void replaceLengthPrefixWithStartcodePrefix(uint8_t* buffer, size_t size)
+static void replaceLengthPrefixWithStartCodePrefix(uint8_t* buffer, size_t size)
 {
-    uint8_t* curr;
-    uint8_t* end;
-    uint32_t remain, slice_size = 0;
+    uint8_t* curr = NULL;
+    uint8_t* end = NULL;
+    uint32_t remain = 0;
+    uint32_t slice_size = 0;
 
     curr =  buffer;
     end = buffer + size;
@@ -159,7 +160,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
 
                 assert( sizeof(nalUnit) < (inClear+inEncrypted));
                 // replace length prefiex NALU length into startcode prefix
-                replaceLengthPrefixWithStartcodePrefix(mappedData+index, inClear+inEncrypted);
+                replaceLengthPrefixWithStartCodePrefix(mappedData+index, inClear+inEncrypted);
                 B_Secbuf_ImportData(opaqueDataEnc, index, mappedData + index, inClear + inEncrypted, true);
                 index += inClear + inEncrypted;
             }
