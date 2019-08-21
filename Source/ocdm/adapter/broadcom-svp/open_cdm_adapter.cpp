@@ -45,13 +45,15 @@ static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
-static void replaceLengthprefixWithStartcodepreix(uint8_t *buffer, int bufsz) {
-    uint8_t *curr, *end;
+static void replaceLengthPrefixWithStartcodePrefix(uint8_t* buffer, size_t size)
+{
+    uint8_t* curr;
+    uint8_t* end;
     uint32_t remain, slice_size = 0;
 
     curr =  buffer;
-    end = buffer + bufsz;
-    remain = bufsz;
+    end = buffer + size;
+    remain = size;
 
     while (curr < end) {
 
@@ -60,7 +62,11 @@ static void replaceLengthprefixWithStartcodepreix(uint8_t *buffer, int bufsz) {
         slice_size += (*(curr + 2)) << 8;
         slice_size += (*(curr + 3)) ;
 
-        if ((curr == buffer) && (*curr == 0x00) && (*(curr + 1) == 0x00) && (*(curr + 2)  == 0x00) && (*(curr + 3)) == 0x01) {
+        if ((curr == buffer) && 
+                (*curr       == nalUnit[0]) && 
+                (*(curr + 1) == nalUnit[1]) && 
+                (*(curr + 2) == nalUnit[2]) && 
+                (*(curr + 3) == nalUnit[3])) {
             return;
         }
 
@@ -68,13 +74,13 @@ static void replaceLengthprefixWithStartcodepreix(uint8_t *buffer, int bufsz) {
             return;
         }
 
-        *curr       = 0x00;
-        *(curr + 1) = 0x00;
-        *(curr + 2) = 0x00;
-        *(curr + 3) = 0x01;
+        *curr       = nalUnit[0];
+        *(curr + 1) = nalUnit[1];
+        *(curr + 2) = nalUnit[2];
+        *(curr + 3) = nalUnit[3];
 
-        curr += slice_size+4;
-        remain -= slice_size+4;
+        curr   += slice_size + sizeof(nalUnit);
+        remain -= slice_size + sizeof(nalUnit);
     }
 }
 
@@ -153,7 +159,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
 
                 assert( sizeof(nalUnit) < (inClear+inEncrypted));
                 // replace length prefiex NALU length into startcode prefix
-                replaceLengthprefixWithStartcodepreix(mappedData+index, inClear+inEncrypted);
+                replaceLengthPrefixWithStartcodePrefix(mappedData+index, inClear+inEncrypted);
                 B_Secbuf_ImportData(opaqueDataEnc, index, mappedData + index, inClear + inEncrypted, true);
                 index += inClear + inEncrypted;
             }
