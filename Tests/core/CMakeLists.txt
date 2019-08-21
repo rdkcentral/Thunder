@@ -13,6 +13,8 @@ add_executable(${TEST_RUNNER_NAME}
     test_socket_streamtext.cpp
     test_thread.cpp
     test_timer.cpp
+    test_websocket_json.cpp
+    test_websocket_text.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
