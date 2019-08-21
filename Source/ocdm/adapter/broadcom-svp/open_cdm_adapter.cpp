@@ -45,6 +45,46 @@ static void addSVPMetaData(GstBuffer* gstBuffer, uint8_t* opaqueData)
     gst_buffer_add_brcm_svp_meta(gstBuffer, svpMeta);
 }
 
+static void replaceLengthPrefixWithStartCodePrefix(uint8_t* buffer, size_t size)
+{
+    uint8_t* curr = NULL;
+    uint8_t* end = NULL;
+    uint32_t remain = 0;
+    uint32_t slice_size = 0;
+
+    curr =  buffer;
+    end = buffer + size;
+    remain = size;
+
+    while (curr < end) {
+
+        slice_size = (*curr) << 24;
+        slice_size += (*(curr + 1)) << 16;
+        slice_size += (*(curr + 2)) << 8;
+        slice_size += (*(curr + 3)) ;
+
+        if ((curr == buffer) && 
+                (*curr       == nalUnit[0]) && 
+                (*(curr + 1) == nalUnit[1]) && 
+                (*(curr + 2) == nalUnit[2]) && 
+                (*(curr + 3) == nalUnit[3])) {
+            return;
+        }
+
+        if (slice_size > remain) {
+            return;
+        }
+
+        *curr       = nalUnit[0];
+        *(curr + 1) = nalUnit[1];
+        *(curr + 2) = nalUnit[2];
+        *(curr + 3) = nalUnit[3];
+
+        curr   += slice_size + sizeof(nalUnit);
+        remain -= slice_size + sizeof(nalUnit);
+    }
+}
+
 OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, GstBuffer* buffer, GstBuffer* subSample, const uint32_t subSampleCount,
                                                GstBuffer* IV, GstBuffer* keyID, uint32_t initWithLast15)
 {
@@ -119,8 +159,9 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
                 rpcSecureBufferInformation->subSamples[2*position + 1] = inEncrypted;
 
                 assert( sizeof(nalUnit) < (inClear+inEncrypted));
-                B_Secbuf_ImportData(opaqueDataEnc, index, const_cast<uint8_t*>(nalUnit), sizeof(nalUnit), false);
-                B_Secbuf_ImportData(opaqueDataEnc, index + sizeof(nalUnit), mappedData + index + sizeof(nalUnit), inClear + inEncrypted - sizeof(nalUnit), true);
+                // replace length prefiex NALU length into startcode prefix
+                replaceLengthPrefixWithStartCodePrefix(mappedData+index, inClear+inEncrypted);
+                B_Secbuf_ImportData(opaqueDataEnc, index, mappedData + index, inClear + inEncrypted, true);
                 index += inClear + inEncrypted;
             }
             gst_byte_reader_free(reader);
