@@ -259,15 +259,18 @@ namespace Wayland {
 
             inline EGLImageKHR GetImage() const
             {
-                return _eglImageKHR;
+                return _eglImage;
             }
 
         private:
             friend Display;
             uint32_t _refcount;
-            EGLImageKHR _eglImageKHR;
+            EGLImageKHR _eglImage;
             Display* _display;
-            const char* _eglExtension;
+
+            static EGLenum _eglTarget;
+            static PFNEGLCREATEIMAGEKHRPROC _eglCreateImagePtr;
+            static PFNEGLDESTROYIMAGEKHRPROC _eglDestroyImagePtr;
         };
 
         typedef std::map<const uint32_t, SurfaceImplementation*> SurfaceMap;
