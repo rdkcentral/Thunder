@@ -15,11 +15,7 @@ namespace Bluetooth {
         Address(const int handle)
             : _length(0)
         {
-            if (handle > 0) {
-                if (hci_devba(handle, &_address) >= 0) {
-                    _length = sizeof(_address);
-                }
-            }
+            Default(handle);
         }
         Address(const bdaddr_t& address)
             : _length(sizeof(_address))
@@ -71,11 +67,15 @@ namespace Bluetooth {
             }
             return (IsValid());
         }
- 
-        Address AnyInterface() const
+        static Address AnyInterface()
         {
-            static bdaddr_t g_anyAddress;
+            static bdaddr_t g_anyAddress = { 0 };
             return (Address(g_anyAddress));
+        }
+        static Address LocalInterface()
+        {
+            static bdaddr_t g_localAddress = { 0, 0, 0, 0xFF, 0xFF, 0xFF };
+            return (Address(g_localAddress));
         }
         const bdaddr_t* Data() const
         {
