@@ -347,6 +347,7 @@ void HCISocket::Abort()
         hci_filter_set_event(EVT_CMD_STATUS, &_filter);
         hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
         hci_filter_set_event(EVT_LE_META_EVENT, &_filter);
+        hci_filter_set_event(EVT_LE_CONN_COMPLETE, &_filter);
 
         // Interesting why this needs to be set.... I hope not!!
         // hci_filter_set_opcode(0, &_filter);
