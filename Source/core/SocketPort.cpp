@@ -341,6 +341,7 @@ namespace Core {
                             nStatus = Core::ERROR_UNREACHABLE_NETWORK;
                         } else {
                             nStatus = Core::ERROR_ASYNC_FAILED;
+                            TRACE_L1("Error on socket connect. Error %d", __ERRORRESULT__);
                         }
                     }
                 }
