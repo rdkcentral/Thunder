@@ -18,6 +18,51 @@ namespace Core {
 
     namespace JSON {
 
+        struct Error {
+            explicit Error(string&& message)
+                : _message(std::move(message))
+                , _context()
+                , _pos(0)
+            {
+            }
+
+            Error(const Error&) = default;
+            Error(Error&&) = default;
+            Error& operator=(const Error&) = default;
+            Error& operator=(Error&&) = default;
+
+            string Message() const { return _message; }
+            string Context() const { return _context; }
+            size_t Position() const { return _pos; }
+
+            // Unfortunately top most element has broader context than the one rising an error this is why this
+            // is splited and not made mandatory upon creation.
+            void Context(const char json[], size_t jsonLength, size_t pos)
+            {
+                size_t contextLength = std::min(kContextMaxLength, std::min(jsonLength, pos));
+                std::string context{ &json[pos - contextLength], &json[pos] };
+                _context.swap(context);
+                _pos = pos;
+            }
+
+        private:
+            friend class OptionalType<Error>;
+            Error()
+                : _message()
+                , _context()
+                , _pos(0)
+            {
+            }
+
+            static constexpr size_t kContextMaxLength = 80;
+
+            string _message;
+            string _context;
+            size_t _pos;
+        };
+
+        string ErrorDisplayMessage(const Error& err);
+
         struct EXTERNAL IElement {
 
             static char NullTag[];
@@ -46,8 +91,16 @@ namespace Core {
 
                 return (offset == 0);
             }
+
             template <typename INSTANCEOBJECT>
             static bool FromString(const string& text, INSTANCEOBJECT& realObject)
+            {
+                Core::OptionalType<Error> error;
+                return FromString(text, realObject, error);
+            }
+
+            template <typename INSTANCEOBJECT>
+            static bool FromString(const string& text, INSTANCEOBJECT& realObject, Core::OptionalType<Error>& error)
             {
                 uint16_t offset = 0;
 
@@ -55,22 +108,38 @@ namespace Core {
 
                 if (text.empty() == false) {
                     // Deserialize object
-                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset);
+                    uint16_t loaded = static_cast<IElement&>(realObject).Deserialize(text.c_str(), static_cast<uint16_t>(text.length() + 1), offset, error);
 
                     ASSERT(loaded <= (text.length() + 1));
                     DEBUG_VARIABLE(loaded);
                 }
 
-                return (offset == 0);
+                if (offset != 0 && error.IsSet() == false) {
+                    error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
+                    realObject.Clear();
+                }
+
+                if (error.IsSet() == true) {
+                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                }
+
+                return (error.IsSet() == false);
             }
 
             inline bool ToString(string& text) const
             {
                 return (Core::JSON::IElement::ToString(*this, text));
             }
+
             inline bool FromString(const string& text)
             {
-                return (Core::JSON::IElement::FromString(text, *this));
+                Core::OptionalType<Error> error;
+                return FromString(text, error);
+            }
+
+            inline bool FromString(const string& text, Core::OptionalType<Error>& error)
+            {
+                return (Core::JSON::IElement::FromString(text, *this, error));
             }
 
             template <typename INSTANCEOBJECT>
@@ -97,11 +166,17 @@ namespace Core {
 
                 return (completed);
             }
+
             template <typename INSTANCEOBJECT>
             static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject)
             {
-                bool completed = false;
+                Core::OptionalType<Error> error;
+                return FromFile(fileObject, realObject, error);
+            }
 
+            template <typename INSTANCEOBJECT>
+            static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject, Core::OptionalType<Error>& error)
+            {
                 if (fileObject.IsOpen()) {
 
                     char buffer[1024];
@@ -118,7 +193,7 @@ namespace Core {
                         if (readBytes == 0) {
                             loaded = ~0;
                         } else {
-                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
+                            loaded = static_cast<IElement&>(realObject).Deserialize(buffer, sizeof(buffer), offset, error);
 
                             ASSERT(loaded <= readBytes);
 
@@ -129,19 +204,33 @@ namespace Core {
 
                     } while ((loaded == readBytes) && (offset != 0));
 
-                    completed = (offset == 0);
+                    if (offset != 0 && error.IsSet() == false) {
+                        error = Error{ "Malformed JSON. Missing closing quotes or brackets" };
+                        realObject.Clear();
+                    }
                 }
 
-                return (completed);
+                if (error.IsSet() == true) {
+                    TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                }
+
+                return (error.IsSet() == false);
             }
 
             bool ToFile(Core::File& fileObject) const
             {
                 return (Core::JSON::IElement::ToFile(fileObject, *this));
             }
+
             bool FromFile(Core::File& fileObject)
             {
-                return (Core::JSON::IElement::FromFile(fileObject, *this));
+                Core::OptionalType<Error> error;
+                return FromFile(fileObject, error);
+            }
+
+            bool FromFile(Core::File& fileObject, Core::OptionalType<Error>& error)
+            {
+                return (Core::JSON::IElement::FromFile(fileObject, *this, error));
             }
 
             // JSON Serialization interface
@@ -149,9 +238,21 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-
             virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
-            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset) = 0;
+            uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset)
+            {
+                Core::OptionalType<Error> error;
+                uint16_t loaded = Deserialize(Stream, MaxLength, offset, error);
+
+                if (error.IsSet() == true) {
+                    Clear();
+                    error.Value().Context(Stream, MaxLength, loaded);
+                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                }
+
+                return loaded;
+            }
+            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset, Core::OptionalType<Error>& error) = 0;
         };
 
         struct EXTERNAL IMessagePack {
@@ -164,10 +265,38 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) = 0;
         };
+
+        enum class ValueValidity : int8_t {
+            IS_NULL,
+            UNKNOWN,
+            INVALID,
+            VALID
+        };
+
+        static ValueValidity IsNullValue(const char stream[], const uint16_t maxLength, uint16_t& offset, uint16_t& loaded)
+        {
+            ValueValidity validity = ValueValidity::INVALID;
+            const size_t nullTagLen = strlen(IElement::NullTag);
+            ASSERT(offset < nullTagLen);
+            while (offset < nullTagLen) {
+                if (loaded + 1 == maxLength) {
+                    validity = ValueValidity::UNKNOWN;
+                    break;
+                }
+                if (stream[loaded++] != IElement::NullTag[offset++]) {
+                    offset = 0;
+                    break;
+                }
+            }
+
+            if (offset == nullTagLen)
+                validity = ValueValidity::IS_NULL;
+
+            return validity;
+        }
 
         template <class TYPE, bool SIGNED, const NumberBase BASETYPE>
         class NumberType : public IElement, public IMessagePack {
@@ -190,19 +319,22 @@ namespace Core {
                 , _default(0)
             {
             }
+
             NumberType(const TYPE Value, const bool set = false)
                 : _set(set ? SET : 0)
                 , _value(Value)
                 , _default(Value)
             {
             }
+
             NumberType(const NumberType<TYPE, SIGNED, BASETYPE>& copy)
                 : _set(copy._set)
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
-            virtual ~NumberType()
+
+            ~NumberType() override
             {
             }
 
@@ -213,6 +345,7 @@ namespace Core {
 
                 return (*this);
             }
+
             NumberType<TYPE, SIGNED, BASETYPE>& operator=(const TYPE& RHS)
             {
                 _value = RHS;
@@ -220,18 +353,22 @@ namespace Core {
 
                 return (*this);
             }
+
             inline TYPE Default() const
             {
                 return _default;
             }
+
             inline TYPE Value() const
             {
                 return ((_set & SET) != 0 ? _value : _default);
             }
+
             inline operator TYPE() const
             {
                 return _value;
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -239,23 +376,28 @@ namespace Core {
                 else
                     _set &= ~UNDEFINED;
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_set & (SET | UNDEFINED)) != 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 return ((_set & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _set = 0;
                 _value = 0;
             }
 
         private:
+            // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -315,7 +457,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -340,11 +483,13 @@ namespace Core {
                             _set = UNDEFINED;
                             offset = 1;
                         } else {
+                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
+                            ++loaded;
                             _set = ERROR;
                             offset = 4;
                         }
                     } else if (offset == 1) {
-                        ASSERT(_set = QUOTED);
+                        ASSERT(_set == QUOTED || _set == UNDEFINED);
                         if (stream[loaded] == '0') {
                             offset = 2;
                         } else if (stream[loaded] == '-') {
@@ -357,13 +502,13 @@ namespace Core {
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'u')) {
                             offset = 2;
                         } else {
+                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
+                            ++loaded;
                             _set = ERROR;
                             offset = 4;
                         }
                     } else if (offset == 2) {
-                        ASSERT(_set = QUOTED);
                         if (stream[loaded] == '0') {
-                            ASSERT(_set & NEGATIVE);
                             offset = 3;
                         } else if (::toupper(stream[loaded]) == 'X') {
                             offset = 4;
@@ -375,12 +520,12 @@ namespace Core {
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 3;
                         } else {
+                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
+                            ++loaded;
                             _set = ERROR;
                             offset = 4;
                         }
                     } else if (offset == 3) {
-                        ASSERT(_set & QUOTED);
-                        ASSERT(_set & NEGATIVE);
                         if (::toupper(stream[loaded]) == 'X') {
                             offset = 4;
                             _set |= HEXADECIMAL;
@@ -391,6 +536,8 @@ namespace Core {
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 4;
                         } else {
+                            error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
+                            ++loaded;
                             _set = ERROR;
                             offset = 4;
                         }
@@ -416,6 +563,8 @@ namespace Core {
                         completed = true;
                     } else {
                         // Oopsie daisy, error, computer says *NO*
+                        error = Error{ "Unsupported character \"" + std::string(1, stream[loaded]) + "\" in a number" };
+                        ++loaded;
                         _set |= ERROR;
                         completed = true;
                     }
@@ -437,7 +586,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_set & UNDEFINED) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -445,7 +596,8 @@ namespace Core {
                 }
                 return (Convert(stream, maxLength, offset, TemplateIntToType<SIGNED>()));
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint8_t loaded = 0;
                 if (offset == 0) {
@@ -477,6 +629,7 @@ namespace Core {
                 }
                 return (loaded);
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TYPE serialize) const
             {
                 uint8_t parsed = 4;
@@ -511,14 +664,17 @@ namespace Core {
 
                 return (loaded);
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, _value));
             }
+
             uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 return (Convert(stream, maxLength, offset, ::abs(_value)));
             }
+
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<false>& /* For compile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
@@ -557,6 +713,7 @@ namespace Core {
 
                 return (loaded);
             }
+
             uint16_t Convert(uint8_t stream[], const uint16_t maxLength, uint16_t& offset, const TemplateIntToType<true>& /* For c ompile time diffrentiation */) const
             {
                 uint8_t loaded = 0;
@@ -642,14 +799,17 @@ namespace Core {
                 : _value(None)
             {
             }
+
             Boolean(const bool Value)
                 : _value(Value ? DefaultBit : None)
             {
             }
+
             Boolean(const Boolean& copy)
                 : _value(copy._value)
             {
             }
+
             ~Boolean()
             {
             }
@@ -661,6 +821,7 @@ namespace Core {
 
                 return (*this);
             }
+
             Boolean& operator=(const bool& RHS)
             {
                 // Do not overwrite the default
@@ -668,18 +829,22 @@ namespace Core {
 
                 return (*this);
             }
+
             inline bool Value() const
             {
                 return ((_value & SetBit) != 0 ? (_value & ValueBit) != 0 : (_value & DefaultBit) != 0);
             }
+
             inline bool Default() const
             {
                 return (_value & DefaultBit) != 0;
             }
+
             inline operator bool() const
             {
                 return (_value & ValueBit);
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -687,21 +852,26 @@ namespace Core {
                 else
                     _value &= ~NullBit;
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_value & (SetBit | NullBit)) != 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 return ((_value & NullBit) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _value = (_value & DefaultBit);
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 static constexpr char trueBuffer[] = "true";
                 static constexpr char falseBuffer[] = "false";
@@ -731,7 +901,8 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
                 static constexpr char trueBuffer[] = "true";
@@ -782,7 +953,9 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if ((_value & NullBit) != 0) {
                     stream[0] = IMessagePack::NullValue;
@@ -793,7 +966,8 @@ namespace Core {
                 }
                 return (1);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 if ((stream[0] == IMessagePack::NullValue) != 0) {
                     _value = NullBit;
@@ -815,19 +989,27 @@ namespace Core {
         class EXTERNAL String : public IElement, public IMessagePack {
         private:
             static constexpr uint32_t None = 0x00000000;
-            static constexpr uint32_t ScopeMask = 0x0FFFFFFF;
+            static constexpr uint32_t ScopeMask = 0x007FFFFF;
+            static constexpr uint32_t DepthCountMask = 0x0F800000;
             static constexpr uint32_t QuotedSerializeBit = 0x80000000;
             static constexpr uint32_t SetBit = 0x40000000;
             static constexpr uint32_t QuoteFoundBit = 0x20000000;
             static constexpr uint32_t NullBit = 0x10000000;
 
+            template <int N>
+            uint8_t MaxOpaqueObjectDepth()
+            {
+                return ((N >> 1) > 0) ? 1 + MaxOpaqueObjectDepth<(N >> 1)>() : 1;
+            }
+
         public:
-            String(const bool quoted = true)
+            explicit String(const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
                 , _value()
             {
             }
+
             explicit String(const string& Value, const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
@@ -835,6 +1017,7 @@ namespace Core {
             {
                 Core::ToString(Value.c_str(), _default);
             }
+
             explicit String(const char Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
@@ -842,6 +1025,7 @@ namespace Core {
             {
                 Core::ToString(Value, _default);
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
@@ -851,13 +1035,15 @@ namespace Core {
                 Core::ToString(Value, _default);
             }
 #endif // __NO_WCHAR_SUPPORT__
+
             String(const String& copy)
                 : _default(copy._default)
                 , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
                 , _value(copy._value)
             {
             }
-            virtual ~String()
+
+            ~String() override
             {
             }
 
@@ -868,6 +1054,7 @@ namespace Core {
 
                 return (*this);
             }
+
             String& operator=(const char RHS[])
             {
                 Core::ToString(RHS, _value);
@@ -875,6 +1062,7 @@ namespace Core {
 
                 return (*this);
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             String& operator=(const wchar_t RHS[])
             {
@@ -884,6 +1072,7 @@ namespace Core {
                 return (*this);
             }
 #endif // __NO_WCHAR_SUPPORT__
+
             String& operator=(const String& RHS)
             {
                 _default = RHS._default;
@@ -892,14 +1081,17 @@ namespace Core {
 
                 return (*this);
             }
+
             inline bool operator==(const String& RHS) const
             {
                 return (Value() == RHS.Value());
             }
+
             inline bool operator!=(const String& RHS) const
             {
                 return (!operator==(RHS));
             }
+
             inline bool operator==(const char RHS[]) const
             {
                 return (Value() == RHS);
@@ -909,6 +1101,7 @@ namespace Core {
             {
                 return (!operator==(RHS));
             }
+
 #ifndef __NO_WCHAR_SUPPORT__
             inline bool operator==(const wchar_t RHS[]) const
             {
@@ -921,20 +1114,23 @@ namespace Core {
             {
                 return (!operator==(RHS));
             }
-
 #endif // __NO_WCHAR_SUPPORT__
+
             inline bool operator<(const String& RHS) const
             {
                 return (Value() < RHS.Value());
             }
+
             inline bool operator>(const String& RHS) const
             {
                 return (Value() > RHS.Value());
             }
+
             inline bool operator>=(const String& RHS) const
             {
                 return (!operator<(RHS));
             }
+
             inline bool operator<=(const String& RHS) const
             {
                 return (!operator>(RHS));
@@ -947,10 +1143,12 @@ namespace Core {
                 }
                 return (((_scopeCount & (SetBit | NullBit)) == SetBit) ? Core::ToString(_value.c_str()) : Core::ToString(_default.c_str()));
             }
+
             inline const string& Default() const
             {
                 return (_default);
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -958,23 +1156,28 @@ namespace Core {
                 else
                     _scopeCount &= ~NullBit;
             }
-            // IElement interface methods
-            virtual bool IsNull() const override
+
+            // IElement iface:
+            bool IsNull() const override
             {
                 return (_scopeCount & NullBit) != 0;
             }
-            virtual bool IsSet() const override
+
+            bool IsSet() const override
             {
                 return ((_scopeCount & (SetBit | NullBit)) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _scopeCount = (_scopeCount & QuotedSerializeBit);
             }
+
             inline bool IsQuoted() const
             {
                 return ((_scopeCount & (QuotedSerializeBit | QuoteFoundBit)) != 0);
             }
+
             inline void SetQuoted(const bool enable)
             {
                 if (enable == true) {
@@ -989,7 +1192,9 @@ namespace Core {
             {
                 return (str.length() > 0) && (str[str.length() - 1] == ch);
             }
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 bool quoted = IsQuoted();
                 uint16_t result = 0;
@@ -1039,19 +1244,20 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 bool finished = false;
                 uint16_t result = 0;
                 ASSERT(maxLength > 0);
 
                 if (offset == 0) {
-                    // We got a quote, start recording..
                     _value.clear();
-                    _scopeCount &= QuotedSerializeBit;
                     if (stream[result] != '\"') {
                         _unaccountedCount = 0;
+                        SetQuoted(false);
                     } else {
+                        SetQuoted(true);
                         result++;
                         _scopeCount |= (QuoteFoundBit | 1);
                         _unaccountedCount = 1;
@@ -1066,33 +1272,76 @@ namespace Core {
                     TCHAR current = stream[result];
 
                     if (escapedSequence == false) {
-                        if ((current == '{') || (current == '[')) {
-                            _scopeCount++;
-                        } else if ((current == '}') || (current == ']')) {
-                            if ((_scopeCount & ScopeMask) > 0) {
-                                _scopeCount--;
-                            } else {
+                        // Do not interpret anything if it's quoted.
+                        if ((_scopeCount & (ScopeMask | QuoteFoundBit)) == (QuoteFoundBit | 1)) {
+                            if (current == '\"') {
+                                result++;
                                 finished = true;
                             }
-                        } else if ((current == '\"') && ((_scopeCount & (ScopeMask | QuoteFoundBit)) == (QuoteFoundBit | 1))) {
-                            result++;
-                            finished = true;
-                        } else if ((_scopeCount & ScopeMask) == 0) {
-                            finished = ((current == ',') || (current == ' ') || (current == '\t'));
+                        } else {
+                            uint8_t depth = ((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
+                            if ((current == '{') || current == '[') {
+                                if (depth + 1 > MaxOpaqueObjectDepth<ScopeMask>()) {
+                                    error = Error{ "Opaque object nesting too deep" };
+                                    finished = true;
+                                } else {
+                                    ++depth;
+                                    uint32_t scope = _scopeCount & ScopeMask;
+                                    scope <<= 1;
+                                    scope |= current == '{' ? static_cast<bool>(ScopeBracket::CURLY_BRACKET) : static_cast<bool>(ScopeBracket::SQUARE_BRACKET);
+                                    _scopeCount &= ~(DepthCountMask | ScopeMask);
+                                    _scopeCount |= (depth << MaxOpaqueObjectDepth<ScopeMask>()) | scope;
+                                }
+                            } else if ((current == '}') || (current == ']')) {
+                                if (depth > 0) {
+                                    uint32_t scope = _scopeCount & ScopeMask;
+                                    bool bracket = (scope & 0x1);
+                                    if (current == '}' && bracket != static_cast<bool>(ScopeBracket::CURLY_BRACKET)) {
+                                        error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
+                                        finished = true;
+                                    } else if (current == ']' && bracket != static_cast<bool>(ScopeBracket::SQUARE_BRACKET)) {
+                                        error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
+                                        finished = true;
+                                    } else {
+                                        --depth;
+                                        scope >>= 1;
+                                        _scopeCount &= ~(DepthCountMask | ScopeMask);
+                                        _scopeCount |= (depth << MaxOpaqueObjectDepth<ScopeMask>()) | scope;
+                                    }
+                                } else {
+                                    finished = true;
+                                }
+                            } else if (depth == 0) {
+                                finished = ((current == ',') || (current == ' ') || (current == '\t'));
+                            }
                         }
                     }
 
+                    EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
                     if (finished == false) {
+                        if ((escapedSequence == true)) {
+                            if (!IsValidEscapeSequence(current)) {
+                                finished = true;
+                                error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
+                                ++result;
+                                break;
+                            } else {
+                                escapeHandling = GetEscapeSequenceAction(current);
+                            }
+                        }
 
-                        if ((escapedSequence == true) && (current == '\"')) {
+                        if (escapeHandling == EscapeSequenceAction::COLLAPSE || escapeHandling == EscapeSequenceAction::REPLACE) {
+                            if (escapeHandling == EscapeSequenceAction::REPLACE) {
+                                current = EscapeSequenceReplacemnent(current);
+                            }
                             _value[_value.length() - 1] = current;
-                            _unaccountedCount++;
+                            ++_unaccountedCount;
                         } else {
                             // Write the amount we possibly can..
                             _value += current;
                         }
 
-                        escapedSequence = (current == '\\');
+                        escapedSequence = (current == '\\' && escapeHandling != EscapeSequenceAction::COLLAPSE);
 
                         // Move on to the next position
                         result++;
@@ -1108,7 +1357,9 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1148,7 +1399,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1190,7 +1442,73 @@ namespace Core {
             }
 
         private:
+            bool IsValidEscapeSequence(char current) const
+            {
+                ASSERT(MatchLastCharacter(_value, '\\') == true);
+                // Any character may be escaped using \uXXXX. The serlializer should escape
+                // control chars with values less that 0x1F using this convention. Also serializer
+                // should change '"' '\' '\n' '\t' '\f' '\r' '\f' to
+                // '\''"' '\''\' '\''n' '\''t' '\''f' '\''r' '\''f' and deserisalizer has to change tham back
+                return current == '"' || current == 'b' || current == 'n' || current == 't' || current == 'u' || current == '/' || current == '\\' || current == 'f' || current == 'r';
+            }
+
+            enum class EscapeSequenceAction {
+                NOTHING,
+                COLLAPSE,
+                REPLACE
+            };
+
+            EscapeSequenceAction GetEscapeSequenceAction(char current) const
+            {
+                EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
+                if (current == 'u') {
+                    action = EscapeSequenceAction::NOTHING;
+                } else {
+                    if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
+                        action = EscapeSequenceAction::REPLACE;
+                }
+
+                return action;
+            }
+
+            char EscapeSequenceReplacemnent(char current) const
+            {
+                ASSERT(GetEscapeSequenceAction(current) == EscapeSequenceAction::REPLACE);
+                char replacement = current;
+                switch (current) {
+                case 'n':
+                    replacement = '\n';
+                    break;
+                case 'r':
+                    replacement = '\r';
+                    break;
+                case 't':
+                    replacement = '\t';
+                    break;
+                case 'f':
+                    replacement = '\f';
+                    break;
+                case 'b':
+                    replacement = '\b';
+                    break;
+                }
+                return replacement;
+            }
+
+            enum class ScopeBracket : bool {
+                CURLY_BRACKET = 0,
+                SQUARE_BRACKET = 1
+            };
+
             std::string _default;
+            // The value stores the following BITS:
+            // | 4 |  5 |         23          |
+            // FFFFDDDDDSSSSSSSSSSSSSSSSSSSSSSS
+            // Where:
+            // F are flags bits (Null, Set etc.)
+            // D are depth value bits
+            // S bits keep scope stack.
+            // This constrains the maximal depth of the opaque object to be 23.
             uint32_t _scopeCount;
             mutable uint32_t _unaccountedCount;
             std::string _value;
@@ -1214,7 +1532,8 @@ namespace Core {
                 , _buffer(reinterpret_cast<uint8_t*>(::malloc(_maxLength)))
             {
             }
-            virtual ~Buffer()
+
+            ~Buffer() override
             {
                 if (_buffer != nullptr) {
                     ::free(_buffer);
@@ -1228,23 +1547,27 @@ namespace Core {
                 else
                     _state &= ~UNDEFINED;
             }
-            // IElement interface methods
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return ((_length > 0) && ((_state & SET) != 0));
             }
-            virtual bool IsNull() const
+
+            bool IsNull() const
             {
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
                 _length = 0;
             }
 
         protected:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                                     "abcdefghijklmnopqrstuvwxyz"
@@ -1303,7 +1626,8 @@ namespace Core {
                 }
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
 
@@ -1332,6 +1656,7 @@ namespace Core {
                     if ((_state & UNDEFINED) != 0) {
                         while ((loaded < maxLength) && (offset != 0) && (offset < 4)) {
                             if (stream[loaded] != IElement::NullTag[offset]) {
+                                error = Error{ "Only base64 characters or null supported." };
                                 _state = ERROR;
                                 offset = 0;
                             } else {
@@ -1360,6 +1685,7 @@ namespace Core {
                                 _state |= SET;
                                 break;
                             } else {
+                                error = Error{ "Only base64 characters or null supported." };
                                 _state = ERROR;
                                 offset = 0;
                                 break;
@@ -1401,7 +1727,9 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1432,7 +1760,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
@@ -1506,19 +1835,22 @@ namespace Core {
                 , _default(static_cast<ENUMERATE>(0))
             {
             }
+
             EnumType(const ENUMERATE Value)
                 : _state(0)
                 , _value()
                 , _default(Value)
             {
             }
+
             EnumType(const EnumType<ENUMERATE>& copy)
                 : _state(copy._state)
                 , _value(copy._value)
                 , _default(copy._default)
             {
             }
-            virtual ~EnumType()
+
+            ~EnumType() override
             {
             }
 
@@ -1528,6 +1860,7 @@ namespace Core {
                 _state = RHS._state;
                 return (*this);
             }
+
             EnumType<ENUMERATE>& operator=(const ENUMERATE& RHS)
             {
                 _value = RHS;
@@ -1535,22 +1868,27 @@ namespace Core {
 
                 return (*this);
             }
+
             inline const ENUMERATE Default() const
             {
                 return (_default);
             }
+
             inline const ENUMERATE Value() const
             {
                 return (((_state & (SET | UNDEFINED)) == SET) ? _value : _default);
             }
+
             inline operator const ENUMERATE() const
             {
                 return _value;
             }
+
             const TCHAR* Data() const
             {
                 return (Core::EnumerateType<ENUMERATE>(Value()).Data());
             }
+
             void Null(const bool enabled)
             {
                 if (enabled == true)
@@ -1558,21 +1896,25 @@ namespace Core {
                 else
                     _state &= ~UNDEFINED;
             }
-            virtual bool IsSet() const override
+
+            bool IsSet() const override
             {
                 return ((_state & SET) != 0);
             }
+
             bool IsNull() const override
             {
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 if (offset == 0) {
                     if ((_state & UNDEFINED) != 0) {
@@ -1583,9 +1925,10 @@ namespace Core {
                 }
                 return (static_cast<const IElement&>(_parser).Serialize(stream, maxLength, offset));
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
-                uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset);
+                uint16_t result = static_cast<IElement&>(_parser).Deserialize(stream, maxLength, offset, error);
 
                 if (offset == 0) {
 
@@ -1600,15 +1943,19 @@ namespace Core {
                             _state = SET;
                         } else {
                             _state = ERROR;
+                            error = Error{ "Unknown enum value \"" + _parser.Value() + "\"" };
                         }
                     } else {
+                        error = Error{ "Invalid enum" };
                         _state = ERROR;
                     }
                 }
 
                 return (result);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -1622,7 +1969,8 @@ namespace Core {
 
                 return (loaded == 0 ? static_cast<const IMessagePack&>(_package).Serialize(stream, maxLength, offset) : loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t result = 0;
 
@@ -1660,11 +2008,11 @@ namespace Core {
                 UNDEFINED = 0x40
             };
 
-            static constexpr uint16_t BEGIN_MARKER = 1;
-            static constexpr uint16_t END_MARKER = 2;
-            static constexpr uint16_t SKIP_BEFORE = 3;
-            static constexpr uint16_t SKIP_AFTER = 4;
-            static constexpr uint16_t PARSE = 5;
+            static constexpr uint16_t BEGIN_MARKER = 5;
+            static constexpr uint16_t END_MARKER = 6;
+            static constexpr uint16_t SKIP_BEFORE = 7;
+            static constexpr uint16_t SKIP_AFTER = 8;
+            static constexpr uint16_t PARSE = 9;
 
         public:
             template <typename ARRAYELEMENT>
@@ -1684,18 +2032,21 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ConstIteratorType(const ArrayContainer& container)
                     : _container(&container)
                     , _iterator(container.begin())
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ConstIteratorType(const ConstIteratorType<ARRAYELEMENT>& copy)
                     : _container(copy._container)
                     , _iterator(copy._iterator)
                     , _state(copy._state)
                 {
                 }
+
                 ~ConstIteratorType()
                 {
                 }
@@ -1714,6 +2065,7 @@ namespace Core {
                 {
                     return (_state == AT_ELEMENT);
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -1721,6 +2073,7 @@ namespace Core {
                     }
                     _state = AT_BEGINNING;
                 }
+
                 virtual bool Next()
                 {
                     if (_container != nullptr) {
@@ -1740,12 +2093,14 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 const ARRAYELEMENT& Current() const
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator);
                 }
+
                 inline uint32_t Count() const
                 {
                     return (_container == nullptr ? 0 : _container->size());
@@ -1756,6 +2111,7 @@ namespace Core {
                 typename ArrayContainer::const_iterator _iterator;
                 State _state;
             };
+
             template <typename ARRAYELEMENT>
             class IteratorType {
             private:
@@ -1773,18 +2129,21 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 IteratorType(ArrayContainer& container)
                     : _container(&container)
                     , _iterator(container.begin())
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 IteratorType(const IteratorType<ARRAYELEMENT>& copy)
                     : _container(copy._container)
                     , _iterator(copy._iterator)
                     , _state(copy._state)
                 {
                 }
+
                 ~IteratorType()
                 {
                 }
@@ -1803,6 +2162,7 @@ namespace Core {
                 {
                     return (_state == AT_ELEMENT);
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -1810,6 +2170,7 @@ namespace Core {
                     }
                     _state = AT_BEGINNING;
                 }
+
                 bool Next()
                 {
                     if (_container != nullptr) {
@@ -1829,18 +2190,21 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 IElement* Element()
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (&(*_iterator));
                 }
+
                 ARRAYELEMENT& Current()
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator);
                 }
+
                 inline uint32_t Count() const
                 {
                     return (_container == nullptr ? 0 : _container->size());
@@ -1861,46 +2225,55 @@ namespace Core {
                 , _iterator(_data)
             {
             }
+
             ArrayType(const ArrayType<ELEMENT>& copy)
                 : _data(copy._data)
                 , _iterator(_data)
             {
             }
-            virtual ~ArrayType()
+
+            ~ArrayType() override
             {
             }
 
         public:
-            virtual bool IsSet() const override
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return (Length() > 0);
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 //TODO: Implement null for Arrays
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 _state = 0;
                 _data.clear();
             }
+
             inline uint16_t Length() const
             {
                 return static_cast<uint16_t>(_data.size());
             }
+
             inline ELEMENT& Add()
             {
                 _data.push_back(ELEMENT());
 
                 return (_data.back());
             }
+
             inline ELEMENT& Add(const ELEMENT& element)
             {
                 _data.push_back(element);
 
                 return (_data.back());
             }
+
             ELEMENT& operator[](const uint32_t index)
             {
                 uint32_t skip = index;
@@ -1917,6 +2290,7 @@ namespace Core {
 
                 return (*locator);
             }
+
             const ELEMENT& operator[](const uint32_t index) const
             {
                 uint32_t skip = index;
@@ -1933,18 +2307,22 @@ namespace Core {
 
                 return (*locator);
             }
+
             const ELEMENT& Get(const uint32_t index) const
             {
                 return operator[](index);
             }
+
             inline Iterator Elements()
             {
                 return (Iterator(_data));
             }
+
             inline ConstIterator Elements() const
             {
                 return (ConstIterator(_data));
             }
+
             ArrayType<ELEMENT>& operator=(const ArrayType<ELEMENT>& RHS)
             {
                 _state = RHS._state;
@@ -1953,12 +2331,14 @@ namespace Core {
 
                 return (*this);
             }
+
             inline operator string() const
             {
                 string result;
                 ToString(result);
                 return (result);
             }
+
             inline ArrayType<ELEMENT>& operator=(const string& RHS)
             {
                 FromString(RHS);
@@ -1966,7 +2346,8 @@ namespace Core {
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -1992,19 +2373,37 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                if ((offset == 0) || (offset == BEGIN_MARKER)) {
-                    // Run till we find opening bracket..
-                    while ((loaded < maxLength) && (stream[loaded] != '[')) {
+                // Run till we find opening bracket..
+                if (offset == 0) {
+                    while ((loaded < maxLength) && ::isspace(stream[loaded])) {
                         loaded++;
                     }
-                    if (loaded == maxLength) {
-                        offset = BEGIN_MARKER;
-                    } else {
+                }
+
+                if (loaded == maxLength) {
+                    offset = 0;
+                } else if (offset == 0) {
+                    ValueValidity valid = stream[loaded] != '[' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
+                    offset = 0;
+                    switch (valid) {
+                    default:
+                        // fall through
+                    case ValueValidity::UNKNOWN:
+                        break;
+                    case ValueValidity::IS_NULL:
+                        _state = UNDEFINED;
+                        break;
+                    case ValueValidity::INVALID:
+                        error = Error{ "Invalid value.\"null\" or \"[\" expected." };
+                        break;
+                    case ValueValidity::VALID:
                         offset = SKIP_BEFORE;
                         loaded++;
+                        break;
                     }
                 }
 
@@ -2024,28 +2423,42 @@ namespace Core {
                             case ',':
                                 if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
+                                    error = Error{ "Expected new element, \",\" found." };
+                                    offset = 0;
                                 } else {
                                     offset = SKIP_BEFORE;
                                 }
                                 loaded++;
                                 break;
                             default:
-                                offset = PARSE;
-                                _data.push_back(ELEMENT());
+                                if (offset == SKIP_AFTER) {
+                                    error = Error{ "Unexpected character \"" + std::string(1, stream[loaded]) + "\". Expected either \",\" or \"]\"" };
+                                    offset = 0;
+                                    ++loaded;
+                                } else {
+                                    offset = PARSE;
+                                    _data.push_back(ELEMENT());
+                                }
                                 break;
                             }
                         }
                     }
+
                     if (offset >= PARSE) {
                         offset = (offset - PARSE);
-                        loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                        loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
                         offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
                     }
+
+                    if (error.IsSet() == true)
+                        break;
                 }
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2082,7 +2495,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -2142,11 +2556,13 @@ namespace Core {
                 UNDEFINED = 0x40
             };
 
-            static constexpr uint16_t BEGIN_MARKER = 1;
-            static constexpr uint16_t END_MARKER = 2;
-            static constexpr uint16_t SKIP_BEFORE = 3;
-            static constexpr uint16_t SKIP_AFTER = 4;
-            static constexpr uint16_t PARSE = 5;
+            static constexpr uint16_t BEGIN_MARKER = 5;
+            static constexpr uint16_t END_MARKER = 6;
+            static constexpr uint16_t SKIP_BEFORE = 7;
+            static constexpr uint16_t SKIP_BEFORE_VALUE = 8;
+            static constexpr uint16_t SKIP_AFTER = 9;
+            static constexpr uint16_t SKIP_AFTER_KEY = 10;
+            static constexpr uint16_t PARSE = 11;
 
             typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
             typedef std::list<JSONLabelValue> JSONElementList;
@@ -2172,6 +2588,7 @@ namespace Core {
                     , _state(AT_BEGINNING)
                 {
                 }
+
                 ~Iterator()
                 {
                 }
@@ -2182,6 +2599,7 @@ namespace Core {
                     _iterator = _container.begin();
                     _state = AT_BEGINNING;
                 }
+
                 bool Next()
                 {
                     if (_state != AT_END) {
@@ -2193,12 +2611,14 @@ namespace Core {
                     }
                     return (_state == AT_ELEMENT);
                 }
+
                 const TCHAR* Label() const
                 {
                     ASSERT(_state == AT_ELEMENT);
 
                     return (*_iterator).first;
                 }
+
                 IElement* Element()
                 {
                     ASSERT(_state == AT_ELEMENT);
@@ -2217,6 +2637,7 @@ namespace Core {
         public:
             Container(const Container& copy) = delete;
             Container& operator=(const Container& RHS) = delete;
+
             Container()
                 : _state(0)
                 , _data()
@@ -2224,7 +2645,8 @@ namespace Core {
                 , _fieldName(true)
             {
             }
-            virtual ~Container()
+
+            ~Container() override
             {
             }
 
@@ -2239,7 +2661,9 @@ namespace Core {
 
                 return (index != _data.end());
             }
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 JSONElementList::const_iterator index = _data.begin();
 
@@ -2250,12 +2674,14 @@ namespace Core {
 
                 return (index != _data.end());
             }
-            virtual bool IsNull() const override
+
+            bool IsNull() const override
             {
                 // TODO: Implement null for conrtainers
                 return ((_state & UNDEFINED) != 0);
             }
-            virtual void Clear() override
+
+            void Clear() override
             {
                 JSONElementList::const_iterator index = _data.begin();
 
@@ -2270,6 +2696,7 @@ namespace Core {
             {
                 _data.push_back(JSONLabelValue(label, element));
             }
+
             void Remove(const TCHAR label[])
             {
                 JSONElementList::iterator index(_data.begin());
@@ -2284,7 +2711,8 @@ namespace Core {
             }
 
         private:
-            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            // IElement iface:
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2328,26 +2756,43 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
             {
                 uint16_t loaded = 0;
-                if ((offset == 0) || (offset == BEGIN_MARKER)) {
-                    // Run till we find opening bracket..
-                    while ((loaded < maxLength) && (stream[loaded] != '{')) {
+                // Run till we find opening bracket..
+                if (offset == 0) {
+                    while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
                         loaded++;
                     }
+                }
 
-                    if (stream[loaded] != '{') {
-                        offset = BEGIN_MARKER;
-                    } else {
+                if (loaded == maxLength) {
+                    offset = 0;
+                } else if (offset == 0) {
+                    ValueValidity valid = stream[loaded] != '{' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
+                    offset = 0;
+                    switch (valid) {
+                    default:
+                        // fall through
+                    case ValueValidity::UNKNOWN:
+                        break;
+                    case ValueValidity::IS_NULL:
+                        _state = UNDEFINED;
+                        break;
+                    case ValueValidity::INVALID:
+                        error = Error{ "Invalid value.\"null\" or \"{\" expected." };
+                        break;
+                    case ValueValidity::VALID:
                         loaded++;
                         _fieldName.Clear();
                         offset = SKIP_BEFORE;
+                        break;
                     }
                 }
 
                 while ((offset != 0) && (loaded < maxLength)) {
-                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
+                    if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
                         while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
                             loaded++;
@@ -2356,30 +2801,59 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case '}':
+                                if (offset == SKIP_BEFORE && !_data.empty()) {
+                                    _state = ERROR;
+                                    error = Error{ "Expected new element, \"}\" found." };
+                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
+                                    _state = ERROR;
+                                    error = Error{ "Expected value, \"}\" found." };
+                                }
                                 offset = 0;
                                 loaded++;
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
+                                    error = Error{ "Expected new element \",\" found." };
+                                    offset = 0;
+                                } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
+                                    _state = ERROR;
+                                    error = Error{ "Expected value, \",\" found." };
+                                    offset = 0;
                                 } else {
                                     offset = SKIP_BEFORE;
                                 }
                                 loaded++;
                                 break;
                             case ':':
-                                if (offset == SKIP_BEFORE) {
+                                if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
                                     _state = ERROR;
+                                    error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
+                                    offset = 0;
+                                } else if (_fieldName.IsSet() == false) {
+                                    _state = ERROR;
+                                    error = Error{ "Expected \"}\" or \",\", \":\" found." };
+                                    offset = 0;
                                 } else {
-                                    offset = SKIP_BEFORE;
+                                    offset = SKIP_BEFORE_VALUE;
                                 }
                                 loaded++;
                                 break;
                             default:
-                                offset = PARSE;
                                 if (_fieldName.IsSet() == true) {
                                     if (_current.json != nullptr) {
                                         _state = ERROR;
+                                        // This is not a critical error. It happens when config contains more/different
+                                        // things as the one "registered".
+                                        // error = Error{"Internal parser error."};
+                                        // offset = 0;
+                                        // break;
+                                    } else if (offset != SKIP_BEFORE_VALUE) {
+                                        _state = ERROR;
+                                        error = Error{ "Colon expected." };
+                                        offset = 0;
+                                        ++loaded;
+                                        break;
                                     }
                                     _current.json = Find(_fieldName.Value().c_str());
 
@@ -2389,26 +2863,53 @@ namespace Core {
                                         _current.json = &_fieldName;
                                     }
                                 } else {
+                                    if (offset == SKIP_AFTER || offset == SKIP_AFTER_KEY) {
+                                        _state = ERROR;
+                                        error = Error{ "Expected either \",\" or \"}\", \"" + std::string(1, stream[loaded]) + "\" found." };
+                                        offset = 0;
+                                        ++loaded;
+                                        break;
+                                    }
                                     _current.json = nullptr;
                                 }
+                                offset = PARSE;
                                 break;
                             }
                         }
                     }
+
                     if (offset >= PARSE) {
                         offset = (offset - PARSE);
+                        uint16_t skip = SKIP_AFTER;
                         if (_current.json == nullptr) {
-                            loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                            loaded += static_cast<IElement&>(_fieldName).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
+                            if (_fieldName.IsQuoted() == false) {
+                                error = Error{ "Key must be properly quoted." };
+                            }
+                            skip = SKIP_AFTER_KEY;
                         } else {
-                            loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset);
+                            loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
                         }
-                        offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
+                        offset = (offset == 0 ? skip : offset + PARSE);
                     }
+
+                    if (error.IsSet() == true)
+                        break;
+                }
+
+                // This is done for containers only using the fact the top most JSON element is a container.
+                // This make sure the parsing error at any level results in an empty C++ objects and context
+                // is as full as possible.
+                if (error.IsSet() == true) {
+                    Clear();
+                    error.Value().Context(stream, maxLength, loaded);
                 }
 
                 return (loaded);
             }
-            virtual uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+
+            // IMessagePack iface:
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
             {
                 uint16_t loaded = 0;
 
@@ -2465,7 +2966,8 @@ namespace Core {
 
                 return (loaded);
             }
-            virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
             {
                 uint16_t loaded = 0;
 
@@ -2519,6 +3021,7 @@ namespace Core {
 
                 return (loaded);
             }
+
             IElement* Find(const char label[])
             {
                 IElement* result = nullptr;
@@ -2544,6 +3047,7 @@ namespace Core {
                 }
                 return (result);
             }
+
             bool FindNext() const
             {
                 _iterator++;
@@ -2552,6 +3056,7 @@ namespace Core {
                 }
                 return (_iterator != _data.end());
             }
+
             virtual bool Request(const TCHAR label[])
             {
                 return (false);
@@ -2589,57 +3094,68 @@ namespace Core {
             {
                 String::operator=("null");
             }
+
             Variant(const int32_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<int32_t, true, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const int64_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<int64_t, true, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const uint32_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<uint32_t, false, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const uint64_t value)
                 : JSON::String(false)
                 , _type(type::NUMBER)
             {
                 String::operator=(Core::NumberType<uint64_t, false, NumberBase::BASE_DECIMAL>(value).Text());
             }
+
             Variant(const bool value)
                 : JSON::String(false)
                 , _type(type::BOOLEAN)
             {
                 String::operator=(value ? _T("true") : _T("false"));
             }
+
             Variant(const string& text)
                 : JSON::String(true)
                 , _type(type::STRING)
             {
                 String::operator=(text);
             }
+
             Variant(const TCHAR* text)
                 : JSON::String(true)
                 , _type(type::STRING)
             {
                 String::operator=(text);
             }
+
             Variant(const Variant& copy)
                 : JSON::String(copy)
                 , _type(copy._type)
             {
             }
+
             Variant(const VariantContainer& object);
-            virtual ~Variant()
+
+            ~Variant() override
             {
             }
+
             Variant& operator=(const Variant& RHS)
             {
                 JSON::String::operator=(RHS);
@@ -2652,6 +3168,7 @@ namespace Core {
             {
                 return _type;
             }
+
             bool Boolean() const
             {
                 bool result = false;
@@ -2660,6 +3177,7 @@ namespace Core {
                 }
                 return result;
             }
+
             int64_t Number() const
             {
                 int64_t result = 0;
@@ -2668,10 +3186,12 @@ namespace Core {
                 }
                 return result;
             }
+
             const string String() const
             {
                 return Value();
             }
+
             ArrayType<Variant> Array() const
             {
                 ArrayType<Variant> result;
@@ -2680,6 +3200,7 @@ namespace Core {
 
                 return result;
             }
+
             inline VariantContainer Object() const;
 
             void Boolean(const bool value)
@@ -2688,6 +3209,7 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(value ? _T("true") : _T("false"));
             }
+
             template <typename TYPE>
             void Number(const TYPE value)
             {
@@ -2695,12 +3217,14 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(Core::NumberType<TYPE>(value).Text());
             }
+
             void String(const TCHAR* value)
             {
                 _type = type::STRING;
                 String::SetQuoted(true);
                 String::operator=(value);
             }
+
             void Array(const ArrayType<Variant>& value)
             {
                 _type = type::ARRAY;
@@ -2709,6 +3233,7 @@ namespace Core {
                 String::SetQuoted(false);
                 String::operator=(data);
             }
+
             inline void Object(const VariantContainer& object);
 
             template <typename VALUE>
@@ -2717,40 +3242,51 @@ namespace Core {
                 Number(value);
                 return (*this);
             }
+
             Variant& operator=(const bool& value)
             {
                 Boolean(value);
                 return (*this);
             }
+
             Variant& operator=(const string& value)
             {
                 String(value.c_str());
                 return (*this);
             }
+
             Variant& operator=(const TCHAR value[])
             {
                 String(value);
                 return (*this);
             }
+
             Variant& operator=(const ArrayType<Variant>& value)
             {
                 Array(value);
                 return (*this);
             }
+
             Variant& operator=(const VariantContainer& value)
             {
                 Object(value);
                 return (*this);
             }
+
             inline void ToString(string& result) const;
-            virtual bool IsSet() const override
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
             {
                 return String::IsSet();
             }
+
             string GetDebugString(const TCHAR name[], int indent = 0, int arrayIndex = -1) const;
 
         private:
-            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset) override;
+            // IElement iface:
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override;
+
             static uint16_t FindEndOfScope(const char stream[], uint16_t maxLength)
             {
                 ASSERT(maxLength > 0 && (stream[0] == '{' || stream[0] == '['));
@@ -2794,12 +3330,14 @@ namespace Core {
                     , _start(true)
                 {
                 }
+
                 Iterator(const Elements& container)
                     : _container(&container)
                     , _index(_container->begin())
                     , _start(true)
                 {
                 }
+
                 Iterator(const Iterator& copy)
                     : _container(copy._container)
                     , _index()
@@ -2809,6 +3347,7 @@ namespace Core {
                         _index = _container->begin();
                     }
                 }
+
                 ~Iterator()
                 {
                 }
@@ -2827,6 +3366,7 @@ namespace Core {
                 {
                     return ((_container != nullptr) && (_start == false) && (_index != _container->end()));
                 }
+
                 void Reset()
                 {
                     if (_container != nullptr) {
@@ -2834,6 +3374,7 @@ namespace Core {
                         _index = _container->begin();
                     }
                 }
+
                 bool Next()
                 {
                     if (_container != nullptr) {
@@ -2847,10 +3388,12 @@ namespace Core {
 
                     return (false);
                 }
+
                 const TCHAR* Label() const
                 {
                     return (_index->first.c_str());
                 }
+
                 const JSON::Variant& Current() const
                 {
                     return (_index->second);
@@ -2868,18 +3411,21 @@ namespace Core {
                 , _elements()
             {
             }
+
             VariantContainer(const TCHAR serialized[])
                 : Container()
                 , _elements()
             {
                 Container::FromString(serialized);
             }
+
             VariantContainer(const string& serialized)
                 : Container()
                 , _elements()
             {
                 Container::FromString(serialized);
             }
+
             VariantContainer(const VariantContainer& copy)
                 : Container()
                 , _elements(copy._elements)
@@ -2892,6 +3438,7 @@ namespace Core {
                     index++;
                 }
             }
+
             VariantContainer(const Elements& values)
                 : Container()
             {
@@ -2905,7 +3452,8 @@ namespace Core {
                     index++;
                 }
             }
-            virtual ~VariantContainer()
+
+            ~VariantContainer() override
             {
             }
 
@@ -2946,6 +3494,7 @@ namespace Core {
 
                 return (*this);
             }
+
             void Set(const TCHAR fieldName[], const JSON::Variant& value)
             {
                 Elements::iterator index(Find(fieldName));
@@ -2958,6 +3507,7 @@ namespace Core {
                     Container::Add(_elements.back().first.c_str(), &(_elements.back().second));
                 }
             }
+
             Variant Get(const TCHAR fieldName[]) const
             {
                 JSON::Variant result;
@@ -2970,6 +3520,7 @@ namespace Core {
 
                 return (result);
             }
+
             JSON::Variant& operator[](const TCHAR fieldName[])
             {
                 Elements::iterator index(Find(fieldName));
@@ -2985,6 +3536,7 @@ namespace Core {
 
                 return (index->second);
             }
+
             const JSON::Variant& operator[](const TCHAR fieldName[]) const
             {
                 static const JSON::Variant emptyVariant;
@@ -2993,14 +3545,17 @@ namespace Core {
 
                 return (index == _elements.end() ? emptyVariant : index->second);
             }
+
             bool HasLabel(const TCHAR labelName[]) const
             {
                 return (Find(labelName) != _elements.end());
             }
+
             Iterator Variants() const
             {
                 return (Iterator(_elements));
             }
+
             string GetDebugString(int indent = 0) const;
 
         private:
@@ -3012,6 +3567,7 @@ namespace Core {
                 }
                 return (index);
             }
+
             Elements::const_iterator Find(const TCHAR fieldName[]) const
             {
                 Elements::const_iterator index(_elements.begin());
@@ -3020,7 +3576,9 @@ namespace Core {
                 }
                 return (index);
             }
-            virtual bool Request(const TCHAR label[])
+
+            // Container iface:
+            bool Request(const TCHAR label[]) override
             {
                 // Whetever comes in and has no counter part, we need to create a Variant for it, so
                 // it can be filled.
@@ -3053,13 +3611,15 @@ namespace Core {
             object.ToString(value);
             String::operator=(value);
         }
+
         inline VariantContainer Variant::Object() const
         {
             VariantContainer result;
             result.FromString(Value());
             return (result);
         }
-        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
+
+        inline uint16_t Variant::Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error)
         {
             uint16_t result = 0;
             if (stream[0] == '{' || stream[0] == '[') {
@@ -3077,7 +3637,7 @@ namespace Core {
                     }
                 }
             } else {
-                result = String::Deserialize(stream, maxLength, offset);
+                result = String::Deserialize(stream, maxLength, offset, error);
 
                 _type = type::STRING;
 
@@ -3111,6 +3671,7 @@ namespace Core {
             Tester()
             {
             }
+
             ~Tester()
             {
             }
@@ -3122,6 +3683,7 @@ namespace Core {
                 uint16_t size, loaded;
 
                 receptor->Clear();
+                Core::OptionalType<Error> error;
 
                 do {
                     size = static_cast<uint16_t>((value.size() - fillCount) < SIZE ? (value.size() - fillCount) : SIZE);
@@ -3131,7 +3693,7 @@ namespace Core {
 
                     fillCount += size;
 
-                    loaded = static_cast<IElement&>(*receptor).Deserialize(_buffer, size, offset);
+                    loaded = static_cast<IElement&>(*receptor).Deserialize(_buffer, size, offset, error);
 
                     ASSERT(loaded <= size);
 
