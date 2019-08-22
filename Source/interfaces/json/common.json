@@ -46,6 +46,10 @@
       "code": 24,
       "message": "ERROR_PRIVILEGED_REQUEST"
     },
+    "requestsubmitted": {
+      "code": 27,
+      "message": "ERROR_REQUEST_SUBMITTED"
+    },
     "unknowntable": {
       "code": 28,
       "message": "ERROR_UNKNOWN_TABLE"
