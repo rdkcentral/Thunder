@@ -47,10 +47,10 @@ namespace Core {
     {
         if (element < 10) {
             return (static_cast<TCHAR>(element + '0'));
-        } else if (element < 36) {
+        } else if (element < 16) {
             return static_cast<TCHAR>((element - 10) + 'A');
         }
-        return (0);
+        return ('0');
     }
     TCHAR ToBase64(const unsigned char element)
     {
