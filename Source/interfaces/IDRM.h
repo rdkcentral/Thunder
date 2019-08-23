@@ -218,11 +218,8 @@ public:
         const char* f_pszUrl)
         = 0; //__in_z_opt
 
-    // Event fired when MediaKeySession has found a usable key.
-    virtual void OnKeyReady(void) = 0;
-
     // Event fired when MediaKeySession encounters an error.
-    virtual void OnKeyError(
+    virtual void OnError(
         int16_t f_nError,
         CDMi_RESULT f_crSysError,
         const char* errorMessage)
@@ -230,6 +227,7 @@ public:
 
     //Event fired on key status update
     virtual void OnKeyStatusUpdate(const char* keyMessage, const uint8_t* buffer, const uint8_t length) = 0;
+    virtual void OnKeyStatusesUpdated() const = 0;
 };
 
 // IMediaKeySession defines the MediaKeySession interface.

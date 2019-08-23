@@ -41,22 +41,19 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
         virtual ~ICallback() {}
 
         // Event fired when a key message is successfully created.
-        virtual void
-        OnKeyMessage(const uint8_t* keyMessage /* @length:keyLength */, //__in_bcount(f_cbKeyMessage)
+        virtual void OnKeyMessage(const uint8_t* keyMessage /* @length:keyLength */, //__in_bcount(f_cbKeyMessage)
             const uint16_t keyLength, //__in
-            const std::string URL)
-            = 0; //__in_z_opt
-
-        // Event fired when MediaKeySession has found a usable key.
-        virtual void OnKeyReady() = 0;
+            const std::string& URL) = 0; //__in_z_opt
 
         // Event fired when MediaKeySession encounters an error.
-        virtual void OnKeyError(const int16_t error, const OCDM_RESULT sysError,
-            const std::string errorMessage)
-            = 0;
+        virtual void OnError(const int16_t error, const OCDM_RESULT sysError, const std::string& errorMessage) = 0;
 
         // Event fired on key status update
-        virtual void OnKeyStatusUpdate(const ISession::KeyStatus status) = 0;
+        virtual void OnKeyStatusUpdate(const uint8_t keyID[] /* @length:keyIDLength */,
+                                       const uint8_t keyIDLength,
+                                       const ISession::KeyStatus status) = 0;
+
+        virtual void OnKeyStatusesUpdated() const = 0;
     };
 
     enum { ID = WPEFramework::RPC::ID_SESSION };
@@ -77,6 +74,7 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
     // Report the current status of the Session with respect to the KeyExchange.
     virtual KeyStatus Status() const = 0;
+    virtual KeyStatus Status(const uint8_t keyID[] /* @length:keyIDLength */, const uint8_t keyIDLength) const = 0;
 
     // Report the name to be used for the Shared Memory for exchanging the
     // Encrypted fragements.
