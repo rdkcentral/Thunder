@@ -77,5 +77,10 @@
         ]
       }
     }
+  },
+  "events": {
+    "locationchange": {
+      "summary": "Signals a location change"
+    }
   }
 }
