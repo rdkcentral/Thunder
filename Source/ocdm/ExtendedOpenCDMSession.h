@@ -27,19 +27,6 @@ protected:
     ExtendedOpenCDMSession& operator=(ExtendedOpenCDMSession&) = delete;
 
 protected:
-    enum sessionState {
-        // Initialized.
-        SESSION_INIT = 0x00,
-
-        // ExtendedOpenCDMSession created, waiting for message callback.
-        SESSION_MESSAGE = 0x01,
-        SESSION_READY = 0x02,
-        SESSION_ERROR = 0x04,
-        SESSION_LOADED = 0x08,
-        SESSION_UPDATE = 0x10
-    };
-
-protected:
     class Sink : public OCDM::ISession::ICallback {
     private:
         Sink() = delete;
@@ -92,8 +79,6 @@ public:
     ExtendedOpenCDMSession(OpenCDMSessionCallbacks* callbacks)
         : OpenCDMSession()
         , _sink(this)
-        , _state(SESSION_INIT)
-        , _message()
         , _URL()
         , _error()
         , _errorCode(0)
@@ -115,8 +100,6 @@ public:
         void* userData)
         : OpenCDMSession()
         , _sink(this)
-        , _state(SESSION_INIT)
-        , _message()
         , _URL()
         , _error()
         , _errorCode(0)
@@ -158,88 +141,6 @@ public:
     {
         return (_sysError);
     }
-    void GetKeyMessage(std::string& challenge, uint8_t* licenseURL,
-        uint16_t& urlLength)
-    {
-
-        ASSERT(IsValid() == true);
-
-        _state.WaitState(SESSION_MESSAGE | SESSION_READY,
-            a_Time);
-
-        if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
-            challenge = _message;
-            if (urlLength > static_cast<int>(_URL.length())) {
-                urlLength = static_cast<uint16_t>(_URL.length());
-            }
-            memcpy(licenseURL, _URL.c_str(), urlLength);
-            TRACE_L1("Returning a KeyMessage, Length: [%d,%d]", urlLength,
-                static_cast<uint32_t>(challenge.length()));
-        } else if ((_state & SESSION_READY) == SESSION_READY) {
-            challenge.clear();
-            *licenseURL = '\0';
-            urlLength = 0;
-            TRACE_L1("Returning a KeyMessage failed. %d", __LINE__);
-        }
-    }
-    int Load(std::string& response)
-    {
-        int ret = 1;
-
-        _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
-
-        response.clear();
-
-        if (OpenCDMSession::Load() == 0) {
-
-            _state.WaitState(SESSION_UPDATE, a_Time);
-
-            if (_key == OCDM::ISession::Usable) {
-                ret = 0;
-            } else if (_state == SESSION_MESSAGE) {
-                ret = 0;
-                response = "message:" + _message;
-            }
-        }
-
-        return ret;
-    }
-    KeyStatus Update(const uint8_t* pbResponse, const uint16_t cbResponse,
-        std::string& response)
-    {
-
-        _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
-
-        OpenCDMSession::Update(pbResponse, cbResponse);
-
-        _state.WaitState(SESSION_UPDATE | SESSION_MESSAGE | SESSION_ERROR,
-            a_Time);
-        if ((_state & SESSION_MESSAGE) == SESSION_MESSAGE) {
-            response = "message:" + _message;
-        }
-
-        return CDMState(_key);
-    }
-    int Remove(std::string& response)
-    {
-        int ret = 1;
-
-        _state = static_cast<sessionState>(_state & (~(SESSION_UPDATE | SESSION_MESSAGE)));
-
-        if (OpenCDMSession::Remove() == 0) {
-
-            _state.WaitState(SESSION_UPDATE, a_Time);
-
-            if (_key == OCDM::ISession::StatusPending) {
-                ret = 0;
-            } else if (_state == SESSION_MESSAGE) {
-                ret = 0;
-                response = "message:" + _message;
-            }
-        }
-
-        return (ret);
-    }
 
 protected:
     // void (*process_challenge) (void * userData, const char url[], const uint8_t
@@ -251,31 +152,18 @@ protected:
     // Event fired when a key message is successfully created.
     void OnKeyMessage(const std::string& keyMessage, const std::string& URL)
     {
-        _message = keyMessage;
         _URL = URL;
         TRACE_L1("Received URL: [%s]", _URL.c_str());
 
-        if (_callback == nullptr) {
-            _state = static_cast<sessionState>(_state | SESSION_MESSAGE | SESSION_UPDATE);
-        } else {
-            if (_callback->process_challenge)
-                _callback->process_challenge(this, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
-            else
-                _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(_message.c_str()), static_cast<uint16_t>(_message.length()));
-        }
+        if (_callback != nullptr && _callback->process_challenge_callback != nullptr)
+            _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(keyMessage.c_str()), static_cast<uint16_t>(keyMessage.length()));
     }
     // Event fired when MediaKeySession has found a usable key.
     void OnKeyReady()
     {
         _key = OCDM::ISession::Usable;
-        if (_callback == nullptr) {
-            _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
-        } else {
-            if (_callback->key_update)
-                _callback->key_update(this, nullptr, 0);
-            else
-                _callback->key_update_callback(this, _userData, nullptr, 0);
-        }
+        if (_callback != nullptr && _callback->key_update_callback != nullptr)
+            _callback->key_update_callback(this, _userData, nullptr, 0);
     }
     // Event fired when MediaKeySession encounters an error.
     void OnKeyError(const int16_t error, const OCDM::OCDM_RESULT sysError,
@@ -286,16 +174,9 @@ protected:
         _errorCode = error;
         _sysError = sysError;
 
-        if (_callback == nullptr) {
-            _state = static_cast<sessionState>(_state | SESSION_ERROR | SESSION_UPDATE);
-        } else {
-            if (_callback->key_update) {
-                _callback->key_update(this, nullptr, 0);
-                _callback->message(this, errorMessage.c_str());
-            } else {
-                _callback->key_update_callback(this, _userData, nullptr, 0);
-                _callback->message_callback(this, _userData, errorMessage.c_str());
-            }
+        if (_callback != nullptr && _callback->message_callback != nullptr) {
+            _callback->key_update_callback(this, _userData, nullptr, 0);
+            _callback->message_callback(this, _userData, errorMessage.c_str());
         }
     }
     // Event fired on key status update
@@ -303,20 +184,12 @@ protected:
     {
         _key = status;
 
-        if (_callback == nullptr) {
-            _state = static_cast<sessionState>(_state | SESSION_READY | SESSION_UPDATE);
-        } else {
-            if (_callback->key_update)
-                _callback->key_update(this, nullptr, 0);
-            else
-                _callback->key_update_callback(this, _userData, nullptr, 0);
-        }
+        if (_callback != nullptr && _callback->key_update_callback != nullptr)
+            _callback->key_update_callback(this, _userData, nullptr, 0);
     }
 
 protected:
     WPEFramework::Core::Sink<Sink> _sink;
-    WPEFramework::Core::StateTrigger<sessionState> _state;
-    std::string _message;
     std::string _URL;
     std::string _error;
     uint32_t _errorCode;
