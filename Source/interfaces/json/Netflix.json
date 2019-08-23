@@ -91,6 +91,19 @@
           }
         }
       }
+    },
+    "playbackchange": {
+      "summary": "Signals a playback change of the Netflix",
+      "params": {
+        "type": "object",
+        "properties": {
+          "playing": {
+            "description": "Determines if the Netflix is in playing mode (true) or not playing (false)",
+            "type": "boolean",
+            "example": true
+          }
+        }
+      }
     }
   }
 }
