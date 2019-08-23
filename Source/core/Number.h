@@ -33,7 +33,7 @@ namespace Core {
         }
         NumberType(
             const TextFragment& text,
-            const NumberBase Type = BASE_UNKNOWN)
+            const NumberBase Type = BASETYPE)
             : m_Value(0)
         {
             NumberType<TYPE, SIGNED, BASETYPE>::Convert(text.Data(), text.Length(), m_Value, Type);
@@ -41,7 +41,7 @@ namespace Core {
         NumberType(
             const TCHAR Value[],
             const uint32_t Length,
-            const NumberBase Type = BASE_UNKNOWN)
+            const NumberBase Type = BASETYPE)
             : m_Value(0)
         {
             NumberType<TYPE, SIGNED, BASETYPE>::Convert(Value, Length, m_Value, Type);
