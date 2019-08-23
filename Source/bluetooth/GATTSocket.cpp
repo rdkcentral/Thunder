@@ -186,9 +186,13 @@ bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
 
     if (IsOpen() == true) {
+        TRACE_L1("Statechange: OPEN\n")
         socklen_t len = sizeof(_connectionInfo);
         ::getsockopt(Handle(), SOL_L2CAP, L2CAP_CONNINFO, &_connectionInfo, &len);
-        Send(CommunicationTimeOut, _sink, &_sink, &_sink);
+
+        // for now skip setting the preferred MTU and go straight for Operational 
+        //Send(CommunicationTimeOut, _sink, &_sink, &_sink);
+        Operational();
     }
 }
 
