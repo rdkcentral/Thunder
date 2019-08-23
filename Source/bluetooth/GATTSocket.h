@@ -64,7 +64,7 @@ namespace Bluetooth {
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const override
             {
                 if ((_mtu >> 24) == 0xFF) {
-                    ASSERT(length <= 3);
+                    ASSERT(length >= 3);
                     stream[0] = ATT_OP_MTU_REQ;
                     stream[1] = (_mtu & 0xFF);
                     stream[2] = ((_mtu >> 8) & 0xFF);
@@ -302,15 +302,6 @@ namespace Bluetooth {
                     _size = 9;
                     return (ATT_OP_FIND_BY_TYPE_RESP);
                 }
-                uint8_t Write(const UUID& id, const uint8_t length, const uint8_t data[])
-                {
-                    _buffer[0] = ATT_OP_WRITE_REQ;
-                    _buffer[1] = (id.Short() & 0xFF);
-                    _buffer[2] = (id.Short() >> 8) & 0xFF;
-                    ::memcpy(&(_buffer[3]), data, length);
-                    _size = 3 + length;
-                    return (ATT_OP_WRITE_RESP);
-                }
                 uint8_t ReadByType(const uint16_t start, const uint16_t end, const UUID& id)
                 {
                     _buffer[0] = ATT_OP_READ_BY_TYPE_REQ;
@@ -349,6 +340,15 @@ namespace Bluetooth {
                     _buffer[4] = (offset >> 8) & 0xFF;
                     _size = 5;
                     return (ATT_OP_READ_BLOB_RESP);
+                }
+                uint8_t Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
+                {
+                    _buffer[0] = ATT_OP_WRITE_REQ;
+                    _buffer[1] = (handle & 0xFF);
+                    _buffer[2] = (handle >> 8) & 0xFF;
+                    ::memcpy(&(_buffer[3]), data, length);
+                    _size = 3 + length;
+                    return (ATT_OP_WRITE_RESP);
                 }
                 uint16_t Serialize(uint8_t stream[], const uint16_t length) const
                 {
@@ -548,6 +548,12 @@ namespace Bluetooth {
             uint16_t Error() const {
                 return(_error);
             }
+            void FindInformation(const uint16_t min, const uint16_t max)
+            {
+                _response.Clear();
+                _error = ~0;
+                _id = _frame.FindInformation(min, max);
+            }
             void ReadByGroupType(const uint16_t min, const uint16_t max, const UUID& uuid)
             {
                 _response.Clear();
@@ -566,12 +572,12 @@ namespace Bluetooth {
                 _error = ~0;
                 _id = _frame.ReadBlob(handle, 0);
             }
-            void WriteByType(const uint16_t min, const uint16_t max, const UUID& uuid, const uint8_t length, const uint8_t data[])
+            void Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
             {
                 _response.Clear();
                 _response.Extend(length, data);
                 _error = ~0;
-                _id = _frame.ReadByType(min, max, uuid);
+                _id = _frame.Write(handle, length, data);
             }
             void FindByType(const uint16_t min, const uint16_t max, const UUID& uuid, const uint8_t length, const uint8_t data[])
             {
