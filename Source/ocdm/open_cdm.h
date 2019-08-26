@@ -159,13 +159,21 @@ typedef struct {
     void (*key_update_callback)(struct OpenCDMSession* session, void* userData, const uint8_t keyId[], const uint8_t length);
 
     /**
-    * Called when a message is received from the DRM system
+    * Called when an error message is received from the DRM system
     *
     * \param session The session the notification applies to.
     * \param userData Pointer passed along when \ref opencdm_construct_session was issued.
     * \param message Text string, null terminated, from the DRM session.
     */
-    void (*message_callback)(struct OpenCDMSession* session, void* userData, const char message[]);
+    void (*error_message_callback)(struct OpenCDMSession* session, void* userData, const char message[]);
+
+    /**
+    * Called after all known key status changes were reported.
+    *
+    * \param session The session the notification applies to.
+    * \param userData Pointer passed along when \ref opencdm_construct_session was issued.
+    */
+    void (*keys_updated_callback)(const struct OpenCDMSession* session, void* userData);
 } OpenCDMSessionCallbacks;
 
 /**

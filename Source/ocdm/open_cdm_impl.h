@@ -212,7 +212,8 @@ public:
     }
     bool WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
         const uint32_t waitTime,
-        const OCDM::ISession::KeyStatus status) const
+        const OCDM::ISession::KeyStatus status,
+        std::string& sessionId) const
     {
         bool result = false;
         KeyId paramKey(keyId, keyLength);
@@ -264,6 +265,7 @@ public:
 
                 Core::InterlockedDecrement(_interested);
             } else {
+                sessionId = session->first;
                 _adminLock.Unlock();
             }
         } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
@@ -694,11 +696,9 @@ public:
         return (_decryptSession != nullptr ? _decryptSession->Name() : EmptyString);
     }
     inline bool IsValid() const { return (_session != nullptr); }
-    inline OCDM::ISession::KeyStatus Status() const
+    inline OCDM::ISession::KeyStatus Status(const uint8_t keyID[], const uint8_t keyIDLength) const
     {
-
-        return (_session != nullptr ? _session->Status()
-                                    : OCDM::ISession::StatusPending);
+        return (_session != nullptr ? _session->Status(keyID, keyIDLength) : OCDM::ISession::StatusPending);
     }
     inline void Close()
     {
