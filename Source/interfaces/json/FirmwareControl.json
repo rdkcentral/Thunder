@@ -15,13 +15,15 @@
       "type": "string",
       "enum": [
         "none",
-        "downloadnotstarted",
+        "upgradestarted",
+        "downloadstarted",
         "downloadaborted",
         "downloadedcompleted",
         "installnotstarted",
         "installaborted",
         "installstarted",
-        "upgradecompleted"
+        "upgradecompleted",
+        "upgradecancelled"
       ],
       "example": "completed"
     },
@@ -48,6 +50,18 @@
         "RCDL"
       ],
       "example": "CDL"
+    }
+  },
+  "properties": {
+  "status": {
+      "readonly": true,
+      "summary": "Current status of a upgrade",
+      "events": [
+        "upgradeprogress"
+      ],
+      "params": {
+        "$ref": "#/definitions/status"
+      }
     }
   },
   "methods": {
