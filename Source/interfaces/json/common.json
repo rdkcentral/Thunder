@@ -25,6 +25,11 @@
       "message": "ERROR_INPROGRESS",
       "description": "Operation in progress"
     },
+    "incorrecthash": {
+      "code": 14,
+      "message": "ERROR_INCORRECT_HASH",
+      "description": "Incorrect Hash given"
+    },
     "incorrecturl": {
       "code": 15,
       "message": "ERROR_INCORRECT_URL",
