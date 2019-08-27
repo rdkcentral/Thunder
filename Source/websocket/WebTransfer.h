@@ -163,11 +163,9 @@ namespace Web {
                     ASSERT(_request->IsValid() == true);
 
                     BaseClass::Submit(_request);
-                } else if (_response.IsValid() == true) {
+                } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true)) {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
-
-                    _response.Release();
                 }
             }
 
@@ -353,11 +351,14 @@ namespace Web {
 
             // We are done, change state
             _adminLock.Lock();
-
-            if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
+            if (response.IsValid() == true) {
+                if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
+                    errorCode = Core::ERROR_UNAVAILABLE;
+                } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                    errorCode = Core::ERROR_INCORRECT_HASH;
+                }
+            } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
-            } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
-                errorCode = Core::ERROR_INCORRECT_HASH;
             }
 
             _state = TRANSFER_IDLE;
