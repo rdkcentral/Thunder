@@ -116,89 +116,6 @@ EXTERNAL void ForceLinkingOfOpenCDM();
 #define SESSION_ID_LEN 16
 #define MAX_NUM_SECURE_STOPS 8
 
-namespace media {
-
-class EXTERNAL OpenCdm {
-private:
-    OpenCdm& operator=(const OpenCdm&) = delete;
-
-public:
-    typedef ::KeyStatus KeyStatus;
-    enum LicenseType {
-        Temporary = ::LicenseType::Temporary,
-        PersistentUsageRecord = ::LicenseType::PersistentUsageRecord,
-        PersistentLicense = ::LicenseType::PersistentLicense,
-    };
-
-public:
-    OpenCdm();
-    OpenCdm(const OpenCdm& copy);
-    explicit OpenCdm(const std::string& sessionId);
-    OpenCdm(const uint8_t keyId[], const uint8_t length);
-    ~OpenCdm();
-    static OpenCdm& Instance();
-
-public:
-    bool GetSession(const uint8_t keyId[], const uint8_t length,
-        const uint32_t waitTime);
-
-    // ---------------------------------------------------------------------------------------------
-    // INSTANTIATION OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    // Before instantiating the ROOT DRM OBJECT, Check if it is capable of
-    // decrypting the requested
-    // asset.
-    bool IsTypeSupported(const std::string& keySystem,
-        const std::string& mimeType) const;
-
-    // The next call is the startng point of creating a decryption context. It
-    // select the DRM system
-    // to be used within this OpenCDM object.
-    void SelectKeySystem(const std::string& keySystem);
-
-    // ---------------------------------------------------------------------------------------------
-    // ROOT DRM OBJECT OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    // If required, ServerCertificates can be added to this OpenCdm object (DRM
-    // Context).
-    int SetServerCertificate(const uint8_t*, const uint32_t);
-
-    // Now for every particular stream a session needs to be created. Create a
-    // session for all
-    // encrypted streams that require decryption. (This allows for MultiKey
-    // decryption)
-    std::string CreateSession(const std::string&, const uint8_t* addData,
-        const uint16_t addDataLength,
-        const uint8_t* cdmData,
-        const uint16_t cdmDataLength,
-        const LicenseType license);
-
-    // ---------------------------------------------------------------------------------------------
-    // ROOT DRM -> SESSION OBJECT OPERATIONS:
-    // ---------------------------------------------------------------------------------------------
-    void GetKeyMessage(std::string&, uint8_t*, uint16_t&);
-    KeyStatus Update(const uint8_t*, const uint16_t, std::string&);
-    int Load(std::string&);
-    int Remove(std::string&);
-    int Close();
-    KeyStatus Status() const;
-
-    uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t,
-        uint32_t);
-    uint32_t Decrypt(uint8_t*, const uint32_t, const uint8_t*, const uint16_t,
-        const uint8_t, const uint8_t[], uint32_t,
-        const uint32_t waitTime = 6000);
-
-    inline const std::string& KeySystem() const { return (_keySystem); }
-
-private:
-    OpenCDMAccessor* _implementation;
-    OpenCDMSession* _session;
-    std::string _keySystem;
-};
-
-} // namespace media
-
 extern "C" {
 
 #endif
@@ -230,7 +147,6 @@ typedef struct {
     * \param challengeLength Length of challenge (in bytes).
     */
     void (*process_challenge_callback)(struct OpenCDMSession* session, void* userData, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
-    void (*process_challenge)(struct OpenCDMSession* session, const char url[], const uint8_t challenge[], const uint16_t challengeLength);
 
     /**
     * Called when status of a key changes. Use \ref opencdm_session_status to find out new key status.
@@ -241,7 +157,6 @@ typedef struct {
     * \param length Length of key ID buffer.
     */
     void (*key_update_callback)(struct OpenCDMSession* session, void* userData, const uint8_t keyId[], const uint8_t length);
-    void (*key_update)(struct OpenCDMSession* session, const uint8_t keyId[], const uint8_t length);
 
     /**
     * Called when a message is received from the DRM system
@@ -251,7 +166,6 @@ typedef struct {
     * \param message Text string, null terminated, from the DRM session.
     */
     void (*message_callback)(struct OpenCDMSession* session, void* userData, const char message[]);
-    void (*message)(struct OpenCDMSession* session, const char message[]);
 } OpenCDMSessionCallbacks;
 
 /**
