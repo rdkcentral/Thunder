@@ -1,6 +1,6 @@
 
-// C++ classes for Dropbear Server JSON-RPC API.
-// Generated automatically from 'DropbearServerAPI.json'.
+// C++ classes for SecureShellServer JSON-RPC API.
+// Generated automatically from 'SecureShellServerAPI.json'.
 
 // Note: This code is inherently not thread safe. If required, proper synchronisation must be added.
 
@@ -12,29 +12,10 @@ namespace WPEFramework {
 
 namespace JsonData {
 
-    namespace DropbearServer {
+    namespace SecureShellServer {
 
         // Method params/result classes
         //
-
-        class StartserviceParamsData : public Core::JSON::Container {
-        public:
-            StartserviceParamsData()
-                : Core::JSON::Container()
-            {
-                Add(_T("hostkeys"), &HostKeys);
-                Add(_T("portflag"), &PortFlag);
-                Add(_T("port"), &Port);
-            }
-
-            StartserviceParamsData(const StartserviceParamsData&) = delete;
-            StartserviceParamsData& operator=(const StartserviceParamsData&) = delete;
-
-        public:
-            Core::JSON::String Port; // Port on which DHCP service shall run
-            Core::JSON::String PortFlag; // Flag to enable user defined port number to use
-            Core::JSON::String HostKeys; // Falg to run the DHCP service in background mode
-        }; // class StartserviceParamsData
 
         class CloseclientsessionParamsData : public Core::JSON::Container {
         public:
@@ -89,7 +70,7 @@ namespace JsonData {
             Core::JSON::String TimeStamp; // Port on which DHCP service shall run
         }; // class SessioninfoResultData
 
-    } // namespace DropbearServer
+    } // namespace SecureShellServer
 
 } // namespace JsonData
 
