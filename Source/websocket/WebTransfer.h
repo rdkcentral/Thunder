@@ -115,17 +115,20 @@ namespace Web {
             }
 
         public:
-            void StartTransfer(const Core::ProxyType<Web::Request>& request)
+            uint32_t StartTransfer(const Core::ProxyType<Web::Request>& request)
             {
                 ASSERT(_request->IsValid() == false);
                 ASSERT(_response->IsValid() == false);
+
+                uint32_t result = Core::ERROR_NONE;
 
                 if (BaseClass::IsOpen() == true) {
                     BaseClass::Submit(request);
                 } else {
                     _request = request;
-                    BaseClass::Open(0);
+                    result = BaseClass::Open(0);
                 }
+                return status;
             }
 
         private:
@@ -294,7 +297,7 @@ namespace Web {
                         _SerializedHashValue<LINK, FILEBODY>();
 
                         // Prepare the request for processing
-                        _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(_request);
                     }
                 }
             }
@@ -330,7 +333,7 @@ namespace Web {
                         _request->Path = '/' + source.Path().Value().Text();
 
                         // Prepare the request for processing
-                        _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(_request);
                     }
                 }
             }
