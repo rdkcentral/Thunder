@@ -12,15 +12,15 @@
 #include <GLES2/gl2ext.h>
 #include <EGL/eglext.h>
 
-#include <refsw/nexus_config.h>
-#include <refsw/nexus_core_utils.h>
-#include <refsw/nexus_display.h>
-#include <refsw/nexus_platform.h>
-#include <refsw/default_nexus.h>
+#include <nexus_config.h>
+#include <nexus_core_utils.h>
+#include <nexus_display.h>
+#include <nexus_platform.h>
+#include <default_nexus.h>
 
 #define BACKEND_BCM_NEXUS_NXCLIENT 1
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT
-#include <refsw/nxclient.h>
+#include <nxclient.h>
 #endif
 
 #include <virtualinput/virtualinput.h>
