@@ -289,6 +289,7 @@ namespace Web {
                         _state = TRANSFER_UPLOAD;
                         _request->Verb = Web::Request::HTTP_PUT;
                         _request->Path = '/' + destination.Path().Value().Text();
+                        _request->Host = source.Host().Value().Text();
                         _request->Body(_fileBody);
 
                         // Maybe we need to add a hash value...
@@ -329,6 +330,7 @@ namespace Web {
                         _state = TRANSFER_DOWNLOAD;
                         _request->Verb = Web::Request::HTTP_GET;
                         _request->Path = '/' + source.Path().Value().Text();
+                        _request->Host = source.Host().Value().Text();
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(_request);
@@ -357,6 +359,7 @@ namespace Web {
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 }
+                response.Release();
             } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
             }
