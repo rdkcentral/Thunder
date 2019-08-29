@@ -67,4 +67,10 @@
       ]
     }
   }
+  ,
+  "events": {
+    "timechange": {
+      "summary": "Signals a time change"
+    }
+  }
 }

@@ -20,10 +20,19 @@
       "code": 6,
       "message": "ERROR_OPENING_FAILED"
     },
+    "timedout": {
+      "code": 11,
+      "message": "ERROR_TIMEDOUT"
+    },
     "inprogress": {
       "code": 12,
       "message": "ERROR_INPROGRESS",
       "description": "Operation in progress"
+    },
+    "incorrecthash": {
+      "code": 14,
+      "message": "ERROR_INCORRECT_HASH",
+      "description": "Incorrect Hash given"
     },
     "incorrecturl": {
       "code": 15,
