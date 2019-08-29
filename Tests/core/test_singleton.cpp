@@ -40,13 +40,12 @@ TEST(test_singleton, simple_singleton)
 {
     static SingletonTypeOne& object1 = SingletonType<SingletonTypeOne>::Instance();
     static SingletonTypeOne& object_sample = SingletonType<SingletonTypeOne>::Instance();
-    EXPECT_EQ(&object1,&object_sample);
+    ASSERT_EQ(&object1,&object_sample);
     static SingletonTypeTwo& object2 = SingletonType<SingletonTypeTwo>::Instance("SingletonTypeTwo");
     static SingletonTypeThree& object3 = SingletonType<SingletonTypeThree>::Instance("SingletonTypeThree","SingletonTypeThree");
     SingletonType<SingletonTypeTwo>* x = (SingletonType<SingletonTypeTwo>*)&object2;
-    EXPECT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
+    ASSERT_STREQ(x->ImplementationName().c_str(),"SingletonTypeTwo");
     SingletonType<SingletonTypeThree>* y = (SingletonType<SingletonTypeThree>*)&object3;
-    EXPECT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
+    ASSERT_STREQ(y->ImplementationName().c_str(),"SingletonTypeThree");
     Singleton::Dispose();
 }
-
