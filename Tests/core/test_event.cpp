@@ -11,9 +11,9 @@ using namespace WPEFramework::Core;
 
 Event event(false,true);
 bool g_threadDone = false;
-bool g_lock = false;
-bool g_set_event = false;
-bool g_pulse_event = false;
+bool g_lock = true;
+bool g_set_event = true;
+bool g_pulse_event = true;
 std::thread::id g_parentTid;
 
 class ThreadClass : public Core::Thread {
@@ -36,17 +36,17 @@ public:
         while (IsRunning() && (!g_threadDone)) {
             ASSERT(g_parentTid != std::this_thread::get_id());
             if (g_lock) {
-                event.Unlock();
                 g_threadDone = true;
                 g_lock = false;
+                event.Unlock();
             }else if (g_set_event) {
-                event.SetEvent();
                 g_threadDone = true;
                 g_set_event = false;
+                event.SetEvent();
             }else if (g_pulse_event) {
-                event.PulseEvent();
                 g_threadDone = true;
                 g_pulse_event = false;
+                event.PulseEvent();
             }
             ::SleepMs(50);
         }
@@ -68,35 +68,29 @@ TEST(test_event, simple_event)
 }
 TEST(test_event, unlock_event)
 {    
-    uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
-    uint64_t now(Core::Time::Now().Ticks());
     ThreadClass object;
     object.Run();
-    g_lock = true;
     event.Lock();
+    ASSERT_FALSE(g_lock);
     object.Stop();
 }
 TEST(test_event, set_event)
 {
-    uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
-    uint64_t now(Core::Time::Now().Ticks());
     ThreadClass object;
     g_threadDone = false;
     object.Run();
     event.ResetEvent();
-    g_set_event = true;
     event.Lock();
+    ASSERT_FALSE(g_set_event);
     object.Stop();     
 }
 TEST(test_event, pulse_event)
 {
-    uint64_t timeOut(Core::Time::Now().Add(3).Ticks());
-    uint64_t now(Core::Time::Now().Ticks());
     ThreadClass object;
     object.Run();
     g_threadDone = false;
     event.ResetEvent();
-    g_pulse_event = true;
     event.Lock();
+    ASSERT_FALSE(g_pulse_event);
     object.Stop();
 }
