@@ -21,6 +21,12 @@
 #include "Module.h"
 #include "open_cdm_impl.h"
 
+// TODO
+struct OpenCDMSystem
+{
+   std::string m_name;
+};
+
 #include "ExtendedOpenCDMSession.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -69,9 +75,11 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
  * opencdm_is_type_supported)
  * \return \ref OpenCDMAccessor instance, NULL on error.
  */
-struct OpenCDMAccessor* opencdm_create_system()
+struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
-    return (OpenCDMAccessor::Instance());
+    OpenCDMSystem * output = new OpenCDMSystem;
+    output->m_name = keySystem;
+    return output;
 }
 
 /**
@@ -81,8 +89,9 @@ struct OpenCDMAccessor* opencdm_create_system()
  */
 OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system)
 {
+    assert(system != nullptr);
     if (system != nullptr) {
-        system->Release();
+       delete system;
     }
     return (OpenCDMError::ERROR_NONE);
 }
@@ -96,13 +105,13 @@ OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system)
  * \return Zero if supported, Non-zero otherwise.
  * \remark mimeType is currently ignored.
  */
-OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
-    const char keySystem[],
+OpenCDMError opencdm_is_type_supported(const char keySystem[],
     const char mimeType[])
 {
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(OpenCDMError::ERROR_KEYSYSTEM_NOT_SUPPORTED);
 
-    if ((system != nullptr) && (system->IsTypeSupported(std::string(keySystem), std::string(mimeType)) == 0)) {
+    if ((accessor != nullptr) && (accessor->IsTypeSupported(std::string(keySystem), std::string(mimeType)) == 0)) {
         result = OpenCDMError::ERROR_NONE;
     }
     return (result);
@@ -123,15 +132,15 @@ OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
  * REPLACING: void* acquire_session(const uint8_t* keyId, const uint8_t
  * keyLength, const uint32_t waitTime);
  */
-struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
-    const uint8_t keyId[],
+struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
     const uint8_t length,
     const uint32_t waitTime)
 {
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     struct OpenCDMSession* result = nullptr;
 
-    if ((system != nullptr) && (system->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable) == true)) {
-        OCDM::ISession* session(system->Session(keyId, length));
+    if ((accessor != nullptr) && (accessor->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable) == true)) {
+        OCDM::ISession* session(accessor->Session(keyId, length));
 
         if (session != nullptr) {
             result = new OpenCDMSession(session);
@@ -151,15 +160,15 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
  * \param serverCertificateLength Buffer length of certificate data.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_system_set_server_certificate(
-    struct OpenCDMAccessor* system, const char keySystem[],
-    const uint8_t serverCertificate[], uint16_t serverCertificateLength)
+OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMSystem* system,
+    const uint8_t serverCertificate[], const uint16_t serverCertificateLength)
 {
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        result = static_cast<OpenCDMError>(system->SetServerCertificate(
-            keySystem, serverCertificate, serverCertificateLength));
+        result = static_cast<OpenCDMError>(accessor->SetServerCertificate(
+            system->m_name, serverCertificate, serverCertificateLength));
     }
     return (result);
 }

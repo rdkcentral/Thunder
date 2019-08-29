@@ -60,7 +60,7 @@
 /**
  * Represents an OCDM system
  */
-struct OpenCDMAccessor;
+struct OpenCDMSystem;
 
 /**
  * Represents a OpenCDM session, use this one to decrypt.
@@ -168,19 +168,23 @@ typedef struct {
     void (*message_callback)(struct OpenCDMSession* session, void* userData, const char message[]);
 } OpenCDMSessionCallbacks;
 
+EXTERNAL OpenCDMError opencdm_init();
+
+EXTERNAL OpenCDMError opencdm_deinit();
+
 /**
  * \brief Creates DRM system.
  *
  * \return \ref OpenCDMAccessor instance, NULL on error.
  */
-EXTERNAL struct OpenCDMAccessor* opencdm_create_system();
+EXTERNAL struct OpenCDMSystem* opencdm_create_system(const char keySystem[]);
 
 /**
  * Destructs an \ref OpenCDMAccessor instance.
  * \param system \ref OpenCDMAccessor instance to desctruct.
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
+EXTERNAL OpenCDMError opencdm_destruct_system(struct OpenCDMSystem* system);
 
 /**
  * \brief Checks if a DRM system is supported.
@@ -192,8 +196,7 @@ EXTERNAL OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system);
  * \return Zero if supported, Non-zero otherwise.
  * \remark mimeType is currently ignored.
  */
-EXTERNAL OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
-    const char keySystem[],
+EXTERNAL OpenCDMError opencdm_is_type_supported(const char keySystem[],
     const char mimeType[]);
 
 /**
@@ -206,8 +209,7 @@ EXTERNAL OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
  * (Should as least be 64 chars long.)
  * \return Zero if successful, non-zero on error.
  */
-EXTERNAL OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
-    const char keySystem[],
+EXTERNAL OpenCDMError opencdm_system_get_version(const char keySystem[],
     char versionStr[]);
 
 /**
@@ -221,8 +223,8 @@ EXTERNAL OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
  * \param time Output variable that will contain DRM system time.
  * \return Zero if successful, non-zero on error.
  */
-EXTERNAL OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system,
-    const char keySystem[],
+// TODO: use nowhere time_t, all uint64_t
+EXTERNAL OpenCDMError opencdm_system_get_drm_time(const char keySystem[],
     uint64_t* time);
 
 /**
@@ -239,8 +241,7 @@ EXTERNAL OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system
  * timed out. This instance
  *         also needs to be destructed using \ref opencdm_session_destruct.
  */
-EXTERNAL struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
-    const uint8_t keyId[],
+EXTERNAL struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
     const uint8_t length,
     const uint32_t waitTime);
 
@@ -256,7 +257,7 @@ EXTERNAL struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* syst
  * \return Zero on success, non-zero on error.
  */
 EXTERNAL OpenCDMError opencdm_system_set_server_certificate(
-    struct OpenCDMAccessor* system, const char keySystem[],
+    struct OpenCDMSystem* system,
     const uint8_t serverCertificate[], const uint16_t serverCertificateLength);
 
 /**
@@ -277,13 +278,9 @@ EXTERNAL OpenCDMError opencdm_system_set_server_certificate(
  * \param session Output parameter that will contain pointer to instance of \ref OpenCDMSession.
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL OpenCDMError opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
+EXTERNAL OpenCDMError opencdm_construct_session(struct OpenCDMSystem* system, const LicenseType licenseType,
     const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks, void* userData,
-    struct OpenCDMSession** session);
-EXTERNAL OpenCDMError opencdm_create_session(struct OpenCDMAccessor* system, const char keySystem[], const LicenseType licenseType,
-    const char initDataType[], const uint8_t initData[], const uint16_t initDataLength,
-    const uint8_t CDMData[], const uint16_t CDMDataLength, OpenCDMSessionCallbacks* callbacks,
     struct OpenCDMSession** session);
 
 /**
