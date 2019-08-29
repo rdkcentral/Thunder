@@ -14,6 +14,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textfragment.cpp
    test_statetrigger.cpp
    test_queue.cpp
+   test_event.cpp
 #   test_sharedbuffer.cpp
 )
 
