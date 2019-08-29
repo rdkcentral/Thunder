@@ -20,6 +20,10 @@
       "code": 6,
       "message": "ERROR_OPENING_FAILED"
     },
+    "timedout": {
+      "code": 11,
+      "message": "ERROR_TIMEDOUT"
+    },
     "inprogress": {
       "code": 12,
       "message": "ERROR_INPROGRESS",

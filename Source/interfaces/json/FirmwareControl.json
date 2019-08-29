@@ -38,6 +38,7 @@
         "operationotsupported",
         "incorrecthash",
         "unavailable",
+        "timedout",
         "unkown"
       ],
       "example": "operationotsupported"
