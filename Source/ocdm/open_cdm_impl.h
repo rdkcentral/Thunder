@@ -5,6 +5,12 @@
 #include "Module.h"
 #include "open_cdm.h"
 
+// TODO
+struct OpenCDMSystem
+{
+   std::string m_name;
+};
+
 using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;

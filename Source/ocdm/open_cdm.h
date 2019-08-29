@@ -209,7 +209,7 @@ EXTERNAL OpenCDMError opencdm_is_type_supported(const char keySystem[],
  * (Should as least be 64 chars long.)
  * \return Zero if successful, non-zero on error.
  */
-EXTERNAL OpenCDMError opencdm_system_get_version(const char keySystem[],
+EXTERNAL OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
     char versionStr[]);
 
 /**
@@ -224,7 +224,7 @@ EXTERNAL OpenCDMError opencdm_system_get_version(const char keySystem[],
  * \return Zero if successful, non-zero on error.
  */
 // TODO: use nowhere time_t, all uint64_t
-EXTERNAL OpenCDMError opencdm_system_get_drm_time(const char keySystem[],
+EXTERNAL OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
     uint64_t* time);
 
 /**

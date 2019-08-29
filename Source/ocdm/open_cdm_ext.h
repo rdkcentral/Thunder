@@ -38,8 +38,7 @@ struct OpenCDMSystemExt;
  * support extended functionality.
  */
 struct OpenCDMSystemExt*
-opencdm_create_system_ext(struct OpenCDMAccessor* system,
-    const char keySystem[]);
+opencdm_create_system_ext(const char keySystem[]);
 
 /**
  * Desctructs Extended OCDM system.

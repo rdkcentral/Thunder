@@ -21,12 +21,6 @@
 #include "Module.h"
 #include "open_cdm_impl.h"
 
-// TODO
-struct OpenCDMSystem
-{
-   std::string m_name;
-};
-
 #include "ExtendedOpenCDMSession.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
@@ -87,7 +81,7 @@ struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
  * \param system \ref OpenCDMAccessor instance to desctruct.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system)
+OpenCDMError opencdm_destruct_system(struct OpenCDMSystem* system)
 {
     assert(system != nullptr);
     if (system != nullptr) {

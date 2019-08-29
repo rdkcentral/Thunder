@@ -91,12 +91,10 @@ private:
 };
 
 struct OpenCDMSystemExt*
-opencdm_create_system_ext(struct OpenCDMAccessor* system,
-    const char keySystem[])
+opencdm_create_system_ext(const char keySystem[])
 {
-    ASSERT(system != nullptr);
-
-    OpenCDMAccessor* accessor = system;
+    //OpenCDMAccessor* accessor = system;
+    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     // TODO: can these two be put together?
     accessor->CreateSystemExt(keySystem);
     accessor->InitSystemExt(keySystem);
@@ -115,13 +113,13 @@ OpenCDMError opencdm_destruct_system_ext(struct OpenCDMSystemExt* system)
     return ERROR_NONE;
 }
 
-OpenCDMError opencdm_system_get_version(struct OpenCDMAccessor* system,
-    const char keySystem[],
+OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
     char versionStr[])
 {
+    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     versionStr[0] = '\0';
 
-    std::string versionStdStr = system->GetVersionExt(keySystem);
+    std::string versionStdStr = accessor->GetVersionExt(system->m_name);
 
     assert(versionStdStr.length() < 64);
 
@@ -193,15 +191,15 @@ OpenCDMError opencdm_system_ext_commit_secure_stop(
         serverResponseLength);
 }
 
-OpenCDMError opencdm_system_get_drm_time(struct OpenCDMAccessor* system,
-    const char keySystem[],
+OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
     uint64_t* time)
 {
+    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         time_t cTime;
-        cTime = system->GetDrmSystemTime(keySystem);
+        cTime = accessor->GetDrmSystemTime(system->m_name);
         *time = static_cast<uint64_t>(cTime);
         result = ERROR_NONE;
     }
@@ -366,7 +364,7 @@ OpenCDMError opencdm_system_teardown(struct OpenCDMSystemExt* system)
  * \return Zero on success, non-zero on error.
  */
 OpenCDMError
-opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[],
+opencdm_construct_session(struct OpenCDMSystem* system,
     const LicenseType licenseType, const char initDataType[],
     const uint8_t initData[], const uint16_t initDataLength,
     const uint8_t CDMData[], const uint16_t CDMDataLength,
@@ -374,14 +372,15 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
     struct OpenCDMSession** session)
 {
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
 
-    TRACE_L1("Creating a Session for %s", keySystem);
+    TRACE_L1("Creating a Session for %s", system->m_name.c_str());
 
     // TODO: Since we are passing key system name anyway, not need for if here.
-    if (strcmp(keySystem, "com.netflix.playready") != 0) {
+    if (system->m_name != "com.netflix.playready") {
         if (system != nullptr) {
             *session = new ExtendedOpenCDMSession(
-                static_cast<OCDM::IAccessorOCDM*>(system), std::string(keySystem),
+                static_cast<OCDM::IAccessorOCDM*>(accessor), system->m_name,
                 std::string(initDataType), initData, initDataLength, CDMData,
                 CDMDataLength, licenseType, callbacks, userData);
 
@@ -390,7 +389,7 @@ opencdm_construct_session(struct OpenCDMAccessor* system, const char keySystem[]
         }
     } else {
         if (system != nullptr) {
-            *session = new ExtendedOpenCDMSessionExt(std::string(keySystem), system, initData, initDataLength,
+            *session = new ExtendedOpenCDMSessionExt(system->m_name, accessor, initData, initDataLength,
                 callbacks);
             result = OpenCDMError::ERROR_NONE;
         }
