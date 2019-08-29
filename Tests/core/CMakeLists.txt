@@ -4,6 +4,7 @@ add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    test_rpc.cpp
    test_jsonparser.cpp
+   test_hex2strserialization.cpp
 #   test_sharedbuffer.cpp
 )
 
