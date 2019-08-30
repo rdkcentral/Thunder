@@ -128,7 +128,7 @@ namespace Web {
                     _request = request;
                     result = BaseClass::Open(0);
                 }
-                return status;
+                return result;
             }
 
         private:
@@ -289,7 +289,7 @@ namespace Web {
                         _state = TRANSFER_UPLOAD;
                         _request->Verb = Web::Request::HTTP_PUT;
                         _request->Path = '/' + destination.Path().Value().Text();
-                        _request->Host = source.Host().Value().Text();
+                        _request->Host = destination.Host().Value().Text();
                         _request->Body(_fileBody);
 
                         // Maybe we need to add a hash value...
