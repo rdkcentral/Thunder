@@ -130,8 +130,9 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
 {
     struct OpenCDMSession* result = nullptr;
 
-    if ((system != nullptr) && (system->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable) == true)) {
-        OCDM::ISession* session(system->Session(keyId, length));
+    std::string sessionId;
+    if ((system != nullptr) && (system->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable, sessionId) == true)) {
+        OCDM::ISession* session(system->Session(sessionId));
 
         if (session != nullptr) {
             result = new OpenCDMSession(session);
