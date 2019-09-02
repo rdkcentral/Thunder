@@ -6,10 +6,10 @@
 #include "open_cdm.h"
 
 // TODO
-struct OpenCDMSystem
-{
-   std::string m_name2;
-};
+//struct OpenCDMSystem
+//{
+//   std::string m_name2;
+//};
 
 using namespace WPEFramework;
 
@@ -809,8 +809,7 @@ private:
     uint32_t _refCount;
 };
 
-struct OpenCDMSystemExt {
-    OpenCDMAccessor* m_accessor;
+struct OpenCDMSystem {
     std::string m_keySystem;
 };
 
