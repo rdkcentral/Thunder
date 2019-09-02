@@ -8,7 +8,7 @@
 // TODO
 struct OpenCDMSystem
 {
-   std::string m_name;
+   std::string m_name2;
 };
 
 using namespace WPEFramework;
@@ -808,3 +808,9 @@ protected:
 private:
     uint32_t _refCount;
 };
+
+struct OpenCDMSystemExt {
+    OpenCDMAccessor* m_accessor;
+    std::string m_keySystem;
+};
+

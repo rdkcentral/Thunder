@@ -69,12 +69,14 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
  * opencdm_is_type_supported)
  * \return \ref OpenCDMAccessor instance, NULL on error.
  */
+/*
 struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
     OpenCDMSystem * output = new OpenCDMSystem;
     output->m_name = keySystem;
     return output;
 }
+*/
 
 /**
  * Destructs an \ref OpenCDMAccessor instance.
@@ -154,15 +156,16 @@ struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
  * \param serverCertificateLength Buffer length of certificate data.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMSystem* system,
+OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMSystem* system2,
     const uint8_t serverCertificate[], const uint16_t serverCertificateLength)
 {
+    OpenCDMSystemExt * system = (OpenCDMSystemExt*)system2;
     OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
         result = static_cast<OpenCDMError>(accessor->SetServerCertificate(
-            system->m_name, serverCertificate, serverCertificateLength));
+            system->m_keySystem, serverCertificate, serverCertificateLength));
     }
     return (result);
 }
