@@ -5,12 +5,6 @@
 #include "Module.h"
 #include "open_cdm.h"
 
-// TODO
-//struct OpenCDMSystem
-//{
-//   std::string m_name2;
-//};
-
 using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;
@@ -578,7 +572,7 @@ protected:
     OpenCDMSession(const OpenCDMSession&) = delete;
     OpenCDMSession& operator=(OpenCDMSession&) = delete;
 
-private:
+protected:
     class DataExchange : public OCDM::DataExchange {
     private:
         DataExchange() = delete;
@@ -664,7 +658,6 @@ public:
     OpenCDMSession()
         : _sessionId()
         , _session(nullptr)
-        , _sessionExt(nullptr)
         , _decryptSession(nullptr)
         , _refCount(1)
     {
@@ -673,7 +666,6 @@ public:
     explicit OpenCDMSession(OCDM::ISession* session)
         : _sessionId(session->SessionId())
         , _session(session)
-        , _sessionExt(nullptr)
         , _decryptSession(new DataExchange(_session->BufferId()))
         , _refCount(1)
     {
@@ -794,29 +786,11 @@ protected:
         }
     }
 
-    void SessionExt(OCDM::ISessionExt* sessionExt)
-    {
-        ASSERT((_sessionExt == nullptr) ^ (sessionExt == nullptr));
-
-        if ((sessionExt == nullptr) && (_sessionExt != nullptr)) {
-            _sessionExt->Release();
-        }
-        _sessionExt = sessionExt;
-
-        if (_sessionExt != nullptr) {
-            _decryptSession = new DataExchange(_sessionExt->BufferIdExt());
-        } else {
-            delete _decryptSession;
-            _decryptSession = nullptr;
-        }
-    }
-
 protected:
     std::string _sessionId;
 
 private:
     OCDM::ISession* _session;
-    OCDM::ISessionExt* _sessionExt;
 
 protected:
     DataExchange* _decryptSession;

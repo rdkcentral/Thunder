@@ -76,6 +76,7 @@ protected:
     };
 
 public:
+    // TODO: reduce to only one ctor
     ExtendedOpenCDMSession(OpenCDMSessionCallbacks* callbacks)
         : OpenCDMSession()
         , _sink(this)
@@ -122,11 +123,90 @@ public:
             OpenCDMSession::Session(realSession);
         }
     }
+    ExtendedOpenCDMSession(const string keySystem, OpenCDMAccessor* system, const uint8_t drmHeader[],
+        uint32_t drmHeaderLength, OpenCDMSessionCallbacks* callbacks)
+        : OpenCDMSession()
+        , _sink(this)
+        , _URL()
+        , _error()
+        , _errorCode(0)
+        , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
+        , _key(OCDM::ISession::StatusPending)
+        , _callback(callbacks)
+        , _userData(nullptr)
+        , _sessionExt(nullptr)
+    {
+
+        OCDM::ISessionExt* realSession = nullptr;
+
+        system->CreateSessionExt(keySystem, drmHeader, drmHeaderLength, &_sink, _sessionId,
+            realSession);
+
+        if (realSession == nullptr) {
+            TRACE_L1("Creating a Session failed. %d", __LINE__);
+        } else {
+           _sessionExt = realSession;
+
+           _decryptSession = new DataExchange(_sessionExt->BufferIdExt());
+        }
+    }
     virtual ~ExtendedOpenCDMSession()
     {
+        if (_sessionExt) {
+           _sessionExt->Release();
+           _sessionExt = nullptr;
+        }
+
         if (OpenCDMSession::IsValid() == true) {
             Revoke(&_sink);
         }
+    }
+
+    uint32_t SessionIdExt() const {
+       ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+       return _sessionExt->SessionIdExt();
+    }
+
+    OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[],
+        uint32_t drmHeaderLength)
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->SetDrmHeader(drmHeader, drmHeaderLength);
+    }
+
+    OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t* challenge,
+        uint32_t& challengeSize,
+        uint32_t isLDL)
+    {
+       ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+       return _sessionExt->GetChallengeDataExt(challenge, challengeSize, isLDL);
+    }
+
+    OCDM::OCDM_RESULT CancelChallengeDataExt()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->CancelChallengeDataExt();
+    }
+
+    OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[],
+        uint32_t licenseDataSize,
+        uint8_t* secureStopId)
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->StoreLicenseData(licenseData, licenseDataSize,
+            secureStopId);
+    }
+
+    OCDM::OCDM_RESULT InitDecryptContextByKid()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->InitDecryptContextByKid();
+    }
+
+    OCDM::OCDM_RESULT CleanDecryptContext()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->CleanDecryptContext();
     }
 
 public:
@@ -197,6 +277,7 @@ protected:
     OCDM::ISession::KeyStatus _key;
     OpenCDMSessionCallbacks* _callback;
     void* _userData;
+    OCDM::ISessionExt* _sessionExt;
 };
 
 #endif /* EXTENDEDOPENCDMSESSION_H */
