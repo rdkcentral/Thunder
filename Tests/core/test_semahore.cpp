@@ -1,7 +1,8 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/core.h>
+#include <core/Sync.h>
+#include <core/Thread.h>
 #include <thread>
 
 using namespace WPEFramework;
@@ -9,7 +10,7 @@ using namespace WPEFramework::Core;
 
 int g_shared = 1;
 bool g_threadCritDone = false;
-static std::thread::id g_parentId;
+std::thread::id g_parentId;
 Core::CriticalSection lock;
 
 class ThreadClass : public Core::Thread {
@@ -30,7 +31,7 @@ public:
     virtual uint32_t Worker() override
     {
         while (IsRunning() && (!g_threadCritDone)) {
-            EXPECT_TRUE(g_parentId != std::this_thread::get_id());
+            ASSERT(g_parentId != std::this_thread::get_id());
             g_threadCritDone = true;
             lock.Lock();
             g_shared++;
@@ -50,7 +51,7 @@ TEST(test_criticalsection, simple_criticalsection)
     g_shared++;
     lock.Unlock();
     object.Stop();
-    EXPECT_EQ(g_shared,2);
+    ASSERT_EQ(g_shared,2);
 }
 TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
 {
@@ -64,7 +65,7 @@ TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    EXPECT_EQ(g_shared,3);
+    ASSERT_EQ(g_shared,3);
 }
 
 TEST(test_binairysemaphore, simple_binairysemaphore)
@@ -73,7 +74,7 @@ TEST(test_binairysemaphore, simple_binairysemaphore)
     bsem.Lock();
     g_shared++;
     bsem.Unlock();
-    EXPECT_EQ(g_shared,4);
+    ASSERT_EQ(g_shared,4);
 }
 TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
 {
@@ -87,7 +88,7 @@ TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    EXPECT_EQ(g_shared,5);
+    ASSERT_EQ(g_shared,5);
    
     timeOut = Core::Time::Now().Add(3).Ticks();
     now = Core::Time::Now().Ticks();
@@ -98,7 +99,7 @@ TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    EXPECT_EQ(g_shared,6);
+    ASSERT_EQ(g_shared,6);
 }
 TEST(test_countingsemaphore, simple_countingsemaphore)
 {
@@ -106,5 +107,5 @@ TEST(test_countingsemaphore, simple_countingsemaphore)
     csem.Lock();
     g_shared++;
     csem.Unlock(1);
-    EXPECT_EQ(g_shared,7);
+    ASSERT_EQ(g_shared,7);
 }
