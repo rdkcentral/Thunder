@@ -17,6 +17,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_event.cpp
    test_singleton.cpp
    test_semahore.cpp
+   test_XGetopt.cpp 
 #   test_sharedbuffer.cpp
 )
 
