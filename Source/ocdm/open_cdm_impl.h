@@ -597,6 +597,8 @@ protected:
                 OCDM::DataExchange::Name().c_str());
         }
 
+
+
     public:
         uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength,
             const uint8_t* ivData, uint16_t ivDataLength,
@@ -658,6 +660,7 @@ public:
     OpenCDMSession()
         : _sessionId()
         , _session(nullptr)
+        , _sessionExt(nullptr)
         , _decryptSession(nullptr)
         , _refCount(1)
     {
@@ -666,6 +669,7 @@ public:
     explicit OpenCDMSession(OCDM::ISession* session)
         : _sessionId(session->SessionId())
         , _session(session)
+        , _sessionExt(session->QueryInterface<OCDM::ISessionExt>())
         , _decryptSession(new DataExchange(_session->BufferId()))
         , _refCount(1)
     {
@@ -678,6 +682,9 @@ public:
     }
     virtual ~OpenCDMSession()
     {
+        if (_sessionExt != nullptr) {
+           _sessionExt->Release();
+        }
         if (_session != nullptr) {
             _session->Release();
         }
@@ -688,7 +695,6 @@ public:
     }
 
 public:
-    virtual bool IsExtended() const { return (false); }
     void AddRef() { Core::InterlockedIncrement(_refCount); }
     bool Release()
     {
@@ -768,6 +774,79 @@ public:
         return (_session->Revoke(callback));
     }
 
+
+
+         uint32_t SessionIdExt() const {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->SessionIdExt();
+         }
+
+         OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[],
+            uint32_t drmHeaderLength)
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->SetDrmHeader(drmHeader, drmHeaderLength);
+         }
+
+         OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t* challenge,
+            uint32_t& challengeSize,
+            uint32_t isLDL)
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->GetChallengeDataExt(challenge, challengeSize, isLDL);
+         }
+
+         OCDM::OCDM_RESULT CancelChallengeDataExt()
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->CancelChallengeDataExt();
+         }
+
+         OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[],
+            uint32_t licenseDataSize,
+            uint8_t* secureStopId)
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->StoreLicenseData(licenseData, licenseDataSize,
+                  secureStopId);
+         }
+
+         OCDM::OCDM_RESULT InitDecryptContextByKid()
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->InitDecryptContextByKid();
+         }
+
+         OCDM::OCDM_RESULT CleanDecryptContext()
+         {
+            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+            return _sessionExt->CleanDecryptContext();
+         }
+
+      public:
+         inline KeyStatus Status(const uint8_t /* keyId */[],
+            uint8_t /* length */) const
+         {
+            //return (::CDMState(_key));
+            // TODO
+            return (KeyStatus)(0);
+         }
+         inline uint32_t Error() const { 
+            //return (_errorCode); 
+            // TODO
+            return 0;
+         }
+         inline uint32_t Error(const uint8_t keyId[], uint8_t length) const
+         {
+            //return (_sysError);
+            // TODO
+            return 0;
+         }
+
+
+
+
+
 protected:
     void Session(OCDM::ISession* session)
     {
@@ -784,6 +863,15 @@ protected:
             delete _decryptSession;
             _decryptSession = nullptr;
         }
+
+        if (_sessionExt) {
+           _sessionExt->Release();
+           _sessionExt = nullptr;
+        }
+
+        if (_session) {
+           _sessionExt = _session->QueryInterface<OCDM::ISessionExt>();
+        }
     }
 
 protected:
@@ -791,6 +879,7 @@ protected:
 
 private:
     OCDM::ISession* _session;
+    OCDM::ISessionExt* _sessionExt;
 
 protected:
     DataExchange* _decryptSession;

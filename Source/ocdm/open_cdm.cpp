@@ -227,9 +227,8 @@ KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
 {
     KeyStatus result(KeyStatus::InternalError);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<const ExtendedOpenCDMSession*>(session)->Status(
-            keyId, length);
+    if (session != nullptr) {
+        result = session->Status(keyId, length);
     }
 
     return (result);
@@ -247,9 +246,8 @@ uint32_t opencdm_session_error(const struct OpenCDMSession* session,
 {
     uint32_t result(~0);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<const ExtendedOpenCDMSession*>(session)->Error(
-            keyId, length);
+    if (session != nullptr) {
+        result = session->Error(keyId, length);
     }
 
     return (result);
@@ -265,9 +263,8 @@ opencdm_session_system_error(const struct OpenCDMSession* session)
 {
     OpenCDMError result(ERROR_INVALID_SESSION);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<OpenCDMError>(
-            static_cast<const ExtendedOpenCDMSession*>(session)->Error());
+    if (session != nullptr) {
+        result = static_cast<OpenCDMError>(session->Error());
     }
 
     return (result);
