@@ -279,7 +279,7 @@ opencdm_construct_session(struct OpenCDMSystem* system,
     // TODO: Since we are passing key system name anyway, not need for if here.
     if (system->m_keySystem != "com.netflix.playready") {
         if (system != nullptr) {
-            *session = new ExtendedOpenCDMSession(
+            *session = new OpenCDMSession(
                 static_cast<OCDM::IAccessorOCDM*>(accessor), system->m_keySystem,
                 std::string(initDataType), initData, initDataLength, CDMData,
                 CDMDataLength, licenseType, callbacks, userData);
@@ -289,7 +289,7 @@ opencdm_construct_session(struct OpenCDMSystem* system,
         }
     } else {
         if (system != nullptr) {
-            *session = new ExtendedOpenCDMSession(system->m_keySystem, accessor, initData, initDataLength,
+            *session = new OpenCDMSession(system->m_keySystem, accessor, initData, initDataLength,
                 callbacks);
             result = OpenCDMError::ERROR_NONE;
         }
