@@ -6,7 +6,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING 
         "Disable tracing in debug" OFF)
-option(BLUETOOTH_SUPPORT
+option(BLUETOOTH
         "Enable support for Bluetooth in the core." OFF)
 
 find_package(Threads REQUIRED)
@@ -141,7 +141,7 @@ if(NOT WCHAR_SUPPORT)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
-if (BLUETOOTH_SUPPORT)
+if (BLUETOOTH)
     target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
     message(STATUS "Enable Bluetooth support.")
 endif()

@@ -147,7 +147,7 @@ namespace Bluetooth {
         static constexpr uint16_t ACTION_MASK = 0x3FFF;
 
     public:
-        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE>
+        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = ~0>
         class CommandType : public Core::IOutbound, public Core::IInbound {
         private:
             CommandType(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
@@ -190,6 +190,9 @@ namespace Bluetooth {
 
                     ::memcpy(stream, &(_buffer[_offset]), result);
                     _offset += result;
+
+                    printf ("SEND: ");
+                    for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
                 }
                 return (result);
             }
@@ -215,48 +218,43 @@ namespace Bluetooth {
                     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(stream[1 + HCI_EVENT_HDR_SIZE]));
                     uint16_t len = (length - (1 + HCI_EVENT_HDR_SIZE));
 
+                    printf ("RECEIVE: ");
+                    for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+
                     if (hdr->evt == EVT_CMD_STATUS) {
                         const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
-                        if (cs->opcode == OPCODE) {
-
-                            if (RESPONSECODE == EVT_CMD_STATUS) {
-                                _error = (cs->status != 0 ? Core::ERROR_GENERAL : Core::ERROR_NONE);
-                            } else if (cs->status != 0) {
-                                _error = cs->status;
+                        if (htobs(cs->opcode) == OPCODE) {
+                            if (cs->status == 0) {
+                                _error = Core::ERROR_NONE;
+                            }
+                            else {
+                                _error =  Core::ERROR_GENERAL;
+                                TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X Error: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status ));
                             }
                             result = length;
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X expected: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status ));
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X unexpected: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status));
                         }
                     } else if (hdr->evt == EVT_CMD_COMPLETE) {
                         const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
-                        if (cc->opcode == OPCODE) {
+                        if (htobs(cc->opcode) == OPCODE) {
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
                                 _error = Core::ERROR_GENERAL;
+                                TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X Error: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
                             } else {
                                 uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
                                 ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
                                 _error = Core::ERROR_NONE;
                             }
                             result = length;
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X expected: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X unexpected: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
                         }
                     } else if ((hdr->evt == EVT_LE_META_EVENT) && (((OPCODE >> 10) & 0x3F) == OGF_LE_CTL)) {
                         const evt_le_meta_event* eventMetaData = reinterpret_cast<const evt_le_meta_event*>(ptr);
 
                         if (eventMetaData->subevent == RESPONSECODE) {
-                            TRACE(Trace::Information, (_T(">>EVT_COMPLETE: expected")));
-
                             uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_LE_META_EVENT_SIZE));
                             ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_LE_META_EVENT_SIZE]), toCopy);
 
                             _error = Core::ERROR_NONE;
                             result = length;
-                        } else {
-                            TRACE(Trace::Information, (_T(">>EVT_COMPLETE: unexpected [%d]"), eventMetaData->subevent));
                         }
                     }
                 }
@@ -345,26 +343,17 @@ namespace Bluetooth {
             uint8_t _features[8];
         };
 
-        enum capabilities {
-            DISPLAY_ONLY = 0x00,
-            DISPLAY_YES_NO = 0x01,
-            KEYBOARD_ONLY = 0x02,
-            NO_INPUT_NO_OUTPUT = 0x03,
-            KEYBOARD_DISPLAY = 0x04,
-            INVALID = 0xFF
-        };
-
         // ------------------------------------------------------------------------
         // Create definitions for the HCI commands
         // ------------------------------------------------------------------------
         struct Command {
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete, EVT_CONN_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
                 Connect;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete, EVT_AUTH_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
                 Authenticate;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete, EVT_DISCONN_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete>
                 Disconnect;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
@@ -373,34 +362,34 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t, EVT_LE_CONN_COMPLETE>
                 EncryptLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, evt_remote_name_req_complete, EVT_REMOTE_NAME_REQ_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, evt_remote_name_req_complete>
                 RemoteName;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t, EVT_CMD_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t>
                 ScanParametersLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE), le_set_scan_enable_cp, uint8_t, EVT_CMD_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_ENABLE), le_set_scan_enable_cp, uint8_t>
                 ScanEnableLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Core::Void, Core::Void, EVT_CMD_STATUS>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CLEAR_WHITE_LIST), Core::Void, Core::Void>
                 ClearWhiteList;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Core::Void, le_read_white_list_size_rp, EVT_CMD_STATUS>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_WHITE_LIST_SIZE), Core::Void, le_read_white_list_size_rp>
                 ReadWhiteListSize;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Core::Void, EVT_CMD_STATUS>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_ADD_DEVICE_TO_WHITE_LIST), le_add_device_to_white_list_cp, Core::Void>
                 AddDeviceToWhiteList;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_REMOVE_DEVICE_FROM_WHITE_LIST), le_remove_device_from_white_list_cp, uint8_t, EVT_CMD_STATUS>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_REMOVE_DEVICE_FROM_WHITE_LIST), le_remove_device_from_white_list_cp, uint8_t>
                 RemoveDeviceFromWhiteList;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_READ_REMOTE_USED_FEATURES), le_read_remote_used_features_cp, evt_le_read_remote_used_features_complete, EVT_LE_READ_REMOTE_USED_FEATURES_COMPLETE>
                 RemoteFeaturesLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISING_PARAMETERS), le_set_advertising_parameters_cp, uint8_t, EVT_CMD_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISING_PARAMETERS), le_set_advertising_parameters_cp, uint8_t>
                 AdvertisingParametersLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISE_ENABLE), le_set_advertise_enable_cp, uint8_t, EVT_CMD_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISE_ENABLE), le_set_advertise_enable_cp, uint8_t>
                 AdvertisingEnableLE;
         };
 
@@ -417,12 +406,12 @@ namespace Bluetooth {
         HCISocket& operator=(const HCISocket&) = delete;
 
         HCISocket()
-            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, Core::NodeId(), Core::NodeId(), 256, 256)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, Core::NodeId(), Core::NodeId(), 1024, 1024)
             , _state(IDLE)
         {
         }
         HCISocket(const Core::NodeId& sourceNode)
-            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, sourceNode, Core::NodeId(), 256, 256)
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, sourceNode, Core::NodeId(), 1024, 1024)
             , _state(IDLE)
         {
         }
@@ -432,41 +421,6 @@ namespace Bluetooth {
         }
 
     public:
-        static bool Up(const uint16_t deviceId)
-        {
-            int descriptor;
-
-            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
-                TRACE_L1("Could not open a socket. Error: %d", errno);
-            }
-            else {
-                if ( (::ioctl(descriptor, HCIDEVUP, deviceId) == 0) || (errno == EALREADY) ) {
-                    return (true);
-                }
-                else {
-                    TRACE_L1("Could not bring up the interface [%d]. Error: %d", deviceId, errno);
-                }
-                ::close(descriptor);
-            }
-            return (false);
-        }
-        static bool Down(const uint16_t deviceId)
-        {
-            int descriptor;
-            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
-                TRACE_L1("Could not open a socket. Error: %d", errno);
-            }
-            else {
-                if ( (::ioctl(descriptor, HCIDEVDOWN, deviceId) == 0) || (errno == EALREADY) ) {
-                    return (true);
-                }
-                else {
-                    TRACE_L1("Could not bring up the interface [%d]. Error: %d\n", deviceId, errno);
-                }
-                ::close(descriptor);
-            }
-            return (false);
-        }
         bool IsScanning() const
         {
             return ((_state & SCANNING) != 0);
@@ -475,12 +429,9 @@ namespace Bluetooth {
         {
             return ((_state & ADVERTISING) != 0);
         }
-        uint32_t Config(const bool powered, const bool bondable, const bool advertising, const bool simplePairing, const bool lowEnergy, const bool secure);
         uint32_t Advertising(const bool enable, const uint8_t mode = 0);
         void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
-        uint32_t Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT);
-        uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
         void Abort();
 
     protected:
@@ -496,6 +447,286 @@ namespace Bluetooth {
         Core::StateTrigger<state> _state;
         struct hci_filter _filter;
     };
+
+    class ControlSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    private:
+        template<typename KEYTYPE>
+        class KeyListType {
+        public:
+            KeyListType() : _list() {
+            }
+            KeyListType(const KeyListType<KEYTYPE>& copy) : _list(copy._list) {
+            }
+            ~KeyListType() {
+            }
+
+            KeyListType<KEYTYPE>& operator= (const KeyListType<KEYTYPE>&) = delete;
+
+        public:
+            static uint8_t Length () {
+                return (KEYTYPE::Length());
+            }
+            void Add(const KEYTYPE& key) {
+                _list.push_back(key);
+            }
+            uint8_t Entries() const {
+                return (_list.size());
+            }
+            uint16_t Clone (const uint16_t length, uint8_t buffer[]) const {
+                uint16_t result = 0;
+                typename std::list<KEYTYPE>::const_iterator index (_list.begin());
+                while ( (index != _list.end()) && (result <= (length - KEYTYPE::Length())) ) {
+                    ::memcpy(&(buffer[result]), index->Data(), KEYTYPE::Length());
+                    result += KEYTYPE::Length();
+                    index++;
+                }
+                return (result);
+            }
+
+        private:
+            std::list<KEYTYPE> _list;
+        };
+
+    public:
+        class LinkKey {
+        public:
+            LinkKey() {
+                ::memset(&_key, 0, sizeof(_key));
+            }
+            LinkKey(const Address& address, const uint8_t key[16], const uint8_t pinLength, const uint8_t type) {
+                ::memset(&_key, 0, sizeof(_key));
+                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+                ::memcpy(&(_key.val), key, sizeof(_key.val));
+                _key.addr.type = BDADDR_BREDR;
+                _key.pin_len = pinLength;
+                _key.type = type;
+            }
+            LinkKey(const LinkKey& copy) {
+                ::memcpy(&_key, &copy._key, sizeof(_key));
+            }
+            ~LinkKey() {
+            }
+
+        public:
+            Address Locator() const {
+                return (_key.addr.bdaddr);
+            }
+            uint8_t Pin() const {
+                return(_key.pin_len);
+            }
+            uint8_t Type() const {
+                return(_key.type);
+            }
+            const uint8_t* Key() const {
+                return (_key.val);
+            }
+            const uint8_t* Data() const {
+                return (reinterpret_cast<const uint8_t*>(&_key));
+            }
+            static uint8_t Length() {
+                return (sizeof(struct mgmt_link_key_info));
+            }
+
+        private:
+            struct mgmt_link_key_info _key;
+        };
+
+        class LongTermKey {
+        public:
+            LongTermKey() {
+                ::memset(&_key, 0, sizeof(_key));
+            }
+            LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encodingSize, const uint16_t eDivider, const uint64_t random, const uint8_t value[16]) {
+                ::memset(&_key, 0, sizeof(_key));
+                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+                ::memcpy(&(_key.val), value, sizeof(_key.val));
+                _key.addr.type = type;
+                _key.master = master;
+                _key.type = authenticated;
+                _key.enc_size = encodingSize;
+                _key.ediv = htons(eDivider); // 16 bits
+                _key.rand = htonll(random); // 64 bits
+            }
+            LongTermKey(const LongTermKey& copy) {
+                ::memcpy(&_key, &copy._key, sizeof(_key));
+            }
+            ~LongTermKey() {
+            }
+
+        public:
+            Address Locator() const {
+                return (_key.addr.bdaddr);
+            }
+            uint8_t Master() const {
+                return(_key.master);
+            }
+            uint8_t Authenticated() const {
+                return(_key.type);
+            }
+            uint8_t EncodingSize() const {
+                return(_key.enc_size);
+            }
+            uint16_t Divider() const {
+                return(ntohs(_key.ediv));
+            }
+            uint64_t Random() const {
+                return(ntohll(_key.rand));
+            }
+            const uint8_t* Value() const {
+                return (_key.val);
+            }
+            const uint8_t* Data() const {
+                return (reinterpret_cast<const uint8_t*>(&_key));
+            }
+            static uint8_t Length() {
+                return (sizeof(struct mgmt_ltk_info));
+            }
+
+        private:
+            struct mgmt_ltk_info _key;
+        };
+
+        class IdentityKey {
+        public:
+            IdentityKey() {
+                ::memset(&_key, 0, sizeof(_key));
+            }
+            IdentityKey(const Address& address, const uint8_t addressType, const uint8_t value[16]) {
+                ::memset(&_key, 0, sizeof(_key));
+                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+                ::memcpy(&(_key.val), value, sizeof(_key.val));
+                _key.addr.type = addressType;
+            }
+            IdentityKey(const IdentityKey& copy) {
+                ::memcpy(&_key, &copy._key, sizeof(_key));
+            }
+            ~IdentityKey() {
+            }
+
+        public:
+            Address Locator() const {
+                return (_key.addr.bdaddr);
+            }
+            const uint8_t* Value() const {
+                return (_key.val);
+            }
+            const uint8_t* Data() const {
+                return (reinterpret_cast<const uint8_t*>(&_key));
+            }
+            static uint8_t Length() {
+                return (sizeof(struct mgmt_irk_info));
+            }
+
+        private:
+            struct mgmt_irk_info _key;
+        };
+
+        typedef KeyListType<LinkKey> LinkKeyList;
+        typedef KeyListType<LongTermKey> LongTermKeyList;
+        typedef KeyListType<IdentityKey> IdentityKeyList;
+
+        enum capabilities {
+            DISPLAY_ONLY = 0x00,
+            DISPLAY_YES_NO = 0x01,
+            KEYBOARD_ONLY = 0x02,
+            NO_INPUT_NO_OUTPUT = 0x03,
+            KEYBOARD_DISPLAY = 0x04,
+            INVALID = 0xFF
+        };
+
+
+    public:
+        ControlSocket(const ControlSocket&) = delete;
+        ControlSocket& operator=(const ControlSocket&) = delete;
+
+        ControlSocket()
+            : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, Core::NodeId(HCI_DEV_NONE, HCI_CHANNEL_CONTROL), Core::NodeId(), 1024, 1024)
+            , _deviceId(~0)
+        {
+            if (Core::SynchronousChannelType<Core::SocketPort>::Open(Core::infinite) != Core::ERROR_NONE) {
+            }
+        }
+        virtual ~ControlSocket()
+        {
+            Core::SynchronousChannelType<Core::SocketPort>::Close(Core::infinite);
+        }
+
+    public:
+        static void Devices(std::list<uint16_t>& list);
+
+        void DeviceId (const uint16_t deviceId) 
+        {
+            ASSERT((_deviceId == static_cast<uint16_t>(~0)) ^ (deviceId == static_cast<uint16_t>(~0)));
+
+            _deviceId = deviceId;
+        }
+        uint16_t DeviceId() const 
+        {
+            return (_deviceId);
+        }
+        static bool Up(const uint16_t deviceId)
+        {
+            bool result = false;
+            int descriptor;
+
+            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
+                TRACE_L1("Could not open a socket. Error: %d", errno);
+            }
+            else {
+                if ( (::ioctl(descriptor, HCIDEVUP, deviceId) == 0) || (errno == EALREADY) ) {
+                    result = true;
+                }
+                else {
+                    TRACE_L1("Could not bring up the interface [%d]. Error: %d", deviceId, errno);
+                }
+                ::close(descriptor);
+            }
+            return (result);
+        }
+        static bool Down(const uint16_t deviceId)
+        {
+            bool result = false;
+            int descriptor;
+            if ((descriptor = socket(AF_BLUETOOTH, SOCK_RAW, BTPROTO_HCI)) < 0) {
+                TRACE_L1("Could not open a socket. Error: %d", errno);
+            }
+            else {
+                if ( (::ioctl(descriptor, HCIDEVDOWN, deviceId) == 0) || (errno == EALREADY) ) {
+                    result = true;
+                }
+                else {
+                    TRACE_L1("Could not bring up the interface [%d]. Error: %d\n", deviceId, errno);
+                }
+                ::close(descriptor);
+            }
+            return (result);
+        }
+        uint32_t Power(bool enabled);
+        uint32_t Bondable(bool enabled);
+        uint32_t Advertising(bool enabled);
+        uint32_t SimplePairing(bool enabled);
+        uint32_t LowEnergy(bool enabled);
+        uint32_t Secure(bool enabled);
+        uint32_t LinkKeys(const LinkKeyList& keys, const bool debugKeys = false);
+        uint32_t LongTermKeys(const LongTermKeyList& keys);
+        uint32_t IdentityKeys(const IdentityKeyList& keys);
+        uint32_t Name(const string& shortName, const string longName);
+
+        uint32_t Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT);
+        uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
+
+    protected:
+        virtual void Update(const hci_event_hdr& eventData);
+
+    private:
+        virtual void StateChange() override;
+        virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData) override;
+
+    private:
+        uint16_t _deviceId;
+        struct hci_filter _filter;
+    };
+
 
 } // namespace Bluetooth
 
