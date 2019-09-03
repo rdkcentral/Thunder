@@ -327,6 +327,10 @@ namespace PluginHost {
             }
         }
 
+        if (serviceConfig.Environments.IsSet() == true) {
+             Core::SystemInfo::SetEnvironments(serviceConfig.Environments);
+        }
+
 #ifndef __WIN32__
         ::umask(serviceConfig.Process.Umask.Value());
 #endif

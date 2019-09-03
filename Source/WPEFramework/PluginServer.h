@@ -244,6 +244,7 @@ namespace PluginHost {
                 , Process()
                 , Input()
                 , Configs()
+                , Environments()
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -270,6 +271,7 @@ namespace PluginHost {
                 Add(_T("input"), &Input);
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
+                Add(_T("environment"), &Environments);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -301,6 +303,7 @@ namespace PluginHost {
             InputConfig Input;
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
+            Core::JSON::ArrayType<Core::SystemInfo::Environment> Environments;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
