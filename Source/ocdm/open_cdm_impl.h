@@ -718,8 +718,8 @@ public:
         TRACE_L1("Constructing the Session Client side: %p, (nil)", this);
     }
 
-    OpenCDMSession(OCDM::IAccessorOCDM* system, const string keySystem,
-        const std::string& initDataType,
+    OpenCDMSession(const string& keySystem,
+        const string& initDataType,
         const uint8_t* pbInitData, const uint16_t cbInitData,
         const uint8_t* pbCustomData,
         const uint16_t cbCustomData,
@@ -740,7 +740,7 @@ public:
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
     {
-
+        OpenCDMAccessor* system = OpenCDMAccessor::Instance();
         std::string bufferId;
         OCDM::ISession* realSession = nullptr;
 
@@ -754,8 +754,9 @@ public:
             OpenCDMSession::Session(realSession);
         }
     }
-    OpenCDMSession(const string keySystem, OpenCDMAccessor* system, const uint8_t drmHeader[],
-        uint32_t drmHeaderLength, OpenCDMSessionCallbacks* callbacks)
+    OpenCDMSession(const string& keySystem, const string& initDataType, const uint8_t pbInitData[],
+        uint32_t cbInitData, const uint8_t* pbCustomData, const uint16_t cbCustomData,
+        const LicenseType licenseType, OpenCDMSessionCallbacks* callbacks, void* userData, bool dummy)
         : _sessionId()
         , _session(nullptr)
         , _sessionExt(nullptr)
@@ -764,29 +765,29 @@ public:
         , _sink(this)
         , _URL()
         , _callback(callbacks)
-        , _userData(nullptr)
+        , _userData(userData)
         , _key(OCDM::ISession::StatusPending)
         , _error()
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
     {
+        OpenCDMAccessor* system = OpenCDMAccessor::Instance();
+        OCDM::ISession* realSession = nullptr;
 
-        OCDM::ISessionExt* realSession = nullptr;
-
-        system->CreateSessionExt(keySystem, drmHeader, drmHeaderLength, &_sink, _sessionId,
-            realSession);
+        system->CreateSession(keySystem, licenseType, initDataType, pbInitData,
+            cbInitData, pbCustomData, cbCustomData, &_sink,
+            _sessionId, realSession);
 
         if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
         } else {
-           _sessionExt = realSession;
+           _sessionExt = realSession->QueryInterface<OCDM::ISessionExt>();
 
            _decryptSession = new DataExchange(_sessionExt->BufferIdExt());
         }
 
-        OCDM::ISession * session = realSession->QueryInterface<OCDM::ISession>();
-        OpenCDMSession::Session(session);
-        session->Release();
+        Session(realSession);
+        realSession->Release();
     }
 
     explicit OpenCDMSession(OCDM::ISession* session)

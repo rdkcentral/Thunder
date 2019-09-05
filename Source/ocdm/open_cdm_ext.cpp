@@ -286,27 +286,15 @@ opencdm_construct_session(struct OpenCDMSystem* system,
 {
     ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
-    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
 
     TRACE_L1("Creating a Session for %s", system->m_keySystem.c_str());
 
-    // TODO: Since we are passing key system name anyway, not need for if here.
-    if (system->m_keySystem != "com.netflix.playready") {
-        if (system != nullptr) {
-            *session = new OpenCDMSession(
-                static_cast<OCDM::IAccessorOCDM*>(accessor), system->m_keySystem,
-                std::string(initDataType), initData, initDataLength, CDMData,
-                CDMDataLength, licenseType, callbacks, userData);
-
-            result = (*session != nullptr ? OpenCDMError::ERROR_NONE
-                                          : OpenCDMError::ERROR_INVALID_SESSION);
-        }
-    } else {
-        if (system != nullptr) {
-            *session = new OpenCDMSession(system->m_keySystem, accessor, initData, initDataLength,
-                callbacks);
-            result = OpenCDMError::ERROR_NONE;
-        }
+    if (system != nullptr) {
+        *session = new OpenCDMSession(system->m_keySystem, std::string(initDataType),
+        initData, initDataLength, CDMData,
+            CDMDataLength, licenseType, callbacks, userData /*, true */ );
+        result = (*session != nullptr ? OpenCDMError::ERROR_NONE
+                                        : OpenCDMError::ERROR_INVALID_SESSION);
     }
 
     TRACE_L1("Created a Session, result %p, %d", *session, result);
