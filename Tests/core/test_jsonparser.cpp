@@ -492,6 +492,54 @@ namespace Tests {
         });
     }
 
+    TEST(JSONParser, PositiveHexNumber)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "0X7B";
+        data.valueToPutInJson = "\"" + data.value + "\"";;
+        ExecutePrimitiveJsonTest<Core::JSON::HexUInt8>(data, true, [](const Core::JSON::HexUInt8& v) {
+            EXPECT_EQ(123u, v.Value());
+        });
+    }
+
+    TEST(JSONParser, NegativeHexNumber)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "-0X7B";
+        data.valueToPutInJson = "\"" + data.value + "\"";;
+        ExecutePrimitiveJsonTest<Core::JSON::HexSInt8>(data, true, [](const Core::JSON::HexSInt8& v) {
+            EXPECT_EQ(-123, v.Value());
+        });
+    }
+
+    TEST(JSONParser, PositiveOctNumber)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "0173";
+        data.valueToPutInJson = "\"" + data.value + "\"";;
+        ExecutePrimitiveJsonTest<Core::JSON::OctUInt8>(data, true, [](const Core::JSON::OctUInt8& v) {
+            EXPECT_EQ(123u, v.Value());
+        });
+    }
+
+    TEST(JSONParser, NegativeOctNumber)
+    {
+        TestData data;
+        data.key = "key";
+        data.keyToPutInJson = "\"" + data.key + "\"";
+        data.value = "-0173";
+        data.valueToPutInJson = "\"" + data.value + "\"";;
+        ExecutePrimitiveJsonTest<Core::JSON::OctSInt8>(data, true, [](const Core::JSON::OctSInt8& v) {
+            EXPECT_EQ(-123, v.Value());
+        });
+    }
+
     // FIXME: Disabled because JSON Parser does not support exponential notation
     // yet is supports hex so 'E' or 'e' in number is interpreted as hex.
     TEST(DISABLED_JSONParser, ExponentialNumber)

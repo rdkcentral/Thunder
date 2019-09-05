@@ -494,7 +494,7 @@ namespace Core {
                             offset = 2;
                         } else if (stream[loaded] == '-') {
                             _set |= NEGATIVE;
-                            offset = 3;
+                            offset = 2;
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
                             _set |= DECIMAL;
@@ -515,7 +515,7 @@ namespace Core {
                             _set |= HEXADECIMAL;
                         } else if (isdigit(stream[loaded])) {
                             _value = (stream[loaded] - '0');
-                            _set = (_set & NEGATIVE ? DECIMAL : OCTAL);
+                            _set |= (_set & NEGATIVE ? DECIMAL : OCTAL);
                             offset = 4;
                         } else if (((_set & UNDEFINED) != 0) && (stream[loaded] == 'l')) {
                             offset = 3;
