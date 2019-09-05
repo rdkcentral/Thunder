@@ -732,14 +732,13 @@ public:
         , _decryptSession(nullptr)
         , _refCount(1)
         , _sink(this)
-        , _callback(nullptr)
         , _URL()
+        , _callback(callbacks)
+        , _userData(userData)
+        , _key(OCDM::ISession::StatusPending)
         , _error()
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
-        , _key(OCDM::ISession::StatusPending)
-//        , _callback(callbacks)
-        , _userData(userData)
     {
 
         std::string bufferId;
@@ -763,14 +762,13 @@ public:
         , _decryptSession(nullptr)
         , _refCount(1)
         , _sink(this)
-        , _callback(nullptr)
         , _URL()
+        , _callback(callbacks)
+        , _userData(nullptr)
+        , _key(OCDM::ISession::StatusPending)
         , _error()
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
-        , _key(OCDM::ISession::StatusPending)
-//        , _callback(callbacks)
-        , _userData(nullptr)
     {
 
         OCDM::ISessionExt* realSession = nullptr;
@@ -791,8 +789,6 @@ public:
         session->Release();
     }
 
-
-
     explicit OpenCDMSession(OCDM::ISession* session)
         : _sessionId(session->SessionId())
         , _session(session)
@@ -811,14 +807,23 @@ public:
     }
     virtual ~OpenCDMSession()
     {
+        if (IsValid()) {
+           _session->Revoke(&_sink);
+        }
+
         if (_sessionExt != nullptr) {
            _sessionExt->Release();
+           _sessionExt = nullptr;
         }
+
         if (_session != nullptr) {
             _session->Release();
+            _session = nullptr;
         }
+
         if (_decryptSession != nullptr) {
             delete _decryptSession;
+            _decryptSession = nullptr;
         }
         TRACE_L1("Destructed the Session Client side: %p", this);
     }
@@ -894,84 +899,69 @@ public:
         }
         return (result);
     }
-    inline void Revoke(OCDM::ISession::ICallback* callback)
+
+    uint32_t SessionIdExt() const
     {
-
-        ASSERT(_session != nullptr);
-        ASSERT(callback != nullptr);
-
-        return (_session->Revoke(callback));
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->SessionIdExt();
     }
 
+    OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[],
+        uint32_t drmHeaderLength)
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->SetDrmHeader(drmHeader, drmHeaderLength);
+    }
 
+    OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t* challenge,
+        uint32_t& challengeSize,
+        uint32_t isLDL)
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->GetChallengeDataExt(challenge, challengeSize, isLDL);
+    }
 
-         uint32_t SessionIdExt() const {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->SessionIdExt();
-         }
+    OCDM::OCDM_RESULT CancelChallengeDataExt()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->CancelChallengeDataExt();
+    }
 
-         OCDM::OCDM_RESULT SetDrmHeader(const uint8_t drmHeader[],
-            uint32_t drmHeaderLength)
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->SetDrmHeader(drmHeader, drmHeaderLength);
-         }
+    OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[],
+        uint32_t licenseDataSize,
+        uint8_t* secureStopId)
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->StoreLicenseData(licenseData, licenseDataSize,
+            secureStopId);
+    }
 
-         OCDM::OCDM_RESULT GetChallengeDataExt(uint8_t* challenge,
-            uint32_t& challengeSize,
-            uint32_t isLDL)
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->GetChallengeDataExt(challenge, challengeSize, isLDL);
-         }
+    OCDM::OCDM_RESULT InitDecryptContextByKid()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->InitDecryptContextByKid();
+    }
 
-         OCDM::OCDM_RESULT CancelChallengeDataExt()
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->CancelChallengeDataExt();
-         }
+    OCDM::OCDM_RESULT CleanDecryptContext()
+    {
+        ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
+        return _sessionExt->CleanDecryptContext();
+    }
 
-         OCDM::OCDM_RESULT StoreLicenseData(const uint8_t licenseData[],
-            uint32_t licenseDataSize,
-            uint8_t* secureStopId)
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->StoreLicenseData(licenseData, licenseDataSize,
-                  secureStopId);
-         }
-
-         OCDM::OCDM_RESULT InitDecryptContextByKid()
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->InitDecryptContextByKid();
-         }
-
-         OCDM::OCDM_RESULT CleanDecryptContext()
-         {
-            ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-            return _sessionExt->CleanDecryptContext();
-         }
-
-      public:
-         inline KeyStatus Status(const uint8_t /* keyId */[],
-            uint8_t /* length */) const
-         {
-            //return (::CDMState(_key));
-            // TODO
-            return (KeyStatus)(0);
-         }
-         inline uint32_t Error() const { 
-            //return (_errorCode); 
-            // TODO
-            return 0;
-         }
-         inline uint32_t Error(const uint8_t keyId[], uint8_t length) const
-         {
-            //return (_sysError);
-            // TODO
-            return 0;
-         }
-
+public:
+    inline KeyStatus Status(const uint8_t /* keyId */[],
+        uint8_t /* length */) const
+    {
+        return (KeyStatus)_key;
+    }
+    inline uint32_t Error() const
+    {
+        return (_errorCode);
+    }
+    inline uint32_t Error(const uint8_t keyId[], uint8_t length) const
+    {
+        return (_sysError);
+    }
 
     // Event fired when a key message is successfully created.
     void OnKeyMessage(const std::string& keyMessage, const std::string& URL)

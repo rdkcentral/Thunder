@@ -21,8 +21,6 @@
 #include "Module.h"
 #include "open_cdm_impl.h"
 
-#include "ExtendedOpenCDMSession.h"
-
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 using namespace WPEFramework;

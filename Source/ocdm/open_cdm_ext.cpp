@@ -2,8 +2,6 @@
 
 #include "open_cdm_impl.h"
 
-#include "ExtendedOpenCDMSession.h"
-
 #define ASSERT_NOT_EXECUTED()                                         \
     {                                                                 \
         fprintf(stderr, "Error: didn't expect to use %s (%s:%d)!!\n", \
@@ -29,6 +27,7 @@ struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
     char versionStr[])
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     versionStr[0] = '\0';
 
@@ -44,6 +43,7 @@ OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
 OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystem* system,
     uint32_t* ldlLimit)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     std::string keySystem = system->m_keySystem;
     *ldlLimit = accessor->GetLdlSessionLimit(keySystem);
@@ -53,6 +53,7 @@ OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystem* system,
 bool opencdm_system_ext_is_secure_stop_enabled(
     struct OpenCDMSystem* system)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->IsSecureStopEnabled(system->m_keySystem);
 }
@@ -61,6 +62,7 @@ OpenCDMError
 opencdm_system_ext_enable_secure_stop(struct OpenCDMSystem* system,
     uint32_t use)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->EnableSecureStop(system->m_keySystem,
         use != 0);
@@ -68,6 +70,7 @@ opencdm_system_ext_enable_secure_stop(struct OpenCDMSystem* system,
 
 uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystem* system)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->ResetSecureStops(system->m_keySystem);
 }
@@ -77,6 +80,7 @@ OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystem* system,
     uint8_t idSize,
     uint32_t* count)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->GetSecureStopIds(system->m_keySystem, ids,
         idSize, *count);
@@ -88,6 +92,7 @@ OpenCDMError opencdm_system_ext_get_secure_stop(OpenCDMSystem* system,
     uint8_t rawData[],
     uint16_t* rawSize)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->GetSecureStop(
         system->m_keySystem, sessionID, sessionIDLength, rawData, *rawSize);
@@ -98,6 +103,7 @@ OpenCDMError opencdm_system_ext_commit_secure_stop(
     uint32_t sessionIDLength, const uint8_t serverResponse[],
     uint32_t serverResponseLength)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->CommitSecureStop(
         system->m_keySystem, sessionID, sessionIDLength, serverResponse,
@@ -107,6 +113,7 @@ OpenCDMError opencdm_system_ext_commit_secure_stop(
 OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
     uint64_t* time)
 {
+    ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
@@ -122,13 +129,20 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
 uint32_t
 opencdm_session_get_session_id_ext(struct OpenCDMSession* opencdmSession)
 {
-    ExtendedOpenCDMSession* session = static_cast<ExtendedOpenCDMSession*>(opencdmSession);
-    return session->SessionIdExt();
+    uint32_t result = OpenCDMError::ERROR_INVALID_SESSION;
+    ASSERT(opencdmSession != nullptr);
+
+    if (opencdmSession != nullptr) {
+       result = opencdmSession->SessionIdExt();
+    }
+
+    return result;
 }
 
 OpenCDMError opencdm_destruct_session_ext(OpenCDMSession* opencdmSession)
 {
     OpenCDMError result(OpenCDMError::ERROR_INVALID_SESSION);
+    ASSERT(opencdmSession != nullptr);
 
     if (opencdmSession != nullptr) {
         result = OpenCDMError::ERROR_NONE;
@@ -143,9 +157,8 @@ opencdm_session_set_drm_header(struct OpenCDMSession* opencdmSession,
     const uint8_t drmHeader[],
     uint32_t drmHeaderSize)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(opencdmSession);
-
-    return (OpenCDMError)sessionExt->SetDrmHeader(drmHeader, drmHeaderSize);
+    ASSERT(opencdmSession != nullptr);
+    return (OpenCDMError)opencdmSession->SetDrmHeader(drmHeader, drmHeaderSize);
 }
 
 OpenCDMError
@@ -153,48 +166,45 @@ opencdm_session_get_challenge_data(struct OpenCDMSession* mOpenCDMSession,
     uint8_t* challenge, uint32_t* challengeSize,
     uint32_t isLDL)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(mOpenCDMSession);
-
-    return (OpenCDMError)sessionExt->GetChallengeDataExt(challenge,
+    ASSERT(mOpenCDMSession != nullptr);
+    return (OpenCDMError)mOpenCDMSession->GetChallengeDataExt(challenge,
         *challengeSize, isLDL);
 }
 
 OpenCDMError
 opencdm_session_cancel_challenge_data(struct OpenCDMSession* mOpenCDMSession)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(mOpenCDMSession);
-
-    return (OpenCDMError)sessionExt->CancelChallengeDataExt();
+    ASSERT(mOpenCDMSession != nullptr);
+    return (OpenCDMError)mOpenCDMSession->CancelChallengeDataExt();
 }
 
 OpenCDMError opencdm_session_store_license_data(
     struct OpenCDMSession* mOpenCDMSession, const uint8_t licenseData[],
     uint32_t licenseDataSize, uint8_t* secureStopId)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(mOpenCDMSession);
-
-    return (OpenCDMError)sessionExt->StoreLicenseData(
+    ASSERT(mOpenCDMSession != nullptr);
+    return (OpenCDMError)mOpenCDMSession->StoreLicenseData(
         licenseData, licenseDataSize, secureStopId);
 }
 
 OpenCDMError opencdm_session_init_decrypt_context_by_kid(
     struct OpenCDMSession* mOpenCDMSession)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(mOpenCDMSession);
-    OpenCDMError output = (OpenCDMError)sessionExt->InitDecryptContextByKid();
+    ASSERT(mOpenCDMSession != nullptr);
+    OpenCDMError output = (OpenCDMError)mOpenCDMSession->InitDecryptContextByKid();
     return output;
 }
 
 OpenCDMError
 opencdm_session_clean_decrypt_context(struct OpenCDMSession* mOpenCDMSession)
 {
-    ExtendedOpenCDMSession* sessionExt = static_cast<ExtendedOpenCDMSession*>(mOpenCDMSession);
-
-    return (OpenCDMError)sessionExt->CleanDecryptContext();
+    ASSERT(mOpenCDMSession != nullptr);
+    return (OpenCDMError)mOpenCDMSession->CleanDecryptContext();
 }
 
 OpenCDMError opencdm_delete_key_store(struct OpenCDMSystem* system)
 {
+    ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
@@ -207,6 +217,7 @@ OpenCDMError opencdm_delete_key_store(struct OpenCDMSystem* system)
 
 OpenCDMError opencdm_delete_secure_store(struct OpenCDMSystem* system)
 {
+    ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
@@ -221,6 +232,7 @@ OpenCDMError opencdm_get_key_store_hash_ext(struct OpenCDMSystem* system,
     uint8_t keyStoreHash[],
     uint32_t keyStoreHashLength)
 {
+    ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
@@ -236,6 +248,7 @@ OpenCDMError opencdm_get_secure_store_hash_ext(struct OpenCDMSystem* system,
     uint8_t secureStoreHash[],
     uint32_t secureStoreHashLength)
 {
+    ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
@@ -271,6 +284,7 @@ opencdm_construct_session(struct OpenCDMSystem* system,
     OpenCDMSessionCallbacks* callbacks, void* userData,
     struct OpenCDMSession** session)
 {
+    ASSERT(system != nullptr);
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
     OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
 
