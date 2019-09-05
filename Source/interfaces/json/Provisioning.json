@@ -60,6 +60,9 @@
   "methods": {
     "provision": {
       "summary": "Trigers platform provision process",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
       "errors": [
         {
           "description": "Provisioning in progress",
