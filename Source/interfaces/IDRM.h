@@ -348,7 +348,7 @@ public:
     IMediaKeysExt(void) {}
     virtual ~IMediaKeysExt(void) {}
 
-    virtual time_t GetDrmSystemTime() const = 0;
+    virtual uint64_t GetDrmSystemTime() const = 0;
 
     // Destroy a MediaKeySession instance.
     virtual CDMi_RESULT DestroyMediaKeySessionExt(

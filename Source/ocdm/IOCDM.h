@@ -185,7 +185,7 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
 
     enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_EXTENSION };
 
-    virtual time_t GetDrmSystemTime(const std::string& keySystem) const = 0;
+    virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const = 0;
 
     virtual OCDM_RESULT CreateSessionExt(
         const std::string keySystem,

@@ -433,7 +433,7 @@ public:
             sessionId, session));
     }
 
-    virtual time_t GetDrmSystemTime(const std::string& keySystem) const override
+    virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const override
     {
         ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
         return _remoteExt->GetDrmSystemTime(keySystem);

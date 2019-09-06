@@ -118,9 +118,7 @@ OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        time_t cTime;
-        cTime = accessor->GetDrmSystemTime(system->m_keySystem);
-        *time = static_cast<uint64_t>(cTime);
+        *time = accessor->GetDrmSystemTime(system->m_keySystem);
         result = ERROR_NONE;
     }
     return (result);
