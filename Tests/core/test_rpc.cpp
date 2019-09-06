@@ -17,44 +17,41 @@ namespace Exchange {
         virtual uint32_t GetPid() = 0;
     };
 }
-}
 
-using namespace WPEFramework;
-using namespace std;
+namespace Tests {
 
-class Adder : public Exchange::IAdder
-{
-public:
-    Adder()
-        : m_value(0)
+    class Adder : public Exchange::IAdder
     {
-    }
+    public:
+        Adder()
+            : m_value(0)
+        {
+        }
 
-    uint32_t GetValue()
-    {
-        return m_value;
-    }
+        uint32_t GetValue()
+        {
+            return m_value;
+        }
 
-    void Add(uint32_t value)
-    {
-        m_value += value;
-    }
+        void Add(uint32_t value)
+        {
+            m_value += value;
+        }
 
-    uint32_t GetPid()
-    {
-        return getpid();
-    }
+        uint32_t GetPid()
+        {
+            return getpid();
+        }
 
-    BEGIN_INTERFACE_MAP(Adder)
-        INTERFACE_ENTRY(Exchange::IAdder)
-    END_INTERFACE_MAP
+        BEGIN_INTERFACE_MAP(Adder)
+            INTERFACE_ENTRY(Exchange::IAdder)
+        END_INTERFACE_MAP
 
-private:
-    uint32_t m_value;
-};
+    private:
+        uint32_t m_value;
+    };
 
-// Proxystubs.
-namespace WPEFramework {
+    // Proxystubs.
     using namespace Exchange;
 
     // -----------------------------------------------------------------
@@ -199,90 +196,91 @@ namespace WPEFramework {
         } ProxyStubRegistration;
 
     } // namespace
-}
 
-namespace {
-class ExternalAccess : public RPC::Communicator
-{
-private:
-    ExternalAccess() = delete;
-    ExternalAccess(const ExternalAccess &) = delete;
-    ExternalAccess & operator=(const ExternalAccess &) = delete;
-
-public:
-    ExternalAccess(const Core::NodeId & source)
-        : RPC::Communicator(source, _T(""))
+    namespace {
+    class ExternalAccess : public RPC::Communicator
     {
-        Open(Core::infinite);
-    }
+    private:
+        ExternalAccess() = delete;
+        ExternalAccess(const ExternalAccess &) = delete;
+        ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-    ~ExternalAccess()
-    {
-        Close(Core::infinite);
-    }
-
-private:
-    virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-    {
-        void* result = nullptr;
-
-        if (interfaceId == Exchange::IAdder::ID) {
-            Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
-            result = newAdder;
+    public:
+        ExternalAccess(const Core::NodeId & source)
+            : RPC::Communicator(source, _T(""))
+        {
+            Open(Core::infinite);
         }
 
-        return result;
+        ~ExternalAccess()
+        {
+            Close(Core::infinite);
+        }
+
+    private:
+        virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+        {
+            void* result = nullptr;
+
+            if (interfaceId == Exchange::IAdder::ID) {
+                Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
+                result = newAdder;
+            }
+
+            return result;
+        }
+    };
     }
-};
+
+    TEST(Core_RPC, adder)
+    {
+       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+          Core::NodeId remoteNode(g_connectorName.c_str());
+
+          ExternalAccess communicator(remoteNode);
+
+          testAdmin.Sync("setup server");
+
+          testAdmin.Sync("done testing");
+
+          communicator.Close(Core::infinite);
+       };
+
+       IPTestAdministrator testAdmin(otherSide);
+
+       testAdmin.Sync("setup server");
+
+       {
+          Core::NodeId remoteNode(g_connectorName.c_str());
+
+          Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
+          Core::ProxyType<RPC::CommunicatorClient> client(
+               Core::ProxyType<RPC::CommunicatorClient>::Create(
+                   remoteNode,
+                   Core::ProxyType<Core::IIPCServer>(engine)
+               ));
+          engine->Announcements(client->Announcement());
+
+          // Create remote instance of "IAdder".
+          Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
+
+          // Perform some arithmatic.
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
+          adder->Add(20);
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
+          adder->Add(22);
+          EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
+
+          // Make sure other side is indeed running in other process.
+          EXPECT_NE(adder->GetPid(), (uint32_t)getpid());
+
+          adder->Release();
+
+          client->Close(Core::infinite);
+       }
+
+       testAdmin.Sync("done testing");
+       Core::Singleton::Dispose();
+    }
 }
-
-TEST(Core_RPC, adder)
-{
-   IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-      Core::NodeId remoteNode(g_connectorName.c_str());
-
-      ExternalAccess communicator(remoteNode);
-
-      testAdmin.Sync("setup server");
-
-      testAdmin.Sync("done testing");
-
-      communicator.Close(Core::infinite);
-   };
-
-   IPTestAdministrator testAdmin(otherSide);
-
-   testAdmin.Sync("setup server");
-
-   {
-      Core::NodeId remoteNode(g_connectorName.c_str());
-
-      Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
-      Core::ProxyType<RPC::CommunicatorClient> client(
-           Core::ProxyType<RPC::CommunicatorClient>::Create(
-               remoteNode,
-               Core::ProxyType<Core::IIPCServer>(engine)
-           ));
-      engine->Announcements(client->Announcement());
-
-      // Create remote instance of "IAdder".
-      Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
-
-      // Perform some arithmatic.
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(0));
-      adder->Add(20);
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(20));
-      adder->Add(22);
-      EXPECT_EQ(adder->GetValue(), static_cast<uint32_t>(42));
-
-      // Make sure other side is indeed running in other process.
-      EXPECT_NE(adder->GetPid(), getpid());
-
-      adder->Release();
-
-      client->Close(Core::infinite);
-   }
-
-   testAdmin.Sync("done testing");
-   Core::Singleton::Dispose();
 }
