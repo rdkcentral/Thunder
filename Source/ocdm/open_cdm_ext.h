@@ -40,8 +40,7 @@ opencdm_system_ext_get_ldl_session_limit(struct OpenCDMSystem* system,
  * \param system Extended OCDM system handle.
  * \return True if enabled, fals otherwise.
  */
-// TODO: bool in C, is this possible?
-bool opencdm_system_ext_is_secure_stop_enabled(struct OpenCDMSystem* system);
+uint32_t opencdm_system_ext_is_secure_stop_enabled(struct OpenCDMSystem* system);
 
 /**
  * Enables/disables Secure Stop.

@@ -14,7 +14,7 @@ struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
 
     // TODO: can these two be put together?
-    // TODO: this shouldn't always be done
+    // TODO: this shouldn't always be done (not every system is a system ext)
     accessor->CreateSystemExt(keySystem);
     accessor->InitSystemExt(keySystem);
 
@@ -50,7 +50,7 @@ OpenCDMError opencdm_system_ext_get_ldl_session_limit(OpenCDMSystem* system,
     return ERROR_NONE;
 }
 
-bool opencdm_system_ext_is_secure_stop_enabled(
+uint32_t opencdm_system_ext_is_secure_stop_enabled(
     struct OpenCDMSystem* system)
 {
     ASSERT(system != nullptr);

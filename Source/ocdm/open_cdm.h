@@ -223,7 +223,6 @@ EXTERNAL OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
  * \param time Output variable that will contain DRM system time.
  * \return Zero if successful, non-zero on error.
  */
-// TODO: use nowhere time_t, all uint64_t
 EXTERNAL OpenCDMError opencdm_system_get_drm_time(struct OpenCDMSystem* system,
     uint64_t* time);
 
