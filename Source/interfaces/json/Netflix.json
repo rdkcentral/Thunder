@@ -47,6 +47,9 @@
   "methods": {
     "factoryreset": {
       "summary": "Does Netflix factory reset",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
       "errors": [
         {
           "description": "Netflix is unavailable",
@@ -65,6 +68,9 @@
             "example": "config"
           }
         }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
       },
       "errors": [
         {
