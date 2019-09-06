@@ -172,57 +172,71 @@ void HCISocket::Abort()
         hci_filter_set_event(EVT_CMD_STATUS, &_filter);
         hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
         hci_filter_set_event(EVT_LE_META_EVENT, &_filter);
-        hci_filter_set_event(EVT_LE_CONN_COMPLETE, &_filter);
-
-        // Interesting why this needs to be set.... I hope not!!
-        // hci_filter_set_opcode(0, &_filter);
 
         setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter));
     }
 }
 
+uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
+    const uint8_t* buffer = info.data;
+    std::string store;
+    uint8_t offset = 0;
+    uint8_t type = 0;
+
+    while (((offset + buffer[offset]) <= info.length) && (buffer[offset+1] != 0)) {
+
+        if (((buffer[offset + 1] == EIR_NAME_SHORT) && (name.empty() == true)) || (buffer[offset + 1] == EIR_NAME_COMPLETE)) {
+            store = std::string(reinterpret_cast<const char*>(&(buffer[offset + 2])), buffer[offset] - 1);
+            type = buffer[offset + 1];
+        }
+        offset += (1 /* length */ + 1 /* type */ + buffer[offset] /* size */);
+    }
+    if (type != 0) {
+        name = Core::ToString(store.c_str());
+    }
+    return (type);
+}
+
 /* virtual */ uint16_t HCISocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
+    uint16_t result = 0;
     const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(dataFrame[1]));
-    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(dataFrame[1 + HCI_EVENT_HDR_SIZE]));
 
-    if ( (hdr->evt != EVT_LE_META_EVENT) || (reinterpret_cast<const evt_le_meta_event*>(ptr)->subevent != EVT_LE_ADVERTISING_REPORT) ) {
-        Update(*hdr);
+    // printf ("GENERAL RECEIVED: ");
+    // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
+
+    if ( (availableData > sizeof(hci_event_hdr)) && (availableData > (sizeof(hci_event_hdr) + hdr->plen)) ) {
+        const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(dataFrame[1 + sizeof(hci_event_hdr)]));
+
+        result = 1 + sizeof(hci_event_hdr) + hdr->plen;
+
+        if ( (hdr->evt != EVT_LE_META_EVENT) || (reinterpret_cast<const evt_le_meta_event*>(ptr)->subevent != EVT_LE_ADVERTISING_REPORT) ) {
+            Update(*hdr);
+        }
+        else {
+            const uint8_t* segment = reinterpret_cast<const evt_le_meta_event*>(ptr)->data;
+            uint8_t  entries = segment[0];
+            segment++;
+
+            for (uint8_t loop = 0; loop < entries; loop++) {
+                const le_advertising_info* info = reinterpret_cast<const le_advertising_info*>(segment);
+                Update (*info);
+                segment = &(segment[info->length + sizeof(le_advertising_info)]);
+            }
+        }
     }
     else {
-        const le_advertising_info* advertisingInfo = reinterpret_cast<const le_advertising_info*>(&(reinterpret_cast<const evt_le_meta_event*>(ptr)->data[1]));
-        uint16_t offset = 0;
-        const uint8_t* buffer = advertisingInfo->data;
-        const char* name = nullptr;
-        uint8_t pos = 0;
-
-        while (((offset + buffer[offset]) <= advertisingInfo->length) && (buffer[offset] != 0)) {
-
-            if (((buffer[offset + 1] == EIR_NAME_SHORT) && (name == nullptr)) || (buffer[offset + 1] == EIR_NAME_COMPLETE)) {
-                name = reinterpret_cast<const char*>(&(buffer[offset + 2]));
-                pos = buffer[offset] - 1;
-            }
-            offset += (buffer[offset] + 1);
-        }
-
-        if ((name == nullptr) || (pos == 0)) {
-            TRACE_L1("Entry[%s] has no name.", Address(advertisingInfo->bdaddr).ToString().c_str());
-            Discovered(true, Address(advertisingInfo->bdaddr), _T("[Unknown]"));
-        } else {
-            Discovered(true, Address(advertisingInfo->bdaddr), string(name, pos));
-        }
+        TRACE_L1(_T("EVT_HCI: Message too short => (hci_event_hdr)")); 
     }
 
-    return (availableData);
+    return (result);
 }
 
-void HCISocket::SetOpcode(const uint16_t opcode)
+/* virtual */ void HCISocket::Update(const hci_event_hdr&)
 {
-    hci_filter_set_opcode(opcode, &_filter);
-    setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter));
 }
 
-/* virtual */ void HCISocket::Update(const hci_event_hdr& eventData)
+/* virtual */ void HCISocket::Update(const le_advertising_info&)
 {
 }
 
@@ -320,14 +334,14 @@ private:
                 const mgmt_ev_cmd_status* data = reinterpret_cast<const mgmt_ev_cmd_status*>(&(stream[sizeof(mgmt_hdr)])); 
                 if (htobs(data->opcode) == OPCODE) { 
                     result = sizeof(mgmt_hdr);
-                    if ( (data->status == 0) && (len >= sizeof(mgmt_ev_cmd_status)) ) { 
-                        result += sizeof(mgmt_ev_cmd_status); 
-                        _error  = Core::ERROR_NONE; 
-                    } 
-                    else { 
-                        result += (len < sizeof(mgmt_ev_cmd_status) ? len : sizeof(mgmt_ev_cmd_status));
+                    if ( len < sizeof(mgmt_ev_cmd_status)) { 
+                        result += len;
                         _error  = Core::ERROR_GENERAL; 
-                        TRACE(Trace::Information, (_T(">>EVT_MGMT_STATUS: %04X Error: %d"), data->opcode, data->status )); 
+                        TRACE_L1(_T("EVT_MGMT_STATUS: Message too short => %04X Error: %d"), data->opcode, data->status); 
+                    }
+                    else {
+                        result += sizeof(mgmt_ev_cmd_status); 
+                        _error  = (data->status == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL); 
                     } 
                 }
             }
@@ -338,7 +352,7 @@ private:
                     result = sizeof(mgmt_hdr);
                     if (len < sizeof(mgmt_ev_cmd_complete)) { 
                         _error = Core::ERROR_GENERAL; 
-                        TRACE(Trace::Information, (_T(">>EVT_MGMT_COMPLETED: %04X Error: %d"), data->opcode, _error)); 
+                        TRACE_L1(_T("EVT_MGMT_COMPLETED: Message too short => %04X Error: %d"), data->opcode, _error); 
                         result += len; 
                     } else { 
                         _inboundSize = std::min(
@@ -592,6 +606,8 @@ uint32_t ControlSocket::Pair(const Address& remote, const uint8_t type, const ca
     command->addr.type = type;
     command->io_cap = cap;
 
+    printf("Pairing type %d, Address: %s, Caps: %d\n", type, remote.ToString().c_str(), cap);
+
     return (Exchange(MANAGMENT_TIMEOUT, command, command));
 }
 
@@ -611,14 +627,6 @@ uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
         hci_filter_clear(&_filter);
-        hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
-        hci_filter_set_event(EVT_CMD_STATUS, &_filter);
-        hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
-        hci_filter_set_event(EVT_LE_META_EVENT, &_filter);
-        hci_filter_set_event(EVT_LE_CONN_COMPLETE, &_filter);
-
-        // Interesting why this needs to be set.... I hope not!!
-        // hci_filter_set_opcode(0, &_filter);
 
         setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter));
     }
@@ -626,18 +634,22 @@ uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
 
 /* virtual */ uint16_t ControlSocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
-    if (availableData > sizeof(hci_event_hdr)) {
-        const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(dataFrame[1]));
+    // uint16_t length = htobs(hdr->len);
+    // printf ("Header: %d, Len: %d, Available: %d\n", sizeof(mgmt_hdr), length, availableData);
+    // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
+
+    if (availableData > sizeof(mgmt_hdr)) {
+        const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(dataFrame);
         Update(*hdr);
     }
     else {
-        TRACE(Trace::Information, (_T("]]CONTROLSOCKET: Failure received a too small frame")));
+        TRACE_L1(_T("EVT_MGMT: Message too short => (hci_event_hdr)")); 
     }
 
     return (availableData);
 }
 
-/* virtual */ void ControlSocket::Update(const hci_event_hdr& eventData)
+/* virtual */ void ControlSocket::Update(const mgmt_hdr&)
 {
 }
 

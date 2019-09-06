@@ -191,8 +191,8 @@ namespace Bluetooth {
                     ::memcpy(stream, &(_buffer[_offset]), result);
                     _offset += result;
 
-                    printf ("SEND: ");
-                    for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    // printf ("SEND: ");
+                    // for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
                 }
                 return (result);
             }
@@ -218,18 +218,21 @@ namespace Bluetooth {
                     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(stream[1 + HCI_EVENT_HDR_SIZE]));
                     uint16_t len = (length - (1 + HCI_EVENT_HDR_SIZE));
 
-                    printf ("RECEIVE: ");
-                    for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    // printf ("RECEIVE: ");
+                    // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
                     if (hdr->evt == EVT_CMD_STATUS) {
                         const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
                         if (htobs(cs->opcode) == OPCODE) {
                             if (cs->status == 0) {
-                                _error = Core::ERROR_NONE;
+                                // See if we are waiting for an LE subevent...
+                                if (RESPONSECODE == static_cast<uint8_t>(~0)) {
+                                    _error = Core::ERROR_NONE;
+                                }
                             }
                             else {
                                 _error =  Core::ERROR_GENERAL;
-                                TRACE(Trace::Information, (_T(">>EVT_CMD_STATUS: %X-%03X Error: %d"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status ));
+                                printf(_T(">>EVT_CMD_STATUS: %X-%03X Error: %d\n"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status);
                             }
                             result = length;
                         }
@@ -238,11 +241,14 @@ namespace Bluetooth {
                         if (htobs(cc->opcode) == OPCODE) {
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
                                 _error = Core::ERROR_GENERAL;
-                                TRACE(Trace::Information, (_T(">>EVT_CMD_COMPLETED: %X-%03X Error: %d"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error));
+                                printf(_T(">>EVT_CMD_COMPLETED: %X-%03X Error: %d\n"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error);
                             } else {
-                                uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
-                                ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
-                                _error = Core::ERROR_NONE;
+                                // See if we are waiting for an LE subevent...
+                                if (RESPONSECODE == static_cast<uint8_t>(~0)) {
+                                    _error = Core::ERROR_NONE;
+                                    uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
+                                    ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
+                                }
                             }
                             result = length;
                         }
@@ -359,7 +365,7 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
                 ConnectLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t, EVT_LE_CONN_COMPLETE>
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t>
                 EncryptLE;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, evt_remote_name_req_complete>
@@ -433,8 +439,10 @@ namespace Bluetooth {
         void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
+        uint8_t Name(const le_advertising_info& info, string& name) const;
 
     protected:
+        virtual void Update(const le_advertising_info& eventData);
         virtual void Update(const hci_event_hdr& eventData);
         virtual void Discovered(const bool lowEnergy, const Bluetooth::Address& address, const string& name);
 
@@ -716,7 +724,7 @@ namespace Bluetooth {
         uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
 
     protected:
-        virtual void Update(const hci_event_hdr& eventData);
+        virtual void Update(const mgmt_hdr& eventData);
 
     private:
         virtual void StateChange() override;
