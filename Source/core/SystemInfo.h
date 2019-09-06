@@ -2,7 +2,6 @@
 #define __SYSTEMINFO_H
 
 #include "Module.h"
-#include "JSON.h"
 #include "Portability.h"
 #include "Time.h"
 
@@ -17,42 +16,8 @@ namespace Core {
         extern "C" const char* MODULE_NAME;
         extern "C" EXTERNAL uint32_t Reboot();
     }
+
     class EXTERNAL SystemInfo {
-    public:
-    class Environment : public Core::JSON::Container {
-    public:
-        Environment()
-            : Core::JSON::Container()
-            , Key()
-            , Value()
-        {
-                Add(_T("key"), &Key);
-                Add(_T("value"), &Value);
-            }
-            Environment(const Environment& copy)
-                : Core::JSON::Container()
-                , Key(copy.Key)
-                , Value(copy.Value)
-            {
-                Add(_T("env"), &Key);
-                Add(_T("value"), &Value);
-            }
-            virtual ~Environment()
-            {
-            }
-            Environment& operator=(const Environment& RHS)
-            {
-                Key = RHS.Key;
-                Value = RHS.Value;
-
-                return (*this);
-            }
-
-        public:
-            Core::JSON::String Key;
-            Core::JSON::String Value;
-        };
-
     private:
         SystemInfo(const SystemInfo&) = delete;
         SystemInfo& operator=(const SystemInfo&) = delete;
@@ -69,7 +34,6 @@ namespace Core {
         static bool GetEnvironment(const string& name, string& value);
         static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);
-        static void SetEnvironments(const Core::JSON::ArrayType<Environment>& environments);
 
 #ifdef __WIN32__
         static SystemInfo& Instance();

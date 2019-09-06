@@ -519,20 +519,6 @@ namespace Core {
         return SetEnvironment(name, value.c_str(), forced);
     }
 
-    /* static */ void SystemInfo::SetEnvironments(const Core::JSON::ArrayType<SystemInfo::Environment>& environments)
-    {
-        bool status = true;
-        Core::JSON::ArrayType<Environment>::ConstIterator index(environments.Elements());
-        while ((index.Next() == true) && (status == true)) {
-            if ((index.Current().Key.IsSet() == true) && (index.Current().Value.IsSet() == true)) {
-                status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), index.Current().Value.Value(), true);
-                if (status != true) {
-                    TRACE_L1("Failure in setting Key:Value:[%s]:[%s]\n", index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
-                }
-            }
-        }
-    }
-
 #ifdef __WIN32__
     /* static */ SystemInfo& SystemInfo::Instance()
     {

@@ -1,4 +1,5 @@
 #include "PluginServer.h"
+#include "EnvironmentConfig.h"
 // #include "Portability.h"
 
 #ifndef __WIN32__
@@ -17,6 +18,7 @@ namespace PluginHost {
 
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+    PluginHost::EnvironmentConfig::VariableMap PluginHost::EnvironmentConfig::_variables;
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -328,7 +330,8 @@ namespace PluginHost {
         }
 
         if (serviceConfig.Environments.IsSet() == true) {
-             Core::SystemInfo::SetEnvironments(serviceConfig.Environments);
+            EnvironmentConfig::Initialize(serviceConfig);
+            EnvironmentConfig::SetEnvironments(serviceConfig, serviceConfig.Environments);
         }
 
 #ifndef __WIN32__
