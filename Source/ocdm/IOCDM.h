@@ -187,15 +187,6 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
 
     virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const = 0;
 
-    virtual OCDM_RESULT CreateSessionExt(
-        const std::string keySystem,
-        const uint8_t drmHeader[] /* @length:drmHeaderLength */,
-        uint32_t drmHeaderLength,
-        ::OCDM::ISession::ICallback* callback,
-        std::string& sessionId /* @out */,
-        ISessionExt*& session /* @out */)
-        = 0;
-
     virtual std::string GetVersionExt(const std::string& keySystem) const = 0;
 
     virtual uint32_t GetLdlSessionLimit(const std::string& keySystem) const = 0;

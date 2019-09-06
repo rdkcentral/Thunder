@@ -422,17 +422,6 @@ public:
         _adminLock.Unlock();
     }
 
-    virtual OCDM::OCDM_RESULT
-    CreateSessionExt(const string keySystem, const uint8_t drmHeader[], uint32_t drmHeaderLength,
-        ::OCDM::ISession::ICallback* callback,
-        std::string& sessionId,
-        OCDM::ISessionExt*& session) override
-    {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return (_remoteExt->CreateSessionExt(keySystem, drmHeader, drmHeaderLength, callback,
-            sessionId, session));
-    }
-
     virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const override
     {
         ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
