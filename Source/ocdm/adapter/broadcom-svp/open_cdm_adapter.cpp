@@ -120,10 +120,12 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
 
         uint8_t *mappedKeyID = nullptr;
         uint32_t mappedKeyIDSize = 0;
-        if (mappedBuffer(keyID, false, &mappedKeyID, &mappedKeyIDSize) == false) {
-            TRACE_L1("Invalid keyID buffer.");
-            result = ERROR_INVALID_DECRYPT_BUFFER;
-            goto exit;
+        if (keyID != nullptr) {
+            if (mappedBuffer(keyID, false, &mappedKeyID, &mappedKeyIDSize) == false) {
+                TRACE_L1("Invalid keyID buffer.");
+                result = ERROR_INVALID_DECRYPT_BUFFER;
+                goto exit;
+            }
         }
 
         B_Secbuf_Info secureBufferInfo;
@@ -178,7 +180,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         // opaqueDataEnc no need as more. OCDM will acces it via its token
         B_Secbuf_FreeDesc(opaqueDataEnc);
 
-        result = opencdm_session_decrypt(session, reinterpret_cast<uint8_t*>(rpcSecureBufferInformation), sizeOfRPCInfo, mappedIV, mappedIVSize, mappedKeyID, mappedKeyIDSize);
+        result = opencdm_session_decrypt(session, reinterpret_cast<uint8_t*>(rpcSecureBufferInformation), sizeOfRPCInfo, mappedIV, mappedIVSize, mappedKeyID, mappedKeyIDSize, initWithLast15);
         if(result != ERROR_NONE) {
             TRACE_L1("adapter_session_decrypt: opencdm_session_decrypt failed!");
             goto exit;
