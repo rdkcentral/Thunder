@@ -307,7 +307,7 @@ public:
 
     virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t* secureStopId) = 0;
 
-    virtual CDMi_RESULT InitDecryptContextByKid() = 0;
+    virtual CDMi_RESULT SelectKeyId(const uint8_t keyLength, const uint8_t keyId[]) = 0;
 
     virtual CDMi_RESULT CleanDecryptContext() = 0;
 };

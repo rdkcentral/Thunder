@@ -202,8 +202,8 @@ systems (e.g. PlayReady 2.0).
 * \param opencdmSession OCDM Session.
  * \return Zero if successful, non-zero otherwise.
  */
-OpenCDMError opencdm_session_init_decrypt_context_by_kid(
-    struct OpenCDMSession* mOpenCDMSession);
+OpenCDMError opencdm_session_select_key_id(
+    struct OpenCDMSession* mOpenCDMSession, uint8_t keyLenght, const uint8_t keyId[]);
 
 /**
  * Tear down the drm system

@@ -926,10 +926,10 @@ public:
             secureStopId);
     }
 
-    OCDM::OCDM_RESULT InitDecryptContextByKid()
+    OCDM::OCDM_RESULT SelectKeyId(const uint8_t keyLength, const uint8_t keyId[])
     {
         ASSERT(_sessionExt && "This method only works on OCDM::ISessionExt implementations.");
-        return _sessionExt->InitDecryptContextByKid();
+        return _sessionExt->SelectKeyId(keyLength, keyId);
     }
 
     OCDM::OCDM_RESULT CleanDecryptContext()

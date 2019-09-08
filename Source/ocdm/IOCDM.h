@@ -129,7 +129,10 @@ struct ISessionExt : virtual public WPEFramework::Core::IUnknown {
         uint8_t* secureStopId /* @out @length:16 */)
         = 0;
 
-    virtual OCDM_RESULT InitDecryptContextByKid() = 0;
+    virtual OCDM_RESULT SelectKeyId(const uint8_t keyLength,
+        const uint8_t keyId[] /* @length:keyLength */) 
+        = 0;
+
 
     virtual OCDM_RESULT CleanDecryptContext() = 0;
 };

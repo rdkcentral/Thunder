@@ -185,16 +185,15 @@ OpenCDMError opencdm_session_store_license_data(
         licenseData, licenseDataSize, secureStopId);
 }
 
-OpenCDMError opencdm_session_init_decrypt_context_by_kid(
-    struct OpenCDMSession* mOpenCDMSession)
+OpenCDMError opencdm_session_select_key_id(
+    struct OpenCDMSession* mOpenCDMSession, uint8_t keyLenght, const uint8_t keyId[])
 {
     ASSERT(mOpenCDMSession != nullptr);
-    OpenCDMError output = (OpenCDMError)mOpenCDMSession->InitDecryptContextByKid();
+    OpenCDMError output = (OpenCDMError)mOpenCDMSession->SelectKeyId(keyLenght, keyId);
     return output;
 }
 
-OpenCDMError
-opencdm_session_clean_decrypt_context(struct OpenCDMSession* mOpenCDMSession)
+OpenCDMError opencdm_session_clean_decrypt_context(struct OpenCDMSession* mOpenCDMSession)
 {
     ASSERT(mOpenCDMSession != nullptr);
     return (OpenCDMError)mOpenCDMSession->CleanDecryptContext();
