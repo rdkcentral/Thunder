@@ -245,7 +245,7 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
 }
 
 // --------------------------------------------------------------------------------------------------
-// ControlSocket !!!
+// ManagementSocket !!!
 // --------------------------------------------------------------------------------------------------
 
 // ------------------------------------------------------------------------
@@ -341,6 +341,7 @@ private:
                     }
                     else {
                         result += sizeof(mgmt_ev_cmd_status); 
+                        printf ("EVT_MGMT_STATUS: Error %d\n", data->status);
                         _error  = (data->status == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL); 
                     } 
                 }
@@ -447,20 +448,23 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_SET_SECURE_CONN, mgmt_mode, uint32_t> SecureConnections;
     typedef ManagementFixedType<MGMT_OP_SET_LE, mgmt_mode, uint32_t> LowEnergy;
     typedef ManagementFixedType<MGMT_OP_SET_ADVERTISING, mgmt_mode, uint32_t> Advertising;
-    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, Core::Void> Pair;
+    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, mgmt_rp_pair_device> Pair;
     typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, Core::Void> Unpair;
     typedef ManagementFixedType<MGMT_OP_READ_INDEX_LIST, Core::Void, uint16_t[33]> Indexes;
     typedef ManagementFixedType<MGMT_OP_SET_LOCAL_NAME, mgmt_cp_set_local_name, mgmt_cp_set_local_name> DeviceName;
-    typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, ControlSocket::LinkKeyList> LinkKeys;
-    typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, ControlSocket::LongTermKeyList> LongTermKeys;
-    typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, ControlSocket::IdentityKeyList> IdentityKeys;
+    typedef ManagementFixedType<MGMT_OP_SET_PRIVACY, mgmt_cp_set_privacy, Core::Void> Privacy;
+    typedef ManagementFixedType<MGMT_OP_BLOCK_DEVICE, mgmt_cp_block_device, mgmt_addr_info> Block;
+    typedef ManagementFixedType<MGMT_OP_UNBLOCK_DEVICE, mgmt_cp_unblock_device, mgmt_addr_info> Unblock;
+    typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, ManagementSocket::LinkKeyList> LinkKeys;
+    typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, ManagementSocket::LongTermKeyList> LongTermKeys;
+    typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, ManagementSocket::IdentityKeyList> IdentityKeys;
 
 }
 
-/* static */ void ControlSocket::Devices(std::list<uint16_t>& adapters)
+/* static */ void ManagementSocket::Devices(std::list<uint16_t>& adapters)
 {
     Management::Indexes message(HCI_DEV_NONE);
-    ControlSocket globalPort;
+    ManagementSocket globalPort;
 
     if (globalPort.Exchange(MANAGMENT_TIMEOUT, message, message) == Core::ERROR_NONE) {
         if (message.Result() == Core::ERROR_NONE) {
@@ -471,7 +475,7 @@ namespace Management {
     }
 }
 
-uint32_t ControlSocket::Name(const string& shortName, const string longName)
+uint32_t ManagementSocket::Name(const string& shortName, const string longName)
 {
     Management::DeviceName message(_deviceId);
     std::string shortName2(Core::ToString(shortName.substr(0, sizeof(message->short_name) - 1)));
@@ -485,7 +489,7 @@ uint32_t ControlSocket::Name(const string& shortName, const string longName)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::Power(const bool enabled)
+uint32_t ManagementSocket::Power(const bool enabled)
 {
     Management::Power message(_deviceId);
 
@@ -496,7 +500,44 @@ uint32_t ControlSocket::Power(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::Bondable(const bool enabled)
+uint32_t ManagementSocket::Block(const Address::type type, const Address& address)
+{
+    Management::Block message(_deviceId);
+
+    message->addr.type = type;
+    ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+uint32_t ManagementSocket::Unblock(const Address::type type, const Address& address)
+{
+    Management::Unblock message(_deviceId);
+
+    message->addr.type = type;
+    ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16])
+{
+    Management::Privacy message(_deviceId);
+
+    message->privacy = mode;
+    ::memcpy (message->irk, identity, sizeof(message->irk));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+
+uint32_t ManagementSocket::Bondable(const bool enabled)
 {
     Management::Bondable message(_deviceId);
 
@@ -507,7 +548,7 @@ uint32_t ControlSocket::Bondable(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::Advertising(const bool enabled)
+uint32_t ManagementSocket::Advertising(const bool enabled)
 {
     Management::Advertising message(_deviceId);
 
@@ -518,7 +559,7 @@ uint32_t ControlSocket::Advertising(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::SimplePairing(const bool enabled)
+uint32_t ManagementSocket::SimplePairing(const bool enabled)
 {
     Management::SimplePairing message(_deviceId);
 
@@ -529,7 +570,7 @@ uint32_t ControlSocket::SimplePairing(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::LowEnergy(const bool enabled)
+uint32_t ManagementSocket::LowEnergy(const bool enabled)
 {
     Management::LowEnergy message(_deviceId);
 
@@ -540,7 +581,7 @@ uint32_t ControlSocket::LowEnergy(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::Secure(const bool enabled)
+uint32_t ManagementSocket::Secure(const bool enabled)
 {
     Management::SecureConnections message(_deviceId);
 
@@ -551,7 +592,7 @@ uint32_t ControlSocket::Secure(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ControlSocket::LinkKeys(const LinkKeyList& keys, const bool debugKeys) 
+uint32_t ManagementSocket::LinkKeys(const LinkKeyList& keys, const bool debugKeys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -567,7 +608,7 @@ uint32_t ControlSocket::LinkKeys(const LinkKeyList& keys, const bool debugKeys)
     return (result);
 }
 
-uint32_t ControlSocket::LongTermKeys(const LongTermKeyList& keys) 
+uint32_t ManagementSocket::LongTermKeys(const LongTermKeyList& keys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -582,7 +623,7 @@ uint32_t ControlSocket::LongTermKeys(const LongTermKeyList& keys)
     return (result);
 }
 
-uint32_t ControlSocket::IdentityKeys(const IdentityKeyList& keys) 
+uint32_t ManagementSocket::IdentityKeys(const IdentityKeyList& keys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -590,14 +631,14 @@ uint32_t ControlSocket::IdentityKeys(const IdentityKeyList& keys)
         Management::IdentityKeys message = Management::IdentityKeys::Instance(_deviceId, keys);
         message->irk_count = htobs(keys.Entries());
 
-        result = Exchange(MANAGMENT_TIMEOUT, message);
+        result = Exchange(MANAGMENT_TIMEOUT, message, message);
         result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
     }
 
     return (result);
 }
 
-uint32_t ControlSocket::Pair(const Address& remote, const uint8_t type, const capabilities cap)
+uint32_t ManagementSocket::Pair(const Address& remote, const uint8_t type, const capabilities cap)
 {
     Management::Pair command(_deviceId);
 
@@ -606,12 +647,11 @@ uint32_t ControlSocket::Pair(const Address& remote, const uint8_t type, const ca
     command->addr.type = type;
     command->io_cap = cap;
 
-    printf("Pairing type %d, Address: %s, Caps: %d\n", type, remote.ToString().c_str(), cap);
-
-    return (Exchange(MANAGMENT_TIMEOUT, command, command));
+    // Pairing takes longer, so allow for a larget timeout...
+    return (Exchange(40 * MANAGMENT_TIMEOUT, command, command));
 }
 
-uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
+uint32_t ManagementSocket::Unpair(const Address& remote, const uint8_t type)
 {
     Management::Unpair command(_deviceId);
     command.Clear();
@@ -622,7 +662,7 @@ uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
     return(Exchange(MANAGMENT_TIMEOUT, command, command));
 }
 
-/* virtual */ void ControlSocket::StateChange() 
+/* virtual */ void ManagementSocket::StateChange() 
 {
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
@@ -632,7 +672,7 @@ uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
     }
 }
 
-/* virtual */ uint16_t ControlSocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
+/* virtual */ uint16_t ManagementSocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
     // uint16_t length = htobs(hdr->len);
     // printf ("Header: %d, Len: %d, Available: %d\n", sizeof(mgmt_hdr), length, availableData);
@@ -649,7 +689,7 @@ uint32_t ControlSocket::Unpair(const Address& remote, const uint8_t type)
     return (availableData);
 }
 
-/* virtual */ void ControlSocket::Update(const mgmt_hdr&)
+/* virtual */ void ManagementSocket::Update(const mgmt_hdr&)
 {
 }
 

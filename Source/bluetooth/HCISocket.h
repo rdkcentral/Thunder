@@ -37,9 +37,11 @@ namespace Bluetooth {
         {
         }
 
-        static constexpr uint8_t BREDR_ADDRESS = 0x00;
-        static constexpr uint8_t LE_PUBLIC_ADDRESS = 0x01;
-        static constexpr uint8_t LE_RANDOM_ADDRESS = 0x02;
+        enum type : uint8_t {
+            BREDR_ADDRESS = 0x00,
+            LE_PUBLIC_ADDRESS = 0x01,
+            LE_RANDOM_ADDRESS = 0x02
+        };
 
     public:
         Address& operator=(const Address& rhs)
@@ -456,7 +458,7 @@ namespace Bluetooth {
         struct hci_filter _filter;
     };
 
-    class ControlSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         template<typename KEYTYPE>
         class KeyListType {
@@ -642,19 +644,18 @@ namespace Bluetooth {
             INVALID = 0xFF
         };
 
-
     public:
-        ControlSocket(const ControlSocket&) = delete;
-        ControlSocket& operator=(const ControlSocket&) = delete;
+        ManagementSocket(const ManagementSocket&) = delete;
+        ManagementSocket& operator=(const ManagementSocket&) = delete;
 
-        ControlSocket()
+        ManagementSocket()
             : Core::SynchronousChannelType<Core::SocketPort>(SocketPort::RAW, Core::NodeId(HCI_DEV_NONE, HCI_CHANNEL_CONTROL), Core::NodeId(), 1024, 1024)
             , _deviceId(~0)
         {
             if (Core::SynchronousChannelType<Core::SocketPort>::Open(Core::infinite) != Core::ERROR_NONE) {
             }
         }
-        virtual ~ControlSocket()
+        virtual ~ManagementSocket()
         {
             Core::SynchronousChannelType<Core::SocketPort>::Close(Core::infinite);
         }
@@ -715,6 +716,9 @@ namespace Bluetooth {
         uint32_t SimplePairing(bool enabled);
         uint32_t LowEnergy(bool enabled);
         uint32_t Secure(bool enabled);
+        uint32_t Block(const Address::type type, const Address& address);
+        uint32_t Unblock(const Address::type type, const Address& address);
+        uint32_t Privacy(const uint8_t mode, const uint8_t identity[16]);
         uint32_t LinkKeys(const LinkKeyList& keys, const bool debugKeys = false);
         uint32_t LongTermKeys(const LongTermKeyList& keys);
         uint32_t IdentityKeys(const IdentityKeyList& keys);
