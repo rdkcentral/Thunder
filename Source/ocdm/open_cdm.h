@@ -322,6 +322,16 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 EXTERNAL const char* opencdm_session_id(const struct OpenCDMSession* session);
 
 /**
+ * Checks if a session has a specific keyid. Will check both BE/LE
+ * \param session \ref OpenCDMSession instance.
+ * \param length Length of key ID buffer (in bytes).
+ * \param keyId Key ID.
+ * \return 1 if keyID found else 0.
+ */
+EXTERNAL uint32_t opencdm_session_has_key_id(struct OpenCDMSession* session, 
+    const uint8_t length, const uint8_t keyId[]);
+
+/**
  * Returns status of a particular key assigned to a session.
  * \param session \ref OpenCDMSession instance.
  * \param keyId Key ID.

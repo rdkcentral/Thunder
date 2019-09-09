@@ -214,6 +214,30 @@ const char* opencdm_session_buffer_id(const struct OpenCDMSession* session)
 }
 
 /**
+ * Checks if a session has a specific keyid. Will check both BE/LE
+ * \param session \ref OpenCDMSession instance.
+ * \param length Length of key ID buffer (in bytes).
+ * \param keyId Key ID.
+ * \return 1 if keyID found else 0.
+ */
+uint32_t opencdm_session_has_key_id(struct OpenCDMSession* session, 
+    const uint8_t length, const uint8_t keyId[])
+{
+    bool result = false;
+    if (session != nullptr) {
+        string sessionId = session->SessionId();
+        result = OpenCDMAccessor::Instance()->HasKeyId(sessionId, 
+            length, keyId);
+            
+        //TODO: remove this hack and enable the code commented out 
+        //      once the serrver can send kid to the OCDM client
+        //result = session->HasKeyId(length, keyId); 
+    }
+    
+    return result ? 1 : 0;
+}
+
+/**
  * Returns status of a particular key assigned to a session.
  * \param session \ref OpenCDMSession instance.
  * \param keyId Key ID.

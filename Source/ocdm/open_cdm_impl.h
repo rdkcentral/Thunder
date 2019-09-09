@@ -210,6 +210,30 @@ public:
         _singleton = nullptr;
         TRACE_L1("Destructed the OpenCDMAccessor %p", this);
     }
+    bool HasKeyId(const string& sessionId, const uint8_t keyLength, const uint8_t keyId[]) const 
+    {
+        bool result = false;
+
+        TRACE_L1("%s:%d", __FUNCTION__, __LINE__);
+
+        _adminLock.Lock();
+
+        KeyMap::const_iterator session(_sessionKeys.find(sessionId));
+
+        if (session != _sessionKeys.end()) 
+        {
+            KeyId paramKey(keyId, keyLength);
+            KeyList::const_iterator index = session->second.begin();
+
+            while ((index != session->second.end()) && (*index != paramKey)) { index++; }
+
+            result = (index != session->second.end());
+
+            TRACE_L1("%d keys available for session %s", session->second.size() , sessionId.c_str());
+        }
+        _adminLock.Unlock();
+        return (result);
+    }
     bool WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
         const uint32_t waitTime,
         const OCDM::ISession::KeyStatus status) const
