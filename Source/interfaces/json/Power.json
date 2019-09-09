@@ -66,6 +66,9 @@
       "params": {
         "$ref": "#/definitions/power"
       },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
       "errors": [
         {
           "description": "General failure",

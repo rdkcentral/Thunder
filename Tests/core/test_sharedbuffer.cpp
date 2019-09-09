@@ -1,10 +1,10 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/SharedBuffer.h>
+#include <core/core.h>
 
-using namespace WPEFramework;
-using namespace WPEFramework::Core;
+namespace WPEFramework {
+namespace Tests {
 
 const uint32_t g_bufferSize = 8 * 1024;
 const uint16_t g_administrationSize = 64;
@@ -23,54 +23,70 @@ void CleanUpBuffer()
 TEST(Core_SharedBuffer, simpleSet)
 {
    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-      CleanUpBuffer();
+       CleanUpBuffer();
 
-      SharedBuffer buff01(g_bufferName, g_bufferSize, g_administrationSize);
-      buff01.RequestProduce(Core::infinite);
-      
-      testAdmin.Sync("setup producer");
+       uint32_t result;
+       Core::SharedBuffer buff01(g_bufferName,
+           Core::File::USER_READ    |
+           Core::File::USER_WRITE   |
+           Core::File::USER_EXECUTE |
+           Core::File::GROUP_READ   |
+           Core::File::GROUP_WRITE  |
+           Core::File::OTHERS_READ  |
+           Core::File::OTHERS_WRITE,
+           g_bufferSize,
+           g_administrationSize);
+       result = buff01.RequestProduce(Core::infinite);
+       EXPECT_EQ(result, Core::ERROR_NONE);
 
-      testAdmin.Sync("setup consumer");
-      
-      uint8_t * buffer = buff01.Buffer();
-      uint64_t bufferSize = buff01.Size();
-      ASSERT_EQ(bufferSize, g_bufferSize);
+       testAdmin.Sync("setup producer");
 
-      buffer[0] = 42;
-      buffer[1] = 43;
-      buffer[2] = 44;
+       testAdmin.Sync("setup consumer");
 
-      buff01.Produced();
-      
-      testAdmin.Sync("consumer done");
+       uint8_t * buffer = buff01.Buffer();
+       uint64_t bufferSize = buff01.Size();
+       EXPECT_EQ(bufferSize, g_bufferSize);
+
+       buffer[0] = 42;
+       buffer[1] = 43;
+       buffer[2] = 44;
+
+       result = buff01.Produced();
+       EXPECT_EQ(result, Core::ERROR_NONE);
+
+       testAdmin.Sync("consumer done");
    };
 
    // This side (tested) acts as client (consumer).
    IPTestAdministrator testAdmin(otherSide);
 
    {
-      // In extra scope, to make sure "buff01" is destructed before producer.
-      bool result = testAdmin.Sync("setup producer");
-      ASSERT_TRUE(result);
+       // In extra scope, to make sure "buff01" is destructed before producer.
+       testAdmin.Sync("setup producer");
 
-      SharedBuffer buff01(g_bufferName);
+       uint32_t result;
+       Core::SharedBuffer buff01(g_bufferName);
 
-      testAdmin.Sync("setup consumer");
+       testAdmin.Sync("setup consumer");
 
-      buff01.RequestConsume(Core::infinite);
-      
-      uint8_t * buffer = buff01.Buffer();
-      uint64_t bufferSize = buff01.Size();
-      ASSERT_EQ(bufferSize, g_bufferSize);
+       result = buff01.RequestConsume(Core::infinite);
+       EXPECT_EQ(result, Core::ERROR_NONE);
 
-      EXPECT_EQ(buffer[0], 42);
-      EXPECT_EQ(buffer[1], 43);
-      EXPECT_EQ(buffer[2], 44);
+       uint8_t * buffer = buff01.Buffer();
+       uint64_t bufferSize = buff01.Size();
+       EXPECT_EQ(bufferSize, g_bufferSize);
 
-      buff01.Consumed();
+       EXPECT_EQ(buffer[0], 42);
+       EXPECT_EQ(buffer[1], 43);
+       EXPECT_EQ(buffer[2], 44);
+
+       buff01.Consumed();
+       EXPECT_EQ(result, Core::ERROR_NONE);
    }
 
    testAdmin.Sync("consumer done");
 
    Core::Singleton::Dispose();
+}
+}
 }
