@@ -37,11 +37,11 @@ namespace Bluetooth {
         {
         }
 
-        enum type : uint8_t {
-            BREDR_ADDRESS = 0x00,
-            LE_PUBLIC_ADDRESS = 0x01,
-            LE_RANDOM_ADDRESS = 0x02
-        };
+        enum type : uint8_t { 
+            BREDR_ADDRESS = 0x00, 
+            LE_PUBLIC_ADDRESS = 0x01, 
+            LE_RANDOM_ADDRESS = 0x02 
+        }; 
 
     public:
         Address& operator=(const Address& rhs)

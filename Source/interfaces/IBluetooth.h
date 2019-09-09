@@ -31,9 +31,21 @@ namespace Exchange {
                 virtual IDevice* Current() = 0;
             };
 
+            struct ICallback : virtual public Core::IUnknown {
+
+                enum { ID = ID_BLUETOOTH_CALLBACK };
+
+                virtual ~ICallback () {}
+                
+                virtual void Updated () = 0;
+            };
+                
+
             virtual ~IDevice() {}
 
-            virtual string Address() const = 0;
+            virtual uint8_t Type () const = 0;
+            virtual string LocalId() const = 0;
+            virtual string RemoteId() const = 0;
             virtual string Name() const = 0;
             virtual bool IsDiscovered() const = 0;
             virtual bool IsPaired() const = 0;
@@ -42,6 +54,7 @@ namespace Exchange {
             virtual uint32_t Unpair() = 0;
             virtual uint32_t Connect() = 0;
             virtual uint32_t Disconnect(const uint16_t reason) = 0;
+            virtual uint32_t Callback(ICallback* callback) = 0;
         };
 
         struct INotification : virtual public Core::IUnknown {
