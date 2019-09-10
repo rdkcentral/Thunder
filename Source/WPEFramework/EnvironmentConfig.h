@@ -32,8 +32,10 @@ namespace PluginHost {
                     if (status == true) {
                         status = Core::SystemInfo::SetEnvironment(index.Current().Key.Value(), value, index.Current().Override.Value());
                         if (status != true) {
-                            TRACE_L1("Failure in setting Key:Value:[%s]:[%s]\n", index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
+                            SYSLOG(Logging::Startup, (_T("Failure in setting Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
                         }
+                    } else {
+                        SYSLOG(Logging::Startup, (_T("Failure in Substituting Value of Key:Value:[%s]:[%s]\n"), index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str()));
                     }
                 }
             }
