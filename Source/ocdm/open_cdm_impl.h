@@ -268,7 +268,7 @@ public:
                 sessionId = session->first;
                 _adminLock.Unlock();
             }
-        } while ((result == false) && (timeOut < Core::Time::Now().Ticks()));
+        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
 
         return (result);
     }
