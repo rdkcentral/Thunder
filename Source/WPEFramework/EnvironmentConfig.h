@@ -74,12 +74,12 @@ namespace PluginHost {
                             begin = end;
                         } else {
                             status = false;
-                            TRACE_L1("%s variable is not given between the delimeter:[%c]\n", Delimeter);
+                            TRACE_L1("variable is not given between the delimeter:[%c]\n", Delimeter);
                             break;
                         }
                     } else {
                         status = false;
-                        TRACE_L1("There is no closing delemeter-%s for the value\n", Delimeter, value.c_str());
+                        TRACE_L1("There is no closing delimeter-%c for the value:%s\n", Delimeter, value.c_str());
                         break;
                     }
                 }
