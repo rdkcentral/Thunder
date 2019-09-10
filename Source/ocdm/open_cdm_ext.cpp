@@ -13,14 +13,10 @@ struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
 
-    // TODO: can these two be put together?
-    // TODO: this shouldn't always be done (not every system is a system ext)
-    accessor->CreateSystemExt(keySystem);
-    accessor->InitSystemExt(keySystem);
-
+     
     OpenCDMSystem* output = new OpenCDMSystem;
     output->m_keySystem = keySystem;
-    
+   
     return output;
 }
 

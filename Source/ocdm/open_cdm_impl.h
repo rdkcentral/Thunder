@@ -319,27 +319,6 @@ public:
     }
 
     virtual OCDM::OCDM_RESULT
-    CreateSystemExt(const std::string& keySystem) override
-    {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->CreateSystemExt(keySystem);
-    }
-
-    virtual OCDM::OCDM_RESULT
-    InitSystemExt(const std::string& keySystem) override
-    {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->InitSystemExt(keySystem);
-    }
-
-    virtual OCDM::OCDM_RESULT
-    TeardownSystemExt(const std::string& keySystem) override
-    {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->TeardownSystemExt(keySystem);
-    }
-
-    virtual OCDM::OCDM_RESULT
     DeleteKeyStore(const std::string& keySystem) override
     {
         ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");

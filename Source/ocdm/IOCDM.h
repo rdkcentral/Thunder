@@ -195,12 +195,6 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
         const uint8_t serverResponse[] /* @length:serverResponseLength */,
         uint32_t serverResponseLength)
         = 0;
-    
-    virtual OCDM_RESULT CreateSystemExt(const std::string& keySystem) = 0;
-
-    virtual OCDM_RESULT InitSystemExt(const std::string& keySystem) = 0;
-
-    virtual OCDM_RESULT TeardownSystemExt(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT DeleteKeyStore(const std::string& keySystem) = 0;
 

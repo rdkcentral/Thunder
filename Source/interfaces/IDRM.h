@@ -383,13 +383,6 @@ public:
         uint32_t serverResponseLength)
         = 0;
 
-    // TODO: rename to something like "SetStoreDirs"
-    virtual CDMi_RESULT CreateSystemExt() = 0;
-
-    virtual CDMi_RESULT InitSystemExt() = 0;
-
-    virtual CDMi_RESULT TeardownSystemExt() = 0;
-
     virtual CDMi_RESULT DeleteKeyStore() = 0;
 
     virtual CDMi_RESULT DeleteSecureStore() = 0;
