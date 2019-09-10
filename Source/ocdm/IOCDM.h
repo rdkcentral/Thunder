@@ -158,14 +158,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     SetServerCertificate(const string keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
-
-    virtual void Register(INotification* sink) = 0;
-
-    virtual void Unregister(INotification* sink) = 0;
-
-    virtual ISession* Session(const std::string sessionId) = 0;
-
-    virtual ISession* Session(const uint8_t keyId[] /* @length:length */, const uint8_t length) = 0;
 };
 
 struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
@@ -203,7 +195,7 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
         const uint8_t serverResponse[] /* @length:serverResponseLength */,
         uint32_t serverResponseLength)
         = 0;
-
+    
     virtual OCDM_RESULT CreateSystemExt(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT InitSystemExt(const std::string& keySystem) = 0;
