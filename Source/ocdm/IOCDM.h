@@ -139,20 +139,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM };
 
-    struct INotification : virtual public WPEFramework::Core::IUnknown {
-
-        enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_NOTIFICATION };
-
-        virtual ~INotification() {}
-
-        virtual void Create(const string& sessionId) = 0;
-        virtual void Destroy(const string& sessionId) = 0;
-        virtual void KeyChange(const string& sessionId, const uint8_t keyId[] /* @length:length */,
-            const uint8_t length,
-            const OCDM::ISession::KeyStatus status)
-            = 0;
-    };
-
     virtual ~IAccessorOCDM() {}
 
     virtual bool IsTypeSupported(const std::string keySystem,

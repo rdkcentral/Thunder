@@ -119,12 +119,7 @@ struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
 
     std::string sessionId;
     if ((accessor != nullptr) && (accessor->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable, sessionId) == true)) {
-        OCDM::ISession* session(accessor->Session(sessionId));
-
-        if (session != nullptr) {
-            result = new OpenCDMSession(session);
-            session->Release();
-        }
+        result = accessor->Session(sessionId);
     }
 
     return (result);
@@ -164,7 +159,7 @@ OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session)
 
     if (session != nullptr) {
         result = OpenCDMError::ERROR_NONE;
-        delete session;
+        session->Release();
     }
 
     return (result);
@@ -226,13 +221,7 @@ uint32_t opencdm_session_has_key_id(struct OpenCDMSession* session,
 {
     bool result = false;
     if (session != nullptr) {
-        string sessionId = session->SessionId();
-        result = OpenCDMAccessor::Instance()->HasKeyId(sessionId, 
-            length, keyId);
-            
-        //TODO: remove this hack and enable the code commented out 
-        //      once the serrver can send kid to the OCDM client
-        //result = session->HasKeyId(length, keyId); 
+        result = session->HasKeyId(length, keyId);
     }
     
     return result ? 1 : 0;
@@ -251,7 +240,7 @@ KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
     KeyStatus result(KeyStatus::InternalError);
 
     if (session != nullptr) {
-        result = session->Status(keyId, length);
+        result = CDMState(session->Status(length, keyId));
     }
 
     return (result);
@@ -383,3 +372,107 @@ OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     return (result);
 }
 
+
+bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
+        const uint32_t waitTime,
+        const OCDM::ISession::KeyStatus status,
+        std::string& sessionId) const
+    {
+        bool result = false;
+        KeyId paramKey(keyId, keyLength);
+        uint64_t timeOut(Core::Time::Now().Add(waitTime).Ticks());
+
+        do {
+            _adminLock.Lock();
+
+            KeyMap::const_iterator session(_sessionKeys.begin());
+
+            while ((session != _sessionKeys.end()) && (session->second->HasKeyId(keyLength, keyId) == false)) {
+                session++;
+            }
+            if (session != _sessionKeys.end()) {
+                result = (session->second->Status(keyLength, keyId) == status);
+            }
+
+            if (result == false) {
+                _interested++;
+
+                _adminLock.Unlock();
+
+                TRACE_L1("Waiting for KeyId: %s", paramKey.ToString().c_str());
+
+                uint64_t now(Core::Time::Now().Ticks());
+
+                if (now < timeOut) {
+                    _signal.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
+                }
+
+                Core::InterlockedDecrement(_interested);
+            } else {
+                sessionId = session->first;
+                _adminLock.Unlock();
+            }
+        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
+
+        return (result);
+    }
+    OpenCDMSession* OpenCDMAccessor::Session(const std::string sessionId) 
+    {
+        OpenCDMSession* result = nullptr;
+        KeyMap::iterator index = _sessionKeys.find(sessionId);
+
+        if(index != _sessionKeys.end()){
+            result = index->second;
+            result->AddRef();
+        }
+
+        return (result);
+    }
+
+    OpenCDMSession* OpenCDMAccessor::Session(const uint8_t keyId[], const uint8_t length)
+    {
+        OpenCDMSession* result = nullptr;
+        KeyMap::iterator session(_sessionKeys.begin());
+
+            while ((session != _sessionKeys.end()) && (session->second->HasKeyId(length, keyId) == false)) {
+                session++;
+            }
+            if (session != _sessionKeys.end()) {
+                result = session->second;
+                result->AddRef();
+            }
+        return (result);
+    }
+    void OpenCDMAccessor::AddSession(OpenCDMSession* session)
+    {
+        string sessionId = session->SessionId();
+
+        _adminLock.Lock();
+
+        KeyMap::iterator index(_sessionKeys.find(sessionId));
+
+        if (index == _sessionKeys.end()) {
+            _sessionKeys.insert(std::pair<string, OpenCDMSession*>(sessionId, session));
+        } else {
+            TRACE_L1("Same session created, again ???? Keep the old one than. [%s]",
+                sessionId.c_str());
+        }
+
+        _adminLock.Unlock();
+    }
+    void OpenCDMAccessor::RemoveSession(const string& sessionId)
+    {
+
+        _adminLock.Lock();
+
+        KeyMap::iterator index(_sessionKeys.find(sessionId));
+
+        if (index != _sessionKeys.end()) {
+            _sessionKeys.erase(index);
+        } else {
+            TRACE_L1("A session is destroyed of which we were not aware [%s]",
+                sessionId.c_str());
+        }
+
+        _adminLock.Unlock();
+    }
