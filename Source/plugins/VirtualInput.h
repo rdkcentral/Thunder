@@ -2,6 +2,7 @@
 #define __VIRTUAL_INPUT__
 
 #include "Module.h"
+#include "../virtualinput/IVirtualInput.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -234,32 +235,9 @@ namespace PluginHost {
         };
 
     public:
-        enum actiontype {
-            RELEASED = 0,
-            PRESSED = 1,
-            REPEAT = 2,
-            COMPLETED = 3,
-            KEY_RELEASED = RELEASED,
-            KEY_PRESSED = PRESSED,
-            KEY_REPEAT = REPEAT,
-            KEY_COMPLETED = COMPLETED,
-            AXIS_HORIZONTAL_MOTION = 4,
-            AXIS_VERTICAL_MOTION = 5,
-            POINTER_RELEASED = 6,
-            POINTER_PRESSED = 7,
-            POINTER_HORIZONTAL_MOTION = 8,
-            POINTER_VERTICAL_MOTION = 9,
-            TOUCH_RELEASED = 10,
-            TOUCH_PRESSED = 11,
-            TOUCH_HORIZONTAL_POSITION = 12,
-            TOUCH_VERTICAL_POSITION = 13,
-            TOUCH_INDEX = 14,
-            TOUCH_COMPLETED = 15
-        };
-
         struct INotifier {
             virtual ~INotifier() {}
-            virtual void Dispatch(const actiontype action, const uint32_t code) = 0;
+            virtual void Dispatch(const IVirtualInput::KeyData::type type, const uint32_t code) = 0;
         };
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
 
@@ -474,12 +452,13 @@ namespace PluginHost {
         virtual void LookupChanges(const string&) = 0;
 
         void RepeatKey(const uint32_t code);
-        void ModifierKey(const actiontype type, const uint16_t modifiers);
-        bool SendModifier(const actiontype type, const enumModifier mode);
-        void AdministerAndSendKey(const actiontype type, const uint32_t code);
-        void DispatchRegisteredKey(const actiontype type, uint32_t code);
+        void ModifierKey(const IVirtualInput::KeyData::type type, const uint16_t modifiers);
+        bool SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode);
+        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code);
 
-        virtual void SendKey(const actiontype type, const uint32_t code) = 0;
+        virtual void Send(const IVirtualInput::KeyData& data) = 0;
+        virtual void Send(const IVirtualInput::MouseData& data) = 0;
+        virtual void Send(const IVirtualInput::TouchData& data) = 0;
 
         inline uint16_t Modifiers(const Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier>>& modifiers) const
         {
@@ -526,7 +505,9 @@ namespace PluginHost {
         virtual void MapChanges(ChangeIterator& updated);
 
     private:
-        virtual void SendKey(const actiontype type, const uint32_t code);
+        virtual void Send(const IVirtualInput::KeyData& data) override;
+        virtual void Send(const IVirtualInput::MouseData& data) override;
+        virtual void Send(const IVirtualInput::TouchData& data) override;
         bool Updated(ChangeIterator& updated);
         virtual void LookupChanges(const string&);
 
@@ -538,35 +519,28 @@ namespace PluginHost {
     };
 #endif
 
-    class EXTERNAL IPCKeyboardInput : public VirtualInput {
+    class EXTERNAL IPCUserInput : public VirtualInput {
     private:
-        struct KeyData {
-            uint32_t Action;
-            uint32_t Code;
-        };
-
-        typedef Core::IPCMessageType<0, KeyData, Core::Void> KeyMessage;
-        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20>> NameMessage;
-
-        IPCKeyboardInput(const IPCKeyboardInput&) = delete;
-        IPCKeyboardInput& operator=(const IPCKeyboardInput&) = delete;
+        IPCUserInput(const IPCUserInput&) = delete;
+        IPCUserInput& operator=(const IPCUserInput&) = delete;
 
     public:
-        class KeyboardLink : public Core::IDispatchType<Core::IIPC> {
+        class InputDataLink : public Core::IDispatchType<Core::IIPC> {
         private:
-            KeyboardLink(const KeyboardLink&) = delete;
-            KeyboardLink& operator=(const KeyboardLink&) = delete;
+            InputDataLink(const InputDataLink&) = delete;
+            InputDataLink& operator=(const InputDataLink&) = delete;
 
         public:
-            KeyboardLink(Core::IPCChannelType<Core::SocketPort, KeyboardLink>*)
+            InputDataLink(Core::IPCChannelType<Core::SocketPort, InputDataLink>*)
                 : _enabled(false)
                 , _name()
+                , _mode(0)
                 , _parent(nullptr)
                 , _postLookup(nullptr)
-                , _replacement(Core::ProxyType<KeyMessage>::Create())
+                , _replacement(Core::ProxyType<IVirtualInput::KeyMessage>::Create())
             {
             }
-            virtual ~KeyboardLink()
+            virtual ~InputDataLink()
             {
             }
 
@@ -579,13 +553,13 @@ namespace PluginHost {
             {
                 Core::ProxyType<Core::IIPC> result;
 
-                if (_enabled == true) {
-                    if (_postLookup == nullptr) {
+                if ( (_enabled == true) && (Subscribed(element->Label()) == true) ) {
+                    if ( (element->Label() != IVirtualInput::KeyMessage::Id()) || (_postLookup == nullptr) ) {
                         result = element;
                     } else {
-                        KeyMessage& copy(static_cast<KeyMessage&>(*element));
+                        IVirtualInput::KeyMessage& copy(static_cast<IVirtualInput::KeyMessage&>(*element));
 
-                        ASSERT(dynamic_cast<KeyMessage*>(&(*element)) != nullptr);
+                        ASSERT(dynamic_cast<IVirtualInput::KeyMessage*>(&(*element)) != nullptr);
 
                         // See if we need to convert this keycode..
                         PostLookupEntries::const_iterator index(_postLookup->find(copy.Parameters().Code));
@@ -605,7 +579,7 @@ namespace PluginHost {
             {
                 return (_name);
             }
-            inline void Parent(IPCKeyboardInput& parent)
+            inline void Parent(IPCUserInput& parent)
             {
                 // We assume it will only be set, if the client reports it self in, once !
                 ASSERT(_parent == nullptr);
@@ -617,11 +591,19 @@ namespace PluginHost {
             }
 
         private:
+            bool Subscribed(const uint32_t id) const {
+                uint8_t index (id == IVirtualInput::KeyMessage::Id()   ? IVirtualInput::INPUT_KEY   :
+                              (id == IVirtualInput::MouseMessage::Id() ? IVirtualInput::INPUT_MOUSE :
+                              (id == IVirtualInput::TouchMessage::Id() ? IVirtualInput::INPUT_TOUCH : 0)));
+
+                return ((index & _mode) != 0);
+            }
             virtual void Dispatch(Core::IIPC& element) override
             {
-                ASSERT(dynamic_cast<NameMessage*>(&element) != nullptr);
+                ASSERT(dynamic_cast<IVirtualInput::NameMessage*>(&element) != nullptr);
 
-                _name = (static_cast<NameMessage&>(element).Response().Value());
+                _name = (static_cast<IVirtualInput::NameMessage&>(element).Response().Name);
+                _mode = (static_cast<IVirtualInput::NameMessage&>(element).Response().Mode);
                 _enabled = true;
                 _postLookup = _parent->FindPostLookup(_name);
             }
@@ -629,17 +611,18 @@ namespace PluginHost {
         private:
             bool _enabled;
             string _name;
-            IPCKeyboardInput* _parent;
+            uint8_t _mode;
+            IPCUserInput* _parent;
             const PostLookupEntries* _postLookup;
-            Core::ProxyType<KeyMessage> _replacement;
+            Core::ProxyType<IVirtualInput::KeyMessage> _replacement;
         };
 
-        class VirtualInputChannelServer : public Core::IPCChannelServerType<KeyboardLink, true> {
+        class VirtualInputChannelServer : public Core::IPCChannelServerType<InputDataLink, true> {
         private:
-            typedef Core::IPCChannelServerType<KeyboardLink, true> BaseClass;
+            typedef Core::IPCChannelServerType<InputDataLink, true> BaseClass;
 
         public:
-            VirtualInputChannelServer(IPCKeyboardInput& parent, const Core::NodeId& sourceName)
+            VirtualInputChannelServer(IPCUserInput& parent, const Core::NodeId& sourceName)
                 : BaseClass(sourceName, 32)
                 , _parent(parent)
             {
@@ -649,7 +632,7 @@ namespace PluginHost {
             {
                 TRACE_L1("VirtualInputChannelServer::Added -- %d", __LINE__);
 
-                Core::ProxyType<Core::IIPC> message(Core::ProxyType<NameMessage>::Create());
+                Core::ProxyType<Core::IIPC> message(Core::ProxyType<IVirtualInput::NameMessage>::Create());
 
                 // TODO: The reference to this should be held by the IPC mechanism.. Testing showed it did
                 //       not, to be further investigated..
@@ -660,12 +643,12 @@ namespace PluginHost {
             }
 
         private:
-            IPCKeyboardInput& _parent;
+            IPCUserInput& _parent;
         };
 
     public:
-        IPCKeyboardInput(const Core::NodeId& sourceName);
-        virtual ~IPCKeyboardInput();
+        IPCUserInput(const Core::NodeId& sourceName);
+        virtual ~IPCUserInput();
 
         virtual uint32_t Open();
         virtual uint32_t Close();
@@ -673,245 +656,12 @@ namespace PluginHost {
         virtual void LookupChanges(const string&);
 
     private:
-        virtual void SendKey(const actiontype type, const uint32_t code);
+        virtual void Send(const IVirtualInput::KeyData& data) override;
+        virtual void Send(const IVirtualInput::MouseData& data) override;
+        virtual void Send(const IVirtualInput::TouchData& data) override;
 
     private:
         VirtualInputChannelServer _service;
-    };
-
-    class EXTERNAL IPCMouseInput : public VirtualInput {
-    private:
-        enum class mouseactiontype : uint32_t {
-            MOUSE_RELEASED = 0,
-            MOUSE_PRESSED = 1,
-            MOUSE_MOTION = 2,
-            MOUSE_SCROLL = 3
-        };
-
-        struct MouseData {
-            mouseactiontype Action;
-            uint16_t Button;
-            int16_t Horizontal;
-            int16_t Vertical;
-        };
-
-        typedef Core::IPCMessageType<0, MouseData, Core::Void> MouseMessage;
-        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20>> NameMessage;
-
-        IPCMouseInput(const IPCMouseInput&) = delete;
-        IPCMouseInput& operator=(const IPCMouseInput&) = delete;
-
-    public:
-        class MouseLink : public Core::IDispatchType<Core::IIPC> {
-        private:
-            MouseLink(const MouseLink&) = delete;
-            MouseLink& operator=(const MouseLink&) = delete;
-
-        public:
-            MouseLink(Core::IPCChannelType<Core::SocketPort, MouseLink>*)
-                : _enabled(false)
-                , _name()
-                , _parent()
-            {
-            }
-            virtual ~MouseLink()
-            {
-            }
-
-        public:
-            inline void Enable(const bool enabled)
-            {
-                _enabled = enabled;
-            }
-            inline Core::ProxyType<Core::IIPC> InvokeAllowed(const Core::ProxyType<Core::IIPC>& element) const
-            {
-                Core::ProxyType<Core::IIPC> result;
-
-                if (_enabled == true) {
-                    result = element;
-                }
-                return (result);
-            }
-            inline const string& Name() const
-            {
-                return (_name);
-            }
-            inline void Parent(IPCMouseInput& parent)
-            {
-                ASSERT(_parent == nullptr);
-                _parent = &parent;
-            }
-
-        private:
-            virtual void Dispatch(Core::IIPC& element) override
-            {
-                ASSERT(dynamic_cast<NameMessage*>(&element) != nullptr);
-                _name = (static_cast<NameMessage&>(element).Response().Value());
-                _enabled = true;
-            }
-
-        private:
-            bool _enabled;
-            string _name;
-            IPCMouseInput* _parent;
-        };
-
-        class VirtualInputChannelServer : public Core::IPCChannelServerType<MouseLink, true> {
-        private:
-            typedef Core::IPCChannelServerType<MouseLink, true> BaseClass;
-
-        public:
-            VirtualInputChannelServer(IPCMouseInput& parent, const Core::NodeId& sourceName)
-                : BaseClass(sourceName, 32)
-                , _parent(parent)
-            {
-            }
-
-            virtual void Added(Core::ProxyType<Client>& client) override
-            {
-                Core::ProxyType<Core::IIPC> message(Core::ProxyType<NameMessage>::Create());
-                message.AddRef();
-                client->Extension().Parent(_parent);
-                client->Invoke(message, &(client->Extension()));
-            }
-
-        private:
-            IPCMouseInput& _parent;
-        };
-
-    public:
-        IPCMouseInput(const Core::NodeId& sourceName);
-        virtual ~IPCMouseInput();
-
-        uint32_t Open() override;
-        uint32_t Close() override;
-        void MapChanges(ChangeIterator& updated) override { }
-        void LookupChanges(const string&) override { }
-
-    private:
-        virtual void SendKey(const actiontype type, const uint32_t code) override;
-
-    private:
-        VirtualInputChannelServer _service;
-    };
-
-    class EXTERNAL IPCTouchScreenInput : public VirtualInput {
-    private:
-        enum class touchactiontype : uint32_t {
-            TOUCH_RELEASED = 0,
-            TOUCH_PRESSED = 1,
-            TOUCH_MOTION = 2
-        };
-
-        struct TouchData {
-            touchactiontype Action;
-            uint16_t Index;
-            uint16_t X;
-            uint16_t Y;
-        };
-
-        typedef Core::IPCMessageType<0, TouchData, Core::Void> TouchMessage;
-        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20>> NameMessage;
-
-        IPCTouchScreenInput(const IPCTouchScreenInput&) = delete;
-        IPCTouchScreenInput& operator=(const IPCTouchScreenInput&) = delete;
-
-    public:
-        class TouchScreenLink : public Core::IDispatchType<Core::IIPC> {
-        private:
-            TouchScreenLink(const TouchScreenLink&) = delete;
-            TouchScreenLink& operator=(const TouchScreenLink&) = delete;
-
-        public:
-            TouchScreenLink(Core::IPCChannelType<Core::SocketPort, TouchScreenLink>*)
-                : _enabled(false)
-                , _name()
-                , _parent()
-            {
-            }
-            virtual ~TouchScreenLink()
-            {
-            }
-
-        public:
-            inline void Enable(const bool enabled)
-            {
-                _enabled = enabled;
-            }
-            inline Core::ProxyType<Core::IIPC> InvokeAllowed(const Core::ProxyType<Core::IIPC>& element) const
-            {
-                Core::ProxyType<Core::IIPC> result;
-
-                if (_enabled == true) {
-                    result = element;
-                }
-                return (result);
-            }
-            inline const string& Name() const
-            {
-                return (_name);
-            }
-            inline void Parent(IPCTouchScreenInput& parent)
-            {
-                ASSERT(_parent == nullptr);
-                _parent = &parent;
-            }
-
-        private:
-            virtual void Dispatch(Core::IIPC& element) override
-            {
-                ASSERT(dynamic_cast<NameMessage*>(&element) != nullptr);
-                _name = (static_cast<NameMessage&>(element).Response().Value());
-                _enabled = true;
-            }
-
-        private:
-            bool _enabled;
-            string _name;
-            IPCTouchScreenInput* _parent;
-        };
-
-        class VirtualInputChannelServer : public Core::IPCChannelServerType<TouchScreenLink, true> {
-        private:
-            typedef Core::IPCChannelServerType<TouchScreenLink, true> BaseClass;
-
-        public:
-            VirtualInputChannelServer(IPCTouchScreenInput& parent, const Core::NodeId& sourceName)
-                : BaseClass(sourceName, 32)
-                , _parent(parent)
-            {
-            }
-
-            virtual void Added(Core::ProxyType<Client>& client) override
-            {
-                Core::ProxyType<Core::IIPC> message(Core::ProxyType<NameMessage>::Create());
-                message.AddRef();
-                client->Extension().Parent(_parent);
-                client->Invoke(message, &(client->Extension()));
-            }
-
-        private:
-            IPCTouchScreenInput& _parent;
-        };
-
-    public:
-        IPCTouchScreenInput(const Core::NodeId& sourceName);
-        virtual ~IPCTouchScreenInput();
-
-        uint32_t Open() override;
-        uint32_t Close() override;
-        void MapChanges(ChangeIterator& updated) override { }
-        void LookupChanges(const string&) override { }
-
-    private:
-        virtual void SendKey(const actiontype type, const uint32_t code) override;
-
-    private:
-        VirtualInputChannelServer _service;
-        uint16_t _latch_index;
-        touchactiontype _latch_action;
-        uint32_t _latch_x;
-        uint32_t _latch_y;
     };
 
     class EXTERNAL InputHandler {
@@ -933,16 +683,16 @@ namespace PluginHost {
         };
 
     public:
-        void InitializeKeyboard(const type t, const string& locator)
+        void Initialize(const type t, const string& locator)
         {
             ASSERT(_keyHandler == nullptr);
 #if defined(__WIN32__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
-            _inputHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
+            _inputHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
 #else
             if (t == VIRTUAL) {
-                _keyHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
+                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
             } else {
                 if (Core::File(locator, false).Exists() == true) {
@@ -963,41 +713,7 @@ namespace PluginHost {
             }
         }
 
-        void InitializeMouse(const type t, const string& locator)
-        {
-            ASSERT(_mouseHandler == nullptr);
-            if (t == VIRTUAL) {
-                _mouseHandler = new PluginHost::IPCMouseInput(Core::NodeId(locator.c_str()));
-                TRACE_L1("Creating a IPC Channel for mouse communication. %d", 0);
-            }
-            if (_mouseHandler != nullptr) {
-                TRACE_L1("Opening VirtualInput %s", locator.c_str());
-                if (_mouseHandler->Open() != Core::ERROR_NONE) {
-                    TRACE_L1("ERROR: Could not open VirtualInput %s.", locator.c_str());
-                }
-            } else {
-                TRACE_L1("ERROR: Could not create '%s' as mouse communication channel.", locator.c_str());
-            }
-        }
-
-        void InitializeTouchScreen(const type t, const string& locator)
-        {
-            ASSERT(_touchHandler == nullptr);
-            if (t == VIRTUAL) {
-                _touchHandler = new PluginHost::IPCTouchScreenInput(Core::NodeId(locator.c_str()));
-                TRACE_L1("Creating a IPC Channel for touch communication. %d", 0);
-            }
-            if (_touchHandler != nullptr) {
-                TRACE_L1("Opening VirtualInput %s", locator.c_str());
-                if (_touchHandler->Open() != Core::ERROR_NONE) {
-                    TRACE_L1("ERROR: Could not open VirtualInput %s.", locator.c_str());
-                }
-            } else {
-                TRACE_L1("ERROR: Could not create '%s' as touch communication channel.", locator.c_str());
-            }
-        }
-
-        void DeinitializeKeyboard()
+        void Deinitialize()
         {
             if (_keyHandler != nullptr) {
                 _keyHandler->Close();
@@ -1006,43 +722,13 @@ namespace PluginHost {
             }
         }
 
-        void DeinitializeMouse()
-        {
-            if (_mouseHandler != nullptr) {
-                _mouseHandler->Close();
-                delete (_mouseHandler);
-                _mouseHandler = nullptr;
-            }
-        }
-
-        void DeinitializeTouchScreen()
-        {
-            if (_touchHandler != nullptr) {
-                _touchHandler->Close();
-                delete (_touchHandler);
-                _touchHandler = nullptr;
-            }
-        }
-
-        static VirtualInput* KeyHandler()
+        static VirtualInput* Handler()
         {
             return _keyHandler;
         }
 
-        static VirtualInput* MouseHandler()
-        {
-            return _mouseHandler;
-        }
-
-        static VirtualInput* TouchHandler()
-        {
-            return _touchHandler;
-        }
-
     private:
         static VirtualInput* _keyHandler;
-        static VirtualInput* _mouseHandler;
-        static VirtualInput* _touchHandler;
     };
 
 } // PluginHost
