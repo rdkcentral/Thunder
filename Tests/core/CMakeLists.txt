@@ -18,8 +18,10 @@ add_executable(${TEST_RUNNER_NAME}
    test_singleton.cpp
    test_semahore.cpp
    test_XGetopt.cpp
-   test_dataElement.cpp 
-#   test_sharedbuffer.cpp
+   test_dataElement.cpp
+   test_portability.cpp
+   test_frametype.cpp 
+#  test_sharedbuffer.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
