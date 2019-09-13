@@ -43,28 +43,29 @@ protected:
 
     public:
         // Event fired when a key message is successfully created.
-        virtual void
-        OnKeyMessage(const uint8_t* keyMessage, //__in_bcount(f_cbKeyMessage)
+        void OnKeyMessage(const uint8_t* keyMessage, //__in_bcount(f_cbKeyMessage)
             const uint16_t keyLength, //__in
-            const std::string URL)
+            const std::string& URL) override
         {
             _parent.OnKeyMessage(
                 std::string(reinterpret_cast<const char*>(keyMessage), keyLength),
                 URL);
         }
-        // Event fired when MediaKeySession has found a usable key.
-        virtual void OnKeyReady() { _parent.OnKeyReady(); }
-        // Event fired when MediaKeySession encounters an error.
-        virtual void OnKeyError(const int16_t error,
-            const OCDM::OCDM_RESULT sysError,
-            const std::string errorMessage)
+
+        void OnError(const int16_t error, const OCDM::OCDM_RESULT sysError, const std::string& errorMessage) override
         {
-            _parent.OnKeyError(error, sysError, errorMessage);
+            _parent.OnError(error, sysError, errorMessage);
         }
+
         // Event fired on key status update
-        virtual void OnKeyStatusUpdate(const OCDM::ISession::KeyStatus keyMessage)
+        void OnKeyStatusUpdate(const uint8_t keyID[], const uint8_t keyIDLength,const OCDM::ISession::KeyStatus keyMessage) override
         {
-            _parent.OnKeyStatusUpdate(keyMessage);
+            _parent.OnKeyStatusUpdate(keyID, keyIDLength, keyMessage);
+        }
+
+        void OnKeyStatusesUpdated() const override
+        {
+            _parent.OnKeyStatusesUpdated();
         }
 
         BEGIN_INTERFACE_MAP(Sink)
@@ -80,16 +81,15 @@ public:
         : OpenCDMSession()
         , _sink(this)
         , _URL()
-        , _error()
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
-        , _key(OCDM::ISession::StatusPending)
         , _callback(callbacks)
     {
         TRACE_L1("Constructing the Session Client side - ExtendedOpenCDMSession: "
                  "%p, (nil)",
             this);
     }
+
     ExtendedOpenCDMSession(OCDM::IAccessorOCDM* system, const string keySystem,
         const std::string& initDataType,
         const uint8_t* pbInitData, const uint16_t cbInitData,
@@ -101,10 +101,8 @@ public:
         : OpenCDMSession()
         , _sink(this)
         , _URL()
-        , _error()
         , _errorCode(0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
-        , _key(OCDM::ISession::StatusPending)
         , _callback(callbacks)
         , _userData(userData)
     {
@@ -122,7 +120,8 @@ public:
             OpenCDMSession::Session(realSession);
         }
     }
-    virtual ~ExtendedOpenCDMSession()
+
+    ~ExtendedOpenCDMSession() override
     {
         if (OpenCDMSession::IsValid() == true) {
             Revoke(&_sink);
@@ -130,13 +129,28 @@ public:
     }
 
 public:
-    virtual bool IsExtended() const override { return (true); }
-    inline KeyStatus Status(const uint8_t /* keyId */[],
-        uint8_t /* length */) const
+    bool IsExtended() const override { return (true); }
+
+    inline KeyStatus Status(const uint8_t keyId[], uint8_t length) const
     {
-        return (::CDMState(_key));
+        KeyStatus result = StatusPending;
+        if (_errorCode == 0) {
+            std::string keyIdStr(reinterpret_cast<const char*>(keyId), length);
+            auto item = _keyStatuses.find(keyIdStr);
+            if (item != _keyStatuses.end()) {
+                result = CDMState(item->second);
+            } else {
+                result = CDMState(OpenCDMSession::Status(keyId, length));
+            }
+        } else {
+            result = InternalError;
+        }
+
+        return result;
     }
+
     inline uint32_t Error() const { return (_errorCode); }
+
     inline uint32_t Error(const uint8_t keyId[], uint8_t length) const
     {
         return (_sysError);
@@ -158,43 +172,42 @@ protected:
         if (_callback != nullptr && _callback->process_challenge_callback != nullptr)
             _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(keyMessage.c_str()), static_cast<uint16_t>(keyMessage.length()));
     }
-    // Event fired when MediaKeySession has found a usable key.
-    void OnKeyReady()
-    {
-        _key = OCDM::ISession::Usable;
-        if (_callback != nullptr && _callback->key_update_callback != nullptr)
-            _callback->key_update_callback(this, _userData, nullptr, 0);
-    }
+
     // Event fired when MediaKeySession encounters an error.
-    void OnKeyError(const int16_t error, const OCDM::OCDM_RESULT sysError,
+    void OnError(const int16_t error, const OCDM::OCDM_RESULT sysError,
         const std::string& errorMessage)
     {
-        _key = OCDM::ISession::InternalError;
-        _error = errorMessage;
         _errorCode = error;
         _sysError = sysError;
 
-        if (_callback != nullptr && _callback->message_callback != nullptr) {
-            _callback->key_update_callback(this, _userData, nullptr, 0);
-            _callback->message_callback(this, _userData, errorMessage.c_str());
+        if (_callback != nullptr && _callback->error_message_callback != nullptr) {
+            _callback->error_message_callback(this, _userData, errorMessage.c_str());
         }
     }
+
     // Event fired on key status update
-    void OnKeyStatusUpdate(const OCDM::ISession::KeyStatus status)
+    void OnKeyStatusUpdate(const uint8_t keyID[], const uint8_t keyIDLength, const OCDM::ISession::KeyStatus status)
     {
-        _key = status;
+        std::string keyId(reinterpret_cast<const char*>(keyID), keyIDLength);
+        _keyStatuses[keyId] = status;
 
         if (_callback != nullptr && _callback->key_update_callback != nullptr)
-            _callback->key_update_callback(this, _userData, nullptr, 0);
+            _callback->key_update_callback(this, _userData, keyID, keyIDLength);
     }
+
+    void OnKeyStatusesUpdated() const
+    {
+        if (_callback->keys_updated_callback)
+            _callback->keys_updated_callback(this, _userData);
+    }
+
 
 protected:
     WPEFramework::Core::Sink<Sink> _sink;
     std::string _URL;
-    std::string _error;
     uint32_t _errorCode;
     OCDM::OCDM_RESULT _sysError;
-    OCDM::ISession::KeyStatus _key;
+    std::map<std::string, OCDM::ISession::KeyStatus> _keyStatuses;
     OpenCDMSessionCallbacks* _callback;
     void* _userData;
 };

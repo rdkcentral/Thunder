@@ -4,16 +4,12 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
 add_library(${TARGET} SHARED
         Module.cpp
-        VirtualKeyboard.cpp
-        VirtualMouse.cpp
-        VirtualTouchScreen.cpp
+        virtualinput.cpp
         )
 
 set(PUBLIC_HEADERS
         virtualinput.h
-        VirtualKeyboard.h
-        VirtualMouse.h
-        VirtualTouchScreen.h
+        IVirtualInput.h
         Module.h
         )
 

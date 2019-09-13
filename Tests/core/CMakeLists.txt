@@ -5,7 +5,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rpc.cpp
    test_jsonparser.cpp
    test_hex2strserialization.cpp
-#   test_sharedbuffer.cpp
+   test_sharedbuffer.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 

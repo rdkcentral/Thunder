@@ -6,6 +6,7 @@
 #endif
 
 #include <stdbool.h>
+#include "../core/core.h"
 
 #ifdef _MSVC_LANG
 #undef EXTERNAL

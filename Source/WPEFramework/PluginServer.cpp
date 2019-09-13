@@ -669,9 +669,7 @@ namespace PluginHost
         _services.Load();
 
         // Create input handle
-        _inputHandler.InitializeKeyboard(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
-        _inputHandler.InitializeMouse(InputHandler::VIRTUAL, "/tmp/mousehandler");
-        _inputHandler.InitializeTouchScreen(InputHandler::VIRTUAL, "/tmp/touchhandler");
+        _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
 
         // Initialize static message.
         Service::Initialize();
@@ -763,9 +761,7 @@ namespace PluginHost
         destructor->Stopped();
         _services.Destroy();
         destructor->Release();
-        _inputHandler.DeinitializeTouchScreen();
-        _inputHandler.DeinitializeMouse();
-        _inputHandler.DeinitializeKeyboard();
+        _inputHandler.Deinitialize();
     }
 }
 }

@@ -2,6 +2,7 @@
 #define COMPOSITOR_CPP_ABSTRACTION_H
 
 #include <assert.h>
+#include <string.h>
 #include <cstddef>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
