@@ -498,6 +498,147 @@ namespace Bluetooth {
         };
 
     public:
+        class Info {
+        public:
+            class Properties {
+            public:
+                Properties() : _value(0) {}
+                Properties(const uint32_t value) : _value(value) {}
+                Properties(const Properties& copy) : _value(copy._value) {}
+                ~Properties() {}
+
+                Properties& operator= (const Properties& rhs) {
+                    _value = rhs._value;
+                    return (*this);
+                }
+
+            public:
+                bool IsPowered() const {
+                    return ((_value & MGMT_SETTING_POWERED) != 0);
+                }
+		bool IsConnectable() const {
+                    return ((_value & MGMT_SETTING_CONNECTABLE) != 0);
+                }
+		bool IsFastConnectable() const {
+                    return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
+                }
+		bool HasDiscovery() const {
+                    return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
+                }
+		bool HasPairing() const {
+                    return ((_value & MGMT_SETTING_BONDABLE) != 0);
+                }
+		bool HasLinkLevelSecurity() const {
+                    return ((_value & MGMT_SETTING_LINK_SECURITY) != 0);
+                }
+		bool HasSecureSimplePairing() const {
+                    return ((_value & MGMT_SETTING_SSP) != 0);
+                }
+		bool HasBasicEnhancedRate() const {
+                    return ((_value & MGMT_SETTING_BREDR) != 0);
+                }
+		bool HasHighSpeed() const {
+                    return ((_value & MGMT_SETTING_HS) != 0);
+                }
+		bool HasLowEnergy() const {
+                    return ((_value & MGMT_SETTING_LE) != 0);
+                }
+		bool HasAdvertising() const {
+                    return ((_value & MGMT_SETTING_ADVERTISING) != 0);
+                }
+		bool HasSecureConnections() const {
+                    return ((_value & MGMT_SETTING_SECURE_CONN) != 0);
+                }
+		bool HasDebugKeys() const {
+                    return ((_value & MGMT_SETTING_DEBUG_KEYS) != 0);
+                }
+		bool HasPrivacy() const {
+                    return ((_value & MGMT_SETTING_PRIVACY) != 0);
+                }
+		bool HasConfiguration() const {
+                    return ((_value & MGMT_SETTING_CONFIGURATION) != 0);
+                }
+		bool HasStaticAddress() const {
+                    return ((_value & MGMT_SETTING_STATIC_ADDRESS) != 0);
+                }
+
+            private:
+                uint32_t _value;
+            };
+        public:
+            Info() 
+                : _address()
+                , _version(0)
+                , _manufacturer(0)
+                , _supported(0)
+                , _settings(0)
+                , _deviceClass(0)
+                , _name()
+                , _shortName()
+            {
+            }
+            Info(const Info& copy) 
+                : _address(copy._address)
+                , _version(copy._version)
+                , _manufacturer(copy._manufacturer)
+                , _supported(copy._supported)
+                , _settings(copy._settings)
+                , _deviceClass(copy._deviceClass)
+                , _name(copy._name)
+                , _shortName(copy._shortName)
+            {
+            }
+            Info(const mgmt_rp_read_info& copy) 
+                : _address(copy.bdaddr)
+                , _version(copy.version)
+                , _manufacturer(copy.manufacturer)
+                , _supported(copy.supported_settings)
+                , _settings(copy.current_settings)
+                , _deviceClass((copy.dev_class[0] << 16) | (copy.dev_class[1] << 8) | copy.dev_class[2])
+                , _name(Core::ToString(reinterpret_cast<const char*>(copy.name)))
+                , _shortName(Core::ToString(reinterpret_cast<const char*>(copy.short_name)))
+            {
+            }
+            ~Info()
+            {
+            }
+
+        public:
+            const Bluetooth::Address& Address() const {
+                return (_address);
+            }
+            uint8_t Version () const {
+                return (_version);
+            }
+            uint16_t Manufacturer() const {
+                return (_manufacturer);
+            }
+            Properties Supported () const {
+                return (Properties(_supported));
+            }
+            Properties Actuals() const {
+                return (Properties(_settings));
+            }
+            uint32_t DeviceClass() const {
+                return (_deviceClass);
+            }
+            const string& ShortName() const {
+                return (_shortName);
+            }
+            const string& Name() const {
+                return (_name);
+            }
+ 
+        private:
+            Bluetooth::Address _address;
+            uint8_t _version;
+            uint16_t _manufacturer;
+            uint32_t _supported;
+            uint32_t _settings;
+            uint32_t _deviceClass;
+            string _name;
+            string _shortName;
+        };
         class LinkKey {
         public:
             LinkKey() {
@@ -644,6 +785,8 @@ namespace Bluetooth {
             INVALID = 0xFF
         };
 
+
+
     public:
         ManagementSocket(const ManagementSocket&) = delete;
         ManagementSocket& operator=(const ManagementSocket&) = delete;
@@ -710,8 +853,12 @@ namespace Bluetooth {
             }
             return (result);
         }
+        Info Settings() const;
         uint32_t Power(bool enabled);
         uint32_t Bondable(bool enabled);
+        uint32_t Connectable(const bool enabled);
+        uint32_t FastConnectable(const bool enabled);
+        uint32_t Discoverable(const bool enabled);
         uint32_t Advertising(bool enabled);
         uint32_t SimplePairing(bool enabled);
         uint32_t LowEnergy(bool enabled);
@@ -724,8 +871,10 @@ namespace Bluetooth {
         uint32_t IdentityKeys(const IdentityKeyList& keys);
         uint32_t Name(const string& shortName, const string longName);
 
+        uint32_t Discovering(const bool on, const bool regular, const bool LowEnergy);
         uint32_t Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT);
         uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
+        uint32_t PairAbort(const Address& remote, const uint8_t type = BDADDR_BREDR);
 
     protected:
         virtual void Update(const mgmt_hdr& eventData);

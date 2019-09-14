@@ -74,21 +74,21 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
 
     // See if we need to retrigger..
     if ((stream[0] != _id) && ((stream[0] != ATT_OP_ERROR) && (stream[1] == _id))) {
-        TRACE(Trace::Error, (_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), _id, stream[0], stream[1]));
+        TRACE_L1(_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), _id, stream[0], stream[1]);
     } else {
         result = length;
 
-        TRACE(Trace::Information, (_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]));
+        TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
 
         // This is what we are expecting, so process it...
         switch (stream[0]) {
         case ATT_OP_ERROR: {
-            TRACE(Trace::Error, (_T("Houston we got an error... %d"), stream[4]));
+            TRACE_L1(_T("Houston we got an error... %d"), stream[4]);
             _error = stream[4];
             break;
         }
         case ATT_OP_READ_BY_GROUP_RESP: {
-            TRACE(Trace::Information, (_T("L2CapSocket Read By Group Type")));
+            TRACE_L1(_T("L2CapSocket Read By Group Type"));
             _error = Core::ERROR_NONE;
             break;
         }
@@ -133,7 +133,7 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
             break;
         }
         case ATT_OP_WRITE_RESP: {
-            TRACE(Trace::Information, (_T("We have written: %d"),length));
+            TRACE_L1(_T("We have written: %d"),length);
             _error = Core::ERROR_NONE;
             break;
         }
@@ -151,10 +151,10 @@ uint16_t GATTSocket::Attribute::Deserialize(const uint8_t stream[], const uint16
             } else {
                 _response.Extend(length - 1, &(stream[1]));
             }
-            TRACE(Trace::Information, (_T("Received a blob of length %d"), length));
+            TRACE_L1(_T("Received a blob of length %d"), length);
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
-                TRACE(Trace::Information, (_T("Now we need to send another send....")));
+                TRACE_L1(_T("Now we need to send another send...."));
             } else {
                 _error = Core::ERROR_NONE;
             }
@@ -175,7 +175,7 @@ bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
     btSecurity.level = level;
     btSecurity.key_size = keySize;
     if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity))) {
-        TRACE(Trace::Error, ("Failed to set L2CAP Security level for Device [%s]", RemoteId().c_str()));
+        TRACE_L1("Failed to set L2CAP Security level for Device [%s], error: %d", RemoteId().c_str(), errno);
         result = false;
     }
     return (result);
@@ -184,15 +184,12 @@ bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
 /* virtual */ void GATTSocket::StateChange() 
 {
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
-
+ 
     if (IsOpen() == true) {
-        TRACE_L1("Statechange: OPEN\n")
         socklen_t len = sizeof(_connectionInfo);
         ::getsockopt(Handle(), SOL_L2CAP, L2CAP_CONNINFO, &_connectionInfo, &len);
 
-        // for now skip setting the preferred MTU and go straight for Operational 
-        //Send(CommunicationTimeOut, _sink, &_sink, &_sink);
-        Operational();
+        Send(CommunicationTimeOut, _sink, &_sink, &_sink);
     }
 }
 

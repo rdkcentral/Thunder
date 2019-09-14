@@ -28,7 +28,6 @@ uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
                 advertising->enable = 1;
 
                 if (Exchange(MAX_ACTION_TIMEOUT, advertising, advertising) == Core::ERROR_NONE) { //  && (advertising.Response() == 0)) {
-                    printf ("Status = %d\n", advertising.Response());
                     _state.SetState(static_cast<state>(_state.GetState() | ADVERTISING));
                     result = Core::ERROR_NONE;
                 }
@@ -442,7 +441,10 @@ static constexpr uint8_t DISABLE_MODE = 0x00;
 static constexpr uint8_t ENABLE_MODE  = 0x01;
 
 namespace Management {
+    typedef ManagementFixedType<MGMT_OP_READ_INFO, Core::Void, mgmt_rp_read_info> Settings;
     typedef ManagementFixedType<MGMT_OP_SET_POWERED, mgmt_mode, uint32_t> Power;
+    typedef ManagementFixedType<MGMT_OP_SET_CONNECTABLE, mgmt_mode, uint32_t> Connectable;
+    typedef ManagementFixedType<MGMT_SETTING_FAST_CONNECTABLE, mgmt_mode, uint32_t> FastConnectable;
     typedef ManagementFixedType<MGMT_OP_SET_BONDABLE, mgmt_mode, uint32_t> Bondable;
     typedef ManagementFixedType<MGMT_OP_SET_SSP, mgmt_mode, uint32_t> SimplePairing;
     typedef ManagementFixedType<MGMT_OP_SET_SECURE_CONN, mgmt_mode, uint32_t> SecureConnections;
@@ -450,8 +452,11 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_SET_ADVERTISING, mgmt_mode, uint32_t> Advertising;
     typedef ManagementFixedType<MGMT_OP_SET_CONNECTABLE, mgmt_mode, uint32_t> Connectable;
     typedef ManagementFixedType<MGMT_OP_SET_DISCOVERABLE, mgmt_cp_set_discoverable, uint32_t> Discoverable;
+    typedef ManagementFixedType<MGMT_OP_START_DISCOVERY, mgmt_cp_start_discovery, uint8_t> StartDiscovery;
+    typedef ManagementFixedType<MGMT_OP_STOP_DISCOVERY, mgmt_cp_stop_discovery, uint8_t> StopDiscovery;
     typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, mgmt_rp_pair_device> Pair;
     typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, Core::Void> Unpair;
+    typedef ManagementFixedType<MGMT_OP_CANCEL_PAIR_DEVICE, mgmt_addr_info, Core::Void> PairAbort;
     typedef ManagementFixedType<MGMT_OP_READ_INDEX_LIST, Core::Void, uint16_t[33]> Indexes;
     typedef ManagementFixedType<MGMT_OP_SET_LOCAL_NAME, mgmt_cp_set_local_name, mgmt_cp_set_local_name> DeviceName;
     typedef ManagementFixedType<MGMT_OP_SET_PRIVACY, mgmt_cp_set_privacy, Core::Void> Privacy;
@@ -491,9 +496,42 @@ uint32_t ManagementSocket::Name(const string& shortName, const string longName)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
+uint32_t ManagementSocket::Discoverable(const bool enabled)
+{
+    Management::Discoverable message(_deviceId);
+
+    message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
 uint32_t ManagementSocket::Power(const bool enabled)
 {
     Management::Power message(_deviceId);
+
+    message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+uint32_t ManagementSocket::Connectable(const bool enabled)
+{
+    Management::Connectable message(_deviceId);
+
+    message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+uint32_t ManagementSocket::FastConnectable(const bool enabled)
+{
+    Management::FastConnectable message(_deviceId);
 
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
@@ -640,6 +678,42 @@ uint32_t ManagementSocket::IdentityKeys(const IdentityKeyList& keys)
     return (result);
 }
 
+uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const bool lowEnergy) 
+{
+    uint32_t result = Core::ERROR_UNAVAILABLE;
+    uint8_t mode = (regular ? 1 : 0) | (lowEnergy ? 6 : 0);
+
+    // If you do not select any type, no use calling this method
+    ASSERT (mode != 0);
+
+    if (on == true) {
+        Management::StartDiscovery message(_deviceId);
+        message->type = mode;
+     
+        result = Exchange(MANAGMENT_TIMEOUT, message, message);
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
+    }
+    else {
+        Management::StopDiscovery message(_deviceId);
+        message->type = mode;
+     
+        result = Exchange(MANAGMENT_TIMEOUT, message, message);
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
+    }
+    return (result);
+}
+
+ManagementSocket::Info ManagementSocket::Settings() const
+{
+    Info result;
+    Management::Settings message(_deviceId);
+    
+    if (const_cast<ManagementSocket*>(this)->Exchange(MANAGMENT_TIMEOUT, message, message) == Core::ERROR_NONE) {
+        result = Info(message.Response());
+    }
+    return (result);
+}
+
 uint32_t ManagementSocket::Pair(const Address& remote, const uint8_t type, const capabilities cap)
 {
     Management::Pair command(_deviceId);
@@ -662,6 +736,18 @@ uint32_t ManagementSocket::Unpair(const Address& remote, const uint8_t type)
     command->disconnect = 1;
 
     return(Exchange(MANAGMENT_TIMEOUT, command, command));
+}
+
+uint32_t ManagementSocket::PairAbort(const Address& remote, const uint8_t type)
+{
+    Management::PairAbort command(_deviceId);
+
+    command.Clear();
+    command->bdaddr = *remote.Data();
+    command->type = type;
+
+    // Pairing takes longer, so allow for a larget timeout...
+    return (Exchange(MANAGMENT_TIMEOUT, command, command));
 }
 
 /* virtual */ void ManagementSocket::StateChange() 

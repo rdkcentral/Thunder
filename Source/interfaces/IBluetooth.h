@@ -40,17 +40,30 @@ namespace Exchange {
                 virtual void Updated () = 0;
             };
                 
+            enum type : uint8_t {
+                ADDRESS_BREDR,
+                ADDRESS_LE_PUBLIC,
+                ADDRESS_LE_RANDOM
+            };
+            enum capabilities : uint8_t {
+                DISPLAY_ONLY = 0x00,
+                DISPLAY_YES_NO = 0x01,
+                KEYBOARD_ONLY = 0x02,
+                NO_INPUT_NO_OUTPUT = 0x03,
+                KEYBOARD_DISPLAY = 0x04,
+            };
 
             virtual ~IDevice() {}
 
-            virtual uint8_t Type () const = 0;
+            virtual type Type () const = 0;
             virtual string LocalId() const = 0;
             virtual string RemoteId() const = 0;
             virtual string Name() const = 0;
+            virtual bool HasDisappeared() const = 0;
             virtual bool IsDiscovered() const = 0;
             virtual bool IsPaired() const = 0;
             virtual bool IsConnected() const = 0;
-            virtual uint32_t Pair() = 0;
+            virtual uint32_t Pair(const capabilities) = 0;
             virtual uint32_t Unpair() = 0;
             virtual uint32_t Connect() = 0;
             virtual uint32_t Disconnect(const uint16_t reason) = 0;

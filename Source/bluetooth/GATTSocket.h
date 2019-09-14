@@ -39,7 +39,7 @@ namespace Bluetooth {
             CommandSink(const CommandSink&) = delete;
             CommandSink& operator= (const CommandSink&) = delete;
 
-            CommandSink(GATTSocket& parent, const uint32_t preferredMTU) : _parent(parent), _mtu(preferredMTU) {
+            CommandSink(GATTSocket& parent, const uint16_t preferredMTU) : _parent(parent), _mtu(preferredMTU) {
                 Reload();
             }
             virtual ~CommandSink() {
@@ -63,29 +63,33 @@ namespace Bluetooth {
             }
             virtual uint16_t Serialize(uint8_t stream[], const uint16_t length) const override
             {
+                uint16_t result = 0;
                 if ((_mtu >> 24) == 0xFF) {
                     ASSERT(length >= 3);
                     stream[0] = ATT_OP_MTU_REQ;
                     stream[1] = (_mtu & 0xFF);
                     stream[2] = ((_mtu >> 8) & 0xFF);
                     _mtu = ((_mtu & 0xFFFF) | 0xF0000000);
+                    result = 3;
                 }
-                return (3);
+                return (result);
             }
             virtual Core::IInbound::state IsCompleted() const override
             {
-                return ((_mtu >> 24) == 0x80 ? Core::IInbound::COMPLETED : Core::IInbound::INPROGRESS);
+                return ((_mtu >> 24) == 0x00 ? Core::IInbound::COMPLETED : Core::IInbound::INPROGRESS);
             }
             virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override {
-                uint16_t result = length;
+                uint16_t result = 0;
 
                 // See if we need to retrigger..
                 if (stream[0] == ATT_OP_MTU_RESP) {
                     _mtu = ((stream[2] << 8) | stream[1]);
+                    result = length;
                 } else if ((stream[0] == ATT_OP_ERROR) && (stream[1] == ATT_OP_MTU_RESP)) {
-                    TRACE(Trace::Error, (_T("Error on receiving MTU: [%d]"), stream[2]));
+                    printf(_T("Error on receiving MTU: [%d]\n"), stream[2]);
+                    result = length;
                 } else {
-                    TRACE(Trace::Error, (_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]"), ATT_OP_MTU_RESP, stream[0], stream[1]));
+                    printf(_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]\n"), ATT_OP_MTU_RESP, stream[0], stream[1]);
                     result = 0;
                 } 
                 return (result);
@@ -357,11 +361,8 @@ namespace Bluetooth {
                         ::memcpy(stream, &(_buffer[_offset]), result);
                         _offset += result;
 
-                        printf("L2CAP send [%d]: ", result);
-                        for (uint8_t index = 0; index < (result - 1); index++) {
-                            printf("%02X:", stream[index]);
-                        }
-                        printf("%02X\n", stream[result - 1]);
+                        // printf("L2CAP send [%d]: ", result);
+                        // for (uint8_t index = 0; index < (result - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[result - 1]);
                     }
 
                     return (result);
@@ -677,6 +678,9 @@ namespace Bluetooth {
         }
 
     public:
+        inline uint16_t MTU() const {
+            return (_sink.MTU());
+        }
         bool Security(const uint8_t level, const uint8_t keySize);
 
         void Execute(const uint32_t waitTime, Command& cmd, const Handler& handler)
