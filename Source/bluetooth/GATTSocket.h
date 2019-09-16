@@ -6,6 +6,150 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
+    class UUID {
+    public:
+        // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
+
+    public:
+        UUID(const uint16_t uuid)
+        {
+            _uuid[0] = 2;
+            _uuid[1] = (uuid & 0xFF);
+            _uuid[2] = (uuid >> 8) & 0xFF;
+        }
+        UUID(const uint8_t uuid[16])
+        {
+            _uuid[0] = 16;
+            ::memcpy(&(_uuid[1]), uuid, 16);
+        }
+        UUID(const UUID& copy)
+        {
+            ::memcpy(_uuid, copy._uuid, copy._uuid[0] + 1);
+        }
+        ~UUID()
+        {
+        }
+
+        UUID& operator=(const UUID& rhs)
+        {
+            ::memcpy(_uuid, rhs._uuid, rhs._uuid[0] + 1);
+            return (*this);
+        }
+
+    public:
+        uint16_t Short() const
+        {
+            ASSERT(_uuid[0] == 2);
+            return ((_uuid[2] << 8) | _uuid[1]);
+        }
+        bool operator==(const UUID& rhs) const
+        {
+            return (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0);
+        }
+        bool operator!=(const UUID& rhs) const
+        {
+            return !(operator==(rhs));
+        }
+        bool HasShort() const
+        {
+            return (_uuid[0] == 2);
+        }
+        uint8_t Length() const
+        {
+            return (_uuid[0]);
+        }
+        const uint8_t* Data() const
+        {
+            return &(_uuid[1]);
+        }
+
+    private:
+        uint8_t _uuid[17];
+    };
+
+    class Attribute {
+    public:
+        enum type {
+            NIL = 0x00,
+            INTEGER_UNSIGNED = 0x08,
+            INTEGER_SIGNED = 0x10,
+            UUID = 0x18,
+            TEXT = 0x20,
+            BOOLEAN = 0x28,
+            SEQUENCE = 0x30,
+            ALTERNATIVE = 0x38,
+            URL = 0x40
+        };
+
+        Attribute()
+            : _type(~0)
+            , _offset(0)
+            , _length(~0)
+            , _bufferSize(64)
+            , _buffer(reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
+        {
+        }
+        Attribute(const uint16_t size, const uint8_t stream[])
+            : _type(~0)
+            , _offset(0)
+            , _length(~0)
+            , _bufferSize(size)
+            , _buffer(reinterpret_cast<uint8_t*>(::malloc(_bufferSize))) {
+            Deserialize(size, stream);
+        }
+        ~Attribute()
+        {
+            if (_buffer != nullptr) {
+                ::free(_buffer);
+            }
+        }
+
+    public:
+        void Clear()
+        {
+            _type = ~0;
+            _offset = 0;
+            _length = ~0;
+        }
+        bool IsLoaded() const
+        {
+            return (_offset == static_cast<uint32_t>(~0));
+        }
+        type Type() const
+        {
+            return (static_cast<type>(_type & 0xF8));
+        }
+        uint32_t Length() const
+        {
+            return ((_type & 0x3) <= 4 ? (_type == 0 ? 0 : 1 << (_type & 0x03)) : _length);
+        }
+        template <typename TYPE>
+        void Load(TYPE& value) const
+        {
+            value = 0;
+            for (uint8_t index = 0; index < sizeof(TYPE); index++) {
+                value = (value << 8) | _buffer[index];
+            }
+        }
+        void Load(bool& value) const
+        {
+            value = (_buffer[0] != 0);
+        }
+        void Load(string& value) const
+        {
+            value = string(reinterpret_cast<const char*>(_buffer), _length);
+        }
+
+        uint16_t Deserialize(const uint16_t size, const uint8_t stream[]);
+
+    private:
+        uint8_t _type;
+        uint32_t _offset;
+        uint32_t _length;
+        uint32_t _bufferSize;
+        uint8_t* _buffer;
+    };
+
     class GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         GATTSocket(const GATTSocket&) = delete;
@@ -102,142 +246,6 @@ namespace Bluetooth {
 
     public:
         static constexpr uint32_t CommunicationTimeOut = 2000; /* 2 seconds. */
-
-        class UUID {
-        public:
-            // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
-
-        public:
-            UUID(const uint16_t uuid)
-            {
-                _uuid[0] = 2;
-                _uuid[1] = (uuid & 0xFF);
-                _uuid[2] = (uuid >> 8) & 0xFF;
-            }
-            UUID(const uint8_t uuid[16])
-            {
-                _uuid[0] = 16;
-                ::memcpy(&(_uuid[1]), uuid, 16);
-            }
-            UUID(const UUID& copy)
-            {
-                ::memcpy(_uuid, copy._uuid, copy._uuid[0] + 1);
-            }
-            ~UUID()
-            {
-            }
-
-            UUID& operator=(const UUID& rhs)
-            {
-                ::memcpy(_uuid, rhs._uuid, rhs._uuid[0] + 1);
-                return (*this);
-            }
-
-        public:
-            uint16_t Short() const
-            {
-                ASSERT(_uuid[0] == 2);
-                return ((_uuid[2] << 8) | _uuid[1]);
-            }
-            bool operator==(const UUID& rhs) const
-            {
-                return (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0);
-            }
-            bool operator!=(const UUID& rhs) const
-            {
-                return !(operator==(rhs));
-            }
-            bool HasShort() const
-            {
-                return (_uuid[0] == 2);
-            }
-            uint8_t Length() const
-            {
-                return (_uuid[0]);
-            }
-            const uint8_t* Data() const
-            {
-                return &(_uuid[1]);
-            }
-
-        private:
-            uint8_t _uuid[17];
-        };
-
-        class Attribute {
-        public:
-            enum type {
-                NIL = 0x00,
-                INTEGER_UNSIGNED = 0x08,
-                INTEGER_SIGNED = 0x10,
-                UUID = 0x18,
-                TEXT = 0x20,
-                BOOLEAN = 0x28,
-                SEQUENCE = 0x30,
-                ALTERNATIVE = 0x38,
-                URL = 0x40
-            };
-
-            Attribute()
-                : _type(~0)
-                , _offset(0)
-                , _length(~0)
-                , _bufferSize(64)
-                , _buffer(reinterpret_cast<uint8_t*>(::malloc(_bufferSize)))
-            {
-            }
-            ~Attribute()
-            {
-                if (_buffer != nullptr) {
-                    ::free(_buffer);
-                }
-            }
-
-        public:
-            void Clear()
-            {
-                _type = ~0;
-                _offset = 0;
-                _length = ~0;
-            }
-            bool IsLoaded() const
-            {
-                return (_offset == static_cast<uint32_t>(~0));
-            }
-            type Type() const
-            {
-                return (static_cast<type>(_type & 0xF8));
-            }
-            uint32_t Length() const
-            {
-                return ((_type & 0x3) <= 4 ? (_type == 0 ? 0 : 1 << (_type & 0x03)) : _length);
-            }
-            template <typename TYPE>
-            void Load(TYPE& value) const
-            {
-                value = 0;
-                for (uint8_t index = 0; index < sizeof(TYPE); index++) {
-                    value = (value << 8) | _buffer[index];
-                }
-            }
-            void Load(bool& value) const
-            {
-                value = (_buffer[0] != 0);
-            }
-            void Load(string& value) const
-            {
-                value = string(reinterpret_cast<const char*>(_buffer), _length);
-            }
-
-            uint16_t Deserialize(const uint8_t stream[], const uint16_t size);
-
-        private:
-            uint8_t _type;
-            uint32_t _offset;
-            uint32_t _length;
-            uint32_t _bufferSize;
-            uint8_t* _buffer;
-        };
 
         class Command : public Core::IOutbound, public Core::IInbound {
         private:
@@ -389,7 +397,7 @@ namespace Bluetooth {
                 Response& operator=(const Response&) = delete;
 
                 static constexpr uint16_t BLOCKSIZE = 64;
-                typedef std::pair<uint16_t, uint16_t> Entry;
+                typedef std::pair<uint16_t, std::pair<uint16_t, uint16_t> > Entry;
 
             public:
                 Response()
@@ -447,7 +455,7 @@ namespace Bluetooth {
                 }
                 uint16_t Group() const
                 {
-                    return (_iterator->second);
+                    return (_iterator->second.first);
                 }
                 uint16_t Count() const
                 {
@@ -462,13 +470,13 @@ namespace Bluetooth {
                     uint16_t result = _loaded;
                     if (IsValid() == true) {
                         std::list<Entry>::iterator next(_iterator);
-                        result = (++next == _result.end() ? (_loaded - _iterator->second) : (next->second - _iterator->second));
+                        result = (++next == _result.end() ? (_loaded - _iterator->second.second) : (next->second.second - _iterator->second.second));
                     }
                     return (result);
                 }
                 const uint8_t* Data() const
                 {
-                    return (IsValid() == true ? &(_storage[_iterator->second]) : (((_result.size() <= 1) && (_loaded > 0)) ? _storage : nullptr));
+                    return (IsValid() == true ? &(_storage[_iterator->second.second]) : (((_result.size() <= 1) && (_loaded > 0)) ? _storage : nullptr));
                 }
 
             private:
@@ -484,7 +492,7 @@ namespace Bluetooth {
                         _min = handle;
                     if (_max < handle)
                         _max = handle;
-                    _result.emplace_back(Entry(handle, group));
+                    _result.emplace_back(Entry(handle, std::pair<uint16_t,uint16_t>(group,_loaded)));
                 }
                 void Add(const uint16_t handle, const uint8_t length, const uint8_t buffer[])
                 {
@@ -493,22 +501,33 @@ namespace Bluetooth {
                     if (_max < handle)
                         _max = handle;
 
-                    _result.emplace_back(Entry(handle, _loaded));
+                    _result.emplace_back(Entry(handle, std::pair<uint16_t,uint16_t>(0,_loaded)));
+                    Extend(length, buffer);
+                }
+                void Add(const uint16_t handle, const uint16_t group, const uint8_t length, const uint8_t buffer[])
+                {
+                    if (_min > handle)
+                        _min = handle;
+                    if (_max < handle)
+                        _max = handle;
+                    _result.emplace_back(Entry(handle, std::pair<uint16_t,uint16_t>(group,_loaded)));
                     Extend(length, buffer);
                 }
                 void Extend(const uint8_t length, const uint8_t buffer[])
                 {
-                    if ((_loaded + length) > _maxSize) {
-                        _maxSize = ((((_loaded + length) / BLOCKSIZE) + 1) * BLOCKSIZE);
-                        _storage = reinterpret_cast<uint8_t*>(::realloc(_storage, _maxSize));
-                    }
+                    if (length > 0) {
+                        if ((_loaded + length) > _maxSize) {
+                            _maxSize = ((((_loaded + length) / BLOCKSIZE) + 1) * BLOCKSIZE);
+                            _storage = reinterpret_cast<uint8_t*>(::realloc(_storage, _maxSize));
+                        }
 
-                    ::memcpy(&(_storage[_loaded]), buffer, length);
-                    _loaded += length;
+                        ::memcpy(&(_storage[_loaded]), buffer, length);
+                        _loaded += length;
+                    }
                 }
                 uint16_t Offset() const
                 {
-                    return (_result.size() != 0 ? _loaded : _loaded - _result.back().second);
+                    return (_result.size() != 0 ? _loaded : _loaded - _result.back().second.second);
                 }
 
             private:
@@ -572,6 +591,12 @@ namespace Bluetooth {
                 _response.Clear();
                 _error = ~0;
                 _id = _frame.ReadBlob(handle, 0);
+            }
+            void Read(const uint16_t handle)
+            {
+                _response.Clear();
+                _error = ~0;
+                _id = _frame.Read(handle);
             }
             void Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
             {
@@ -735,6 +760,252 @@ namespace Bluetooth {
         std::list<Entry> _queue;
         uint32_t _mtuSize;
         struct l2cap_conninfo _connectionInfo;
+    };
+
+    class Profile {
+    private:
+        static constexpr uint16_t PRIMARY_SERVICE_UUID = 0x2800;
+        static constexpr uint16_t CHARACTERISTICS_UUID = 0x2803;
+
+    public:
+        class Service {
+        public:
+            enum type : uint16_t {
+                GenericAccess               = 0x1800,
+                AlertNotificationService    = 0x1811,
+                AutomationIO                = 0x1815,
+                BatteryService              = 0x180F,
+                BinarySensor                = 0x183B,
+                BloodPressure               = 0x1810,
+                BodyComposition             = 0x181B,
+                BondManagementService       = 0x181E,
+                ContinuousGlucoseMonitoring = 0x181F,
+                CurrentTimeService          = 0x1805,
+                CyclingPower                = 0x1818,
+                CyclingSpeedAndCadence      = 0x1816,
+                DeviceInformation           = 0x180A,
+                EmergencyConfiguration      = 0x183C,
+                EnvironmentalSensing        = 0x181A,
+                FitnessMachine              = 0x1826,
+                GenericAttribute            = 0x1801,
+                Glucose                     = 0x1808,
+                HealthThermometer           = 0x1809,
+                HeartRate                   = 0x180D,
+                HTTPProxy                   = 0x1823,
+                HumanInterfaceDevice        = 0x1812,
+                ImmediateAlert              = 0x1802,
+                IndoorPositioning           = 0x1821,
+                InsulinDelivery             = 0x183A,
+                InternetProtocolSupport     = 0x1820,
+                LinkLoss                    = 0x1803,
+                LocationAndNavigation       = 0x1819,
+                MeshProvisioningService     = 0x1827,
+                MeshProxyService            = 0x1828,
+                NextDSTChangeService        = 0x1807,
+                ObjectTransferService       = 0x1825,
+                PhoneAlertStatusService     = 0x180E,
+                PulseOximeterService        = 0x1822,
+                ReconnectionConfiguration   = 0x1829,
+                ReferenceTimeUpdateService  = 0x1806,
+                RunningSpeedAndCadence      = 0x1814,
+                ScanParameters              = 0x1813,
+                TransportDiscovery          = 0x1824,
+                TxPower                     = 0x1804,
+                UserData                    = 0x181C,
+                WeightScale                 = 0x181D,
+            };
+
+        public:
+            typedef Core::IteratorType< const std::list<Attribute>, const Attribute&, std::list<Attribute>::const_iterator> Iterator;
+
+            Service(const Service&) = delete;
+            Service& operator= (const Service&) = delete;
+
+            Service(uint16_t serviceId, const uint16_t handle, const uint16_t group)
+                : _index(handle)
+                , _group(group)
+                , _serviceId(serviceId) {
+            }
+            ~Service() {
+            }
+
+        public:
+            type Type() const {
+                return (static_cast<type>(_serviceId));
+            }
+            const TCHAR* Name() const {
+                Core::EnumerateType<type> value(Type());
+                return (value.IsSet() == false ? nullptr : value.Data());
+            }
+            Iterator Characteristics() const {
+                return (Iterator(_characteristics));
+            }
+
+        private:
+            friend class Profile;
+            uint16_t Handle () const {
+                return (_index <= _group ? _index : 0);
+            }
+            void Characteristic (const uint16_t length, const uint8_t buffer[]) {
+                _characteristics.emplace_back(length, buffer);
+                _index++;
+            }
+
+        private:
+            uint16_t _index;
+            uint16_t _group;
+            uint16_t _serviceId;
+            std::list<Attribute> _characteristics;
+        };
+
+    public:
+        typedef std::function<void(const uint32_t)> Handler;
+        typedef Core::IteratorType< const std::list<Service>, const Service&, std::list<Service>::const_iterator> Iterator;
+
+        Profile (const Profile&) = delete;
+        Profile& operator= (const Profile&) = delete;
+
+        Profile()
+            : _adminLock()
+            , _socket(nullptr)
+            , _command()
+            , _handler()
+            , _expired(0) {
+        }
+        ~Profile() {
+        }
+
+    public:
+        uint32_t Discover(const uint32_t waitTime, GATTSocket& socket, const Handler& handler) {
+            uint32_t result = Core::ERROR_INPROGRESS;
+
+            _adminLock.Lock();
+            if (_socket == nullptr) {
+                result = Core::ERROR_NONE;
+                _socket = &socket;
+                _expired = Core::Time::Now().Add(waitTime).Ticks();
+                _handler = handler;
+
+                _command.ReadByGroupType(0x0001, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
+                _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
+            }
+            _adminLock.Unlock();
+
+            return(result);
+        }
+        void Abort () {
+            Report(Core::ERROR_ASYNC_ABORTED);
+        }
+        bool IsValid() const {
+            return ((_services.size() > 0) && (_expired == Core::ERROR_NONE));
+        }
+        Iterator Services() const {
+            return (Iterator(_services));
+        }
+
+    private:
+        void OnServices(const GATTSocket::Command& cmd) {
+            ASSERT (&cmd == &_command);
+
+            if (cmd.Error() != Core::ERROR_NONE) {
+                // Seems like the services could not be discovered, report it..
+                Report(Core::ERROR_GENERAL);
+            }
+            else {
+                uint32_t waitTime = AvailableTime();
+
+                if (waitTime > 0) {
+                    _services.clear();
+                    GATTSocket::Command::Response& response(_command.Result());
+
+                    while (response.Next() == true) {
+                        if (response.Length() == 2) {
+                            const uint8_t* service = response.Data();
+
+                            _services.emplace_back( (service[0] | (service[1] << 8)), response.Handle(), response.Group() );
+                        }
+                    }
+
+                    if (_services.size() == 0) {
+                        Report (Core::ERROR_UNAVAILABLE);
+                    }
+                    else {
+                        _index = _services.begin();
+
+                        _adminLock.Lock();
+                        if (_socket != nullptr) {
+                            _command.Read(_index->Handle());
+                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
+                        }
+                        _adminLock.Unlock();
+                    }
+                }
+            }
+        }
+        void OnCharacteristics(const GATTSocket::Command& cmd) {
+            ASSERT (&cmd == &_command);
+
+            if (cmd.Error() != Core::ERROR_NONE) {
+                // Seems like the services could not be discovered, report it..
+                Report(Core::ERROR_GENERAL);
+            }
+            else {
+                uint32_t waitTime = AvailableTime();
+
+                if (waitTime > 0) {
+                    GATTSocket::Command::Response& response(_command.Result());
+                    _index->Characteristic(response.Length(), response.Data());
+                    uint16_t next = _index->Handle();
+                    if (next == 0) {
+                        _index++;
+                        if (_index != _services.end()) {
+                            next = _index->Handle();
+                        }
+                    }
+                    if (next == 0) {
+                        Report(Core::ERROR_NONE);
+                    }
+                    else {
+                        _adminLock.Lock();
+                        if (_socket != nullptr) {
+                            _command.Read(_index->Handle());
+                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
+                        }
+                        _adminLock.Unlock();
+                    }
+                }
+            }
+        }
+        void Report(const uint32_t result) {
+            _adminLock.Lock();
+            if (_socket != nullptr) {
+                Handler caller = _handler;
+                _socket = nullptr;
+                _handler = nullptr;
+                _expired = result;
+
+                caller(result);
+            }
+            _adminLock.Unlock();
+        }
+        uint32_t AvailableTime () {
+            uint64_t now = Core::Time::Now().Ticks();
+            uint32_t result = (now >= _expired ? 0 : static_cast<uint32_t>((_expired - now) / Core::Time::TicksPerMillisecond));
+
+            if (result == 0) {
+                Report(Core::ERROR_TIMEDOUT);
+            }
+            return (result);
+        }
+
+    private:
+        Core::CriticalSection _adminLock;
+        std::list<Service> _services;
+        std::list<Service>::iterator _index;
+        GATTSocket* _socket;
+        GATTSocket::Command _command;
+        Handler _handler;
+        uint64_t _expired;
     };
 
 } // namespace Bluetooth
