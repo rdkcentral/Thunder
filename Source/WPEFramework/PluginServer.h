@@ -184,46 +184,6 @@ namespace PluginHost {
                 Core::JSON::EnumType<PluginHost::InputHandler::type> Type;
             };
 
-            class Environment : public Core::JSON::Container {
-            public:
-                Environment()
-                    : Core::JSON::Container()
-                    , Key()
-                    , Value()
-                    , Override(false)
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value);
-                    Add(_T("override"), &Override);
-                }
-                Environment(const Environment& copy)
-                    : Core::JSON::Container()
-                    , Key(copy.Key)
-                    , Value(copy.Value)
-                    , Override(copy.Override)
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value);
-                    Add(_T("override"), &Override);
-                }
-                virtual ~Environment()
-                {
-                }
-                Environment& operator=(const Environment& RHS)
-                {
-                    Key = RHS.Key;
-                    Value = RHS.Value;
-                    Override = RHS.Override;
-
-                    return (*this);
-                }
-
-            public:
-                Core::JSON::String Key;
-                Core::JSON::String Value;
-                Core::JSON::Boolean Override;
-            };
-
 #ifdef PROCESSCONTAINERS_ENABLED
 
             class ProcessContainerConfig : public Core::JSON::Container {
@@ -343,7 +303,7 @@ namespace PluginHost {
             InputConfig Input;
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
-            Core::JSON::ArrayType<Environment> Environments;
+            Core::JSON::ArrayType<Environment::Config> Environments;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif

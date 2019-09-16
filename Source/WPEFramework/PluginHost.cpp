@@ -1,5 +1,4 @@
 #include "PluginServer.h"
-#include "EnvironmentConfig.h"
 // #include "Portability.h"
 
 #ifndef __WIN32__
@@ -18,7 +17,6 @@ namespace PluginHost {
 
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
-    PluginHost::EnvironmentConfig::VariableMap PluginHost::EnvironmentConfig::_variables;
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -327,11 +325,6 @@ namespace PluginHost {
             if (serviceConfig.Process.StackSize.IsSet() == true) {
                 Core::Thread::DefaultStackSize(serviceConfig.Process.StackSize.Value());
             }
-        }
-
-        if (serviceConfig.Environments.IsSet() == true) {
-            EnvironmentConfig::Initialize(serviceConfig);
-            EnvironmentConfig::SetEnvironments(serviceConfig, serviceConfig.Environments);
         }
 
 #ifndef __WIN32__
