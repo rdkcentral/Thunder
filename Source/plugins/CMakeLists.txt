@@ -18,6 +18,7 @@ set(PUBLIC_HEADERS
         Channel.h
         Config.h
         Configuration.h
+        Environment.h
         IPlugin.h
         IShell.h
         IStateControl.h
