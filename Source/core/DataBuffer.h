@@ -105,6 +105,7 @@ namespace Core {
         }
         uint16_t Write(const uint8_t* dataFrame, const uint16_t receivedSize)
         {
+            ASSERT(receivedSize < _size);
             uint32_t freeBuffer = Free();
             uint32_t result = ((receivedSize + _head) > _size ? (_size - _head) : receivedSize);
 
