@@ -221,6 +221,10 @@ namespace VirtualInput{
         static Core::ProxyType<Core::IIPCServer> _mouseCallback;
         static Core::ProxyType<Core::IIPCServer> _touchCallback;
     };
+
+    Core::ProxyType<Core::IIPCServer> Controller::_keyCallback;
+    Core::ProxyType<Core::IIPCServer> Controller::_mouseCallback;
+    Core::ProxyType<Core::IIPCServer> Controller::_touchCallback;
 }
 }
 
