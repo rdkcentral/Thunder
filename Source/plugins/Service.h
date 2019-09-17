@@ -3,7 +3,6 @@
 
 #include "Channel.h"
 #include "Configuration.h"
-#include "Environment.h"
 #include "IPlugin.h"
 #include "IShell.h"
 #include "MetaData.h"
@@ -279,10 +278,6 @@ namespace PluginHost {
         {
             return (_config.Configuration().Resumed.Value());
         }
-        virtual string ConfigSubstitution(const string& input) const
-        {
-            return _environment.SubstituteVariables(_config.Information(), input);
-        }
         virtual bool IsSupported(const uint8_t number) const
         {
             return (_config.IsSupported(number));
@@ -477,7 +472,6 @@ namespace PluginHost {
         state _state;
         Config _config;
         string _errorMessage;
-        Environment _environment;
 
         // In case the Service also has WebPage availability, these variables
         // contain the URL path and the start of the path location on disk.

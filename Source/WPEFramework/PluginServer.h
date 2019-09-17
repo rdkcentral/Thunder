@@ -3,6 +3,7 @@
 
 #include "Module.h"
 #include "SystemInfo.h"
+#include "Environment.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -926,6 +927,10 @@ namespace PluginHost {
 
                 Unlock();
             }
+            virtual string ConfigSubstitution(const string& input) const
+            {
+                return _administrator.EnvironmentConfig().SubstituteVariables(_administrator.Configuration(), input);
+            }
             virtual uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             virtual ISubSystem* SubSystems() override;
             virtual void Notify(const string& message) override;
@@ -933,6 +938,7 @@ namespace PluginHost {
             virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
             virtual void Register(IPlugin::INotification* sink) override;
             virtual void Unregister(IPlugin::INotification* sink) override;
+
 
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
             virtual ICOMLink* COMLink() override;
@@ -1677,6 +1683,12 @@ namespace PluginHost {
 
             void Destroy();
 
+            inline const Environment& EnvironmentConfig() const {
+                return _server.EnvironmentConfig();
+            }
+            inline const PluginHost::Config& Configuration() const {
+                return _server.Configuration();
+            }
         private:
             void RecursiveNotification(std::map<const string, Core::ProxyType<Service>>::iterator& index)
             {
@@ -2528,6 +2540,9 @@ namespace PluginHost {
             _controller->Notification(message);
         }
 #endif
+        const Environment& EnvironmentConfig() const {
+            return _environment;
+        }
         void Open();
         void Close();
 
@@ -2563,6 +2578,8 @@ namespace PluginHost {
         // Hold on to the controller that controls the PluginHost. Using this plugin, the
         // system can externally control the webbridge.
         Core::ProxyType<Service> _controller;
+
+        Environment _environment;
     };
 }
 }

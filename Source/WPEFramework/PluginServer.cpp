@@ -626,8 +626,7 @@ namespace PluginHost
         }
 
         if (configuration.Environments.IsSet() == true) {
-            PluginHost::Environment environment;
-            environment.Set(_config, configuration.Environments);
+            _environment.Set(_config, configuration.Environments);
         }
 
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
