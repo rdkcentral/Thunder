@@ -253,6 +253,24 @@ EXTERNAL struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
     const uint32_t waitTime);
 
 /**
+ * \brief Maps key ID to \ref OpenCDMSession instance within the given system instance.
+ *
+ * In some situations we only have the key ID, but need the specific \ref
+ * OpenCDMSession instance that
+ * belongs to this key ID. This method facilitates this requirement.
+ * \param system Instance of \ref OpenCDMSystem.
+ * \param keyId Array containing key ID.
+ * \param length Length of keyId array.
+ * \param maxWaitTime Maximum allowed time to block (in miliseconds).
+ * \return \ref OpenCDMSession belonging to key ID, or NULL when not found or
+ * timed out. This instance
+ *         also needs to be destructed using \ref opencdm_session_destruct.
+ */
+EXTERNAL struct OpenCDMSession* opencdm_get_system_session(struct OpenCDMSystem* system, const uint8_t keyId[],
+    const uint8_t length, const uint32_t waitTime);
+
+
+/**
  * \brief Sets server certificate.
  *
  * Some DRMs (e.g. WideVine) use a system-wide server certificate. This method

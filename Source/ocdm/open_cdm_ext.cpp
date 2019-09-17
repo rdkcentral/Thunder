@@ -283,7 +283,7 @@ opencdm_construct_session(struct OpenCDMSystem* system,
     TRACE_L1("Creating a Session for %s", system->m_keySystem.c_str());
 
     if (system != nullptr) {
-        *session = new OpenCDMSession(system->m_keySystem, std::string(initDataType),
+        *session = new OpenCDMSession(system, std::string(initDataType),
                             initData, initDataLength, CDMData,
                             CDMDataLength, licenseType, callbacks, userData);
         result = (*session != nullptr ? OpenCDMError::ERROR_NONE

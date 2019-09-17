@@ -9,6 +9,10 @@ using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;
 
+struct OpenCDMSystem {
+    std::string m_keySystem;
+};
+
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM,
                          public OCDM::IAccessorOCDMExt {
 private:
@@ -174,7 +178,7 @@ public:
     bool WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
         const uint32_t waitTime,
         const OCDM::ISession::KeyStatus status,
-        std::string& sessionId) const;
+        std::string& sessionId, OpenCDMSystem* system = nullptr) const;
 
 public:
     virtual void AddRef() const override
@@ -229,9 +233,8 @@ public:
             serverCertificateLength));
     }
 
-    OpenCDMSession* Session(const std::string sessionId);
+    OpenCDMSession* Session(const std::string& sessionId);
 
-    OpenCDMSession* Session(const uint8_t keyId[], const uint8_t length);
     void AddSession(OpenCDMSession* sessionId);
     void RemoveSession(const string& sessionId);
     void KeyUpdate()
@@ -503,7 +506,7 @@ public:
     OpenCDMSession& operator= (const OpenCDMSession&) = delete;
     OpenCDMSession() = delete;
 
-    OpenCDMSession(const string& keySystem,
+    OpenCDMSession(OpenCDMSystem* system,
         const string& initDataType,
         const uint8_t* pbInitData, const uint16_t cbInitData,
         const uint8_t* pbCustomData,
@@ -524,12 +527,13 @@ public:
         , _error()
         , _errorCode(~0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
+        , _system(system)
     {
-        OpenCDMAccessor* system = OpenCDMAccessor::Instance();
+        OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
         std::string bufferId;
         OCDM::ISession* realSession = nullptr;
 
-        system->CreateSession(keySystem, licenseType, initDataType, pbInitData,
+        accessor->CreateSession(system->m_keySystem, licenseType, initDataType, pbInitData,
             cbInitData, pbCustomData, cbCustomData, &_sink,
             _sessionId, realSession);
 
@@ -538,7 +542,7 @@ public:
         } else {
             Session(realSession);
             realSession->Release();
-            system->AddSession(this);
+            accessor->AddSession(this);
         }
     }
 
@@ -699,6 +703,7 @@ public:
         return (_sysError);
     }
 
+    bool BelongsTo(OpenCDMSystem* system) { return system == _system; }
 
 protected:
     void Session(OCDM::ISession* session)
@@ -779,6 +784,7 @@ protected:
     DataExchange* _decryptSession;
 
 private:
+
     OCDM::ISession* _session;
     OCDM::ISessionExt* _sessionExt;
     uint32_t _refCount;
@@ -790,9 +796,6 @@ private:
     std::string _error;
     uint32_t _errorCode;
     OCDM::OCDM_RESULT _sysError;
-};
-
-struct OpenCDMSystem {
-    std::string m_keySystem;
+    OpenCDMSystem* _system;
 };
 
