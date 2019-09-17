@@ -430,6 +430,7 @@ private:
     uint16_t _touch_x;
     uint16_t _touch_y;
     uint16_t _touch_state;
+    IDisplay::IKeyboard::state _key_state;
 
     mutable uint32_t _refCount;
 };
@@ -561,6 +562,7 @@ Display::Display(const string& name)
     , _touch_x(-1)
     , _touch_y(-1)
     , _touch_state(0)
+    , _key_state(IDisplay::IKeyboard::released)
     , _refCount(0)
 {
 }
@@ -579,8 +581,8 @@ int Display::Process(const uint32_t data)
         std::function<void(SurfaceImplementation*)> action = nullptr;
 
         if (message.type == KEYBOARD) {
-            const IDisplay::IKeyboard::state state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed);
-            action = [&](SurfaceImplementation* s) { s->SendKey(message.keyData.code, state, timestamp); };
+            _key_state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed);
+            action = [&](SurfaceImplementation* s) { s->SendKey(message.keyData.code, _key_state, timestamp); };
         } else if (message.type == MOUSE) {
             // Clamp movement to display size
             // TODO: Handle surfaces that are not full screen
