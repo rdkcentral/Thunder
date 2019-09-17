@@ -603,7 +603,7 @@ namespace PluginHost
                         (data.Action == IVirtualInput::KeyData::RELEASED ? 0 : 2)));
             ev.code  = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? 0 : data.Code);
 
-            TRACE_L1("Inserted a keycode: %d", data.code);
+            TRACE_L1("Inserted a keycode: %d", data.Code);
             (void)write(_eventDescriptor, &ev, sizeof(ev));
         }
     }
