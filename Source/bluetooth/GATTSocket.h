@@ -7,20 +7,28 @@ namespace WPEFramework {
 namespace Bluetooth {
 
     class UUID {
-    public:
-        // const uint8_t BASE[] = { 00000000-0000-1000-8000-00805F9B34FB };
+    private:
+        static const uint8_t BASE[];
 
     public:
         UUID(const uint16_t uuid)
         {
             _uuid[0] = 2;
-            _uuid[1] = (uuid & 0xFF);
-            _uuid[2] = (uuid >> 8) & 0xFF;
+            ::memcpy(&(_uuid[1]), BASE, sizeof(_uuid) - 3);
+            _uuid[15] = (uuid & 0xFF);
+            _uuid[16] = (uuid >> 8) & 0xFF;
         }
         UUID(const uint8_t uuid[16])
         {
-            _uuid[0] = 16;
             ::memcpy(&(_uuid[1]), uuid, 16);
+
+            // See if this contains the Base, cause than it can be a short...
+            if (::memcmp(BASE, uuid, 14) == 0) {
+                _uuid[0] = 2;
+            }
+            else {
+                _uuid[0] = 16;
+            }
         }
         UUID(const UUID& copy)
         {
@@ -40,11 +48,13 @@ namespace Bluetooth {
         uint16_t Short() const
         {
             ASSERT(_uuid[0] == 2);
-            return ((_uuid[2] << 8) | _uuid[1]);
+            return ((_uuid[16] << 8) | _uuid[15]);
         }
         bool operator==(const UUID& rhs) const
         {
-            return (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0);
+            return ((rhs._uuid[0] == _uuid[0]) && 
+                    ((_uuid[0] == 2) ? ((rhs._uuid[15] == _uuid[15]) && (rhs._uuid[16] == _uuid[16])) : 
+                                       (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0)));
         }
         bool operator!=(const UUID& rhs) const
         {
@@ -60,7 +70,52 @@ namespace Bluetooth {
         }
         const uint8_t* Data() const
         {
-            return &(_uuid[1]);
+             return (_uuid[0] == 2 ? &(_uuid[15]) :  &(_uuid[1]));
+        }
+        string ToString(const bool full = false) const {
+
+            // 00002a23-0000-1000-8000-00805f9b34fb
+            static const TCHAR hexArray[] = "0123456789abcdef";
+
+            uint8_t index = 0;
+            string result;
+
+            if ((HasShort() == false) || (full == true)) {
+                result.resize(36);
+                for (uint8_t byte = 12 + 4; byte > 12; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+                result[index++] = '-';
+                for (uint8_t byte = 10 + 2; byte > 10; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+                result[index++] = '-';
+                for (uint8_t byte = 8 + 2; byte > 8; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+                result[index++] = '-';
+                for (uint8_t byte = 6 + 2; byte > 6; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+                result[index++] = '-';
+                for (uint8_t byte = 0 + 6; byte > 0; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+            }
+            else {
+                result.resize(4);
+
+                for (uint8_t byte = 14 + 2; byte > 14; byte--) {
+                    result[index++] = hexArray[_uuid[byte] >> 4];
+                    result[index++] = hexArray[_uuid[byte] & 0xF];
+                }
+            }
+            return (result);
         }
 
     private:
@@ -478,6 +533,12 @@ namespace Bluetooth {
                 {
                     return (IsValid() == true ? &(_storage[_iterator->second.second]) : (((_result.size() <= 1) && (_loaded > 0)) ? _storage : nullptr));
                 }
+                uint16_t Min() const {
+                    return(_min);
+                }
+                uint16_t Max() const {
+                    return(_max);
+                }
 
             private:
                 friend class Command;
@@ -490,8 +551,8 @@ namespace Bluetooth {
                 {
                     if (_min > handle)
                         _min = handle;
-                    if (_max < handle)
-                        _max = handle;
+                    if (_max < group)
+                        _max = group;
                     _result.emplace_back(Entry(handle, std::pair<uint16_t,uint16_t>(group,_loaded)));
                 }
                 void Add(const uint16_t handle, const uint8_t length, const uint8_t buffer[])
@@ -508,8 +569,8 @@ namespace Bluetooth {
                 {
                     if (_min > handle)
                         _min = handle;
-                    if (_max < handle)
-                        _max = handle;
+                    if (_max < group)
+                        _max = group;
                     _result.emplace_back(Entry(handle, std::pair<uint16_t,uint16_t>(group,_loaded)));
                     Extend(length, buffer);
                 }
@@ -822,7 +883,12 @@ namespace Bluetooth {
             Service& operator= (const Service&) = delete;
 
             Service(uint16_t serviceId, const uint16_t handle, const uint16_t group)
-                : _index(handle)
+                : _index(handle + 1)
+                , _group(group)
+                , _serviceId(serviceId) {
+            }
+            Service(const uint8_t serviceId[16], const uint16_t handle, const uint16_t group)
+                : _index(handle + 1)
                 , _group(group)
                 , _serviceId(serviceId) {
             }
@@ -830,12 +896,19 @@ namespace Bluetooth {
             }
 
         public:
-            type Type() const {
-                return (static_cast<type>(_serviceId));
+            const UUID& Type() const {
+                return (_serviceId);
             }
-            const TCHAR* Name() const {
-                Core::EnumerateType<type> value(Type());
-                return (value.IsSet() == false ? nullptr : value.Data());
+            string Name() const {
+                string result;
+                if (_serviceId.HasShort() == false) {
+                    result = _serviceId.ToString();
+                }
+                else {
+                    Core::EnumerateType<type> value(static_cast<type>(_serviceId.Short()));
+                    result = (value.IsSet() == true ? string(value.Data()) : _serviceId.ToString(false));
+                }
+                return (result);
             }
             Iterator Characteristics() const {
                 return (Iterator(_characteristics));
@@ -854,7 +927,7 @@ namespace Bluetooth {
         private:
             uint16_t _index;
             uint16_t _group;
-            uint16_t _serviceId;
+            UUID _serviceId;
             std::list<Attribute> _characteristics;
         };
 
@@ -865,8 +938,11 @@ namespace Bluetooth {
         Profile (const Profile&) = delete;
         Profile& operator= (const Profile&) = delete;
 
-        Profile()
+        Profile(const bool includeVendorCharacteristics)
             : _adminLock()
+            , _services()
+            , _index()
+            , _includeVendorCharacteristics(includeVendorCharacteristics)
             , _socket(nullptr)
             , _command()
             , _handler()
@@ -885,7 +961,7 @@ namespace Bluetooth {
                 _socket = &socket;
                 _expired = Core::Time::Now().Add(waitTime).Ticks();
                 _handler = handler;
-
+                _services.clear();
                 _command.ReadByGroupType(0x0001, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
                 _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
             }
@@ -904,6 +980,16 @@ namespace Bluetooth {
         }
 
     private:
+        std::list<Service>::iterator ValidService(const std::list<Service>::iterator& input) {
+            if (_includeVendorCharacteristics == false) {
+                std::list<Service>::iterator index(input);
+                while ( (index != _services.end()) && (index->Type().HasShort() == false) ) {
+                    index++;
+                }
+                return (index);
+            }
+            return (input);
+        }
         void OnServices(const GATTSocket::Command& cmd) {
             ASSERT (&cmd == &_command);
 
@@ -915,29 +1001,39 @@ namespace Bluetooth {
                 uint32_t waitTime = AvailableTime();
 
                 if (waitTime > 0) {
-                    _services.clear();
                     GATTSocket::Command::Response& response(_command.Result());
 
                     while (response.Next() == true) {
+                        const uint8_t* service = response.Data();
                         if (response.Length() == 2) {
-                            const uint8_t* service = response.Data();
-
                             _services.emplace_back( (service[0] | (service[1] << 8)), response.Handle(), response.Group() );
+                        }
+                        else if (response.Length() == 16) {
+                            _services.emplace_back( service, response.Handle(), response.Group() );
                         }
                     }
 
                     if (_services.size() == 0) {
                         Report (Core::ERROR_UNAVAILABLE);
                     }
+                    else if ((response.Count() > 0) && (response.Max() < 0xFFFF)) {
+                        _command.ReadByGroupType(response.Max() + 1, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
+                        _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
+                    }
                     else {
-                        _index = _services.begin();
+                        _index = ValidService(_services.begin());
 
-                        _adminLock.Lock();
-                        if (_socket != nullptr) {
-                            _command.Read(_index->Handle());
-                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
+                        if (_index == _services.end()) {
+                            Report (Core::ERROR_NONE);
                         }
-                        _adminLock.Unlock();
+                        else {
+                            _adminLock.Lock();
+                            if (_socket != nullptr) {
+                                _command.Read(_index->Handle());
+                                _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
+                            }
+                            _adminLock.Unlock();
+                        }
                     }
                 }
             }
@@ -957,7 +1053,7 @@ namespace Bluetooth {
                     _index->Characteristic(response.Length(), response.Data());
                     uint16_t next = _index->Handle();
                     if (next == 0) {
-                        _index++;
+                        _index = ValidService(++_index);
                         if (_index != _services.end()) {
                             next = _index->Handle();
                         }
@@ -1002,6 +1098,7 @@ namespace Bluetooth {
         Core::CriticalSection _adminLock;
         std::list<Service> _services;
         std::list<Service>::iterator _index;
+        bool _includeVendorCharacteristics;
         GATTSocket* _socket;
         GATTSocket::Command _command;
         Handler _handler;

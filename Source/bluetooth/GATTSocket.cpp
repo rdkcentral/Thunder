@@ -51,6 +51,8 @@ ENUM_CONVERSION_END(Bluetooth::Profile::Service::type)
 
 namespace Bluetooth {
 
+/* static */ const uint8_t UUID::BASE[] = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
 {
     uint16_t result = 0;
@@ -126,8 +128,8 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
         result = length;
 
         TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
-        // printf("L2CAP received [%d]: ", length);
-        // for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
+        printf("L2CAP received [%d]: ", length);
+        for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
 
         // This is what we are expecting, so process it...
         switch (stream[0]) {
