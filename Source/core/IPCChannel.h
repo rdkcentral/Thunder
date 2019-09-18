@@ -230,6 +230,7 @@ namespace Core {
             Close(infinite);
 
             if (_clients.size() > 0) {
+                InternalCleanup();
 
                 TRACE_L1("Closing clients that should have been closed before destruction [%d].", static_cast<uint32_t>(_clients.size()));
                 CloseClients();
@@ -307,13 +308,6 @@ namespace Core {
             std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.find(id));
 
             ASSERT(index != _handlers.end());
-
-            typename ClientMap::iterator cleaner(_clients.begin());
-            while (cleaner != _clients.end()) {
-                if (cleaner->second->IsClosed() == true)
-                    cleaner->second->Unregister(index->first);
-                cleaner++;
-            }
 
             if (index != _handlers.end()) {
                 _handlers.erase(index);
