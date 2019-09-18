@@ -4,10 +4,13 @@
 #include <core/core.h>
 #include <websocket/websocket.h>
 
-using namespace WPEFramework;
+namespace WPEFramework {
+namespace Tests {
+
 namespace StreamTextTest {
     const TCHAR* g_connector = "/tmp/wpestreamtext0";
     bool g_done = false;
+} // StreamTextTest 
 
     class TextConnector : public Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> {
     private:
@@ -41,12 +44,12 @@ namespace StreamTextTest {
                 Submit(text);
             else {
                 _dataReceived = text;
-                _dataPending.SetEvent();
+                _dataPending.Unlock();
             }
         }
-        int Wait(unsigned int milliseconds) const
+        int Wait() const
         {
-            return _dataPending.Lock(milliseconds);
+            return _dataPending.Lock();
         }
         void Retrieve(string& text)
         {
@@ -60,7 +63,7 @@ namespace StreamTextTest {
         {
             if (IsOpen()) {
                 if (_serverSocket)
-                    g_done = true;
+                    StreamTextTest::g_done = true;
             }
         }
 
@@ -69,33 +72,34 @@ namespace StreamTextTest {
         string _dataReceived;
         mutable WPEFramework::Core::Event _dataPending;
     };
-}
 
-TEST(Core_Socket, StreamText)
-{
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-        Core::SocketServerType<StreamTextTest::TextConnector> textSocketServer(Core::NodeId(StreamTextTest::g_connector));
-        textSocketServer.Open(Core::infinite);
-        testAdmin.Sync("setup server");
-        while(!StreamTextTest::g_done);
-        testAdmin.Sync("server open");
-        testAdmin.Sync("client done");
-    };
-
-    IPTestAdministrator testAdmin(otherSide);
-    testAdmin.Sync("setup server");
+    TEST(Core_Socket, StreamText)
     {
-        StreamTextTest::TextConnector textSocketClient(Core::NodeId(StreamTextTest::g_connector));
-        textSocketClient.Open(Core::infinite);
-        testAdmin.Sync("server open");
-        string message = "hello";
-        textSocketClient.Submit(message);
-        textSocketClient.Wait(2000);
-        string received;
-        textSocketClient.Retrieve(received);
-        ASSERT_STREQ(message.c_str(), received.c_str());
-        textSocketClient.Close(Core::infinite);
-        testAdmin.Sync("client done");
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(StreamTextTest::g_connector));
+            textSocketServer.Open(Core::infinite);
+            testAdmin.Sync("setup server");
+            while(!StreamTextTest::g_done);
+            testAdmin.Sync("server open");
+            testAdmin.Sync("client done");
+        };
+
+        IPTestAdministrator testAdmin(otherSide);
+        testAdmin.Sync("setup server");
+        {
+            TextConnector textSocketClient(Core::NodeId(StreamTextTest::g_connector));
+            textSocketClient.Open(Core::infinite);
+            testAdmin.Sync("server open");
+            string message = "hello";
+            textSocketClient.Submit(message);
+            textSocketClient.Wait();
+            string received;
+            textSocketClient.Retrieve(received);
+            EXPECT_STREQ(message.c_str(), received.c_str());
+            textSocketClient.Close(Core::infinite);
+            testAdmin.Sync("client done");
+        }
+        Core::Singleton::Dispose();
     }
-    Core::Singleton::Dispose();
-}
+} // Tests
+} // WPEFramework

@@ -16,7 +16,7 @@ namespace Exchange {
         virtual void Add(uint32_t value) = 0;
         virtual uint32_t GetPid() = 0;
     };
-}
+} // Exchange
 
 namespace Tests {
 
@@ -282,5 +282,5 @@ namespace Tests {
        testAdmin.Sync("done testing");
        Core::Singleton::Dispose();
     }
-}
-}
+} // Tests
+} // WPEFramework

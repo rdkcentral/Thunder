@@ -35,17 +35,6 @@ namespace Tests {
         Core::Time _nextTick;
     };
 
-    TEST(Core_Timer, PastTime)
-    {
-        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
-        uint32_t time = 100; // 0.1 second
-
-        Core::Time pastTime = Core::Time::Now();
-        pastTime.Sub(time);
-        timer.Schedule(pastTime.Ticks(), TimeHandler(pastTime));
-        usleep(100);
-    }
-
     TEST(Core_Timer, LoopedTimer)
     {
         Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
@@ -73,5 +62,17 @@ namespace Tests {
         timer.Schedule(nextTick.Ticks(), TimeHandler(nextTick));
         while(!(g_done == 5));
     }
-}
-}
+
+    TEST(Core_Timer, PastTime)
+    {
+        Core::TimerType<TimeHandler> timer(Core::Thread::DefaultStackSize(), _T(""));
+        uint32_t time = 100; // 0.1 second
+
+        Core::Time pastTime = Core::Time::Now();
+        pastTime.Sub(time);
+        timer.Schedule(pastTime.Ticks(), TimeHandler(pastTime));
+        while(!(g_done == 6));
+    }
+
+} // Tests
+} // WPEFramework

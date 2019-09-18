@@ -4,15 +4,17 @@
 #include <core/core.h>
 #include <websocket/websocket.h>
 
-using namespace WPEFramework;
+namespace WPEFramework {
+namespace Tests {
 
 namespace TextWebLinkTest {
     const TCHAR* g_connector = "0.0.0.0";
 
     static Core::ProxyPoolType<Web::TextBody> g_textBodyFactory(5);
     static Core::ProxyPoolType<Web::Response> g_responseFactory(5);
+} // TextWebLinkTest
 
-    class EXTERNAL WebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > {
+    class WebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > {
     private:
         typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > BaseClass;
 
@@ -35,15 +37,15 @@ namespace TextWebLinkTest {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
         {
             // Time to attach a String Body
-            element->Body(g_textBodyFactory.Element());
+            element->Body(TextWebLinkTest::g_textBodyFactory.Element());
         }
         virtual void Received(Core::ProxyType<WPEFramework::Web::Request>& request)
         {
-            ASSERT(request->Verb == Web::Request::HTTP_GET);
-            ASSERT(request->MajorVersion == 1);
-            ASSERT(request->MinorVersion == 1);
-            ASSERT(request->HasBody());
-            ASSERT(request->ContentLength.Value() == 19);
+            EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
+            EXPECT_EQ(request->MajorVersion, 1);
+            EXPECT_EQ(request->MinorVersion, 1);
+            EXPECT_TRUE(request->HasBody());
+            EXPECT_EQ(request->ContentLength.Value(), 19u);
 
             Core::ProxyType<Web::Response> response(Core::ProxyType<Web::Response>::Create());
             response->ErrorCode = 200;
@@ -52,15 +54,15 @@ namespace TextWebLinkTest {
         }
         virtual void Send(const Core::ProxyType<WPEFramework::Web::Response>& response)
         {
-            ASSERT(response->ErrorCode == 200);
-            ASSERT(response->HasBody());
+            EXPECT_EQ(response->ErrorCode, 200);
+            EXPECT_TRUE(response->HasBody());
         }
         virtual void StateChange()
         {
         }
     };
 
-    class EXTERNAL WebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
+    class WebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
     private:
         typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
@@ -70,7 +72,7 @@ namespace TextWebLinkTest {
 
     public:
         WebClient(const WPEFramework::Core::NodeId& remoteNode)
-            : BaseClass(5, g_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
+            : BaseClass(5, TextWebLinkTest::g_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
         {
         }
@@ -84,24 +86,24 @@ namespace TextWebLinkTest {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
         {
             // Time to attach a String Body
-            element->Body(g_textBodyFactory.Element());
+            element->Body(TextWebLinkTest::g_textBodyFactory.Element());
         }
         virtual void Received(Core::ProxyType<WPEFramework::Web::Response>& response)
         {
-            ASSERT(response->ErrorCode == 200);
-            ASSERT(response->Message == string("OK"));
-            ASSERT(response->MajorVersion == 1);
-            ASSERT(response->MinorVersion == 1);
-            ASSERT(response->HasBody());
-            ASSERT(response->ContentLength.Value() == 19);
+            EXPECT_EQ(response->ErrorCode, 200);
+            EXPECT_STREQ(response->Message.c_str(), "OK");
+            EXPECT_EQ(response->MajorVersion, 1);
+            EXPECT_EQ(response->MinorVersion, 1);
+            EXPECT_TRUE(response->HasBody());
+            EXPECT_EQ(response->ContentLength.Value(), 19u);
 
             _dataReceived = *(response->Body<Web::TextBody>());
             _dataPending.Unlock();
         }
         virtual void Send(const Core::ProxyType<WPEFramework::Web::Request>& request)
         {
-            ASSERT(request->Verb == Web::Request::HTTP_GET);
-            ASSERT(request->HasBody());
+            EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
+            EXPECT_TRUE(request->HasBody());
         }
         virtual void StateChange()
         {
@@ -119,36 +121,38 @@ namespace TextWebLinkTest {
         mutable WPEFramework::Core::Event _dataPending;
         string _dataReceived;
     };
-}
 
-TEST(WebLink, Text)
-{
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-        Core::SocketServerType<TextWebLinkTest::WebServer> _webServer(Core::NodeId(TextWebLinkTest::g_connector, 12343));
-        _webServer.Open(Core::infinite);
-        testAdmin.Sync("setup server");
-        testAdmin.Sync("client done");
-    };
-
-    IPTestAdministrator testAdmin(otherSide);
-    testAdmin.Sync("setup server");
+    TEST(WebLink, Text)
     {
-        TextWebLinkTest::WebClient webConnector(Core::NodeId(TextWebLinkTest::g_connector, 12343));
-        Core::ProxyType<Web::Request> webRequest(Core::ProxyType<Web::Request>::Create());
-        Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
-        webRequest->Body<Web::TextBody>(webRequestBody);
-        webConnector.Open(Core::infinite);
-        while(!webConnector.IsOpen());
-        webRequest->Verb = Web::Request::HTTP_GET;
-        string sent = "Just a body to send";
-        *webRequestBody = sent;
-        webConnector.Submit(webRequest);
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<WebServer> _webServer(Core::NodeId(TextWebLinkTest::g_connector, 12343));
+            _webServer.Open(Core::infinite);
+            testAdmin.Sync("setup server");
+            testAdmin.Sync("client done");
+        };
 
-        webConnector.Wait();
-        string received;
-        webConnector.Retrieve(received);
-        ASSERT_STREQ(received.c_str(), sent.c_str());
-        testAdmin.Sync("client done");
+        IPTestAdministrator testAdmin(otherSide);
+        testAdmin.Sync("setup server");
+        {
+            WebClient webConnector(Core::NodeId(TextWebLinkTest::g_connector, 12343));
+            Core::ProxyType<Web::Request> webRequest(Core::ProxyType<Web::Request>::Create());
+            Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
+            webRequest->Body<Web::TextBody>(webRequestBody);
+            webConnector.Open(Core::infinite);
+            while(!webConnector.IsOpen());
+            webRequest->Verb = Web::Request::HTTP_GET;
+            string sent = "Just a body to send";
+            *webRequestBody = sent;
+            webConnector.Submit(webRequest);
+
+            webConnector.Wait();
+            string received;
+            webConnector.Retrieve(received);
+            EXPECT_STREQ(received.c_str(), sent.c_str());
+            testAdmin.Sync("client done");
+        }
+        Core::Singleton::Dispose();
     }
-    Core::Singleton::Dispose();
-}
+
+} // Tests
+} // WPEFramework

@@ -25,5 +25,5 @@ namespace Tests {
         EXPECT_EQ(data.Average(), 0u);
         EXPECT_EQ(data.Measurements(), 0u);
     }
-}
-}
+} // Tests
+} // WPEFramework
