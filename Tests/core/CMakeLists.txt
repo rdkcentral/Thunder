@@ -7,10 +7,10 @@ add_executable(${TEST_RUNNER_NAME}
     test_doorbell.cpp
     test_hex2strserialization.cpp
     test_ipc.cpp
+    test_jsonparser.cpp
     test_measurementtype.cpp
     test_numbertype.cpp
     test_rpc.cpp
-    test_jsonparser.cpp
     test_sharedbuffer.cpp
     test_socket_streamjson.cpp
     test_socket_streamtext.cpp
