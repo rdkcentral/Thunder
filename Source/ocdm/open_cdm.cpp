@@ -428,7 +428,7 @@ bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
 
         return (result);
     }
-    OpenCDMSession* OpenCDMAccessor::Session(const std::string sessionId)
+    OpenCDMSession* OpenCDMAccessor::Session(const std::string& sessionId)
     {
         OpenCDMSession* result = nullptr;
         KeyMap::iterator index = _sessionKeys.find(sessionId);
