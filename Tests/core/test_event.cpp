@@ -10,7 +10,7 @@ using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
 Event event(false,true);
-bool g_threadDone = false;
+static bool g_threadDone = false;
 bool g_lock = true;
 bool g_set_event = true;
 bool g_pulse_event = true;
