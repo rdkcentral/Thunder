@@ -9,8 +9,8 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-std::thread::id g_parentId;
-bool g_threadDone = false;
+static std::thread::id g_parentId;
+static bool g_threadDone = false;
 
 
 class ThreadClass : public Core::Thread {
