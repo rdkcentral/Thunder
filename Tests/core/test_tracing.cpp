@@ -100,7 +100,7 @@ bool ParseTraceData(const uint8_t buffer[], uint32_t length, uint32_t& offset, T
 
     traceData._Header = *header;
     uint16_t entrySize = traceData._Header._Length;
-    ASSERT(entrySize <= CyclicBufferSize);
+    EXPECT_TRUE(entrySize <= CyclicBufferSize);
 
     if (!ReadTraceString(buffer, length, offset, traceData._File)) {
         std::cerr << "Failed to read file name" << std::endl;
@@ -132,7 +132,7 @@ bool ParseTraceData(const uint8_t buffer[], uint32_t length, uint32_t& offset, T
 
     offset += textLength;
 
-    ASSERT(offset == (startOffset + entrySize));
+    EXPECT_TRUE(offset == (startOffset + entrySize));
 
     return true;
 }
@@ -148,13 +148,13 @@ void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuff
         index++;
         entrySize += static_cast<uint16_t>(buffer[index]) << 8;
 
-        ASSERT(entrySize < CyclicBufferSize);
+        EXPECT_TRUE(entrySize < CyclicBufferSize);
         index += entrySize - 1;
 
         entryCount++;
     }
 
-    ASSERT(index == length);
+    EXPECT_TRUE(index == length);
 }
 
 void CreateTraceBuffer()
@@ -182,7 +182,7 @@ TEST(Core_tracing, simpleTracing)
            uint32_t actuallyRead = cycBuffer.Read(buffer, sizeof(buffer));
            testAdmin.Sync("server done");
 
-           ASSERT(actuallyRead < cycBuffer.Size());
+           EXPECT_TRUE(actuallyRead < cycBuffer.Size());
 
            DebugCheckIfConsistent(buffer, actuallyRead, cycBuffer);
 
@@ -190,10 +190,13 @@ TEST(Core_tracing, simpleTracing)
            int traceCount = 0;
            while(offset < actuallyRead) {
                TraceData traceData;
-               ASSERT(ParseTraceData(buffer, actuallyRead, offset, traceData));
+               EXPECT_TRUE(ParseTraceData(buffer, actuallyRead, offset, traceData));
                string time(Core::Time::Now().ToRFC1123(true));
 
-               fprintf(stderr, "[%s]:[%s:%d]:[%s] %s: %s\n", time.c_str(), traceData._File.c_str(), traceData._Header._LineNumber, traceData._Class.c_str(), traceData._Category.c_str(), traceData._Text.c_str());
+               EXPECT_STREQ(traceData._File.c_str(),"test_tracing.cpp");
+               EXPECT_STREQ(traceData._Class.c_str(),"<<Global>>");
+               EXPECT_STREQ(traceData._Category.c_str(),"Information");
+               EXPECT_STREQ(traceData._Text.c_str(),"lrbbmqbhcdarzowkkyhiddqscdxrjmowfrxsjybldbefsarcbynecdyggxxpklorellnmpapqfwkhopkmcoqhnwnkuewhsqmgbbuqcljjivswmdkqtbxixmvtrrbljptnsnfwzqf");
 
                traceCount++;
 
@@ -231,7 +234,30 @@ TEST(Core_tracing, simpleTracing)
             TRACE_GLOBAL(Trace::Information, (buffer));
         }
         testAdmin.Sync("server done");
+
+        Trace::TraceUnit::Instance().SetCategories(true,"Tracing", reinterpret_cast<const char*>("Information"));
+        Trace::TraceUnit::Iterator index = Trace::TraceUnit::Instance().GetCategories();
+
+        while (index.Next() == true)
+            if((*index)->Enabled() == true) {
+                EXPECT_STREQ((*index)->Module(),"Tracing");
+                EXPECT_STREQ((*index)->Category(),"Information");
+            }
+
+        bool enabled = false;
+        Trace::TraceUnit::Instance().IsDefaultCategory("Tracing",reinterpret_cast<const char*>("Information"),enabled);
+
+        string jsonDefaultCategories("Information");
+        if (jsonDefaultCategories.empty() == false) {
+            Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+        }
+        Trace::TraceUnit::Instance().GetDefaultCategoriesJson(jsonDefaultCategories);
+
+        TRACE(Trace::Information,(Trace::Format(_T("Checking the Format() with 1 parameter"))));
+        std::string text = "Hello";
+        TRACE(Trace::Information,(Trace::Format(text.c_str(),_T("Checking the Format() with 2 parameter"))));
         Trace::TraceUnit::Instance().Close();
+        Trace::TraceUnit::Instance().Open(1);
    }
    Core::Singleton::Dispose();
 }
