@@ -14,8 +14,7 @@ namespace Exchange {
             Idle = 0,
             Loading,
             Prepared,
-            Paused,
-            Playing,
+            Controlled,
             Error
         };
 
@@ -40,6 +39,35 @@ namespace Exchange {
             Unknown
         };
 
+        struct IElement : virtual public Core::IUnknown {
+
+            enum { ID = ID_STREAM_ELEMENT};
+
+            struct IIterator : virtual public Core::IUnknown {
+                enum { ID = ID_STREAM_ELEMENT_ITERATOR };
+
+                virtual ~IIterator() {}
+
+                virtual void Reset() = 0;
+                virtual bool IsValid() const = 0;
+                virtual bool Next() = 0;
+                virtual IElement* Current() = 0;
+            };
+
+            enum type {
+                Unknown = 0,
+                Audio,
+                Video,
+                Subtitles,
+                Teletext,
+                Data
+            };
+
+            virtual ~IElement() {}
+
+            virtual type Type() const = 0;
+        };
+
         struct IControl : virtual public Core::IUnknown {
             enum { ID = ID_STREAM_CONTROL };
 
@@ -60,10 +88,11 @@ namespace Exchange {
 
                 virtual ~ICallback() {}
 
+                virtual void Event(const uint32_t eventid) = 0;
                 virtual void TimeUpdate(const uint64_t position) = 0;
             };
 
-            virtual ~IControl(){};
+            virtual ~IControl() {}
 
             virtual RPC::IValueIterator* Speeds() const = 0;
             virtual void Speed(const int32_t request) = 0;
@@ -83,6 +112,7 @@ namespace Exchange {
 
             virtual void DRM(const uint32_t state) = 0;
             virtual void StateChange(const state newState) = 0;
+            virtual void Event(const uint32_t eventid) = 0;
         };
 
         virtual ~IStream() {}
@@ -94,6 +124,9 @@ namespace Exchange {
         virtual void Callback(IStream::ICallback* callback) = 0;
         virtual state State() const = 0;
         virtual uint32_t Load(const string& configuration) = 0;
+        virtual uint32_t LastError() const = 0;
+
+        virtual IElement::IIterator* Elements() = 0;
     };
 
     struct IPlayer : virtual public Core::IUnknown {

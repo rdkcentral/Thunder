@@ -24,7 +24,6 @@ ScreenResolutionWidthHeight resolutionWidthHeightTable[] = {
 };
 
 ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
-
     { Exchange::IComposition::ScreenResolution_Unknown, _TXT("Unknown") },
     { Exchange::IComposition::ScreenResolution_480i, _TXT("480i") },
     { Exchange::IComposition::ScreenResolution_480p, _TXT("480p") },
@@ -36,7 +35,6 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
     { Exchange::IComposition::ScreenResolution_1080p60Hz, _TXT("1080p60Hz") },
     { Exchange::IComposition::ScreenResolution_2160p50Hz, _TXT("2160p50Hz") },
     { Exchange::IComposition::ScreenResolution_2160p60Hz, _TXT("2160p60Hz") },
-
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
@@ -53,11 +51,9 @@ ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
 ENUM_CONVERSION_END(Exchange::IStream::streamtype)
 
 ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
-    { Exchange::IStream::Loading,  _TXT("Loading")  },
-    { Exchange::IStream::Prepared, _TXT("Prepared") },
-    { Exchange::IStream::Paused,   _TXT("Paused")   },
-    { Exchange::IStream::Playing,  _TXT("Playing")  },
-    { Exchange::IStream::Error,    _TXT("Error")    },
+    { Exchange::IStream::Loading,    _TXT("Loading")    },
+    { Exchange::IStream::Prepared,   _TXT("Prepared")   },
+    { Exchange::IStream::Controlled, _TXT("Controlled") },
 ENUM_CONVERSION_END(Exchange::IStream::state)
 
 namespace Exchange
