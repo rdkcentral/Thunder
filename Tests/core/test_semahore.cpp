@@ -10,7 +10,7 @@ using namespace WPEFramework::Core;
 
 int g_shared = 1;
 bool g_threadCritDone = false;
-std::thread::id g_parentId;
+static std::thread::id g_parentId;
 Core::CriticalSection lock;
 
 class ThreadClass : public Core::Thread {
