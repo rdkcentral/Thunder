@@ -34,5 +34,5 @@ namespace Tests {
             testAdmin.Sync("Second ring");
         }
     }
-}
-}
+} // Tests
+} // WPEFramework

@@ -60,8 +60,8 @@ namespace Tests {
         g_threadDone = false;
         ThreadClass object;
         object.Run();
-        usleep(1000);
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
+        usleep(1000);
         EXPECT_TRUE(g_threadDone);
         object.Stop();
         EXPECT_EQ(object.State(), Core::Thread::STOPPING);
@@ -79,5 +79,5 @@ namespace Tests {
         EXPECT_TRUE(g_threadDone);
         Core::Singleton::Dispose();
     }
-}
-}
+} // Tests
+} // WPEFramework

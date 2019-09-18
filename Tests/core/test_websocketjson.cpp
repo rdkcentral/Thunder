@@ -4,11 +4,13 @@
 #include <core/core.h>
 #include <websocket/websocket.h>
 
-using namespace WPEFramework;
+namespace WPEFramework {
+namespace Tests {
 
 namespace JsonWebSocketTest {
     bool g_done = false;
-    const TCHAR* g_connector = "/tmp/wpewebsocket1";
+    const TCHAR* g_connector = "/tmp/wpewebsocketjson0";
+} // JsonWebSocketTest
 
 	class Message : public Core::JSON::Container {
 	private:
@@ -49,20 +51,20 @@ namespace JsonWebSocketTest {
 		}
 	};
 
-	class SocketServerLink : public Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory& > {
+	class JsonSocketServer : public Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory& > {
 	private:
 		typedef Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory& > BaseClass;
 
 	private:
-		SocketServerLink(const SocketServerLink&) = delete;
-		SocketServerLink& operator=(const SocketServerLink&) = delete;
+		JsonSocketServer(const JsonSocketServer&) = delete;
+		JsonSocketServer& operator=(const JsonSocketServer&) = delete;
 
 	public:
-		SocketServerLink(const SOCKET& socket, const WPEFramework::Core::NodeId& remoteNode, Core::SocketServerType<SocketServerLink>*)
+		JsonSocketServer(const SOCKET& socket, const Core::NodeId& remoteNode, Core::SocketServerType<JsonSocketServer>*)
 			: BaseClass(2, _objectFactory, false, false, false, socket, remoteNode, 512, 512)
 			, _objectFactory(1) {
 		}
-		virtual ~SocketServerLink() {
+		virtual ~JsonSocketServer() {
 		}
 
 	public:
@@ -71,7 +73,7 @@ namespace JsonWebSocketTest {
         }
 		virtual void StateChange() {
 			if (IsOpen())
-                g_done = true;
+                JsonWebSocketTest::g_done = true;
 		}
 
 		bool IsAttached() const {
@@ -86,22 +88,22 @@ namespace JsonWebSocketTest {
 		Factory _objectFactory;
 	};
 
-	class SocketClientLink : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&> {
+	class JsonSocketClient : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&> {
 	private:
 		typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&> BaseClass;
 
 	private:
-		SocketClientLink(const SocketClientLink&) = delete;
-		SocketClientLink& operator=(const SocketClientLink&) = delete;
+		JsonSocketClient(const JsonSocketClient&) = delete;
+		JsonSocketClient& operator=(const JsonSocketClient&) = delete;
 
 	public:
-		SocketClientLink(const Core::NodeId& remoteNode)
+		JsonSocketClient(const Core::NodeId& remoteNode)
 			: BaseClass(5, _objectFactory, _T(""), _T(""), _T(""), _T(""), false, true, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
 			, _objectFactory(2)
             , _dataPending(false, false)
 		{
 		}
-		virtual ~SocketClientLink()
+		virtual ~JsonSocketClient()
 		{
 		}
 
@@ -141,40 +143,41 @@ namespace JsonWebSocketTest {
 	private:
 		Factory _objectFactory;
         string _dataReceived;
-        mutable WPEFramework::Core::Event _dataPending;
+        mutable Core::Event _dataPending;
 	};
-} // namespace
 
-TEST(WebSocket, Json)
-{
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-        Core::SocketServerType<JsonWebSocketTest::SocketServerLink> jsonWebSocketServer(Core::NodeId(JsonWebSocketTest::g_connector));
-		jsonWebSocketServer.Open(Core::infinite);
-        testAdmin.Sync("setup server");
-        while(!JsonWebSocketTest::g_done);
-        testAdmin.Sync("server open");
-        testAdmin.Sync("client done");
-    };
-
-    IPTestAdministrator testAdmin(otherSide);
-    testAdmin.Sync("setup server");
+    TEST(WebSocket, Json)
     {
-        Core::ProxyType<JsonWebSocketTest::Message> sendObject = Core::ProxyType<JsonWebSocketTest::Message>::Create();
-        sendObject->EventType = _T("Test");
-        sendObject->Event = _T("TestSend");
-        std::string sendString;
-        sendObject->ToString(sendString);
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<JsonSocketServer> jsonWebSocketServer(Core::NodeId(JsonWebSocketTest::g_connector));
+            jsonWebSocketServer.Open(Core::infinite);
+            testAdmin.Sync("setup server");
+            while(!JsonWebSocketTest::g_done);
+            testAdmin.Sync("server open");
+            testAdmin.Sync("client done");
+        };
 
-        JsonWebSocketTest::SocketClientLink jsonWebSocketClient(Core::NodeId(JsonWebSocketTest::g_connector));
-        jsonWebSocketClient.Open(Core::infinite);
-        testAdmin.Sync("server open");
-        jsonWebSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
-        uint32_t result = jsonWebSocketClient.Wait();
-        string received;
-        jsonWebSocketClient.Retrieve(received);
-        ASSERT_STREQ(sendString.c_str(), received.c_str());
-        jsonWebSocketClient.Close(Core::infinite);
-        testAdmin.Sync("client done");
+        IPTestAdministrator testAdmin(otherSide);
+        testAdmin.Sync("setup server");
+        {
+            Core::ProxyType<Message> sendObject = Core::ProxyType<Message>::Create();
+            sendObject->EventType = _T("Test");
+            sendObject->Event = _T("TestSend");
+            std::string sendString;
+            sendObject->ToString(sendString);
+
+            JsonSocketClient jsonWebSocketClient(Core::NodeId(JsonWebSocketTest::g_connector));
+            jsonWebSocketClient.Open(Core::infinite);
+            testAdmin.Sync("server open");
+            jsonWebSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
+            jsonWebSocketClient.Wait();
+            string received;
+            jsonWebSocketClient.Retrieve(received);
+            EXPECT_STREQ(sendString.c_str(), received.c_str());
+            jsonWebSocketClient.Close(Core::infinite);
+            testAdmin.Sync("client done");
+        }
+        Core::Singleton::Dispose();
     }
-    Core::Singleton::Dispose();
-}
+} // Tests
+} // WPEFramework

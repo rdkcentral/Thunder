@@ -12,14 +12,14 @@ add_executable(${TEST_RUNNER_NAME}
     test_rpc.cpp
     test_jsonparser.cpp
     test_sharedbuffer.cpp
-    test_socket_streamjson.cpp
-    test_socket_streamtext.cpp
+    test_socketstreamjson.cpp
+    test_socketstreamtext.cpp
     test_thread.cpp
     test_timer.cpp
-    test_weblink_json.cpp
-    test_weblink_text.cpp
-    test_websocket_json.cpp
-    test_websocket_text.cpp
+    test_weblinkjson.cpp
+    test_weblinktext.cpp
+    test_websocketjson.cpp
+    test_websockettext.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
