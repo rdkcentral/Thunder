@@ -19,13 +19,13 @@ TEST(tracing_logging, simple_loggings)
    Logging::SysLog(false);
    SYSLOG(Logging::Shutdown, ("Logging utility verification"));
 
-   ASSERT_STREQ("SysLog",Logging::LoggingType<Logging::Notification>("Hello").Module());
-   ASSERT_STREQ("Notification",Logging::LoggingType<Logging::Notification>("Hello").Category());
-   ASSERT_STREQ("Hello",Logging::LoggingType<Logging::Notification>("Hello").Data());
-   ASSERT_EQ(Logging::LoggingType<Logging::Notification>("Hello").Length(),5);
-   ASSERT_EQ(Logging::LoggingType<Logging::Startup>("Hello").Length(),5);
-   ASSERT_EQ(Logging::LoggingType<Logging::Shutdown>("Hello").Length(),5);
-   ASSERT_TRUE(Logging::LoggingType<Logging::Notification>("Hello").Enabled()) << "TraceControl not Enabled";
+   EXPECT_STREQ("SysLog",Logging::LoggingType<Logging::Notification>("Hello").Module());
+   EXPECT_STREQ("Notification",Logging::LoggingType<Logging::Notification>("Hello").Category());
+   EXPECT_STREQ("Hello",Logging::LoggingType<Logging::Notification>("Hello").Data());
+   EXPECT_EQ(Logging::LoggingType<Logging::Notification>("Hello").Length(),5);
+   EXPECT_EQ(Logging::LoggingType<Logging::Startup>("Hello").Length(),5);
+   EXPECT_EQ(Logging::LoggingType<Logging::Shutdown>("Hello").Length(),5);
+   EXPECT_TRUE(Logging::LoggingType<Logging::Notification>("Hello").Enabled()) << "TraceControl not Enabled";
    Logging::LoggingType<Logging::Notification>("Hello").Enabled(true);
    Logging::LoggingType<Logging::Notification>("Hello").Destroy();
 
