@@ -402,9 +402,6 @@ namespace Tests {
 
             error = multiChannel.Close(1000); // Wait for 1 Second.
             EXPECT_EQ(error, Core::ERROR_NONE);
-            multiChannel.Unregister(TripletResponse::Id());
-            multiChannel.Unregister(VoidTriplet::Id());
-            multiChannel.Unregister(TextText::Id());
 
             factory->DestroyFactories();
         };

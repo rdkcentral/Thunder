@@ -6,6 +6,7 @@ add_executable(${TEST_RUNNER_NAME}
     test_databuffer.cpp
     test_doorbell.cpp
     test_hex2strserialization.cpp
+    test_enumerate.cpp
     test_ipc.cpp
     test_jsonparser.cpp
     test_measurementtype.cpp
