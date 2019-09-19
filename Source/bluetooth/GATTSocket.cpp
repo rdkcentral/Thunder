@@ -2,53 +2,6 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(Bluetooth::Profile::Service::type)
-
-    { Bluetooth::Profile::Service::GenericAccess,                  _TXT("Generic Access")                },
-    { Bluetooth::Profile::Service::AlertNotificationService,       _TXT("Alert Notification Service")    },
-    { Bluetooth::Profile::Service::AutomationIO,                   _TXT("Automation IO")                 },
-    { Bluetooth::Profile::Service::BatteryService,                 _TXT("Battery Service")               },
-    { Bluetooth::Profile::Service::BinarySensor,                   _TXT("Binary Sensor")                 },
-    { Bluetooth::Profile::Service::BloodPressure,                  _TXT("Blood Pressure")                },
-    { Bluetooth::Profile::Service::BodyComposition,                _TXT("Body Composition")              },
-    { Bluetooth::Profile::Service::BondManagementService,          _TXT("Bond Management Service")       },
-    { Bluetooth::Profile::Service::ContinuousGlucoseMonitoring,    _TXT("Continuous Glucose Monitoring") },
-    { Bluetooth::Profile::Service::CurrentTimeService,             _TXT("Current Time Service")          },
-    { Bluetooth::Profile::Service::CyclingPower,                   _TXT("Cycling Power")                 },
-    { Bluetooth::Profile::Service::CyclingSpeedAndCadence,         _TXT("Cycling Speed and Cadence")     },
-    { Bluetooth::Profile::Service::DeviceInformation,              _TXT("Device Information")            },
-    { Bluetooth::Profile::Service::EmergencyConfiguration,         _TXT("Emergency Configuration")       },
-    { Bluetooth::Profile::Service::EnvironmentalSensing,           _TXT("Environmental Sensing")         },
-    { Bluetooth::Profile::Service::FitnessMachine,                 _TXT("Fitness Machine")               },
-    { Bluetooth::Profile::Service::GenericAttribute,               _TXT("Generic Attribute")             },
-    { Bluetooth::Profile::Service::Glucose,                        _TXT("Glucose")                       },
-    { Bluetooth::Profile::Service::HealthThermometer,              _TXT("Health Thermometer")            },
-    { Bluetooth::Profile::Service::HeartRate,                      _TXT("Heart Rate")                    },
-    { Bluetooth::Profile::Service::HTTPProxy,                      _TXT("HTTP Proxy")                    },
-    { Bluetooth::Profile::Service::HumanInterfaceDevice,           _TXT("Human Interface Device")        },
-    { Bluetooth::Profile::Service::ImmediateAlert,                 _TXT("Immediate Alert")               },
-    { Bluetooth::Profile::Service::IndoorPositioning,              _TXT("Indoor Positioning")            },
-    { Bluetooth::Profile::Service::InsulinDelivery,                _TXT("Insulin Delivery")              },
-    { Bluetooth::Profile::Service::InternetProtocolSupport,        _TXT("Internet Protocol Support")     },
-    { Bluetooth::Profile::Service::LinkLoss,                       _TXT("Link Loss")                     },
-    { Bluetooth::Profile::Service::LocationAndNavigation,          _TXT("Location and Navigation")       },
-    { Bluetooth::Profile::Service::MeshProvisioningService,        _TXT("Mesh Provisioning Service")     },
-    { Bluetooth::Profile::Service::MeshProxyService,               _TXT("Mesh Proxy Service")            },
-    { Bluetooth::Profile::Service::NextDSTChangeService,           _TXT("Next DST Change Service")       },
-    { Bluetooth::Profile::Service::ObjectTransferService,          _TXT("ObjectTransferService")         },
-    { Bluetooth::Profile::Service::PhoneAlertStatusService,        _TXT("Phone Alert Status Service")    },
-    { Bluetooth::Profile::Service::PulseOximeterService,           _TXT("Pulse Oximeter Service")        },
-    { Bluetooth::Profile::Service::ReconnectionConfiguration,      _TXT("Reconnection Configuration")    },
-    { Bluetooth::Profile::Service::ReferenceTimeUpdateService,     _TXT("Reference Time Update Service") },
-    { Bluetooth::Profile::Service::RunningSpeedAndCadence,         _TXT("Running Speed and Cadence")     },
-    { Bluetooth::Profile::Service::ScanParameters,                 _TXT("Scan Parameters")               },
-    { Bluetooth::Profile::Service::TransportDiscovery,             _TXT("Transport Discovery")           },
-    { Bluetooth::Profile::Service::TxPower,                        _TXT("Tx Power")                      },
-    { Bluetooth::Profile::Service::UserData,                       _TXT("User Data")                     },
-    { Bluetooth::Profile::Service::WeightScale,                    _TXT("Weight Scale")                  },
-
-ENUM_CONVERSION_END(Bluetooth::Profile::Service::type)
-
 namespace Bluetooth {
 
 /* static */ const uint8_t UUID::BASE[] = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
@@ -131,6 +84,8 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
         printf("L2CAP received [%d]: ", length);
         for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
 
+        _response.Type(stream[0]);
+
         // This is what we are expecting, so process it...
         switch (stream[0]) {
         case ATT_OP_ERROR: {
@@ -205,12 +160,25 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
             break;
         }
         case ATT_OP_FIND_INFO_RESP: {
+            if ((stream[1] > 0) && (stream[1] <= 2)) {
+                uint8_t step = (stream[1] == 1 ? 2 : 16);
+                uint8_t entries = ((length - 2) / step);
+                for (uint8_t index = 0; index < entries; index++) {
+                    uint16_t offset = 2 + (index * step);
+                    uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];
+
+                    _response.Add(handle, step, &(stream[offset + 2]));
+                }
+            }
             _error = Core::ERROR_NONE;
             break;
         }
         case ATT_OP_READ_RESP: {
             _error = Core::ERROR_NONE;
-            _response.Add(0, length, &(stream[1]));
+            _response.Add(_frame.Handle(), length, &(stream[1]));
+            if (length == _mtu) {
+                _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
+            }
             break;
         }
         case ATT_OP_READ_BLOB_RESP: {

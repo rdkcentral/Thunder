@@ -7,6 +7,7 @@ find_package(NEXUS QUIET)
 add_library(${TARGET} SHARED
         HCISocket.cpp
         GATTSocket.cpp
+        Profile.cpp
         Definitions.cpp
         Module.cpp)
 
@@ -14,6 +15,7 @@ set(PUBLIC_HEADERS
         IDriver.h
         HCISocket.h
         GATTSocket.h
+        Profile.h
         Module.h
         bluetooth.h
         )

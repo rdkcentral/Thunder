@@ -11,6 +11,9 @@ namespace Bluetooth {
         static const uint8_t BASE[];
 
     public:
+        UUID() {
+            _uuid[0] = 0;
+        }
         UUID(const uint16_t uuid)
         {
             _uuid[0] = 2;
@@ -45,6 +48,9 @@ namespace Bluetooth {
         }
 
     public:
+        bool IsValid() const {
+            return (_uuid[0] != 0);
+        }
         uint16_t Short() const
         {
             ASSERT(_uuid[0] == 2);
@@ -464,6 +470,7 @@ namespace Bluetooth {
                     , _preHead(true)
                     , _min(0x0001)
                     , _max(0xFFFF)
+                    , _type(ATT_OP_ERROR)
                 {
                 }
                 ~Response()
@@ -474,6 +481,9 @@ namespace Bluetooth {
                 }
 
             public:
+                void Type(const uint8_t response) {
+                    _type = response;
+                }
                 void Clear()
                 {
                     Reset();
@@ -481,6 +491,7 @@ namespace Bluetooth {
                     _loaded = 0;
                     _min = 0xFFFF;
                     _max = 0x0001;
+                    _type = ATT_OP_ERROR;
                 }
                 void Reset()
                 {
@@ -510,7 +521,27 @@ namespace Bluetooth {
                 }
                 uint16_t Group() const
                 {
-                    return (_iterator->second.first);
+                    return (_type == ATT_OP_READ_BY_TYPE_RESP ? ((_storage[_iterator->second.second + 2] << 8) | (_storage[_iterator->second.second + 1])) : _iterator->second.first);
+                }
+                UUID Attribute() const {
+                    UUID result;
+
+                    uint8_t        offset = (_type == ATT_OP_READ_BY_TYPE_RESP ? 3 : 0);
+                    uint16_t       length = Delta() - offset;
+                    const uint8_t* data   = &(_storage[_iterator->second.second + offset]);
+ 
+                    if (length == 2) {
+                        
+                        result = UUID((data[1] << 8) | (*data));
+                    }
+                    else if (length == 16) {
+                        result = UUID(data);
+                    }
+
+                    return (result);
+                }
+                uint8_t Rights() const {
+                    return (_storage[_iterator->second.second]);
                 }
                 uint16_t Count() const
                 {
@@ -524,8 +555,7 @@ namespace Bluetooth {
                 {
                     uint16_t result = _loaded;
                     if (IsValid() == true) {
-                        std::list<Entry>::iterator next(_iterator);
-                        result = (++next == _result.end() ? (_loaded - _iterator->second.second) : (next->second.second - _iterator->second.second));
+                        result = Delta();
                     }
                     return (result);
                 }
@@ -542,6 +572,10 @@ namespace Bluetooth {
 
             private:
                 friend class Command;
+                uint16_t Delta() const {
+                    std::list<Entry>::iterator next(_iterator);
+                    return (++next == _result.end() ? (_loaded - _iterator->second.second) : (next->second.second - _iterator->second.second));
+                }
                 void SetMTU(const uint16_t MTU)
                 {
                     _storage[0] = (MTU >> 8) & 0xFF;
@@ -600,6 +634,7 @@ namespace Bluetooth {
                 bool _preHead;
                 uint16_t _min;
                 uint16_t _max;
+                uint8_t _type;
             };
 
 
@@ -821,288 +856,6 @@ namespace Bluetooth {
         std::list<Entry> _queue;
         uint32_t _mtuSize;
         struct l2cap_conninfo _connectionInfo;
-    };
-
-    class Profile {
-    private:
-        static constexpr uint16_t PRIMARY_SERVICE_UUID = 0x2800;
-        static constexpr uint16_t CHARACTERISTICS_UUID = 0x2803;
-
-    public:
-        class Service {
-        public:
-            enum type : uint16_t {
-                GenericAccess               = 0x1800,
-                AlertNotificationService    = 0x1811,
-                AutomationIO                = 0x1815,
-                BatteryService              = 0x180F,
-                BinarySensor                = 0x183B,
-                BloodPressure               = 0x1810,
-                BodyComposition             = 0x181B,
-                BondManagementService       = 0x181E,
-                ContinuousGlucoseMonitoring = 0x181F,
-                CurrentTimeService          = 0x1805,
-                CyclingPower                = 0x1818,
-                CyclingSpeedAndCadence      = 0x1816,
-                DeviceInformation           = 0x180A,
-                EmergencyConfiguration      = 0x183C,
-                EnvironmentalSensing        = 0x181A,
-                FitnessMachine              = 0x1826,
-                GenericAttribute            = 0x1801,
-                Glucose                     = 0x1808,
-                HealthThermometer           = 0x1809,
-                HeartRate                   = 0x180D,
-                HTTPProxy                   = 0x1823,
-                HumanInterfaceDevice        = 0x1812,
-                ImmediateAlert              = 0x1802,
-                IndoorPositioning           = 0x1821,
-                InsulinDelivery             = 0x183A,
-                InternetProtocolSupport     = 0x1820,
-                LinkLoss                    = 0x1803,
-                LocationAndNavigation       = 0x1819,
-                MeshProvisioningService     = 0x1827,
-                MeshProxyService            = 0x1828,
-                NextDSTChangeService        = 0x1807,
-                ObjectTransferService       = 0x1825,
-                PhoneAlertStatusService     = 0x180E,
-                PulseOximeterService        = 0x1822,
-                ReconnectionConfiguration   = 0x1829,
-                ReferenceTimeUpdateService  = 0x1806,
-                RunningSpeedAndCadence      = 0x1814,
-                ScanParameters              = 0x1813,
-                TransportDiscovery          = 0x1824,
-                TxPower                     = 0x1804,
-                UserData                    = 0x181C,
-                WeightScale                 = 0x181D,
-            };
-
-        public:
-            typedef Core::IteratorType< const std::list<Attribute>, const Attribute&, std::list<Attribute>::const_iterator> Iterator;
-
-            Service(const Service&) = delete;
-            Service& operator= (const Service&) = delete;
-
-            Service(uint16_t serviceId, const uint16_t handle, const uint16_t group)
-                : _index(handle + 1)
-                , _group(group)
-                , _serviceId(serviceId) {
-            }
-            Service(const uint8_t serviceId[16], const uint16_t handle, const uint16_t group)
-                : _index(handle + 1)
-                , _group(group)
-                , _serviceId(serviceId) {
-            }
-            ~Service() {
-            }
-
-        public:
-            const UUID& Type() const {
-                return (_serviceId);
-            }
-            string Name() const {
-                string result;
-                if (_serviceId.HasShort() == false) {
-                    result = _serviceId.ToString();
-                }
-                else {
-                    Core::EnumerateType<type> value(static_cast<type>(_serviceId.Short()));
-                    result = (value.IsSet() == true ? string(value.Data()) : _serviceId.ToString(false));
-                }
-                return (result);
-            }
-            Iterator Characteristics() const {
-                return (Iterator(_characteristics));
-            }
-
-        private:
-            friend class Profile;
-            uint16_t Handle () const {
-                return (_index <= _group ? _index : 0);
-            }
-            void Characteristic (const uint16_t length, const uint8_t buffer[]) {
-                _characteristics.emplace_back(length, buffer);
-                _index++;
-            }
-
-        private:
-            uint16_t _index;
-            uint16_t _group;
-            UUID _serviceId;
-            std::list<Attribute> _characteristics;
-        };
-
-    public:
-        typedef std::function<void(const uint32_t)> Handler;
-        typedef Core::IteratorType< const std::list<Service>, const Service&, std::list<Service>::const_iterator> Iterator;
-
-        Profile (const Profile&) = delete;
-        Profile& operator= (const Profile&) = delete;
-
-        Profile(const bool includeVendorCharacteristics)
-            : _adminLock()
-            , _services()
-            , _index()
-            , _includeVendorCharacteristics(includeVendorCharacteristics)
-            , _socket(nullptr)
-            , _command()
-            , _handler()
-            , _expired(0) {
-        }
-        ~Profile() {
-        }
-
-    public:
-        uint32_t Discover(const uint32_t waitTime, GATTSocket& socket, const Handler& handler) {
-            uint32_t result = Core::ERROR_INPROGRESS;
-
-            _adminLock.Lock();
-            if (_socket == nullptr) {
-                result = Core::ERROR_NONE;
-                _socket = &socket;
-                _expired = Core::Time::Now().Add(waitTime).Ticks();
-                _handler = handler;
-                _services.clear();
-                _command.ReadByGroupType(0x0001, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
-                _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
-            }
-            _adminLock.Unlock();
-
-            return(result);
-        }
-        void Abort () {
-            Report(Core::ERROR_ASYNC_ABORTED);
-        }
-        bool IsValid() const {
-            return ((_services.size() > 0) && (_expired == Core::ERROR_NONE));
-        }
-        Iterator Services() const {
-            return (Iterator(_services));
-        }
-
-    private:
-        std::list<Service>::iterator ValidService(const std::list<Service>::iterator& input) {
-            if (_includeVendorCharacteristics == false) {
-                std::list<Service>::iterator index(input);
-                while ( (index != _services.end()) && (index->Type().HasShort() == false) ) {
-                    index++;
-                }
-                return (index);
-            }
-            return (input);
-        }
-        void OnServices(const GATTSocket::Command& cmd) {
-            ASSERT (&cmd == &_command);
-
-            if (cmd.Error() != Core::ERROR_NONE) {
-                // Seems like the services could not be discovered, report it..
-                Report(Core::ERROR_GENERAL);
-            }
-            else {
-                uint32_t waitTime = AvailableTime();
-
-                if (waitTime > 0) {
-                    GATTSocket::Command::Response& response(_command.Result());
-
-                    while (response.Next() == true) {
-                        const uint8_t* service = response.Data();
-                        if (response.Length() == 2) {
-                            _services.emplace_back( (service[0] | (service[1] << 8)), response.Handle(), response.Group() );
-                        }
-                        else if (response.Length() == 16) {
-                            _services.emplace_back( service, response.Handle(), response.Group() );
-                        }
-                    }
-
-                    if (_services.size() == 0) {
-                        Report (Core::ERROR_UNAVAILABLE);
-                    }
-                    else if ((response.Count() > 0) && (response.Max() < 0xFFFF)) {
-                        _command.ReadByGroupType(response.Max() + 1, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
-                        _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
-                    }
-                    else {
-                        _index = ValidService(_services.begin());
-
-                        if (_index == _services.end()) {
-                            Report (Core::ERROR_NONE);
-                        }
-                        else {
-                            _adminLock.Lock();
-                            if (_socket != nullptr) {
-                                _command.Read(_index->Handle());
-                                _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
-                            }
-                            _adminLock.Unlock();
-                        }
-                    }
-                }
-            }
-        }
-        void OnCharacteristics(const GATTSocket::Command& cmd) {
-            ASSERT (&cmd == &_command);
-
-            if (cmd.Error() != Core::ERROR_NONE) {
-                // Seems like the services could not be discovered, report it..
-                Report(Core::ERROR_GENERAL);
-            }
-            else {
-                uint32_t waitTime = AvailableTime();
-
-                if (waitTime > 0) {
-                    GATTSocket::Command::Response& response(_command.Result());
-                    _index->Characteristic(response.Length(), response.Data());
-                    uint16_t next = _index->Handle();
-                    if (next == 0) {
-                        _index = ValidService(++_index);
-                        if (_index != _services.end()) {
-                            next = _index->Handle();
-                        }
-                    }
-                    if (next == 0) {
-                        Report(Core::ERROR_NONE);
-                    }
-                    else {
-                        _adminLock.Lock();
-                        if (_socket != nullptr) {
-                            _command.Read(_index->Handle());
-                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
-                        }
-                        _adminLock.Unlock();
-                    }
-                }
-            }
-        }
-        void Report(const uint32_t result) {
-            _adminLock.Lock();
-            if (_socket != nullptr) {
-                Handler caller = _handler;
-                _socket = nullptr;
-                _handler = nullptr;
-                _expired = result;
-
-                caller(result);
-            }
-            _adminLock.Unlock();
-        }
-        uint32_t AvailableTime () {
-            uint64_t now = Core::Time::Now().Ticks();
-            uint32_t result = (now >= _expired ? 0 : static_cast<uint32_t>((_expired - now) / Core::Time::TicksPerMillisecond));
-
-            if (result == 0) {
-                Report(Core::ERROR_TIMEDOUT);
-            }
-            return (result);
-        }
-
-    private:
-        Core::CriticalSection _adminLock;
-        std::list<Service> _services;
-        std::list<Service>::iterator _index;
-        bool _includeVendorCharacteristics;
-        GATTSocket* _socket;
-        GATTSocket::Command _command;
-        Handler _handler;
-        uint64_t _expired;
     };
 
 } // namespace Bluetooth
