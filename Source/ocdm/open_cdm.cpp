@@ -478,7 +478,7 @@ bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
     void OpenCDMAccessor::SystemBeingDestructed(OpenCDMSystem* system)
     {
         _adminLock.Lock();
-        for  (auto& sessionKey : _sessionKeys) {
+        for (auto& sessionKey : _sessionKeys) {
             if (sessionKey.second->BelongsTo(system) == true) {
                 TRACE_L1("System the session %s belongs to is being destructed. Destruct the session before destructing the system!", sessionKey.second->SessionId().c_str());
             }
