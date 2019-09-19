@@ -204,6 +204,13 @@
               "type": {
                 "type": "string",
                 "description": "Test command output parameter type",
+                "enum": [
+                  "Number",
+                  "String",
+                  "Boolean",
+                  "Object",
+                  "Symbol"
+                ],
                 "example": "Number"
               },
               "comment": {

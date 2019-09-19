@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.5"
+VERSION="1.3.6"
 
 class Trace:
     def __init__(self):
@@ -179,7 +179,6 @@ class JsonEnum(JsonType):
             self.origRef = obj
             if obj.parent != parent:
                 obj.AddRef(self)
-        pass
     def CppType(self):
         return TypePrefix("EnumType<%s>" % self.CppClass())
     def CppClass(self):
@@ -571,11 +570,21 @@ class ObjectTracker:
                     return False
                 elif rhs[name]["type"] != prop["type"]:
                     return False
+                elif "enum" in prop:
+                    if "enum" in rhs[name]:
+                        return prop["enum"] == rhs[name]["enum"]
+                    else:
+                        return False
             for name, prop in rhs.iteritems():
                 if name not in lhs:
                     return False
                 elif lhs[name]["type"] != prop["type"]:
                     return False
+                elif "enum" in prop:
+                    if "enum" in lhs[name]:
+                        return prop["enum"] == lhs[name]["enum"]
+                    else:
+                        return False
             return True
         if "properties" in newObj.Schema() and not isinstance(newObj, JsonMethod):
             self.objects.append(newObj)
@@ -586,6 +595,7 @@ class ObjectTracker:
                     if not is_ref or not IsInRef(obj):
                         trace.Warn("Duplicate object '%s' (same as '%s') - consider using $ref" % (newObj.OrigName(), obj.OrigName()))
                     return obj
+            return None
     def Objects(self):
         return self.objects
     def Reset(self):
@@ -594,6 +604,10 @@ class ObjectTracker:
         return SortByDependency(filter(lambda obj: obj.RefCount() > 1, self.Objects()))
 
 class EnumTracker(ObjectTracker):
+    def __IsTopmost(self, obj):
+        while isinstance(obj.parent, JsonArray):
+            obj = obj.parent
+        return isinstance(obj.parent, JsonMethod)
     def Add(self, newObj):
         def __Compare(lhs, rhs):
             # NOTE: Two enums are considered identical if they have the same enumeration names and types
@@ -616,8 +630,9 @@ class EnumTracker(ObjectTracker):
                     if not is_ref or not IsInRef(obj):
                         trace.Warn("Duplicate enums '%s' (same as '%s') - consider using $ref" % (newObj.OrigName(), obj.OrigName()))
                     return obj
+            return None
     def CommonObjects(self):
-        return SortByDependency(filter(lambda obj: obj.RefCount() > 1 or isinstance(obj.parent, JsonMethod), self.Objects()))
+        return SortByDependency(filter(lambda obj: obj.RefCount() > 1 or self.__IsTopmost(obj), self.Objects()))
 
 #
 # THE EMITTER
