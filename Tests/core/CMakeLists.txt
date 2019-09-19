@@ -19,7 +19,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_XGetopt.cpp
    test_dataElement.cpp
    test_portability.cpp
-   test_frametype.cpp 
+   test_frametype.cpp
+   test_dataelementfile.cpp
 #  test_sharedbuffer.cpp
 )
 
