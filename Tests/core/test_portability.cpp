@@ -31,7 +31,6 @@ public:
     virtual uint32_t Worker() override
     {
         while (IsRunning() && (!g_threadDone)) {
-            printf("Inside thread\n");
             ASSERT(g_parentId != std::this_thread::get_id());
             g_threadDone = true;
             ::SleepMs(50);
@@ -68,8 +67,8 @@ TEST(test_portability, simple_generic)
    SleepS(1);
    SleepMs(1);
    uint64_t value = 12345;
-   std::cout<<htonll(value)<<std::endl;
-   std::cout<<ntohll(value)<<std::endl;
+   EXPECT_EQ(htonll(value),4120793659044003840);
+   EXPECT_EQ(ntohll(value),4120793659044003840);
    DumpCallStack();
 
    ThreadClass object;
@@ -81,17 +80,16 @@ TEST(test_portability, simple_generic)
    std::string s1 = "Hello";
    uint8_t dest_buffer[5];
    memrcpy((void*)dest_buffer,(void*)s1.c_str(),  static_cast<size_t>(5));
-   std::cout<<"The string is "<<dest_buffer<<std::endl;
+   EXPECT_STREQ((const char*)(dest_buffer),s1.c_str());
 }
 
 TEST(test_error, simple_error)
 {
-   std::cout<<"Error string is : "<<ErrorToString(ERROR_NONE)<<std::endl;
+   EXPECT_STREQ(ErrorToString(ERROR_NONE),"ERROR_NONE");
 }
 TEST(test_void, simple_void)
 {
     Void v;
-//    Void<int> v1(1);
     Void v2 = v;
 }
  
