@@ -174,6 +174,7 @@ void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
         *destination-- = *source--;
         --_MaxCount;
     }
+    *destination-- = *source--;
 
     return (destination);
 }
