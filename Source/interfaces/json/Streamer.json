@@ -67,10 +67,11 @@
       "description": "DRM used",
       "type": "string",
       "enum": [
-        "unknown",
+        "none",
         "clearkey",
         "playready",
-        "widevine"
+        "widevine",
+        "unknown"
       ],
       "example": "clearkey"
     },
@@ -527,24 +528,6 @@
         ]
       }
     },
-    "drmchange": {
-      "summary": "Notifies of stream DRM system change.",
-      "id": {
-        "name": "Stream ID",
-        "example": "0"
-      },
-      "params": {
-        "type": "object",
-        "properties": {
-          "drm": {
-            "$ref": "#/definitions/drm"
-          }
-        },
-        "required": [
-          "drm"
-        ]
-      }
-    },
     "timeupdate": {
       "summary": "Notifies of stream position change. This event is fired every second to indicate that the stream has progressed by a second. It does not fire if the stream is paused (i.e. speed of 0).",
       "id": {
@@ -582,6 +565,23 @@
     },
     "player": {
       "summary": "Notifies of a custom player incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    },
+    "drm": {
+      "summary": "Notifies of a custom DRM-related incident",
       "id": {
         "name": "Stream ID",
         "example": "0"
