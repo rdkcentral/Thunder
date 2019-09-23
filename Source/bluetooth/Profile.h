@@ -328,6 +328,12 @@ namespace Bluetooth {
                     }
 
                 public:
+                    bool operator== (const UUID& id) const {
+                        return (id == _uuid);
+                    }
+                    bool operator!= (const UUID& id) const {
+                        return (!operator== (id));
+                    }
                     const UUID& Type() const {
                         return (_uuid);
                     }
@@ -370,6 +376,12 @@ namespace Bluetooth {
                 }
 
             public:
+                bool operator== (const UUID& id) const {
+                    return (id == _type);
+                }
+                bool operator!= (const UUID& id) const {
+                    return (!operator== (id));
+                }
                 uint8_t Error() const {
                     return (_error);
                 }
@@ -406,6 +418,13 @@ namespace Bluetooth {
                 }
                 Iterator Descriptors() const {
                     return (Iterator(_descriptors));
+                }
+                const Descriptor* operator[] (const UUID& id) const {
+                    std::list<Descriptor>::const_iterator index (_descriptors.begin());
+
+                    while ((index != _descriptors.end()) && (*index != id)) { index++; }
+
+                    return (index != _descriptors.end() ? &(*index) : nullptr);
                 }
                 uint16_t Handle() const {
                     return (_handle);
@@ -462,12 +481,19 @@ namespace Bluetooth {
             Service(const UUID& serviceId, const uint16_t handle, const uint16_t group)
                 : _handle(handle)
                 , _group(group)
-                , _serviceId(serviceId) {
+                , _serviceId(serviceId)
+                , _characteristics() {
             }
             ~Service() {
             }
 
         public:
+            bool operator== (const UUID& id) const {
+                return (id == _serviceId);
+            }
+            bool operator!= (const UUID& id) const {
+                return (!operator== (id));
+            }
             const UUID& Type() const {
                 return (_serviceId);
             }
@@ -484,6 +510,13 @@ namespace Bluetooth {
             }
             Iterator Characteristics() const {
                 return (Iterator(_characteristics));
+            }
+            const Characteristic* operator[] (const UUID& id) const {
+                std::list<Characteristic>::const_iterator index (_characteristics.begin());
+
+                while ((index != _characteristics.end()) && (*index != id)) { index++; }
+
+                return (index != _characteristics.end() ? &(*index) : nullptr);
             }
             uint16_t Handle() const {
                 return (_handle);
@@ -566,6 +599,13 @@ namespace Bluetooth {
         }
         Iterator Services() const {
             return (Iterator(_services));
+        }
+        const Service* operator[] (const UUID& id) const {
+            std::list<Service>::const_iterator index (_services.begin());
+
+            while ((index != _services.end()) && (*index != id)) { index++; }
+
+            return (index != _services.end() ? &(*index) : nullptr);
         }
 
     private:

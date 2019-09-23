@@ -399,6 +399,9 @@ namespace Bluetooth {
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_ADVERTISE_ENABLE), le_set_advertise_enable_cp, uint8_t>
                 AdvertisingEnableLE;
+
+            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CONN_UPDATE), le_connection_update_cp, evt_le_connection_update_complete, EVT_LE_CONN_UPDATE_COMPLETE>
+                ConnectionUpdate;
         };
 
         enum state : uint16_t {
@@ -442,6 +445,7 @@ namespace Bluetooth {
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
         uint8_t Name(const le_advertising_info& info, string& name) const;
+        uint32_t Connection(const uint16_t connection, const uint16_t min, const uint16_t max, const uint16_t latency, const uint16_t timeout);
 
     protected:
         virtual void Update(const le_advertising_info& eventData);

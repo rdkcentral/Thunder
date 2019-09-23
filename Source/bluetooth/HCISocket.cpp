@@ -48,6 +48,24 @@ uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
     return (result);
 }
 
+uint32_t HCISocket::Connection(const uint16_t connection, const uint16_t minInterval, const uint16_t maxInterval, const uint16_t latency, const uint16_t timeout)
+{
+    uint32_t result = Core::ERROR_BAD_REQUEST;
+
+    Command::ConnectionUpdate parameters;
+
+    parameters.Clear();
+    parameters->handle = connection;
+    parameters->min_interval = minInterval;
+    parameters->max_interval = maxInterval;
+    parameters->latency = latency;
+    parameters->supervision_timeout = timeout;
+    parameters->min_ce_length = minLength;
+    parameters->max_ce_length = maxLength;
+
+    return (Exchange(MAX_ACTION_TIMEOUT, parameters, parameters));
+}
+
 void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags)
 {
     ASSERT(scanTime <= 326);
