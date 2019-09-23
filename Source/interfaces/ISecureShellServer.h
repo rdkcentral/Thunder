@@ -25,18 +25,17 @@ namespace Exchange {
                 virtual void Reset() = 0;
                 virtual bool IsValid() const = 0;
                 virtual bool Next() = 0;
-		virtual IClient* Current() = 0;
-	    }
-                
-	    virtual ~IClient() {}
+                virtual IClient* Current() = 0;
+            };
+
+            virtual ~IClient() {}
 
             virtual string RemoteId() const = 0;
+            virtual string TimeStamp() const = 0;
+            virtual string IpAddress() const = 0;
             //virtual void Close() = 0;
             //virtual void Count() const = 0;
         };
-
-	virtual IClient* Client(const string&) = 0;
-        virtual IClient::IIterator* Clients() = 0;
     };
 }
 }
