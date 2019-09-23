@@ -2,6 +2,26 @@
 
 namespace WPEFramework {
 
+ENUM_CONVERSION_BEGIN(Bluetooth::Profile::Service::Characteristic::Descriptor::type)
+
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::CharacteristicAggregateFormat,      _TXT("CharacteristicAggregateFormat") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::CharacteristicExtendedPropertie,    _TXT("CharacteristicExtendedPropertie") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::CharacteristicPresentationFormat,   _TXT("CharacteristicPresentationFormat") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::CharacteristicUserDescription,      _TXT("CharacteristicUserDescription") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ClientCharacteristicConfiguration,  _TXT("ClientCharacteristicConfiguration") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::EnvironmentalSensingConfiguration,  _TXT("EnvironmentalSensingConfiguration") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::EnvironmentalSensingMeasurement,    _TXT("EnvironmentalSensingMeasurement") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::EnvironmentalSensingTriggerSetting, _TXT("EnvironmentalSensingTriggerSetting") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ExternalReportReference,            _TXT("ExternalReportReference") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::NumberOfDigital,                    _TXT("NumberOfDigital") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ReportReference,                    _TXT("ReportReference") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ServerCharacteristicConfiguration,  _TXT("ServerCharacteristicConfiguration") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::TimeTriggerSetting,                 _TXT("TimeTriggerSetting") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ValidRange,                         _TXT("ValidRange") },
+    { Bluetooth::Profile::Service::Characteristic::Descriptor::ValueTriggerSetting,                _TXT("ValueTriggerSetting") },
+
+ENUM_CONVERSION_END(Bluetooth::Profile::Service::Characteristic::Descriptor::type)
+
 ENUM_CONVERSION_BEGIN(Bluetooth::Profile::Service::Characteristic::type)
 
     { Bluetooth::Profile::Service::Characteristic::AerobicHeartRateLowerLimit,                _TXT("AerobicHeartRateLowerLimit") },

@@ -81,104 +81,183 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
         result = length;
 
         TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
-        printf("L2CAP received [%d]: ", length);
-        for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
-
-        _response.Type(stream[0]);
+        // printf("L2CAP received [%d]: ", length);
+        // for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
 
         // This is what we are expecting, so process it...
         switch (stream[0]) {
         case ATT_OP_ERROR: {
-            TRACE_L1(_T("Houston we got an error... %d"), stream[4]);
-            _error = stream[4];
-            break;
+             if ((stream[4] == ATT_ECODE_ATTR_NOT_FOUND) && (_frame.End() != 0) && (_response.Empty() == false)) {
+                 _error = Core::ERROR_NONE;
+             }
+             else { 
+                 _response._min = stream[4];
+                 _response.Type(stream[0]);
+                 _error = Core::ERROR_GENERAL;
+             }
+             break;
         }
         case ATT_OP_READ_BY_GROUP_RESP: {
-            /* PDU must contain at least:
-             * - Attribute length (1 octet)
-             * - Attribute Data List (at least one entry):
-             *   - Attribute Handle (2 octets)
-             *   - End Group Handle (2 octets) 
-             *   - Data (Attribute length - 4) */
-            /* Minimum Attribute Data List size */
-            TRACE_L1(_T("L2CapSocket Read By Group Type"));
-             if (stream[1] >= 4) {
-                uint8_t entries = (length - 2) / stream[1];
-                for (uint8_t index = 0; index < entries; index++) {
-                    uint16_t offset = 2 + (index * stream[1]);
-                    uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
-                    uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
-                    _response.Add(foundHandle, groupHandle, (stream[1] - 4), &(stream[offset+4]));
-                }
-            }
-            _error = Core::ERROR_NONE;
-            break;
+             /* PDU must contain at least:
+              * - Attribute length (1 octet)
+              * - Attribute Data List (at least one entry):
+              *   - Attribute Handle (2 octets)
+              *   - End Group Handle (2 octets) 
+              *   - Data (Attribute length - 4) */
+             /* Minimum Attribute Data List size */
+             if (stream[1] < 4) {
+                 _error = Core::ERROR_BAD_REQUEST;
+             }
+             else {
+                 uint16_t last = 0;
+                 uint8_t entries = (length - 2) / stream[1];
+                 for (uint8_t index = 0; index < entries; index++) {
+                     uint16_t offset = 2 + (index * stream[1]);
+                     uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
+                     uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
+                     _response.Add(foundHandle, groupHandle, (stream[1] - 4), &(stream[offset+4]));
+                     if (last < groupHandle) {
+                         last = groupHandle;
+                     }
+                 }
+
+                 ASSERT(_frame.End() != 0);
+
+                 if (last >= _frame.End()) {
+                     _error = Core::ERROR_NONE;
+                 }
+                 else {
+                     _frame.ReadByGroupType(last + 1);
+                 }
+
+                 _response.Type(stream[0]);
+             }
+             break;
         }
         case ATT_OP_FIND_BY_TYPE_RESP: {
-            /* PDU must contain at least:
-             * - Attribute Opcode (1 octet)
-             * - Length (1 octet)
-             * - Attribute Data List (at least one entry):
-             *   - Attribute Handle (2 octets)
-             *   - Attribute Value (at least 1 octet) */
-            /* Minimum Attribute Data List size */
-            if (stream[1] >= 3) {
-                uint8_t entries = (length - 1) / 4;
-                for (uint8_t index = 0; index < entries; index++) {
-                    uint16_t offset = 2 + (index * stream[1]);
-                    uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
-                    uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
-                    _response.Add(foundHandle, groupHandle);
-                }
-            }
-            _error = Core::ERROR_NONE;
-            break;
+             /* PDU must contain at least:
+              * - Attribute Opcode (1 octet)
+              * - Length (1 octet)
+              * - Attribute Data List (at least one entry):
+              *   - Attribute Handle (2 octets)
+              *   - Attribute Value (at least 1 octet) */
+             /* Minimum Attribute Data List size */
+             if (stream[1] < 3) {
+                 _error = Core::ERROR_BAD_REQUEST;
+             }
+             else {
+                 uint16_t last = 0;
+                 uint8_t entries = (length - 1) / 4;
+                 for (uint8_t index = 0; index < entries; index++) {
+                     uint16_t offset = 2 + (index * stream[1]);
+                     uint16_t foundHandle = (stream[offset + 1] << 8) | stream[offset + 0];
+                     uint16_t groupHandle = (stream[offset + 3] << 8) | stream[offset + 2];
+                     _response.Add(foundHandle, groupHandle);
+
+                     if (last < groupHandle) {
+                         last = groupHandle;
+                     }
+                 }
+
+                 ASSERT(_frame.End() != 0);
+
+                 if (last >= _frame.End()) {
+                     _error = Core::ERROR_NONE;
+                 }
+                 else {
+                     _frame.FindByType(last + 1);
+                 }
+
+                 _response.Type(stream[0]);
+             }
+ 
+             break;
         }
         case ATT_OP_READ_BY_TYPE_RESP: {
-            /* PDU must contain at least:
-             * - Attribute Opcode (1 octet)
-             * - Length (1 octet)
-             * - Attribute Data List (at least one entry):
-             *   - Attribute Handle (2 octets)
-             *   - Attribute Value (at least 1 octet) */
-            /* Minimum Attribute Data List size */
-            if (stream[1] >= 3) {
-                uint8_t entries = ((length - 2) / stream[1]);
-                for (uint8_t index = 0; index < entries; index++) {
-                    uint16_t offset = 2 + (index * stream[1]);
-                    uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];
+             /* PDU must contain at least:
+              * - Attribute Opcode (1 octet)
+              * - Length (1 octet)
+              * - Attribute Data List (at least one entry):
+              *   - Attribute Handle (2 octets)
+              *   - Attribute Value (at least 1 octet) */
+             /* Minimum Attribute Data List size */
+             if (stream[1] < 3) {
+                 _error = Core::ERROR_BAD_REQUEST;
+             }
+             else {
+                 uint16_t last = 0;
+                 uint8_t entries = ((length - 2) / stream[1]);
+                 for (uint8_t index = 0; index < entries; index++) {
+                     uint16_t offset = 2 + (index * stream[1]);
+                     uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];
 
-                    _response.Add(handle, stream[1] - 2, &(stream[offset + 2]));
-                }
-            }
-            _error = Core::ERROR_NONE;
-            break;
+                     _response.Add(handle, stream[1] - 2, &(stream[offset + 2]));
+                     if (last < handle) {
+                         last = handle;
+                     }
+                 }
+
+                 ASSERT(_frame.End() != 0);
+
+                 if (last >= _frame.End()) {
+                     _error = Core::ERROR_NONE;
+                 }
+                 else {
+                     _frame.ReadByType(last + 1);
+                 }
+
+                 _response.Type(stream[0]);
+             }
+ 
+             break;
+        }
+        case ATT_OP_FIND_INFO_RESP: {
+             if ((stream[1] != 1) && (stream[1] != 2)) {
+                 _error = Core::ERROR_BAD_REQUEST;
+             }
+             else {
+                 uint16_t last = 0;
+                 uint8_t step = (stream[1] == 1 ? 2 : 16);
+                 uint8_t entries = ((length - 2) / (2 + step));
+                 for (uint8_t index = 0; index < entries; index++) {
+                     uint16_t offset = 2 + (index * (2 + step));
+                     uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];
+
+                     _response.Add(handle, step, &(stream[offset + 2]));
+                     if (last < handle) {
+                         last = handle;
+                     }
+                 }
+
+                 ASSERT(_frame.End() != 0);
+
+                 if (last >= _frame.End()) {
+                     _error = Core::ERROR_NONE;
+                 }
+                 else {
+                     _frame.FindInformation(last + 1);
+                 }
+
+                 _response.Type(stream[0]);
+             }
+ 
+             break;
         }
         case ATT_OP_WRITE_RESP: {
             TRACE_L1(_T("We have written: %d"),length);
             _error = Core::ERROR_NONE;
             break;
         }
-        case ATT_OP_FIND_INFO_RESP: {
-            if ((stream[1] > 0) && (stream[1] <= 2)) {
-                uint8_t step = (stream[1] == 1 ? 2 : 16);
-                uint8_t entries = ((length - 2) / step);
-                for (uint8_t index = 0; index < entries; index++) {
-                    uint16_t offset = 2 + (index * step);
-                    uint16_t handle = (stream[offset + 1] << 8) | stream[offset + 0];
-
-                    _response.Add(handle, step, &(stream[offset + 2]));
-                }
-            }
-            _error = Core::ERROR_NONE;
-            break;
-        }
         case ATT_OP_READ_RESP: {
-            _error = Core::ERROR_NONE;
             _response.Add(_frame.Handle(), length, &(stream[1]));
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
             }
+            else {
+                _error = Core::ERROR_NONE;
+            }
+
+            _response.Type(stream[0]);
             break;
         }
         case ATT_OP_READ_BLOB_RESP: {
@@ -190,10 +269,10 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
             TRACE_L1(_T("Received a blob of length %d"), length);
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
-                TRACE_L1(_T("Now we need to send another send...."));
             } else {
                 _error = Core::ERROR_NONE;
             }
+            _response.Type(ATT_OP_READ_RESP);
             break;
         }
         default:

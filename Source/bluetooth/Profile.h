@@ -296,25 +296,101 @@ namespace Bluetooth {
                     WindChill                                 = 0x2A79
                 };
 
+                class Descriptor {
+                public:
+                    enum type : uint16_t {
+                        CharacteristicAggregateFormat         = 0x2905,
+                        CharacteristicExtendedPropertie       = 0x2900,
+                        CharacteristicPresentationFormat      = 0x2904,
+                        CharacteristicUserDescription         = 0x2901,
+                        ClientCharacteristicConfiguration     = 0x2902,
+                        EnvironmentalSensingConfiguration     = 0x290B,
+                        EnvironmentalSensingMeasurement	      = 0x290C,
+                        EnvironmentalSensingTriggerSetting    = 0x290D,
+                        ExternalReportReference               = 0x2907,
+                        NumberOfDigital                       = 0x2909,
+                        ReportReference	                      = 0x2908,
+                        ServerCharacteristicConfiguration     = 0x2903,
+                        TimeTriggerSetting                    = 0x290E,
+                        ValidRange                            = 0x2906,
+                        ValueTriggerSetting                   = 0x290A
+                    };
+
+                public:
+                    Descriptor(const Descriptor&) = delete;
+                    Descriptor& operator= (const Descriptor&) = delete;
+
+                    Descriptor(const uint16_t handle, const UUID& uuid)
+                        : _handle(handle)
+                        , _uuid(uuid) {
+                    }
+                    ~Descriptor() {
+                    }
+
+                public:
+                    const UUID& Type() const {
+                        return (_uuid);
+                    }
+                    string Name() const {
+                        string result;
+                        if (_uuid.HasShort() == false) {
+                            result = _uuid.ToString();
+                        }
+                        else {
+                            type input = static_cast<type>(_uuid.Short());
+                            Core::EnumerateType<type> value (input);
+                            result = (value.IsSet() == true ? string(value.Data()) : _uuid.ToString(false));
+                        }
+                        return (result);
+                    }
+                    uint16_t Handle() const {
+                        return (_handle);
+                    }
+ 
+                private:
+                    uint16_t _handle;
+                    UUID _uuid;
+                };
+
             public: 
-                typedef Core::IteratorType< const std::list<UUID>, const UUID&, std::list<UUID>::const_iterator> Iterator;
+                typedef Core::IteratorType< const std::list<Descriptor>, const Descriptor&, std::list<Descriptor>::const_iterator> Iterator;
 
                 Characteristic(const Characteristic&) = delete;
                 Characteristic& operator= (const Characteristic&) = delete;
 
-                Characteristic(const uint16_t handle, const uint8_t rights, const uint16_t group, const UUID& attribute)
-                    : _handle(handle)
+                Characteristic(const uint16_t end, const uint8_t rights, const uint16_t value, const UUID& attribute)
+                    : _handle(value)
                     , _rights(rights)
-                    , _group(group)
+                    , _end(end)
                     , _type(attribute)
-                    , _attribute() {
+                    , _error(0)
+                    , _value() {
                 }
                 ~Characteristic() {
                 }
 
             public:
+                uint8_t Error() const {
+                    return (_error);
+                }
+                string ToString() const {
+                    string result;
+                    result.reserve(_value.length() + 1);
+                    for (const char& c : _value) {
+                        if (::isprint(c)) {
+                            result = result + c;
+                        }
+                        else {
+                            result = result + '.';
+                        }
+                    }
+                    return (result);
+                }
                 const UUID& Type() const {
                     return (_type);
+                }
+                uint8_t Rights() const {
+                    return (_rights);
                 }
                 string Name() const {
                     string result;
@@ -322,7 +398,8 @@ namespace Bluetooth {
                         result = _type.ToString();
                     }
                     else {
-                        Core::EnumerateType<type> value(static_cast<type>(_type.Short()));
+                        type input = static_cast<type>(_type.Short());
+                        Core::EnumerateType<type> value (input);
                         result = (value.IsSet() == true ? string(value.Data()) : _type.ToString(false));
                     }
                     return (result);
@@ -330,11 +407,11 @@ namespace Bluetooth {
                 Iterator Descriptors() const {
                     return (Iterator(_descriptors));
                 }
-                operator Attribute& () {
-                    return (_attribute);
+                uint16_t Handle() const {
+                    return (_handle);
                 }
-                operator const Attribute& () const {
-                    return (_attribute);
+                uint16_t Max() const {
+                    return (_end);
                 }
                
                 /* 
@@ -348,35 +425,31 @@ namespace Bluetooth {
 
             private:
                 friend class Profile;
-                uint16_t Min() const {
-                    return (_handle);
-                }
-                uint16_t Max() const {
-                    return (_group);
-                }
-                uint16_t Descriptors (GATTSocket::Command::Response& response) {
-                    uint16_t handle = 0;
-                 
+                void Descriptors (GATTSocket::Command::Response& response) {
                     while (response.Next() == true) {
-                        _descriptors.emplace_back(response.Attribute());
-                        if (handle < response.Handle()) {
-                            handle = response.Handle();
-                        }
+                        UUID descriptor(response.Attribute());
+                        _descriptors.emplace_back(response.Handle(), descriptor);
                     }
-
-                    return (handle + 1);
                 }
                 uint16_t Value(GATTSocket::Command::Response& response) {
+                    _error = response.Error();
+                    if ( (_error != 0) || (response.Data() == nullptr)) {
+                        _value.clear();
+                    }
+                    else {
+                        _value = std::string(reinterpret_cast<const char*>(response.Data()), response.Length());
+                    }
                     return(0);
                 }
 
             private:
                 uint16_t _handle;
                 uint8_t _rights;
-                uint16_t _group;
+                uint16_t _end;
                 UUID _type;
-                std::list<UUID> _descriptors;
-                Attribute _attribute;
+                std::list<Descriptor> _descriptors;
+                uint8_t _error;
+                std::string _value;
             };
 
         public:
@@ -386,12 +459,7 @@ namespace Bluetooth {
             Service(const Service&) = delete;
             Service& operator= (const Service&) = delete;
 
-            Service(uint16_t serviceId, const uint16_t handle, const uint16_t group)
-                : _handle(handle)
-                , _group(group)
-                , _serviceId(serviceId) {
-            }
-            Service(const uint8_t serviceId[16], const uint16_t handle, const uint16_t group)
+            Service(const UUID& serviceId, const uint16_t handle, const uint16_t group)
                 : _handle(handle)
                 , _group(group)
                 , _serviceId(serviceId) {
@@ -417,26 +485,29 @@ namespace Bluetooth {
             Iterator Characteristics() const {
                 return (Iterator(_characteristics));
             }
-
-        private:
-            friend class Profile;
-            uint16_t Min() const {
+            uint16_t Handle() const {
                 return (_handle);
             }
             uint16_t Max() const {
                 return (_group);
             }
-            uint16_t AddCharacteristics (GATTSocket::Command::Response& response) {
-                uint16_t handle = 0;
-                 
-                while (response.Next() == true) {
-                    _characteristics.emplace_back(response.Handle(), response.Rights(), response.Group(), response.Attribute());
-                    if (handle < response.Handle()) {
-                        handle = response.Handle();
-                    }
-                }
+ 
+        private:
+            friend class Profile;
+            void AddCharacteristics (GATTSocket::Command::Response& response) {
+                if (response.Next() == true) {
+                    do  {
+                        uint16_t value (response.Group());
+                        uint8_t rights (response.Rights());
+                        UUID attribute (response.Attribute());
 
-                return (handle);
+                        // Where does the next one start ?
+                        uint16_t end = (response.Next() ? response.Handle() - 1 : Max());
+
+                        _characteristics.emplace_back(end, rights, value, attribute);
+
+                    } while (response.IsValid() == true);
+                }
             }
             Index Filler() {
                 return (Index(_characteristics));
@@ -501,7 +572,7 @@ namespace Bluetooth {
         std::list<Service>::iterator ValidService(const std::list<Service>::iterator& input) {
             std::list<Service>::iterator index (input);
             while ( (index != _services.end()) && 
-                     ( (index->Min() >= index->Max()) || ((_custom == false) && (index->Type().HasShort() == false)) ) ) {
+                     ( (index->Handle() >= index->Max()) || ((_custom == false) && (index->Type().HasShort() == false)) ) ) {
                 index++;
             }
 
@@ -509,10 +580,7 @@ namespace Bluetooth {
         }
         bool NextCharacteristic() {
             do {
-                while ((_characteristics.Next() == true) && (_characteristics.Current().Min() >= _characteristics.Current().Max())) { 
-                    /* intentionally left empty */
-                }
-                if (_characteristics.IsValid() == false) {
+                if ( _characteristics.Next() == false) {
                     _index = ValidService(++_index);
 
                     if (_index != _services.end()) {
@@ -524,10 +592,28 @@ namespace Bluetooth {
 
             return (_characteristics.IsValid());
         }
+        void LoadCharacteristics(uint32_t waitTime) {
+            uint16_t begin = _characteristics.Current().Handle();
+            uint16_t end = _characteristics.Current().Max();
+
+            _adminLock.Unlock();
+
+            if (_socket != nullptr) {
+                if ((begin + 1) < end){
+                    _command.FindInformation(begin+1, end);
+                    _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
+                }
+                else {
+                    _command.Read(_characteristics.Current().Handle());
+                    _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnAttribute(cmd); });
+                }
+            }
+            _adminLock.Unlock();
+        }
         void OnServices(const GATTSocket::Command& cmd) {
             ASSERT (&cmd == &_command);
 
-            if (cmd.Error() != Core::ERROR_NONE) {
+            if ( (cmd.Error() != Core::ERROR_NONE) && (cmd.Result().Error() != 0) ) {
                 // Seems like the services could not be discovered, report it..
                 Report(Core::ERROR_GENERAL);
             }
@@ -540,19 +626,15 @@ namespace Bluetooth {
                     while (response.Next() == true) {
                         const uint8_t* service = response.Data();
                         if (response.Length() == 2) {
-                            _services.emplace_back( (service[0] | (service[1] << 8)), response.Handle(), response.Group() );
+                            _services.emplace_back( UUID(service[0] | (service[1] << 8)), response.Handle(), response.Group() );
                         }
                         else if (response.Length() == 16) {
-                            _services.emplace_back( service, response.Handle(), response.Group() );
+                            _services.emplace_back( UUID(service), response.Handle(), response.Group() );
                         }
                     }
 
                     if (_services.size() == 0) {
                         Report (Core::ERROR_UNAVAILABLE);
-                    }
-                    else if ((response.Count() > 0) && (response.Max() < 0xFFFF)) {
-                        _command.ReadByGroupType(response.Max() + 1, 0xFFFF, UUID(PRIMARY_SERVICE_UUID));
-                        _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnServices(cmd); });
                     }
                     else {
                         _index = ValidService(_services.begin());
@@ -563,7 +645,7 @@ namespace Bluetooth {
                         else {
                             _adminLock.Lock();
                             if (_socket != nullptr) {
-                                _command.ReadByType(_index->Min()+1, _index->Max(), UUID(CHARACTERISTICS_UUID));
+                                _command.ReadByType(_index->Handle()+1, _index->Max(), UUID(CHARACTERISTICS_UUID));
                                 _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
                             }
                             _adminLock.Unlock();
@@ -575,7 +657,7 @@ namespace Bluetooth {
         void OnCharacteristics(const GATTSocket::Command& cmd) {
             ASSERT (&cmd == &_command);
 
-            if (cmd.Error() != Core::ERROR_NONE) {
+            if ( (cmd.Error() != Core::ERROR_NONE) && (cmd.Result().Error() != 0) ) {
                 // Seems like the services could not be discovered, report it..
                 Report(Core::ERROR_GENERAL);
             }
@@ -585,42 +667,33 @@ namespace Bluetooth {
                 if (waitTime > 0) {
                     GATTSocket::Command::Response& response(_command.Result());
 
-                    uint16_t handle = _index->AddCharacteristics(response);
+                    _index->AddCharacteristics(response);
+                    _index = ValidService(++_index);
 
-                    if ((handle > _index->Min()) && (handle < _index->Max())) {
-                        _adminLock.Unlock();
+                    if (_index != _services.end()) {
+                        _adminLock.Lock();
                         if (_socket != nullptr) {
-                            _command.ReadByType(handle + 1, _index->Max(), UUID(CHARACTERISTICS_UUID));
+                            _command.ReadByType(_index->Handle()+1, _index->Max(), UUID(CHARACTERISTICS_UUID));
                             _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnCharacteristics(cmd); });
                         }
                         _adminLock.Unlock();
                     }
                     else {
-                        _index = ValidService(++_index);
 
-                        if (_index == _services.end()) {
+                        // Time to start reading the attributes on the services!!
+                        _index = _services.begin();
 
-                            // Time to start reading the attributes on the services!!
-                            _index = _services.begin();
+                        // If we get here, there must be services, otherwise we would have bailed out on OnServices!! 
+                        ASSERT (_index != _services.end());
 
-                            // If we get here, there must be services, otherwise we would have bailed out on OnServices!! 
-                            ASSERT (_index != _services.end());
+                        _characteristics = _index->Filler();
 
-                            _characteristics = _index->Filler();
-
-                            if (NextCharacteristic() == false) {
-                                Report(Core::ERROR_NONE);
-                            }
-                            else {
-                                _adminLock.Unlock();
-
-                                if (_socket != nullptr) {
-                                    _command.FindInformation(_characteristics.Current().Min()+1, _characteristics.Current().Max());
-                                    _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
-                                }
-                                _adminLock.Unlock();
-                            }
+                        if (NextCharacteristic() == false) {
+                            Report(Core::ERROR_NONE);
                         }
+                        else {
+                            LoadCharacteristics(waitTime);
+                       }
                     }
                 }
             }
@@ -628,7 +701,7 @@ namespace Bluetooth {
         void OnDescriptors(const GATTSocket::Command& cmd) {
             ASSERT (&cmd == &_command);
 
-            if (cmd.Error() != Core::ERROR_NONE) {
+            if ( (cmd.Error() != Core::ERROR_NONE) && (cmd.Result().Error() != 0) ) {
                 // Seems like the services could not be discovered, report it..
                 Report(Core::ERROR_GENERAL);
             }
@@ -636,21 +709,14 @@ namespace Bluetooth {
                 uint32_t waitTime = AvailableTime();
 
                 if (waitTime > 0) {
-                    uint32_t handle = _characteristics.Current().Descriptors(_command.Result());
+                    _characteristics.Current().Descriptors(_command.Result());
 
                     _adminLock.Lock();
 
                     if (_socket != nullptr) {
 
-                        if ((handle <= _characteristics.Current().Min()) || (handle <= _characteristics.Current().Max())) {
-
-                            _command.Read(_characteristics.Current().Min());
-                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnAttribute(cmd); });
-                        }
-                        else {
-                            _command.FindInformation(handle + 1, _characteristics.Current().Max());
-                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
-                        }
+                        _command.Read(_characteristics.Current().Handle());
+                        _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnAttribute(cmd); });
                     }
 
                     _adminLock.Unlock();
@@ -668,31 +734,13 @@ namespace Bluetooth {
                 uint32_t waitTime = AvailableTime();
 
                 if (waitTime > 0) {
-                    uint32_t handle = _characteristics.Current().Value(_command.Result());
+                    _characteristics.Current().Value(_command.Result());
 
-                    _adminLock.Lock();
-
-                    if (_socket != nullptr) {
-
-                        if ((handle <= _characteristics.Current().Min()) || (handle <= _characteristics.Current().Max())) {
-
-                            if (NextCharacteristic() == false) {
-                                Report(Core::ERROR_NONE);
-                            }
-                            else {
-                                _adminLock.Unlock();
-
-                                if (_socket != nullptr) {
-                                    _command.FindInformation(_characteristics.Current().Min()+1, _characteristics.Current().Max());
-                                    _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
-                                }
-                                _adminLock.Unlock();
-                            }
-                        }
-                        else {
-                            _command.FindInformation(handle + 1, _characteristics.Current().Max());
-                            _socket->Execute(waitTime, _command, [&](const GATTSocket::Command& cmd) { OnDescriptors(cmd); });
-                        }
+                    if (NextCharacteristic() == false) {
+                        Report(Core::ERROR_NONE);
+                    }
+                    else {
+                        LoadCharacteristics(waitTime);
                     }
 
                     _adminLock.Unlock();

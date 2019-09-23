@@ -35,7 +35,7 @@ namespace Bluetooth {
         }
         UUID(const UUID& copy)
         {
-            ::memcpy(_uuid, copy._uuid, copy._uuid[0] + 1);
+            ::memcpy(_uuid, copy._uuid, sizeof(_uuid));
         }
         ~UUID()
         {
@@ -43,7 +43,7 @@ namespace Bluetooth {
 
         UUID& operator=(const UUID& rhs)
         {
-            ::memcpy(_uuid, rhs._uuid, rhs._uuid[0] + 1);
+            ::memcpy(_uuid, rhs._uuid, sizeof(_uuid));
             return (*this);
         }
 
@@ -237,6 +237,29 @@ namespace Bluetooth {
         static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;
         static constexpr uint8_t ATT_OP_WRITE_RESP = 0x13;
 
+        static constexpr uint8_t ATT_ECODE_INVALID_HANDLE = 0x01;
+        static constexpr uint8_t ATT_ECODE_READ_NOT_PERM = 0x02;
+        static constexpr uint8_t ATT_ECODE_WRITE_NOT_PERM = 0x03;
+        static constexpr uint8_t ATT_ECODE_INVALID_PDU = 0x04;
+        static constexpr uint8_t ATT_ECODE_AUTHENTICATION = 0x05;
+        static constexpr uint8_t ATT_ECODE_REQ_NOT_SUPP = 0x06;
+        static constexpr uint8_t ATT_ECODE_INVALID_OFFSET = 0x07;
+        static constexpr uint8_t ATT_ECODE_AUTHORIZATION = 0x08;
+        static constexpr uint8_t ATT_ECODE_PREP_QUEUE_FULL = 0x09;
+        static constexpr uint8_t ATT_ECODE_ATTR_NOT_FOUND = 0x0A;
+        static constexpr uint8_t ATT_ECODE_ATTR_NOT_LONG = 0x0B;
+        static constexpr uint8_t ATT_ECODE_INSUFF_ENCR_KEY_SIZE = 0x0C;
+        static constexpr uint8_t ATT_ECODE_INVAL_ATTR_VALUE_LEN = 0x0D;
+        static constexpr uint8_t ATT_ECODE_UNLIKELY = 0x0E;
+        static constexpr uint8_t ATT_ECODE_INSUFF_ENC = 0x0F;
+        static constexpr uint8_t ATT_ECODE_UNSUPP_GRP_TYPE = 0x10;
+        static constexpr uint8_t ATT_ECODE_INSUFF_RESOURCES = 0x11;
+
+        /* Application error */
+        static constexpr uint8_t ATT_ECODE_IO = 0x80;
+        static constexpr uint8_t ATT_ECODE_TIMEOUT = 0x81;
+        static constexpr uint8_t ATT_ECODE_ABORTED = 0x82;
+
         class CommandSink : public Core::IOutbound::ICallback, public Core::IOutbound, public Core::IInbound
         {
         public:
@@ -291,10 +314,10 @@ namespace Bluetooth {
                     _mtu = ((stream[2] << 8) | stream[1]);
                     result = length;
                 } else if ((stream[0] == ATT_OP_ERROR) && (stream[1] == ATT_OP_MTU_RESP)) {
-                    printf(_T("Error on receiving MTU: [%d]\n"), stream[2]);
+                    TRACE_L1("Error on receiving MTU: [%d]", stream[2]);
                     result = length;
                 } else {
-                    printf(_T("Unexpected L2CapSocket message. Expected: %d, got %d [%d]\n"), ATT_OP_MTU_RESP, stream[0], stream[1]);
+                    TRACE_L1("Unexpected L2CapSocket message. Expected: %d, got %d [%d]", ATT_OP_MTU_RESP, stream[0], stream[1]);
                     result = 0;
                 } 
                 return (result);
@@ -312,6 +335,8 @@ namespace Bluetooth {
         private:
             Command(const Command&) = delete;
             Command& operator=(const Command&) = delete;
+
+            static constexpr uint16_t BLOCKSIZE = 64;
 
             class Exchange {
             private:
@@ -337,6 +362,12 @@ namespace Bluetooth {
                 {
                     _offset = 0;
                 }
+                void ReadByGroupType(const uint16_t start)
+                {
+                    _buffer[1] = (start & 0xFF);
+                    _buffer[2] = (start >> 8) & 0xFF;
+                    Reload();
+                }
                 uint8_t ReadByGroupType(const uint16_t start, const uint16_t end, const UUID& id)
                 {
                     _buffer[0] = ATT_OP_READ_BY_GROUP_REQ;
@@ -346,7 +377,14 @@ namespace Bluetooth {
                     _buffer[4] = (end >> 8) & 0xFF;
                     ::memcpy(&(_buffer[5]), id.Data(), id.Length());
                     _size = id.Length() + 5;
+                    _end = end;
                     return (ATT_OP_READ_BY_GROUP_RESP);
+                }
+                void FindByType(const uint16_t start)
+                {
+                    _buffer[1] = (start & 0xFF);
+                    _buffer[2] = (start >> 8) & 0xFF;
+                    Reload();
                 }
                 uint8_t FindByType(const uint16_t start, const uint16_t end, const UUID& id, const uint8_t length, const uint8_t data[])
                 {
@@ -359,6 +397,7 @@ namespace Bluetooth {
                     _buffer[6] = (id.Short() >> 8) & 0xFF;
                     ::memcpy(&(_buffer[7]), data, length);
                     _size = 7 + length;
+                    _end = end;
                     return (ATT_OP_FIND_BY_TYPE_RESP);
                 }
                 uint8_t FindByType(const uint16_t start, const uint16_t end, const UUID& id, const uint16_t handle)
@@ -373,7 +412,14 @@ namespace Bluetooth {
                     _buffer[7] = (handle & 0xFF);
                     _buffer[8] = (handle >> 8) & 0xFF;
                     _size = 9;
+                    _end = end;
                     return (ATT_OP_FIND_BY_TYPE_RESP);
+                }
+                void ReadByType(const uint16_t start)
+                {
+                    _buffer[1] = (start & 0xFF);
+                    _buffer[2] = (start >> 8) & 0xFF;
+                    Reload();
                 }
                 uint8_t ReadByType(const uint16_t start, const uint16_t end, const UUID& id)
                 {
@@ -384,7 +430,14 @@ namespace Bluetooth {
                     _buffer[4] = (end >> 8) & 0xFF;
                     ::memcpy(&(_buffer[5]), id.Data(), id.Length());
                     _size = id.Length() + 5;
+                    _end = end;
                     return (ATT_OP_READ_BY_TYPE_RESP);
+                }
+                void FindInformation(const uint16_t start)
+                {
+                    _buffer[1] = (start & 0xFF);
+                    _buffer[2] = (start >> 8) & 0xFF;
+                    Reload();
                 }
                 uint8_t FindInformation(const uint16_t start, const uint16_t end)
                 {
@@ -394,6 +447,7 @@ namespace Bluetooth {
                     _buffer[3] = (end & 0xFF);
                     _buffer[4] = (end >> 8) & 0xFF;
                     _size = 5;
+                    _end = end;
                     return (ATT_OP_FIND_INFO_RESP);
                 }
                 uint8_t Read(const uint16_t handle)
@@ -402,6 +456,7 @@ namespace Bluetooth {
                     _buffer[1] = (handle & 0xFF);
                     _buffer[2] = (handle >> 8) & 0xFF;
                     _size = 3;
+                    _end = 0;
                     return (ATT_OP_READ_RESP);
                 }
                 uint8_t ReadBlob(const uint16_t handle, const uint16_t offset)
@@ -412,6 +467,7 @@ namespace Bluetooth {
                     _buffer[3] = (offset & 0xFF);
                     _buffer[4] = (offset >> 8) & 0xFF;
                     _size = 5;
+                    _end = 0;
                     return (ATT_OP_READ_BLOB_RESP);
                 }
                 uint8_t Write(const uint16_t handle, const uint8_t length, const uint8_t data[])
@@ -421,6 +477,7 @@ namespace Bluetooth {
                     _buffer[2] = (handle >> 8) & 0xFF;
                     ::memcpy(&(_buffer[3]), data, length);
                     _size = 3 + length;
+                    _end = 0;
                     return (ATT_OP_WRITE_RESP);
                 }
                 uint16_t Serialize(uint8_t stream[], const uint16_t length) const
@@ -444,11 +501,15 @@ namespace Bluetooth {
                 {
                     return ((_buffer[0] == ATT_OP_READ_BLOB_REQ) ? ((_buffer[4] << 8) | _buffer[3]) : 0);
                 }
+                uint16_t End() const {
+                    return (_end);
+                }
 
             private:
                 mutable uint16_t _offset;
+                uint16_t _end;
                 uint8_t _size;
-                uint8_t _buffer[64];
+                uint8_t _buffer[BLOCKSIZE];
             };
 
         public:
@@ -457,7 +518,6 @@ namespace Bluetooth {
                 Response(const Response&) = delete;
                 Response& operator=(const Response&) = delete;
 
-                static constexpr uint16_t BLOCKSIZE = 64;
                 typedef std::pair<uint16_t, std::pair<uint16_t, uint16_t> > Entry;
 
             public:
@@ -493,6 +553,9 @@ namespace Bluetooth {
                     _max = 0x0001;
                     _type = ATT_OP_ERROR;
                 }
+                uint8_t Error() const {
+                    return (_type == ATT_OP_ERROR ? static_cast<uint8_t>(_min) : 0);
+                }
                 void Reset()
                 {
                     _preHead = true;
@@ -524,21 +587,17 @@ namespace Bluetooth {
                     return (_type == ATT_OP_READ_BY_TYPE_RESP ? ((_storage[_iterator->second.second + 2] << 8) | (_storage[_iterator->second.second + 1])) : _iterator->second.first);
                 }
                 UUID Attribute() const {
-                    UUID result;
-
                     uint8_t        offset = (_type == ATT_OP_READ_BY_TYPE_RESP ? 3 : 0);
                     uint16_t       length = Delta() - offset;
                     const uint8_t* data   = &(_storage[_iterator->second.second + offset]);
  
-                    if (length == 2) {
-                        
-                        result = UUID((data[1] << 8) | (*data));
-                    }
-                    else if (length == 16) {
-                        result = UUID(data);
+                    if ((length != 2) && (length != 16)) {
+                        TRACE_L1("**** Unexpected Attribute length [%d] !!!!", length);
                     }
 
-                    return (result);
+                    return (length == 2  ? UUID(static_cast<uint16_t>((data[1] << 8) | (*data))) :
+                            length == 16 ? UUID(data) :
+                                           UUID());
                 }
                 uint8_t Rights() const {
                     return (_storage[_iterator->second.second]);
