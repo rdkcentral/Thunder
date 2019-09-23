@@ -167,14 +167,13 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
-    unsigned char* destination = static_cast<unsigned char*>(_Dst) + _MaxCount;
-    const unsigned char* source = static_cast<const unsigned char*>(_Src) + _MaxCount;
+    unsigned char* destination = static_cast<unsigned char*>(_Dst) + _MaxCount - 1;
+    const unsigned char* source = static_cast<const unsigned char*>(_Src) + _MaxCount - 1;
 
     while (_MaxCount) {
         *destination-- = *source--;
         --_MaxCount;
     }
-    *destination-- = *source--;
 
     return (destination);
 }
