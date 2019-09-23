@@ -762,15 +762,12 @@ protected:
     // Event fired on key status update
     void OnKeyStatusUpdate(const uint8_t keyID[], const uint8_t keyIDLength, const OCDM::ISession::KeyStatus status)
     {   
-        printf("BRAM2 DEBUG OnKeyStatusUpdate %d %d %p\n", keyIDLength, status, _callback);
         std::string keyId(reinterpret_cast<const char*>(keyID), keyIDLength);
         _keyStatuses[keyId] = status;
 
         if ((_callback != nullptr) && (_callback->key_update_callback != nullptr)){
             _callback->key_update_callback(this, _userData, keyID, keyIDLength);
-        } else {
-            printf("BRAM3 DEBUG OnKeyStatusUpdate\n");
-        }
+        } 
     }
 
     void OnKeyStatusesUpdated() const
