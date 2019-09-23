@@ -353,6 +353,8 @@ public:
             secureStoreHashLength);
     }
 
+    void SystemBeingDestructed(OpenCDMSystem* system);
+
 private:
     mutable uint32_t _refCount;
 	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;

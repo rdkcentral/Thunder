@@ -67,7 +67,7 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
  */
 OpenCDMError opencdm_destruct_system(struct OpenCDMSystem* system)
 {
-    // FIXME: Assure all sessions belonging to this system are destructed as well if any.
+    OpenCDMAccessor::Instance()->SystemBeingDestructed(system);
     assert(system != nullptr);
     if (system != nullptr) {
        delete system;
@@ -472,5 +472,16 @@ bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
                 sessionId.c_str());
         }
 
+        _adminLock.Unlock();
+    }
+
+    void OpenCDMAccessor::SystemBeingDestructed(OpenCDMSystem* system)
+    {
+        _adminLock.Lock();
+        for (auto& sessionKey : _sessionKeys) {
+            if (sessionKey.second->BelongsTo(system) == true) {
+                TRACE_L1("System the session %s belongs to is being destructed. Destruct the session before destructing the system!", sessionKey.second->SessionId().c_str());
+            }
+        }
         _adminLock.Unlock();
     }
