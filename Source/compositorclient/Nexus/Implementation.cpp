@@ -30,14 +30,14 @@ int g_pipefd[2];
 
 struct Message {
     uint32_t code;
-    actiontype type;
+    keyactiontype type;
 };
 
 static const char* connectorName = "/tmp/keyhandler";
 
-static void VirtualKeyboardCallback(actiontype type, unsigned int code)
+static void VirtualKeyboardCallback(keyactiontype type, unsigned int code)
 {
-    if (type != COMPLETED) {
+    if (type != KEY_COMPLETED) {
         Message message;
         message.code = code;
         message.type = type;
@@ -183,7 +183,11 @@ namespace Nexus {
                g_pipefd[1] = -1;
            }
 
-           _virtualkeyboard = Construct(name.c_str(), connectorName, VirtualKeyboardCallback);
+           // on nexus we will for now only have Keyboard support
+           callback_keyboard(VirtualKeyboardCallback);
+
+           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName);
+
            if (_virtualkeyboard == nullptr) {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");
            }
@@ -208,7 +212,7 @@ namespace Nexus {
             NxClient_Uninit();
 #endif
             if (_virtualkeyboard != nullptr) {
-                Destruct(_virtualkeyboard);
+                virtualinput_close(_virtualkeyboard);
             }
 
             printf("Destructed the Display: %p - %s", this, _displayName.c_str());
