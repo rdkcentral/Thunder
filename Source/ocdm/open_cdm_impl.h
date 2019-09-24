@@ -10,7 +10,31 @@ using namespace WPEFramework;
 extern Core::CriticalSection _systemLock;
 
 struct OpenCDMSystem {
-    std::string m_keySystem;
+    OpenCDMSystem(const char system[]) : _keySystem(system), _type(Type::UNKNOWN) {}
+    ~OpenCDMSystem() = default;
+    OpenCDMSystem(const OpenCDMSystem&) = default;
+    OpenCDMSystem(OpenCDMSystem&&) = default;
+    OpenCDMSystem& operator=(OpenCDMSystem&&) = default;
+    OpenCDMSystem& operator=(const OpenCDMSystem&) = default;
+    const std::string& keySystem() const { return _keySystem; }
+    bool isPlayready() const
+    {
+        if (_type == UNKNOWN) {
+            _type = _keySystem.find("playready") != std::string::npos ? Type::PLAYREADY : Type::OTHER;
+        }
+
+        return _type == Type::PLAYREADY;
+    }
+
+ private:
+    std::string _keySystem;
+
+    enum Type {
+        UNKNOWN,
+        PLAYREADY,
+        OTHER,
+    };
+    mutable Type _type;
 };
 
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM,
@@ -535,7 +559,7 @@ public:
         std::string bufferId;
         OCDM::ISession* realSession = nullptr;
 
-        accessor->CreateSession(system->m_keySystem, licenseType, initDataType, pbInitData,
+        accessor->CreateSession(system->keySystem(), licenseType, initDataType, pbInitData,
             cbInitData, pbCustomData, cbCustomData, &_sink,
             _sessionId, realSession);
 
@@ -585,19 +609,24 @@ public:
         return (_decryptSession != nullptr ? _decryptSession->Name() : EmptyString);
     }
     inline bool IsValid() const { return (_session != nullptr); }
-    inline OCDM::ISession::KeyStatus Status(const uint8_t keyIDLength, const uint8_t keyID[]) const
+    inline OCDM::ISession::KeyStatus Status(const uint8_t keyIDLength, const uint8_t keyId[]) const
     {
-        std::string key(reinterpret_cast<const char*>(keyID), keyIDLength);
+        std::string key(reinterpret_cast<const char*>(keyId), keyIDLength);
 
-        std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index =  _keyStatuses.find(key); 
-
-        return (index != _keyStatuses.end() ? index->second : OCDM::ISession::StatusPending); 
+        std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index = _keyStatuses.find(key);
+        if (index == _keyStatuses.end() && _system->isPlayready()) {
+            index = FindUsingSwappedEndianess(keyIDLength, keyId);
+        }
+        return index != _keyStatuses.end() ? index->second : OCDM::ISession::StatusPending;
     }
     inline bool HasKeyId(const uint8_t keyIDLength, const uint8_t keyID[]) const
     {
         std::string key(reinterpret_cast<const char*>(keyID), keyIDLength);
 
         std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index =  _keyStatuses.find(key); 
+        if (index == _keyStatuses.end() && _system->isPlayready()) {
+            index = FindUsingSwappedEndianess(keyIDLength, keyID);
+        }
 
         return (index != _keyStatuses.end());
     }
@@ -783,6 +812,24 @@ protected:
     DataExchange* _decryptSession;
 
 private:
+    using KeyStatusesMap = std::map<std::string, OCDM::ISession::KeyStatus>;
+
+    KeyStatusesMap::const_iterator FindUsingSwappedEndianess(const uint8_t keyIDLength, const uint8_t keyID[]) const
+    {
+        ASSERT(keyIDLength == 16 && _system->isPlayready());
+        uint8_t keyWithSwappedEndianess[16];
+        keyWithSwappedEndianess[0] = keyID[3];
+        keyWithSwappedEndianess[1] = keyID[2];
+        keyWithSwappedEndianess[2] = keyID[1];
+        keyWithSwappedEndianess[3] = keyID[0];
+        keyWithSwappedEndianess[4] = keyID[5];
+        keyWithSwappedEndianess[5] = keyID[4];
+        keyWithSwappedEndianess[6] = keyID[7];
+        keyWithSwappedEndianess[7] = keyID[6];
+        memcpy(&keyWithSwappedEndianess[8], &keyID[8], 8);
+        std::string key(reinterpret_cast<const char*>(keyWithSwappedEndianess), keyIDLength);
+        return _keyStatuses.find(key);
+    }
 
     OCDM::ISession* _session;
     OCDM::ISessionExt* _sessionExt;
@@ -791,7 +838,7 @@ private:
     std::string _URL;
     OpenCDMSessionCallbacks* _callback;
     void* _userData; 
-    std::map<std::string, OCDM::ISession::KeyStatus> _keyStatuses;
+    KeyStatusesMap _keyStatuses;
     std::string _error;
     uint32_t _errorCode;
     OCDM::OCDM_RESULT _sysError;

@@ -150,7 +150,7 @@ OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMSystem* system,
 
     if (system != nullptr) {
         result = static_cast<OpenCDMError>(accessor->SetServerCertificate(
-            system->m_keySystem, serverCertificate, serverCertificateLength));
+            system->keySystem(), serverCertificate, serverCertificateLength));
     }
     return (result);
 }
