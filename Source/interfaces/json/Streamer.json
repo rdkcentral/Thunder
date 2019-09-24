@@ -529,7 +529,7 @@
       }
     },
     "timeupdate": {
-      "summary": "Notifies of stream position change. This event is fired every second to indicate that the stream has progressed by a second. It does not fire if the stream is paused (i.e. speed of 0).",
+      "summary": "Notifies of stream position change. This event is fired every second to indicate the current stream position. It does not fire if the stream is paused (i.e. speed is set to 0).",
       "id": {
         "name": "Stream ID",
         "example": "0"
@@ -539,9 +539,9 @@
         "properties": {
           "time": {
             "type": "number",
-            "description": "Position in seconds",
+            "description": "Stream position in miliseconds",
             "size": 64,
-            "example": 30
+            "example": 30000
           }
         }
       }
