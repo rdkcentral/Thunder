@@ -767,7 +767,7 @@ protected:
         std::string keyId(reinterpret_cast<const char*>(keyID), keyIDLength);
         _keyStatuses[keyId] = status;
 
-        if ((_callback != nullptr) && (_callback->key_update_callback != nullptr)){
+        if ((_callback != nullptr) && (_callback->key_update_callback != nullptr) && (status != OCDM::ISession::StatusPending)) {
             _callback->key_update_callback(this, _userData, keyID, keyIDLength);
         } 
     }
