@@ -53,30 +53,65 @@ namespace PluginHost {
         }
     };
 
+#ifndef __WIN32__
+    class SignalHandler : public Core::Thread {
+    private:
+        SignalHandler(const SignalHandler&) = delete;
+        SignalHandler& operator=(const SignalHandler&) = delete;
+
+    public:
+        SignalHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+            sigemptyset(&_signalSet);
+            sigaddset(&_signalSet, SIGINT);
+            sigaddset(&_signalSet, SIGTERM);
+            sigaddset(&_signalSet, SIGSEGV);
+            sigprocmask(SIG_BLOCK, &_signalSet, 0);
+        }
+        virtual ~SignalHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            int status, signal;
+
+            status = sigwait(&_signalSet, &signal);
+            if (status == 0) {
+                ExitDaemonHandler(signal);
+            }
+            Stop();
+            return (Core::infinite);
+        }
+        void ExitDaemonHandler(int signo)
+        {
+            if (_background) {
+                syslog(LOG_NOTICE, "Signal received %d.", signo);
+            } else {
+                fprintf(stderr, "Signal received %d.\n", signo);
+            }
+
+            if (signo == SIGTERM) {
+                if (Core::WorkerPool::IsAvailable() == true) {
+                   Core::WorkerPool::Instance().Stop();
+                }
+            } else if (signo == SIGSEGV) {
+                DumpCallStack();
+                // now invoke the default segfault handler
+                signal(signo, SIG_DFL);
+                kill(getpid(), signo);
+           }
+        }
+    private:
+        sigset_t _signalSet;
+    };
+#endif
     extern "C" {
 
-#ifndef __WIN32__
-
-    void ExitDaemonHandler(int signo)
-    {
-        if (_background) {
-            syslog(LOG_NOTICE, "Signal received %d.", signo);
-        } else {
-            fprintf(stderr, "Signal received %d.\n", signo);
-        }
-
-        if (signo == SIGTERM) {
-            if (Core::WorkerPool::IsAvailable() == true) {
-				Core::WorkerPool::Instance().Stop();
-			}
-        } else if (signo == SIGSEGV) {
-            DumpCallStack();
-            // now invoke the default segfault handler
-            signal(signo, SIG_DFL);
-            kill(getpid(), signo);
-        }
-    }
-#endif
     static void CloseDown()
     {
         TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
@@ -256,17 +291,8 @@ namespace PluginHost {
             ;
         }
 #ifndef __WIN32__
-        else {
-            struct sigaction sa;
-            memset(&sa, 0, sizeof(struct sigaction));
-            sigemptyset(&sa.sa_mask);
-            sa.sa_handler = ExitDaemonHandler;
-            sa.sa_flags = 0; // not SA_RESTART!;
-
-            sigaction(SIGINT, &sa, nullptr);
-            sigaction(SIGTERM, &sa, nullptr);
-            sigaction(SIGSEGV, &sa, nullptr);
-        }
+        SignalHandler signalHandler;
+        signalHandler.Run();
 
         if (_background == true) {
             //Close Standard File Descriptors
@@ -593,6 +619,7 @@ namespace PluginHost {
             } while (keyPress != 'Q');
         }
         CloseDown();
+
         return 0;
 
     } // End main.
