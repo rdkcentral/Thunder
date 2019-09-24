@@ -22,6 +22,7 @@ namespace Exchange {
 
 		virtual ~IIterator() {}
 
+                virtual void Count() const = 0;
                 virtual void Reset() = 0;
                 virtual bool IsValid() const = 0;
                 virtual bool Next() = 0;
@@ -33,9 +34,11 @@ namespace Exchange {
             virtual string RemoteId() const = 0;
             virtual string TimeStamp() const = 0;
             virtual string IpAddress() const = 0;
-            //virtual void Close() = 0;
-            //virtual void Count() const = 0;
+            virtual void Close(uint32_t id) = 0;
         };
+
+	virtual IClient* Client(const uint32_t&) = 0;
+        virtual IClient::IIterator* Clients() = 0;
     };
 }
 }
