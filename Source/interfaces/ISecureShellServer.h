@@ -34,10 +34,9 @@ namespace Exchange {
             virtual string RemoteId() const = 0;
             virtual string TimeStamp() const = 0;
             virtual string IpAddress() const = 0;
-            virtual void Close(const uint32_t&) = 0;
+            virtual void Close() = 0;
         };
 
-	virtual IClient* Client(const uint32_t&) = 0;
         virtual IClient::IIterator* Clients() = 0;
     };
 }
