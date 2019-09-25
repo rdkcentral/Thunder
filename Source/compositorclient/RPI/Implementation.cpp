@@ -393,13 +393,13 @@ private:
         write(g_pipefd[1], &message, sizeof(message));
         close(g_pipefd[1]);
 
-        callback_keyboard(nullptr);
-        callback_mouse(nullptr);
-        callback_touch(nullptr);
-
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
         }
+
+        callback_keyboard(nullptr);
+        callback_mouse(nullptr);
+        callback_touch(nullptr);
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
         while (index != _surfaces.end()) {
