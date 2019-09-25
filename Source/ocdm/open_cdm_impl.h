@@ -614,7 +614,7 @@ public:
         std::string key(reinterpret_cast<const char*>(keyId), keyIDLength);
 
         std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index = _keyStatuses.find(key);
-        if (index == _keyStatuses.end() && _system->isPlayready()) {
+        if (_system->isPlayready() && (index == _keyStatuses.end() || index->second == OCDM::ISession::StatusPending)) {
             index = FindUsingSwappedEndianess(keyIDLength, keyId);
         }
         return index != _keyStatuses.end() ? index->second : OCDM::ISession::StatusPending;
