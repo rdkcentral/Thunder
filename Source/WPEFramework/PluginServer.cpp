@@ -701,14 +701,16 @@ namespace PluginHost
     {
     }
 
-	void Server::Notification(const ForwardMessage& data)
+    void Server::Notification(const ForwardMessage& data)
     {
-        _controller->ClassType<Plugin::Controller>()->Notification(data);
-		#ifdef RESTFULL_API
+        if (_controller->ClassType<Plugin::Controller>() != nullptr) {
+            _controller->ClassType<Plugin::Controller>()->Notification(data);
+        }
+#ifdef RESTFULL_API
         string result;
         data.ToString(result);
         _controller->Notification(result);
-		#endif
+#endif
     }
 
     void Server::Open()
