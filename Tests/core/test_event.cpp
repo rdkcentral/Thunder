@@ -1,9 +1,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/Sync.h>
-#include <core/Time.h>
-#include <core/Thread.h>
+#include <core/core.h>
 #include <thread>
 
 using namespace WPEFramework;
@@ -34,7 +32,7 @@ public:
     virtual uint32_t Worker() override
     {
         while (IsRunning() && (!g_threadDone)) {
-            ASSERT(g_parentTid != std::this_thread::get_id());
+            EXPECT_TRUE(g_parentTid != std::this_thread::get_id());
             if (g_lock) {
                 g_threadDone = true;
                 g_lock = false;
@@ -62,7 +60,7 @@ TEST(test_event, simple_event)
     {
         if (now < timeOut) {
             event.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
-            ASSERT_FALSE(event.IsSet());
+            EXPECT_FALSE(event.IsSet());
         }
     } while (timeOut < Core::Time::Now().Ticks());
 }
@@ -71,7 +69,7 @@ TEST(test_event, unlock_event)
     ThreadClass object;
     object.Run();
     event.Lock();
-    ASSERT_FALSE(g_lock);
+    EXPECT_FALSE(g_lock);
     object.Stop();
 }
 TEST(test_event, set_event)
@@ -81,7 +79,7 @@ TEST(test_event, set_event)
     object.Run();
     event.ResetEvent();
     event.Lock();
-    ASSERT_FALSE(g_set_event);
+    EXPECT_FALSE(g_set_event);
     object.Stop();     
 }
 TEST(test_event, pulse_event)
@@ -91,6 +89,6 @@ TEST(test_event, pulse_event)
     g_threadDone = false;
     event.ResetEvent();
     event.Lock();
-    ASSERT_FALSE(g_pulse_event);
+    EXPECT_FALSE(g_pulse_event);
     object.Stop();
 }
