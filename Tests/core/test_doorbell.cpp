@@ -26,8 +26,8 @@ namespace Tests {
 
         IPTestAdministrator testAdmin(otherSide);
         {
-            usleep(1000);
             Core::DoorBell doorBell(g_fileName.c_str());
+            ::SleepMs(1);
             doorBell.Ring();
             testAdmin.Sync("First ring");
             doorBell.Ring();

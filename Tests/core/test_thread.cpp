@@ -61,8 +61,7 @@ namespace Tests {
         ThreadClass object;
         object.Run();
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
-        usleep(1000);
-        EXPECT_TRUE(g_threadDone);
+        while(!g_threadDone);
         object.Stop();
         EXPECT_EQ(object.State(), Core::Thread::STOPPING);
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
@@ -75,8 +74,7 @@ namespace Tests {
         Core::ProxyType<Core::IDispatch> job(Core::ProxyType<Job>::Create());
         Core::ThreadPoolType<Core::Job, 1> executor(0, _T("TestPool"));
         executor.Submit(Core::Job(job), Core::infinite);
-        usleep(1000);
-        EXPECT_TRUE(g_threadDone);
+        while(!g_threadDone);
         Core::Singleton::Dispose();
     }
 } // Tests
