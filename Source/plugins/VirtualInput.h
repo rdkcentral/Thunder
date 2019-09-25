@@ -175,7 +175,6 @@ namespace PluginHost {
                 }
 
                 ChangeIterator removed(removedKeys);
-                _parent.MapChanges(removed);
             }
 
         public:
