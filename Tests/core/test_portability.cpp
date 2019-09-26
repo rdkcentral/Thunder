@@ -1,8 +1,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/Portability.h>
-#include <core/Thread.h>
+#include <core/core.h>
 #include <thread>
 
 
@@ -31,7 +30,7 @@ public:
     virtual uint32_t Worker() override
     {
         while (IsRunning() && (!g_threadDone)) {
-            ASSERT(g_parentId != std::this_thread::get_id());
+            EXPECT_TRUE(g_parentId != std::this_thread::get_id());
             g_threadDone = true;
             ::SleepMs(50);
         }
@@ -45,10 +44,10 @@ TEST(test_portability, simple_upper)
     std::string input = "hello";
     std::string output;
     ToUpper(input,output);
-    ASSERT_STREQ(output.c_str(),_T("HELLO"));
+    EXPECT_STREQ(output.c_str(),_T("HELLO"));
 
     ToUpper(input);
-    ASSERT_STREQ(input.c_str(),_T("HELLO"));
+    EXPECT_STREQ(input.c_str(),_T("HELLO"));
 }
 
 TEST(test_portability, simple_lower)
@@ -56,10 +55,10 @@ TEST(test_portability, simple_lower)
     std::string input = "HELLO";
     std::string output;
     ToLower(input,output);
-    ASSERT_STREQ(output.c_str(),_T("hello"));
+    EXPECT_STREQ(output.c_str(),_T("hello"));
     
     ToLower(input);
-    ASSERT_STREQ(input.c_str(),_T("hello"));
+    EXPECT_STREQ(input.c_str(),_T("hello"));
 }
 
 TEST(test_portability, simple_generic)
