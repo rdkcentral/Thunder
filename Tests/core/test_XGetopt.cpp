@@ -24,15 +24,15 @@ class ConsoleOptions : public Core::Options {
         {
             switch (option) {
             case 'c':
-                ASSERT_EQ(option,'c');
+                EXPECT_EQ(option,'c');
                 break;
 #ifndef __WIN32__
             case 'b':
-                ASSERT_EQ(option,'b');
+                EXPECT_EQ(option,'b');
                 break;
 #endif
             case 'h':
-                ASSERT_EQ(option,'h');
+                EXPECT_EQ(option,'h');
                 break;
             default:
                 printf("default\n");
