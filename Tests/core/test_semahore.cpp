@@ -1,8 +1,7 @@
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
-#include <core/Sync.h>
-#include <core/Thread.h>
+#include <core/core.h>
 #include <thread>
 
 using namespace WPEFramework;
@@ -31,7 +30,7 @@ public:
     virtual uint32_t Worker() override
     {
         while (IsRunning() && (!g_threadCritDone)) {
-            ASSERT(g_parentId != std::this_thread::get_id());
+            EXPECT_TRUE(g_parentId != std::this_thread::get_id());
             g_threadCritDone = true;
             lock.Lock();
             g_shared++;
@@ -51,7 +50,7 @@ TEST(test_criticalsection, simple_criticalsection)
     g_shared++;
     lock.Unlock();
     object.Stop();
-    ASSERT_EQ(g_shared,2);
+    EXPECT_EQ(g_shared,2);
 }
 TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
 {
@@ -65,7 +64,7 @@ TEST(test_binairysemaphore, simple_binairysemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    ASSERT_EQ(g_shared,3);
+    EXPECT_EQ(g_shared,3);
 }
 
 TEST(test_binairysemaphore, simple_binairysemaphore)
@@ -74,7 +73,7 @@ TEST(test_binairysemaphore, simple_binairysemaphore)
     bsem.Lock();
     g_shared++;
     bsem.Unlock();
-    ASSERT_EQ(g_shared,4);
+    EXPECT_EQ(g_shared,4);
 }
 TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
 {
@@ -88,7 +87,7 @@ TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    ASSERT_EQ(g_shared,5);
+    EXPECT_EQ(g_shared,5);
    
     timeOut = Core::Time::Now().Add(3).Ticks();
     now = Core::Time::Now().Ticks();
@@ -99,7 +98,7 @@ TEST(test_countingsemaphore, simple_countingsemaphore_timeout)
             g_shared++;
         }
     } while (timeOut < Core::Time::Now().Ticks());
-    ASSERT_EQ(g_shared,6);
+    EXPECT_EQ(g_shared,6);
 }
 TEST(test_countingsemaphore, simple_countingsemaphore)
 {
@@ -107,5 +106,5 @@ TEST(test_countingsemaphore, simple_countingsemaphore)
     csem.Lock();
     g_shared++;
     csem.Unlock(1);
-    ASSERT_EQ(g_shared,7);
+    EXPECT_EQ(g_shared,7);
 }
