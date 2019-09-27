@@ -52,7 +52,9 @@ namespace PluginHost {
             }
         }
     };
-
+    extern "C" {
+    static void CloseDown();
+    }
 #ifndef __WIN32__
     class SignalHandler : public Core::Thread {
     private:
@@ -97,6 +99,7 @@ namespace PluginHost {
 
             if (signo == SIGTERM) {
                 if (Core::WorkerPool::IsAvailable() == true) {
+                   CloseDown(); // Do it before stopping all the workers;
                    Core::WorkerPool::Instance().Stop();
                 }
             } else if (signo == SIGSEGV) {
@@ -291,9 +294,6 @@ namespace PluginHost {
             ;
         }
 #ifndef __WIN32__
-        SignalHandler signalHandler;
-        signalHandler.Run();
-
         if (_background == true) {
             //Close Standard File Descriptors
             // close(STDIN_FILENO);
@@ -420,6 +420,8 @@ namespace PluginHost {
 
 #ifndef __WIN32__
         if (_background == true) {
+            SignalHandler signalHandler;
+            signalHandler.Run();
             Core::WorkerPool::Instance().Join();
         } else
 #endif
