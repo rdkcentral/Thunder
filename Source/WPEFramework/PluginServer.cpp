@@ -762,10 +762,10 @@ namespace PluginHost
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        _dispatcher.Stop();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();
+        _dispatcher.Stop();
         destructor->Release();
         _inputHandler.Deinitialize();
     }
