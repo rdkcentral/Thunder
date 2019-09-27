@@ -197,26 +197,6 @@ namespace Core {
 
             return (result);
         }
-
-        void Send(const uint32_t waitTime, const IOutbound& message, IOutbound::ICallback* callback, IInbound* response)
-        {
-
-            message.Reload();
-
-            _adminLock.Lock();
-
-            Cleanup();
-
-            _queue.emplace_back(message, response, callback, waitTime);
-            bool trigger = (_queue.size() == 1);
-
-            _adminLock.Unlock();
-
-            if (trigger == true) {
-                CHANNEL::Trigger();
-            }
-        }
-
         void Revoke(const IOutbound& message)
         {
             bool trigger = false;
@@ -243,6 +223,23 @@ namespace Core {
         }
 
     protected:
+        void Send(const uint32_t waitTime, const IOutbound& message, IOutbound::ICallback* callback, IInbound* response)
+        {
+            message.Reload();
+
+            _adminLock.Lock();
+
+            Cleanup();
+
+            _queue.emplace_back(message, response, callback, waitTime);
+            bool trigger = (_queue.size() == 1);
+
+            _adminLock.Unlock();
+
+            if (trigger == true) {
+                CHANNEL::Trigger();
+            }
+        }
         int Handle() const
         {
             return (static_cast<const Core::IResource&>(*this).Descriptor());

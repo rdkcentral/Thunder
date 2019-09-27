@@ -12,10 +12,12 @@ namespace Bluetooth {
             : _length(0)
         {
         }
-        Address(const int handle)
+        Address(const uint16_t deviceId)
             : _length(0)
         {
-            Default(handle);
+            if (hci_devba(deviceId, &_address) >= 0) {
+                _length = sizeof(_address);
+            }
         }
         Address(const bdaddr_t& address)
             : _length(sizeof(_address))
@@ -54,20 +56,11 @@ namespace Bluetooth {
         {
             return (_length == sizeof(_address));
         }
-        bool Default()
+        static Address Default()
         {
-            _length = 0;
             int deviceId = hci_get_route(nullptr);
           
-            return ((deviceId >= 0) ? Default(static_cast<uint16_t>(deviceId)) : false);
-        }
-        bool Default(const uint16_t deviceId)
-        {
-            _length = 0;
-            if (hci_devba(deviceId, &_address) >= 0) {
-                _length = sizeof(_address);
-            }
-            return (IsValid());
+            return ((deviceId >= 0) ? Address(static_cast<uint16_t>(deviceId)) : Address());
         }
         static Address AnyInterface()
         {
@@ -137,6 +130,181 @@ namespace Bluetooth {
         uint8_t _length;
     };
 
+    template<typename KEYTYPE>
+    class KeyListType {
+    public:
+        KeyListType() : _list() {
+        }
+        KeyListType(const KeyListType<KEYTYPE>& copy) : _list(copy._list) {
+        }
+        ~KeyListType() {
+        }
+
+        KeyListType<KEYTYPE>& operator= (const KeyListType<KEYTYPE>&) = delete;
+
+    public:
+        static uint8_t Length () {
+            return (KEYTYPE::Length());
+        }
+        void Add(const KEYTYPE& key) {
+            _list.push_back(key);
+        }
+        uint8_t Entries() const {
+            return (_list.size());
+        }
+        uint16_t Clone (const uint16_t length, uint8_t buffer[]) const {
+            uint16_t result = 0;
+            typename std::list<KEYTYPE>::const_iterator index (_list.begin());
+            while ( (index != _list.end()) && (result <= (length - KEYTYPE::Length())) ) {
+                ::memcpy(&(buffer[result]), index->Data(), KEYTYPE::Length());
+                result += KEYTYPE::Length();
+                index++;
+            }
+            return (result);
+        }
+
+    private:
+        std::list<KEYTYPE> _list;
+    };
+
+    class LinkKey {
+    public:
+        LinkKey() {
+            ::memset(&_key, 0, sizeof(_key));
+        }
+        LinkKey(const Address& address, const uint8_t key[16], const uint8_t pinLength, const uint8_t type) {
+            ::memset(&_key, 0, sizeof(_key));
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            ::memcpy(&(_key.val), key, sizeof(_key.val));
+            _key.addr.type = BDADDR_BREDR;
+            _key.pin_len = pinLength;
+            _key.type = type;
+        }
+        LinkKey(const LinkKey& copy) {
+            ::memcpy(&_key, &copy._key, sizeof(_key));
+        }
+        ~LinkKey() {
+        }
+
+    public:
+        Address Locator() const {
+            return (_key.addr.bdaddr);
+        }
+        uint8_t Pin() const {
+            return(_key.pin_len);
+        }
+        uint8_t Type() const {
+            return(_key.type);
+        }
+        const uint8_t* Key() const {
+            return (_key.val);
+        }
+        const uint8_t* Data() const {
+            return (reinterpret_cast<const uint8_t*>(&_key));
+        }
+        static uint8_t Length() {
+            return (sizeof(struct mgmt_link_key_info));
+        }
+
+    private:
+        struct mgmt_link_key_info _key;
+    };
+
+    class LongTermKey {
+    public:
+        LongTermKey() {
+                ::memset(&_key, 0, sizeof(_key));
+        }
+        LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encodingSize, const uint16_t eDivider, const uint64_t random, const uint8_t value[16]) {
+            ::memset(&_key, 0, sizeof(_key));
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            ::memcpy(&(_key.val), value, sizeof(_key.val));
+            _key.addr.type = type;
+            _key.master = master;
+            _key.type = authenticated;
+            _key.enc_size = encodingSize;
+            _key.ediv = htons(eDivider); // 16 bits
+            _key.rand = htonll(random); // 64 bits
+        }
+        LongTermKey(const LongTermKey& copy) {
+            ::memcpy(&_key, &copy._key, sizeof(_key));
+        }
+        ~LongTermKey() {
+        }
+
+    public:
+        Address Locator() const {
+            return (_key.addr.bdaddr);
+        }
+        uint8_t Master() const {
+            return(_key.master);
+        }
+        uint8_t Authenticated() const {
+            return(_key.type);
+        }
+        uint8_t EncodingSize() const {
+            return(_key.enc_size);
+        }
+        uint16_t Divider() const {
+            return(ntohs(_key.ediv));
+        }
+        uint64_t Random() const {
+            return(ntohll(_key.rand));
+        }
+        const uint8_t* Value() const {
+            return (_key.val);
+        }
+        const uint8_t* Data() const {
+            return (reinterpret_cast<const uint8_t*>(&_key));
+        }
+        static uint8_t Length() {
+            return (sizeof(struct mgmt_ltk_info));
+        }
+
+    private:
+        struct mgmt_ltk_info _key;
+    };
+
+    class IdentityKey {
+    public:
+        IdentityKey() {
+            ::memset(&_key, 0, sizeof(_key));
+        }
+        IdentityKey(const Address& address, const uint8_t addressType, const uint8_t value[16]) {
+            ::memset(&_key, 0, sizeof(_key));
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            ::memcpy(&(_key.val), value, sizeof(_key.val));
+            _key.addr.type = addressType;
+        }
+        IdentityKey(const IdentityKey& copy) {
+            ::memcpy(&_key, &copy._key, sizeof(_key));
+        }
+        ~IdentityKey() {
+        }
+
+    public:
+        Address Locator() const {
+            return (_key.addr.bdaddr);
+        }
+        const uint8_t* Value() const {
+            return (_key.val);
+        }
+        const uint8_t* Data() const {
+            return (reinterpret_cast<const uint8_t*>(&_key));
+        }
+        static uint8_t Length() {
+            return (sizeof(struct mgmt_irk_info));
+        }
+
+    private:
+        struct mgmt_irk_info _key;
+    };
+
+    typedef KeyListType<LinkKey> LinkKeys;
+    typedef KeyListType<LongTermKey> LongTermKeys;
+    typedef KeyListType<IdentityKey> IdentityKeys;
+
+
     class HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         static constexpr int      SCAN_TIMEOUT = 1000;
@@ -149,10 +317,10 @@ namespace Bluetooth {
         static constexpr uint16_t ACTION_MASK = 0x3FFF;
 
     public:
+
         template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = ~0>
         class CommandType : public Core::IOutbound, public Core::IInbound {
         private:
-            CommandType(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
             CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& operator=(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
 
         public:
@@ -167,6 +335,11 @@ namespace Bluetooth {
                 _buffer[1] = (OPCODE & 0xFF);
                 _buffer[2] = ((OPCODE >> 8) & 0xFF);
                 _buffer[3] = static_cast<uint8_t>(sizeof(OUTBOUND));
+            }
+            CommandType(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& copy) 
+                : _offset(copy._offset)
+                , _error(~0) {
+                ::memcpy (_buffer, copy._buffer, sizeof(_buffer));
             }
             virtual ~CommandType()
             {
@@ -367,6 +540,9 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CREATE_CONN), le_create_connection_cp, evt_le_connection_complete, EVT_LE_CONN_COMPLETE>
                 ConnectLE;
 
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_SET_CONN_ENCRYPT), set_conn_encrypt_cp, evt_encrypt_change, EVT_ENCRYPT_CHANGE>
+                Encrypt; 
+
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t>
                 EncryptLE;
 
@@ -402,6 +578,9 @@ namespace Bluetooth {
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_CONN_UPDATE), le_connection_update_cp, evt_le_connection_update_complete, EVT_LE_CONN_UPDATE_COMPLETE>
                 ConnectionUpdate;
+
+            typedef CommandType<cmd_opcode_pack(OGF_HOST_CTL, OCF_READ_STORED_LINK_KEY), read_stored_link_key_cp, read_stored_link_key_rp>
+                ReadStoredLinkKey;
         };
 
         enum state : uint16_t {
@@ -445,7 +624,43 @@ namespace Bluetooth {
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
         uint8_t Name(const le_advertising_info& info, string& name) const;
-        uint32_t Connection(const uint16_t connection, const uint16_t min, const uint16_t max, const uint16_t latency, const uint16_t timeout);
+        uint32_t ReadStoredLinkKeys(const Address adr, const bool all, LinkKeys& keys);
+
+        template<typename COMMAND>
+        void Execute(const uint32_t waitTime, const COMMAND& cmd, std::function<void(COMMAND&, const uint32_t error)> handler)
+        {
+            class Handler : public Core::IOutbound::ICallback {
+            public:
+                Handler() = delete;
+                Handler(const Handler&) = delete;
+                Handler(const COMMAND& cmd, const std::function<void(COMMAND&, const uint32_t error)> handler) 
+                    : _cmd(cmd)
+                    , _handler(handler){
+                }
+                virtual ~Handler() {
+                }
+
+            public:
+                COMMAND& Cmd() {
+                    return (_cmd);
+                }
+                void Updated(const Core::IOutbound& data, const uint32_t error_code) override {
+                    ASSERT(_cmd == data);
+                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
+                    _handler(_cmd, error_code);
+                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
+                    delete this;
+                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
+                }
+
+            private:
+                COMMAND _cmd;
+                std::function<void(COMMAND&, const uint32_t error)> _handler;
+            };
+            Handler* entry = new Handler(cmd, handler);
+
+            Send(waitTime, entry->Cmd(), entry, &(entry->Cmd()));
+        }
 
     protected:
         virtual void Update(const le_advertising_info& eventData);
@@ -463,44 +678,6 @@ namespace Bluetooth {
     };
 
     class ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
-    private:
-        template<typename KEYTYPE>
-        class KeyListType {
-        public:
-            KeyListType() : _list() {
-            }
-            KeyListType(const KeyListType<KEYTYPE>& copy) : _list(copy._list) {
-            }
-            ~KeyListType() {
-            }
-
-            KeyListType<KEYTYPE>& operator= (const KeyListType<KEYTYPE>&) = delete;
-
-        public:
-            static uint8_t Length () {
-                return (KEYTYPE::Length());
-            }
-            void Add(const KEYTYPE& key) {
-                _list.push_back(key);
-            }
-            uint8_t Entries() const {
-                return (_list.size());
-            }
-            uint16_t Clone (const uint16_t length, uint8_t buffer[]) const {
-                uint16_t result = 0;
-                typename std::list<KEYTYPE>::const_iterator index (_list.begin());
-                while ( (index != _list.end()) && (result <= (length - KEYTYPE::Length())) ) {
-                    ::memcpy(&(buffer[result]), index->Data(), KEYTYPE::Length());
-                    result += KEYTYPE::Length();
-                    index++;
-                }
-                return (result);
-            }
-
-        private:
-            std::list<KEYTYPE> _list;
-        };
-
     public:
         class Info {
         public:
@@ -643,144 +820,8 @@ namespace Bluetooth {
             string _name;
             string _shortName;
         };
-        class LinkKey {
-        public:
-            LinkKey() {
-                ::memset(&_key, 0, sizeof(_key));
-            }
-            LinkKey(const Address& address, const uint8_t key[16], const uint8_t pinLength, const uint8_t type) {
-                ::memset(&_key, 0, sizeof(_key));
-                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
-                ::memcpy(&(_key.val), key, sizeof(_key.val));
-                _key.addr.type = BDADDR_BREDR;
-                _key.pin_len = pinLength;
-                _key.type = type;
-            }
-            LinkKey(const LinkKey& copy) {
-                ::memcpy(&_key, &copy._key, sizeof(_key));
-            }
-            ~LinkKey() {
-            }
 
-        public:
-            Address Locator() const {
-                return (_key.addr.bdaddr);
-            }
-            uint8_t Pin() const {
-                return(_key.pin_len);
-            }
-            uint8_t Type() const {
-                return(_key.type);
-            }
-            const uint8_t* Key() const {
-                return (_key.val);
-            }
-            const uint8_t* Data() const {
-                return (reinterpret_cast<const uint8_t*>(&_key));
-            }
-            static uint8_t Length() {
-                return (sizeof(struct mgmt_link_key_info));
-            }
-
-        private:
-            struct mgmt_link_key_info _key;
-        };
-
-        class LongTermKey {
-        public:
-            LongTermKey() {
-                ::memset(&_key, 0, sizeof(_key));
-            }
-            LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encodingSize, const uint16_t eDivider, const uint64_t random, const uint8_t value[16]) {
-                ::memset(&_key, 0, sizeof(_key));
-                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
-                ::memcpy(&(_key.val), value, sizeof(_key.val));
-                _key.addr.type = type;
-                _key.master = master;
-                _key.type = authenticated;
-                _key.enc_size = encodingSize;
-                _key.ediv = htons(eDivider); // 16 bits
-                _key.rand = htonll(random); // 64 bits
-            }
-            LongTermKey(const LongTermKey& copy) {
-                ::memcpy(&_key, &copy._key, sizeof(_key));
-            }
-            ~LongTermKey() {
-            }
-
-        public:
-            Address Locator() const {
-                return (_key.addr.bdaddr);
-            }
-            uint8_t Master() const {
-                return(_key.master);
-            }
-            uint8_t Authenticated() const {
-                return(_key.type);
-            }
-            uint8_t EncodingSize() const {
-                return(_key.enc_size);
-            }
-            uint16_t Divider() const {
-                return(ntohs(_key.ediv));
-            }
-            uint64_t Random() const {
-                return(ntohll(_key.rand));
-            }
-            const uint8_t* Value() const {
-                return (_key.val);
-            }
-            const uint8_t* Data() const {
-                return (reinterpret_cast<const uint8_t*>(&_key));
-            }
-            static uint8_t Length() {
-                return (sizeof(struct mgmt_ltk_info));
-            }
-
-        private:
-            struct mgmt_ltk_info _key;
-        };
-
-        class IdentityKey {
-        public:
-            IdentityKey() {
-                ::memset(&_key, 0, sizeof(_key));
-            }
-            IdentityKey(const Address& address, const uint8_t addressType, const uint8_t value[16]) {
-                ::memset(&_key, 0, sizeof(_key));
-                ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
-                ::memcpy(&(_key.val), value, sizeof(_key.val));
-                _key.addr.type = addressType;
-            }
-            IdentityKey(const IdentityKey& copy) {
-                ::memcpy(&_key, &copy._key, sizeof(_key));
-            }
-            ~IdentityKey() {
-            }
-
-        public:
-            Address Locator() const {
-                return (_key.addr.bdaddr);
-            }
-            const uint8_t* Value() const {
-                return (_key.val);
-            }
-            const uint8_t* Data() const {
-                return (reinterpret_cast<const uint8_t*>(&_key));
-            }
-            static uint8_t Length() {
-                return (sizeof(struct mgmt_irk_info));
-            }
-
-        private:
-            struct mgmt_irk_info _key;
-        };
-
-        typedef KeyListType<LinkKey> LinkKeyList;
-        typedef KeyListType<LongTermKey> LongTermKeyList;
-        typedef KeyListType<IdentityKey> IdentityKeyList;
-
-        enum capabilities {
+        enum capabilities : uint8_t {
             DISPLAY_ONLY = 0x00,
             DISPLAY_YES_NO = 0x01,
             KEYBOARD_ONLY = 0x02,
@@ -789,7 +830,11 @@ namespace Bluetooth {
             INVALID = 0xFF
         };
 
-
+        enum mode : uint8_t {
+            REMOVE = 0x00,
+            WHITELIST = 0x01,
+            AUTOCONNECT = 0x02
+        };
 
     public:
         ManagementSocket(const ManagementSocket&) = delete;
@@ -866,13 +911,15 @@ namespace Bluetooth {
         uint32_t Advertising(bool enabled);
         uint32_t SimplePairing(bool enabled);
         uint32_t LowEnergy(bool enabled);
-        uint32_t Secure(bool enabled);
+        uint32_t SecureLink(bool enabled);
+        uint32_t SecureConnection(bool enabled);
+        uint32_t Connection(const Address::type type, const Address& address, const mode value);
         uint32_t Block(const Address::type type, const Address& address);
         uint32_t Unblock(const Address::type type, const Address& address);
         uint32_t Privacy(const uint8_t mode, const uint8_t identity[16]);
-        uint32_t LinkKeys(const LinkKeyList& keys, const bool debugKeys = false);
-        uint32_t LongTermKeys(const LongTermKeyList& keys);
-        uint32_t IdentityKeys(const IdentityKeyList& keys);
+        uint32_t LinkKey(const LinkKeys& keys, const bool debugKeys = false);
+        uint32_t LongTermKey(const LongTermKeys& keys);
+        uint32_t IdentityKey(const IdentityKeys& keys);
         uint32_t Name(const string& shortName, const string longName);
 
         uint32_t Discovering(const bool on, const bool regular, const bool LowEnergy);
@@ -880,11 +927,13 @@ namespace Bluetooth {
         uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
         uint32_t PairAbort(const Address& remote, const uint8_t type = BDADDR_BREDR);
 
+        uint32_t Notifications(const bool enabled);
+        
+
     protected:
         virtual void Update(const mgmt_hdr& eventData);
 
     private:
-        virtual void StateChange() override;
         virtual uint16_t Deserialize(const uint8_t* dataFrame, const uint16_t availableData) override;
 
     private:

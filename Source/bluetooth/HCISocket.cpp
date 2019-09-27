@@ -48,24 +48,6 @@ uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
     return (result);
 }
 
-uint32_t HCISocket::Connection(const uint16_t connection, const uint16_t minInterval, const uint16_t maxInterval, const uint16_t latency, const uint16_t timeout)
-{
-    uint32_t result = Core::ERROR_BAD_REQUEST;
-
-    Command::ConnectionUpdate parameters;
-
-    parameters.Clear();
-    parameters->handle = connection;
-    parameters->min_interval = minInterval;
-    parameters->max_interval = maxInterval;
-    parameters->latency = latency;
-    parameters->supervision_timeout = timeout;
-    parameters->min_ce_length = minLength;
-    parameters->max_ce_length = maxLength;
-
-    return (Exchange(MAX_ACTION_TIMEOUT, parameters, parameters));
-}
-
 void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags)
 {
     ASSERT(scanTime <= 326);
@@ -168,6 +150,18 @@ void HCISocket::Scan(const uint16_t scanTime, const bool limited, const bool pas
     _state.Unlock();
 }
 
+uint32_t HCISocket::ReadStoredLinkKeys(const Address adr, const bool all, LinkKeys& list)
+{
+    Command::ReadStoredLinkKey parameters;
+
+    parameters.Clear();
+    ::memcpy(&(parameters->bdaddr), adr.Data(), sizeof(parameters->bdaddr));
+    parameters->read_all= (all ? 0x1 : 0x0);
+
+    return (Exchange(MAX_ACTION_TIMEOUT, parameters, parameters));
+}
+
+
 void HCISocket::Abort()
 {
     _state.Lock();
@@ -185,12 +179,41 @@ void HCISocket::Abort()
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
         hci_filter_clear(&_filter);
-        hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
-        hci_filter_set_event(EVT_CMD_STATUS, &_filter);
-        hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
+	hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
         hci_filter_set_event(EVT_LE_META_EVENT, &_filter);
+	hci_filter_set_event(EVT_CMD_STATUS, &_filter);
+	hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_PIN_CODE_REQ, &_filter);
+	hci_filter_set_event(EVT_LINK_KEY_REQ, &_filter);
+	hci_filter_set_event(EVT_LINK_KEY_NOTIFY, &_filter);
+	hci_filter_set_event(EVT_RETURN_LINK_KEYS, &_filter);
+	hci_filter_set_event(EVT_IO_CAPABILITY_REQUEST, &_filter);
+	hci_filter_set_event(EVT_IO_CAPABILITY_RESPONSE, &_filter);
+	hci_filter_set_event(EVT_USER_CONFIRM_REQUEST, &_filter);
+	hci_filter_set_event(EVT_USER_PASSKEY_REQUEST, &_filter);
+	hci_filter_set_event(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
+	hci_filter_set_event(EVT_USER_PASSKEY_NOTIFY, &_filter);
+	hci_filter_set_event(EVT_KEYPRESS_NOTIFY, &_filter);
+	hci_filter_set_event(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_AUTH_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
+	hci_filter_set_event(EVT_INQUIRY_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_INQUIRY_RESULT, &_filter);
+	hci_filter_set_event(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
+	hci_filter_set_event(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
+	hci_filter_set_event(EVT_CONN_REQUEST, &_filter);
+	hci_filter_set_event(EVT_CONN_COMPLETE, &_filter);
+	hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
 
-        setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter));
+	if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
+		printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
+        }
+        else {
+            printf("FILTER SET !!!!\n");
+        }
     }
 }
 
@@ -330,8 +353,8 @@ private:
             ::memcpy(stream, &(_buffer[_offset]), result);
             _offset += result;
 
-            // printf ("SEND: ");
-            // for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+            printf ("SEND: ");
+            for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
         }
         return (result);
     }
@@ -340,8 +363,8 @@ private:
         uint16_t result = 0;
         if (length >= sizeof(mgmt_hdr)) {
 
-            // printf ("RECEIVED: ");
-            // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+            printf ("RECEIVED: ");
+            for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
             const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(stream);
             uint16_t opCode = htobs(hdr->opcode);
@@ -465,7 +488,8 @@ namespace Management {
     typedef ManagementFixedType<MGMT_SETTING_FAST_CONNECTABLE, mgmt_mode, uint32_t> FastConnectable;
     typedef ManagementFixedType<MGMT_OP_SET_BONDABLE, mgmt_mode, uint32_t> Bondable;
     typedef ManagementFixedType<MGMT_OP_SET_SSP, mgmt_mode, uint32_t> SimplePairing;
-    typedef ManagementFixedType<MGMT_OP_SET_SECURE_CONN, mgmt_mode, uint32_t> SecureConnections;
+    typedef ManagementFixedType<MGMT_OP_SET_SECURE_CONN, mgmt_mode, uint32_t> SecureConnection;
+    typedef ManagementFixedType<MGMT_OP_SET_LINK_SECURITY, mgmt_mode, uint32_t> SecureLink;
     typedef ManagementFixedType<MGMT_OP_SET_LE, mgmt_mode, uint32_t> LowEnergy;
     typedef ManagementFixedType<MGMT_OP_SET_ADVERTISING, mgmt_mode, uint32_t> Advertising;
     typedef ManagementFixedType<MGMT_OP_SET_CONNECTABLE, mgmt_mode, uint32_t> Connectable;
@@ -480,9 +504,11 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_SET_PRIVACY, mgmt_cp_set_privacy, Core::Void> Privacy;
     typedef ManagementFixedType<MGMT_OP_BLOCK_DEVICE, mgmt_cp_block_device, mgmt_addr_info> Block;
     typedef ManagementFixedType<MGMT_OP_UNBLOCK_DEVICE, mgmt_cp_unblock_device, mgmt_addr_info> Unblock;
-    typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, ManagementSocket::LinkKeyList> LinkKeys;
-    typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, ManagementSocket::LongTermKeyList> LongTermKeys;
-    typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, ManagementSocket::IdentityKeyList> IdentityKeys;
+    typedef ManagementFixedType<MGMT_OP_ADD_DEVICE, mgmt_cp_add_device, mgmt_rp_add_device> AddDevice;
+    typedef ManagementFixedType<MGMT_OP_REMOVE_DEVICE, mgmt_cp_remove_device, mgmt_rp_remove_device> RemoveDevice;
+    typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, LinkKeys> LinkKeys;
+    typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, LongTermKeys> LongTermKeys;
+    typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, IdentityKeys> IdentityKeys;
 
 }
 
@@ -582,6 +608,29 @@ uint32_t ManagementSocket::Unblock(const Address::type type, const Address& addr
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
+uint32_t ManagementSocket::Connection(const Address::type type, const Address& address, const mode value)
+{
+    if (value == REMOVE) {
+        Management::RemoveDevice message(_deviceId);
+
+        message->addr.type = type;
+        ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+        uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+        return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    }
+    Management::AddDevice message(_deviceId);
+
+    message->action = value;
+    message->addr.type = type;
+    ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
 uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16])
 {
     Management::Privacy message(_deviceId);
@@ -639,9 +688,9 @@ uint32_t ManagementSocket::LowEnergy(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ManagementSocket::Secure(const bool enabled)
+uint32_t ManagementSocket::SecureLink(const bool enabled)
 {
-    Management::SecureConnections message(_deviceId);
+    Management::SecureLink message(_deviceId);
 
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
@@ -650,7 +699,18 @@ uint32_t ManagementSocket::Secure(const bool enabled)
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
 
-uint32_t ManagementSocket::LinkKeys(const LinkKeyList& keys, const bool debugKeys) 
+uint32_t ManagementSocket::SecureConnection(const bool enabled)
+{
+    Management::SecureConnection message(_deviceId);
+
+    message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+
+    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+}
+
+uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -666,7 +726,7 @@ uint32_t ManagementSocket::LinkKeys(const LinkKeyList& keys, const bool debugKey
     return (result);
 }
 
-uint32_t ManagementSocket::LongTermKeys(const LongTermKeyList& keys) 
+uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -681,7 +741,7 @@ uint32_t ManagementSocket::LongTermKeys(const LongTermKeyList& keys)
     return (result);
 }
 
-uint32_t ManagementSocket::IdentityKeys(const IdentityKeyList& keys) 
+uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys) 
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
@@ -742,7 +802,7 @@ uint32_t ManagementSocket::Pair(const Address& remote, const uint8_t type, const
     command->io_cap = cap;
 
     // Pairing takes longer, so allow for a larget timeout...
-    return (Exchange(40 * MANAGMENT_TIMEOUT, command, command));
+    return (Exchange(40 * MANAGMENT_TIMEOUT, command));
 }
 
 uint32_t ManagementSocket::Unpair(const Address& remote, const uint8_t type)
@@ -768,14 +828,54 @@ uint32_t ManagementSocket::PairAbort(const Address& remote, const uint8_t type)
     return (Exchange(MANAGMENT_TIMEOUT, command, command));
 }
 
-/* virtual */ void ManagementSocket::StateChange() 
-{
-    Core::SynchronousChannelType<Core::SocketPort>::StateChange();
+uint32_t ManagementSocket::Notifications(const bool enabled) {
+    uint32_t result = Core::ERROR_UNAVAILABLE;
+
     if (IsOpen() == true) {
+
         hci_filter_clear(&_filter);
 
-        setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter));
+        if (enabled == true) {
+            hci_filter_set_ptype(HCI_EVENT_PKT, &_filter);
+            hci_filter_set_event(EVT_CMD_STATUS, &_filter);
+            hci_filter_set_event(EVT_CMD_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_PIN_CODE_REQ, &_filter);
+            hci_filter_set_event(EVT_LINK_KEY_REQ, &_filter);
+            hci_filter_set_event(EVT_LINK_KEY_NOTIFY, &_filter);
+            hci_filter_set_event(EVT_RETURN_LINK_KEYS, &_filter);
+            hci_filter_set_event(EVT_IO_CAPABILITY_REQUEST, &_filter);
+            hci_filter_set_event(EVT_IO_CAPABILITY_RESPONSE, &_filter);
+            hci_filter_set_event(EVT_USER_CONFIRM_REQUEST, &_filter);
+            hci_filter_set_event(EVT_USER_PASSKEY_REQUEST, &_filter);
+            hci_filter_set_event(EVT_REMOTE_OOB_DATA_REQUEST, &_filter);
+            hci_filter_set_event(EVT_USER_PASSKEY_NOTIFY, &_filter);
+            hci_filter_set_event(EVT_KEYPRESS_NOTIFY, &_filter);
+            hci_filter_set_event(EVT_SIMPLE_PAIRING_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_AUTH_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_REMOTE_NAME_REQ_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_READ_REMOTE_VERSION_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_READ_REMOTE_FEATURES_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_REMOTE_HOST_FEATURES_NOTIFY, &_filter);
+            hci_filter_set_event(EVT_INQUIRY_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_INQUIRY_RESULT, &_filter);
+            hci_filter_set_event(EVT_INQUIRY_RESULT_WITH_RSSI, &_filter);
+            hci_filter_set_event(EVT_EXTENDED_INQUIRY_RESULT, &_filter);
+            hci_filter_set_event(EVT_CONN_REQUEST, &_filter);
+            hci_filter_set_event(EVT_CONN_COMPLETE, &_filter);
+            hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
+        }
+
+        if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
+            printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
+            
+            result = Core::ERROR_GENERAL;
+        }
+        else {
+            result = Core::ERROR_NONE;
+            printf("Management FILTER SET !!!!\n");
+        }
     }
+    return (result);
 }
 
 /* virtual */ uint16_t ManagementSocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
