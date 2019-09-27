@@ -21,8 +21,6 @@
 #include "Module.h"
 #include "open_cdm_impl.h"
 
-#include "ExtendedOpenCDMSession.h"
-
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 using namespace WPEFramework;
@@ -63,26 +61,16 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
 /* static */ OpenCDMAccessor* OpenCDMAccessor::_singleton = nullptr;
 
 /**
- * \brief Creates DRM system.
- *
- * \param keySystem Name of required key system (See \ref
- * opencdm_is_type_supported)
- * \return \ref OpenCDMAccessor instance, NULL on error.
- */
-struct OpenCDMAccessor* opencdm_create_system()
-{
-    return (OpenCDMAccessor::Instance());
-}
-
-/**
  * Destructs an \ref OpenCDMAccessor instance.
  * \param system \ref OpenCDMAccessor instance to desctruct.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system)
+OpenCDMError opencdm_destruct_system(struct OpenCDMSystem* system)
 {
+    OpenCDMAccessor::Instance()->SystemBeingDestructed(system);
+    assert(system != nullptr);
     if (system != nullptr) {
-        system->Release();
+       delete system;
     }
     return (OpenCDMError::ERROR_NONE);
 }
@@ -96,13 +84,13 @@ OpenCDMError opencdm_destruct_system(struct OpenCDMAccessor* system)
  * \return Zero if supported, Non-zero otherwise.
  * \remark mimeType is currently ignored.
  */
-OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
-    const char keySystem[],
+OpenCDMError opencdm_is_type_supported(const char keySystem[],
     const char mimeType[])
 {
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(OpenCDMError::ERROR_KEYSYSTEM_NOT_SUPPORTED);
 
-    if ((system != nullptr) && (system->IsTypeSupported(std::string(keySystem), std::string(mimeType)) == 0)) {
+    if ((accessor != nullptr) && (accessor->IsTypeSupported(std::string(keySystem), std::string(mimeType)) == 0)) {
         result = OpenCDMError::ERROR_NONE;
     }
     return (result);
@@ -123,25 +111,27 @@ OpenCDMError opencdm_is_type_supported(struct OpenCDMAccessor* system,
  * REPLACING: void* acquire_session(const uint8_t* keyId, const uint8_t
  * keyLength, const uint32_t waitTime);
  */
-struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
-    const uint8_t keyId[],
+struct OpenCDMSession* opencdm_get_session(const uint8_t keyId[],
     const uint8_t length,
     const uint32_t waitTime)
 {
+    return opencdm_get_system_session(nullptr, keyId, length, waitTime);
+}
+
+struct OpenCDMSession* opencdm_get_system_session(struct OpenCDMSystem* system, const uint8_t keyId[],
+    const uint8_t length, const uint32_t waitTime)
+{
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     struct OpenCDMSession* result = nullptr;
 
     std::string sessionId;
-    if ((system != nullptr) && (system->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable, sessionId) == true)) {
-        OCDM::ISession* session(system->Session(sessionId));
-
-        if (session != nullptr) {
-            result = new OpenCDMSession(session);
-            session->Release();
-        }
+    if ((accessor != nullptr) && (accessor->WaitForKey(length, keyId, waitTime, OCDM::ISession::Usable, sessionId, system) == true)) {
+        result = accessor->Session(sessionId);
     }
 
     return (result);
 }
+
 
 /**
  * \brief Sets server certificate.
@@ -152,15 +142,15 @@ struct OpenCDMSession* opencdm_get_session(struct OpenCDMAccessor* system,
  * \param serverCertificateLength Buffer length of certificate data.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_system_set_server_certificate(
-    struct OpenCDMAccessor* system, const char keySystem[],
-    const uint8_t serverCertificate[], uint16_t serverCertificateLength)
+OpenCDMError opencdm_system_set_server_certificate(struct OpenCDMSystem* system,
+    const uint8_t serverCertificate[], const uint16_t serverCertificateLength)
 {
+    OpenCDMAccessor * accessor = OpenCDMAccessor::Instance();
     OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
     if (system != nullptr) {
-        result = static_cast<OpenCDMError>(system->SetServerCertificate(
-            keySystem, serverCertificate, serverCertificateLength));
+        result = static_cast<OpenCDMError>(accessor->SetServerCertificate(
+            system->keySystem(), serverCertificate, serverCertificateLength));
     }
     return (result);
 }
@@ -177,7 +167,7 @@ OpenCDMError opencdm_destruct_session(struct OpenCDMSession* session)
 
     if (session != nullptr) {
         result = OpenCDMError::ERROR_NONE;
-        delete session;
+        session->Release();
     }
 
     return (result);
@@ -228,6 +218,24 @@ const char* opencdm_session_buffer_id(const struct OpenCDMSession* session)
 }
 
 /**
+ * Checks if a session has a specific keyid. Will check both BE/LE
+ * \param session \ref OpenCDMSession instance.
+ * \param length Length of key ID buffer (in bytes).
+ * \param keyId Key ID.
+ * \return 1 if keyID found else 0.
+ */
+uint32_t opencdm_session_has_key_id(struct OpenCDMSession* session, 
+    const uint8_t length, const uint8_t keyId[])
+{
+    bool result = false;
+    if (session != nullptr) {
+        result = session->HasKeyId(length, keyId);
+    }
+    
+    return result ? 1 : 0;
+}
+
+/**
  * Returns status of a particular key assigned to a session.
  * \param session \ref OpenCDMSession instance.
  * \param keyId Key ID.
@@ -239,9 +247,8 @@ KeyStatus opencdm_session_status(const struct OpenCDMSession* session,
 {
     KeyStatus result(KeyStatus::InternalError);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<const ExtendedOpenCDMSession*>(session)->Status(
-            keyId, length);
+    if (session != nullptr) {
+        result = CDMState(session->Status(length, keyId));
     }
 
     return (result);
@@ -259,9 +266,8 @@ uint32_t opencdm_session_error(const struct OpenCDMSession* session,
 {
     uint32_t result(~0);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<const ExtendedOpenCDMSession*>(session)->Error(
-            keyId, length);
+    if (session != nullptr) {
+        result = session->Error(keyId, length);
     }
 
     return (result);
@@ -277,9 +283,8 @@ opencdm_session_system_error(const struct OpenCDMSession* session)
 {
     OpenCDMError result(ERROR_INVALID_SESSION);
 
-    if ((session != nullptr) && (session->IsExtended() == true)) {
-        result = static_cast<OpenCDMError>(
-            static_cast<const ExtendedOpenCDMSession*>(session)->Error());
+    if (session != nullptr) {
+        result = static_cast<OpenCDMError>(session->Error());
     }
 
     return (result);
@@ -375,3 +380,108 @@ OpenCDMError opencdm_session_decrypt(struct OpenCDMSession* session,
     return (result);
 }
 
+
+bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
+        const uint32_t waitTime,
+        const OCDM::ISession::KeyStatus status,
+        std::string& sessionId, OpenCDMSystem* system) const
+    {
+        bool result = false;
+        KeyId paramKey(keyId, keyLength);
+        uint64_t timeOut(Core::Time::Now().Add(waitTime).Ticks());
+
+        do {
+            _adminLock.Lock();
+
+            KeyMap::const_iterator session(_sessionKeys.begin());
+
+            for  (; session != _sessionKeys.end(); ++session) {
+                if (!system || session->second->BelongsTo(system) == true) {
+                    if (session->second->HasKeyId(keyLength, keyId) == true)
+                        break;
+                }
+            }
+
+            if (session != _sessionKeys.end()) {
+                result = (session->second->Status(keyLength, keyId) == status);
+            }
+
+            if (result == false) {
+                _interested++;
+
+                _adminLock.Unlock();
+
+                TRACE_L1("Waiting for KeyId: %s", paramKey.ToString().c_str());
+
+                uint64_t now(Core::Time::Now().Ticks());
+
+                if (now < timeOut) {
+                    _signal.Lock(static_cast<uint32_t>((timeOut - now) / Core::Time::TicksPerMillisecond));
+                }
+
+                Core::InterlockedDecrement(_interested);
+            } else {
+                sessionId = session->first;
+                _adminLock.Unlock();
+            }
+        } while ((result == false) && (timeOut > Core::Time::Now().Ticks()));
+
+        return (result);
+    }
+    OpenCDMSession* OpenCDMAccessor::Session(const std::string& sessionId)
+    {
+        OpenCDMSession* result = nullptr;
+        KeyMap::iterator index = _sessionKeys.find(sessionId);
+
+        if(index != _sessionKeys.end()){
+            result = index->second;
+            result->AddRef();
+        }
+
+        return (result);
+    }
+
+    void OpenCDMAccessor::AddSession(OpenCDMSession* session)
+    {
+        string sessionId = session->SessionId();
+
+        _adminLock.Lock();
+
+        KeyMap::iterator index(_sessionKeys.find(sessionId));
+
+        if (index == _sessionKeys.end()) {
+            _sessionKeys.insert(std::pair<string, OpenCDMSession*>(sessionId, session));
+        } else {
+            TRACE_L1("Same session created, again ???? Keep the old one than. [%s]",
+                sessionId.c_str());
+        }
+
+        _adminLock.Unlock();
+    }
+    void OpenCDMAccessor::RemoveSession(const string& sessionId)
+    {
+
+        _adminLock.Lock();
+
+        KeyMap::iterator index(_sessionKeys.find(sessionId));
+
+        if (index != _sessionKeys.end()) {
+            _sessionKeys.erase(index);
+        } else {
+            TRACE_L1("A session is destroyed of which we were not aware [%s]",
+                sessionId.c_str());
+        }
+
+        _adminLock.Unlock();
+    }
+
+    void OpenCDMAccessor::SystemBeingDestructed(OpenCDMSystem* system)
+    {
+        _adminLock.Lock();
+        for (auto& sessionKey : _sessionKeys) {
+            if (sessionKey.second->BelongsTo(system) == true) {
+                TRACE_L1("System the session %s belongs to is being destructed. Destruct the session before destructing the system!", sessionKey.second->SessionId().c_str());
+            }
+        }
+        _adminLock.Unlock();
+    }

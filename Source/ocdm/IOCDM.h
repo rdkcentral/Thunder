@@ -127,7 +127,10 @@ struct ISessionExt : virtual public WPEFramework::Core::IUnknown {
         uint8_t* secureStopId /* @out @length:16 */)
         = 0;
 
-    virtual OCDM_RESULT InitDecryptContextByKid() = 0;
+    virtual OCDM_RESULT SelectKeyId(const uint8_t keyLength,
+        const uint8_t keyId[] /* @length:keyLength */) 
+        = 0;
+
 
     virtual OCDM_RESULT CleanDecryptContext() = 0;
 };
@@ -135,20 +138,6 @@ struct ISessionExt : virtual public WPEFramework::Core::IUnknown {
 struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM };
-
-    struct INotification : virtual public WPEFramework::Core::IUnknown {
-
-        enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_NOTIFICATION };
-
-        virtual ~INotification() {}
-
-        virtual void Create(const string& sessionId) = 0;
-        virtual void Destroy(const string& sessionId) = 0;
-        virtual void KeyChange(const string& sessionId, const uint8_t keyId[] /* @length:length */,
-            const uint8_t length,
-            const OCDM::ISession::KeyStatus status)
-            = 0;
-    };
 
     virtual ~IAccessorOCDM() {}
 
@@ -169,30 +158,13 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     SetServerCertificate(const string keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
-
-    virtual void Register(INotification* sink) = 0;
-
-    virtual void Unregister(INotification* sink) = 0;
-
-    virtual ISession* Session(const std::string sessionId) = 0;
-
-    virtual ISession* Session(const uint8_t keyId[] /* @length:length */, const uint8_t length) = 0;
 };
 
 struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
 
     enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_EXTENSION };
 
-    virtual time_t GetDrmSystemTime(const std::string& keySystem) const = 0;
-
-    virtual OCDM_RESULT CreateSessionExt(
-        const std::string keySystem,
-        const uint8_t drmHeader[] /* @length:drmHeaderLength */,
-        uint32_t drmHeaderLength,
-        ::OCDM::ISession::ICallback* callback,
-        std::string& sessionId /* @out */,
-        ISessionExt*& session /* @out */)
-        = 0;
+    virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const = 0;
 
     virtual std::string GetVersionExt(const std::string& keySystem) const = 0;
 
@@ -223,12 +195,6 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
         const uint8_t serverResponse[] /* @length:serverResponseLength */,
         uint32_t serverResponseLength)
         = 0;
-
-    virtual OCDM_RESULT CreateSystemExt(const std::string& keySystem) = 0;
-
-    virtual OCDM_RESULT InitSystemExt(const std::string& keySystem) = 0;
-
-    virtual OCDM_RESULT TeardownSystemExt(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT DeleteKeyStore(const std::string& keySystem) = 0;
 

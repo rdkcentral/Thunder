@@ -13,7 +13,8 @@ namespace Exchange {
         enum { ID = ID_CONTENTDECRYPTION };
 
         virtual ~IContentDecryption() {}
-        virtual uint32_t Configure(PluginHost::IShell* service) = 0;
+        virtual uint32_t Initialize(PluginHost::IShell* service) = 0;
+        virtual void Deinitialize(PluginHost::IShell* service) = 0;
         virtual uint32_t Reset() = 0;
         virtual RPC::IStringIterator* Systems() const = 0;
         virtual RPC::IStringIterator* Designators(const string& keySystem) const = 0;

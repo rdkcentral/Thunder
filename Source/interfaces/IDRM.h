@@ -305,7 +305,7 @@ public:
 
     virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t* secureStopId) = 0;
 
-    virtual CDMi_RESULT InitDecryptContextByKid() = 0;
+    virtual CDMi_RESULT SelectKeyId(const uint8_t keyLength, const uint8_t keyId[]) = 0;
 
     virtual CDMi_RESULT CleanDecryptContext() = 0;
 };
@@ -346,14 +346,7 @@ public:
     IMediaKeysExt(void) {}
     virtual ~IMediaKeysExt(void) {}
 
-    virtual time_t GetDrmSystemTime() const = 0;
-
-    virtual CDMi_RESULT CreateMediaKeySessionExt(
-        const std::string& keySystem,
-        const uint8_t drmHeader[],
-        uint32_t drmHeaderLength,
-        IMediaKeySessionExt** session)
-        = 0;
+    virtual uint64_t GetDrmSystemTime() const = 0;
 
     // Destroy a MediaKeySession instance.
     virtual CDMi_RESULT DestroyMediaKeySessionExt(
@@ -390,13 +383,6 @@ public:
         uint32_t serverResponseLength)
         = 0;
 
-    // TODO: rename to something like "SetStoreDirs"
-    virtual CDMi_RESULT CreateSystemExt() = 0;
-
-    virtual CDMi_RESULT InitSystemExt() = 0;
-
-    virtual CDMi_RESULT TeardownSystemExt() = 0;
-
     virtual CDMi_RESULT DeleteKeyStore() = 0;
 
     virtual CDMi_RESULT DeleteSecureStore() = 0;
@@ -416,7 +402,8 @@ struct ISystemFactory {
     virtual IMediaKeys* Instance() = 0;
     virtual const char* KeySystem() const = 0;
     virtual const std::vector<std::string>& MimeTypes() const = 0;
-    virtual void SystemConfig(const WPEFramework::PluginHost::IShell * shell, const std::string& configline) = 0;
+    virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline) = 0;
+    virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell) = 0;
 };
 
 template <typename IMPLEMENTATION>
@@ -450,13 +437,17 @@ public:
         return (typeid(IMPLEMENTATION).name());
     }
 
-    virtual void SystemConfig(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
+    virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
         if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
            OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
         } else {
-           OnSystemConfig(shell, configline, std::integral_constant<bool, HasOnShellAndSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+           Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
         }
+    }
+    virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell)
+    {
+        Deinitialize(shell, std::integral_constant<bool, HasOnShellAndSystemDeinitialize<IMPLEMENTATION>::Has>());
     }
 
 private:
@@ -482,23 +473,45 @@ private:
     }
 
     template <typename T>
-    struct HasOnShellAndSystemConfigurationAvailable {
+    struct HasOnShellAndSystemInitialize {
         template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
         struct SFINAE {
         };
         template <typename U>
-        static uint8_t Test(SFINAE<U, &U::OnSystemConfigurationAvailable>*);
+        static uint8_t Test(SFINAE<U, &U::Initialize>*);
         template <typename U>
         static uint32_t Test(...);
         static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
     };
 
-    void OnSystemConfig(const WPEFramework::PluginHost::IShell * service, const std::string& configline, std::true_type)
+    template <typename T>
+    struct HasOnShellAndSystemDeinitialize {
+        template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *)>
+        struct SFINAE {
+        };
+        template <typename U>
+        static uint8_t Test(SFINAE<U, &U::Deinitialize>*);
+        template <typename U>
+        static uint32_t Test(...);
+        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
+    };
+
+
+    void Initialize(const WPEFramework::PluginHost::IShell * service, const std::string& configline, std::true_type)
     {
-        _instance.OnSystemConfigurationAvailable(service, configline);
+        _instance.Initialize(service, configline);
     }
 
-    void OnSystemConfig(const WPEFramework::PluginHost::IShell * service, const std::string&, std::false_type)
+    void Initialize(const WPEFramework::PluginHost::IShell *, const std::string&, std::false_type)
+    {
+    }
+
+    void Deinitialize(const WPEFramework::PluginHost::IShell * service, std::true_type)
+    {
+        _instance.Deinitialize(service);
+    }
+
+    void Deinitialize(const WPEFramework::PluginHost::IShell *, std::false_type)
     {
     }
 
