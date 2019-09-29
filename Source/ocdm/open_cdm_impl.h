@@ -10,31 +10,16 @@ using namespace WPEFramework;
 extern Core::CriticalSection _systemLock;
 
 struct OpenCDMSystem {
-    OpenCDMSystem(const char system[]) : _keySystem(system), _type(Type::UNKNOWN) {}
+    OpenCDMSystem(const char system[]) : _keySystem(system) {}
     ~OpenCDMSystem() = default;
     OpenCDMSystem(const OpenCDMSystem&) = default;
     OpenCDMSystem(OpenCDMSystem&&) = default;
     OpenCDMSystem& operator=(OpenCDMSystem&&) = default;
     OpenCDMSystem& operator=(const OpenCDMSystem&) = default;
     const std::string& keySystem() const { return _keySystem; }
-    bool isPlayready() const
-    {
-        if (_type == UNKNOWN) {
-            _type = _keySystem.find("playready") != std::string::npos ? Type::PLAYREADY : Type::OTHER;
-        }
-
-        return _type == Type::PLAYREADY;
-    }
 
  private:
     std::string _keySystem;
-
-    enum Type {
-        UNKNOWN,
-        PLAYREADY,
-        OTHER,
-    };
-    mutable Type _type;
 };
 
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM,
@@ -45,90 +30,6 @@ private:
     OpenCDMAccessor& operator=(const OpenCDMAccessor&) = delete;
 
 private:
-    class KeyId {
-    private:
-        KeyId() = delete;
-        KeyId& operator=(const KeyId& rhs) = delete;
-
-    public:
-        inline KeyId(const KeyId& copy)
-            : _status(copy._status)
-        {
-            ::memcpy(_kid, copy._kid, sizeof(_kid));
-        }
-        inline KeyId(const uint8_t kid[], const uint8_t length,
-            const ::OCDM::ISession::KeyStatus status = OCDM::ISession::StatusPending)
-            : _status(status)
-        {
-            uint8_t copyLength(length > sizeof(_kid) ? sizeof(_kid) : length);
-
-            ::memcpy(_kid, kid, copyLength);
-
-            if (copyLength < sizeof(_kid)) {
-                ::memset(&(_kid[copyLength]), 0, sizeof(_kid) - copyLength);
-            }
-        }
-        inline ~KeyId() {}
-
-    public:
-        inline bool operator==(const KeyId& rhs) const
-        {
-            // Hack, in case of PlayReady, the key offered on the interface might be
-            // ordered incorrectly, cater for this situation, by silenty comparing
-            // with this incorrect value.
-            bool equal = false;
-
-            // Regardless of the order, the last 8 bytes should be equal
-            if (memcmp(&_kid[8], &(rhs._kid[8]), 8) == 0) {
-
-                // Lets first try the non swapped byte order.
-                if (memcmp(_kid, rhs._kid, 8) == 0) {
-                    // this is a match :-)
-                    equal = true;
-                } else {
-                    // Let do the byte order alignment as suggested in the spec and see if
-                    // it matches than :-)
-                    // https://msdn.microsoft.com/nl-nl/library/windows/desktop/aa379358(v=vs.85).aspx
-                    uint8_t alignedBuffer[8];
-                    alignedBuffer[0] = rhs._kid[3];
-                    alignedBuffer[1] = rhs._kid[2];
-                    alignedBuffer[2] = rhs._kid[1];
-                    alignedBuffer[3] = rhs._kid[0];
-                    alignedBuffer[4] = rhs._kid[5];
-                    alignedBuffer[5] = rhs._kid[4];
-                    alignedBuffer[6] = rhs._kid[7];
-                    alignedBuffer[7] = rhs._kid[6];
-                    equal = (memcmp(_kid, alignedBuffer, 8) == 0);
-                }
-            }
-            return (equal);
-        }
-        inline bool operator!=(const KeyId& rhs) const
-        {
-            return !(operator==(rhs));
-        }
-        inline const uint8_t* Id() const { return (_kid); }
-        inline static uint8_t Length() { return (sizeof(_kid)); }
-        inline void Status(::OCDM::ISession::KeyStatus status) { _status = status; }
-        ::OCDM::ISession::KeyStatus Status() const { return (_status); }
-        string ToString() const
-        {
-            static TCHAR HexArray[] = "0123456789ABCDEF";
-            string result(1, HexArray[(_kid[0] >> 4) & 0xF]);
-            result += HexArray[_kid[0] & 0xF];
-
-            for (uint8_t index = 1; index < sizeof(_kid); index++) {
-                result += ':';
-                result += HexArray[(_kid[index] >> 4) & 0xF];
-                result += HexArray[_kid[index] & 0xF];
-            }
-            return (result);
-        }
-
-    private:
-        uint8_t _kid[16];
-        ::OCDM::ISession::KeyStatus _status;
-    };
     typedef std::map<string, OpenCDMSession*> KeyMap;
 
 private:
@@ -394,6 +295,8 @@ private:
 
 struct OpenCDMSession {
 private:
+    using KeyStatusesMap = std::list<OCDM::KeyId>;
+
     class Sink : public OCDM::ISession::ICallback {
     //private:
     public:
@@ -415,9 +318,7 @@ private:
             const uint16_t keyLength, //__in
             const std::string& URL) override
         {
-            _parent.OnKeyMessage(
-                std::string(reinterpret_cast<const char*>(keyMessage), keyLength),
-                URL);
+            _parent.OnKeyMessage(keyMessage, keyLength, URL);
         }
 
         void OnError(const int16_t error, const OCDM::OCDM_RESULT sysError, const std::string& errorMessage) override
@@ -467,8 +368,6 @@ private:
             TRACE_L1("Destructing buffer client side: %p - %s", this,
                 OCDM::DataExchange::Name().c_str());
         }
-
-
 
     public:
         uint32_t Decrypt(uint8_t* encryptedData, uint32_t encryptedDataLength,
@@ -611,22 +510,17 @@ public:
     inline bool IsValid() const { return (_session != nullptr); }
     inline OCDM::ISession::KeyStatus Status(const uint8_t keyIDLength, const uint8_t keyId[]) const
     {
-        std::string key(reinterpret_cast<const char*>(keyId), keyIDLength);
+        OCDM::KeyId key(keyId, keyIDLength);
 
-        std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index = _keyStatuses.find(key);
-        if (_system->isPlayready() && (index == _keyStatuses.end() || index->second == OCDM::ISession::StatusPending)) {
-            index = FindUsingSwappedEndianess(keyIDLength, keyId);
-        }
-        return index != _keyStatuses.end() ? index->second : OCDM::ISession::StatusPending;
+        KeyStatusesMap::const_iterator index = std::find(_keyStatuses.begin(), _keyStatuses.end(), key);
+
+        return index != _keyStatuses.end() ? index->Status() : OCDM::ISession::StatusPending;
     }
     inline bool HasKeyId(const uint8_t keyIDLength, const uint8_t keyID[]) const
     {
-        std::string key(reinterpret_cast<const char*>(keyID), keyIDLength);
+        OCDM::KeyId key(keyID, keyIDLength);
 
-        std::map<std::string, OCDM::ISession::KeyStatus>::const_iterator index =  _keyStatuses.find(key); 
-        if (index == _keyStatuses.end() && _system->isPlayready()) {
-            index = FindUsingSwappedEndianess(keyIDLength, keyID);
-        }
+        KeyStatusesMap::const_iterator index = std::find(_keyStatuses.begin(), _keyStatuses.end(), key);
 
         return (index != _keyStatuses.end());
     }
@@ -769,13 +663,14 @@ protected:
         }
     }
    // Event fired when a key message is successfully created.
-    void OnKeyMessage(const std::string& keyMessage, const std::string& URL)
+    void OnKeyMessage(const uint8_t keyId[], const uint8_t length, const std::string& URL)
     {
         _URL = URL;
         TRACE_L1("Received URL: [%s]", _URL.c_str());
 
-        if (_callback != nullptr && _callback->process_challenge_callback != nullptr)
-            _callback->process_challenge_callback(this, _userData, _URL.c_str(), reinterpret_cast<const uint8_t*>(keyMessage.c_str()), static_cast<uint16_t>(keyMessage.length()));
+        if (_callback != nullptr && _callback->process_challenge_callback != nullptr) {
+            _callback->process_challenge_callback(this, _userData, _URL.c_str(), keyId, length);
+        }
     }
 
     // Event fired when MediaKeySession encounters an error.
@@ -793,8 +688,17 @@ protected:
     // Event fired on key status update
     void OnKeyStatusUpdate(const uint8_t keyID[], const uint8_t keyIDLength, const OCDM::ISession::KeyStatus status)
     {   
-        std::string keyId(reinterpret_cast<const char*>(keyID), keyIDLength);
-        _keyStatuses[keyId] = status;
+        OCDM::KeyId key(keyID, keyIDLength);
+
+        KeyStatusesMap::iterator index = std::find(_keyStatuses.begin(), _keyStatuses.end(), key);
+
+        if (index == _keyStatuses.end()) {
+            key.Status(status);
+            _keyStatuses.emplace_back(key);
+        }
+        else {
+            index->Status(status);
+        }
 
         if ((_callback != nullptr) && (_callback->key_update_callback != nullptr) && (status != OCDM::ISession::StatusPending)) {
             _callback->key_update_callback(this, _userData, keyID, keyIDLength);
@@ -803,34 +707,14 @@ protected:
 
     void OnKeyStatusesUpdated() const
     {
-        if (_callback->keys_updated_callback)
+        if ((_callback != nullptr) && (_callback->keys_updated_callback)) {
             _callback->keys_updated_callback(this, _userData);
+        }
     }
-
-protected:
-    std::string _sessionId;
-    DataExchange* _decryptSession;
 
 private:
-    using KeyStatusesMap = std::map<std::string, OCDM::ISession::KeyStatus>;
-
-    KeyStatusesMap::const_iterator FindUsingSwappedEndianess(const uint8_t keyIDLength, const uint8_t keyID[]) const
-    {
-        ASSERT(keyIDLength == 16 && _system->isPlayready());
-        uint8_t keyWithSwappedEndianess[16];
-        keyWithSwappedEndianess[0] = keyID[3];
-        keyWithSwappedEndianess[1] = keyID[2];
-        keyWithSwappedEndianess[2] = keyID[1];
-        keyWithSwappedEndianess[3] = keyID[0];
-        keyWithSwappedEndianess[4] = keyID[5];
-        keyWithSwappedEndianess[5] = keyID[4];
-        keyWithSwappedEndianess[6] = keyID[7];
-        keyWithSwappedEndianess[7] = keyID[6];
-        memcpy(&keyWithSwappedEndianess[8], &keyID[8], 8);
-        std::string key(reinterpret_cast<const char*>(keyWithSwappedEndianess), keyIDLength);
-        return _keyStatuses.find(key);
-    }
-
+    std::string _sessionId;
+    DataExchange* _decryptSession;
     OCDM::ISession* _session;
     OCDM::ISessionExt* _sessionExt;
     uint32_t _refCount;

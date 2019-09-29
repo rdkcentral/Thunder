@@ -28,6 +28,8 @@ using namespace WPEFramework;
 Core::CriticalSection _systemLock;
 const char EmptyString[] = { '\0' };
 
+/* static */ const OCDM::KeyId OCDM::KeyId::InvalidKey;
+
 #ifdef _MSVC_LANG
 extern "C" {
 	void ForceLinkingOfOpenCDM() 
@@ -387,7 +389,6 @@ bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
         std::string& sessionId, OpenCDMSystem* system) const
     {
         bool result = false;
-        KeyId paramKey(keyId, keyLength);
         uint64_t timeOut(Core::Time::Now().Add(waitTime).Ticks());
 
         do {
@@ -407,6 +408,7 @@ bool OpenCDMAccessor::WaitForKey(const uint8_t keyLength, const uint8_t keyId[],
             }
 
             if (result == false) {
+                OCDM::KeyId paramKey(keyId, keyLength);
                 _interested++;
 
                 _adminLock.Unlock();

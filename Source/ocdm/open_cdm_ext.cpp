@@ -11,8 +11,6 @@
 
 struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
-    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
-
     return new OpenCDMSystem(keySystem);
 }
 
