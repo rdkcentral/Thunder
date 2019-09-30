@@ -47,7 +47,6 @@
         64,
         96
       ],
-      "enumtyped": false,
       "description": "Stream type",
       "example": "cable"
     },

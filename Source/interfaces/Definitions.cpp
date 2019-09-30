@@ -37,25 +37,6 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
     { Exchange::IComposition::ScreenResolution_2160p60Hz, _TXT("2160p60Hz") },
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
-ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
-    { Exchange::IStream::Undefined,   _TXT("Unknown")     },
-    { Exchange::IStream::Cable,       _TXT("Cable")       },
-    { Exchange::IStream::Handheld,    _TXT("Handheld")    },
-    { Exchange::IStream::Satellite,   _TXT("Satellite")   },
-    { Exchange::IStream::Terrestrial, _TXT("Terrestrial") },
-    { Exchange::IStream::DAB,         _TXT("DAB")         },
-    { Exchange::IStream::RF,          _TXT("RF")          },
-    { Exchange::IStream::Unicast,     _TXT("Unicast")     },
-    { Exchange::IStream::Multicast,   _TXT("Multicast")   },
-    { Exchange::IStream::IP,          _TXT("IP")          },
-ENUM_CONVERSION_END(Exchange::IStream::streamtype)
-
-ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
-    { Exchange::IStream::Loading,    _TXT("Loading")    },
-    { Exchange::IStream::Prepared,   _TXT("Prepared")   },
-    { Exchange::IStream::Controlled, _TXT("Controlled") },
-ENUM_CONVERSION_END(Exchange::IStream::state)
-
 namespace Exchange
 {
 

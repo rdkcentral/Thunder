@@ -10,7 +10,7 @@ namespace Exchange {
     struct IStream : virtual public Core::IUnknown {
         enum { ID = ID_STREAM };
 
-        enum state {
+        enum class state {
             Idle = 0,
             Loading,
             Prepared,
@@ -18,7 +18,7 @@ namespace Exchange {
             Error
         };
 
-        enum streamtype {
+        enum class streamtype {
             Undefined = 0,
             Cable = 1,
             Handheld = 2,
@@ -31,7 +31,7 @@ namespace Exchange {
             IP = 96
        };
 
-        enum drmtype {
+        enum class drmtype {
             None = 0,
             ClearKey,
             PlayReady,
@@ -54,7 +54,7 @@ namespace Exchange {
                 virtual IElement* Current() = 0;
             };
 
-            enum type {
+            enum class type {
                 Unknown = 0,
                 Audio,
                 Video,
