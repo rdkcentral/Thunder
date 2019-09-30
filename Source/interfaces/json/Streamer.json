@@ -331,7 +331,7 @@
         }
       ]
     },
-    "lasterror": {
+    "error": {
       "summary": "Most recent error code",
       "readonly": true,
       "params": {

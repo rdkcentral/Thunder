@@ -124,7 +124,7 @@ namespace Exchange {
         virtual void Callback(IStream::ICallback* callback) = 0;
         virtual state State() const = 0;
         virtual uint32_t Load(const string& configuration) = 0;
-        virtual uint32_t LastError() const = 0;
+        virtual uint32_t Error() const = 0;
 
         virtual IElement::IIterator* Elements() = 0;
     };
