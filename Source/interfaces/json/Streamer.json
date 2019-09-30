@@ -47,7 +47,6 @@
         64,
         96
       ],
-      "enumtyped": false,
       "description": "Stream type",
       "example": "cable"
     },
@@ -58,20 +57,20 @@
         "idle",
         "loading",
         "prepared",
-        "paused",
-        "playing",
+        "controlled",
         "error"
       ],
-      "example": "playing"
+      "example": "controlled"
     },
     "drm": {
       "description": "DRM used",
       "type": "string",
       "enum": [
-        "unknown",
+        "none",
         "clearkey",
         "playready",
-        "widevine"
+        "widevine",
+        "unknown"
       ],
       "example": "clearkey"
     },
@@ -106,15 +105,39 @@
         "width",
         "height"
       ]
+    },
+    "element": {
+      "description": "Stream element type",
+      "type": "string",
+      "enum": [
+        "video",
+        "audio",
+        "subtitles",
+        "teletext",
+        "data"
+      ],
+      "example": "video"
+    },
+    "streamelement": {
+      "description": "Stream element",
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/element"
+        }
+      },
+      "required": [
+        "type"
+      ]
     }
   },
   "properties": {
     "speed": {
       "summary": "Playback speed",
       "description": "Speed (in percentage)",
-      "events": "statechange",
+      "events": ["statechange"],
       "params": {
-        "description": "Speed percentage; e.g.: 0 - pause, 100 - normal playback, -100 - rewind, -200 - reverse at twice the speed, 50 - forward at half speed, etc. Must be one of the speeds supported by the player",
+        "description": "Speed percentage; e.g.: 0 - pause, 100 - normal playback, -100 - rewind, -200 - reverse at twice the normal speed, 50 - forward at half speed, etc. Must be one of the speeds supported by the player",
         "type": "number",
         "signed": true,
         "example": 100
@@ -293,7 +316,7 @@
       "summary": "Metadata associated with the stream",
       "params": {
         "type": "string",
-        "description": "Custom player-specific metadata",
+        "description": "Custom implementation-specific metadata",
         "example": ""
       },
       "index": {
@@ -304,6 +327,50 @@
         {
           "description": "Unknown stream ID given",
           "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "error": {
+      "summary": "Most recent error code",
+      "readonly": true,
+      "params": {
+        "type": "number",
+        "description": "Custom implementation-specific error code value",
+        "example": 0
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "elements": {
+      "summary": "Stream elements",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of stream elements",
+        "items": {
+          "$ref": "#/definitions/streamelement"
+        }
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Stream elements retrieval not supported",
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     }
@@ -350,7 +417,7 @@
     },
     "Streamer.1.load": {
       "summary": "Loads a source into a stream.",
-      "events": "statechange",
+      "events": ["statechange"],
       "params": {
         "type": "object",
         "properties": {
@@ -444,7 +511,6 @@
   "events": {
     "statechange": {
       "summary": "Notifies of stream state change.",
-      "example": "1.*",
       "id": {
         "name": "Stream ID",
         "example": "0"
@@ -461,28 +527,8 @@
         ]
       }
     },
-    "drmchange": {
-      "summary": "Notifies of stream DRM system change.",
-      "example": "1.*",
-      "id": {
-        "name": "Stream ID",
-        "example": "0"
-      },
-      "params": {
-        "type": "object",
-        "properties": {
-          "drm": {
-            "$ref": "#/definitions/drm"
-          }
-        },
-        "required": [
-          "drm"
-        ]
-      }
-    },
     "timeupdate": {
-      "summary": "Notifies of stream position change. This event is fired every second to indicate that the stream has progressed by a second, and event does not fire, if the stream is in paused state.",
-      "example": "20",
+      "summary": "Notifies of stream position change. This event is fired every second to indicate the current stream position. It does not fire if the stream is paused (i.e. speed is set to 0).",
       "id": {
         "name": "Stream ID",
         "example": "0"
@@ -492,9 +538,60 @@
         "properties": {
           "time": {
             "type": "number",
-            "description": "Position in seconds",
+            "description": "Stream position in miliseconds",
             "size": 64,
-            "example": 30
+            "example": 30000
+          }
+        }
+      }
+    },
+    "stream": {
+      "summary": "Notifies of a custom stream incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    },
+    "player": {
+      "summary": "Notifies of a custom player incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    },
+    "drm": {
+      "summary": "Notifies of a custom DRM-related incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
           }
         }
       }

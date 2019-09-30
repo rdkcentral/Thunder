@@ -108,7 +108,10 @@ namespace Exchange {
         ID_POINTERHANDLER,
         ID_POINTERPRODUCER,
         ID_TOUCHHANDLER,
-        ID_TOUCHPRODUCER
+        ID_TOUCHPRODUCER,
+
+        ID_STREAM_ELEMENT,
+        ID_STREAM_ELEMENT_ITERATOR
     };
 }
 }
