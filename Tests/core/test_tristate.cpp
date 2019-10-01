@@ -6,7 +6,7 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-TEST(test_TriState, simple_TriState)
+TEST(test_TextReader, simple_TextReader)
 {
     TriState();
     TriState tristate1("F");
