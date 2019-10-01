@@ -22,6 +22,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_dataelementfile.cpp
    test_ISO639.cpp
    test_optional.cpp
+   test_filesystem.cpp
 #  test_sharedbuffer.cpp
 )
 
