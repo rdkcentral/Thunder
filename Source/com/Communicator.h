@@ -19,7 +19,7 @@ namespace RPC {
     public:
         enum class HostType {
             LOCAL,
-            REMOTE,
+            DISTRIBUTED,
             CONTAINER
         };
 
@@ -588,7 +588,7 @@ namespace RPC {
             case Object::HostType::LOCAL:
                 result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
                 break;
-            case Object::HostType::REMOTE:
+            case Object::HostType::DISTRIBUTED:
                 result = Core::Service<RemoteHost>::Create<RemoteProcess>(Core::NodeId(_T("127.0.0.1:9120")));
                 break;
             case Object::HostType::CONTAINER:

@@ -53,7 +53,7 @@ namespace PluginHost
             OFF,
             LOCAL,
             CONTAINER,
-            REMOTE
+            DISTRIBUTED
         };
 
         Object()
@@ -145,8 +145,8 @@ namespace PluginHost
                 case ModeType::CONTAINER :
                     result = RPC::Object::HostType::CONTAINER;
                     break;
-                case ModeType::REMOTE :
-                    result = RPC::Object::HostType::REMOTE;
+                case ModeType::DISTRIBUTED:
+                    result = RPC::Object::HostType::DISTRIBUTED;
                     break;
                 default:
                     result = RPC::Object::HostType::LOCAL;
@@ -229,7 +229,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::Object::ModeType)
     { PluginHost::Object::ModeType::OFF, _TXT("Off") },
     { PluginHost::Object::ModeType::LOCAL, _TXT("Local") },
     { PluginHost::Object::ModeType::CONTAINER, _TXT("Container") },
-    { PluginHost::Object::ModeType::REMOTE, _TXT("Remote") },
+    { PluginHost::Object::ModeType::DISTRIBUTED, _TXT("Distributed") },
 
 ENUM_CONVERSION_END(PluginHost::Object::ModeType);
 

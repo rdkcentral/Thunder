@@ -408,10 +408,6 @@ uint64_t ntohll(const uint64_t& value);
 #define NUMBER_MAX_SIGNED(TYPE) (static_cast<TYPE>((((static_cast<TYPE>(1) << (NUMBER_MAX_BITS(TYPE) - 2)) - 1) << 1) + 1))
 #define NUMBER_MIN_SIGNED(TYPE) (static_cast<TYPE>(-1 - NUMBER_MAX_SIGNED(TYPE)))
 
-#define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-    TypeName(const TypeName&);             \
-    TypeName& operator=(const TypeName&);
-
 typedef enum {
     BASE_UNKNOWN = 0,
     BASE_OCTAL = 8,
