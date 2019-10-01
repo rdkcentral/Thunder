@@ -23,6 +23,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_ISO639.cpp
    test_optional.cpp
    test_filesystem.cpp
+   test_textreader.cpp
 #  test_sharedbuffer.cpp
 )
 
