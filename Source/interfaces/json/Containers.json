@@ -1,0 +1,193 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Process Containers",
+    "class": "Containers",
+    "description": "Process Containers JSON-RPC API"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "containers": {
+      "summary": "List of active containers",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of names of all containers",
+        "items": {
+          "type": "string",
+          "example": "ContainerName"
+        }      
+      }    
+    },
+    "networks": {
+      "summary": "List of networks in the container",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of all networks related to the container",
+        "items": {
+          "type": "string",
+          "example": "veth3NF06K"
+        }      
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "ip": {
+      "summary": "List of ip addresses",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of all ip addresses assigned to the container",
+        "items": {
+          "type": "string",
+          "example": "192.168.0.123"
+        }      
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "memory": {
+      "summary": "Memory taken by container",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "description": "Memory allocated by the container, in bytes",
+        "example": "{memory: 123456789; kmem: 112233445}"
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "status": {
+      "summary": "Operational status of the container",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "description": "Status of the container",
+        "enum": [
+          "stopped",
+          "starting",
+          "running",
+          "aborting",
+          "stopping"
+        ]  
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "cpu": {
+      "summary": "CPU time",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "description": "CPU time spent on running the container, in nanoseconds",
+        "example": "{total:21873781248,percpu: [11873781248, 10000000000]}"
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "log": {
+      "summary": "Containers log",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "description": "logs from the container"
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "config": {
+      "summary": "Container's configuration",
+      "readonly": true,
+      "params": {
+        "type": "string",
+        "description": "configuraiton of the container"
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "stop": {
+      "summary": "Stops a container",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of container",
+            "type": "string", 
+            "example": "ContainerName"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}

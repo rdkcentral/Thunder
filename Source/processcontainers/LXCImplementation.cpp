@@ -14,7 +14,9 @@ class LXCContainerAdministrator : public ProcessContainers::IContainerAdministra
 private:
 
     using LxcContainerType = struct lxc_container;
-
+    static constexpr char* logFileName = "lxclogging.log";
+    static constexpr char* configFileName = "config";
+    static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
 public:
     LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
     LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
@@ -90,6 +92,48 @@ public:
 #endif
         };
 
+        class CpuInfo : public Core::JSON::Container {
+        public:
+            CpuInfo(const CpuInfo&) = delete;
+            CpuInfo& operator=(const CpuInfo&) = delete;
+
+            CpuInfo()
+                : Core::JSON::Container()
+                , Total(0)
+                , PerCPU()
+            {
+                Add(_T("total"), &Total);
+                Add(_T("percpu"), &PerCPU);
+
+            }
+            
+            ~CpuInfo() = default;
+
+            Core::JSON::DecUInt64 Total;
+            Core::JSON::ArrayType<Core::JSON::DecUInt64> PerCPU;
+        };
+
+        class MemoryInfo : public Core::JSON::Container {
+        public:
+            MemoryInfo(const MemoryInfo&) = delete;
+            MemoryInfo& operator=(const MemoryInfo&) = delete;
+
+            MemoryInfo()
+                : Core::JSON::Container()
+                , Total(0)
+                , Kernel(0)
+            {
+                Add(_T("total"), &Total);
+                Add(_T("kernel"), &Kernel);
+
+            }
+            
+            ~MemoryInfo() = default;
+
+            Core::JSON::DecUInt64 Total;
+            Core::JSON::DecUInt64 Kernel;
+        };
+
     public:
 
         LCXContainer(const LCXContainer&) = delete;
@@ -99,6 +143,7 @@ public:
             : _name(name)
             , _pid(0)
             , _lxcpath(lxcpath)
+            , _logpath(logpath)
             , _referenceCount(1)
             , _lxccontainer(lxccontainer)
 #ifdef __DEBUG__
@@ -147,6 +192,13 @@ public:
             return _pid;
         }
 
+        string Memory() const override;
+        string Cpu() const override;
+        string Configuration() const override;
+        string Log() const override;
+        void Networks(std::vector<std::string>& networks) const override;
+        void IPs(std::vector<Core::NodeId>& ips) const override;
+        State ContainerState() const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
@@ -175,6 +227,8 @@ public:
             const string _name;
             pid_t _pid;
             string _lxcpath;
+            string _logpath;
+            mutable Core::CriticalSection _adminLock;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
 #ifdef __DEBUG__
@@ -195,10 +249,12 @@ public:
                                                                       const string& configuration) override;
 
     void Logging(const string& logpath, const string& logid, const string& logging) override;
+    ContainerIterator Containers() override;
 
 
 private:
     mutable Core::CriticalSection _lock;
+    std::list<IContainer*> _containers;
 };
 
 ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrator::Container(const string& name, 
@@ -219,6 +275,8 @@ ProcessContainers::IContainerAdministrator::IContainer* LXCContainerAdministrato
             LxcContainerType *c = clist[index];
             if( name == c->name ) {
                 container = new LXCContainerAdministrator::LCXContainer(name, c, logpath, configuration, searchpaths.Current());
+
+                _containers.push_back(container);
             }
             else {
                 lxc_container_put(c);
@@ -252,7 +310,7 @@ void LXCContainerAdministrator::Logging(const string& logpath, const string& log
                                        || ( std::toupper(logstring[2]) != _T('N') ) 
                                        || ( std::toupper(logstring[3]) != _T('E') ) 
         ) {
-        string filename(logpath + "/lxclogging.log");
+        string filename(logpath + logFileName);
 
         lxc_log log;
         log.name = logid.c_str();
@@ -263,6 +321,11 @@ void LXCContainerAdministrator::Logging(const string& logpath, const string& log
         log.quiet = false;
         lxc_log_init(&log);
     }
+}
+
+LXCContainerAdministrator::ContainerIterator LXCContainerAdministrator::Containers()
+{
+    return ContainerIterator(_containers);
 }
 
 ProcessContainers::IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
@@ -332,10 +395,208 @@ bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/
     return result;
 }
 
+string LXCContainerAdministrator::LCXContainer::Memory() const  
+{
+    ASSERT(_lxccontainer != nullptr);
+
+    char buffer[256];
+    uint32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
+
+    MemoryInfo memory;
+
+    if (read != 0 && read < 256) {
+        memory.Total = strtoll(buffer, nullptr, 10);
+    } else {
+        TRACE(Trace::Warning, ("Could not read memory usage of LXC container"));
+    } 
+
+    read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.kmem.tcp.usage_in_bytes", buffer, sizeof(buffer));
+    if (read != 0 && read < 256) {
+        memory.Kernel = strtoll(buffer, nullptr, 10);
+    } else {
+        TRACE(Trace::Warning, ("Could not read kernel memory usage of LXC container"));
+    }
+
+    string result;
+    memory.ToString(result);
+
+    return result;
+}
+
+string LXCContainerAdministrator::LCXContainer::Cpu() const
+{
+    ASSERT(_lxccontainer != nullptr);
+
+    char buffer[512];
+    uint32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage", buffer, sizeof(buffer));
+
+    CpuInfo cpu;
+
+    if (read != 0 && read < sizeof(buffer)) {
+        cpu.Total = strtoll(buffer, nullptr, 10);
+    } else {
+        TRACE(Trace::Warning, ("Could not read total cpu usage of LXC container"));
+    } 
+
+    read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
+
+    if (read != 0 && read < sizeof(buffer)) {
+        char* pos = buffer;
+        char* end;
+        while(true) {
+            uint64_t value = strtoull(pos, &end, 10);
+
+            if (pos == end)
+                break;
+
+            Core::JSON::DecUInt64 jsonValue;
+            jsonValue = strtoll(pos, &pos, 10);
+            cpu.PerCPU.Add(jsonValue);
+            pos = end;
+        }
+    } else {
+        TRACE(Trace::Warning, ("Could not per thread cpu-usage of LXC container"));
+    }
+
+    string result;
+    cpu.ToString(result);
+
+    return result;
+}
+
+string LXCContainerAdministrator::LCXContainer::Configuration() const 
+{
+    Core::File configFile(_lxcpath + Id() + "/" + LXCContainerAdministrator::configFileName);
+
+    char* buffer;
+    string result;
+
+    _adminLock.Lock();
+
+    if (configFile.Open(true) == true) {
+        const uint64_t length = std::min<uint64_t>(configFile.Size(), maxReadSize);
+        buffer = new char[length+1];
+
+        uint32_t numRead = configFile.Read(reinterpret_cast<uint8_t*>(buffer), length);
+
+        if (numRead > 0) {
+            buffer[numRead] = '\0'; // Make sure that the string is null terminated
+            result = buffer;
+        }
+
+        configFile.Close();
+    } else {
+        TRACE(Trace::Warning, ("Failed to open configuration file for container %s", Id().c_str()));
+    }
+
+    _adminLock.Unlock();
+
+    return result;
+}
+
+string LXCContainerAdministrator::LCXContainer::Log() const 
+{
+    Core::File logFile(_logpath + LXCContainerAdministrator::logFileName);
+
+    char* buffer;
+    string result;
+
+    _adminLock.Lock();
+    
+    if (logFile.Open(true)) {
+        const uint64_t offset = std::max<uint64_t>(logFile.Size() - maxReadSize, 0);
+        const uint64_t length = logFile.Size() - offset;
+        buffer = new char[length+1];
+
+        logFile.Position(false, offset); // If we can't read everthing, latest log is most important
+        uint32_t numRead = logFile.Read(reinterpret_cast<uint8_t*>(buffer), length);
+
+        if (numRead > 0) {
+            buffer[numRead] = '\0'; // Make sure that the string is null terminated
+            result = buffer;
+        }
+
+        logFile.Close();
+    }
+
+    _adminLock.Unlock();
+
+    return result;
+}
+
+void LXCContainerAdministrator::LCXContainer::Networks(std::vector<std::string>& networks) const
+{
+    char buf[256];
+
+    ASSERT(_lxccontainer != nullptr);
+
+    for(int netnr = 0; ;netnr++) {
+        sprintf(buf, "lxc.net.%d.type", netnr);
+
+        char* type = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+        if (!type)
+            break;
+
+        if (strcmp(type, "veth") == 0) {
+            sprintf(buf, "lxc.net.%d.veth.pair", netnr);
+        } else {
+            sprintf(buf, "lxc.net.%d.link", netnr);
+        }
+        free(type);
+
+        char* ifname = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+        if (!ifname)
+            break;
+
+        networks.emplace_back(ifname);
+        free(ifname);
+    }
+}
+
+void LXCContainerAdministrator::LCXContainer::IPs(std::vector<Core::NodeId>& ips) const
+{  
+    char **addresses = _lxccontainer->get_ips(_lxccontainer, NULL, NULL, 0);
+    if (addresses) {
+        for (int i = 0; addresses[i] != nullptr; i++) {
+            ips.emplace_back(addresses[i]);
+        }
+    }
+}
+
+ProcessContainers::IContainerAdministrator::IContainer::State LXCContainerAdministrator::LCXContainer::ContainerState() const
+{
+    const char* stateStr = _lxccontainer->state(_lxccontainer);
+    State state;
+
+    if (stateStr != nullptr) {
+        if (strcmp(stateStr, "STOPPED") == 0)
+            state = STOPPED;
+        else if (strcmp(stateStr, "STARTING") == 0)
+            state = STARTING;
+        else if (strcmp(stateStr, "RUNNING") == 0)
+            state = RUNNING;
+        else if (strcmp(stateStr, "ABORTING") == 0)
+            state = ABORTING;
+        else if (strcmp(stateStr, "STOPPING") == 0)
+            state = STOPPED;
+        else {
+            TRACE(Trace::Error, ("Failed to get status of %s container!", Id().c_str()));
+
+        }
+    } else {
+        TRACE(Trace::Error, ("Failed to get status of %s container!", Id().c_str()));
+    }
+
+    return state;   
+}
+
 bool LXCContainerAdministrator::LCXContainer::IsRunning() const {
     return _lxccontainer->is_running(_lxccontainer);
 }
 
+constexpr char* LXCContainerAdministrator::logFileName;
+constexpr char* LXCContainerAdministrator::configFileName;
+constexpr uint32_t LXCContainerAdministrator::maxReadSize;
 
 } //namespace WPEFramework 
 
