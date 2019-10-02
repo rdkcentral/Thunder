@@ -72,6 +72,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     // Removes all license(s) and key(s) associated with the session
     virtual OCDM_RESULT Remove() = 0;
 
+    // Provides keysystem-specific metadata of the session
+    virtual void Metadata(std::string& metadata /* @out */) const = 0;
+
     // Report the current status of the Session with respect to the KeyExchange.
     virtual KeyStatus Status() const = 0;
     virtual KeyStatus Status(const uint8_t keyID[] /* @length:keyIDLength */, const uint8_t keyIDLength) const = 0;
@@ -143,6 +146,9 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     virtual bool IsTypeSupported(const std::string keySystem,
         const std::string mimeType) const = 0;
+
+    // Provides keysystem-specific metadata
+    virtual OCDM_RESULT Metadata(const std::string& keySystem, std::string& metadata /* @out */) const = 0;
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM_RESULT
