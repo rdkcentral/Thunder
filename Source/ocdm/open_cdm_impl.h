@@ -663,13 +663,13 @@ protected:
         }
     }
    // Event fired when a key message is successfully created.
-    void OnKeyMessage(const uint8_t keyId[], const uint8_t length, const std::string& URL)
+    void OnKeyMessage(const uint8_t keyMessage[], const uint16_t length, const std::string& URL)
     {
         _URL = URL;
         TRACE_L1("Received URL: [%s]", _URL.c_str());
 
         if (_callback != nullptr && _callback->process_challenge_callback != nullptr) {
-            _callback->process_challenge_callback(this, _userData, _URL.c_str(), keyId, length);
+            _callback->process_challenge_callback(this, _userData, _URL.c_str(), keyMessage, length);
         }
     }
 
