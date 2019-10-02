@@ -135,6 +135,12 @@ public:
         return (_remote->IsTypeSupported(keySystem, mimeType));
     }
 
+    virtual OCDM::OCDM_RESULT Metadata(const std::string& keySystem,
+        std::string& metadata) const override
+    {
+        return(_remote->Metadata(keySystem, metadata));
+    }
+
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM::OCDM_RESULT
     CreateSession(const string keySystem, const int32_t licenseType,
@@ -499,6 +505,11 @@ public:
             return (true);
         }
         return (false);
+    }
+    inline void Metadata(string& metadata) const
+    {
+        ASSERT(_session != _nullptr);
+        _session->Metadata(metadata);
     }
     inline const string& SessionId() const { return (_sessionId); }
     inline const string& BufferId() const
