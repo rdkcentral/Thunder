@@ -508,7 +508,7 @@ public:
     }
     inline void Metadata(string& metadata) const
     {
-        ASSERT(_session != _nullptr);
+        ASSERT(_session != nullptr);
         _session->Metadata(metadata);
     }
     inline const string& SessionId() const { return (_sessionId); }
