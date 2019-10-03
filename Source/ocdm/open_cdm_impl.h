@@ -10,16 +10,18 @@ using namespace WPEFramework;
 extern Core::CriticalSection _systemLock;
 
 struct OpenCDMSystem {
-    OpenCDMSystem(const char system[]) : _keySystem(system) {}
+    OpenCDMSystem(const char system[], const std::string& metadata) : _keySystem(system), _metadata(metadata) {}
     ~OpenCDMSystem() = default;
     OpenCDMSystem(const OpenCDMSystem&) = default;
     OpenCDMSystem(OpenCDMSystem&&) = default;
     OpenCDMSystem& operator=(OpenCDMSystem&&) = default;
     OpenCDMSystem& operator=(const OpenCDMSystem&) = default;
     const std::string& keySystem() const { return _keySystem; }
+    const std::string& Metadata() const { return _metadata; }
 
  private:
     std::string _keySystem;
+    std::string _metadata;
 };
 
 struct OpenCDMAccessor : public OCDM::IAccessorOCDM,
@@ -129,8 +131,8 @@ public:
     INTERFACE_ENTRY(OCDM::IAccessorOCDM)
     END_INTERFACE_MAP
 
-    virtual bool IsTypeSupported(const std::string keySystem,
-        const std::string mimeType) const override
+    virtual bool IsTypeSupported(const std::string& keySystem,
+        const std::string& mimeType) const override
     {
         return (_remote->IsTypeSupported(keySystem, mimeType));
     }
@@ -143,21 +145,21 @@ public:
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM::OCDM_RESULT
-    CreateSession(const string keySystem, const int32_t licenseType,
-        const std::string initDataType, const uint8_t* initData,
+    CreateSession(const string& keySystem, const int32_t licenseType,
+        const std::string& initDataType, const uint8_t* initData,
         const uint16_t initDataLength, const uint8_t* CDMData,
         const uint16_t CDMDataLength,
-        OCDM::ISession::ICallback* callback, std::string& sessionId,
+        OCDM::ISession::ICallback* callback, std::string& sessionId, std::string& metadata,
         OCDM::ISession*& session) override
     {
         return (_remote->CreateSession(
             keySystem, licenseType, initDataType, initData, initDataLength, CDMData,
-            CDMDataLength, callback, sessionId, session));
+            CDMDataLength, callback, sessionId, metadata, session));
     }
 
     // Set Server Certificate
     virtual OCDM::OCDM_RESULT
-    SetServerCertificate(const string keySystem, const uint8_t* serverCertificate,
+    SetServerCertificate(const string& keySystem, const uint8_t* serverCertificate,
         const uint16_t serverCertificateLength) override
     {
         return (_remote->SetServerCertificate(keySystem, serverCertificate,
@@ -459,6 +461,7 @@ public:
         , _errorCode(~0)
         , _sysError(OCDM::OCDM_RESULT::OCDM_SUCCESS)
         , _system(system)
+        , _metadata()
     {
         OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
         std::string bufferId;
@@ -466,7 +469,7 @@ public:
 
         accessor->CreateSession(system->keySystem(), licenseType, initDataType, pbInitData,
             cbInitData, pbCustomData, cbCustomData, &_sink,
-            _sessionId, realSession);
+            _sessionId, _metadata, realSession);
 
         if (realSession == nullptr) {
             TRACE_L1("Creating a Session failed. %d", __LINE__);
@@ -506,12 +509,8 @@ public:
         }
         return (false);
     }
-    inline void Metadata(string& metadata) const
-    {
-        ASSERT(_session != nullptr);
-        _session->Metadata(metadata);
-    }
     inline const string& SessionId() const { return (_sessionId); }
+    inline const string& Metadata() const { return _metadata; }
     inline const string& BufferId() const
     {
         static string EmptyString;
@@ -738,5 +737,6 @@ private:
     uint32_t _errorCode;
     OCDM::OCDM_RESULT _sysError;
     OpenCDMSystem* _system;
+    std::string _metadata;
 };
 

@@ -188,6 +188,14 @@ EXTERNAL OpenCDMError opencdm_deinit();
 EXTERNAL struct OpenCDMSystem* opencdm_create_system(const char keySystem[]);
 
 /**
+ * \brief Creates DRM system.
+ *
+ * \param system Output parameter that will contain pointer to instance of \ref OpenCDMSystem.
+ * \return Zero on success, non-zero on error.
+ */
+EXTERNAL OpenCDMError opencdm_create_system_extended(const char keySystem[], struct OpenCDMSystem** system);
+
+/**
  * Destructs an \ref OpenCDMAccessor instance.
  * \param system \ref OpenCDMAccessor instance to desctruct.
  * \return Zero on success, non-zero on error.
@@ -210,12 +218,10 @@ EXTERNAL OpenCDMError opencdm_is_type_supported(const char keySystem[],
 /**
  * \brief Retrieves DRM system specific metadata.
  *
- * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \return Zero on success, non-zero on error.
- * \remark The caller shall free() the received metadata buffer.
-*/
-EXTERNAL OpenCDMError opencdm_metadata(const char keySystem[], char* pMetadata[]);
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \return System Metadata, valid as long as \ref session is valid.
+ */
+EXTERNAL const char* opencdm_system_get_metadata(struct OpenCDMSystem* system);
 
 /**
  * \brief Returns string describing version of DRM system.
@@ -351,12 +357,11 @@ EXTERNAL OpenCDMError opencdm_session_update(struct OpenCDMSession* session,
 OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 
 /**
- * Retrieves DRM system specific metadata of a session.
+ * Retrieves DRM session specific metadata of a session.
  * \param session \ref OpenCDMSession instance.
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \remark The caller shall free() the received metadata buffer.
+ * \return Session Metadata, valid as long as \ref session is valid.
  */
-EXTERNAL OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* session, char* pMetadata[]);
+EXTERNAL const char* opencdm_session_metadata(const struct OpenCDMSession* session);
 
 /**
  * Gets Session ID for a session.

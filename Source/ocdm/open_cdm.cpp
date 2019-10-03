@@ -101,34 +101,16 @@ OpenCDMError opencdm_is_type_supported(const char keySystem[],
 /**
  * \brief Retrieves DRM system specific metadata.
  *
- * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \return Zero on success, non-zero on error.
- * \remark The caller shall free() the received metadata buffer.
-*/
-OpenCDMError opencdm_metadata(const char keySystem[], char* pMetadata[])
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \return System Metadata, valid as long as \ref session is valid.
+ */
+const char* opencdm_system_get_metadata(struct OpenCDMSystem* system)
 {
-    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
-    OpenCDMError result(OpenCDMError::ERROR_INVALID_ACCESSOR);
-
-    if (accessor != nullptr) {
-        string metadata;
-        if (accessor->Metadata(std::string(keySystem), metadata) == OCDM::OCDM_SUCCESS) {
-            if (pMetadata != nullptr) {
-                (*pMetadata) = nullptr;
-                if (metadata.empty() == false) {
-                    (*pMetadata) = reinterpret_cast<char *>(malloc(metadata.length() + 1));
-                    strcpy(*pMetadata, metadata.c_str());
-                }
-            }
-
-            result = OpenCDMError::ERROR_NONE;
-        } else {
-            result = OpenCDMError::ERROR_KEYSYSTEM_NOT_SUPPORTED;
-        }
+    const char* result = EmptyString;
+    if( system != nullptr ) {
+        result = system->Metadata().c_str();
     }
-
-    return (result);
+    return result;
 }
 
 /**
@@ -225,32 +207,17 @@ OpenCDMError opencdm_session_load(struct OpenCDMSession* session)
 }
 
 /**
- * \brief Retrieves DRM system specific metadata of the session.
- *
- * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \return Zero on success, non-zero on error.
- * \remark The caller shall free() the received metadata buffer.
-*/
-OpenCDMError opencdm_session_metadata(struct OpenCDMSession* session, char* pMetadata[])
+ * Retrieves DRM session specific metadata of a session.
+ * \param session \ref OpenCDMSession instance.
+ * \return Session Metadata, valid as long as \ref session is valid.
+ */
+const char* opencdm_session_metadata(const struct OpenCDMSession* session)
 {
-    OpenCDMError result(OpenCDMError::ERROR_INVALID_SESSION);
-
+    const char* result = EmptyString;
     if (session != nullptr) {
-        string metadata;
-        session->Metadata(metadata);
-        if (pMetadata != nullptr) {
-            (*pMetadata) = nullptr;
-            if (metadata.empty() == false) {
-                (*pMetadata) = reinterpret_cast<char *>(malloc(metadata.length() + 1));
-                strcpy(*pMetadata, metadata.c_str());
-            }
-        }
-
-        result = OpenCDMError::ERROR_NONE;
+        result = session->Metadata().c_str();
     }
-
-    return (result);
+    return result;
 }
 
 /**
