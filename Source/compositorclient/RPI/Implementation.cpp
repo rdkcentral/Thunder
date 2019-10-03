@@ -577,10 +577,9 @@ int Display::Process(const uint32_t data)
 
         time_t timestamp = time(nullptr);
         std::function<void(SurfaceImplementation*)> action = nullptr;
-
         if (message.type == KEYBOARD) {
             const IDisplay::IKeyboard::state state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed);
-            action = [&](SurfaceImplementation* s) { s->SendKey(message.keyData.code, state, timestamp); };
+            action = [=](SurfaceImplementation* s) { s->SendKey(message.keyData.code, state, timestamp); };
         } else if (message.type == MOUSE) {
             // Clamp movement to display size
             // TODO: Handle surfaces that are not full screen
@@ -589,14 +588,14 @@ int Display::Process(const uint32_t data)
             switch (message.mouseData.type)
             {
             case MOUSE_MOTION:
-                action = [&](SurfaceImplementation* s) { s->SendPointerPosition(_pointer_x, _pointer_y, timestamp); };
+                action = [=](SurfaceImplementation* s) { s->SendPointerPosition(_pointer_x, _pointer_y, timestamp); };
                 break;
             case MOUSE_SCROLL:
-                action = [&](SurfaceImplementation* s) { s->SendWheelMotion(message.mouseData.horizontal, message.mouseData.vertical, timestamp); };
+                action = [=](SurfaceImplementation* s) { s->SendWheelMotion(message.mouseData.horizontal, message.mouseData.vertical, timestamp); };
                 break;
             case MOUSE_RELEASED:
             case MOUSE_PRESSED:
-                action = [&](SurfaceImplementation* s) { s->SendPointerButton(message.mouseData.button, message.mouseData.type == MOUSE_RELEASED? IDisplay::IPointer::released : IDisplay::IPointer::pressed , timestamp); };
+                action = [=](SurfaceImplementation* s) { s->SendPointerButton(message.mouseData.button, message.mouseData.type == MOUSE_RELEASED? IDisplay::IPointer::released : IDisplay::IPointer::pressed , timestamp); };
                 break;
             }
         } else if (message.type == TOUCHSCREEN) {
@@ -607,7 +606,7 @@ int Display::Process(const uint32_t data)
             const IDisplay::ITouchPanel::state state = ((message.touchData.type == TOUCH_RELEASED)? ITouchPanel::released : ((message.touchData.type == TOUCH_PRESSED)? ITouchPanel::pressed : ITouchPanel::motion));
             // Reduce IPC traffic. The physical touch coordinates might be different, but when scaled to screen position, they may be same as previous.
             if ((x != _touch_x) || (y != _touch_y) || (state != _touch_state)) {
-                action = [&](SurfaceImplementation* s) { s->SendTouch(message.touchData.index, state, x, y, timestamp); };
+                action = [=](SurfaceImplementation* s) { s->SendTouch(message.touchData.index, state, x, y, timestamp); };
                 _touch_state = state;
                 _touch_x = x;
                 _touch_y = y;
