@@ -8,6 +8,8 @@ add_executable(${TEST_RUNNER_NAME}
     test_hex2strserialization.cpp
     test_enumerate.cpp
     test_ipc.cpp
+    test_iterator.cpp
+    test_jsonparser.cpp
     test_measurementtype.cpp
     test_numbertype.cpp
     test_rpc.cpp
