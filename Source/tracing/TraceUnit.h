@@ -21,45 +21,105 @@ namespace Trace {
 
     // ---- Class Definition ----
     class EXTERNAL TraceUnit {
-    private:
-        class EnabledCategory : public Core::JSON::Container {
+    public:
+        class Setting {
+        public:
+            class JSON : public Core::JSON::Container {
+            public:
+                JSON& operator=(const JSON&) = delete;
+                JSON()
+                    : Core::JSON::Container()
+                    , Module()
+                    , Category()
+                    , Enabled(false)
+                {
+                    Add(_T("module"), &Module);
+                    Add(_T("category"), &Category);
+                    Add(_T("enabled"), &Enabled);
+                }
+                JSON(const JSON& copy)
+                    : Core::JSON::Container()
+                    , Module(copy.Module)
+                    , Category(copy.Category)
+                    , Enabled(copy.Enabled)
+                {
+                    Add(_T("module"), &Module);
+                    Add(_T("category"), &Category);
+                    Add(_T("enabled"), &Enabled);
+                }
+                JSON(const Setting& rhs)
+                    : Core::JSON::Container()
+                    , Module()
+                    , Category()
+                    , Enabled()
+                {
+                    Add(_T("module"), &Module);
+                    Add(_T("category"), &Category);
+                    Add(_T("enabled"), &Enabled);
+
+                    if (rhs.HasModule()) {
+                        Module = rhs.Module();
+                    }
+                    if (rhs.HasCategory()) {
+                        Module = rhs.Category();
+                    }
+                    Enabled = rhs.Enabled();
+                }
+                virtual ~JSON()
+                {
+                }
+
+            public:
+                Core::JSON::String Module;
+                Core::JSON::String Category;
+                Core::JSON::Boolean Enabled;
+            };
+
+        public:
+            Setting(const JSON& source) 
+                : _module()
+                , _category()
+                , _enabled(source.Enabled.Value()) {
+                if (source.Module.IsSet()) {
+                    _module = source.Module.Value();
+                }
+                if (source.Category.IsSet()) {
+                    _module = source.Category.Value();
+                }
+            }
+            Setting(const Setting& copy)
+                : _module(copy._module)
+                , _category(copy._category)
+                , _enabled(copy._enabled) {
+            }
+            ~Setting() {
+            }
+
+        public:
+            const bool HasModule() const {
+                return (_module.IsSet());
+            }
+            const bool HasCategory() const {
+                return (_category.IsSet());
+            }
+            const string& Module() const {
+                return (_module);
+            }
+            const string& Category() const {
+                return (_category);
+            }
+            bool Enabled() const {
+                return (_enabled);
+            }
+
         private:
-            EnabledCategory& operator=(const EnabledCategory&) = delete;
-
-        public:
-            EnabledCategory()
-                : Core::JSON::Container()
-                , Module()
-                , Category()
-                , Enabled(false)
-            {
-                Add(_T("module"), &Module);
-                Add(_T("category"), &Category);
-                Add(_T("enabled"), &Enabled);
-            }
-            EnabledCategory(const EnabledCategory& copy)
-                : Core::JSON::Container()
-                , Module(copy.Module)
-                , Category(copy.Category)
-                , Enabled(copy.Enabled)
-            {
-                Add(_T("module"), &Module);
-                Add(_T("category"), &Category);
-                Add(_T("enabled"), &Enabled);
-            }
-            virtual ~EnabledCategory()
-            {
-            }
-
-        public:
-            Core::JSON::String Module;
-            Core::JSON::String Category;
-            Core::JSON::Boolean Enabled;
+            Core::OptionalType<string> _module;
+            Core::OptionalType<string> _category;
+            bool _enabled;
         };
 
-        typedef Core::JSON::ArrayType<EnabledCategory> EnabledCategories;
-
     public:
+        typedef std::list<Setting> Settings;
         typedef std::list<ITraceControl*> TraceControlList;
         typedef Core::IteratorType<TraceControlList, ITraceControl*> Iterator;
 
@@ -127,8 +187,8 @@ namespace Trace {
 
         // Default enabled/disabled categories: set via config.json.
         bool IsDefaultCategory(const string& module, const string& category, bool& enabled) const;
-        void GetDefaultCategoriesJson(string& jsonCategories);
-        void SetDefaultCategoriesJson(const string& jsonCategories);
+        string Defaults() const;
+        void Defaults(const string& jsonCategories);
 
         void Trace(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* const information);
 
@@ -177,7 +237,7 @@ namespace Trace {
         TraceControlList m_Categories;
         Core::CriticalSection m_Admin;
         TraceBuffer* m_OutputChannel;
-        EnabledCategories m_EnabledCategories;
+        Settings m_EnabledCategories;
         bool m_DirectOut;
     };
 }

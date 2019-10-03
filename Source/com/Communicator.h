@@ -1011,8 +1011,7 @@ namespace RPC {
                     ASSERT(message.IsValid() == true);
 
                     // Anounce the interface as completed
-                    string jsonDefaultCategories;
-                    Trace::TraceUnit::Instance().GetDefaultCategoriesJson(jsonDefaultCategories);
+                    string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(channel, message->Parameters());
 
                     message->Response().Set(result, _parent.ProxyStubPath(), jsonDefaultCategories);

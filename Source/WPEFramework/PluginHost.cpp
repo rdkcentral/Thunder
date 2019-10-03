@@ -335,7 +335,20 @@ namespace PluginHost {
         // Define the environment variable for Tracing files, if it is not already set.
         Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
 
-        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
+        if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
+        
+            Core::File input (serviceConfig.DefaultTraceCategories.Value().c_str());
+            if (input.Open(true)) {
+                string result;
+                Core::JSON::ArrayType<Trace::TraceUnit::Setting::JSON> settings;
+                settings.FromFile(input);
+                settings.ToString(result);
+                Trace::TraceUnit::Instance().Defaults(result);
+            }
+        }
+        else {
+            Trace::TraceUnit::Instance().Defaults(serviceConfig.DefaultTraceCategories.Value());
+        }
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));

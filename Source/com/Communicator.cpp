@@ -480,7 +480,7 @@ namespace RPC {
             string jsonDefaultCategories(announceMessage->Response().TraceCategories());
 
             if (jsonDefaultCategories.empty() == false) {
-                Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
+                Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());

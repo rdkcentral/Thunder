@@ -268,14 +268,33 @@ namespace Trace {
         return (modifications);
     }
 
-    void TraceUnit::GetDefaultCategoriesJson(string& jsonCategories)
+    string TraceUnit::Defaults() const
     {
-        m_EnabledCategories.ToString(jsonCategories);
+        string result;
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        Settings::const_iterator index = m_EnabledCategories.begin();
+        
+        while (index != m_EnabledCategories.end()) {
+            serialized.Add(Setting::JSON(*index));
+            index++;
+        }
+
+        serialized.ToString(result);
+        return (result);
     }
 
-    void TraceUnit::SetDefaultCategoriesJson(const string& jsonCategories)
+    void TraceUnit::Defaults(const string& jsonCategories)
     {
-        m_EnabledCategories.FromString(jsonCategories);
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        serialized.FromString(jsonCategories);
+        Core::JSON::ArrayType<Setting::JSON>::Iterator index = serialized.Elements();
+
+        ASSERT (m_EnabledCategories.size() == 0);
+        m_EnabledCategories.clear();
+
+        while (index.Next()) {
+            m_EnabledCategories.emplace_back(Setting(index.Current()));
+        }
 
         // Deal with existing categories that might need to be enable/disabled.
         UpdateEnabledCategories();
@@ -284,19 +303,20 @@ namespace Trace {
     void TraceUnit::UpdateEnabledCategories()
     {
         for (ITraceControl* traceControl : m_Categories) {
-            // TODO: should be ConstIterator
-            EnabledCategories::Iterator i = m_EnabledCategories.Elements();
-            while (i.Next()) {
-                EnabledCategory& category = i.Current();
+            Settings::const_iterator index = m_EnabledCategories.begin();
+            while (index != m_EnabledCategories.end()) {
+                const Setting& setting = *index;
 
-                if ((!category.Module.Value().empty()) && (category.Module != traceControl->Module()))
+                if ((setting.HasModule() == true) && (setting.Module() != traceControl->Module()))
                     continue;
 
-                if ((!category.Category.Value().empty()) && (category.Category != traceControl->Category()))
+                if ((setting.HasCategory() == true) && (setting.Category() != traceControl->Category()))
                     continue;
 
-                if (category.Enabled != traceControl->Enabled())
-                    traceControl->Enabled(category.Enabled);
+                if (setting.Enabled() != traceControl->Enabled())
+                    traceControl->Enabled(setting.Enabled());
+
+                index++;
             }
         }
     }
@@ -305,19 +325,19 @@ namespace Trace {
     {
         bool isDefaultCategory = false;
 
-        EnabledCategories::ConstIterator i = m_EnabledCategories.Elements();
-        while (i.Next()) {
-            const EnabledCategory& enabledCategory = i.Current();
+        Settings::const_iterator index = m_EnabledCategories.begin();
+        while (index != m_EnabledCategories.end()) {
+            const Setting& setting = *index;
 
-            if ((!enabledCategory.Module.Value().empty()) && (enabledCategory.Module.Value() != module))
+            if ((setting.HasModule() == true) && (module.empty() == false) && (setting.Module() != module))
                 continue;
 
-            if ((!enabledCategory.Category.Value().empty()) && (enabledCategory.Category.Value() != category))
+            if ((setting.HasCategory() == true) && (category.empty() == false) && (setting.Category() != category))
                 continue;
 
             // Register match of category and update enabled flag.
             isDefaultCategory = true;
-            enabled = enabledCategory.Enabled.Value();
+            enabled = setting.Enabled();
         }
 
         return isDefaultCategory;
