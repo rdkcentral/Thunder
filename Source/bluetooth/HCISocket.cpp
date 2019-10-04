@@ -633,16 +633,25 @@ uint32_t ManagementSocket::Connection(const Address::type type, const Address& a
 
 uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16])
 {
+    uint32_t result = Core::ERROR_NONE;
     Management::Privacy message(_deviceId);
 
-    message->privacy = mode;
-    ::memcpy (message->irk, identity, sizeof(message->irk));
+    if ((mode > 2) || ((mode == 2 /* limited privacy */) && (identity == nullptr))) {
+        TRACE_L1("Invalid privacy settings");
+        result = Core::ERROR_INVALID_SIGNATURE;
+    } else {
+        message->privacy = mode;
+        if (identity != nullptr) {
+            ::memcpy(message->irk, identity, sizeof(message->irk));
+        } else {
+            ::memset(message->irk, 0, sizeof(message->irk));
+        }
 
-    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+        result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    }
 
     return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
 }
-
 
 uint32_t ManagementSocket::Bondable(const bool enabled)
 {
