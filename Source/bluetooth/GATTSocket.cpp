@@ -282,17 +282,39 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
     return (result);
 }
 
-bool GATTSocket::Security(const uint8_t level, const uint8_t keySize)
+bool GATTSocket::Security(const uint8_t level)
 {
     bool result = true;
-    struct bt_security btSecurity;
-    memset(&btSecurity, 0, sizeof(btSecurity));
-    btSecurity.level = level;
-    btSecurity.key_size = keySize;
-    if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity))) {
-        TRACE_L1("Failed to set L2CAP Security level for Device [%s], error: %d", RemoteId().c_str(), errno);
+
+    int lm = 0;
+    switch (level) {
+    case BT_SECURITY_SDP:
+        break;
+    case BT_SECURITY_LOW:
+        lm = L2CAP_LM_AUTH;
+        break;
+    case BT_SECURITY_MEDIUM:
+        lm = L2CAP_LM_AUTH | L2CAP_LM_ENCRYPT;
+        break;
+    case BT_SECURITY_HIGH:
+        lm = L2CAP_LM_AUTH | L2CAP_LM_ENCRYPT | L2CAP_LM_SECURE;
+        break;
+    default:
+        TRACE_L1("Invalid security level");
         result = false;
     }
+
+    if (result == true) {
+        struct bt_security btSecurity = { .level = level, 0 };
+        if (::setsockopt(Handle(), SOL_BLUETOOTH, BT_SECURITY, &btSecurity, sizeof(btSecurity))) {
+            TRACE_L1("Failed to set Bluetooth Security level for device [%s], error: %d", RemoteId().c_str(), errno);
+            result = false;
+        } else if (::setsockopt(Handle(), SOL_L2CAP, L2CAP_LM, &lm, sizeof(lm)) < 0) {
+            TRACE_L1("Error setting L2CAP Security for device [%s], error: %d", RemoteId().c_str(), errno);
+            result = false;
+        }
+    }
+
     return (result);
 }
 

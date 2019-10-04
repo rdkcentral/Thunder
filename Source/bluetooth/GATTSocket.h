@@ -861,7 +861,7 @@ namespace Bluetooth {
         inline uint16_t MTU() const {
             return (_sink.MTU());
         }
-        bool Security(const uint8_t level, const uint8_t keySize);
+        bool Security(const uint8_t level);
 
         void Execute(const uint32_t waitTime, Command& cmd, const Handler& handler)
         {
