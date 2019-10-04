@@ -25,6 +25,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_filesystem.cpp
    test_textreader.cpp
    test_tristate.cpp
+   test_rectangle.cpp
 #  test_sharedbuffer.cpp
 )
 
