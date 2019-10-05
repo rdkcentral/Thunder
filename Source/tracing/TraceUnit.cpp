@@ -307,14 +307,11 @@ namespace Trace {
             while (index != m_EnabledCategories.end()) {
                 const Setting& setting = *index;
 
-                if ((setting.HasModule() == true) && (setting.Module() != traceControl->Module()))
-                    continue;
-
-                if ((setting.HasCategory() == true) && (setting.Category() != traceControl->Category()))
-                    continue;
-
-                if (setting.Enabled() != traceControl->Enabled())
+                if ( ((setting.HasModule()   == false) || (setting.Module()   == traceControl->Module())   ) && 
+                     ((setting.HasCategory() == false) || (setting.Category() == traceControl->Category()) ) &&
+                     (setting.Enabled() != traceControl->Enabled()) ) {
                     traceControl->Enabled(setting.Enabled());
+                }
 
                 index++;
             }
@@ -329,15 +326,13 @@ namespace Trace {
         while (index != m_EnabledCategories.end()) {
             const Setting& setting = *index;
 
-            if ((setting.HasModule() == true) && (module.empty() == false) && (setting.Module() != module))
-                continue;
-
-            if ((setting.HasCategory() == true) && (category.empty() == false) && (setting.Category() != category))
-                continue;
-
-            // Register match of category and update enabled flag.
-            isDefaultCategory = true;
-            enabled = setting.Enabled();
+            if ( ((module.empty() == true)   || (setting.HasModule()   == false) || (setting.Module()   == module)   ) && 
+                 ((category.empty() == true) || (setting.HasCategory() == false) || (setting.Category() == category) ) ) {
+                // Register match of category and update enabled flag.
+                isDefaultCategory = true;
+                enabled = setting.Enabled();
+            }
+            index++;
         }
 
         return isDefaultCategory;
