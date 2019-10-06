@@ -349,7 +349,7 @@ namespace PluginHost {
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
-            traceSettings = pluginPath + serviceConfig.DefaultTraceCategories.Value();
+            traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + serviceConfig.DefaultTraceCategories.Value();
 
             Core::File input (traceSettings, true);
 
@@ -391,7 +391,6 @@ namespace PluginHost {
 
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
-
 
 #ifndef __WIN32__
         if (_background == true) {

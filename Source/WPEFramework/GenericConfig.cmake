@@ -122,13 +122,15 @@ if(NOT VIRTUALINPUT)
     map_append(${CONFIG} input ${PLUGIN_INPUT_DEVICE})
 endif(NOT VIRTUALINPUT)
 
-
+if(TRACE_SETTINGS)
+map_set(${CONFIG} tracing ${TRACE_SETTINGS})
+else(TRACE_SETTINGS)
 map_append(${CONFIG} tracing ___array___)
 map_append(${CONFIG} tracing ${PLUGIN_STARTUP_TRACING})
 map_append(${CONFIG} tracing ${PLUGIN_SHUTDOWN_TRACING})
 map_append(${CONFIG} tracing ${PLUGIN_NOTIFICATION_TRACING})
 map_append(${CONFIG} tracing ${PLUGIN_FATAL_TRACING})
-
+endif(TRACE_SETTINGS)
 
 map_append(${PLUGIN_CONTROLLER} configuration ${PLUGIN_CONTROLLER_CONFIGURATION})
 
