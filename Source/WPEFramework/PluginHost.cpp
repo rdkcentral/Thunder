@@ -330,20 +330,31 @@ namespace PluginHost {
 #ifndef __WIN32__
         ::umask(serviceConfig.Process.Umask.Value());
 #endif
+        // Time to start loading the config of the plugins.
+        string pluginPath(serviceConfig.Configs.Value());
 
+        if (pluginPath.empty() == true) {
+            pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
+            pluginPath += Server::PluginConfigDirectory;
+        }
+        else {
+            pluginPath = Core::Directory::Normalize(pluginPath);
+        }
+
+        string traceSettings (options.configFile);
+ 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
         Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
-        
-            Core::File input (serviceConfig.DefaultTraceCategories.Value().c_str());
+
+            traceSettings = pluginPath + serviceConfig.DefaultTraceCategories.Value();
+
+            Core::File input (traceSettings, true);
+
             if (input.Open(true)) {
-                string result;
-                Core::JSON::ArrayType<Trace::TraceUnit::Setting::JSON> settings;
-                settings.FromFile(input);
-                settings.ToString(result);
-                Trace::TraceUnit::Instance().Defaults(result);
+                Trace::TraceUnit::Instance().Defaults(input);
             }
         }
         else {
@@ -357,6 +368,7 @@ namespace PluginHost {
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
+        SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
 #ifndef __WIN32__
         // We need at least the loopback interface before we continue...
@@ -367,14 +379,6 @@ namespace PluginHost {
         if (serviceConfig.IPV6.Value() == false) {
             SYSLOG(Logging::Startup, (_T("Forcing the network to IPv4 only.")));
             Core::NodeId::ClearIPV6Enabled();
-        }
-
-        // TIme to start loading the config of the plugins.
-        string pluginPath(serviceConfig.Configs.Value());
-
-        if (pluginPath.empty() == true) {
-            pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
-            pluginPath += Server::PluginConfigDirectory;
         }
 
         // Load plugin configs from a directory.

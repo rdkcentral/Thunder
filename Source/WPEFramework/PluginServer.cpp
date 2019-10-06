@@ -48,7 +48,7 @@ namespace PluginHost
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
-    /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins");
+    /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");

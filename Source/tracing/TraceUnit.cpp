@@ -46,6 +46,7 @@ namespace Trace {
         }
     }
 
+
     ///
     /// \brief Format message
     /// \param dst String to store formatted message
@@ -287,7 +288,22 @@ namespace Trace {
     {
         Core::JSON::ArrayType<Setting::JSON> serialized;
         serialized.FromString(jsonCategories);
-        Core::JSON::ArrayType<Setting::JSON>::Iterator index = serialized.Elements();
+
+        // Deal with existing categories that might need to be enable/disabled.
+        UpdateEnabledCategories(serialized);
+    }
+
+    void TraceUnit::Defaults(Core::File& file) {
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        serialized.FromFile(file);
+
+        // Deal with existing categories that might need to be enable/disabled.
+        UpdateEnabledCategories(serialized);
+    }
+
+    void TraceUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
+    {
+        Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
         ASSERT (m_EnabledCategories.size() == 0);
         m_EnabledCategories.clear();
@@ -296,21 +312,16 @@ namespace Trace {
             m_EnabledCategories.emplace_back(Setting(index.Current()));
         }
 
-        // Deal with existing categories that might need to be enable/disabled.
-        UpdateEnabledCategories();
-    }
-
-    void TraceUnit::UpdateEnabledCategories()
-    {
         for (ITraceControl* traceControl : m_Categories) {
             Settings::const_iterator index = m_EnabledCategories.begin();
             while (index != m_EnabledCategories.end()) {
                 const Setting& setting = *index;
 
                 if ( ((setting.HasModule()   == false) || (setting.Module()   == traceControl->Module())   ) && 
-                     ((setting.HasCategory() == false) || (setting.Category() == traceControl->Category()) ) &&
-                     (setting.Enabled() != traceControl->Enabled()) ) {
-                    traceControl->Enabled(setting.Enabled());
+                     ((setting.HasCategory() == false) || (setting.Category() == traceControl->Category()) ) ) {
+                    if (setting.Enabled() != traceControl->Enabled()) {
+                        traceControl->Enabled(setting.Enabled());
+                    }
                 }
 
                 index++;

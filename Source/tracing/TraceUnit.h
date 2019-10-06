@@ -61,7 +61,7 @@ namespace Trace {
                         Module = rhs.Module();
                     }
                     if (rhs.HasCategory()) {
-                        Module = rhs.Category();
+                        Category = rhs.Category();
                     }
                     Enabled = rhs.Enabled();
                 }
@@ -84,7 +84,7 @@ namespace Trace {
                     _module = source.Module.Value();
                 }
                 if (source.Category.IsSet()) {
-                    _module = source.Category.Value();
+                    _category = source.Category.Value();
                 }
             }
             Setting(const Setting& copy)
@@ -189,6 +189,7 @@ namespace Trace {
         bool IsDefaultCategory(const string& module, const string& category, bool& enabled) const;
         string Defaults() const;
         void Defaults(const string& jsonCategories);
+        void Defaults(Core::File& file);
 
         void Trace(const char fileName[], const uint32_t lineNumber, const char className[], const ITrace* const information);
 
@@ -232,7 +233,7 @@ namespace Trace {
 
             return (m_OutputChannel->IsValid() ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
         }
-        void UpdateEnabledCategories();
+        void UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info);
 
         TraceControlList m_Categories;
         Core::CriticalSection m_Admin;
