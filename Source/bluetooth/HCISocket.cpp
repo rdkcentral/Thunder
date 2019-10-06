@@ -209,10 +209,7 @@ void HCISocket::Abort()
 	hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
 
 	if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
-		printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
-        }
-        else {
-            printf("FILTER SET !!!!\n");
+            printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
         }
     }
 }
@@ -353,8 +350,8 @@ private:
             ::memcpy(stream, &(_buffer[_offset]), result);
             _offset += result;
 
-            printf ("SEND: ");
-            for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+            // printf ("SEND: ");
+            // for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
         }
         return (result);
     }
@@ -363,8 +360,8 @@ private:
         uint16_t result = 0;
         if (length >= sizeof(mgmt_hdr)) {
 
-            printf ("RECEIVED: ");
-            for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+            // printf ("RECEIVED: ");
+            // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
             const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(stream);
             uint16_t opCode = htobs(hdr->opcode);

@@ -913,7 +913,6 @@ namespace Bluetooth {
         uint32_t LowEnergy(bool enabled);
         uint32_t SecureLink(bool enabled);
         uint32_t SecureConnection(bool enabled);
-        uint32_t Connection(const Address::type type, const Address& address, const mode value);
         uint32_t Block(const Address::type type, const Address& address);
         uint32_t Unblock(const Address::type type, const Address& address);
         uint32_t Privacy(const uint8_t mode, const uint8_t identity[16]);
@@ -922,6 +921,7 @@ namespace Bluetooth {
         uint32_t IdentityKey(const IdentityKeys& keys);
         uint32_t Name(const string& shortName, const string longName);
 
+        uint32_t Connection(const Address::type type, const Address& address, const mode value);
         uint32_t Discovering(const bool on, const bool regular, const bool LowEnergy);
         uint32_t Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT);
         uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);

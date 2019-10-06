@@ -52,23 +52,16 @@ namespace Exchange {
                 NO_INPUT_NO_OUTPUT = 0x03,
                 KEYBOARD_DISPLAY = 0x04,
             };
-            enum mode : uint8_t {
-                OPERATIONAL = 0x00,
-                WHITELIST = 0x01,
-                AUTOCONNECT = 0x02
-            };
 
             virtual ~IDevice() {}
 
             virtual type Type () const = 0;
+            virtual bool IsValid() const = 0;
+            virtual bool IsPaired() const = 0;
+            virtual bool IsConnected() const = 0;
             virtual string LocalId() const = 0;
             virtual string RemoteId() const = 0;
             virtual string Name() const = 0;
-            virtual bool HasDisappeared() const = 0;
-            virtual bool IsDiscovered() const = 0;
-            virtual bool IsPaired() const = 0;
-            virtual bool IsConnected() const = 0;
-            virtual void Discovered(const mode) = 0;
             virtual uint32_t Pair(const capabilities) = 0;
             virtual uint32_t Unpair() = 0;
             virtual uint32_t Connect() = 0;

@@ -212,10 +212,12 @@ namespace Bluetooth {
     };
 
     class GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    public:
+        static constexpr uint8_t LE_ATT_CID = 4;
+
     private:
         GATTSocket(const GATTSocket&) = delete;
         GATTSocket& operator=(const GATTSocket&) = delete;
-
 
         static constexpr uint8_t ATT_OP_ERROR = 0x01;
         static constexpr uint8_t ATT_OP_MTU_REQ = 0x02;
@@ -236,6 +238,8 @@ namespace Bluetooth {
         static constexpr uint8_t ATT_OP_READ_BY_GROUP_RESP = 0x11;
         static constexpr uint8_t ATT_OP_WRITE_REQ = 0x12;
         static constexpr uint8_t ATT_OP_WRITE_RESP = 0x13;
+        static constexpr uint8_t ATT_OP_HANDLE_NOTIFY = 0x1B;
+
 
         static constexpr uint8_t ATT_ECODE_INVALID_HANDLE = 0x01;
         static constexpr uint8_t ATT_ECODE_READ_NOT_PERM = 0x02;
@@ -696,7 +700,6 @@ namespace Bluetooth {
                 uint8_t _type;
             };
 
-
         public:
             Command()
                 : _error(~0)
@@ -858,11 +861,11 @@ namespace Bluetooth {
         }
 
     public:
+        bool Security(const uint8_t level);
+
         inline uint16_t MTU() const {
             return (_sink.MTU());
         }
-        bool Security(const uint8_t level);
-
         void Execute(const uint32_t waitTime, Command& cmd, const Handler& handler)
         {
             cmd.MTU(_sink.MTU());
@@ -879,8 +882,30 @@ namespace Bluetooth {
         }
 
     private:
+        virtual void Notification(const uint8_t[], const uint16_t) = 0;
         virtual void Operational() = 0;
-        virtual void StateChange() override;
+
+        void StateChange() override;
+
+        uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t availableData) override {
+            uint32_t result = 0;
+
+            if (availableData >= 2) {
+
+                if (dataFrame[0] == ATT_OP_HANDLE_NOTIFY) {
+                    Notification(&(dataFrame[1]), availableData);
+                    result = availableData;
+                }
+                else {
+                    printf ("**** Unexpected data, TYPE [%02X] !!!!\n", dataFrame[0]);
+                }
+            }
+            else {
+                TRACE_L1("**** Unexpected data for deserialization [%d] !!!!", availableData);
+            }
+
+            return (result);
+        }
         void Completed(const Core::IOutbound& data, const uint32_t error_code) 
         {
             if ( (&data == &_sink) && (_sink.HasMTU() == true) ) {
