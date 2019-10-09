@@ -73,7 +73,7 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     virtual OCDM_RESULT Remove() = 0;
 
     // Provides keysystem-specific metadata of the session
-    virtual void Metadata(std::string& metadata /* @out */) const = 0;
+    virtual std::string Metadata() const = 0;
 
     // Report the current status of the Session with respect to the KeyExchange.
     virtual KeyStatus Status() const = 0;
@@ -144,16 +144,16 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     virtual ~IAccessorOCDM() {}
 
-    virtual bool IsTypeSupported(const std::string keySystem,
-        const std::string mimeType) const = 0;
+    virtual bool IsTypeSupported(const std::string& keySystem,
+        const std::string& mimeType) const = 0;
 
     // Provides keysystem-specific metadata
     virtual OCDM_RESULT Metadata(const std::string& keySystem, std::string& metadata /* @out */) const = 0;
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual OCDM_RESULT
-    CreateSession(const string keySystem, const int32_t licenseType,
-        const std::string initDataType, const uint8_t* initData /* @length:initDataLength */,
+    CreateSession(const string& keySystem, const int32_t licenseType,
+        const std::string& initDataType, const uint8_t* initData /* @length:initDataLength */,
         const uint16_t initDataLength, const uint8_t* CDMData /* @length:CDMDataLength */,
         const uint16_t CDMDataLength, ISession::ICallback* callback,
         std::string& sessionId /* @out */, ISession*& session /* @out */)
@@ -161,7 +161,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
 
     // Set Server Certificate
     virtual OCDM_RESULT
-    SetServerCertificate(const string keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
+    SetServerCertificate(const string& keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
 };

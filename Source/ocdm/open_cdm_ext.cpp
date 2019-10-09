@@ -9,9 +9,24 @@
         abort();                                                      \
     }
 
-struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
+DEPRECATED struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
-    return new OpenCDMSystem(keySystem);
+    struct OpenCDMSystem* result = nullptr;
+    opencdm_create_system_extended(keySystem, &result);
+    return result;
+}
+
+OpenCDMError opencdm_create_system_extended(const char keySystem[], struct OpenCDMSystem** system)
+{
+    ASSERT(system != nullptr);
+    *system = nullptr;
+    std::string metadata;
+    OpenCDMError result = static_cast<OpenCDMError>(OpenCDMAccessor::Instance()->Metadata(std::string(keySystem), metadata));
+    if( result == OpenCDMError::ERROR_NONE ) {
+        *system = new OpenCDMSystem(keySystem, metadata);
+    }
+
+    return result;
 }
 
 OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,

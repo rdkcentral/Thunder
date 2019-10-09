@@ -237,7 +237,7 @@ public:
     virtual ~IMediaKeySession(void) {}
 
     // Retrieves keysystem-specific metadata of the session
-    virtual void Metadata(std::string& metadata) const { }
+    virtual std::string GetMetadata() const { return std::string(); }
 
     // Kicks off the process of acquiring a key. A MediaKeySession callback is supplied
     // to receive notifications during the process.
@@ -320,7 +320,7 @@ public:
     virtual ~IMediaKeys(void) {}
 
     // Retrieves keysystem-specific metadata
-    virtual void Metadata(std::string& metadata) const { }
+    virtual std::string GetMetadata() const { return std::string(); }
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
