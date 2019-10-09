@@ -25,6 +25,7 @@ struct wl_keyboard;
 struct wl_pointer;
 struct wl_touch;
 struct wl_simple_shell;
+struct zxdg_shell_v6;
 struct wl_shell;
 struct wl_surface;
 struct wl_egl_window;
@@ -32,6 +33,9 @@ struct wl_keyboard_listener;
 struct wl_callback;
 struct wl_callback_listener;
 struct wl_shell_surface;
+
+struct zxdg_surface_v6;
+struct zxdg_toplevel_v6;
 
 namespace WPEFramework {
 namespace Wayland {
@@ -210,6 +214,11 @@ namespace Wayland {
             // Called by C interface methods. A bit to much overkill to actually make the private and all kind
             // of friend definitions.
             struct wl_surface* _surface;
+
+            struct zxdg_surface_v6 *_xdg_surface;
+            struct zxdg_toplevel_v6 *_xdg_toplevel;
+
+            bool _wait_for_configure;
 
         private:
             friend Display;
@@ -748,6 +757,7 @@ namespace Wayland {
         struct wl_pointer* _pointer;
         struct wl_touch* _touch;
         struct wl_shell* _shell;
+        struct zxdg_shell_v6* _xdg_shell;
 
         // KeyBoardInfo
         uint32_t _keyRate;

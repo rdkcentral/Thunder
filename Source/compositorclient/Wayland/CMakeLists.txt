@@ -1,17 +1,22 @@
+if ((NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Weston") AND
+    (NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Westeros"))
+message( FATAL_ERROR "Invalid Wayland implementation, set PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION to \"Weston\" or \"Westeros\"" )
+endif ()
+
 find_package(WaylandClient REQUIRED)
 find_package(EGL REQUIRED)
 find_package(WaylandEGL REQUIRED)
-find_package(WesterosClient REQUIRED)
+find_package(${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client REQUIRED)
 find_package(NXCLIENT)
 
-add_library(${TARGET} SHARED Westeros.cpp)
+add_library(${TARGET} SHARED ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}.cpp)
 
 target_link_libraries(${TARGET}
     PRIVATE
         WaylandEGL::WaylandEGL
         ${EGL_LIBRARIES}
         ${NAMESPACE}Core::${NAMESPACE}Core
-        WesterosClient::WesterosClient
+        ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client::${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client
         WaylandClient::WaylandClient)
 
 set_target_properties(${TARGET} PROPERTIES
