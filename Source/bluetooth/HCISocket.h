@@ -133,6 +133,8 @@ namespace Bluetooth {
     template<typename KEYTYPE>
     class KeyListType {
     public:
+        typedef KEYTYPE type;
+
         KeyListType() : _list() {
         }
         KeyListType(const KeyListType<KEYTYPE>& copy) : _list(copy._list) {
@@ -152,7 +154,7 @@ namespace Bluetooth {
         uint8_t Entries() const {
             return (_list.size());
         }
-        uint16_t Clone (const uint16_t length, uint8_t buffer[]) const {
+        uint16_t Clone(const uint16_t length, uint8_t buffer[]) const {
             uint16_t result = 0;
             typename std::list<KEYTYPE>::const_iterator index (_list.begin());
             while ( (index != _list.end()) && (result <= (length - KEYTYPE::Length())) ) {
@@ -161,6 +163,12 @@ namespace Bluetooth {
                 index++;
             }
             return (result);
+        }
+        void Clear() {
+            _list.clear();
+        }
+        std::list<KEYTYPE>& Elements() {
+            return (_list);
         }
 
     private:
@@ -226,6 +234,12 @@ namespace Bluetooth {
             _key.ediv = htobs(diversifier); // 16 bits
             _key.rand = htobll(random); // 64 bits
         }
+        LongTermKey(const uint8_t buffer[], const uint16_t length) {
+            ::memset(&_key, 0, sizeof(_key));
+            if (length >= sizeof(_key)) {
+                ::memcpy(&_key, buffer, sizeof(_key));
+            }
+        }
         LongTermKey(const LongTermKey& copy) {
             ::memcpy(&_key, &copy._key, sizeof(_key));
         }
@@ -233,8 +247,15 @@ namespace Bluetooth {
         }
 
     public:
+        bool IsValid() const {
+            return ((EncryptionSize() == sizeof(_key.val)) && (Authenticated() <= 4) && (Master() <= 1)
+                    && ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */)));
+        }
         Address Locator() const {
             return (_key.addr.bdaddr);
+        }
+        uint8_t LocatorType() const {
+            return (_key.addr.type);
         }
         uint8_t Master() const {
             return(_key.master);
