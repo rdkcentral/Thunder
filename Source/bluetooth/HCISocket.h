@@ -215,16 +215,16 @@ namespace Bluetooth {
         LongTermKey() {
                 ::memset(&_key, 0, sizeof(_key));
         }
-        LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encodingSize, const uint16_t eDivider, const uint64_t random, const uint8_t value[16]) {
+        LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encryptionSize, const uint16_t diversifier, const uint64_t random, const uint8_t value[16]) {
             ::memset(&_key, 0, sizeof(_key));
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
             _key.addr.type = type;
             _key.master = master;
             _key.type = authenticated;
-            _key.enc_size = encodingSize;
-            _key.ediv = htons(eDivider); // 16 bits
-            _key.rand = htonll(random); // 64 bits
+            _key.enc_size = encryptionSize;
+            _key.ediv = htobs(diversifier); // 16 bits
+            _key.rand = htobll(random); // 64 bits
         }
         LongTermKey(const LongTermKey& copy) {
             ::memcpy(&_key, &copy._key, sizeof(_key));
@@ -242,14 +242,14 @@ namespace Bluetooth {
         uint8_t Authenticated() const {
             return(_key.type);
         }
-        uint8_t EncodingSize() const {
+        uint8_t EncryptionSize() const {
             return(_key.enc_size);
         }
-        uint16_t Divider() const {
-            return(ntohs(_key.ediv));
+        uint16_t Diversifier() const {
+            return(btohs(_key.ediv));
         }
         uint64_t Random() const {
-            return(ntohll(_key.rand));
+            return(btohll(_key.rand));
         }
         const uint8_t* Value() const {
             return (_key.val);
@@ -645,7 +645,7 @@ namespace Bluetooth {
                     return (_cmd);
                 }
                 void Updated(const Core::IOutbound& data, const uint32_t error_code) override {
-                    ASSERT(_cmd == data);
+                    //ASSERT(_cmd == data);
                     fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                     _handler(_cmd, error_code);
                     fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
