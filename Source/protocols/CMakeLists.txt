@@ -30,6 +30,7 @@ set(SOURCES_WEBSOCKETS
         websocket/WebSocketLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
+        websocket/JSONRPCLink.h
         websocket/WebLink.h
         websocket/WebRequest.h
         websocket/WebResponse.h
@@ -59,6 +60,7 @@ set(COM_INCLUDES
 set(PROTOCOLS_INCLUDES
         URL.h
         JSONWebToken.h
+        JSONRPCLink.h
         WebLink.h
         WebRequest.h
         WebResponse.h
