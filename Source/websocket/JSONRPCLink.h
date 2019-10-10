@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Module.h"
+#include "WebSocketLink.h"
 
 namespace WPEFramework {
 
@@ -103,12 +104,12 @@ namespace JSONRPC {
                 Core::TimerType<WatchDog> _watchDog;
             };
     
-            class ChannelImpl : public Core::StreamJSONType<Web::WebSocketLinkType<Core::SocketStream>, FactoryImpl&, INTERFACE> {
+            class ChannelImpl : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&, INTERFACE> {
             private:
                 ChannelImpl(const ChannelImpl&) = delete;
                 ChannelImpl& operator=(const ChannelImpl&) = delete;
     
-                typedef Core::StreamJSONType<Web::WebSocketLinkType<Core::SocketStream>, FactoryImpl&> BaseClass;
+                typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> BaseClass;
     
             public:
                 ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign)
