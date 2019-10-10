@@ -5,7 +5,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelementfile.cpp
-   test_dataElement.cpp
+   test_dataelement.cpp
    test_doorbell.cpp
    test_event.cpp
    test_hex2strserialization.cpp
@@ -13,7 +13,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_filesystem.cpp
    test_frametype.cpp
    test_ipc.cpp
-   test_ISO639.cpp
+   test_iso639.cpp
    test_iterator.cpp
    test_jsonparser.cpp
    test_library.cpp
@@ -27,7 +27,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_rangetype.cpp
    test_rectangle.cpp
    test_rpc.cpp
-   test_semahore.cpp
+   test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
    test_socketstreamjson.cpp
@@ -44,7 +44,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_weblinktext.cpp
    test_websocketjson.cpp
    test_websockettext.cpp
-   test_XGetopt.cpp
+   test_xgetopt.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
