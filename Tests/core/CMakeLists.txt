@@ -26,6 +26,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_textreader.cpp
    test_tristate.cpp
    test_rectangle.cpp
+   test_messageException.cpp
 #  test_sharedbuffer.cpp
 )
 
