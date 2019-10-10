@@ -13,6 +13,7 @@ add_executable(${TEST_RUNNER_NAME}
     test_library.cpp
     test_measurementtype.cpp
     test_numbertype.cpp
+    test_rangetype.cpp
     test_rpc.cpp
     test_jsonparser.cpp
     test_sharedbuffer.cpp
