@@ -31,8 +31,6 @@ enum keyactiontype {
 
 typedef void (*FNKeyEvent)(enum keyactiontype type, unsigned int code);
 
-EXTERNAL void callback_keyboard(FNKeyEvent callback);
-
 // ================================================================================================================
 
 enum mouseactiontype {
@@ -44,8 +42,6 @@ enum mouseactiontype {
 
 typedef void (*FNMouseEvent)(enum mouseactiontype type, unsigned short button, short horizontal, short vertical);
 
-EXTERNAL void callback_mouse(FNMouseEvent callback);
-
 // ================================================================================================================
 
 enum touchactiontype {
@@ -55,8 +51,6 @@ enum touchactiontype {
 };
 
 typedef void (*FNTouchEvent)(enum touchactiontype type, unsigned short index,  unsigned short x, unsigned short y);
-
-EXTERNAL void callback_touch(FNTouchEvent callback);
 
 // ================================================================================================================
 

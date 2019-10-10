@@ -394,10 +394,6 @@ private:
             virtualinput_close(_virtualinput);
         }
 
-        callback_keyboard(nullptr);
-        callback_mouse(nullptr);
-        callback_touch(nullptr);
-
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
         while (index != _surfaces.end()) {
             string name = (*index)->Name();
