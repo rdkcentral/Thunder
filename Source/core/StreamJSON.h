@@ -7,7 +7,7 @@
 
 namespace WPEFramework {
 namespace Core {
-    template <typename SOURCE, typename ALLOCATOR, typename INTERFACE = Core::JSON::IElement>
+    template <typename SOURCE, typename ALLOCATOR, typename INTERFACE>// = Core::JSON::IElement>
     class StreamJSONType {
     private:
         typedef StreamJSONType<SOURCE, ALLOCATOR, INTERFACE> ParentClass;

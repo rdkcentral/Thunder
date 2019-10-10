@@ -109,7 +109,7 @@ namespace JSONRPC {
                 ChannelImpl(const ChannelImpl&) = delete;
                 ChannelImpl& operator=(const ChannelImpl&) = delete;
     
-                typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> BaseClass;
+                typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&, INTERFACE> BaseClass;
     
             public:
                 ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign)
@@ -972,7 +972,7 @@ namespace JSONRPC {
 
                     _adminLock.Unlock();
 
-                    _channel->Submit(Core::ProxyType<Core::JSON::IElement>(message));
+                    _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                     message.Release();
 
@@ -1026,7 +1026,7 @@ namespace JSONRPC {
 
                 if (newElement.second == true) {
 
-                    _channel->Submit(Core::ProxyType<Core::JSON::IElement>(message));
+                    _channel->Submit(Core::ProxyType<INTERFACE>(message));
 
                     result = Core::ERROR_NONE;
 

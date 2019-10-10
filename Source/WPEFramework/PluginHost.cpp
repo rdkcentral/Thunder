@@ -175,7 +175,7 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
-                    pluginConfig.FromFile(file);
+                    pluginConfig.IElement::FromFile(file);
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
@@ -338,7 +338,7 @@ namespace PluginHost {
         Server::Config serviceConfig;
 
         if (configFile.Open(true) == true) {
-            serviceConfig.FromFile(configFile);
+            serviceConfig.IElement::FromFile(configFile);
 
             configFile.Close();
         } else {
