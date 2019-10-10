@@ -4,16 +4,15 @@
 #include "JSON.h"
 #include "Module.h"
 #include "Portability.h"
-#include "StreamText.h"
 
 namespace WPEFramework {
 namespace Core {
-    template <typename SOURCE, typename ALLOCATOR>
+    template <typename SOURCE, typename ALLOCATOR, typename INTERFACE = Core::JSON::IElement>
     class StreamJSONType {
     private:
-        typedef StreamJSONType<SOURCE, ALLOCATOR> ParentClass;
+        typedef StreamJSONType<SOURCE, ALLOCATOR, INTERFACE> ParentClass;
 
-		class SerializerImpl {
+	class SerializerImpl {
         public:
             SerializerImpl() = delete;
             SerializerImpl(const SerializerImpl&) = delete;
@@ -35,11 +34,11 @@ namespace Core {
             {
                 return (_sendQueue.Count() == 0);
             }
-            bool Submit(const ProxyType<JSON::IElement>& entry)
+            bool Submit(const ProxyType<INTERFACE>& entry)
             {
                 _adminLock.Lock();
 
-                _sendQueue.Add(const_cast<ProxyType<JSON::IElement>&>(entry));
+                _sendQueue.Add(const_cast<ProxyType<INTERFACE>&>(entry));
 
                 bool trigger = (_sendQueue.Count() == 1);
 
@@ -47,16 +46,16 @@ namespace Core {
 
                 return (trigger);
             }
-            inline uint16_t Serialize(char* stream, const uint16_t length) const
+            inline uint16_t Serialize(uint8_t* stream, const uint16_t length) const
             {
                 uint16_t loaded = 0;
 
                 _adminLock.Lock();
 
                 if (_sendQueue.Count() > 0) {
-                    loaded = _sendQueue[0]->Serialize(stream, length, _offset);
+                    loaded = Serialize(_sendQueue[0], stream, length);
                     if ((_offset == 0) || (loaded != length)) {
-                        Core::ProxyType<JSON::IElement> current = _sendQueue[0];
+                        Core::ProxyType<INTERFACE> current = _sendQueue[0];
                         _parent.Send(current);
 
                         _sendQueue.Remove(0);
@@ -70,17 +69,24 @@ namespace Core {
             }
 
         private:
+            inline uint16_t Serialize(const Core::ProxyType<Core::JSON::IElement>& source, uint8_t* stream, const uint16_t length) const {
+                return(source->Serialize(reinterpret_cast<char*>(stream), length, _offset));
+            }
+            inline uint16_t Serialize(const Core::ProxyType<Core::JSON::IMessagePack>& source, uint8_t* stream, const uint16_t length) const {
+                return(source->Serialize(stream, length, _offset));
+            }
+            
+        private:
             ParentClass& _parent;
             mutable Core::CriticalSection _adminLock;
-            mutable Core::ProxyList<JSON::IElement> _sendQueue;
+            mutable Core::ProxyList<INTERFACE> _sendQueue;
             mutable uint16_t _offset;
         };
-        template <typename OBJECTALLOCATOR>
         class DeserializerImpl {
         public:
             DeserializerImpl() = delete;
-            DeserializerImpl(const DeserializerImpl<OBJECTALLOCATOR>&) = delete;
-            DeserializerImpl<OBJECTALLOCATOR>& operator=(const DeserializerImpl<OBJECTALLOCATOR>&) = delete;
+            DeserializerImpl(const DeserializerImpl&) = delete;
+            DeserializerImpl& operator=(const DeserializerImpl&) = delete;
 
             DeserializerImpl(ParentClass& parent, const uint8_t slotSize)
                 : _parent(parent)
@@ -89,7 +95,7 @@ namespace Core {
                 , _offset(0)
             {
             }
-            DeserializerImpl(ParentClass& parent, OBJECTALLOCATOR allocator)
+            DeserializerImpl(ParentClass& parent, ALLOCATOR allocator)
                 : _parent(parent)
                 , _factory(allocator)
                 , _current()
@@ -105,16 +111,16 @@ namespace Core {
             {
                 return (_current.IsValid() == false);
             }
-            inline uint16_t Deserialize(const char* stream, const uint16_t length)
+            inline uint16_t Deserialize(const uint8_t* stream, const uint16_t length)
             {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
-                    _current = Core::ProxyType<Core::JSON::IElement>(_factory.Element(EMPTY_STRING));
+                    _current = Core::ProxyType<INTERFACE>(_factory.Element(EMPTY_STRING));
                     _offset = 0;
-            }
+                }
                 if (_current.IsValid() == true) {
-                    loaded = _current->Deserialize(stream, length, _offset);
+                    loaded = Deserialize(_current, stream, length);
                     if ((_offset == 0) || (loaded != length)) {
                         _parent.Received(_current);
                         _current.Release();
@@ -124,28 +130,36 @@ namespace Core {
                 return (loaded);
             }
 
+
+        private:
+            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IElement>& source, const uint8_t* stream, const uint16_t length) {
+                return(source->Deserialize(reinterpret_cast<const char*>(stream), length, _offset));
+            }
+            inline uint16_t Deserialize(const Core::ProxyType<Core::JSON::IMessagePack>& source, const uint8_t* stream, const uint16_t length) {
+                return (source->Deserialize(stream, length, _offset));
+            }
+
         private:
             ParentClass& _parent;
             ALLOCATOR _factory;
-            Core::ProxyType<Core::JSON::IElement> _current;
+            Core::ProxyType<INTERFACE> _current;
             uint16_t _offset;
         };
 
-        template <typename PARENTCLASS, typename ACTUALSOURCE>
-        class HandlerType : public ACTUALSOURCE {
+        class HandlerType : public SOURCE {
         public:
             HandlerType() = delete;
-            HandlerType(const HandlerType<PARENTCLASS, ACTUALSOURCE>&) = delete;
-            HandlerType<PARENTCLASS, ACTUALSOURCE>& operator=(const HandlerType<PARENTCLASS, ACTUALSOURCE>&) = delete;
+            HandlerType(const HandlerType&) = delete;
+            HandlerType& operator=(const HandlerType&) = delete;
 
-            HandlerType(PARENTCLASS& parent)
-                : ACTUALSOURCE()
+            HandlerType(ParentClass& parent)
+                : SOURCE()
                 , _parent(parent)
             {
             }
             template <typename... Args>
-            HandlerType(PARENTCLASS& parent, Args... args)
-                : ACTUALSOURCE(args...)
+            HandlerType(ParentClass& parent, Args... args)
+                : SOURCE(args...)
                 , _parent(parent)
             {
             }
@@ -176,14 +190,12 @@ namespace Core {
             }
 
         private:
-            PARENTCLASS& _parent;
+            ParentClass& _parent;
         };
 
-        typedef StreamTextType<SOURCE, ALLOCATOR> BaseClass;
-
     public:
-        StreamJSONType(const StreamJSONType<SOURCE, ALLOCATOR>&) = delete;
-        StreamJSONType<SOURCE, ALLOCATOR>& operator=(const StreamJSONType<SOURCE, ALLOCATOR>&) = delete;
+        StreamJSONType(const StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>&) = delete;
+        StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>& operator=(const StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>&) = delete;
 
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
@@ -217,11 +229,11 @@ namespace Core {
         {
             return (_channel);
         }
-        virtual void Received(ProxyType<JSON::IElement>& element) = 0;
-        virtual void Send(ProxyType<JSON::IElement>& element) = 0;
+        virtual void Received(ProxyType<INTERFACE>& element) = 0;
+        virtual void Send(ProxyType<INTERFACE>& element) = 0;
         virtual void StateChange() = 0;
 
-        inline void Submit(const ProxyType<JSON::IElement>& element)
+        inline void Submit(const ProxyType<INTERFACE>& element)
         {
             if (_channel.IsOpen() == true) {
                 _serializer.Submit(element);
@@ -256,14 +268,14 @@ namespace Core {
         }
         uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
         {
-            return (_serializer.Serialize(reinterpret_cast<char*>(dataFrame), maxSendSize));
+            return (_serializer.Serialize(dataFrame, maxSendSize));
         }
         uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
         {
             uint16_t handled = 0;
 
             do {
-                handled += _deserializer.Deserialize(reinterpret_cast<const char*>(&dataFrame[handled]), (receivedSize - handled));
+                handled += _deserializer.Deserialize(&dataFrame[handled], (receivedSize - handled));
 
                 // The dataframe can hold more items....
             } while (handled < receivedSize);
@@ -272,9 +284,9 @@ namespace Core {
         }
 
     private:
-        HandlerType<ParentClass, SOURCE> _channel;
+        HandlerType _channel;
         SerializerImpl _serializer;
-        DeserializerImpl<ALLOCATOR> _deserializer;
+        DeserializerImpl _deserializer;
     };
 }
 } // namespace Core
