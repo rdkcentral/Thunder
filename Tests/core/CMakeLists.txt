@@ -10,6 +10,7 @@ add_executable(${TEST_RUNNER_NAME}
     test_ipc.cpp
     test_iterator.cpp
     test_jsonparser.cpp
+    test_library.cpp
     test_measurementtype.cpp
     test_numbertype.cpp
     test_rpc.cpp
