@@ -2,32 +2,49 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   test_rpc.cpp
-   test_jsonparser.cpp
-   test_hex2strserialization.cpp
-   test_sharedbuffer.cpp
-   test_time.cpp
-   test_tracing.cpp
-   test_logging.cpp
-   test_textfragment.cpp
-   test_statetrigger.cpp
-   test_queue.cpp
-   test_event.cpp
-   test_singleton.cpp
-   test_semahore.cpp
-   test_XGetopt.cpp
-   test_dataElement.cpp
-   test_portability.cpp
-   test_frametype.cpp
+   test_cyclicbuffer.cpp
+   test_databuffer.cpp
    test_dataelementfile.cpp
-   test_ISO639.cpp
-   test_optional.cpp
+   test_dataElement.cpp
+   test_doorbell.cpp
+   test_event.cpp
+   test_hex2strserialization.cpp
+   test_enumerate.cpp
    test_filesystem.cpp
-   test_textreader.cpp
-   test_tristate.cpp
-   test_rectangle.cpp
+   test_frametype.cpp
+   test_ipc.cpp
+   test_ISO639.cpp
+   test_iterator.cpp
+   test_jsonparser.cpp
+   test_library.cpp
+   test_logging.cpp
+   test_measurementtype.cpp
    test_messageException.cpp
-#  test_sharedbuffer.cpp
+   test_numbertype.cpp
+   test_optional.cpp
+   test_portability.cpp
+   test_queue.cpp
+   test_rangetype.cpp
+   test_rectangle.cpp
+   test_rpc.cpp
+   test_semahore.cpp
+   test_sharedbuffer.cpp
+   test_singleton.cpp
+   test_socketstreamjson.cpp
+   test_socketstreamtext.cpp
+   test_statetrigger.cpp
+   test_textfragment.cpp
+   test_textreader.cpp
+   test_thread.cpp
+   test_time.cpp
+   test_timer.cpp
+   test_tracing.cpp
+   test_tristate.cpp
+   test_weblinkjson.cpp
+   test_weblinktext.cpp
+   test_websocketjson.cpp
+   test_websockettext.cpp
+   test_XGetopt.cpp
 )
 
 target_link_libraries(${TEST_RUNNER_NAME} 
