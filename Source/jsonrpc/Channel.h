@@ -6,227 +6,394 @@ namespace WPEFramework {
 
 namespace JSONRPC {
 
-    class Client;
-
     using namespace Core::TypeTraits;
 
-    class EXTERNAL Channel {
+    template<typename INTERFACE>
+    class ClientType {
     private:
-        // -----------------------------------------------------------------------------------------------
-        // Create a resource allocator for all JSON objects used in these tests
-        // -----------------------------------------------------------------------------------------------
-        class EXTERNAL FactoryImpl {
-        private:
-            FactoryImpl(const FactoryImpl&) = delete;
-            FactoryImpl& operator=(const FactoryImpl&) = delete;
-
-            class EXTERNAL WatchDog {
-            private:
-                WatchDog() = delete;
-                WatchDog& operator=(const WatchDog&) = delete;
-
-            public:
-                WatchDog(Client* client)
-                    : _client(client)
-                {
-                }
-                WatchDog(const WatchDog& copy)
-                    : _client(copy._client)
-                {
-                }
-                ~WatchDog()
-                {
-                }
-
-                bool operator==(const WatchDog& rhs) const
-                {
-                    return (rhs._client == _client);
-                }
-                bool operator!=(const WatchDog& rhs) const
-                {
-                    return (!operator==(rhs));
-                }
-
-            public:
-                uint64_t Timed(const uint64_t scheduledTime);
-
-            private:
-                Client* _client;
-            };
-
-            friend Core::SingletonType<FactoryImpl>;
-
-            FactoryImpl()
-                : _jsonRPCFactory(2)
-                , _watchDog(Core::Thread::DefaultStackSize(), _T("JSONRPCCleaner"))
-            {
-            }
-
-        public:
-            static FactoryImpl& Instance();
-            ~FactoryImpl()
-            {
-            }
-
-        public:
-            Core::ProxyType<Core::JSONRPC::Message> Element(const string&)
-            {
-                return (_jsonRPCFactory.Element());
-            }
-            void Trigger(const uint64_t& time, Client* client)
-            {
-                _watchDog.Trigger(time, client);
-            }
-            void Revoke(Client* client)
-            {
-                _watchDog.Revoke(client);
-            }
-
-        private:
-            Core::ProxyPoolType<Core::JSONRPC::Message> _jsonRPCFactory;
-            Core::TimerType<WatchDog> _watchDog;
-        };
-
-        class ChannelImpl : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> {
-        private:
-            ChannelImpl(const ChannelImpl&) = delete;
-            ChannelImpl& operator=(const ChannelImpl&) = delete;
-
-            typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> BaseClass;
-
-        public:
-            ChannelImpl(Channel& parent, const Core::NodeId& remoteNode, const string& callsign)
-                : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), "", "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
-                , _parent(parent)
-            {
-            }
-            virtual ~ChannelImpl()
-            {
-            }
-
-        public:
-            virtual void Received(Core::ProxyType<Core::JSON::IElement>& jsonObject) override
-            {
-                Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
-
-                ASSERT(inbound.IsValid() == true);
-
-                if (inbound.IsValid() == true) {
-                    _parent.Inbound(inbound);
-                }
-            }
-            virtual void Send(Core::ProxyType<Core::JSON::IElement>& jsonObject) override
-            {
-#ifdef __DEBUG__
-                Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
-
-                ASSERT(inbound.IsValid() == true);
-
-                if (inbound.IsValid() == true) {
-                    string message;
-                    inbound->ToString(message);
-                    TRACE_L1("Message: %s send", message.c_str());
-                }
-#endif
-            }
-            virtual void StateChange() override
-            {
-                _parent.StateChange();
-            }
-            virtual bool IsIdle() const
-            {
-                return (true);
-            }
-
-        private:
-            Channel& _parent;
-        };
-
-    protected:
-        Channel(const Core::NodeId& remoteNode, const string& callsign)
-            : _channel(*this, remoteNode, callsign)
-            , _sequence(0)
-        {
-        }
-
-    public:
-        virtual ~Channel()
-        {
-        }
-        static Core::ProxyType<Channel> Instance(const Core::NodeId& remoteNode, const string& callsign);
-
-    public:
-        static void Trigger(const uint64_t& time, Client* client)
-        {
-            FactoryImpl::Instance().Trigger(time, client);
-        }
-        static Core::ProxyType<Core::JSONRPC::Message> Message()
-        {
-            return (FactoryImpl::Instance().Element(string()));
-        }
-        bool IsOperational() const
-        {
-            return (const_cast<Channel&>(*this).Open(0));
-        }
-        uint32_t Sequence() const
-        {
-            return (++_sequence);
-        }
-        void Register(Client& client)
-        {
-            _adminLock.Lock();
-            ASSERT(std::find(_observers.begin(), _observers.end(), &client) == _observers.end());
-            _observers.push_back(&client);
-            _adminLock.Unlock();
-        }
-        void Unregister(Client& client)
-        {
-            _adminLock.Lock();
-            std::list<Client*>::iterator index(std::find(_observers.begin(), _observers.end(), &client));
-            if (index != _observers.end()) {
-                _observers.erase(index);
-            }
-            FactoryImpl::Instance().Revoke(&client);
-            _adminLock.Unlock();
-        }
-        void Submit(const Core::ProxyType<Core::JSON::IElement>& message)
-        {
-            _channel.Submit(message);
-        }
-
-    protected:
-        void StateChange();
-        bool Open(const uint32_t waitTime)
-        {
-            bool result = true;
-            if (_channel.IsClosed() == true) {
-                result = (_channel.Open(waitTime) == Core::ERROR_NONE);
-            }
-            return (result);
-        }
-        void Close()
-        {
-            _channel.Close(Core::infinite);
-        }
-
-    private:
-        uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound);
-
-    private:
-        Core::CriticalSection _adminLock;
-        ChannelImpl _channel;
-        mutable std::atomic<uint32_t> _sequence;
-        std::list<Client*> _observers;
-    };
-
-    class EXTERNAL Client {
-    private:
-        Client() = delete;
-        Client(const Client&) = delete;
-        Client& operator=(Client&) = delete;
+        ClientType() = delete;
+        ClientType(const ClientType&) = delete;
+        ClientType& operator=(ClientType&) = delete;
 
         typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
+        class CommunicationChannel {
+        private:
+            // -----------------------------------------------------------------------------------------------
+            // Create a resource allocator for all JSON objects used in these tests
+            // -----------------------------------------------------------------------------------------------
+            class EXTERNAL FactoryImpl {
+            private:
+                FactoryImpl(const FactoryImpl&) = delete;
+                FactoryImpl& operator=(const FactoryImpl&) = delete;
+    
+                class EXTERNAL WatchDog {
+                private:
+                    WatchDog() = delete;
+                    WatchDog& operator=(const WatchDog&) = delete;
+    
+                public:
+                    WatchDog(ClientType<INTERFACE>* client)
+                        : _client(client)
+                    {
+                    }
+                    WatchDog(const WatchDog& copy)
+                        : _client(copy._client)
+                    {
+                    }
+                    ~WatchDog()
+                    {
+                    }
+    
+                    bool operator==(const WatchDog& rhs) const
+                    {
+                        return (rhs._client == _client);
+                    }
+                    bool operator!=(const WatchDog& rhs) const
+                    {
+                        return (!operator==(rhs));
+                    }
+    
+                public:
+                    uint64_t Timed(const uint64_t scheduledTime) {
+                        return (_client->Timed());
+                    }
+    
+                private:
+                    ClientType<INTERFACE>* _client;
+                };
+    
+                friend Core::SingletonType<FactoryImpl>;
+    
+                FactoryImpl()
+                    : _jsonRPCFactory(2)
+                    , _watchDog(Core::Thread::DefaultStackSize(), _T("JSONRPCCleaner"))
+                {
+                }
+    
+            public:
+                static FactoryImpl& Instance()
+                {
+                    static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
+    
+                    return (_singleton);
+                }
+    
+    
+                ~FactoryImpl()
+                {
+                }
+    
+            public:
+                Core::ProxyType<Core::JSONRPC::Message> Element(const string&)
+                {
+                    return (_jsonRPCFactory.Element());
+                }
+                void Trigger(const uint64_t& time, ClientType<INTERFACE>* client)
+                {
+                    _watchDog.Trigger(time, client);
+                }
+                void Revoke(ClientType<INTERFACE>* client)
+                {
+                    _watchDog.Revoke(client);
+                }
+    
+            private:
+                Core::ProxyPoolType<Core::JSONRPC::Message> _jsonRPCFactory;
+                Core::TimerType<WatchDog> _watchDog;
+            };
+    
+            class ChannelImpl : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&, INTERFACE> {
+            private:
+                ChannelImpl(const ChannelImpl&) = delete;
+                ChannelImpl& operator=(const ChannelImpl&) = delete;
+    
+                typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> BaseClass;
+    
+            public:
+                ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign)
+                    : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), "", "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
+                    , _parent(*parent)
+                {
+                }
+                virtual ~ChannelImpl()
+                {
+                }
+    
+            public:
+                virtual void Received(Core::ProxyType<INTERFACE>& jsonObject) override
+                {
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+    
+                    ASSERT(inbound.IsValid() == true);
+    
+                    if (inbound.IsValid() == true) {
+                        _parent.Inbound(inbound);
+                    }
+                }
+                virtual void Send(Core::ProxyType<INTERFACE>& jsonObject) override
+                {
+                    #ifdef __DEBUG__
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+    
+                    ASSERT(inbound.IsValid() == true);
+    
+                    if (inbound.IsValid() == true) {
+                        string message;
+                        inbound->ToString(message);
+                        TRACE_L1("Message: %s send", message.c_str());
+                    }
+                    #endif
+                }
+                virtual void StateChange() override
+                {
+                    _parent.StateChange();
+                }
+                virtual bool IsIdle() const
+                {
+                    return (true);
+                }
+    
+            private:
+                CommunicationChannel& _parent;
+            };
+            class ChannelProxy : public Core::ProxyObject<CommunicationChannel> {
+            private:
+                ChannelProxy(const ChannelProxy&) = delete;
+                ChannelProxy& operator=(const ChannelProxy&) = delete;
+                ChannelProxy() = delete;
+    
+                ChannelProxy(const Core::NodeId& remoteNode, const string& callsign)
+                    : Core::ProxyObject<CommunicationChannel>(remoteNode, callsign)
+                {
+                }
+    
+                class Administrator {
+                private:
+                    Administrator(const Administrator&) = delete;
+                    Administrator& operator=(const Administrator&) = delete;
+    
+                    typedef std::map<const string, CommunicationChannel *> CallsignMap;
+    
+                    static Administrator& Instance()
+                    {    
+                        static Administrator& _instance = Core::SingletonType<Administrator>::Instance();
+                        return (_instance);
+                    }
+    
+                public:
+                    Administrator()
+                        : _adminLock()
+                        , _callsignMap()
+                    {
+                    }
+                    ~Administrator()
+                    {
+                    }
+    
+                public:
+                    static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign)
+                    {
+                        return (Instance().InstanceImpl(remoteNode, callsign));
+                    }
+                    static uint32_t Release(ChannelProxy* object)
+                    {
+                        return (Instance().ReleaseImpl(object));
+                    }
+    
+                private:
+                    Core::ProxyType<CommunicationChannel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign)
+                    {
+                        Core::ProxyType<CommunicationChannel> result;
+    
+                        _adminLock.Lock();
+    
+                        string searchLine = remoteNode.HostName() + '@' + callsign;
+    
+                        typename CallsignMap::iterator index(_callsignMap.find(searchLine));
+                        if (index != _callsignMap.end()) {
+                            result = Core::ProxyType<CommunicationChannel>(*(index->second));
+                        } else {
+                            ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign);
+                            _callsignMap[searchLine] = entry;
+                            result = Core::ProxyType<CommunicationChannel>(*entry);
+                        }
+                        _adminLock.Unlock();
+    
+                        ASSERT(result.IsValid() == true);
+    
+                        if (result.IsValid() == true) {
+                            static_cast<ChannelProxy&>(*result).Open(100);
+                        }
+    
+                        return (result);
+                    }
+                    uint32_t ReleaseImpl(ChannelProxy* object)
+                    {
+                        _adminLock.Lock();
+    
+                        uint32_t result = object->ActualRelease();
+    
+                        if (result == Core::ERROR_DESTRUCTION_SUCCEEDED) {
+                            // Oke remove the entry from the MAP.
+    
+                            typename CallsignMap::iterator index(_callsignMap.begin());
+    
+                            while ((index != _callsignMap.end()) && (&(*object) == index->second)) {
+                                index++;
+                            }
+    
+                            if (index != _callsignMap.end()) {
+                                _callsignMap.erase(index);
+                            }
+                        }
+    
+                        _adminLock.Unlock();
+    
+                        return (Core::ERROR_DESTRUCTION_SUCCEEDED);
+                    }
+    
+                private:
+                    Core::CriticalSection _adminLock;
+                    CallsignMap _callsignMap;
+                };
+    
+            public:
+                ~ChannelProxy()
+                {
+                    // Guess we need to close
+                    CommunicationChannel::Close();
+                }
+    
+                static Core::ProxyType< CommunicationChannel > Instance(const Core::NodeId& remoteNode, const string& callsign)
+                {
+                    return (Administrator::Instance(remoteNode, callsign));
+                }
+    
+            public:
+                virtual uint32_t Release() const override
+                {
+                    return (Administrator::Release(const_cast<ChannelProxy*>(this)));
+                }
+    
+            private:
+                uint32_t ActualRelease() const
+                {
+                    return (Core::ProxyObject<CommunicationChannel >::Release());
+                }
+                bool Open(const uint32_t waitTime)
+                {
+                    return (CommunicationChannel::Open(waitTime));
+                }
+    
+            private:
+                Core::CriticalSection _adminLock;
+            };
+    
+        protected:
+            CommunicationChannel(const Core::NodeId& remoteNode, const string& callsign)
+                : _channel(this, remoteNode, callsign)
+                , _sequence(0)
+            {
+            }
+    
+        public:
+            virtual ~CommunicationChannel()
+            {
+            }
+            static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign)
+            {
+                return (ChannelProxy::Instance(remoteNode, callsign));
+            }
+    
+        public:
+            static void Trigger(const uint64_t& time, ClientType<INTERFACE>* client)
+            {
+                FactoryImpl::Instance().Trigger(time, client);
+            }
+            static Core::ProxyType<Core::JSONRPC::Message> Message()
+            {
+                return (FactoryImpl::Instance().Element(string()));
+            }
+            bool IsOperational() const
+            {
+                return (const_cast< CommunicationChannel&>(*this).Open(0));
+            }
+            uint32_t Sequence() const
+            {
+                return (++_sequence);
+            }
+            void Register(ClientType<INTERFACE>& client)
+            {
+                _adminLock.Lock();
+                ASSERT(std::find(_observers.begin(), _observers.end(), &client) == _observers.end());
+                _observers.push_back(&client);
+                _adminLock.Unlock();
+            }
+            void Unregister(ClientType<INTERFACE>& client)
+            {
+                _adminLock.Lock();
+                typename std::list<ClientType<INTERFACE> * >::iterator index(std::find(_observers.begin(), _observers.end(), &client));
+                if (index != _observers.end()) {
+                    _observers.erase(index);
+                }
+                FactoryImpl::Instance().Revoke(&client);
+                _adminLock.Unlock();
+            }
+            void Submit(const Core::ProxyType<INTERFACE>& message)
+            {
+                _channel.Submit(message);
+            }
+    
+        protected:
+            void StateChange()
+            {
+                _adminLock.Lock();
+                typename std::list<ClientType<INTERFACE> * >::iterator index(_observers.begin());
+                while (index != _observers.end()) {
+                    if (_channel.IsOpen() == true) {
+                        (*index)->Opened();
+                    } else {
+                        (*index)->Closed();
+                    }
+                    index++;
+                }
+                _adminLock.Unlock();
+            }
+            bool Open(const uint32_t waitTime)
+            {
+                bool result = true;
+                if (_channel.IsClosed() == true) {
+                    result = (_channel.Open(waitTime) == Core::ERROR_NONE);
+                }
+                return (result);
+            }
+            void Close()
+            {
+                _channel.Close(Core::infinite);
+            }
+    
+        private:
+            uint32_t Inbound(const Core::ProxyType<Core::JSONRPC::Message>& inbound)
+            {
+                uint32_t result = Core::ERROR_UNAVAILABLE;
+                _adminLock.Lock();
+                typename std::list<ClientType<INTERFACE> *>::iterator index(_observers.begin());
+                while ((result != Core::ERROR_NONE) && (index != _observers.end())) {
+                    result = (*index)->Inbound(inbound);
+                    index++;
+                }
+                _adminLock.Unlock();
+    
+                return (result);
+            }
+    
+        private:
+            Core::CriticalSection _adminLock;
+            ChannelImpl _channel;
+            mutable std::atomic<uint32_t> _sequence;
+            std::list< ClientType<INTERFACE> *> _observers;
+        };
         class Entry {
         private:
             Entry(const Entry&) = delete;
@@ -339,7 +506,6 @@ namespace JSONRPC {
                 ASynchronous async;
             } _info;
         };
-
         static Core::NodeId RemoteNodeId()
         {
             Core::NodeId result;
@@ -360,10 +526,10 @@ namespace JSONRPC {
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
     public:
-        Client(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
+        ClientType(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
-            , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
+            , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
             , _handler([&](const uint32_t, const string&, const string&) { }, { DetermineVersion(remoteCallsign) })
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
             , _localSpace(localCallsign)
@@ -372,10 +538,10 @@ namespace JSONRPC {
         {
             _channel->Register(*this);
         }
-        Client(const string& remoteCallsign, const uint8_t version, const bool directed = false)
+        ClientType(const string& remoteCallsign, const uint8_t version, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
-            , _channel(Channel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
+            , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
             , _handler([&](const uint32_t, const string&, const string&) {}, { version })
             , _callsign((!directed || remoteCallsign.empty()) ? remoteCallsign : "")
             , _localSpace()
@@ -389,36 +555,12 @@ namespace JSONRPC {
             _localSpace = string("temporary") + Core::NumberType<uint32_t>(scope).Text();
             _channel->Register(*this);
         }
-        virtual ~Client()
+        virtual ~ClientType()
         {
             _channel->Unregister(*this);
         }
 
     public:
-        uint64_t Timed()
-        {
-            uint64_t result = ~0;
-            uint64_t currentTime = Core::Time::Now().Ticks();
-
-            // Lets see if some callback are expire. If so trigger and remove...
-            _adminLock.Lock();
-
-            PendingMap::iterator index = _pendingQueue.begin();
-
-            while (index != _pendingQueue.end()) {
-
-                if (index->second.Expired(index->first, currentTime, result) == true) {
-                    index = _pendingQueue.erase(index);
-                } else {
-                    index++;
-                }
-            }
-            _scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
-
-            _adminLock.Unlock();
-
-            return (_scheduledTime);
-        }
         template <typename INBOUND, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
@@ -476,41 +618,6 @@ namespace JSONRPC {
             _handler.Unregister(eventName);
         }
 
-        // Opaque JSON structure methods.
-        // Anything goes!
-        // ===================================================================================
-        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = DefaultWaitTime)
-        {
-            return (Invoke<Core::JSON::VariantContainer, Core::JSON::VariantContainer>(waitTime, method, parameters, response));
-        }
-        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
-        {
-            return (Set<Core::JSON::VariantContainer>(waitTime, method, object));
-        }
-        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
-        {
-            return (Get<Core::JSON::VariantContainer>(waitTime, method, object));
-        }
-
-        // Specific JSONRPC methods.
-        // Less memory footprint, less processing power and type checking applied.
-        // =====================================================================================================
-        template <typename RESPONSE = Core::JSON::VariantContainer>
-        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
-        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<void, ResponeType>(..
-        {
-            return InternalInvoke(waitTime, method, EMPTY_STRING, inbound);
-        }
-        //template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
-        template <typename PARAMETERS = Core::JSON::VariantContainer>
-        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, Core::JSON::VariantContainer& inbound)
-        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<PARAMETER type, Core::JSON::VariantContainer>(..
-        {
-            string subject;
-            parameters.ToString(subject);
-            return InternalInvoke(waitTime, method, subject, inbound);
-        }
-
         template <typename PARAMETERS, typename RESPONSE>
         typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
         Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
@@ -543,25 +650,6 @@ namespace JSONRPC {
             return InternalInvoke(waitTime, method, EMPTY_STRING, inbound);
         }
 
-    private:
-        template <typename RESPONSE>
-        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters, RESPONSE& inbound)
-        {
-            Core::ProxyType<Core::JSONRPC::Message> response;
-            uint32_t result = Send(waitTime, method, parameters, response);
-            if (result == Core::ERROR_NONE) {
-                inbound.FromString(response->Result.Value());
-            }
-            return (result);
-        }
-
-        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters)
-        {
-            Core::ProxyType<Core::JSONRPC::Message> response;
-            return Send(waitTime, method, parameters, response);
-        }
-
-    public:
         template <typename PARAMETERS, typename HANDLER>
         typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<typename Core::TypeTraits::func_traits<HANDLER>::classtype, void>::value), uint32_t>::type
         Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
@@ -684,9 +772,81 @@ namespace JSONRPC {
             return (Send(waitTime, method, parameters, response));
         }
 
-    private:
-        friend class Channel;
+        // Generic JSONRPC methods.
+        // Anything goes!
+        // these objects have no type chacking, will consume more memory and processing takes more time
+        // Advice: Use string typed variants above!!!
+        // =====================================================================================================
+        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Invoke<Core::JSON::VariantContainer, Core::JSON::VariantContainer>(waitTime, method, parameters, response));
+        }
+        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Set<Core::JSON::VariantContainer>(waitTime, method, object));
+        }
+        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = DefaultWaitTime)
+        {
+            return (Get<Core::JSON::VariantContainer>(waitTime, method, object));
+        }
+        template <typename RESPONSE = Core::JSON::VariantContainer>
+        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
+        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<void, ResponeType>(..
+        {
+            return InternalInvoke(waitTime, method, EMPTY_STRING, inbound);
+        }
+        //template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
+        template <typename PARAMETERS = Core::JSON::VariantContainer>
+        DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, Core::JSON::VariantContainer& inbound)
+        // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<PARAMETER type, Core::JSON::VariantContainer>(..
+        {
+            string subject;
+            parameters.ToString(subject);
+            return InternalInvoke(waitTime, method, subject, inbound);
+        }
 
+    private:
+        friend CommunicationChannel;
+
+        uint64_t Timed()
+        {
+            uint64_t result = ~0;
+            uint64_t currentTime = Core::Time::Now().Ticks();
+
+            // Lets see if some callback are expire. If so trigger and remove...
+            _adminLock.Lock();
+
+            typename PendingMap::iterator index = _pendingQueue.begin();
+
+            while (index != _pendingQueue.end()) {
+
+                if (index->second.Expired(index->first, currentTime, result) == true) {
+                    index = _pendingQueue.erase(index);
+                } else {
+                    index++;
+                }
+            }
+            _scheduledTime = (result != static_cast<uint64_t>(~0) ? result : 0);
+
+            _adminLock.Unlock();
+
+            return (_scheduledTime);
+        }
+        template <typename RESPONSE>
+        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters, RESPONSE& inbound)
+        {
+            Core::ProxyType<Core::JSONRPC::Message> response;
+            uint32_t result = Send(waitTime, method, parameters, response);
+            if (result == Core::ERROR_NONE) {
+                inbound.FromString(response->Result.Value());
+            }
+            return (result);
+        }
+        uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const string& parameters)
+        {
+            Core::ProxyType<Core::JSONRPC::Message> response;
+            return Send(waitTime, method, parameters, response);
+        }
         template <typename HANDLER>
         uint32_t InternalInvoke(const ::TemplateIntToType<0>&, const uint32_t waitTime, const string& method, const string& parameters, const HANDLER& callback)
         {
@@ -786,7 +946,7 @@ namespace JSONRPC {
 
                 result = Core::ERROR_ASYNC_FAILED;
 
-                Core::ProxyType<Core::JSONRPC::Message> message(Channel::Message());
+                Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
@@ -800,7 +960,7 @@ namespace JSONRPC {
 
                 _adminLock.Lock();
 
-                std::pair<PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
+                typename std::pair< typename PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple());
                 ASSERT(newElement.second == true);
@@ -844,7 +1004,7 @@ namespace JSONRPC {
 
                 result = Core::ERROR_ASYNC_FAILED;
 
-                Core::ProxyType<Core::JSONRPC::Message> message(Channel::Message());
+                Core::ProxyType<Core::JSONRPC::Message> message(CommunicationChannel::Message());
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
@@ -858,7 +1018,7 @@ namespace JSONRPC {
 
                 _adminLock.Lock();
 
-                std::pair<PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
+                typename std::pair<typename PendingMap::iterator, bool> newElement = _pendingQueue.emplace(std::piecewise_construct,
                     std::forward_as_tuple(id),
                     std::forward_as_tuple(waitTime, response));
                 ASSERT(newElement.second == true);
@@ -872,7 +1032,7 @@ namespace JSONRPC {
                     message.Release();
                     if ((_scheduledTime == 0) || (_scheduledTime > newElement.first->second.Expiry())) {
                         _scheduledTime = newElement.first->second.Expiry();
-                        Channel::Trigger(_scheduledTime, this);
+                        CommunicationChannel::Trigger(_scheduledTime, this);
                     }
                 }
 
@@ -895,7 +1055,7 @@ namespace JSONRPC {
                 _adminLock.Lock();
 
                 // See if we issued this..
-                PendingMap::iterator index = _pendingQueue.find(inbound->Id.Value());
+                typename PendingMap::iterator index = _pendingQueue.find(inbound->Id.Value());
 
                 if (index != _pendingQueue.end()) {
 
@@ -924,12 +1084,14 @@ namespace JSONRPC {
     private:
         Core::CriticalSection _adminLock;
         Core::NodeId _connectId;
-        Core::ProxyType<Channel> _channel;
+        Core::ProxyType< CommunicationChannel > _channel;
         Core::JSONRPC::Handler _handler;
         string _callsign;
         string _localSpace;
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
     };
+
+    typedef ClientType<Core::JSON::IElement> Client;
 }
 } // namespace WPEFramework::JSONRPC
