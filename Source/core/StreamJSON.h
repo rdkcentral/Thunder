@@ -194,8 +194,8 @@ namespace Core {
         };
 
     public:
-        StreamJSONType(const StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>&) = delete;
-        StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>& operator=(const StreamJSONType<INTERFACE, SOURCE, ALLOCATOR>&) = delete;
+        StreamJSONType(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
+        StreamJSONType<SOURCE, ALLOCATOR, INTERFACE >& operator=(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
 
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
