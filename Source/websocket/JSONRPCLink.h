@@ -9,11 +9,11 @@ namespace JSONRPC {
     using namespace Core::TypeTraits;
 
     template<typename INTERFACE>
-    class ClientType {
+    class LinkType {
     private:
-        ClientType() = delete;
-        ClientType(const ClientType&) = delete;
-        ClientType& operator=(ClientType&) = delete;
+        LinkType() = delete;
+        LinkType(const LinkType&) = delete;
+        LinkType& operator=(LinkType&) = delete;
 
         typedef std::function<void(const Core::JSONRPC::Message&)> CallbackFunction;
 
@@ -33,7 +33,7 @@ namespace JSONRPC {
                     WatchDog& operator=(const WatchDog&) = delete;
     
                 public:
-                    WatchDog(ClientType<INTERFACE>* client)
+                    WatchDog(LinkType<INTERFACE>* client)
                         : _client(client)
                     {
                     }
@@ -60,7 +60,7 @@ namespace JSONRPC {
                     }
     
                 private:
-                    ClientType<INTERFACE>* _client;
+                    LinkType<INTERFACE>* _client;
                 };
     
                 friend Core::SingletonType<FactoryImpl>;
@@ -89,11 +89,11 @@ namespace JSONRPC {
                 {
                     return (_jsonRPCFactory.Element());
                 }
-                void Trigger(const uint64_t& time, ClientType<INTERFACE>* client)
+                void Trigger(const uint64_t& time, LinkType<INTERFACE>* client)
                 {
                     _watchDog.Trigger(time, client);
                 }
-                void Revoke(ClientType<INTERFACE>* client)
+                void Revoke(LinkType<INTERFACE>* client)
                 {
                     _watchDog.Revoke(client);
                 }
@@ -103,12 +103,12 @@ namespace JSONRPC {
                 Core::TimerType<WatchDog> _watchDog;
             };
     
-            class ChannelImpl : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&, INTERFACE> {
+            class ChannelImpl : public Core::StreamJSONType<Web::WebSocketLinkType<Core::SocketStream>, FactoryImpl&, INTERFACE> {
             private:
                 ChannelImpl(const ChannelImpl&) = delete;
                 ChannelImpl& operator=(const ChannelImpl&) = delete;
     
-                typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&> BaseClass;
+                typedef Core::StreamJSONType<Web::WebSocketLinkType<Core::SocketStream>, FactoryImpl&> BaseClass;
     
             public:
                 ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign)
@@ -307,7 +307,7 @@ namespace JSONRPC {
             }
     
         public:
-            static void Trigger(const uint64_t& time, ClientType<INTERFACE>* client)
+            static void Trigger(const uint64_t& time, LinkType<INTERFACE>* client)
             {
                 FactoryImpl::Instance().Trigger(time, client);
             }
@@ -323,17 +323,17 @@ namespace JSONRPC {
             {
                 return (++_sequence);
             }
-            void Register(ClientType<INTERFACE>& client)
+            void Register(LinkType<INTERFACE>& client)
             {
                 _adminLock.Lock();
                 ASSERT(std::find(_observers.begin(), _observers.end(), &client) == _observers.end());
                 _observers.push_back(&client);
                 _adminLock.Unlock();
             }
-            void Unregister(ClientType<INTERFACE>& client)
+            void Unregister(LinkType<INTERFACE>& client)
             {
                 _adminLock.Lock();
-                typename std::list<ClientType<INTERFACE> * >::iterator index(std::find(_observers.begin(), _observers.end(), &client));
+                typename std::list<LinkType<INTERFACE> * >::iterator index(std::find(_observers.begin(), _observers.end(), &client));
                 if (index != _observers.end()) {
                     _observers.erase(index);
                 }
@@ -349,7 +349,7 @@ namespace JSONRPC {
             void StateChange()
             {
                 _adminLock.Lock();
-                typename std::list<ClientType<INTERFACE> * >::iterator index(_observers.begin());
+                typename std::list<LinkType<INTERFACE> * >::iterator index(_observers.begin());
                 while (index != _observers.end()) {
                     if (_channel.IsOpen() == true) {
                         (*index)->Opened();
@@ -378,7 +378,7 @@ namespace JSONRPC {
             {
                 uint32_t result = Core::ERROR_UNAVAILABLE;
                 _adminLock.Lock();
-                typename std::list<ClientType<INTERFACE> *>::iterator index(_observers.begin());
+                typename std::list<LinkType<INTERFACE> *>::iterator index(_observers.begin());
                 while ((result != Core::ERROR_NONE) && (index != _observers.end())) {
                     result = (*index)->Inbound(inbound);
                     index++;
@@ -392,7 +392,7 @@ namespace JSONRPC {
             Core::CriticalSection _adminLock;
             ChannelImpl _channel;
             mutable std::atomic<uint32_t> _sequence;
-            std::list< ClientType<INTERFACE> *> _observers;
+            std::list< LinkType<INTERFACE> *> _observers;
         };
         class Entry {
         private:
@@ -526,7 +526,7 @@ namespace JSONRPC {
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
     public:
-        ClientType(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
+        LinkType(const string& remoteCallsign, const TCHAR* localCallsign, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
@@ -538,7 +538,7 @@ namespace JSONRPC {
         {
             _channel->Register(*this);
         }
-        ClientType(const string& remoteCallsign, const uint8_t version, const bool directed = false)
+        LinkType(const string& remoteCallsign, const uint8_t version, const bool directed = false)
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + (directed && !remoteCallsign.empty() ? remoteCallsign : "Controller")))
@@ -555,7 +555,7 @@ namespace JSONRPC {
             _localSpace = string("temporary") + Core::NumberType<uint32_t>(scope).Text();
             _channel->Register(*this);
         }
-        virtual ~ClientType()
+        virtual ~LinkType()
         {
             _channel->Unregister(*this);
         }
@@ -1091,7 +1091,5 @@ namespace JSONRPC {
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
     };
-
-    typedef ClientType<Core::JSON::IElement> Client;
 }
 } // namespace WPEFramework::JSONRPC
