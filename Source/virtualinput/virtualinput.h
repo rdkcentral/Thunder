@@ -60,7 +60,7 @@ EXTERNAL void callback_touch(FNTouchEvent callback);
 
 // ================================================================================================================
 
-EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[]);
+EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[], FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr);
 EXTERNAL void  virtualinput_close(void* handle);
 
 #ifdef __cplusplus
