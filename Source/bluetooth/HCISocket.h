@@ -179,14 +179,21 @@ namespace Bluetooth {
     public:
         LinkKey() {
             ::memset(&_key, 0, sizeof(_key));
+            _key.addr.type = ~0;
         }
         LinkKey(const Address& address, const uint8_t key[16], const uint8_t pinLength, const uint8_t type) {
-            ::memset(&_key, 0, sizeof(_key));
+            LinkKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), key, sizeof(_key.val));
             _key.addr.type = BDADDR_BREDR;
             _key.pin_len = pinLength;
             _key.type = type;
+        }
+        LinkKey(const uint8_t buffer[], const uint16_t length) {
+            LinkKey();
+            if (length >= sizeof(_key)) {
+                ::memcpy(&_key, buffer, sizeof(_key));
+            }
         }
         LinkKey(const LinkKey& copy) {
             ::memcpy(&_key, &copy._key, sizeof(_key));
@@ -195,8 +202,14 @@ namespace Bluetooth {
         }
 
     public:
+        bool IsValid() const {
+            return ((Pin() <= 16) && (Type() <= 8) && (LocatorType() == Bluetooth::Address::BREDR_ADDRESS));
+        }
         Address Locator() const {
             return (_key.addr.bdaddr);
+        }
+        uint8_t LocatorType() const {
+            return (_key.addr.type);
         }
         uint8_t Pin() const {
             return(_key.pin_len);
@@ -211,7 +224,7 @@ namespace Bluetooth {
             return (reinterpret_cast<const uint8_t*>(&_key));
         }
         static uint8_t Length() {
-            return (sizeof(struct mgmt_link_key_info));
+            return (sizeof(_key));
         }
 
     private:
@@ -221,21 +234,24 @@ namespace Bluetooth {
     class LongTermKey {
     public:
         LongTermKey() {
-                ::memset(&_key, 0, sizeof(_key));
-        }
-        LongTermKey(const Address& address, const uint8_t type, const uint8_t master, const uint8_t authenticated, const uint8_t encryptionSize, const uint16_t diversifier, const uint64_t random, const uint8_t value[16]) {
             ::memset(&_key, 0, sizeof(_key));
+            _key.addr.type = ~0;
+        }
+        LongTermKey(const Address& address, const uint8_t address_type, const uint8_t type, const uint8_t master, const uint8_t encryptionSize,
+                    const uint16_t diversifier, const uint64_t random, const uint8_t value[16])
+        {
+            LongTermKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
-            _key.addr.type = type;
+            _key.addr.type = address_type;
+            _key.type = type;
             _key.master = master;
-            _key.type = authenticated;
             _key.enc_size = encryptionSize;
             _key.ediv = htobs(diversifier); // 16 bits
             _key.rand = htobll(random); // 64 bits
         }
         LongTermKey(const uint8_t buffer[], const uint16_t length) {
-            ::memset(&_key, 0, sizeof(_key));
+            LongTermKey();
             if (length >= sizeof(_key)) {
                 ::memcpy(&_key, buffer, sizeof(_key));
             }
@@ -279,7 +295,7 @@ namespace Bluetooth {
             return (reinterpret_cast<const uint8_t*>(&_key));
         }
         static uint8_t Length() {
-            return (sizeof(struct mgmt_ltk_info));
+            return (sizeof(_key));
         }
 
     private:
@@ -290,12 +306,19 @@ namespace Bluetooth {
     public:
         IdentityKey() {
             ::memset(&_key, 0, sizeof(_key));
+            _key.addr.type = ~0;
         }
         IdentityKey(const Address& address, const uint8_t addressType, const uint8_t value[16]) {
-            ::memset(&_key, 0, sizeof(_key));
+            IdentityKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
             _key.addr.type = addressType;
+        }
+        IdentityKey(const uint8_t buffer[], const uint16_t length) {
+            IdentityKey();
+            if (length >= sizeof(_key)) {
+                ::memcpy(&_key, buffer, sizeof(_key));
+            }
         }
         IdentityKey(const IdentityKey& copy) {
             ::memcpy(&_key, &copy._key, sizeof(_key));
@@ -304,8 +327,14 @@ namespace Bluetooth {
         }
 
     public:
+        bool IsValid() const {
+            return ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */));
+        }
         Address Locator() const {
             return (_key.addr.bdaddr);
+        }
+        Address LocatorType() const {
+            return (_key.addr.type);
         }
         const uint8_t* Value() const {
             return (_key.val);
@@ -314,16 +343,70 @@ namespace Bluetooth {
             return (reinterpret_cast<const uint8_t*>(&_key));
         }
         static uint8_t Length() {
-            return (sizeof(struct mgmt_irk_info));
+            return (sizeof(_key));
         }
 
     private:
         struct mgmt_irk_info _key;
     };
 
+    class SignatureKey {
+    public:
+        SignatureKey() {
+            ::memset(&_key, 0, sizeof(_key));
+            _key.addr.type = ~0;
+        }
+        SignatureKey(const Address& address, const uint8_t address_type, const uint8_t type, const uint8_t value[16]) {
+            SignatureKey();
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            ::memcpy(&(_key.val), value, sizeof(_key.val));
+            _key.addr.type = address_type;
+            _key.type = type;
+        }
+        SignatureKey(const uint8_t buffer[], const uint16_t length) {
+            SignatureKey();
+            if (length >= sizeof(_key)) {
+                ::memcpy(&_key, buffer, sizeof(_key));
+            }
+        }
+        SignatureKey(const SignatureKey& copy) {
+            ::memcpy(&_key, &copy._key, sizeof(_key));
+        }
+        ~SignatureKey() {
+        }
+
+    public:
+        bool IsValid() const {
+            return ((Type() <= 3)
+                    && ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS))));
+        }
+        Address Locator() const {
+            return (_key.addr.bdaddr);
+        }
+        uint8_t LocatorType() const {
+            return (_key.addr.type);
+        }
+        uint8_t Type() const {
+            return(_key.type);
+        }
+        const uint8_t* Value() const {
+            return (_key.val);
+        }
+        const uint8_t* Data() const {
+            return (reinterpret_cast<const uint8_t*>(&_key));
+        }
+        static uint8_t Length() {
+            return (sizeof(_key));
+        }
+
+    private:
+        struct mgmt_csrk_info _key;
+    };
+
     typedef KeyListType<LinkKey> LinkKeys;
     typedef KeyListType<LongTermKey> LongTermKeys;
     typedef KeyListType<IdentityKey> IdentityKeys;
+    typedef KeyListType<SignatureKey> SignatureKeys;
 
 
     class HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
