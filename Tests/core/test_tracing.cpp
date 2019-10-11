@@ -247,11 +247,13 @@ TEST(Core_tracing, simpleTracing)
         bool enabled = false;
         Trace::TraceUnit::Instance().IsDefaultCategory("Tracing",reinterpret_cast<const char*>("Information"),enabled);
 
+#if 0
         string jsonDefaultCategories("Information");
         if (jsonDefaultCategories.empty() == false) {
             Trace::TraceUnit::Instance().SetDefaultCategoriesJson(jsonDefaultCategories);
         }
         Trace::TraceUnit::Instance().GetDefaultCategoriesJson(jsonDefaultCategories);
+#endif
 
         TRACE(Trace::Information,(Trace::Format(_T("Checking the Format() with 1 parameter"))));
         std::string text = "Hello";
