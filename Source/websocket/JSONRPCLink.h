@@ -751,7 +751,7 @@ namespace JSONRPC {
                     result = response->Error.Code.Value();
                 } else if ((response->Result.IsSet() == true) && (response->Result.Value().empty() == false)) {
                     sendObject.Clear();
-                    //sendObject.FromString(response->Result.Value());
+                    FromMessage((INTERFACE*)&sendObject, *response);
                 }
             }
             return (result);
@@ -825,11 +825,11 @@ namespace JSONRPC {
             Core::ProxyType<Core::JSONRPC::Message> response;
             uint32_t result = Send(waitTime, method, parameters, response);
             if (result == Core::ERROR_NONE) {
-                inbound.FromString(response->Result.Value());
+                FromMessage((INTERFACE*)&inbound, *response);
             }
             return (result);
         }
-        template <typename PARAMETERS, typename RESPONSE>
+        template <typename PARAMETERS>
         uint32_t InternalInvoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
         {
             Core::ProxyType<Core::JSONRPC::Message> response;
@@ -840,10 +840,10 @@ namespace JSONRPC {
         {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
-            CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
+            CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                 typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                 if (inbound.Error.IsSet() == false) {
-                    response.FromString(inbound.Result.Value());
+                    FromMessage((INTERFACE*)&response, inbound);
                 }
                 callback(response);
             };
@@ -856,11 +856,11 @@ namespace JSONRPC {
         {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
-            CallbackFunction implementation = [callback](const Core::JSONRPC::Message& inbound) -> void {
+            CallbackFunction implementation = [callback, this](const Core::JSONRPC::Message& inbound) -> void {
                 typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
 
                 if (inbound.Error.IsSet() == false) {
-                    response.FromString(inbound.Result.Value());
+                    FromMessage((INTERFACE*)&response, inbound);
                     callback(response, nullptr);
                 } else {
                     callback(response, &(response.Error));
@@ -876,11 +876,11 @@ namespace JSONRPC {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
             std::function<void(RESPONSE)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1);
-            CallbackFunction implementation = [actualMethod](const Core::JSONRPC::Message& inbound) -> void {
+            CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
                 typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
 
                 if (inbound.Error.IsSet() == false) {
-                    response.FromString(inbound.Result.Value());
+                    FromMessage((INTERFACE*)&response, inbound);
                 }
 
                 actualMethod(response);
@@ -895,10 +895,10 @@ namespace JSONRPC {
             using RESPONSE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<0>::type;
 
             std::function<void(RESPONSE, const Core::JSONRPC::Message::Info* result)> actualMethod = std::bind(callback, objectPtr, std::placeholders::_1, std::placeholders::_2);
-            CallbackFunction implementation = [actualMethod](const Core::JSONRPC::Message& inbound) -> void {
+            CallbackFunction implementation = [actualMethod, this](const Core::JSONRPC::Message& inbound) -> void {
                 typename std::remove_const<typename std::remove_reference<RESPONSE>::type>::type response;
                 if (inbound.Error.IsSet() == false) {
-                    response.FromString(inbound.Result.Value());
+                    FromMessage((INTERFACE*)&response, inbound);
                     actualMethod(response, nullptr);
                 } else {
                     actualMethod(response, &(inbound.Error));
@@ -1069,38 +1069,46 @@ namespace JSONRPC {
         }
 
     private:
-        void ToMessage(Core::JSON::IMessagePack& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        {
+           if (parameters.empty() != true) {
+               message->Parameters = parameters;
+           }
+        }
+        template <typename PARAMETERS>
+        void ToMessage(PARAMETERS& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        {
+             ToMessage((INTERFACE*)(&parameters), message);
+             return;
+        }
+        void ToMessage(Core::JSON::IMessagePack* parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
         {
              std::vector<uint8_t> values;
-             parameters.ToBuffer(values);
+             parameters->ToBuffer(values);
              if (values.empty() != true) {
                  message->Parameters = string(values.begin(), values.end());;
              }
              return;
         }
-        void ToMessage(Core::JSON::IElement& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(Core::JSON::IElement* parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
         {
              string values;
-             parameters.ToString(values);
+             parameters->ToString(values);
              if (values.empty() != true) {
                  message->Parameters = values;
              }
              return;
         }
-        void ToMessage(string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
         {
-             if (parameters.empty() != true) {
-                 message->Parameters = parameters;
-             }
+            response->FromString(message.Parameters.Value());
         }
-        void FromMessage(Core::JSON::IElement& response, const Core::ProxyType<Core::JSONRPC::Message>& message)
+        void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {
-            response.FromString(message.Parameters.Value());
+            std::vector<uint8_t> values(message.Parameters.Value().begin(), message.Parameters.Value().end());
+            response->FromBuffer(values);
         }
-        void FromMessage(Core::JSON::IMessagePack& response, const Core::ProxyType<Core::JSONRPC::Message>& message)
-        {
-//            response.FromBuffer(message);
-        }
+
     private:
         Core::CriticalSection _adminLock;
         Core::NodeId _connectId;
