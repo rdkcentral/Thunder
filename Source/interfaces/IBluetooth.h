@@ -36,15 +36,16 @@ namespace Exchange {
                 enum { ID = ID_BLUETOOTH_CALLBACK };
 
                 virtual ~ICallback () {}
-                
+
                 virtual void Updated () = 0;
             };
-                
+
             enum type : uint8_t {
                 ADDRESS_BREDR,
                 ADDRESS_LE_PUBLIC,
                 ADDRESS_LE_RANDOM
             };
+
             enum capabilities : uint8_t {
                 DISPLAY_ONLY = 0x00,
                 DISPLAY_YES_NO = 0x01,
@@ -58,6 +59,7 @@ namespace Exchange {
             virtual type Type () const = 0;
             virtual bool IsValid() const = 0;
             virtual bool IsPaired() const = 0;
+            virtual bool IsBonded() const = 0;
             virtual bool IsConnected() const = 0;
             virtual string LocalId() const = 0;
             virtual string RemoteId() const = 0;
