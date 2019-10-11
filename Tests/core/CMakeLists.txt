@@ -25,6 +25,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_portability.cpp
    test_queue.cpp
    test_rangetype.cpp
+   test_readwritelock.cpp
    test_rectangle.cpp
    test_rpc.cpp
    test_semaphore.cpp
