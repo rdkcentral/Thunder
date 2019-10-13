@@ -625,6 +625,10 @@ namespace PluginHost
             Core::Directory(persistentPath.Name().c_str()).Create();
         }
 
+        if (configuration.Environments.IsSet() == true) {
+            _environment.Set(_config, configuration.Environments);
+        }
+
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
 
         // First register all services, than if we got them, start "activating what is required.
