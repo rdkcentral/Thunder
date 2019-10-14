@@ -18,6 +18,10 @@ namespace PluginHost {
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
 
+    extern "C" {
+    static void CloseDown();
+    }
+
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
@@ -52,26 +56,20 @@ namespace PluginHost {
             }
         }
     };
-    extern "C" {
-    static void CloseDown();
-    }
+
 #ifndef __WIN32__
-    class SignalHandler : public Core::Thread {
+    class ExitHandler : public Core::Thread {
     private:
-        SignalHandler(const SignalHandler&) = delete;
-        SignalHandler& operator=(const SignalHandler&) = delete;
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
 
     public:
-        SignalHandler()
+        ExitHandler()
             : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
         {
-            sigemptyset(&_signalSet);
-            sigaddset(&_signalSet, SIGINT);
-            sigaddset(&_signalSet, SIGTERM);
-            sigaddset(&_signalSet, SIGSEGV);
-            sigprocmask(SIG_BLOCK, &_signalSet, 0);
+            Run();
         }
-        virtual ~SignalHandler()
+        virtual ~ExitHandler()
         {
             Stop();
             Wait(Core::Thread::STOPPED, Core::infinite);
@@ -80,40 +78,37 @@ namespace PluginHost {
     private:
         virtual uint32_t Worker() override
         {
-            int status, signal;
-
-            status = sigwait(&_signalSet, &signal);
-            if (status == 0) {
-                ExitDaemonHandler(signal);
-            }
-            Stop();
+            CloseDown();
+            Block();
             return (Core::infinite);
         }
-        void ExitDaemonHandler(int signo)
-        {
-            if (_background) {
-                syslog(LOG_NOTICE, "Signal received %d.", signo);
-            } else {
-                fprintf(stderr, "Signal received %d.\n", signo);
-            }
-
-            if (signo == SIGTERM) {
-                if (Core::WorkerPool::IsAvailable() == true) {
-                   CloseDown(); // Do it before stopping all the workers;
-                   Core::WorkerPool::Instance().Stop();
-                }
-            } else if (signo == SIGSEGV) {
-                DumpCallStack();
-                // now invoke the default segfault handler
-                signal(signo, SIG_DFL);
-                kill(getpid(), signo);
-           }
-        }
-    private:
-        sigset_t _signalSet;
     };
+    ExitHandler *exitHandler = nullptr;
 #endif
+
     extern "C" {
+
+#ifndef __WIN32__
+
+    void ExitDaemonHandler(int signo)
+    {
+        if (_background) {
+            syslog(LOG_NOTICE, "Signal received %d.", signo);
+        } else {
+            fprintf(stderr, "Signal received %d.\n", signo);
+        }
+
+        if ((signo == SIGTERM) || (signo == SIGQUIT)) {
+            exitHandler = new WPEFramework::PluginHost::ExitHandler();
+        } else if (signo == SIGSEGV) {
+            DumpCallStack();
+            // now invoke the default segfault handler
+            signal(signo, SIG_DFL);
+            kill(getpid(), signo);
+        }
+    }
+
+#endif
 
     static void CloseDown()
     {
@@ -294,6 +289,19 @@ namespace PluginHost {
             ;
         }
 #ifndef __WIN32__
+        else {
+            struct sigaction sa;
+            memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = ExitDaemonHandler;
+            sa.sa_flags = 0; // not SA_RESTART!;
+
+            sigaction(SIGINT, &sa, nullptr);
+            sigaction(SIGTERM, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, nullptr);
+            sigaction(SIGQUIT, &sa, nullptr);
+        }
+
         if (_background == true) {
             //Close Standard File Descriptors
             // close(STDIN_FILENO);
@@ -420,13 +428,10 @@ namespace PluginHost {
 
 #ifndef __WIN32__
         if (_background == true) {
-            SignalHandler signalHandler;
-            signalHandler.Run();
             Core::WorkerPool::Instance().Join();
         } else
 #endif
         {
-
             char keyPress;
 
             do {
@@ -621,6 +626,9 @@ namespace PluginHost {
             } while (keyPress != 'Q');
         }
         CloseDown();
+        if (exitHandler) {
+            delete exitHandler;
+        }
 
         return 0;
 
