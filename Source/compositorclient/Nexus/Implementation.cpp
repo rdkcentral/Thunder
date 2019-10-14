@@ -183,7 +183,7 @@ namespace Nexus {
                g_pipefd[1] = -1;
            }
 
-           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName, VirtualKeyboardCallback);
+           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName, VirtualKeyboardCallback, nullptr, nullptr);
 
            if (_virtualkeyboard == nullptr) {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");

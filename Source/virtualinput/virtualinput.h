@@ -54,7 +54,7 @@ typedef void (*FNTouchEvent)(enum touchactiontype type, unsigned short index,  u
 
 // ================================================================================================================
 
-EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[], FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr);
+EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[], FNKeyEvent keyCallback, FNMouseEvent mouseCallback, FNTouchEvent touchCallback);
 EXTERNAL void  virtualinput_close(void* handle);
 
 #ifdef __cplusplus
