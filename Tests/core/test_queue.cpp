@@ -16,7 +16,7 @@ TEST(test_queue, simple_queue)
     EXPECT_TRUE(obj1.Remove(20));
     int a_Result = 30;
     EXPECT_TRUE(obj1.Extract(a_Result,300));
-    EXPECT_EQ(obj1.Length(),1);
+    EXPECT_EQ(obj1.Length(),(unsigned)1);
     obj1.Enable();
     obj1.Disable();
     obj1.Flush();

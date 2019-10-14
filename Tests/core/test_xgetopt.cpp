@@ -4,7 +4,7 @@
 #include <core/XGetopt.h>
 
 int argumentCount = 3;
-char* arguments[]= {"-c", "-h", "-b"};
+char* arguments[]= {(char*)"-c", (char*)"-h", (char*)"-b"};
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
