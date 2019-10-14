@@ -61,7 +61,7 @@ TEST(test_portability, simple_lower)
     EXPECT_STREQ(input.c_str(),_T("hello"));
 }
 
-TEST(test_portability, simple_generic)
+TEST(DISABLED_test_portability, simple_generic)
 {
    SleepS(1);
    SleepMs(1);
