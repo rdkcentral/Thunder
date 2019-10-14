@@ -151,6 +151,18 @@ namespace Bluetooth {
         void Add(const KEYTYPE& key) {
             _list.push_back(key);
         }
+        uint32_t Purge(const Address& device) {
+            uint32_t count = 0;
+            for (auto it = _list.cbegin(); it != _list.cend(); ) {
+                if (device == (*it).Locator()) {
+                    _list.erase(it++);
+                    count++;
+                } else {
+                    ++it;
+                }
+            }
+            return (count);
+        }
         uint8_t Entries() const {
             return (_list.size());
         }
@@ -265,7 +277,7 @@ namespace Bluetooth {
     public:
         bool IsValid() const {
             return ((EncryptionSize() == sizeof(_key.val)) && (Authenticated() <= 4) && (Master() <= 1)
-                    && ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */)));
+                    && ((LocatorType() == Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */)));
         }
         Address Locator() const {
             return (_key.addr.bdaddr);
@@ -328,7 +340,7 @@ namespace Bluetooth {
 
     public:
         bool IsValid() const {
-            return ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */));
+            return ((LocatorType() == Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Address::LE_RANDOM_ADDRESS) && (_key.addr.bdaddr.b[5] & 0xc0) /* static random */));
         }
         Address Locator() const {
             return (_key.addr.bdaddr);
@@ -378,7 +390,7 @@ namespace Bluetooth {
     public:
         bool IsValid() const {
             return ((Type() <= 3)
-                    && ((LocatorType() == Bluetooth::Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Bluetooth::Address::LE_RANDOM_ADDRESS))));
+                    && ((LocatorType() == Address::LE_PUBLIC_ADDRESS) || ((LocatorType() == Address::LE_RANDOM_ADDRESS))));
         }
         Address Locator() const {
             return (_key.addr.bdaddr);
@@ -1006,6 +1018,7 @@ namespace Bluetooth {
             }
             return (result);
         }
+
         Info Settings() const;
         uint32_t Power(bool enabled);
         uint32_t Bondable(bool enabled);
@@ -1023,16 +1036,15 @@ namespace Bluetooth {
         uint32_t LinkKey(const LinkKeys& keys, const bool debugKeys = false);
         uint32_t LongTermKey(const LongTermKeys& keys);
         uint32_t IdentityKey(const IdentityKeys& keys);
-        uint32_t Name(const string& shortName, const string longName);
+        uint32_t Name(const string& shortName, const string& longName);
 
         uint32_t Connection(const Address::type type, const Address& address, const mode value);
         uint32_t Discovering(const bool on, const bool regular, const bool LowEnergy);
-        uint32_t Pair(const Address& remote, const uint8_t type = BDADDR_BREDR, const capabilities cap = NO_INPUT_NO_OUTPUT);
-        uint32_t Unpair(const Address& remote, const uint8_t type = BDADDR_BREDR);
-        uint32_t PairAbort(const Address& remote, const uint8_t type = BDADDR_BREDR);
+        uint32_t Pair(const Address& remote, const Address::type type, const capabilities cap = NO_INPUT_NO_OUTPUT);
+        uint32_t Unpair(const Address& remote, const Address::type type);
+        uint32_t PairAbort(const Address& remote, const Address::type type);
 
         uint32_t Notifications(const bool enabled);
-        
 
     protected:
         virtual void Update(const mgmt_hdr& eventData);
