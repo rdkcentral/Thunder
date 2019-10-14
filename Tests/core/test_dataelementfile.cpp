@@ -30,10 +30,10 @@ TEST(test_datafile, simple_test)
     char buffer[100];
     sprintf(buffer,"echo 'DataElement file checking......' >%s",FILENAME);
     const string fileName = FILENAME;
-    File _file(fileName);
-    File _fileSample(_file);
-    DataFile obj1(_fileSample);
-    uint32_t errorCode = 0;
+    File file(fileName);
+    File fileSample(file);
+    DataFile obj1(fileSample);
+    uint32_t errorCode = 2;
     EXPECT_EQ(obj1.ErrorCode(),errorCode);
 
     DataFile obj2(fileName);
@@ -41,7 +41,7 @@ TEST(test_datafile, simple_test)
 
     const string& Name = obj1.Name();
     EXPECT_EQ(Name.c_str(), fileName);
-    EXPECT_EQ(obj2.IsValid(), 1);
+    EXPECT_FALSE(obj2.IsValid());
     obj1.Storage();
     obj1.ReloadFileInfo();
     obj2.memoryMap();

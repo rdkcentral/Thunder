@@ -14,6 +14,6 @@ TEST(test_messageException, simple_messageException)
     
     MessageException exception1(msg.c_str(),true);
     char buffer[50];
-    sprintf(buffer,"%s: Success",msg.c_str());
+    sprintf(buffer,"%s: File exists",msg.c_str());
     EXPECT_STREQ(exception1.Message(),buffer);
 }
