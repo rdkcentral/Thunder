@@ -128,31 +128,25 @@ namespace VirtualInput{
         Controller& operator=(const Controller&) = delete;
 
     public:
-	Controller(const string& name, const Core::NodeId& source, FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr)
+        Controller(const string& name, const Core::NodeId& source, FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr)
             : _channel(source, 32)
+            , _keyCallback((keyCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(keyCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _mouseCallback((_mouseCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(mouseCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _touchCallback((_touchCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(touchCallback))) : (Core::ProxyType<Core::IIPCServer>()))
         {
-            if (keyCallback != nullptr) {
-                _keyCallback = (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(keyCallback)));
-                if (_keyCallback.IsValid() ==  true) {
-                    _channel.CreateFactory<IVirtualInput::KeyMessage>(1);
-                    _channel.Register(IVirtualInput::KeyMessage::Id(), _keyCallback);
-                }
+            if (_keyCallback.IsValid() ==  true) {
+                _channel.CreateFactory<IVirtualInput::KeyMessage>(1);
+                _channel.Register(IVirtualInput::KeyMessage::Id(), _keyCallback);
             }
 
-            if (mouseCallback != nullptr) {
-                _mouseCallback = (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(mouseCallback)));
-                if (_mouseCallback.IsValid() ==  true) {
-                    _channel.CreateFactory<IVirtualInput::MouseMessage>(1);
-                    _channel.Register(IVirtualInput::MouseMessage::Id(), _mouseCallback);
-                }
+            if (_mouseCallback.IsValid() ==  true) {
+                _channel.CreateFactory<IVirtualInput::MouseMessage>(1);
+                _channel.Register(IVirtualInput::MouseMessage::Id(), _mouseCallback);
             }
 
-            if (_touchCallback != nullptr) {
-                _touchCallback = (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(touchCallback)));
-                if (_touchCallback.IsValid() ==  true) {
-                    _channel.CreateFactory<IVirtualInput::TouchMessage>(1);
-                    _channel.Register(IVirtualInput::TouchMessage::Id(), _touchCallback);
-                }
+            if (_touchCallback.IsValid() ==  true) {
+                _channel.CreateFactory<IVirtualInput::TouchMessage>(1);
+                _channel.Register(IVirtualInput::TouchMessage::Id(), _touchCallback);
             }
 
             _channel.CreateFactory<IVirtualInput::NameMessage>(1);
