@@ -131,8 +131,8 @@ namespace VirtualInput{
         Controller(const string& name, const Core::NodeId& source, FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr)
             : _channel(source, 32)
             , _keyCallback((keyCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(keyCallback))) : (Core::ProxyType<Core::IIPCServer>()))
-            , _mouseCallback((_mouseCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(mouseCallback))) : (Core::ProxyType<Core::IIPCServer>()))
-            , _touchCallback((_touchCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(touchCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _mouseCallback((mouseCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(mouseCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _touchCallback((touchCallback != nullptr)? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(touchCallback))) : (Core::ProxyType<Core::IIPCServer>()))
         {
             if (_keyCallback.IsValid() ==  true) {
                 _channel.CreateFactory<IVirtualInput::KeyMessage>(1);
