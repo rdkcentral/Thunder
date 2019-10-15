@@ -158,7 +158,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
             goto exit;
         }
 
-        svpMeta->u.u1.secbuf_ptr = reinterpret_cast<uintptr_t>(opaqueData);
+        svpMeta->u.u2.secbuf_ptr = reinterpret_cast<uintptr_t>(opaqueData);
         gst_buffer_add_brcm_svp_meta(buffer, svpMeta);
     }
 exit:
