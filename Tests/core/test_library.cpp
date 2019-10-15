@@ -9,9 +9,9 @@ using namespace WPEFramework::Core;
 TEST(Core_Library, simpleSet)
 {
     Library libObj;
-    const TCHAR* file = "build/wpeframework/build/Source/core/libWPEFrameworkCore.so";
-    const TCHAR* function = "Core::Library::AddRef()";
-    Library LibObj1(file);
+    const string file = string(BUILD_DIR) + _T("/../../Source/core/libWPEFrameworkCore.so");
+    const TCHAR* function = _T("Core::Library::AddRef()");
+    Library LibObj1(file.c_str());
     LibObj1.LoadFunction(function);
     Library LibObj2(LibObj1);
     Library LibObj3;
