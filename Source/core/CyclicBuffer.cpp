@@ -269,6 +269,9 @@ namespace Core {
                 shouldMoveHead = false;
             }
         } else {
+            if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+                return 0;
+
             // A write without reservation, make sure we have the space.
             AssureFreeSpace(length);
 
@@ -315,13 +318,13 @@ namespace Core {
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(head, tail);
 
-        while (free < required) {
+        while (free <= required) {
             uint32_t remaining = required - free;
             Cursor cursor(*this, oldTail, remaining);
             uint32_t offset = GetOverwriteSize(cursor);
             ASSERT((offset + free) >= required);
 
-            uint32_t newTail = cursor.GetCompleteTail(offset);
+            uint32_t newTail = (cursor.GetCompleteTail(offset) + 1); // Differentiate between full and empty buffer.
 
             if (!std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail)) {
                 tail = oldTail & _administration->_tailIndexMask;
@@ -343,6 +346,9 @@ namespace Core {
         pid_t processId = ::getpid();
         pid_t expectedProcessId = static_cast<pid_t>(0);
 #endif
+
+        if (((_administration->_state.load() & state::OVERWRITE) == 0) && (length > Free()))
+            return Core::ERROR_INVALID_INPUT_LENGTH;
 
         bool noOtherReservation = atomic_compare_exchange_strong(&(_administration->_reservedPID), &expectedProcessId, processId);
         ASSERT(noOtherReservation);
