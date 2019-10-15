@@ -457,9 +457,6 @@ namespace Core {
                     // Yield the processor, just to make sure that the gap, between the comparison
                     // of the Executing(.....) ended up in the lock, before we pulse it :-)
                     ::SleepMs(0);
-
-                    // Do not wait keep on processing !!!
-                    return (0);
                 }
 
                 // Oops queue disabled, wait for queue to start us again..
