@@ -183,10 +183,7 @@ namespace Nexus {
                g_pipefd[1] = -1;
            }
 
-           // on nexus we will for now only have Keyboard support
-           callback_keyboard(VirtualKeyboardCallback);
-
-           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName);
+           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName, VirtualKeyboardCallback, nullptr, nullptr);
 
            if (_virtualkeyboard == nullptr) {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");

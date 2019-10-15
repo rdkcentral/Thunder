@@ -365,11 +365,8 @@ private:
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
             _compositerServerRPCConnection.Release();
         }
-        callback_keyboard(VirtualKeyboardCallback);
-        callback_mouse(VirtualMouseCallback);
-        callback_touch(VirtualTouchScreenCallback);
 
-        _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput);
+        _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput, VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
 
         if (_virtualinput == nullptr) {
             TRACE(CompositorClient, (_T("Initialization of virtual input failed for Display %s!"), Name()));
@@ -396,10 +393,6 @@ private:
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
         }
-
-        callback_keyboard(nullptr);
-        callback_mouse(nullptr);
-        callback_touch(nullptr);
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
         while (index != _surfaces.end()) {
