@@ -27,6 +27,13 @@
 #include <string.h>
 #include <core/core.h>
 
+// TODO: What is going on here??
+//  https://github.com/google/googletest/issues/2328
+#include <cxxabi.h>
+__gnu_cxx::recursive_init_error::~recursive_init_error()
+{
+}
+
 extern "C" void __gcov_flush();
 const uint32_t g_maxTimeOut = 2; // In seconds.
 
