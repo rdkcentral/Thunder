@@ -14,7 +14,8 @@ TEST(test_data, simple_data)
     const uint16_t off = 0;
     DataStore obj1;
     obj1.Copy(arr,len,off);
-    EXPECT_EQ(obj1.Size(),(unsigned)21474837504);
+    uint32_t size = 1024;
+    EXPECT_EQ(obj1.Size(),size);
     obj1.Size(1025);
     EXPECT_EQ(*obj1.Buffer(),10);
 
@@ -23,10 +24,12 @@ TEST(test_data, simple_data)
     DataElement obj_sample;
     DataElement obj2(s,arr1);
     DataElement obj_operator = obj2;
-    EXPECT_EQ(obj2.CRC32(0,10),(unsigned)4134036294);
+    uint32_t crc = 4134036294;
+    EXPECT_EQ(obj2.CRC32(0,10),crc);
     EXPECT_TRUE(obj2.Copy(obj2,0));
 
-    EXPECT_EQ(obj2.AllocatedSize(),(unsigned)10);
+    uint64_t alloc_size = 10;
+    EXPECT_EQ(obj2.AllocatedSize(), alloc_size);
     EXPECT_TRUE(obj2.Size(sizeof(arr)));
     EXPECT_TRUE(obj2.IsValid());
     EXPECT_EQ(*obj2.Buffer(),10);
@@ -53,7 +56,8 @@ TEST(test_data, simple_data)
     DataElement obj3 = obj;
     DataElement obj4(obj2,0,0);
 
-    EXPECT_EQ(obj3.Size(),(unsigned)10);
+    uint32_t ob_size = 10;
+    EXPECT_EQ(obj3.Size(),ob_size);
     EXPECT_FALSE(obj3.Expand(0,0));
     EXPECT_TRUE(obj3.Shrink(0,0));
     EXPECT_FALSE(obj3.Copy(obj2));
@@ -71,22 +75,24 @@ TEST(test_linkeddata, simple_linkeddata)
     LinkedDataElement opertr = ob3;
     ob1.SetBuffer(offset,size,arr);
     ob1.GetBuffer(offset,size,arr1);
-    EXPECT_EQ(ob2.Copy(offset,ob3),(unsigned)0);
+    uint64_t copyOb = 0;
+    EXPECT_EQ(ob2.Copy(offset,ob3), copyOb);
 
     ob1.Enclosed();
     ob2.Enclosed(&ob1);
-    EXPECT_EQ(ob2.LinkedSize(),(unsigned)0);
+    uint64_t LinkedSize = 0;
+    EXPECT_EQ(ob2.LinkedSize(), LinkedSize);
     uint32_t LElement = 2;
     EXPECT_EQ(ob2.LinkedElements(),LElement);
 }
 
 TEST(test_dataParser, simple_dataParser)
 {
-    uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};
+    uint8_t arr[] = {10,20,30,40,50};
     DataElement object1(10,arr);
     DataElementParser parser1(object1,0);
+    uint64_t size = -10;
     EXPECT_TRUE(parser1.IsValid());
-    //uint64_t size = 18446744073709551606;
-    //EXPECT_EQ(parser1.Size(),size);
+    EXPECT_EQ(parser1.Size(),size);
     parser1.SkipBytes(2);
 }
