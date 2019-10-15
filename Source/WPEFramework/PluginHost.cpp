@@ -18,10 +18,6 @@ namespace PluginHost {
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
 
-    extern "C" {
-    static void CloseDown();
-    }
-
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
@@ -67,12 +63,24 @@ namespace PluginHost {
         ExitHandler()
             : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
         {
-            Run();
+            ASSERT(_instance == nullptr);
+            _instance = this;
         }
         virtual ~ExitHandler()
         {
             Stop();
             Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+        static void Destruct() {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
         }
 
     private:
@@ -82,8 +90,42 @@ namespace PluginHost {
             Block();
             return (Core::infinite);
         }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_dispatcher != nullptr) {
+                PluginHost::Server* destructor = _dispatcher;
+                destructor->Close();
+                _dispatcher = nullptr;
+                delete destructor;
+
+#ifndef __WIN32__
+                if (_background) {
+                    syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+                } else
+#endif
+                {
+                   fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+                }
+
+#ifndef __WIN32__
+                closelog();
+#endif
+                // Now clear all singeltons we created.
+                Core::Singleton::Dispose();
+            }
+
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+        private:
+            static ExitHandler* _instance;
+            static Core::CriticalSection _adminLock;
     };
-    ExitHandler *exitHandler = nullptr;
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
+
 #endif
 
     extern "C" {
@@ -99,7 +141,8 @@ namespace PluginHost {
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            exitHandler = new WPEFramework::PluginHost::ExitHandler();
+            WPEFramework::PluginHost::ExitHandler* exitHandler = new WPEFramework::PluginHost::ExitHandler();
+            exitHandler->Run();
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
@@ -109,35 +152,6 @@ namespace PluginHost {
     }
 
 #endif
-
-    static void CloseDown()
-    {
-        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-        if (_dispatcher != nullptr) {
-            PluginHost::Server* destructor = _dispatcher;
-            destructor->Close();
-            _dispatcher = nullptr;
-            delete destructor;
-
-#ifndef __WIN32__
-            if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-            } else
-#endif
-            {
-                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
-            }
-
-#ifndef __WIN32__
-            closelog();
-#endif
-            // Now clear all singeltons we created.
-            Core::Singleton::Dispose();
-        }
-
-        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-    }
 
     void LoadPlugins(const string& name, Server::Config& config)
     {
@@ -243,7 +257,7 @@ namespace PluginHost {
                 int status = -1;
                 if (info.dli_sname[0] == '_')
                     demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-                fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+                    fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                     status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                     (char*)callstack[i] - (char*)info.dli_saddr);
                 free(demangled);
@@ -272,9 +286,9 @@ namespace PluginHost {
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(CloseDown) != 0) {
+        if (atexit(ExitHandler::Destruct) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            CloseDown();
+            ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
 #ifndef __WIN32__
@@ -625,11 +639,8 @@ namespace PluginHost {
 
             } while (keyPress != 'Q');
         }
-        CloseDown();
-        if (exitHandler) {
-            delete exitHandler;
-        }
 
+        ExitHandler::Destruct();
         return 0;
 
     } // End main.
