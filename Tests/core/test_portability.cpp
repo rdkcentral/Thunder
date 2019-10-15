@@ -65,9 +65,7 @@ TEST(test_portability, simple_generic)
 {
    SleepS(1);
    SleepMs(1);
-   //uint64_t value = 12345;
-   //EXPECT_EQ(htonll(value),4120793659044003840);
-   //EXPECT_EQ(ntohll(value),4120793659044003840);
+   EXPECT_EQ(htonll(12345),ntohll(12345));
    DumpCallStack();
 
    ThreadClass object;
