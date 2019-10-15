@@ -221,18 +221,25 @@ namespace PluginHost
 
         TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
 
-        // First, move them all to deactivated
+        // First, move them all to deactivated except Controller
+        Core::ProxyType<Service> controller;
         do {
             index--;
 
             ASSERT(index->second.IsValid());
 
-            index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
-
+            if (index->first.c_str() == _server._controller->Callsign()) {
+                controller = index->second;
+            } else {
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+            }
         } while (index != _services.begin());
 
         TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
-        // Now release them all, once they are deactivated..
+        // Now deactivate controller plugin, once other plugins are deactivated
+        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+        // Now release them all
         index = _services.begin();
 
         while (index != _services.end()) {
@@ -253,7 +260,7 @@ namespace PluginHost
 
         _processAdministrator.Close(Core::infinite);
 
-		_processAdministrator.Destroy();
+	_processAdministrator.Destroy();
     }
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
@@ -703,9 +710,12 @@ namespace PluginHost
 
     void Server::Notification(const ForwardMessage& data)
     {
-        if (_controller->ClassType<Plugin::Controller>() != nullptr) {
-            _controller->ClassType<Plugin::Controller>()->Notification(data);
+        if ((_controller.IsValid() == false) || (_controller->ClassType<Plugin::Controller>() == nullptr)) {
+            DumpCallStack();
         }
+
+        _controller->ClassType<Plugin::Controller>()->Notification(data);
+
 #ifdef RESTFULL_API
         string result;
         data.ToString(result);
