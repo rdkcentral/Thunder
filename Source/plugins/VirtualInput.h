@@ -164,6 +164,10 @@ namespace PluginHost {
             ~KeyMap()
             {
 
+            }
+
+        public:
+            void ClearRemovedKeys() {
                 std::map<uint16_t, int16_t> removedKeys;
 
                 while (_keyMap.size() > 0) {
@@ -174,10 +178,11 @@ namespace PluginHost {
                     _keyMap.erase(_keyMap.begin());
                 }
 
-                ChangeIterator removed(removedKeys);
+                if (removedKeys.size() > 0) {
+                    ChangeIterator removed(removedKeys);
+                    _parent.MapChanges(removed);
+                }
             }
-
-        public:
             inline bool PassThrough() const
             {
                 return (_passThrough);
@@ -333,6 +338,12 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
+        inline void ClearKeyMap() {
+            for (auto& keyMap: _mappingTables) {
+                keyMap.second.ClearRemovedKeys();
+            }
+        }
+
         inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
         {
             _repeatKey.Interval(startTime, intervalTime);
