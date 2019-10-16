@@ -63,8 +63,6 @@ namespace PluginHost {
         ExitHandler()
             : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
         {
-            ASSERT(_instance == nullptr);
-            _instance = this;
         }
         virtual ~ExitHandler()
         {
@@ -72,6 +70,14 @@ namespace PluginHost {
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
+        static vodi Construct() {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new WPEFramework::PluginHost::ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
         static void Destruct() {
             _adminLock.Lock();
             if (_instance != nullptr) {
@@ -141,8 +147,7 @@ namespace PluginHost {
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            WPEFramework::PluginHost::ExitHandler* exitHandler = new WPEFramework::PluginHost::ExitHandler();
-            exitHandler->Run();
+            ExitHandler::Construct();
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler

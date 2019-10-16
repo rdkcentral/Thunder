@@ -712,15 +712,16 @@ namespace PluginHost
     {
         if ((_controller.IsValid() == false) || (_controller->ClassType<Plugin::Controller>() == nullptr)) {
             DumpCallStack();
-        }
+        } else {
 
-        _controller->ClassType<Plugin::Controller>()->Notification(data);
+            _controller->ClassType<Plugin::Controller>()->Notification(data);
 
 #ifdef RESTFULL_API
-        string result;
-        data.ToString(result);
-        _controller->Notification(result);
+           string result;
+            data.ToString(result);
+           _controller->Notification(result);
 #endif
+        }
     }
 
     void Server::Open()
