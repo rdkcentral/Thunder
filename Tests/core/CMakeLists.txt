@@ -22,6 +22,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_messageException.cpp
    test_numbertype.cpp
    test_optional.cpp
+   test_parser.cpp
    test_portability.cpp
    test_queue.cpp
    test_rangetype.cpp
