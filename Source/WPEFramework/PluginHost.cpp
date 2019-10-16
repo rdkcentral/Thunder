@@ -260,9 +260,10 @@ namespace PluginHost {
             if (dladdr(callstack[i], &info) && info.dli_sname) {
                 char* demangled = NULL;
                 int status = -1;
-                if (info.dli_sname[0] == '_')
+                if (info.dli_sname[0] == '_') {
                     demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
-                    fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
+                }
+                fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                     status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                     (char*)callstack[i] - (char*)info.dli_saddr);
                 free(demangled);
