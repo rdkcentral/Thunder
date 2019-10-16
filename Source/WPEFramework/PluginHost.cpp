@@ -70,7 +70,7 @@ namespace PluginHost {
             Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
-        static vodi Construct() {
+        static void Construct() {
             _adminLock.Lock();
             if (_instance == nullptr) {
                 _instance = new WPEFramework::PluginHost::ExitHandler();
