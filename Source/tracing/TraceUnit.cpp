@@ -305,7 +305,6 @@ namespace Trace {
     {
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
-        ASSERT (m_EnabledCategories.size() == 0);
         m_EnabledCategories.clear();
 
         while (index.Next()) {
