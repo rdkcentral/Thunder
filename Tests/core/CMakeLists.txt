@@ -50,6 +50,10 @@ add_executable(${TEST_RUNNER_NAME}
    test_xgetopt.cpp
 )
 
+target_compile_definitions(${TEST_RUNNER_NAME}
+   PRIVATE BUILD_DIR=\"${CMAKE_CURRENT_BINARY_DIR}\"
+)
+
 target_link_libraries(${TEST_RUNNER_NAME} 
     ${GTEST_LIBRARY}
     ${GTEST_MAIN_LIBRARY}
