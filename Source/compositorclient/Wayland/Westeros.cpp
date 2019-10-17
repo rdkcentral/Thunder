@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Module.h"
 
 #define EGL_EGLEXT_PROTOTYPES 1
@@ -185,15 +204,26 @@ static const struct wl_pointer_listener pointerListener = {
     // pointerMotion
     [](void* data, struct wl_pointer* pointer, uint32_t time, wl_fixed_t sx, wl_fixed_t sy) {
         int x, y;
+        Wayland::Display& context = *(static_cast<Wayland::Display*>(data));
 
         x = wl_fixed_to_int(sx);
         y = wl_fixed_to_int(sy);
 
         Trace("wl_pointer_listener.pointerMotion [%d,%d]\n", x, y);
+        context.SendPointerPosition(x, y);
     },
     // pointerButton
     [](void* data, struct wl_pointer* pointer, uint32_t serial, uint32_t time, uint32_t button, uint32_t state) {
+        Wayland::Display& context = *(static_cast<Wayland::Display*>(data));
         Trace("wl_pointer_listener.pointerButton [%u,%u]\n", button, state);
+
+        //align with what WPEBackend-rdk wpeframework backend is expecting
+        if (button >= BTN_MOUSE)
+          button = button - BTN_MOUSE;
+        else
+          button = 0;
+
+        context.SendPointerButton(button, static_cast<Wayland::Display::IPointer::state>(state));
     },
     // pointerAxis
     [](void* data, struct wl_pointer* pointer, uint32_t time, uint32_t axis, wl_fixed_t value) {

@@ -1,17 +1,44 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+if(NOT PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION)
+    set(PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION "Westeros")
+endif()
+
+if ((NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Weston") AND
+    (NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Westeros"))
+message( FATAL_ERROR "Invalid Wayland implementation, set PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION (currently: [${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}]) to \"Weston\" or \"Westeros\"" )
+endif ()
+
 find_package(WaylandClient REQUIRED)
 find_package(EGL REQUIRED)
 find_package(WaylandEGL REQUIRED)
-find_package(WesterosClient REQUIRED)
+find_package(${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client REQUIRED)
 find_package(NXCLIENT)
 
-add_library(${TARGET} SHARED Westeros.cpp)
+add_library(${TARGET} SHARED ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}.cpp)
 
 target_link_libraries(${TARGET}
     PRIVATE
+        CompileSettingsDebug::CompileSettingsDebug
         WaylandEGL::WaylandEGL
         ${EGL_LIBRARIES}
         ${NAMESPACE}Core::${NAMESPACE}Core
-        WesterosClient::WesterosClient
+        ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client::${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client
         WaylandClient::WaylandClient)
 
 set_target_properties(${TARGET} PROPERTIES

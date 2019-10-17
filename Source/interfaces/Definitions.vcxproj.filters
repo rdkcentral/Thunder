@@ -1,43 +1,81 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Definitions.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClCompile Include="Definitions.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{ee79f3e5-c132-4027-84e6-9a35454c3451}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{d8766ed9-560a-4d34-bb7a-8e5bef37cb80}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="JSON Files">
-      <UniqueIdentifier>{8139956b-eaee-4eae-aa11-3535f6b92f95}</UniqueIdentifier>
+    <ClInclude Include="definitions.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="json\DeviceInfo.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\DIALServer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\LocationSync.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Messenger.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Monitor.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\NetworkControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\OCDM.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\RemoteControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Spark.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\StateControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Streamer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\SystemCommands.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TestUtility.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TimeSync.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\TraceControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\WebKitBrowser.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\WifiControl.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\Browser.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\DHCPServer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\SecurityAgent.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Contracts">
+      <UniqueIdentifier>{6975244d-cb23-4d09-a334-80cf1e1b4845}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="definitions.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="json\Browser.json" />
-    <CustomBuild Include="json\DeviceInfo.json" />
-    <CustomBuild Include="json\DIALServer.json" />
-    <CustomBuild Include="json\LocationSync.json" />
-    <CustomBuild Include="json\Messenger.json" />
-    <CustomBuild Include="json\Monitor.json" />
-    <CustomBuild Include="json\NetworkControl.json" />
-    <CustomBuild Include="json\OpenCDMi.json" />
-    <CustomBuild Include="json\RemoteControl.json" />
-    <CustomBuild Include="json\Spark.json" />
-    <CustomBuild Include="json\StateControl.json" />
-    <CustomBuild Include="json\Streamer.json" />
-    <CustomBuild Include="json\SystemCommands.json" />
-    <CustomBuild Include="json\TestUtility.json" />
-    <CustomBuild Include="json\TimeSync.json" />
-    <CustomBuild Include="json\WebKitBrowser.json" />
-    <CustomBuild Include="json\WifiControl.json" />
+    <None Include="json\InputSwitch.json">
+      <Filter>Contracts</Filter>
+    </None>
   </ItemGroup>
 </Project>

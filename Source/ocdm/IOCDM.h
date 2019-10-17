@@ -1,6 +1,26 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __IOPENCDMI_H
 #define __IOPENCDMI_H
 
+#include "Module.h"
 #include <com/com.h>
 #include <core/core.h>
 
@@ -164,11 +184,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     SetServerCertificate(const string& keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
-};
-
-struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
-
-    enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_EXTENSION };
 
     virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const = 0;
 
@@ -185,7 +200,7 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
     virtual uint32_t ResetSecureStops(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT GetSecureStopIds(const std::string& keySystem,
-        uint8_t ids[] /* @out @length:idSize */, uint8_t idSize,
+        uint8_t ids[] /* @out @length:idsLength */, uint16_t idsLength,
         uint32_t& count /* @inout */)
         = 0;
 
@@ -217,11 +232,13 @@ struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
         = 0;
 };
 
-class KeyId {
+class EXTERNAL KeyId {
 private:
     static const KeyId InvalidKey;
 
 public:
+    static constexpr uint8_t KEY_LENGTH = 16;
+
     inline KeyId()
         : _status(::OCDM::ISession::StatusPending)
     {
@@ -325,7 +342,7 @@ public:
     }
     inline static uint8_t Length()
     {
-        return (sizeof(_kid));
+        return (KEY_LENGTH);
     }
     inline string ToString() const
     {
@@ -348,7 +365,7 @@ public:
     }
 
 private:
-    uint8_t _kid[16];
+    uint8_t _kid[KEY_LENGTH];
     ::OCDM::ISession::KeyStatus _status;
 };
 

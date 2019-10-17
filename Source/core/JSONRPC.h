@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include "JSON.h"
@@ -277,11 +296,11 @@ namespace Core {
             uint32_t _sequence;
         };
 
+        typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
+        typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
+
         class EXTERNAL Handler {
         private:
-            typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
-            typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
-
             class Entry {
             private:
                 Entry() = delete;
@@ -399,6 +418,74 @@ namespace Core {
             typedef std::function<void(const uint32_t id, const string& designator, const string& data)> NotificationFunction;
 
         public:
+            class EventIterator {
+            public:
+                EventIterator()
+                    : _container(nullptr)
+                    , _index()
+                    , _position(~0)
+                {
+                }
+                EventIterator(const HandlerMap& container)
+                    : _container(&container)
+                    , _index()
+                    , _position(~0)
+                {
+                }
+                EventIterator(const EventIterator& copy)
+                    : _container(copy._container)
+                    , _index(copy._index)
+                    , _position(copy._position)
+                {
+                }
+                ~EventIterator()
+                {
+                }
+
+                EventIterator& operator=(const EventIterator& rhs)
+                {
+                    _container = rhs._container;
+                    _index = rhs._index;
+                    _position = rhs._position;
+
+                    return (*this);
+                }
+
+            public:
+                bool IsValid() const
+                {
+                    return ((_container != nullptr) && (_position < _container->size()));
+                }
+                void Reset()
+                {
+                    _position = ~0;
+                }
+                bool Next()
+                {
+                    if (_position == static_cast<uint16_t>(~0)) {
+                        if (_container != nullptr) {
+                            _position = 0;
+                            _index = _container->cbegin();
+                        }
+                    } else if (_index != _container->cend()) {
+                        _index++;
+                        _position++;
+                    }
+                    return (IsValid());
+                }
+                const string& Event() const
+                {
+                    ASSERT(IsValid());
+                    return (_index->first);
+                }
+
+            private:
+                const HandlerMap* _container;
+                HandlerMap::const_iterator _index;
+                uint16_t _position;
+            };
+
+        public:
             Handler() = delete;
             Handler(const Handler&) = delete;
             Handler& operator=(const Handler&) = delete;
@@ -424,6 +511,10 @@ namespace Core {
             }
 
         public:
+            inline EventIterator Events() const
+            {
+                return (EventIterator(_handlers));
+            }
             inline bool Copy(const Handler& copy, const string& method)
             {
                 bool copied = false;
@@ -522,7 +613,7 @@ namespace Core {
             }
             void Register(const string& methodName, const InvokeFunction& lambda)
             {
-                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
 
                 _handlers.emplace(std::piecewise_construct,

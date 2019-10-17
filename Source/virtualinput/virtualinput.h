@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <stdbool.h>
@@ -31,8 +50,6 @@ enum keyactiontype {
 
 typedef void (*FNKeyEvent)(enum keyactiontype type, unsigned int code);
 
-EXTERNAL void callback_keyboard(FNKeyEvent callback);
-
 // ================================================================================================================
 
 enum mouseactiontype {
@@ -44,8 +61,6 @@ enum mouseactiontype {
 
 typedef void (*FNMouseEvent)(enum mouseactiontype type, unsigned short button, short horizontal, short vertical);
 
-EXTERNAL void callback_mouse(FNMouseEvent callback);
-
 // ================================================================================================================
 
 enum touchactiontype {
@@ -56,11 +71,9 @@ enum touchactiontype {
 
 typedef void (*FNTouchEvent)(enum touchactiontype type, unsigned short index,  unsigned short x, unsigned short y);
 
-EXTERNAL void callback_touch(FNTouchEvent callback);
-
 // ================================================================================================================
 
-EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[]);
+EXTERNAL void* virtualinput_open(const char listenerName[], const char connector[], FNKeyEvent keyCallback, FNMouseEvent mouseCallback, FNTouchEvent touchCallback);
 EXTERNAL void  virtualinput_close(void* handle);
 
 #ifdef __cplusplus

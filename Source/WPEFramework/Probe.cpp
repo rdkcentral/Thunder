@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Probe.h"
 
 namespace WPEFramework {
@@ -39,7 +58,7 @@ namespace Plugin {
         }
         Discovery(const Core::URL& remote, const uint32_t latencyinUs)
         {
-            _text = "Discovered: [" + remote.Text().Text() + "] with latency: " + Core::NumberType<uint32_t>(latencyinUs).Text() + " uS";
+            _text = "Discovered: [" + remote.Text() + "] with latency: " + Core::NumberType<uint32_t>(latencyinUs).Text() + " uS";
         }
         Discovery(const uint32_t latencyinUs)
         {
@@ -202,7 +221,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Probe::Listener::CreateResponse(const uint64_t incomingTime, const uint64_t requestTime)
     {
-        Core::ProxyType<Web::Response> response(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> response(PluginHost::IFactories::Instance().Response());
         Core::ProxyType<Web::TextBody> body(_textResponseFactory.Element());
 
         uint32_t delta = static_cast<uint32_t>(Core::NumberType<uint64_t>(Core::Time::Now().Ticks()) - incomingTime);
@@ -236,7 +255,7 @@ namespace Plugin {
         response->Body(body);
         response->ErrorCode = Web::STATUS_OK;
         response->Message = _T("OK");
-        response->ApplicationURL = _applicationURL;
+        response->ApplicationURL = Core::URL(_applicationURL);
 
         TRACE(Discovery, (response, Link().RemoteNode()));
 

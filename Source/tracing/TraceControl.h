@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __TRACECONTROL_H
 #define __TRACECONTROL_H
 
@@ -12,10 +31,10 @@
 
 // ---- Helper types and constants ----
 #define TRACE(CATEGORY, PARAMETERS)                                                    \
-    if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
+    if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                  \
-        Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                            \
+        WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                            \
             __FILE__,                                                                  \
             __LINE__,                                                                  \
             typeid(*this).name(),                                                      \
@@ -23,13 +42,13 @@
     }
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                             \
-    if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
+    if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                  \
-        Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                            \
+        WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                            \
             __FILE__,                                                                  \
             __LINE__,                                                                  \
-            "<<Global>>",                                                              \
+            __FUNCTION__,                                                              \
             &__message__);                                                             \
     }
 

@@ -1,0 +1,260 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Bluetooth Remote Control API",
+    "class": "BluetoothRemoteControl",
+    "description": "Bluetooth Remote Control JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "deviceaddress": {
+      "description": "Bluetooth address",
+      "type": "string",
+      "example": "81:6F:B0:91:9B:FE"
+    }
+  },
+  "methods": {
+    "assign": {
+      "summary": "Assigns a bluetooth device as a remote control unit",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Bluetooth unavailable",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Device unknown",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Failed to assign the device",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "revoke": {
+      "summary": "Revokes the current remote control assignment",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Remote not assigned",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "name": {
+      "readonly": true,
+      "summary": "Unit name",
+      "params": {
+        "type": "string",
+        "description": "Name of the remote control unit",
+        "example": "Acme Bluetooth RCU"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        }
+      ]
+    },
+    "address": {
+      "readonly": true,
+      "summary": "Bluetooth address of the unit",
+      "params": {
+        "$ref": "#/definitions/deviceaddress"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        }
+      ]
+    },
+    "info": {
+      "summary": "Unit auxiliary information",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "Unit model name or number",
+            "example": "Acme 1500 Plus"
+          },
+          "serial": {
+            "type": "string",
+            "description": "Unit serial number",
+            "example": "1234567890"
+          },
+          "firmware": {
+            "type": "string",
+            "description": "Unit firmware revision",
+            "example": "1.0"
+          },
+          "software": {
+            "type": "string",
+            "description": "Unit software revision",
+            "example": "1.0"
+          },
+          "manufacturer": {
+            "type": "string",
+            "description": "Unit manufacturer name",
+            "example": "Acme Inc."
+          }
+        },
+        "required": [ ]
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to retrieve information"
+        }
+      ]
+    },
+    "batterylevel": {
+      "summary": "Battery level",
+      "event": [ "batterylevel" ],
+      "readonly": true,
+      "params": {
+        "type": "number",
+        "size": 8,
+        "example": 50,
+        "description": "Remote control unit's battery level in percentage"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to retrieve battery level"
+        }
+      ]
+    },
+    "audioprofile" : {
+      "summary": "Audio profile details",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "codec": {
+            "type": "string",
+            "enum" : [ "PCM", "ADPCM" ],
+            "example": "ADPCM",
+            "description": "Name of the audio codec (*pcm* for uncompressed audio)"
+          },
+          "channels": {
+            "type": "number",
+            "size": 8,
+            "example": 1,
+            "description": "Number of audio channels (1: mono, 2: stereo, etc.)"
+          },
+          "rate": {
+            "type": "number",
+            "size": 16,
+            "example": 16000,
+            "description": "Sample rate (in Hz)"
+          },
+          "resolution": {
+            "type": "number",
+            "size": 8,
+            "example": 16,
+            "description": "Sample resolution (in bits per sample)"
+          }
+        },
+        "required": [
+          "codec",
+          "channels",
+          "rate",
+          "resolution"
+        ]
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "The supplied audio profile is unknown"
+        }
+      ]
+    }
+  },
+  "events": {
+    "audiotransmission": {
+      "summary": "Notifies about audio data transmission",
+      "description": "Register to this event to be notified about audio transmission status",
+      "params": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "example": "pcm",
+            "description": "Type of audio profile, marking start of transmission; empty in case of end of transmission"
+          }
+        },
+        "required": []
+      }
+    },
+    "audioframe": {
+      "summary": "Notifies about new audio data available",
+      "description": "Register to this event to be notified about audio data",
+      "params": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number",
+            "example": 1,
+            "description": "Sequence number of the audio frame within current audio transmission"
+          },
+          "data": {
+            "type": "string",
+            "example": "yKMHiYh6qJiDspB6S7ihlKOAbivApYEQDCgY0aECCQhpkAqZogP1ECk9GbHGEAkwG8Ax8wArgaAtEMjGQIoYCKKgGCuzBSA/iuWkKEwamLKzOKoCeR2hwQQZKqgBKKqELoGQwQ==",
+            "description": "Base64 representation of the binary data of the audio frame; format of the data is specified by the audio profile denoted by the most recent *audiotransmission* notification"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    },
+    "batterylevelchange": {
+      "summary": "Notifies about battery level changes",
+      "description": "Register to this event to be notified about battery level drops",
+      "params": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "number",
+            "size": 8,
+            "example": 50,
+            "description": "Battery level (in percentage)"
+          }
+        }
+      }
+    }
+  }
+}

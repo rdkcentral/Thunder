@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <stdlib.h>
 
 #include "IPCConnector.h"
@@ -14,6 +33,22 @@
 using namespace WPEFramework;
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#ifdef __WINDOWS__
+
+#include <ws2tcpip.h>
+
+extern "C" {
+
+    int inet_aton(const char* cp, struct in_addr* inp) {
+#ifdef _UNICODE
+        return (InetPtonW(AF_INET, cp, inp));
+#else
+        return (InetPton(AF_INET, cp, inp));
+#endif
+}
+
+}
+#endif
 
 #ifdef __APPLE__
 extern "C" {
@@ -65,32 +100,15 @@ static void* GetPCFromUContext(void* secret)
 
 static void OverrideStackTopWithPC(void** stack, int stackSize, void* secret)
 {
-    bool foundNull = false;
-
-    int i;
-    for (i = 0; i < stackSize; i++) {
-        void* ptr = stack[i];
-
-        if (ptr != nullptr && foundNull) {
-            // Found first non-null entry.
-            --i;
-            break;
-        } else if (ptr == nullptr) {
-            foundNull = true;
-        }
-    }
-
-    if (i == stackSize) {
-        return;
-    }
-
-    stack[i] = GetPCFromUContext(secret);
-
-    // Remove unneeded stack entries.
-    memmove(stack, stack + i, sizeof(void*) * (stackSize - i));
+    // Move all stack entries one to the right, make sure not to write beyond buffer.
+    uint32_t movedCount = std::min(stackSize, g_threadCallstackBufferSize - 1);
+    memmove(stack + 1, stack, sizeof(void*) * movedCount);
 
     // Set rest to zeroes.
-    memset(stack + stackSize - i, 0, sizeof(void*) * i);
+    memset(stack + 1 + movedCount, 0, sizeof(void*) * (g_threadCallstackBufferSize - movedCount - 1));
+
+    // Assign PC to first entry.
+    stack[0] = GetPCFromUContext(secret);
 }
 
 static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* info VARIABLE_IS_NOT_USED, void* secret)
@@ -213,7 +231,7 @@ void SleepMs(unsigned int a_Time)
 
 #endif
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
 
 uint64_t htonll(const uint64_t& value)
 {

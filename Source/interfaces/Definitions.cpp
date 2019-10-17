@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "definitions.h"
 
 namespace WPEFramework {
@@ -36,6 +55,33 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
     { Exchange::IComposition::ScreenResolution_2160p50Hz, _TXT("2160p50Hz") },
     { Exchange::IComposition::ScreenResolution_2160p60Hz, _TXT("2160p60Hz") },
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
+
+ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
+    { Exchange::IStream::streamtype::Undefined, _TXT(_T("Undefined")) },
+    { Exchange::IStream::streamtype::Cable, _TXT(_T("Cable")) },
+    { Exchange::IStream::streamtype::Handheld, _TXT(_T("Handheld")) },
+    { Exchange::IStream::streamtype::Satellite, _TXT(_T("Satellite")) },
+    { Exchange::IStream::streamtype::Terrestrial, _TXT(_T("Terrestrial")) },
+    { Exchange::IStream::streamtype::DAB, _TXT(_T("DAB")) },
+    { Exchange::IStream::streamtype::RF, _TXT(_T("RF")) },
+    { Exchange::IStream::streamtype::Unicast, _TXT(_T("Unicast")) },
+    { Exchange::IStream::streamtype::Multicast, _TXT(_T("Multicast")) },
+    { Exchange::IStream::streamtype::IP, _TXT(_T("IP")) },
+ENUM_CONVERSION_END(Exchange::IStream::streamtype)
+
+ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
+    { Exchange::IStream::state::Idle, _TXT(_T("Idle")) },
+    { Exchange::IStream::state::Loading, _TXT(_T("Loading")) },
+    { Exchange::IStream::state::Prepared, _TXT(_T("Prepared")) },
+    { Exchange::IStream::state::Controlled, _TXT(_T("Controlled")) },
+    { Exchange::IStream::state::Error, _TXT(_T("Error")) },
+ENUM_CONVERSION_END(Exchange::IStream::state)
+
+ENUM_CONVERSION_BEGIN(Exchange::IVoiceProducer::IProfile::codec)
+    { Exchange::IVoiceProducer::IProfile::codec::UNDEFINED, _TXT(_T("undefined")) },
+    { Exchange::IVoiceProducer::IProfile::codec::PCM, _TXT(_T("pcm")) },
+    { Exchange::IVoiceProducer::IProfile::codec::ADPCM, _TXT(_T("adpcm")) },
+ENUM_CONVERSION_END(Exchange::IVoiceProducer::IProfile::codec)
 
 namespace Exchange
 {

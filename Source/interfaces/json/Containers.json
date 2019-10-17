@@ -1,0 +1,197 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Process Containers",
+    "class": "Containers",
+    "description": "Process Containers JSON-RPC API"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "containers": {
+      "summary": "List of active containers",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of names of all containers",
+        "items": {
+          "type": "string",
+          "example": "ContainerName"
+        }      
+      }    
+    },
+    "networks": {
+      "summary": "List of network interfaces of the container",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of all network interfaces related to the container",
+        "items": {
+          "type": "object",
+          "description": "Returns networks associated with the container",
+          "properties": {
+            "interface": {
+              "type": "string",
+              "description": "Interface name",
+              "example": "veth3NF06K"
+            },
+            "ips": {
+              "type": "array",
+              "description": "List of ip addresses",
+              "items": {
+                "type": "string",
+                "description": "IP address",
+                "example": "192.168.0.12"
+              }
+            }
+          }
+        }      
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "memory": {
+      "summary": "Memory taken by container",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "description": "Memory allocated by the container, in bytes",
+        "properties": {
+          "allocated": {
+            "description": "Memory allocated by container",
+            "type": "number",
+            "size": 64
+          },
+          "resident": {
+            "description": "Resident memory of the container",
+            "type": "number",
+            "size": 64
+          },
+          "shared": {
+            "description": "Shared memory in the container",
+            "type": "number",
+            "size": 64
+          }
+        }
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "cpu": {
+      "summary": "CPU time",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "description": "CPU time spent on running the container, in nanoseconds",
+        "properties": {
+          "total": {
+            "type": "number",
+            "size": 64,
+            "description": "CPU-time spent on container, in nanoseconds",
+            "example": "2871287421"
+          },
+          "cores": {
+            "type": "array",
+            "description": "Time spent on each cpu core, in nanoseconds",
+            "items": {
+              "type": "number",
+              "size": 64,
+              "example": "2871287421"
+            }
+          }
+        }
+      },
+      "index": {
+        "name": "Name",
+        "example": "ContainerName"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "start": {
+      "summary": "Starts a new container",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of container",
+            "type": "string", 
+            "example": "ContainerName"
+          },
+          "command": {
+            "description": "Command that will be started in the container",
+            "type": "string", 
+            "example": "lsof"
+          },
+          "parameters": {
+            "type": "array",
+            "description": "List of parameters supplied to command",
+            "items": {
+              "type": "string",
+              "example": "-i"
+            } 
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Failed to start container",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "stop": {
+      "summary": "Stops a container",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of container",
+            "type": "string", 
+            "example": "ContainerName"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  }
+}

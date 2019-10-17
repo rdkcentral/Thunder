@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __WEBTRANSFER_H
 #define __WEBTRANSFER_H
 
@@ -52,7 +71,7 @@ namespace Web {
             typedef ClientTransferType<LINK, FILEBODY> ThisClass;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             template <typename Arg1>
@@ -105,7 +124,7 @@ namespace Web {
             {
             }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -117,8 +136,8 @@ namespace Web {
         public:
             uint32_t StartTransfer(const Core::ProxyType<Web::Request>& request)
             {
-                ASSERT(_request->IsValid() == false);
-                ASSERT(_response->IsValid() == false);
+                ASSERT(_request.IsValid() == false);
+                ASSERT(_response.IsValid() == false);
 
                 uint32_t result = Core::ERROR_NONE;
 
@@ -181,7 +200,7 @@ namespace Web {
         ClientTransferType<LINK, FILEBODY>& operator=(const ClientTransferType<LINK, FILEBODY>& RHS) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -247,7 +266,7 @@ namespace Web {
             , _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -288,8 +307,8 @@ namespace Web {
 
                         _state = TRANSFER_UPLOAD;
                         _request->Verb = Web::Request::HTTP_PUT;
-                        _request->Path = '/' + destination.Path().Value().Text();
-                        _request->Host = destination.Host().Value().Text();
+                        _request->Path = '/' + destination.Path().Value();
+                        _request->Host = destination.Host().Value();
                         _request->Body(_fileBody);
 
                         // Maybe we need to add a hash value...
@@ -329,8 +348,8 @@ namespace Web {
 
                         _state = TRANSFER_DOWNLOAD;
                         _request->Verb = Web::Request::HTTP_GET;
-                        _request->Path = '/' + source.Path().Value().Text();
-                        _request->Host = source.Host().Value().Text();
+                        _request->Path = '/' + source.Path().Value();
+                        _request->Host = source.Host().Value();
 
                         // Prepare the request for processing
                         result = _channel.StartTransfer(_request);
@@ -430,7 +449,7 @@ namespace Web {
         ServerTransferType<LINK, FILEBODY>& operator=(const ServerTransferType<LINK, FILEBODY>& RHS) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -573,7 +592,7 @@ namespace Web {
             // Path should be a directory. End with a slash !!!
             ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

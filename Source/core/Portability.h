@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __PORTABILITY_H
 #define __PORTABILITY_H
 
@@ -61,16 +80,12 @@
 // W3 -- No matching operator delete found; memory will not be freed if initialization throws an exception
 #pragma warning(disable : 4291)
 
-#ifndef __WIN32__
-#define __WIN32__
-#endif
-
+#ifdef _WIN64
+#define __SIZEOF_POINTER__ 8
+#else
 #ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
-
-#ifdef _WIN64
-#define __SIZEOF_POINTER__ 8
 #endif
 
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
@@ -88,6 +103,9 @@
 #include <memory.h>
 #include <string>
 #include <windows.h>
+#include <unordered_map>
+#include <atomic>
+#include <array>
 
 #define AF_NETLINK 16
 
@@ -99,6 +117,7 @@ inline void SleepMs(unsigned int a_Time)
 {
     ::Sleep(a_Time);
 }
+
 #ifdef _UNICODE
 typedef std::wstring string;
 #endif
@@ -175,7 +194,7 @@ typedef std::string string;
 
 #define LITTLE_ENDIAN_PLATFORM 1
 #undef ERROR
-
+#define __WINDOWS__
 #else
 #ifndef __LINUX__
 #define __LINUX__
@@ -185,6 +204,8 @@ typedef std::string string;
 #ifdef __LINUX__
 
 #include <algorithm>
+#include <atomic>
+#include <array>
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -215,6 +236,7 @@ typedef std::string string;
 #include <termios.h>
 #include <typeinfo>
 #include <unistd.h>
+#include <unordered_map>
 
 #ifdef __APPLE__
 #include <pthread_impl.h>
@@ -337,10 +359,10 @@ inline void SleepS(unsigned int a_Time)
 #define DEPRECATED
 #endif
 
-#if defined(_DEBUG) || !defined(NDEBUG)
+#if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
 #define __DEBUG__
-#ifdef PRODUCTION
-#error "Productiona and Debug is not a good match. Select Production or Debug, not both !!"
+#ifdef _THUNDER_PRODUCTION
+#error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif
 #endif
 
@@ -372,13 +394,13 @@ typedef DEPRECATED signed long long sint64;
 #define TRUE (!FALSE)
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #define SYSTEM_SYNC_HANDLE HANDLE
 #else
 #define SYSTEM_SYNC_HANDLE void*
 #endif
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #define HANDLE int
 #endif
 
@@ -391,7 +413,7 @@ extern "C" {
 
 extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if defined(__LINUX__)
 uint64_t htonll(const uint64_t& value);
 uint64_t ntohll(const uint64_t& value);
 #endif
@@ -416,12 +438,12 @@ typedef enum {
 
 } NumberBase;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
 #include <TCHAR.h>
 #define VARIABLE_IS_NOT_USED
 
-#endif // __WIN32__
+#endif 
 
 #ifdef __LINUX__
 
@@ -466,6 +488,10 @@ typedef HANDLE ThreadId;
 #include "Module.h"
 
 extern "C" {
+
+#ifdef __WINDOWS__
+extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
+#endif
 
 extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
 }
@@ -551,13 +577,11 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown {
+    struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         virtual ~IUnknown(){};
 
-        virtual void AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
         virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
 
         template <typename REQUESTEDINTERFACE>

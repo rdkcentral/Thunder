@@ -1,3 +1,20 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 include (CMakePackageConfigHelpers)
 
 macro(add_element list element)
@@ -335,10 +352,14 @@ function(InstallCMakeConfig)
             break()
         endif()
 
-        get_target_property(_version ${_target} VERSION)
-        get_target_property(_name ${_target} OUTPUT_NAME)
-        get_target_property(_dependencies ${_target} INTERFACE_LINK_LIBRARIES)
-    
+        get_target_property(_type ${_target} TYPE)
+
+        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY")
+            get_target_property(_version ${_target} VERSION)
+            get_target_property(_name ${_target} OUTPUT_NAME)
+            get_target_property(_dependencies ${_target} INTERFACE_LINK_LIBRARIES)
+        endif()
+
         if(NOT _name)
             get_target_property(_name ${_target} NAME)
         endif()
@@ -357,59 +378,61 @@ function(InstallCMakeConfig)
 
         message(STATUS "${_target} added support for cmake consumers via '${_name}Config.cmake'")
 
-        # The alias is used by local targets project
-        add_library(${_name}::${_name} ALIAS ${_target})
+        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY")
+            # The alias is used by local targets project
+            add_library(${_name}::${_name} ALIAS ${_target})
 
-        if(_dependencies)
-            foreach(_dependency ${_dependencies})
-                if ("${_dependency}" MATCHES "LINK_ONLY")
-                    string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_dependency})
-                    string(REGEX REPLACE ">$" "" _dependency ${__fix})
-                endif()
-
-                if(TARGET ${_dependency})
-                    get_target_property(_type ${_dependency} TYPE)
-
-                    if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
-                        set(_type_is_ok TRUE)
-                    else()
-                        set(_type_is_ok FALSE)
+            if(_dependencies)
+                foreach(_dependency ${_dependencies})
+                    if("${_dependency}" MATCHES "LINK_ONLY")
+                        string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_dependency})
+                        string(REGEX REPLACE ">$" "" _dependency ${__fix})
                     endif()
 
-                    get_target_property(_is_imported ${_dependency} IMPORTED)
-                    
-                    if (_type_is_ok)
-                        if(_is_imported)
-                            get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
-                            
-                            if (_configurations)
-                                list(LENGTH _configurations _configurations_count)
+                    if(TARGET ${_dependency})
+                        get_target_property(_type ${_dependency} TYPE)
 
-                                list(GET _configurations 0 _config)
-                                set (config _${_config})
-
-                                if (_configurations_count GREATER 1)
-                                    message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
-                                endif()
-                            endif()
-                            
-                            get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
-                            
-                            _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
+                           set(_type_is_ok TRUE)
                         else()
-                            get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
-
-                            if(NOT _dep_name)
-                                get_target_property( _dep_name ${_dependency} NAME)
-                            endif()
-                        endif(_is_imported)
-                        
-                        if(_dep_name)
-                            list(APPEND dependencies  ${_dep_name})
+                            set(_type_is_ok FALSE)
                         endif()
-                    endif()
-               endif()
-            endforeach()
+
+                        get_target_property(_is_imported ${_dependency} IMPORTED)
+                    
+                        if(_type_is_ok)
+                            if(_is_imported)
+                                get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
+                            
+                                if (_configurations)
+                                    list(LENGTH _configurations _configurations_count)
+
+                                    list(GET _configurations 0 _config)
+                                    set (config _${_config})
+
+                                    if (_configurations_count GREATER 1)
+                                        message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
+                                    endif()
+                                endif()
+                            
+                                get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
+                            
+                                _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                            else()
+                                get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
+
+                                if(NOT _dep_name)
+                                    get_target_property( _dep_name ${_dependency} NAME)
+                                endif()
+                            endif(_is_imported)
+                        
+                            if(_dep_name)
+                                list(APPEND dependencies  ${_dep_name})
+                            endif()
+                        endif()
+                   endif()
+                endforeach()
+            endif()
         endif()
 
         configure_file( "${_config_template}"
@@ -641,149 +664,3 @@ function(print_target_properties tgt)
     endforeach(prop)
 endfunction(print_target_properties)
 
-function(JsonGenerator)
-    if (NOT JSON_GENERATOR)
-        message(FATAL_ERROR "The path JSON_GENERATOR is not set!")
-    endif()
-
-    if(NOT EXISTS "${JSON_GENERATOR}" OR IS_DIRECTORY "${JSON_GENERATOR}")
-        message(FATAL_ERROR "JsonGenerator path ${JSON_GENERATOR} invalid.")
-    endif()
-
-    set(optionsArgs CODE STUBS DOCS NO_WARNINGS COPY_CTOR NO_REF_NAMES)
-    set(oneValueArgs OUTPUT IFDIR INDENT DEF_STRING DEF_INT_SIZE PATH)
-    set(multiValueArgs INPUT)
-
-    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-    if(Argument_UNPARSED_ARGUMENTS)
-        message(FATAL_ERROR "Unknown keywords given to JsonGenerator(): \"${Argument_UNPARSED_ARGUMENTS}\"")
-    endif()
-
-    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-    set(_execute_command ${JSON_GENERATOR})
-
-    if(Argument_CODE)
-        list(APPEND _execute_command  "--code")
-    endif()
-
-    if(Argument_STUBS)
-        list(APPEND _execute_command  "--stubs")
-    endif()
-
-    if(Argument_DOCS)
-        list(APPEND _execute_command  "--docs")
-    endif()
-
-    if(Argument_NO_WARNINGS)
-        list(APPEND _execute_command  "--no-warnings")
-    endif()
-
-    if(Argument_COPY_CTOR)
-        list(APPEND _execute_command  "--copy-ctor")
-    endif()
-
-    if(Argument_NO_REF_NAMES)
-        list(APPEND _execute_command  "--no-ref-names")
-    endif()
-
-    if (Argument_PATH)
-        list(APPEND _execute_command  "-p" "${Argument_PATH}")
-    endif()
-
-    if (Argument_IFDIR)
-        list(APPEND _execute_command  "-i" "${Argument_IFDIR}")
-    endif()
-
-    if (Argument_OUTPUT)
-        file(MAKE_DIRECTORY "${Argument_OUTPUT}")
-        list(APPEND _execute_command  "--output" "${Argument_OUTPUT}")
-    endif()
-
-    if (Argument_INDENT)
-        list(APPEND _execute_command  "--indent" "${Argument_INDENT}")
-    endif()
-
-    if (Argument_DEF_STRING)
-        list(APPEND _execute_command  "--def-string" "${Argument_DEF_STRING}")
-    endif()
-
-    if (Argument_DEF_INT_SIZE)
-        list(APPEND _execute_command  "--def-int-size" "${Argument_DEF_INT_SIZE}")
-    endif()
-
-    foreach(_input ${Argument_INPUT})
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} ${_input} RESULT_VARIABLE rv)
-        if(NOT ${rv} EQUAL 0)
-            message(FATAL_ERROR "JsonGenerator generator failed.")
-        endif()
-    endforeach(_input)
-endfunction(JsonGenerator)
-
-function(ProxyStubGenerator)
-    if (NOT PROXYSTUB_GENERATOR)
-        message(FATAL_ERROR "The path PROXYSTUB_GENERATOR is not set!")
-    endif()
-
-    if(NOT EXISTS "${PROXYSTUB_GENERATOR}" OR IS_DIRECTORY "${PROXYSTUB_GENERATOR}")
-        message(FATAL_ERROR "ProxyStubGenerator path ${PROXYSTUB_GENERATOR} invalid.")
-    endif()
-
-    set(optionsArgs SCAN_IDS TRACES OLD_CPP NO_WARNINGS KEEP VERBOSE)
-    set(oneValueArgs INCLUDE NAMESPACE INDENT)
-    set(multiValueArgs INPUT)
-
-    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-    if(Argument_UNPARSED_ARGUMENTS)
-        message(FATAL_ERROR "Unknown keywords given to ProxyStubGenerator(): \"${Argument_UNPARSED_ARGUMENTS}\"")
-    endif()
-
-    cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
-
-    set(_execute_command ${PROXYSTUB_GENERATOR})
-
-    if(Argument_SCAN_IDS)
-        list(APPEND _execute_command  "--scan-ids")
-    endif()
-
-    if(Argument_TRACES)
-        list(APPEND _execute_command  "--traces")
-    endif()
-
-    if(Argument_OLD_CPP)
-        list(APPEND _execute_command  "--old-cpp")
-    endif()
-
-    if(Argument_NO_WARNINGS)
-        list(APPEND _execute_command  "--no-warnings")
-    endif()
-
-    if(Argument_KEEP)
-        list(APPEND _execute_command  "--keep")
-    endif()
-
-    if(Argument_VERBOSE)
-        list(APPEND _execute_command  "--verbose")
-    endif()
-
-    if (Argument_INCLUDE)
-        list(APPEND _execute_command  "-i" "${Argument_INCLUDE}")
-    endif()
-
-    if (Argument_NAMESPACE)
-        list(APPEND _execute_command  "--namespace" "${Argument_NAMESPACE}")
-    endif()
-
-    if (Argument_INDENT)
-        list(APPEND _execute_command  "--indent" "${Argument_INDENT}")
-    endif()
-
-    foreach(_input ${Argument_INPUT})
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} ${_execute_command} ${_input} RESULT_VARIABLE rv)
-        if(NOT ${rv} EQUAL 0)
-            message(FATAL_ERROR "ProxyStubGenerator generator failed.")
-        endif()
-    endforeach(_input)
-endfunction(ProxyStubGenerator)

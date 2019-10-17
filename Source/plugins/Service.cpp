@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Service.h"
 #include "Channel.h"
 
@@ -43,26 +62,9 @@ namespace PluginHost {
         }
     }
 
-    /* static */ Core::ProxyType<Core::IDispatchType<void>> IShell::Job::Create(IShell* shell, IShell::state toState, IShell::reason why)
+    /* static */ Core::ProxyType<Core::IDispatch> IShell::Job::Create(IShell* shell, IShell::state toState, IShell::reason why)
     {
-        return (Core::proxy_cast<Core::IDispatchType<void>>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
-    }
-
-    Factories::Factories()
-        : _requestFactory(5)
-        , _responseFactory(5)
-        , _fileBodyFactory(5)
-        , _jsonRPCFactory(5)
-    {
-    }
-
-    Factories::~Factories()
-    {
-    }
-
-    /* static */ Factories& Factories::Instance()
-    {
-        return (Core::SingletonType<Factories>::Instance());
+        return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
 #ifdef RESTFULL_API
@@ -91,14 +93,14 @@ namespace PluginHost {
         string fileToService = _webServerFilePath;
 
         if ((webServiceRequest.length() <= offset) || (Web::MIMETypeForFile(webServiceRequest.substr(offset, -1), fileToService, result) == false)) {
-            Core::ProxyType<Web::FileBody> fileBody(Factories::Instance().FileBody());
+            Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
 
             // No filename gives, be default, we go for the index.html page..
             *fileBody = fileToService + _T("index.html");
             response.ContentType = Web::MIME_HTML;
             response.Body<Web::FileBody>(fileBody);
         } else {
-            Core::ProxyType<Web::FileBody> fileBody(Factories::Instance().FileBody());
+            Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
             *fileBody = fileToService;
             response.ContentType = result;
             response.Body<Web::FileBody>(fileBody);

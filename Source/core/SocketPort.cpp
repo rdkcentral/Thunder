@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "SocketPort.h"
 #include "ProcessInfo.h"
 #include "ResourceMonitor.h"
@@ -28,7 +47,7 @@
 #include <sys/signalfd.h>
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #define __ERRORRESULT__ ::WSAGetLastError()
@@ -52,7 +71,7 @@ namespace Core {
     // SocketPort::Initialization
     //////////////////////////////////////////////////////////////////////
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     namespace {
 
@@ -60,35 +79,29 @@ namespace Core {
         public:
             WinSocketInitializer()
             {
-                WORD wVersionRequested;
-                WSADATA wsaData;
-                int err;
+                WORD requestedVersion;
+                WSADATA winsockInfo;
+                int retCode;
 
-                /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
-                wVersionRequested = MAKEWORD(2, 2);
+                // MAKEWORD(lowbyte, highbyte) - this macro is in Windef.h
+                requestedVersion = MAKEWORD(2, 2);
 
-                err = WSAStartup(wVersionRequested, &wsaData);
-                if (err != 0) {
-                    /* Tell the user that we could not find a usable */
-                    /* Winsock DLL.                                  */
-                    printf("WSAStartup failed with error: %d\n", err);
+                retCode = WSAStartup(requestedVersion, &winsockInfo);
+                if (retCode != 0) {
+                    /* Couldn't find a useable Winsock DLL */
+                    printf("WSAStartup failure, error: %d\n", retCode);
                     exit(1);
                 }
 
-                /* Confirm that the WinSock DLL supports 2.2.*/
-                /* Note that if the DLL supports versions greater    */
-                /* than 2.2 in addition to 2.2, it will still return */
-                /* 2.2 in wVersion since that is the version we      */
-                /* requested.                                        */
-
-                if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-                    /* Tell the user that we could not find a usable */
-                    /* WinSock DLL.                                  */
-                    printf("Could not find a usable version of Winsock.dll\n");
+                // WinSock DLL must support 2.2.
+                // Even if the DLL supports versions higher than 2.2 as well,
+                // 2.2 is still returned to match requested version.
+                if (LOBYTE(winsockInfo.wVersion) != 2 || HIBYTE(winsockInfo.wVersion) != 2) {
+                    printf("No version of Winsock.dll found\n");
                     WSACleanup();
                     exit(1);
                 } else {
-                    printf("The Winsock 2.2 dll was found okay\n");
+                    printf("Winsock 2.2 DLL success\n");
                 }
             }
 
@@ -127,7 +140,7 @@ namespace Core {
         ::close(socket);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::closesocket(socket);
 #endif
 
@@ -136,7 +149,7 @@ namespace Core {
 
     bool SetNonBlocking(SOCKET socket)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         unsigned long l_Value = 1;
         if (ioctlsocket(socket, FIONBIO, &l_Value) != 0) {
             TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", __ERRORRESULT__);
@@ -241,7 +254,7 @@ namespace Core {
     {
         uint32_t value;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         int size = sizeof(value);
         if (getsockopt(m_Socket, IPPROTO_IP, IP_TTL, reinterpret_cast<char*>(&value), &size) != 0)
 #else
@@ -258,7 +271,7 @@ namespace Core {
     {
         uint32_t result = Core::ERROR_NONE;
         uint32_t value = ttl;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (setsockopt(m_Socket, IPPROTO_IP, IP_TTL, reinterpret_cast<char*>(&value), sizeof(value)) != 0)
 #else
         if (setsockopt(m_Socket, SOL_IP, IP_TTL, reinterpret_cast<char*>(&value), sizeof(value)) != 0)
@@ -380,6 +393,10 @@ namespace Core {
 
         if (m_Socket != INVALID_SOCKET) {
 
+            m_syncAdmin.Unlock();
+            WaitForWriteComplete(waitTime);
+            m_syncAdmin.Lock();
+
             if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
 
                 if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
@@ -390,7 +407,7 @@ namespace Core {
                     m_State |= SHUTDOWN;
 
 					// Block new data from coming in, signal the other side that we close !!
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                     shutdown(m_Socket, SD_BOTH);
 #else
                     shutdown(m_Socket, SHUT_RDWR);
@@ -483,7 +500,7 @@ namespace Core {
 
         SOCKET l_Result = INVALID_SOCKET;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // Check if domain path already exists, if so remove.
         if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             if (access(localNode.HostName().c_str(), F_OK) != -1) {
@@ -496,7 +513,7 @@ namespace Core {
         if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
             TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
         } else if (SetNonBlocking(l_Result) == false) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::closesocket(l_Result);
 #else
             ::close(l_Result);
@@ -512,7 +529,7 @@ namespace Core {
 
             ::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             // The effect of SO_REUSEADDR  but then on Domain Sockets :-)
             if (unlink(localNode.HostName().c_str()) == -1) {
@@ -529,7 +546,7 @@ namespace Core {
         }
 #endif
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // See if we need to bind to a specific interface.
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
@@ -556,7 +573,7 @@ namespace Core {
             if ((SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) || (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0))) {
                 if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                     if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Rights() <= 0777)) {
                         if (::chmod(localNode.HostName().c_str(), localNode.Rights()) == 0) {
                             BufferAlignment(l_Result);
@@ -617,6 +634,36 @@ namespace Core {
         return (result);
     }
 
+    uint32_t SocketPort::WaitForWriteComplete(const uint32_t time) const
+    {
+        uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
+
+        uint16_t state = 0;
+        // Right, a wait till connection is closed is requested..
+        while ((waiting > 0) && (IsOpen() == true)) {
+            m_syncAdmin.Lock();
+            state =  m_State & SocketPort::WRITESLOT; //Read the state and check write slot is cleared
+            m_syncAdmin.Unlock();
+            if (state == 0) {
+                break;
+            }
+            // Make sure we aren't in the monitor thread waiting for close completion.
+            ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
+
+            uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+
+            // Right, lets sleep in slices of 100 ms
+            SleepMs(sleepSlot);
+
+
+            waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+        }
+
+        uint32_t result = (((time == 0) || (state == 0)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
+
+        return (result);
+    }
+
     uint32_t SocketPort::WaitForClosure(const uint32_t time) const
     {
         // If we build in release, we do not want to "hang" forever, forcefull close after 20S waiting...
@@ -658,7 +705,7 @@ namespace Core {
         uint16_t result = 0;
 
         if (m_State != 0) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             result = FD_CLOSE;
 #else
             result = POLLIN;
@@ -676,7 +723,7 @@ namespace Core {
             if ((m_State & UPDATE) != 0) {
                 m_State ^= UPDATE;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 result |= 0x8000 | ((m_State & SocketPort::ACCEPT) != 0 ? FD_ACCEPT : ((m_State & SocketPort::OPEN) != 0 ? FD_READ | FD_WRITE : FD_CONNECT));
 #endif
             }
@@ -705,7 +752,7 @@ namespace Core {
 
         if ((flagsSet != 0) || (breakIssued == true)) {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if ((flagsSet & FD_CLOSE) != 0) {
                 Closed();
             } else if (IsListening()) {
@@ -894,7 +941,7 @@ namespace Core {
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM))) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 _unlink(m_LocalNode.HostName().c_str());
 #else
                 unlink(m_LocalNode.HostName().c_str());
@@ -1030,7 +1077,7 @@ namespace Core {
 
         ASSERT(inputInfo.IPV4Socket.sin_family == AF_INET);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ip_mreq_source multicastRequest;
 #else
         ip_mreq_source multicastRequest;
@@ -1039,7 +1086,7 @@ namespace Core {
         // multicastRequest.imr_interface = in_addr{ 0, 0;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         multicastRequest.imr_interface = static_cast<const NodeId::SocketInfo&>(LocalNode()).IPV4Socket.sin_addr;
 #endif
 
@@ -1060,7 +1107,7 @@ namespace Core {
 
         ASSERT(inputInfo.IPV4Socket.sin_family == AF_INET);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ip_mreq_source multicastRequest;
 #else
         ip_mreq_source multicastRequest;
@@ -1069,7 +1116,7 @@ namespace Core {
         // multicastRequest.imr_interface = 0;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         multicastRequest.imr_interface = static_cast<const NodeId::SocketInfo&>(LocalNode()).IPV4Socket.sin_addr;
 #endif
 

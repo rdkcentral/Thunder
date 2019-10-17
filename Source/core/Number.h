@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __NUMBER_H
 #define __NUMBER_H
 
@@ -452,7 +471,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
@@ -559,7 +578,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
@@ -632,7 +651,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {

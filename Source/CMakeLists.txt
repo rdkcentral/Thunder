@@ -1,4 +1,22 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 include(config)
+include(CompileSettingsDebug)
 
 option(CORE
         "Include the core library." ON)
@@ -16,6 +34,10 @@ option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
+option(PROVISIONPROXY
+        "Include the provisionproxy library." OFF)
+option(SECURITYAGENT
+        "Include the securityagent library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
@@ -36,8 +58,8 @@ option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
 option(COMPOSITORCLIENT
         "Include a graphics backend abstraction for external applications." OFF)
-option(JSONRPC
-        "Include JSONRPC C++ utility library for external applications." ON)
+option(GSTREAMERCLIENT
+        "Include a gstreamer sink abstraction for external applications." OFF)
 option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
@@ -50,6 +72,27 @@ option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
+
+#
+# Build type specific options
+#
+if(NOT BUILD_TYPE)
+    set(BUILD_TYPE Production)
+    message(AUTHOR_WARNING "BUILD_TYPE not set, assuming '${BUILD_TYPE}'")
+endif()
+if("${BUILD_TYPE}" STREQUAL "Debug")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+elseif("${BUILD_TYPE}" STREQUAL "Production")
+    set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
+else()
+    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+endif()
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
@@ -80,6 +123,10 @@ endif()
 
 if(PROVISIONPROXY)
     add_subdirectory(provisionproxy)
+endif()
+
+if(SECURITYAGENT)
+    add_subdirectory(securityagent)
 endif()
 
 if(CDMI)
@@ -128,12 +175,12 @@ if(VIRTUALINPUT)
     add_subdirectory(virtualinput)
 endif()
 
-if(JSONRPC)
-    add_subdirectory(jsonrpc)
-endif()
-
 if(COMPOSITORCLIENT)
     add_subdirectory(compositorclient)
+endif()
+
+if(GSTREAMERCLIENT)
+    add_subdirectory(gstreamerclient)
 endif()
 
 if(PROCESS)

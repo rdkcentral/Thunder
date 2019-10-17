@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 // SocketPort.h: interface for the SocketPort class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -11,7 +30,7 @@
 #include "ResourceMonitor.h"
 #include "StateTrigger.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #endif
@@ -227,6 +246,7 @@ namespace Core {
         SOCKET ConstructSocket(NodeId& localNode, const string& interfaceName);
         uint32_t WaitForOpen(const uint32_t time) const;
         uint32_t WaitForClosure(const uint32_t time) const;
+        uint32_t WaitForWriteComplete(const uint32_t time) const;
 
     private:
         NodeId m_LocalNode;
@@ -372,7 +392,7 @@ namespace Core {
         SocketListner& operator=(const SocketListner& a_RHS) = delete;
 
     protected:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         SocketListner()
@@ -387,7 +407,7 @@ namespace Core {
         {
             TRACE_L5("Constructor SocketListner <%p>", (this));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

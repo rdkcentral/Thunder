@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <algorithm>
 #include <cassert>
 #include <list>
@@ -79,7 +98,24 @@ namespace Nexus {
                 windowInfo.height = _height;
                 windowInfo.stretch = true;
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT
-                windowInfo.zOrder = 0;
+                // YouTube using EspialBrowser plugin is using 2 surfaces for managing the
+                // Graphics and Video. But only the graphics is using the wpeframework
+                // interface i.e the Compositor plugin, and the video is using a Simple
+                // Nexus decoder client provided along with EspialBrowser. Both the surfaces
+                // are trying to set the zorder to '0'. And results in the video surface coming
+                // on top of the graphics surface.
+                // 
+                // As a workaround the default zorder of the Compositor graphics surface is
+                // changed to '100' (A higher value than '0'). This will force the graphics
+                // surface to be on top of the video surface.
+                //
+                // After applying the workaround NOS videos and YouTube app was checked and the
+                // graphics was coming on top of video as expected.
+                // 
+                // If in the future this leads to issues with other stacks, the suggestion is
+                // to use the Client ID here to determine the zOrder. For now we are not 
+                // expecting any issues form this patch.
+                windowInfo.zOrder = 100;
 #endif
                 windowInfo.clientID = display.NexusClientId();
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
@@ -89,6 +125,7 @@ namespace Nexus {
 
             virtual ~SurfaceImplementation()
             {
+                NXPL_DestroyNativeWindow(this->Native());
                 NEXUS_SurfaceClient_Release(reinterpret_cast<NEXUS_SurfaceClient*>(_nativeWindow));
                 _parent.Unregister(this);
             }
@@ -171,10 +208,12 @@ namespace Nexus {
 
            NEXUS_Error rc = NxClient_Join(&joinSettings);
            BDBG_ASSERT(!rc);
+
+           NxClient_UnregisterAcknowledgeStandby(NxClient_RegisterAcknowledgeStandby());
 #else
            NEXUS_Error rc = NEXUS_Platform_Join();
            BDBG_ASSERT(!rc);
-#endif
+#endif      
 
            NXPL_RegisterNexusDisplayPlatform(&_nxplHandle, displayHandle);
 
@@ -183,16 +222,13 @@ namespace Nexus {
                g_pipefd[1] = -1;
            }
 
-           // on nexus we will for now only have Keyboard support
-           callback_keyboard(VirtualKeyboardCallback);
-
-           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName);
+           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName, VirtualKeyboardCallback, nullptr, nullptr);
 
            if (_virtualkeyboard == nullptr) {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");
            }
 
-           printf("Constructed the Display: %p - %s", this, _displayName.c_str());
+           printf("Constructed the Display: %p - %s\n", this, _displayName.c_str());
         }
 
         uint32_t NexusClientId() const { return _nexusClientId; }
@@ -207,9 +243,15 @@ namespace Nexus {
 
         virtual ~Display()
         {
+            // Clean all active surfaces to deinitialize nexus properly.
+            for (auto surface : _surfaces) {
+                delete surface;
+            }
             NXPL_UnregisterNexusDisplayPlatform(_nxplHandle);
-#ifdef BACKEND_BCM_NEXUS_NXCLIENT
+#ifdef BACKEND_BCM_NEXUS_NXCLIENT   
             NxClient_Uninit();
+#else
+            NEXUS_Platform_Uninit();
 #endif
             if (_virtualkeyboard != nullptr) {
                 virtualinput_close(_virtualkeyboard);
@@ -220,11 +262,11 @@ namespace Nexus {
 
     public:
         // Lifetime management
-        virtual void AddRef() const
+        virtual void AddRef() const override
         {
-        }
-        virtual uint32_t Release() const
-        {
+            }
+        virtual uint32_t Release() const override
+        {               
             // Display can not be destructed, so who cares :-)
             return (0);
         }
@@ -250,7 +292,7 @@ namespace Nexus {
                     // PRESSED   = 1,
                     // REPEAT    = 2,
 
-                    (*index)->SendKey(message.code, (message.type == 0 ? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed), time(nullptr));
+                    (*index)->SendKey(message.code, ((message.type == KEY_RELEASED) ? IDisplay::IKeyboard::released : ((message.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed)), time(nullptr));
                     index++;
                 }
             }
@@ -284,7 +326,7 @@ namespace Nexus {
             }
         }
 
-    private:
+    private: 
         const std::string _displayName;
         NXPL_PlatformHandle _nxplHandle;
         void* _virtualkeyboard;

@@ -49,7 +49,7 @@ OpenCDMError StringToAllocatedBuffer(const std::string& source, char* destinatio
 
     OpenCDMError result = ERROR_NONE;
     
-    sizetype sizeneeded = ( (source.size()+1) > std::numeric_limits<sizetype>::max() ) ? std::numeric_limits<sizetype>::max() : (source.size()+1);
+    sizetype sizeneeded = ( (source.size()+1) > std::numeric_limits<sizetype>::max() ) ? std::numeric_limits<sizetype>::max() : static_cast<sizetype>(source.size()+1);
 
     if(destinationBuffer == nullptr) {
         bufferSize = sizeneeded;

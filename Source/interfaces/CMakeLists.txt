@@ -1,3 +1,20 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set(TargetMarshalling ${NAMESPACE}Marshallings)
 set(TargetDefinitions ${NAMESPACE}Definitions)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
@@ -10,12 +27,15 @@ list(APPEND PUBLIC_HEADERS definitions.h)
 
 ProxyStubGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR})
 JsonGenerator(CODE INPUT ${JSON_FILE})
+JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/I*.h OUTPUT json)
 
 file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
 add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
 file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
 file(GLOB JSON_ENUM_SOURCES json/JsonEnum*.cpp)
+file(GLOB JSON_LINK_HEADERS json/J*.h)
+
 add_library(${TargetDefinitions} SHARED
         Definitions.cpp
         ${JSON_ENUM_SOURCES}
@@ -25,12 +45,15 @@ target_link_libraries(${TargetMarshalling}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_link_libraries(${TargetDefinitions}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 if (PROTOCOLS)
@@ -88,6 +111,11 @@ install(
 install(
         FILES ${JSON_DATA_HEADERS}
         DESTINATION include/${NAMESPACE}/interfaces/json
+)
+
+install(
+        FILES ${JSON_LINK_HEADERS}
+        DESTINATION include/${NAMESPACE}/interfaces
 )
 
 InstallPackageConfig(

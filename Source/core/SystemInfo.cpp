@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "SystemInfo.h"
 #include "FileSystem.h"
 #include "NetworkInfo.h"
@@ -20,35 +39,6 @@
 #include <sys/sysinfo.h>
 #endif
 
-#if defined(PLATFORM_RPI)
-#include <bcm_host.h>
-
-namespace {
-
-class BCMHostInit {
-public:
-    BCMHostInit(const BCMHostInit&) = delete;
-    BCMHostInit& operator=(const BCMHostInit&) = delete;
-
-    BCMHostInit()
-    {
-        bcm_host_init();
-    }
-
-    ~BCMHostInit()
-    {
-        bcm_host_deinit();
-    }
-
-    static void DoBCMHostInit()
-    {
-        static BCMHostInit bcmhostinit;
-    }
-};
-}
-
-#endif
-
 namespace WPEFramework {
 namespace Core {
 
@@ -61,7 +51,7 @@ namespace Core {
         const uint8_t SystemPrefixLength,
         const uint8_t KeyLength)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
 #else
         TCHAR buffer[KeyLength + 1];
@@ -155,35 +145,6 @@ namespace Core {
             KeyLength));
     }
 
-#if defined(PLATFORM_RPI)
-    static std::string vcgencmd_request(const char request[])
-    {
-        // Most VC API calls are guarded but we want to be sure anyway
-        BCMHostInit::DoBCMHostInit();
-
-        static Core::CriticalSection mutualExclusion;
-        mutualExclusion.Lock();
-
-        char buffer[512];
-
-        // Reset the string
-        buffer[0] = '\0';
-
-        int VARIABLE_IS_NOT_USED status = vc_gencmd(buffer, sizeof(buffer), &request[0]);
-        assert((status == 0) && "Error: vc_gencmd failed.\n");
-
-        // Make sure it is null-terminated
-        buffer[sizeof(buffer) - 1] = '\0';
-
-        // Create string from buffer.
-        std::string response(buffer);
-
-        mutualExclusion.Unlock();
-
-        return response;
-    }
-#endif
-
     SystemInfo::SystemInfo()
         : m_HostName(ConstructHostname())
         , m_lastUpdateCpuStats(0)
@@ -206,11 +167,6 @@ namespace Core {
 #endif
 #endif
 
-#if defined(PLATFORM_RPI)
-        // Init GPU resources.
-        // We can call it always. If we are not the first it does not do anything (harmful).
-        // Moreover, it takes care of all underlying necessary API init's
-#endif
         UpdateCpuStats();
     }
 
@@ -249,7 +205,7 @@ namespace Core {
         m_cpuload = ((totalSystemTime + totalUserTime) * 100) / (totalSystemTime + totalUserTime + totalIdleTime);
 #elif defined(__LINUX__)
 
-        static double previousTickCount, previousIdleTime;
+        static uint64_t previousTickCount, previousIdleTime;
 
         // Update once a second to limit file system reads.
         if (difftime(time(nullptr), m_lastUpdateCpuStats) >= RefreshInterval) {
@@ -258,7 +214,7 @@ namespace Core {
             ASSERT(input && "ERROR: Unable to open /proc/stat");
 
             // First line of /proc/stat contains the overall CPU information
-            unsigned long long CpuFields[4];
+            uint64_t CpuFields[4];
 
             int numFields = fscanf(input, _T("cpu %llu %llu %llu %llu"),
                 &CpuFields[0], &CpuFields[1],
@@ -268,17 +224,16 @@ namespace Core {
 
             ASSERT((numFields >= 4) && "ERROR: Read invalid CPU information.");
 
-            unsigned long long CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
-            unsigned long long CurrentTickCount = 0L;
+            uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
+            uint64_t CurrentTickCount = 0L;
 
             for (int i = 0; i < numFields && i < 10; ++i) {
                 CurrentTickCount += CpuFields[i];
             }
+            uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
+            uint64_t DeltaIdleTime = CurrentIdleTime - previousIdleTime;
 
-            double DeltaTickCount = CurrentTickCount - previousTickCount;
-            double DeltaIdleTime = CurrentIdleTime - previousIdleTime;
-
-            SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) / DeltaTickCount) * 100;
+            SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
 
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;
@@ -291,84 +246,12 @@ namespace Core {
 #endif
     }
 
-    void SystemInfo::UpdateTotalGpuRam()
-    {
-        // Save result in gpu field.
-        SystemInfo::m_totalgpuram = 0;
-#if defined(PLATFORM_RPI)
-        if (SystemInfo::m_totalgpuram != 0) {
-            return;
-        }
-
-        std::string response = vcgencmd_request("get_mem reloc_total ");
-
-        // Erase prefix in order to get value.
-        std::size_t prefix = response.find("=");
-        response.erase(0, prefix + 1);
-
-        // Find unit of response and omit from response.
-        std::string unit;
-        std::size_t postfix = response.find_first_not_of("0123456789,. ");
-        if (postfix != std::string::npos) {
-            unit = response.substr(postfix, response.length());
-            response.erase(postfix, response.length());
-        }
-
-        // Convert string to integer.
-        SystemInfo::m_totalgpuram = NumberType<uint64_t>(TextFragment(response)).Value();
-
-        // Convert into bytes, if necessary.
-        if (unit.compare("M") == 0) {
-            // Multiply with MB = 1024*1024.
-            SystemInfo::m_totalgpuram *= 1048576;
-        } else if (unit.compare("K") == 0) {
-            // Multiply with KB = 1024.
-            SystemInfo::m_totalgpuram *= 1024;
-        }
-#endif
-    }
-
-    void SystemInfo::UpdateFreeGpuRam()
-    {
-        // Save result in gpu field.
-        SystemInfo::m_freegpuram = 0;
-
-#if defined(PLATFORM_RPI)
-        static Core::CriticalSection mutualExclusion;
-
-        if (SystemInfo::m_totalgpuram == 0) {
-            SystemInfo::UpdateTotalGpuRam();
-        }
-
-        std::string response = vcgencmd_request("get_mem reloc ");
-
-        // Erase prefix in order to get value.
-        std::size_t prefix = response.find("=");
-        response.erase(0, prefix + 1);
-
-        // Find unit of response and omit from response.
-        std::string unit;
-        std::size_t postfix = response.find_first_not_of("0123456789,. ");
-        if (postfix != std::string::npos) {
-            unit = response.substr(postfix, response.length());
-            response.erase(postfix, response.length());
-        }
-
-        // Convert string to integer.
-        SystemInfo::m_freegpuram = NumberType<uint64_t>(TextFragment(response)).Value();
-
-        // Convert into bytes, if necessary.
-        if (unit.compare("M") == 0) {
-            // Multiply with MB = 1024*1024.
-            SystemInfo::m_freegpuram *= 1048576;
-        } else if (unit.compare("K") == 0) {
-            // Multiply with KB = 1024.
-            SystemInfo::m_freegpuram *= 1024;
-        }
-#endif
-    }
-
 #if defined(__LINUX__) && !defined(__APPLE__)
+
+
+    // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
+    // Licensed under the BSD-3 License
+ 
 
     // GMT specific version of mktime(), taken from BSD source code
     /* Number of days per month (except for February in leap years). */
@@ -387,7 +270,9 @@ namespace Core {
         --y2;
         return (y2 / 4 - y1 / 4) - (y2 / 100 - y1 / 100) + (y2 / 400 - y1 / 400);
     }
-
+   /*
+    * Code adapted from Python 2.4.1 sources (Lib/calendar.py).
+    */
     static time_t mktimegm(const struct tm* tm)
     {
         int year;
@@ -451,7 +336,7 @@ namespace Core {
 
     void SystemInfo::SetTime(const Time& time)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::SetSystemTime(&(time.Handle()));
 
 #elif defined(__APPLE__)
@@ -464,7 +349,17 @@ namespace Core {
 
         time_t value = mktimegm(&setTime);
 
+#if defined(__GNU_LIBRARY__)
+  #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ > 30)
+        timespec ts = {};
+        ts.tv_sec = value;
+        if (clock_settime(CLOCK_REALTIME, &ts) != 0){
+  #else
         if (stime(&value) != 0) {
+  #endif
+#else
+        if (stime(&value) != 0) {
+#endif
             TRACE_L1("Failed to set system time [%d]", errno);
         } else {
             TRACE_L1("System time updated [%d]", errno);
@@ -519,7 +414,7 @@ namespace Core {
         return SetEnvironment(name, value.c_str(), forced);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     /* static */ SystemInfo& SystemInfo::Instance()
     {
         return (_systemInfo);
@@ -534,7 +429,7 @@ namespace Core {
         {
             uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
             // What to do on windows ????
             ASSERT(false);

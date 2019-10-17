@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __COM_ADMINISTRATOR_H
 #define __COM_ADMINISTRATOR_H
 
@@ -21,71 +40,15 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
-    typedef std::pair<const Core::IUnknown*, const uint32_t> ExposedInterface;
-
     class EXTERNAL Administrator {
     private:
         Administrator();
         Administrator(const Administrator&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
-        class ExternalReference {
-        public:
-            ExternalReference() = delete;
-            ExternalReference(const ExternalReference&) = delete;
-            ExternalReference& operator=(const ExternalReference&) = delete;
-
-            ExternalReference(Core::IUnknown* baseInterface, void* implementation, const uint32_t id)
-                : _baseInterface(baseInterface)
-                , _implementation(implementation)
-                , _id(id)
-                , _refCount(1)
-            {
-            }
-            ~ExternalReference()
-            {
-            }
-
-        public:
-            bool operator==(const void* source) const
-            {
-                return (source == _implementation);
-            }
-            bool operator!=(const void* source) const
-            {
-                return (!operator==(source));
-            }
-            void Increment()
-            {
-                _refCount++;
-            }
-            bool Decrement(const uint32_t dropCount)
-            {
-                return (_refCount.fetch_sub(dropCount) == dropCount);
-            }
-            uint32_t Id() const
-            {
-                return (_id);
-            }
-            const Core::IUnknown* Source() const
-            {
-                return (_baseInterface);
-            }
-            uint32_t RefCount() const
-            {
-                return (_refCount.load());
-            }
-
-        private:
-            Core::IUnknown* _baseInterface;
-            void* _implementation;
-            const uint32_t _id;
-            std::atomic<uint32_t> _refCount;
-        };
-
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
         typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
-        typedef std::map<const Core::IPCChannel*, std::list<ExternalReference>> ReferenceMap;
+        typedef std::map<const Core::IPCChannel*, std::list< std::pair<uint32_t, Core::IUnknown*> > > ReferenceMap;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
@@ -136,33 +99,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
-        {
-            _adminLock.Lock();
-
-            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
-
-            if (index != _channelProxyMap.end()) {
-                ProxyList::iterator loop(index->second.begin());
-                while (loop != index->second.end()) {
-                    pendingProxies.push_back(*loop);
-                    loop++;
-                }
-                _channelProxyMap.erase(index);
-            }
-            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
-
-            if (remotes != _channelReferenceMap.end()) {
-                std::list<ExternalReference>::iterator loop(remotes->second.begin());
-                while (loop != remotes->second.end()) {
-                    usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
-                    loop++;
-                }
-                _channelReferenceMap.erase(remotes);
-            }
-
-            _adminLock.Unlock();
-        }
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl)
@@ -175,57 +112,80 @@ namespace RPC {
             return (reinterpret_cast<ACTUALINTERFACE*>(ProxyFind(channel, impl, id, ACTUALINTERFACE::ID)));
         }
         template <typename ACTUALINTERFACE>
-        ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted)
+        ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound)
         {
-
-            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstanceQuery(channel, impl, id, refCounted, ACTUALINTERFACE::ID, false)));
+            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstanceQuery(channel, impl, id, outbound, ACTUALINTERFACE::ID, false)));
         }
         ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
 
-        void AddRef(void* impl, const uint32_t interfaceId);
-        void Release(void* impl, const uint32_t interfaceId);
+        // ----------------------------------------------------------------------------------------------------
+        // Methods for the Proxy Environment
+        // ----------------------------------------------------------------------------------------------------
+        void AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
+        void Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId);
+
+        // ----------------------------------------------------------------------------------------------------
+        // Methods for the Stub Environment
+        // ----------------------------------------------------------------------------------------------------
         void Release(ProxyStub::UnknownProxy* proxy, Data::Output& response);
         void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message);
-        void RegisterProxy(ProxyStub::UnknownProxy& proxy);
-        void UnregisterProxy(ProxyStub::UnknownProxy& proxy);
 
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t id)
-        {
-            RegisterInterface(channel, Convert(reference, id), reference, id);
-        }
+        // ----------------------------------------------------------------------------------------------------
+        // Methods for the Administration
+        // ----------------------------------------------------------------------------------------------------
+        // Stub method for entries that the Stub returns to the callee
         template <typename ACTUALINTERFACE>
         void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
         {
-            RegisterInterface(channel, static_cast<Core::IUnknown*>(reference), reinterpret_cast<void*>(reference), ACTUALINTERFACE::ID);
+            RegisterInterface(channel, static_cast<Core::IUnknown*>(reference), ACTUALINTERFACE::ID);
         }
-        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t interfaceId, const uint32_t dropCount)
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t id)
+        {
+            RegisterInterface(channel, Convert(reference, id), id);
+        }
+        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId)
         {
             ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
 
             if (index != _channelReferenceMap.end()) {
-                std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), reference));
-                ASSERT(element != index->second.end());
+                std::list< std::pair<uint32_t, Core::IUnknown*> >::iterator element(index->second.begin());
+
+                while ( (element != index->second.end()) && ((element->first != interfaceId) || (element->second != source)) ) {
+                    element++;
+                }
+
+                // Comment this out as long as not all interfaces are generated automagically..
+                // ASSERT(element != index->second.end());
 
                 if (element != index->second.end()) {
-                    if (element->Decrement(dropCount) == true) {
-                        index->second.erase(element);
-                        if (index->second.size() == 0) {
-                            _channelReferenceMap.erase(index);
-                        }
+                    index->second.erase(element);
+                    if (index->second.size() == 0) {
+                        _channelReferenceMap.erase(index);
                     }
                 } else {
-                    printf("Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+                    printf("====> Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
                 }
             } else {
-                printf("Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+                printf("====> Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
             }
         }
+        void UnregisterProxy(const ProxyStub::UnknownProxy& proxy);
+        
+   private:
+        // ----------------------------------------------------------------------------------------------------
+        // Methods for the Proxy Environment
+        // ----------------------------------------------------------------------------------------------------
+        // If the Proxy, during the callback, has an Addref for a passed interface, we need to register it. To 
+        // keep track of an external reference held by the given channel on this specific interface.
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
 
-    private:
+        // ----------------------------------------------------------------------------------------------------
+        // Methods for the Stub Environment
+        // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
-        void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id);
+        void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound, const uint32_t ifId, const bool);
+
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
@@ -321,7 +281,7 @@ namespace RPC {
         InvokeServer(const InvokeServer&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
-        InvokeServer(Core::WorkerPool* workers)
+        InvokeServer(Core::IWorkerPool* workers)
             : _threadPoolEngine(*workers)
             , _handler(nullptr)
         {
@@ -347,24 +307,25 @@ namespace RPC {
         }
 
     private:
-        Core::WorkerPool& _threadPoolEngine;
+        Core::IWorkerPool& _threadPoolEngine;
         Core::IIPCServer* _handler;
     };
 
-    template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>
+    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
     class InvokeServerType : public Core::IIPCServer {
     public:
-        InvokeServerType() = delete;
-        InvokeServerType(const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
-        InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& operator = (const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
+        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
 
-        InvokeServerType(const uint32_t stackSize = Core::Thread::DefaultStackSize())
-            : _threadPoolEngine(stackSize, _T("IPCInterfaceMessageHandler"))
+        InvokeServerType()
+            : _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS)
             , _handler(nullptr)
         {
+            _threadPoolEngine.Run();
         }
         ~InvokeServerType()
         {
+            _threadPoolEngine.Stop();
         }
 
         void Announcements(Core::IIPCServer* announces)
@@ -382,13 +343,17 @@ namespace RPC {
 
             if (message->Label() == AnnounceMessage::Id()) {
 	            _handler->Procedure(source, message);
-	        } else {
-                _threadPoolEngine.Submit(Job(source, message, _handler), Core::infinite);
+	    } else {
+
+                Core::ProxyType<Job> job(Job::Instance());
+
+                job->Set(source, message, _handler);
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
             }        
         }
 
     private:
-        Core::ThreadPoolType<Job, THREADPOOLCOUNT, MESSAGESLOTS> _threadPoolEngine;
+        Core::ThreadPool _threadPoolEngine;
         Core::IIPCServer* _handler;
     };
 }

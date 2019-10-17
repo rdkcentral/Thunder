@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __WEBBRIDGESUPPORT_SERVICE__
 #define __WEBBRIDGESUPPORT_SERVICE__
 
@@ -6,49 +25,11 @@
 #include "IPlugin.h"
 #include "IShell.h"
 #include "MetaData.h"
+#include "System.h"
 #include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
-
-   typedef Core::WorkerPool WorkerPool;
-
-    class EXTERNAL Factories {
-    private:
-        Factories();
-        Factories(const Factories&) = delete;
-        Factories& operator=(const Factories&) = delete;
-
-    public:
-        static Factories& Instance();
-        ~Factories();
-
-    public:
-        inline Core::ProxyType<Web::Request> Request()
-        {
-            return (_requestFactory.Element());
-        }
-        inline Core::ProxyType<Web::Response> Response()
-        {
-            return (_responseFactory.Element());
-        }
-        inline Core::ProxyType<Web::FileBody> FileBody()
-        {
-            return (_fileBodyFactory.Element());
-        }
-        inline Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC()
-        {
-            return (_jsonRPCFactory.Element());
-        }
-
-    private:
-        friend class Core::SingletonType<Factories>;
-
-        Core::ProxyPoolType<Web::Request> _requestFactory;
-        Core::ProxyPoolType<Web::Response> _responseFactory;
-        Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-        Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
-    };
 
     class EXTERNAL Service : public IShell {
         // This object is created by the instance that instantiates the plugins. As the lifetime
@@ -116,7 +97,7 @@ namespace PluginHost {
 
             // VolatilePath is a path to a location where the plugin instance can store data needed
             // by the plugin instance, hence why the callSign is included. .
-            // This path is build up from: PersistentPath / callSign /
+            // This path is build up from: VolatilePath / callSign /
             inline const string& VolatilePath() const
             {
                 return (_volatilePath);
@@ -157,7 +138,11 @@ namespace PluginHost {
 
                 // Extract the version list from the config
                 Core::JSON::ArrayType<Core::JSON::DecUInt8> versions;
-                versions.FromString(config.Versions.Value());
+                Core::OptionalType<Core::JSON::Error> error;
+                versions.FromString(config.Versions.Value(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
                 Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
 
                 while (index.Next() == true) {
@@ -308,7 +293,14 @@ namespace PluginHost {
 #ifdef RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
 #endif
+            // When we do this, we need to make sure that the Service does not change state, otherwise it might
+            // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
+            // Now we can first check if
+            Lock();
+
             metaData.JSONState = this;
+
+            Unlock();
 
 #ifdef RUNTIME_STATISTICS
             metaData.ProcessedRequests = _processedRequests;

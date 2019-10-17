@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __PROCESS_H__
 #define __PROCESS_H__
 
@@ -14,12 +33,9 @@ namespace Core {
         class Options {
         private:
             Options() = delete;
-            Options& operator=(const Options&) = delete;
-
-            typedef std::map<const string, string> Map;
-
+            Options& operator=(const Options&) = delete;            
         public:
-            typedef Core::IteratorMapType<const Map, const string&, const string&, Map::const_iterator> Iterator;
+            typedef Core::IteratorType<const std::vector<string>, const string&, std::vector<string>::const_iterator> Iterator;
 
         public:
             Options(const string& command)
@@ -33,7 +49,7 @@ namespace Core {
                 , _options()
             {
                 ASSERT(command.empty() == false);
-                Set(options);
+                Add(options);
             }
             Options(const Options& copy)
                 : _command(copy._command)
@@ -49,39 +65,32 @@ namespace Core {
             {
                 return (_command);
             }
-            inline void Erase(const string& key)
+            inline void Erase(const string& value)
             {
-                _options.erase(key);
-            }
-            inline string& operator[](const TCHAR key[])
-            {
-                return (_options[string(key)]);
-            }
-            inline string& operator[](const string& key)
-            {
-                return (_options[string(key)]);
+                std::remove(_options.begin(), _options.end(), value);
             }
             inline void Clear()
             {
                 _options.clear();
             }
-            void Set(const string& parameter)
+            Options& Add(const string& parameter)
             {
-                _options.insert(std::pair<const string, const string>(parameter, string(_T(""))));
+                _options.push_back(parameter);
+
+                return *this;
             }
-            void Set(const string& key, const string value)
-            {
-                _options.insert(std::pair<const string, const string>(key, value));
-            }
-            void Set(const Iterator& options)
+
+            Options& Add(const Iterator& options)
             {
                 Iterator index(options);
 
                 _options.clear();
 
                 while (index.Next() == true) {
-                    _options.insert(std::pair<const string, const string>(index.Key(), *index));
+                    _options.push_back(index.Current());
                 }
+
+                return *this;
             }
             Iterator Get() const
             {
@@ -94,13 +103,8 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while (index.Next() == true) {
-                    const string& value(*index);
-
-                    size += 1 + static_cast<uint16_t>(index.Key().length());
-
-                    if ((value.empty() != true) && (value[0] != '\0')) {
-                        size += 1 + static_cast<uint16_t>(value.length());
-                    }
+                    // Add length of string plus 1 for '\0'
+                    size += 1 + static_cast<uint16_t>(index.Current().length());
                 }
                 size++; // closing '\0'
 
@@ -115,15 +119,11 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while (index.Next() == true) {
-                    string value(*index);
 
                     argCount++;
-                    size += static_cast<uint16_t>(index.Key().length()) + 1;
 
-                    if (value.empty() != true) {
-                        argCount++;
-                        size += static_cast<uint16_t>(value.length()) + 1;
-                    }
+                    // count for length of parameter + 1 for ending '\0'
+                    size += static_cast<uint16_t>(index.Current().length()) + 1;
                 }
 
                 return ((sizeof(char*) * argCount) + (size * sizeof(char)));
@@ -145,24 +145,13 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while ((data > 2) && (index.Next() == true)) {
-                    const string& value(*index);
-
                     commandCount++;
                     *destination++ = ' ';
                     data -= 1;
 
-                    ::strncpy(destination, index.Key().c_str(), data);
-                    destination = &destination[index.Key().length()];
-                    data -= static_cast<uint16_t>(index.Key().length() > data ? data : index.Key().length());
-
-                    if ((data > 0) && (value.empty() != true)) {
-                        commandCount++;
-                        *destination++ = ' ';
-                        data--;
-                        ::strncpy(destination, value.c_str(), data);
-                        destination = &destination[value.length()];
-                        data -= static_cast<uint16_t>(value.length() > data ? data : value.length());
-                    }
+                    ::strncpy(destination, index.Current().c_str(), data);
+                    destination = &destination[index.Current().length()];
+                    data -= static_cast<uint16_t>(index.Current().length() > data ? data : index.Current().length());
                 }
 
                 if (data > 0) {
@@ -178,12 +167,6 @@ namespace Core {
                 uint16_t commandCount = 1 + static_cast<uint16_t>(_options.size()) + 1;
                 Iterator index(_options);
 
-                // Calculate the number of "not empty" values, they will trigger another argument
-                while (index.Next() == true) {
-                    if ((*index).empty() == false) {
-                        commandCount++;
-                    }
-                }
                 ASSERT(result != nullptr);
 
                 if ((result == nullptr) || (data <= (sizeof(char*) * commandCount))) {
@@ -206,23 +189,13 @@ namespace Core {
                     index.Reset(0);
 
                     // First option needs to be the application start name
-                    while ((data > 2) && (index.Next() == true)) {
-                        const string& value(*index);
-
+                    while ((data >= 2) && (index.Next() == true)) {
                         commandCount++;
                         *indexer++ = destination;
 
-                        ::strncpy(destination, index.Key().c_str(), data);
-                        destination = &destination[index.Key().length() + 1];
-                        data -= static_cast<uint16_t>((index.Key().length() + 1) > data ? data : (index.Key().length() + 1));
-
-                        if ((data > 0) && (value.empty() != true)) {
-                            commandCount++;
-                            *indexer++ = destination;
-                            ::strncpy(destination, value.c_str(), data);
-                            destination = &destination[value.length() + 1];
-                            data -= static_cast<uint16_t>((value.length() + 1) > data ? data : (value.length() + 1));
-                        }
+                        ::strncpy(destination, index.Current().c_str(), data);
+                        destination = &destination[index.Current().length() + 1];
+                        data -= static_cast<uint16_t>((index.Current().length() + 1) > data ? data : (index.Current().length() + 1));
                     }
 
                     *indexer = nullptr;
@@ -233,7 +206,7 @@ namespace Core {
 
         private:
             const string _command;
-            Map _options;
+            std::vector<string> _options;
         };
 
     private:
@@ -245,7 +218,7 @@ namespace Core {
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             , _stdin(capture ? -1 : 0)
             , _stdout(capture ? -1 : 0)
             , _stderr(capture ? -1 : 0)
@@ -256,13 +229,13 @@ namespace Core {
             , _stderr(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
 #endif
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::memset(&_info, 0, sizeof(_info));
 #endif
         }
         ~Process()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (_info.hProcess != 0) {
                 //// Close process and thread handles.
                 CloseHandle(_info.hProcess);
@@ -278,7 +251,7 @@ namespace Core {
     public:
         inline uint32_t Id() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (_info.dwProcessId);
 #else
             return (_PID);
@@ -287,7 +260,7 @@ namespace Core {
 
         inline bool IsActive() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD exitCode = _exitCode;
             if ((_info.hProcess != 0) && (_exitCode == static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
@@ -318,7 +291,7 @@ namespace Core {
         }
         inline bool HasConnector() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return ((_stdin != reinterpret_cast<HANDLE>(~0)) && (_stdin != nullptr));
 #else
             return ((_stdin != -1) && (_stdin != 0));
@@ -344,7 +317,7 @@ namespace Core {
         {
             return ((_exitCode != static_cast<uint32_t>(~0)) && ((_exitCode & 0x80000000) == 0));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline uint16_t Input(const uint8_t data[], const uint16_t length)
         {
 
@@ -399,7 +372,7 @@ namespace Core {
                 // If we are "relaunched" make sure we reset the _exitCode.
                 _exitCode = static_cast<uint32_t>(~0);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 STARTUPINFO si;
                 ZeroMemory(&si, sizeof(si));
                 si.cb = sizeof(si);
@@ -577,7 +550,7 @@ namespace Core {
 
         void Kill(const bool hardKill)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (hardKill == true) {
                 TerminateProcess(_info.hProcess, 1234);
             }
@@ -588,7 +561,7 @@ namespace Core {
 
         uint32_t WaitProcessCompleted(const uint32_t waitTime)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (WaitForSingleObject(_info.hProcess, waitTime) == 0) {
                 return (Core::ERROR_NONE);
             }
@@ -620,7 +593,7 @@ namespace Core {
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             , _stdin(0)
             , _stdout(0)
             , _stderr(0)
@@ -631,7 +604,7 @@ namespace Core {
             , _stderr(nullptr)
 #endif
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::memset(&_info, 0, sizeof(_info));
 #endif
         }
@@ -640,7 +613,7 @@ namespace Core {
         uint16_t _argc;
         void* _parameters;
         mutable uint32_t _exitCode;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _stdin;
         HANDLE _stdout;
         HANDLE _stderr;

@@ -354,11 +354,6 @@ public:
 
     virtual uint64_t GetDrmSystemTime() const = 0;
 
-    // Destroy a MediaKeySession instance.
-    virtual CDMi_RESULT DestroyMediaKeySessionExt(
-        IMediaKeySession* f_piMediaKeySession)
-        = 0;
-
     virtual std::string GetVersionExt() const = 0;
 
     virtual uint32_t GetLdlSessionLimit() const = 0;
@@ -371,7 +366,7 @@ public:
 
     virtual CDMi_RESULT GetSecureStopIds(
         uint8_t ids[],
-        uint8_t idSize,
+        uint16_t idsLength,
         uint32_t& count)
         = 0;
 

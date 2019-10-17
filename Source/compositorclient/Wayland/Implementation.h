@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include <cassert>
@@ -25,6 +44,7 @@ struct wl_keyboard;
 struct wl_pointer;
 struct wl_touch;
 struct wl_simple_shell;
+struct zxdg_shell_v6;
 struct wl_shell;
 struct wl_surface;
 struct wl_egl_window;
@@ -32,6 +52,9 @@ struct wl_keyboard_listener;
 struct wl_callback;
 struct wl_callback_listener;
 struct wl_shell_surface;
+
+struct zxdg_surface_v6;
+struct zxdg_toplevel_v6;
 
 namespace WPEFramework {
 namespace Wayland {
@@ -42,9 +65,6 @@ namespace Wayland {
             virtual ~ICallback() {}
             virtual void Attached(const uint32_t id) = 0;
             virtual void Detached(const uint32_t id) = 0;
-        };
-        struct IPointer {
-            virtual ~IPointer() {}
         };
 
     private:
@@ -210,6 +230,11 @@ namespace Wayland {
             // Called by C interface methods. A bit to much overkill to actually make the private and all kind
             // of friend definitions.
             struct wl_surface* _surface;
+
+            struct zxdg_surface_v6 *_xdg_surface;
+            struct zxdg_toplevel_v6 *_xdg_toplevel;
+
+            bool _wait_for_configure;
 
         private:
             friend Display;
@@ -737,6 +762,30 @@ namespace Wayland {
             _adminLock.Unlock();
         }
 
+        void SendPointerPosition(const uint16_t x, const uint16_t y)
+        {
+            _adminLock.Lock();
+
+            if ((_pointerReceiver != nullptr) && (_pointerReceiver->_pointer != nullptr)) {
+              _pointerReceiver->_pointer->Direct(x, y);
+            }
+
+            _adminLock.Unlock();
+
+        }
+
+        void SendPointerButton(const uint8_t button, const IPointer::state action)
+        {
+            _adminLock.Lock();
+
+            if ((_pointerReceiver != nullptr) && (_pointerReceiver->_pointer != nullptr)) {
+              _pointerReceiver->_pointer->Direct(button, action);
+            }
+
+            _adminLock.Unlock();
+
+        }
+
         // Wayland related info
         struct wl_display* _display;
         struct wl_registry* _registry;
@@ -748,6 +797,7 @@ namespace Wayland {
         struct wl_pointer* _pointer;
         struct wl_touch* _touch;
         struct wl_shell* _shell;
+        struct zxdg_shell_v6* _xdg_shell;
 
         // KeyBoardInfo
         uint32_t _keyRate;

@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "GATTSocket.h"
 
 namespace WPEFramework {
@@ -80,7 +99,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
     } else {
         result = length;
 
-        TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
+        // TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
         // printf("L2CAP received [%d]: ", length);
         // for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
 
@@ -244,13 +263,13 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
              break;
         }
         case ATT_OP_WRITE_RESP: {
-            TRACE_L1(_T("We have written: %d"),length);
+            // TRACE_L1(_T("We have written: %d"),length);
             _error = Core::ERROR_NONE;
             _response.Type(stream[0]);
             break;
         }
         case ATT_OP_READ_RESP: {
-            _response.Add(_frame.Handle(), length, &(stream[1]));
+            _response.Add(_frame.Handle(), length - 1, &(stream[1]));
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
             }
