@@ -189,7 +189,6 @@ namespace PluginHost
 
     VirtualInput::~VirtualInput()
     {
-
         _mappingTables.clear();
     }
 
@@ -516,6 +515,7 @@ namespace PluginHost
 
     /* virtual */ LinuxKeyboardInput::~LinuxKeyboardInput()
     {
+        ClearKeyMap();
         Close();
     }
 
@@ -666,6 +666,7 @@ namespace PluginHost
 
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
+        ClearKeyMap();
     }
 
     /* virtual */ uint32_t IPCUserInput::Open()

@@ -164,18 +164,6 @@ namespace PluginHost {
             ~KeyMap()
             {
 
-                std::map<uint16_t, int16_t> removedKeys;
-
-                while (_keyMap.size() > 0) {
-
-                    // Negative reference counts
-                    removedKeys[_keyMap.begin()->second.Code]--;
-
-                    _keyMap.erase(_keyMap.begin());
-                }
-
-                ChangeIterator removed(removedKeys);
-                _parent.MapChanges(removed);
             }
 
         public:
@@ -227,6 +215,27 @@ namespace PluginHost {
 
                 return (Add(code, key, modifiers));
             }
+
+        private:
+            void ClearKeyMap() {
+                std::map<uint16_t, int16_t> removedKeys;
+
+                while (_keyMap.size() > 0) {
+
+                    // Negative reference counts
+                    removedKeys[_keyMap.begin()->second.Code]--;
+
+                    _keyMap.erase(_keyMap.begin());
+                }
+
+                if (removedKeys.size() > 0) {
+                    ChangeIterator removed(removedKeys);
+                    _parent.MapChanges(removed);
+                }
+            }
+
+        private:
+            friend class VirtualInput;
 
         private:
             VirtualInput& _parent;
@@ -445,6 +454,13 @@ namespace PluginHost {
             PostLookupMap::const_iterator linkMap(_postLookupTable.find(linkName));
 
             return (linkMap != _postLookupTable.end() ? &(linkMap->second) : nullptr);
+        }
+
+    protected:
+        inline void ClearKeyMap() {
+            for (auto& keyMap: _mappingTables) {
+                keyMap.second.ClearKeyMap();
+            }
         }
 
     private:
