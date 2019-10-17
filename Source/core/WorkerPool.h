@@ -60,6 +60,7 @@ namespace Core {
             {
                 ASSERT(_job.IsValid() == true);
                 _job->Dispatch();
+                _job.Release();
             }
 
         private:

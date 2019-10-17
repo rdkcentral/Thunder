@@ -40,4 +40,7 @@
     <CustomBuild Include="json\WebKitBrowser.json" />
     <CustomBuild Include="json\WifiControl.json" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="json\TraceControl.json" />
+  </ItemGroup>
 </Project>

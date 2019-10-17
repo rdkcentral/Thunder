@@ -18,7 +18,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
 namespace PluginHost
 {
-    /*static */ VirtualInput* InputHandler::_keyHandler;
+    /* static */ VirtualInput* InputHandler::_keyHandler;
 
     uint32_t VirtualInput::KeyMap::Load(const string& keyMap)
     {
@@ -47,7 +47,7 @@ namespace PluginHost
             if (mappingFile.Open(true) == true) {
                 result = Core::ERROR_NONE;
 
-                mappingTable.FromFile(mappingFile);
+                mappingTable.IElement::FromFile(mappingFile);
 
                 // Build the device info array..
                 Core::JSON::ArrayType<KeyMapEntry>::Iterator index(mappingTable.Elements());
@@ -162,7 +162,7 @@ namespace PluginHost
                 mappingTable.Add(element);
                 index++;
             }
-            mappingTable.ToFile(mappingFile);
+            mappingTable.IElement::ToFile(mappingFile);
         }
 
         return (result);
@@ -173,7 +173,7 @@ namespace PluginHost
 #endif
     VirtualInput::VirtualInput()
         : _lock()
-        , _repeatKey(*this)
+        , _repeatKey(this)
         , _modifiers(0)
         , _defaultMap(nullptr)
         , _notifierMap()
@@ -182,6 +182,8 @@ namespace PluginHost
         , _repeatLimit(0)
     {
         // The derived class shoud set, the initial value of the modifiers...
+        _repeatKey.AddRef();
+        _repeatKey.AddReference();
     }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
@@ -189,8 +191,9 @@ namespace PluginHost
 
     VirtualInput::~VirtualInput()
     {
-
         _mappingTables.clear();
+        _repeatKey.DropReference();
+        _repeatKey.CompositRelease();
     }
 
     void VirtualInput::Register(INotifier * callback, const uint32_t keyCode)
@@ -381,6 +384,9 @@ namespace PluginHost
                 event.Action =  (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED);
                 event.Code = sendCode;
                 Send(event);
+                DispatchRegisteredKey(
+                    (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED),
+                    sendCode | (sendModifiers << 16));
 
                 if (pressed == false) {
                     if (sendModifiers != 0) {
@@ -516,6 +522,7 @@ namespace PluginHost
 
     /* virtual */ LinuxKeyboardInput::~LinuxKeyboardInput()
     {
+        ClearKeyMap();
         Close();
     }
 
@@ -657,15 +664,21 @@ namespace PluginHost
 #endif
 
     // Keyboard input
-
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
     IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
         : _service(*this, sourceName)
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
+        ClearKeyMap();
     }
 
     /* virtual */ uint32_t IPCUserInput::Open()

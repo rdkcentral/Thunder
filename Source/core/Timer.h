@@ -359,12 +359,10 @@ namespace Core {
 
     template <typename HANDLER>
     class WatchDogType : public Thread {
-    private:
-        WatchDogType();
-        WatchDogType(const WatchDogType<HANDLER>&);
-        WatchDogType& operator=(const WatchDogType&);
-
     public:
+        WatchDogType() = delete;
+        WatchDogType(const WatchDogType<HANDLER>&) = delete;
+        WatchDogType& operator=(const WatchDogType&) = delete;
         WatchDogType(const uint32_t stackSize, const TCHAR* threadName)
             : Thread(stackSize, threadName)
             , _job()

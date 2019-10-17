@@ -322,7 +322,7 @@ namespace RPC {
             {
                 ASSERT(_channel.IsValid() == true);
 
-                return (Core::ProxyType<Core::IPCChannel> (_channel));
+                return (Core::ProxyType<Core::IPCChannel>(_channel));
             }
             void Open(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t id)
             {
@@ -428,7 +428,10 @@ namespace RPC {
             LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
 
         private:
-            LocalRemoteProcess() = default;
+            LocalRemoteProcess()
+                : _id(0)
+            {
+            }
 
             ~LocalRemoteProcess() = default;
 
@@ -945,6 +948,7 @@ namespace RPC {
             ChannelLink(Core::IPCChannelType<Core::SocketPort, ChannelLink>* channel)
                 : _channel(channel->Source())
                 , _connectionMap(nullptr)
+                , _id(0)
             {
                 // We are a composit of the Channel, no need (and do not for cyclic references) not maintain a reference...
                 ASSERT(channel != nullptr);
@@ -1187,11 +1191,18 @@ namespace RPC {
 
             while (loop2 != pendingInterfaces.end()) {
                 const Core::IUnknown* source = loop2->first;
-                uint32_t count = loop2->second;
-                Cleanup(source, count);
-                while (count != 0) {
-                    source->Release();
-                    count--;
+
+                // This is a situation that should not occure. Needs further 
+                // investigation if this ASSERT fires !!!
+                ASSERT (source != nullptr);
+
+                if (source != nullptr) {
+                    uint32_t count = loop2->second;
+                    Cleanup(source, count);
+                    while (count != 0) {
+                        source->Release();
+                        count--;
+                    }
                 }
                 loop2++;
             }

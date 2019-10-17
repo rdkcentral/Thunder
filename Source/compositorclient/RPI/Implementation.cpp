@@ -365,11 +365,8 @@ private:
             TRACE(CompositorClient, (_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text()));
             _compositerServerRPCConnection.Release();
         }
-        callback_keyboard(VirtualKeyboardCallback);
-        callback_mouse(VirtualMouseCallback);
-        callback_touch(VirtualTouchScreenCallback);
 
-        _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput);
+        _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput, VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
 
         if (_virtualinput == nullptr) {
             TRACE(CompositorClient, (_T("Initialization of virtual input failed for Display %s!"), Name()));
@@ -396,10 +393,6 @@ private:
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
         }
-
-        callback_keyboard(nullptr);
-        callback_mouse(nullptr);
-        callback_touch(nullptr);
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
         while (index != _surfaces.end()) {
@@ -630,7 +623,6 @@ int Display::FileDescriptor() const
 Compositor::IDisplay::ISurface* Display::Create(
     const std::string& name, const uint32_t width, const uint32_t height)
 {
-
     SurfaceImplementation* retval = (Core::Service<SurfaceImplementation>::Create<SurfaceImplementation>(this, name, width, height));
 
     OfferClientInterface(retval);
@@ -671,12 +663,19 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
 
-    _adminLock.Lock();
-    uint32_t result = _compositerServerRPCConnection->Offer(client);
-    _adminLock.Unlock();
+    if (_compositerServerRPCConnection.IsValid()) {
+        _adminLock.Lock();
+        uint32_t result = _compositerServerRPCConnection->Offer(client);
+        _adminLock.Unlock();
 
-    if (result != Core::ERROR_NONE) {
-        TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        if (result != Core::ERROR_NONE) {
+            TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        }
+    } else {
+#if defined(COMPOSITORSERVERPLUGIN)
+        SYSLOG(Trace::Fatal, (_T("The CompositorServer plugin is included in the build, but not able to reach!")));
+        ASSERT(false && "The CompositorServer plugin is included in the build, but not able to reach!");
+#endif
     }
 }
 
@@ -684,12 +683,19 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
 
-    _adminLock.Lock();
-    uint32_t result = _compositerServerRPCConnection->Revoke(client);
-    _adminLock.Unlock();
+    if (_compositerServerRPCConnection.IsValid()) {
+        _adminLock.Lock();
+        uint32_t result = _compositerServerRPCConnection->Revoke(client);
+        _adminLock.Unlock();
 
-    if (result != Core::ERROR_NONE) {
-        TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        if (result != Core::ERROR_NONE) {
+            TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        }
+    }else {
+#if defined(COMPOSITORSERVERPLUGIN)
+        SYSLOG(Trace::Fatal, (_T("The CompositorServer plugin is included in the build, but not able to reach!")));
+        ASSERT(false && "The CompositorServer plugin is included in the build, but not able to reach!");
+#endif
     }
 }
 

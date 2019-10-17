@@ -156,6 +156,9 @@ namespace PluginHost {
         //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
         virtual string ProxyStubPath() const = 0;
 
+        //! Substituted Config value
+        virtual string ConfigSubstitution(const string& input) const = 0;
+
         //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
 

@@ -308,6 +308,10 @@ namespace RPC {
     {
     }
 
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+
     Communicator::Communicator(const Core::NodeId& node, const string& proxyStubPath)
         : _connectionMap(*this)
         , _ipcServer(node, _connectionMap, proxyStubPath)
@@ -375,6 +379,9 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
     CommunicatorClient::~CommunicatorClient()
     {

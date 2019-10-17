@@ -2,6 +2,12 @@
 
 namespace WPEFramework {
 
+ENUM_CONVERSION_BEGIN(Bluetooth::Address::type)
+    { Bluetooth::Address::BREDR_ADDRESS, _TXT(_T("bredr")) },
+    { Bluetooth::Address::LE_PUBLIC_ADDRESS, _TXT(_T("le_public")) },
+    { Bluetooth::Address::LE_RANDOM_ADDRESS, _TXT(_T("le_random")) },
+ENUM_CONVERSION_END(Bluetooth::Address::type)
+
 namespace Bluetooth {
 
 uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
@@ -359,50 +365,45 @@ private:
     {
         uint16_t result = 0;
         if (length >= sizeof(mgmt_hdr)) {
-
             // printf ("RECEIVED: ");
             // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
             const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(stream);
-            uint16_t opCode = htobs(hdr->opcode);
-            uint16_t payload = htobs(hdr->len);
+            uint16_t opCode = btohs(hdr->opcode);
+            uint16_t payload = btohs(hdr->len);
+
             if (opCode == MGMT_EV_CMD_STATUS) {
-                uint16_t len = length - sizeof(mgmt_hdr);
-                const mgmt_ev_cmd_status* data = reinterpret_cast<const mgmt_ev_cmd_status*>(&(stream[sizeof(mgmt_hdr)])); 
-                if (htobs(data->opcode) == OPCODE) { 
-                    result = sizeof(mgmt_hdr);
-                    if ( len < sizeof(mgmt_ev_cmd_status)) { 
-                        result += len;
-                        _error  = Core::ERROR_GENERAL; 
-                        TRACE_L1(_T("EVT_MGMT_STATUS: Message too short => %04X Error: %d"), data->opcode, data->status); 
+                uint16_t len = (length - sizeof(mgmt_hdr));
+                const mgmt_ev_cmd_status* data = reinterpret_cast<const mgmt_ev_cmd_status*>(&(stream[sizeof(mgmt_hdr)]));
+                if (btohs(data->opcode) == OPCODE) {
+                    if (len < sizeof(mgmt_ev_cmd_status)) {
+                        TRACE(Trace::Error, (_T("MGMT_EV_CMD_STATUS: Message too short; opcode=%04X"), data->opcode)); 
+                        _error  = Core::ERROR_GENERAL;
+                    } else {
+                        TRACE(Trace::Information, (_T("MGMT_EV_CMD_STATUS: opcode=0x%04X, status=%d"), data->opcode, data->status));
+                        _error = data->status;
                     }
-                    else {
-                        result += sizeof(mgmt_ev_cmd_status); 
-                        printf ("EVT_MGMT_STATUS: Error %d\n", data->status);
-                        _error  = (data->status == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL); 
-                    } 
+                    result = length;
                 }
             }
-            else if (opCode == MGMT_EV_CMD_COMPLETE) { 
-                const mgmt_ev_cmd_complete* data = reinterpret_cast<const mgmt_ev_cmd_complete*>(&(stream[sizeof(mgmt_hdr)])); 
-                if (htobs(data->opcode) == OPCODE) { 
-                    uint16_t len = length - sizeof(mgmt_hdr);
-                    result = sizeof(mgmt_hdr);
-                    if (len < sizeof(mgmt_ev_cmd_complete)) { 
-                        _error = Core::ERROR_GENERAL; 
-                        TRACE_L1(_T("EVT_MGMT_COMPLETED: Message too short => %04X Error: %d"), data->opcode, _error); 
-                        result += len; 
-                    } else { 
+            else if (opCode == MGMT_EV_CMD_COMPLETE) {
+                const mgmt_ev_cmd_complete* data = reinterpret_cast<const mgmt_ev_cmd_complete*>(&(stream[sizeof(mgmt_hdr)]));
+                if (btohs(data->opcode) == OPCODE) {
+                    uint16_t len = (length - sizeof(mgmt_hdr));
+                    if (len < sizeof(mgmt_ev_cmd_complete)) {
+                        TRACE(Trace::Error, (_T("MGMT_EV_CMD_COMPLETE: Message too short; opcode=%04X"), data->opcode));
+                        _error = Core::ERROR_GENERAL;
+                    } else {
                         _inboundSize = std::min(
-                            static_cast<uint16_t>(sizeof(INBOUND)), 
-                            static_cast<uint16_t>(payload - sizeof (mgmt_ev_cmd_complete)));
-                        _inboundSize = std::min(_inboundSize, static_cast<uint16_t>(len - sizeof(mgmt_ev_cmd_complete))); 
-
-                        ::memcpy(reinterpret_cast<uint8_t*>(&_inbound), data->data, _inboundSize); 
-                        _error = Core::ERROR_NONE; 
-                        result = payload;
-                    } 
-                } 
+                            static_cast<uint16_t>(sizeof(INBOUND)),
+                            static_cast<uint16_t>(payload - sizeof(mgmt_ev_cmd_complete)));
+                        _inboundSize = std::min(_inboundSize, static_cast<uint16_t>(len - sizeof(mgmt_ev_cmd_complete)));
+                        ::memcpy(reinterpret_cast<uint8_t*>(&_inbound), data->data, _inboundSize);
+                        TRACE(Trace::Information, (_T("MGMT_EV_CMD_COMPLETE: opcode=0x%04X, status=%d"), data->opcode, data->status));
+                        _error = data->status;
+                    }
+                    result = length;
+                }
             }
         }
         return (result);
@@ -494,7 +495,7 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_START_DISCOVERY, mgmt_cp_start_discovery, uint8_t> StartDiscovery;
     typedef ManagementFixedType<MGMT_OP_STOP_DISCOVERY, mgmt_cp_stop_discovery, uint8_t> StopDiscovery;
     typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, mgmt_rp_pair_device> Pair;
-    typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, Core::Void> Unpair;
+    typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, mgmt_rp_unpair_device> Unpair;
     typedef ManagementFixedType<MGMT_OP_CANCEL_PAIR_DEVICE, mgmt_addr_info, Core::Void> PairAbort;
     typedef ManagementFixedType<MGMT_OP_READ_INDEX_LIST, Core::Void, uint16_t[33]> Indexes;
     typedef ManagementFixedType<MGMT_OP_SET_LOCAL_NAME, mgmt_cp_set_local_name, mgmt_cp_set_local_name> DeviceName;
@@ -506,7 +507,6 @@ namespace Management {
     typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, LinkKeys> LinkKeys;
     typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, LongTermKeys> LongTermKeys;
     typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, IdentityKeys> IdentityKeys;
-
 }
 
 /* static */ void ManagementSocket::Devices(std::list<uint16_t>& adapters)
@@ -523,120 +523,104 @@ namespace Management {
     }
 }
 
-uint32_t ManagementSocket::Name(const string& shortName, const string longName)
+uint32_t ManagementSocket::Name(const string& shortName, const string& longName)
 {
     Management::DeviceName message(_deviceId);
     std::string shortName2(Core::ToString(shortName.substr(0, sizeof(message->short_name) - 1)));
     std::string longName2(Core::ToString(longName.substr(0, sizeof(message->name) - 1)));
-    
+
     strcpy (reinterpret_cast<char*>(message->short_name), shortName2.c_str());
     strcpy (reinterpret_cast<char*>(message->name), longName2.c_str());
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Discoverable(const bool enabled)
 {
     Management::Discoverable message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Power(const bool enabled)
 {
     Management::Power message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Connectable(const bool enabled)
 {
     Management::Connectable message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::FastConnectable(const bool enabled)
 {
     Management::FastConnectable message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Block(const Address::type type, const Address& address)
 {
     Management::Block message(_deviceId);
-
     message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Unblock(const Address::type type, const Address& address)
 {
     Management::Unblock message(_deviceId);
-
     message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::Connection(const Address::type type, const Address& address, const mode value)
+uint32_t ManagementSocket::AddDevice(const Address::type type, const Address& address, const autoconnmode value)
 {
-    if (value == REMOVE) {
-        Management::RemoveDevice message(_deviceId);
-
-        message->addr.type = type;
-        ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
-
-        uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-        return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
-    }
     Management::AddDevice message(_deviceId);
-
-    message->action = value;
+    message->action = (type == Address::BREDR_ADDRESS? 0 : value); // ignore autoconnect for classic BT devices
     message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
 
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+uint32_t ManagementSocket::RemoveDevice(const Address::type type, const Address& address)
+{
+    Management::RemoveDevice message(_deviceId);
+    ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16])
 {
     uint32_t result = Core::ERROR_NONE;
-    Management::Privacy message(_deviceId);
 
     if ((mode > 2) || ((mode == 2 /* limited privacy */) && (identity == nullptr))) {
-        TRACE_L1("Invalid privacy settings");
-        result = Core::ERROR_INVALID_SIGNATURE;
+        TRACE(Trace::Error, (_T("Invalid privacy settings")));
+        return (Core::ERROR_INVALID_SIGNATURE);
     } else {
+        Management::Privacy message(_deviceId);
         message->privacy = mode;
         if (identity != nullptr) {
             ::memcpy(message->irk, identity, sizeof(message->irk));
@@ -645,124 +629,95 @@ uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16
         }
 
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
 
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result);
 }
 
 uint32_t ManagementSocket::Bondable(const bool enabled)
 {
     Management::Bondable message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Advertising(const bool enabled)
 {
     Management::Advertising message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::SimplePairing(const bool enabled)
 {
     Management::SimplePairing message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::LowEnergy(const bool enabled)
 {
     Management::LowEnergy message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::SecureLink(const bool enabled)
 {
     Management::SecureLink message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
 }
 
 uint32_t ManagementSocket::SecureConnection(const bool enabled)
 {
     Management::SecureConnection message(_deviceId);
-
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-
-    return (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys) 
+uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys)
 {
-    uint32_t result = Core::ERROR_UNAVAILABLE;
+    Management::LinkKeys message = Management::LinkKeys::Instance(_deviceId, keys);
+    message->key_count = htobs(keys.Entries());
+    message->debug_keys = (debugKeys ? ENABLE_MODE : DISABLE_MODE);
 
-    if (result == Core::ERROR_UNAVAILABLE) {
-        Management::LinkKeys message = Management::LinkKeys::Instance(_deviceId, keys);
-        message->key_count = htobs(keys.Entries());
-        message->debug_keys = (debugKeys ? ENABLE_MODE : DISABLE_MODE);
-
-        result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
-    }
-
-    return (result);
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys) 
+uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys)
 {
-    uint32_t result = Core::ERROR_UNAVAILABLE;
+    Management::LongTermKeys message = Management::LongTermKeys::Instance(_deviceId, keys);
+    message->key_count = htobs(keys.Entries());
 
-    if (result == Core::ERROR_UNAVAILABLE) {
-        Management::LongTermKeys message = Management::LongTermKeys::Instance(_deviceId, keys);
-        message->key_count = htobs(keys.Entries());
-
-        result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
-    }
-
-    return (result);
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys) 
+uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys)
 {
-    uint32_t result = Core::ERROR_UNAVAILABLE;
+    Management::IdentityKeys message = Management::IdentityKeys::Instance(_deviceId, keys);
+    message->irk_count = htobs(keys.Entries());
 
-    if (result == Core::ERROR_UNAVAILABLE) {
-        Management::IdentityKeys message = Management::IdentityKeys::Instance(_deviceId, keys);
-        message->irk_count = htobs(keys.Entries());
-
-        result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
-    }
-
-    return (result);
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const bool lowEnergy) 
+uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const bool lowEnergy)
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
     uint8_t mode = (regular ? 1 : 0) | (lowEnergy ? 6 : 0);
@@ -773,17 +728,17 @@ uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const 
     if (on == true) {
         Management::StartDiscovery message(_deviceId);
         message->type = mode;
-     
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
     else {
         Management::StopDiscovery message(_deviceId);
         message->type = mode;
-     
+
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == Core::ERROR_NONE ? result : Core::ERROR_ASYNC_FAILED));
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
+
     return (result);
 }
 
@@ -791,14 +746,14 @@ ManagementSocket::Info ManagementSocket::Settings() const
 {
     Info result;
     Management::Settings message(_deviceId);
-    
+
     if (const_cast<ManagementSocket*>(this)->Exchange(MANAGMENT_TIMEOUT, message, message) == Core::ERROR_NONE) {
         result = Info(message.Response());
     }
     return (result);
 }
 
-uint32_t ManagementSocket::Pair(const Address& remote, const uint8_t type, const capabilities cap)
+uint32_t ManagementSocket::Pair(const Address& remote, const Address::type type, const capabilities cap)
 {
     Management::Pair command(_deviceId);
 
@@ -808,21 +763,48 @@ uint32_t ManagementSocket::Pair(const Address& remote, const uint8_t type, const
     command->io_cap = cap;
 
     // Pairing takes longer, so allow for a larget timeout...
-    return (Exchange(40 * MANAGMENT_TIMEOUT, command));
+    uint32_t result = Exchange(20 * MANAGMENT_TIMEOUT, command, command);
+    if (result == Core::ERROR_NONE) {
+        switch (command.Result()) {
+            case MGMT_STATUS_SUCCESS:
+                break;
+            case MGMT_STATUS_ALREADY_PAIRED:
+                result = Core::ERROR_ALREADY_CONNECTED;
+                break;
+            default:
+                result = Core::ERROR_ASYNC_FAILED;
+                break;
+        }
+    }
+    return (result);
 }
 
-uint32_t ManagementSocket::Unpair(const Address& remote, const uint8_t type)
+uint32_t ManagementSocket::Unpair(const Address& remote, const Address::type type)
 {
     Management::Unpair command(_deviceId);
+
     command.Clear();
     command->addr.bdaddr = *remote.Data();
     command->addr.type = type;
     command->disconnect = 1;
 
-    return(Exchange(MANAGMENT_TIMEOUT, command, command));
+    uint32_t result = Exchange(20 * MANAGMENT_TIMEOUT, command, command);
+    if (result == Core::ERROR_NONE) {
+        switch (command.Result()) {
+            case MGMT_STATUS_SUCCESS:
+                break;
+            case MGMT_STATUS_NOT_PAIRED:
+                result = Core::ERROR_ALREADY_RELEASED;
+                break;
+            default:
+                result = Core::ERROR_ASYNC_FAILED;
+                break;
+        }
+    }
+    return (result);
 }
 
-uint32_t ManagementSocket::PairAbort(const Address& remote, const uint8_t type)
+uint32_t ManagementSocket::PairAbort(const Address& remote, const Address::type type)
 {
     Management::PairAbort command(_deviceId);
 
@@ -830,15 +812,15 @@ uint32_t ManagementSocket::PairAbort(const Address& remote, const uint8_t type)
     command->bdaddr = *remote.Data();
     command->type = type;
 
-    // Pairing takes longer, so allow for a larget timeout...
-    return (Exchange(MANAGMENT_TIMEOUT, command, command));
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, command, command);
+    return (result != Core::ERROR_NONE ? result : (command.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::Notifications(const bool enabled) {
+uint32_t ManagementSocket::Notifications(const bool enabled)
+{
     uint32_t result = Core::ERROR_UNAVAILABLE;
 
     if (IsOpen() == true) {
-
         hci_filter_clear(&_filter);
 
         if (enabled == true) {
@@ -872,13 +854,11 @@ uint32_t ManagementSocket::Notifications(const bool enabled) {
         }
 
         if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
-            printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
-            
+            TRACE(Trace::Error, (_T("Can't set filter: %s (%d)"), strerror(errno), errno));
             result = Core::ERROR_GENERAL;
-        }
-        else {
+        } else {
+            TRACE(Trace::Information, (_T("Filter set!")));
             result = Core::ERROR_NONE;
-            printf("Management FILTER SET !!!!\n");
         }
     }
     return (result);
@@ -890,12 +870,11 @@ uint32_t ManagementSocket::Notifications(const bool enabled) {
     // printf ("Header: %d, Len: %d, Available: %d\n", sizeof(mgmt_hdr), length, availableData);
     // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
 
-    if (availableData > sizeof(mgmt_hdr)) {
+    if (availableData >= sizeof(mgmt_hdr)) {
         const mgmt_hdr* hdr = reinterpret_cast<const mgmt_hdr*>(dataFrame);
         Update(*hdr);
-    }
-    else {
-        TRACE_L1(_T("EVT_MGMT: Message too short => (hci_event_hdr)")); 
+    } else {
+        TRACE_L1(_T("EVT_MGMT: Message too short => (hci_event_hdr)"));
     }
 
     return (availableData);
@@ -905,7 +884,6 @@ uint32_t ManagementSocket::Notifications(const bool enabled) {
 {
 }
 
-
 } // namespace Bluetooth
 
-} // namespace WPEFramework
+}

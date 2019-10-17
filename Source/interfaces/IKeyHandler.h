@@ -12,12 +12,20 @@ namespace Exchange {
     struct IPointerProducer;
     struct ITouchProducer;
 
+    enum ProducerEvents {
+        ePairingStarted = 1,
+        ePairingSuccess,
+        ePairingFailed,
+        ePairingTimedout
+    };
+
     struct IKeyHandler : virtual public Core::IUnknown {
         enum { ID = ID_KEYHANDLER };
 
         virtual ~IKeyHandler(){};
 
         virtual uint32_t KeyEvent(const bool pressed, const uint32_t code, const string& table) = 0;
+        virtual void ProducerEvent(const string& producerName, const ProducerEvents event) = 0;
 
         virtual IKeyProducer* Producer(const string& name) = 0;
     };

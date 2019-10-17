@@ -36,8 +36,8 @@ option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
 option(COMPOSITORCLIENT
         "Include a graphics backend abstraction for external applications." OFF)
-option(JSONRPC
-        "Include JSONRPC C++ utility library for external applications." ON)
+option(GSTREAMERCLIENT
+        "Include a gstreamer sink abstraction for external applications." OFF)
 option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
@@ -128,12 +128,12 @@ if(VIRTUALINPUT)
     add_subdirectory(virtualinput)
 endif()
 
-if(JSONRPC)
-    add_subdirectory(jsonrpc)
-endif()
-
 if(COMPOSITORCLIENT)
     add_subdirectory(compositorclient)
+endif()
+
+if(GSTREAMERCLIENT)
+    add_subdirectory(gstreamerclient)
 endif()
 
 if(PROCESS)

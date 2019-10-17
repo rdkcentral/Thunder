@@ -1,0 +1,14 @@
+{
+  "$schema": "plugin.schema.json",
+  "info": {
+    "title": "Test Utility Plugin",
+    "callsign": "TestUtility",
+    "locator": "libWPEFrameworkTestUtility.so",
+    "status": "alpha",
+    "description": "The TestUtility plugin enables to execute embedded test commands on the platform.",
+    "version": "1.0"
+  },
+  "interface": {
+    "$ref": "{interfacedir}/TestUtility.json#"
+  }
+}

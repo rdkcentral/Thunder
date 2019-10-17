@@ -1,5 +1,4 @@
 #include "PluginServer.h"
-// #include "Portability.h"
 
 #ifndef __WIN32__
 #include <dlfcn.h> // for dladdr
@@ -13,10 +12,10 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
-namespace PluginHost {
-
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+
+namespace PluginHost {
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -53,6 +52,84 @@ namespace PluginHost {
         }
     };
 
+    class ExitHandler : public Core::Thread {
+    private:
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
+
+    public:
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+        }
+        virtual ~ExitHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+        static void Construct() {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new WPEFramework::PluginHost::ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct() {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            CloseDown();
+            Block();
+            return (Core::infinite);
+        }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_dispatcher != nullptr) {
+                PluginHost::Server* destructor = _dispatcher;
+                destructor->Close();
+                _dispatcher = nullptr;
+                delete destructor;
+
+#ifndef __WIN32__
+                if (_background) {
+                    syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+                } else
+#endif
+                {
+                   fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+                }
+
+#ifndef __WIN32__
+                closelog();
+#endif
+                // Now clear all singeltons we created.
+                Core::Singleton::Dispose();
+            }
+
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+        private:
+            static ExitHandler* _instance;
+            static Core::CriticalSection _adminLock;
+    };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
+
     extern "C" {
 
 #ifndef __WIN32__
@@ -65,10 +142,8 @@ namespace PluginHost {
             fprintf(stderr, "Signal received %d.\n", signo);
         }
 
-        if (signo == SIGTERM) {
-            if (Core::WorkerPool::IsAvailable() == true) {
-				Core::WorkerPool::Instance().Stop();
-			}
+        if ((signo == SIGTERM) || (signo == SIGQUIT)) {
+            ExitHandler::Construct();
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
@@ -76,35 +151,8 @@ namespace PluginHost {
             kill(getpid(), signo);
         }
     }
+
 #endif
-    static void CloseDown()
-    {
-        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-        if (_dispatcher != nullptr) {
-            PluginHost::Server* destructor = _dispatcher;
-            destructor->Close();
-            _dispatcher = nullptr;
-            delete destructor;
-
-#ifndef __WIN32__
-            if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-            } else
-#endif
-            {
-                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
-            }
-
-#ifndef __WIN32__
-            closelog();
-#endif
-            // Now clear all singeltons we created.
-            Core::Singleton::Dispose();
-        }
-
-        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-    }
 
     void LoadPlugins(const string& name, Server::Config& config)
     {
@@ -123,7 +171,7 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
-                    pluginConfig.FromFile(file);
+                    pluginConfig.IElement::FromFile(file);
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
@@ -208,8 +256,9 @@ namespace PluginHost {
             if (dladdr(callstack[i], &info) && info.dli_sname) {
                 char* demangled = NULL;
                 int status = -1;
-                if (info.dli_sname[0] == '_')
+                if (info.dli_sname[0] == '_') {
                     demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+                }
                 fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                     status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                     (char*)callstack[i] - (char*)info.dli_saddr);
@@ -239,9 +288,9 @@ namespace PluginHost {
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(CloseDown) != 0) {
+        if (atexit(ExitHandler::Destruct) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            CloseDown();
+            ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
 #ifndef __WIN32__
@@ -266,6 +315,7 @@ namespace PluginHost {
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGSEGV, &sa, nullptr);
+            sigaction(SIGQUIT, &sa, nullptr);
         }
 
         if (_background == true) {
@@ -284,7 +334,7 @@ namespace PluginHost {
         Server::Config serviceConfig;
 
         if (configFile.Open(true) == true) {
-            serviceConfig.FromFile(configFile);
+            serviceConfig.IElement::FromFile(configFile);
 
             configFile.Close();
         } else {
@@ -398,7 +448,6 @@ namespace PluginHost {
         } else
 #endif
         {
-
             char keyPress;
 
             do {
@@ -592,7 +641,8 @@ namespace PluginHost {
 
             } while (keyPress != 'Q');
         }
-        CloseDown();
+
+        ExitHandler::Destruct();
         return 0;
 
     } // End main.

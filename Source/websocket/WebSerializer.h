@@ -15,6 +15,7 @@ namespace Web {
 
     public:
         TextBody()
+            : _lastPosition(0)
         {
         }
         virtual ~TextBody()

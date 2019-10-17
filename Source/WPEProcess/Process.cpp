@@ -6,16 +6,88 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
+
+    static std::list<Core::Library> _proxyStubs;
+	static Core::ProxyType<RPC::CommunicatorClient> _server;
+
+    class ExitHandler : public Core::Thread {
+    private:
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
+
+    public:
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+        }
+        virtual ~ExitHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+        static void Construct()
+        {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct()
+        {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            CloseDown();
+            Block();
+            return (Core::infinite);
+        }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_server.IsValid() == true) {
+
+                // We are done, close the channel and unregister all shit we added...
+                _server->Close(2 * RPC::CommunicationTimeOut);
+
+                _proxyStubs.clear();
+
+                _server.Release();
+            }
+
+            Core::Singleton::Dispose();
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+
+    private:
+        static ExitHandler* _instance;
+        static Core::CriticalSection _adminLock;
+    };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
+
 namespace Process {
 
     class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
-    private:
+    public:
         WorkerPoolImplementation() = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-
-    public:
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
             : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
             , _minions()
@@ -32,6 +104,8 @@ namespace Process {
         }
         ~WorkerPoolImplementation()
         {
+            // Diable the queue so the minions can stop, even if they are processing and waiting for work..
+            Stop();
             _minions.clear();
             delete Snapshot().Slot;
         }
@@ -243,39 +317,28 @@ namespace Process {
 
         return (result);
     }
+
 }
 } // Process
 
 using namespace WPEFramework;
 
-static std::list<Core::Library> _proxyStubs;
-static Core::ProxyType<RPC::CommunicatorClient> _server;
-
-//
-// It as allowed to call exit from anywhere in the process by any code loaded. This is like using
-// a goto in disguise (bad programming). However we need to be robust against mallicious program
-// activities.
-// To ovecome this jumping and skipping all kinds of code, we install an @exit handler. This should
-// one exit and on leaving main always be Called. In this code, we cleanup.
-void CloseDown()
+#ifndef __WIN32__
+void ExitDaemonHandler(int signo)
 {
-    TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+    TRACE_L1("Signal received %d.", signo);
+    syslog(LOG_NOTICE, "Signal received %d.", signo);
 
-    if (_server.IsValid() == true) {
-
-        // We are done, close the channel and unregister all shit we added...
-        _server->Close(2 * RPC::CommunicationTimeOut);
-
-        _proxyStubs.clear();
-
-        _server.Release();
+    if ((signo == SIGTERM) || (signo == SIGQUIT)) {
+        ExitHandler::Construct();
+    } else if (signo == SIGSEGV) {
+        DumpCallStack();
+        // now invoke the default segfault handler
+        signal(signo, SIG_DFL);
+        kill(getpid(), signo);
     }
-
-    // Now clear all singeltons we created.
-    Core::Singleton::Dispose();
-
-    TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
 }
+#endif
 
 #ifdef __WIN32__
 int _tmain(int argc, _TCHAR* argv[])
@@ -286,12 +349,24 @@ int main(int argc, char** argv)
     // Give the debugger time to attach to this process..
     // Sleep(20000);
 
-    if (atexit(CloseDown) != 0) {
+    if (atexit(ExitHandler::Destruct) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-        CloseDown();
+        ExitHandler::Destruct();
         exit(EXIT_FAILURE);
     } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
+#ifndef __WIN32__
+            struct sigaction sa;
+            memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = ExitDaemonHandler;
+            sa.sa_flags = 0; // not SA_RESTART!;
+
+            sigaction(SIGINT, &sa, nullptr);
+            sigaction(SIGTERM, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, nullptr);
+            sigaction(SIGQUIT, &sa, nullptr);
+#endif
     }
 
     Process::ConsoleOptions options(argc, argv);
@@ -386,7 +461,6 @@ int main(int argc, char** argv)
                 if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     invokeServer->Run();
-
                     _server->Close(Core::infinite);
                 } else {
                     TRACE_L1("Could not open the connection, error (%d)", result);
@@ -395,5 +469,6 @@ int main(int argc, char** argv)
         }
     }
 
+    ExitHandler::Destruct();
     return 0;
 }
