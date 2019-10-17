@@ -23,36 +23,30 @@
       }    
     },
     "networks": {
-      "summary": "List of networks in the container",
+      "summary": "List of network interfaces of the container",
       "readonly": true,
       "params": {
         "type": "array",
-        "description": "List of all networks related to the container",
+        "description": "List of all network interfaces related to the container",
         "items": {
-          "type": "string",
-          "example": "veth3NF06K"
-        }      
-      },
-      "index": {
-        "name": "Name",
-        "example": "ContainerName"
-      },
-      "errors": [
-        {
-          "description": "Container not found",
-          "$ref": "#/common/errors/unavailable"
-        }
-      ]
-    },
-    "ip": {
-      "summary": "List of ip addresses",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "description": "List of all ip addresses assigned to the container",
-        "items": {
-          "type": "string",
-          "example": "192.168.0.123"
+          "type": "object",
+          "description": "Returns networks associated with the container",
+          "properties": {
+            "interface": {
+              "type": "string",
+              "description": "Interface name",
+              "example": "veth3NF06K"
+            },
+            "ips": {
+              "type": "array",
+              "description": "List of ip addresses",
+              "items": {
+                "type": "string",
+                "description": "IP address",
+                "example": "192.168.0.12"
+              }
+            }
+          }
         }      
       },
       "index": {
@@ -70,9 +64,25 @@
       "summary": "Memory taken by container",
       "readonly": true,
       "params": {
-        "type": "string",
+        "type": "object",
         "description": "Memory allocated by the container, in bytes",
-        "example": "{memory: 123456789; kmem: 112233445}"
+        "properties": {
+          "allocated": {
+            "description": "Memory allocated by container",
+            "type": "number",
+            "size": 64
+          },
+          "resident": {
+            "description": "Resident memory of the container",
+            "type": "number",
+            "size": 64
+          },
+          "shared": {
+            "description": "Shared memory in the container",
+            "type": "number",
+            "size": 64
+          }
+        }
       },
       "index": {
         "name": "Name",
@@ -114,9 +124,25 @@
       "summary": "CPU time",
       "readonly": true,
       "params": {
-        "type": "string",
+        "type": "object",
         "description": "CPU time spent on running the container, in nanoseconds",
-        "example": "{total:21873781248,percpu: [11873781248, 10000000000]}"
+        "properties": {
+          "total": {
+            "type": "number",
+            "size": 64,
+            "description": "CPU-time spent on container, in nanoseconds",
+            "example": "2871287421"
+          },
+          "threads": {
+            "type": "array",
+            "description": "Time spent on each cpu-thread, in nanoseconds",
+            "items": {
+              "type": "number",
+              "size": 64,
+              "example": "12314235"
+            }
+          }
+        }
       },
       "index": {
         "name": "Name",
@@ -129,7 +155,7 @@
         }
       ]
     },
-    "log": {
+    "logpath": {
       "summary": "Containers log",
       "readonly": true,
       "params": {
@@ -147,7 +173,7 @@
         }
       ]
     },
-    "config": {
+    "configpath": {
       "summary": "Container's configuration",
       "readonly": true,
       "params": {

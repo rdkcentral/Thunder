@@ -6,6 +6,8 @@ namespace WPEFramework {
 namespace ProcessContainers {
 
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
+    using IConstStringIterator = Core::IteratorType<const std::vector<string>, const string, std::vector<string>::const_iterator>;
+
     struct IContainerAdministrator {
 
         struct IContainer {
@@ -17,17 +19,30 @@ namespace ProcessContainers {
                 STOPPING
             };
 
+            struct MemoryInfo {
+                uint64_t allocated; // in bytes
+                uint64_t resident; // in bytes
+                uint64_t shared; // in bytes
+            };
+
+            struct CPUInfo {
+                uint64_t total; // total usage of cpu, in nanoseconds;
+                std::vector<uint64_t> threads; // cpu usage per thread;
+            };
+
+            using NetworkInfo = std::map<string, std::vector<Core::NodeId>>;
+
             IContainer() = default;
             virtual ~IContainer() = default;
 
             virtual const string& Id() const = 0;
             virtual pid_t Pid() const = 0;
-            virtual string Memory() const = 0; // In bytes
-            virtual string Cpu() const = 0; // in nanoseconds of cpu time
-            virtual string Configuration() const = 0;
-            virtual string Log() const = 0;
-            virtual void Networks(std::vector<std::string>& networks) const = 0;
-            virtual void IPs(std::vector<Core::NodeId>& ips) const = 0;
+            virtual MemoryInfo Memory() const = 0;
+            virtual CPUInfo Cpu() const = 0; 
+            virtual string ConfigPath() const = 0;
+            virtual string LogPath() const = 0;
+            virtual IConstStringIterator NetworkInterfaces() const = 0;
+            virtual std::vector<Core::NodeId> IPs(const string& interface) const = 0;
             virtual State ContainerState() const = 0;
             virtual bool IsRunning() const = 0;
 

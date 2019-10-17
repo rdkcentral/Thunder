@@ -6,6 +6,7 @@
 #include <lxc/lxccontainer.h>
 #include <vector>
 #include <utility>
+#include <thread>
 #include <cctype>
 
 namespace WPEFramework {
@@ -92,48 +93,6 @@ public:
 #endif
         };
 
-        class CpuInfo : public Core::JSON::Container {
-        public:
-            CpuInfo(const CpuInfo&) = delete;
-            CpuInfo& operator=(const CpuInfo&) = delete;
-
-            CpuInfo()
-                : Core::JSON::Container()
-                , Total(0)
-                , PerCPU()
-            {
-                Add(_T("total"), &Total);
-                Add(_T("percpu"), &PerCPU);
-
-            }
-            
-            ~CpuInfo() = default;
-
-            Core::JSON::DecUInt64 Total;
-            Core::JSON::ArrayType<Core::JSON::DecUInt64> PerCPU;
-        };
-
-        class MemoryInfo : public Core::JSON::Container {
-        public:
-            MemoryInfo(const MemoryInfo&) = delete;
-            MemoryInfo& operator=(const MemoryInfo&) = delete;
-
-            MemoryInfo()
-                : Core::JSON::Container()
-                , Total(0)
-                , Kernel(0)
-            {
-                Add(_T("total"), &Total);
-                Add(_T("kernel"), &Kernel);
-
-            }
-            
-            ~MemoryInfo() = default;
-
-            Core::JSON::DecUInt64 Total;
-            Core::JSON::DecUInt64 Kernel;
-        };
-
     public:
 
         LCXContainer(const LCXContainer&) = delete;
@@ -182,6 +141,8 @@ public:
             while( index.Next() == true ) {
                 _lxccontainer->set_config_item(_lxccontainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
             };
+
+            _networkInterfaces = GetNetworkInterfaces();
         }
 
         const string& Id() const override {
@@ -192,12 +153,12 @@ public:
             return _pid;
         }
 
-        string Memory() const override;
-        string Cpu() const override;
-        string Configuration() const override;
-        string Log() const override;
-        void Networks(std::vector<std::string>& networks) const override;
-        void IPs(std::vector<Core::NodeId>& ips) const override;
+        MemoryInfo Memory() const override;
+        CPUInfo Cpu() const override;
+        string ConfigPath() const override;
+        string LogPath() const override;
+        ProcessContainers::IConstStringIterator NetworkInterfaces() const override;
+        std::vector<Core::NodeId> IPs(const string& interface) const override;
         State ContainerState() const override;
         bool IsRunning() const override;
 
@@ -224,6 +185,9 @@ public:
         }
 
         private:
+            inline std::vector<string> GetNetworkInterfaces();
+
+        private:
             const string _name;
             pid_t _pid;
             string _lxcpath;
@@ -231,6 +195,7 @@ public:
             mutable Core::CriticalSection _adminLock;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxccontainer;
+            std::vector<string> _networkInterfaces;
 #ifdef __DEBUG__
             bool _attach;
 #endif
@@ -395,178 +360,129 @@ bool LXCContainerAdministrator::LCXContainer::Stop(const uint32_t timeout /*ms*/
     return result;
 }
 
-string LXCContainerAdministrator::LCXContainer::Memory() const  
+LXCContainerAdministrator::LCXContainer::MemoryInfo LXCContainerAdministrator::LCXContainer::Memory() const  
 {
     ASSERT(_lxccontainer != nullptr);
 
-    char buffer[256];
-    uint32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
+    MemoryInfo result {UINT64_MAX, UINT64_MAX, UINT64_MAX};
+    char buffer[2048];
+    int32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
 
-    MemoryInfo memory;
+    // Not sure if "read < sizeof(buffer)" is realy needed, but it is checked in offical lxc tools sources
+    if ((read > 0) && (read < sizeof(buffer))) {
+        int32_t scanned = sscanf(buffer, "%llu", &result.allocated);
 
-    if (read != 0 && read < 256) {
-        memory.Total = strtoll(buffer, nullptr, 10);
+        if (scanned != 1) {
+            TRACE(Trace::Warning, ("Could not read allocated memory of LXC container"));
+        }
+    }
+
+    read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.stat", buffer, sizeof(buffer));
+
+    if ((read > 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
+        char name[128];
+        uint64_t value;
+        uint32_t position = 0;
+
+        while (position < read) {
+            int32_t charsRead = 0;
+            int32_t scanned = sscanf(buffer + position, "%s %llu%n", name, &value, &charsRead);
+
+            if (scanned != 2) {
+                break;
+            }
+
+            if (strcmp(name, "rss") == 0) {
+                result.resident = value;
+            } else if (strcmp(name, "shmem") == 0) {
+                result.shared = value;
+            }
+
+            position += charsRead;
+        }
     } else {
         TRACE(Trace::Warning, ("Could not read memory usage of LXC container"));
     } 
 
-    read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.kmem.tcp.usage_in_bytes", buffer, sizeof(buffer));
-    if (read != 0 && read < 256) {
-        memory.Kernel = strtoll(buffer, nullptr, 10);
-    } else {
-        TRACE(Trace::Warning, ("Could not read kernel memory usage of LXC container"));
-    }
-
-    string result;
-    memory.ToString(result);
-
     return result;
 }
 
-string LXCContainerAdministrator::LCXContainer::Cpu() const
+LXCContainerAdministrator::LCXContainer::CPUInfo LXCContainerAdministrator::LCXContainer::Cpu() const
 {
     ASSERT(_lxccontainer != nullptr);
 
+    CPUInfo result;
     char buffer[512];
     uint32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage", buffer, sizeof(buffer));
 
-    CpuInfo cpu;
-
     if (read != 0 && read < sizeof(buffer)) {
-        cpu.Total = strtoll(buffer, nullptr, 10);
+        result.total = strtoll(buffer, nullptr, 10);
     } else {
         TRACE(Trace::Warning, ("Could not read total cpu usage of LXC container"));
     } 
 
     read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
 
-    if (read != 0 && read < sizeof(buffer)) {
+    if ((read != 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
         char* pos = buffer;
         char* end;
+
+        // We might now maximum number of threads in advance
+        static const uint32_t numThreads = std::thread::hardware_concurrency();
+        if (numThreads != 0)
+            result.threads.reserve(numThreads);
+
         while(true) {
             uint64_t value = strtoull(pos, &end, 10);
 
             if (pos == end)
                 break;
 
-            Core::JSON::DecUInt64 jsonValue;
-            jsonValue = strtoll(pos, &pos, 10);
-            cpu.PerCPU.Add(jsonValue);
+            result.threads.push_back(value);
             pos = end;
         }
     } else {
         TRACE(Trace::Warning, ("Could not per thread cpu-usage of LXC container"));
     }
 
-    string result;
-    cpu.ToString(result);
-
     return result;
 }
 
-string LXCContainerAdministrator::LCXContainer::Configuration() const 
+string LXCContainerAdministrator::LCXContainer::ConfigPath() const 
 {
-    Core::File configFile(_lxcpath + Id() + "/" + LXCContainerAdministrator::configFileName);
-
-    char* buffer;
-    string result;
-
-    _adminLock.Lock();
-
-    if (configFile.Open(true) == true) {
-        const uint64_t length = std::min<uint64_t>(configFile.Size(), maxReadSize);
-        buffer = new char[length+1];
-
-        uint32_t numRead = configFile.Read(reinterpret_cast<uint8_t*>(buffer), length);
-
-        if (numRead > 0) {
-            buffer[numRead] = '\0'; // Make sure that the string is null terminated
-            result = buffer;
-        }
-
-        configFile.Close();
-    } else {
-        TRACE(Trace::Warning, ("Failed to open configuration file for container %s", Id().c_str()));
-    }
-
-    _adminLock.Unlock();
-
-    return result;
+    return (_lxcpath + Id() + "/" + LXCContainerAdministrator::configFileName);
 }
 
-string LXCContainerAdministrator::LCXContainer::Log() const 
+string LXCContainerAdministrator::LCXContainer::LogPath() const 
 {
-    Core::File logFile(_logpath + LXCContainerAdministrator::logFileName);
-
-    char* buffer;
-    string result;
-
-    _adminLock.Lock();
-    
-    if (logFile.Open(true)) {
-        const uint64_t offset = std::max<uint64_t>(logFile.Size() - maxReadSize, 0);
-        const uint64_t length = logFile.Size() - offset;
-        buffer = new char[length+1];
-
-        logFile.Position(false, offset); // If we can't read everthing, latest log is most important
-        uint32_t numRead = logFile.Read(reinterpret_cast<uint8_t*>(buffer), length);
-
-        if (numRead > 0) {
-            buffer[numRead] = '\0'; // Make sure that the string is null terminated
-            result = buffer;
-        }
-
-        logFile.Close();
-    }
-
-    _adminLock.Unlock();
-
-    return result;
+    return (_logpath + LXCContainerAdministrator::logFileName);
 }
 
-void LXCContainerAdministrator::LCXContainer::Networks(std::vector<std::string>& networks) const
+ProcessContainers::IConstStringIterator LXCContainerAdministrator::LCXContainer::NetworkInterfaces() const
 {
-    char buf[256];
-
-    ASSERT(_lxccontainer != nullptr);
-
-    for(int netnr = 0; ;netnr++) {
-        sprintf(buf, "lxc.net.%d.type", netnr);
-
-        char* type = _lxccontainer->get_running_config_item(_lxccontainer, buf);
-        if (!type)
-            break;
-
-        if (strcmp(type, "veth") == 0) {
-            sprintf(buf, "lxc.net.%d.veth.pair", netnr);
-        } else {
-            sprintf(buf, "lxc.net.%d.link", netnr);
-        }
-        free(type);
-
-        char* ifname = _lxccontainer->get_running_config_item(_lxccontainer, buf);
-        if (!ifname)
-            break;
-
-        networks.emplace_back(ifname);
-        free(ifname);
-    }
+    return ProcessContainers::IConstStringIterator(_networkInterfaces);
 }
 
-void LXCContainerAdministrator::LCXContainer::IPs(std::vector<Core::NodeId>& ips) const
-{  
-    char **addresses = _lxccontainer->get_ips(_lxccontainer, NULL, NULL, 0);
+std::vector<Core::NodeId> LXCContainerAdministrator::LCXContainer::IPs(const string& interface) const {
+    std::vector<Core::NodeId> result;
+
+    // if no interface name is specified, all addresess will be returned
+    const char* interfaceName = interface.empty() ? nullptr : interface.c_str(); 
+
+    char **addresses = _lxccontainer->get_ips(_lxccontainer, interfaceName, NULL, 0);
     if (addresses) {
         for (int i = 0; addresses[i] != nullptr; i++) {
-            ips.emplace_back(addresses[i]);
+            result.emplace_back(addresses[i]);
         }
     }
+
+    return result;
 }
 
 ProcessContainers::IContainerAdministrator::IContainer::State LXCContainerAdministrator::LCXContainer::ContainerState() const
 {
-    const char* stateStr = _lxccontainer->state(_lxccontainer);
     State state;
+    const char* stateStr = _lxccontainer->state(_lxccontainer);
 
     if (stateStr != nullptr) {
         if (strcmp(stateStr, "STOPPED") == 0)
@@ -592,6 +508,37 @@ ProcessContainers::IContainerAdministrator::IContainer::State LXCContainerAdmini
 
 bool LXCContainerAdministrator::LCXContainer::IsRunning() const {
     return _lxccontainer->is_running(_lxccontainer);
+}
+
+std::vector<string> LXCContainerAdministrator::LCXContainer::GetNetworkInterfaces() {
+    char buf[256];
+    std::vector<string> result;
+
+    ASSERT(_lxccontainer != nullptr);
+
+    for(int netnr = 0; ;netnr++) {
+        sprintf(buf, "lxc.net.%d.type", netnr);
+
+        char* type = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+        if (!type)
+            break;
+
+        if (strcmp(type, "veth") == 0) {
+            sprintf(buf, "lxc.net.%d.veth.pair", netnr);
+        } else {
+            sprintf(buf, "lxc.net.%d.link", netnr);
+        }
+        free(type);
+
+        char* ifname = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+        if (!ifname)
+            break;
+
+        result.emplace_back(ifname);
+        free(ifname);
+    }
+
+    return result;
 }
 
 constexpr char* LXCContainerAdministrator::logFileName;
