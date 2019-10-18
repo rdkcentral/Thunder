@@ -36,6 +36,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_socketstreamtext.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
+   test_synchronize.cpp
    test_textfragment.cpp
    test_textreader.cpp
    test_thread.cpp
