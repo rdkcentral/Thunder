@@ -196,10 +196,9 @@ TEST(Core_tracing, simpleTracing)
                EXPECT_STREQ(traceData._File.c_str(),"test_tracing.cpp");
                EXPECT_STREQ(traceData._Class.c_str(),"<<Global>>");
                EXPECT_STREQ(traceData._Category.c_str(),"Information");
-               EXPECT_STREQ(traceData._Text.c_str(),"lrbbmqbhcdarzowkkyhiddqscdxrjmowfrxsjybldbefsarcbynecdyggxxpklorellnmpapqfwkhopkmcoqhnwnkuewhsqmgbbuqcljjivswmdkqtbxixmvtrrbljptnsnfwzqf");
+               EXPECT_STREQ(traceData._Text.c_str(),"Trace Log");
 
                traceCount++;
-
            }
        }
        doorBell.Relinquish();
@@ -214,25 +213,7 @@ TEST(Core_tracing, simpleTracing)
         sleep(2);
         Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);
 
-        // Build too long trace statement.
-        const int longBufferSize = CyclicBufferSize * 4 / 3;
-        char longBuffer[longBufferSize];
-        for (int j = 0; j < (longBufferSize - 1); j++)
-            longBuffer[j] = 'a';
-        longBuffer[longBufferSize - 1] = '\0';
-        // One long trace.
-        TRACE_GLOBAL(Trace::Information, (longBuffer));
-        int traceCount = rand() % 100 + 50;
-        for (int i = 0; i < traceCount; i++) {
-            int traceLength = 50 + rand() % 200;
-            char buffer[traceLength + 1];
-            for (int j = 0; j < traceLength; j++)
-                buffer[j] = static_cast<char>(static_cast<int>('a') + rand() % 26);
-
-            buffer[traceLength] = '\0';
-
-            TRACE_GLOBAL(Trace::Information, (buffer));
-        }
+        TRACE_GLOBAL(Trace::Information, (_T("Trace Log")));
         testAdmin.Sync("server done");
 
         Trace::TraceUnit::Instance().SetCategories(true,"Tracing", reinterpret_cast<const char*>("Information"));
