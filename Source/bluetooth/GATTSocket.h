@@ -66,6 +66,14 @@ namespace Bluetooth {
         {
             return !(operator==(rhs));
         }
+        bool operator==(const uint16_t shortUuid)
+        {
+            return ((HasShort() == true) && (Short() == shortUuid));
+        }
+        bool operator!=(const uint16_t shortUuid) const
+        {
+            return !(operator==(shortUuid));
+        }
         bool HasShort() const
         {
             return (_uuid[0] == 2);
