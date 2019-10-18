@@ -33,6 +33,10 @@ namespace Bluetooth {
                 _uuid[0] = 16;
             }
         }
+        explicit UUID(const string& uuidStr)
+        {
+            FromString(uuidStr);
+        }
         UUID(const UUID& copy)
         {
             ::memcpy(_uuid, copy._uuid, sizeof(_uuid));
@@ -66,7 +70,7 @@ namespace Bluetooth {
         {
             return !(operator==(rhs));
         }
-        bool operator==(const uint16_t shortUuid)
+        bool operator==(const uint16_t shortUuid) const
         {
             return ((HasShort() == true) && (Short() == shortUuid));
         }
@@ -86,8 +90,8 @@ namespace Bluetooth {
         {
              return (_uuid[0] == 2 ? &(_uuid[15]) :  &(_uuid[1]));
         }
-        string ToString(const bool full = false) const {
-
+        string ToString(const bool full = false) const
+        {
             // 00002a23-0000-1000-8000-00805f9b34fb
             static const TCHAR hexArray[] = "0123456789abcdef";
 
@@ -130,6 +134,36 @@ namespace Bluetooth {
                 }
             }
             return (result);
+        }
+        bool FromString(const string& uuidStr)
+        {
+            const uint16_t size = ((16 * 2) + 4);
+
+            if (uuidStr.length() == size) {
+                uint8_t buf[16];
+                uint8_t* p = (buf + sizeof(buf));
+                int16_t idx = 0;
+
+                while (idx < size) {
+                    if ((idx == 8) || (idx == 13) || (idx == 18) || (idx == 23)) {
+                        if (uuidStr[idx] != '-') {
+                            break;
+                        } else {
+                            idx++;
+                        }
+                    } else {
+                        (*--p) = ((Core::FromHexDigits(uuidStr[idx]) << 4) | Core::FromHexDigits(uuidStr[idx + 1]));
+                        idx += 2;
+                    }
+                }
+
+                if (idx == size) {
+                    (*this) = UUID(buf);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
     private:
