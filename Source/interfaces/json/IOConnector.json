@@ -21,7 +21,7 @@
     "pin": {
       "summary": "GPIO pin value",
       "events": [
-        "pinactivity"
+        "activity"
       ],
       "index": {
         "name": "pin ID",
@@ -39,7 +39,7 @@
     }
   },
   "events": {
-    "pinactivity": {
+    "activity": {
       "summary": "Notifies about GPIO pin activity",
       "description": "Register to this event to be notified about pin value changes",
       "id": {
