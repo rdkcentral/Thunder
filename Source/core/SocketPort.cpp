@@ -380,6 +380,10 @@ namespace Core {
 
         if (m_Socket != INVALID_SOCKET) {
 
+            m_syncAdmin.Unlock();
+            WaitForWriteComplete(waitTime);
+            m_syncAdmin.Lock();
+
             if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
 
                 if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
@@ -613,6 +617,36 @@ namespace Core {
         uint32_t result = (((time == 0) || (IsOpen() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 
         m_syncAdmin.Unlock();
+
+        return (result);
+    }
+
+    uint32_t SocketPort::WaitForWriteComplete(const uint32_t time) const
+    {
+        uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
+
+        uint16_t state = 0;
+        // Right, a wait till connection is closed is requested..
+        while ((waiting > 0) && (IsOpen() == true)) {
+            m_syncAdmin.Lock();
+            state =  m_State & SocketPort::WRITESLOT; //Read the state and check write slot is cleared
+            m_syncAdmin.Unlock();
+            if (state == 0) {
+                break;
+            }
+            // Make sure we aren't in the monitor thread waiting for close completion.
+            ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
+
+            uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+
+            // Right, lets sleep in slices of 100 ms
+            SleepMs(sleepSlot);
+
+
+            waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+        }
+
+        uint32_t result = (((time == 0) || (state == 0)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 
         return (result);
     }
