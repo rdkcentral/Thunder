@@ -80,7 +80,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
     } else {
         result = length;
 
-        TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
+        // TRACE_L1(_T("L2CapSocket Receive [%d], Type: %02X"), length, stream[0]);
         // printf("L2CAP received [%d]: ", length);
         // for (uint8_t index = 0; index < (length - 1); index++) { printf("%02X:", stream[index]); } printf("%02X\n", stream[length - 1]);
 
@@ -244,7 +244,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
              break;
         }
         case ATT_OP_WRITE_RESP: {
-            TRACE_L1(_T("We have written: %d"),length);
+            // TRACE_L1(_T("We have written: %d"),length);
             _error = Core::ERROR_NONE;
             _response.Type(stream[0]);
             break;
