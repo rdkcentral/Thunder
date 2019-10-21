@@ -924,7 +924,7 @@ namespace Bluetooth {
         }
 
     private:
-        virtual void Notification(const uint8_t[], const uint16_t) = 0;
+        virtual void Notification(const uint16_t handle, const uint8_t[], const uint16_t) = 0;
         virtual void Operational() = 0;
 
         void StateChange() override;
@@ -932,10 +932,12 @@ namespace Bluetooth {
         uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t availableData) override {
             uint32_t result = 0;
 
-            if (availableData >= 2) {
+            if (availableData >= 1) {
+                const uint8_t& opcode = dataFrame[0];
 
-                if (dataFrame[0] == ATT_OP_HANDLE_NOTIFY) {
-                    Notification(&(dataFrame[1]), availableData);
+                if ((opcode == ATT_OP_HANDLE_NOTIFY) && (availableData >= 3)) {
+                    uint16_t handle = ((dataFrame[2] << 8) | dataFrame[1]);
+                    Notification(handle, &dataFrame[3], (availableData - 3));
                     result = availableData;
                 }
                 else {
