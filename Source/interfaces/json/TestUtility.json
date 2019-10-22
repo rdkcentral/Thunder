@@ -244,6 +244,16 @@
           "$ref": "#/common/errors/badrequest"
         }
       ]
+    },
+    "shutdowntimeout": {
+     "summary": "Timeout to be waited before deactivating the plugin",
+     "writeonly":true,
+     "params": {
+       "description": "Timeout in milli seconds",
+       "type": "number",
+       "example": 5000,
+       "size": 32
+     }
     }
   }
 }
