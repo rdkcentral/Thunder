@@ -38,6 +38,7 @@ namespace Exchange {
 
         virtual ICommand::IIterator* Commands() const = 0;
         virtual ICommand* Command(const string& name) const = 0;
+        virtual uint32_t ShutdownTimeout(const uint32_t timeout) = 0;
     };
 
 } // namespace Exchange
