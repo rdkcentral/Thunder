@@ -47,17 +47,25 @@ private:
         , _sessionKeys()
     {
         printf("Trying to open an OCDM connection @ %s\n", domainName);
+        Reconnect();
+    }
 
-        _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
+    void Reconnect() const
+    {
+        if (_client->IsOpen() == false) {
+            if (_remote != nullptr) {
+                _remote->Release();
+            }
+            _remote = _client->Open<OCDM::IAccessorOCDM>(_T("OpenCDMImplementation"));
 
-        printf("Trying to open an OCDM connection result %p\n", _remote);
+            ASSERT(_remote != nullptr);
 
-        ASSERT(_remote != nullptr);
-
-        if (_remote != nullptr) {
-            _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
-        } else {
-            _client.Release();
+            if (_remote != nullptr) {
+                _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
+            }
+            else {
+                _client.Release();
+            }
         }
     }
 
@@ -82,6 +90,9 @@ public:
                 delete result;
             }
         } else {
+            // Reconnect if server is down
+            _singleton->Reconnect();
+
             _singleton->AddRef();
         }
 
@@ -134,6 +145,10 @@ public:
     virtual bool IsTypeSupported(const std::string& keySystem,
         const std::string& mimeType) const override
     {
+        // Do reconnection here again if server is down.
+        // This is first call from WebKit when new session is started
+        // If ProxyStub return error for this call, there will be not next call from WebKit
+        Reconnect();
         return (_remote->IsTypeSupported(keySystem, mimeType));
     }
 
@@ -290,10 +305,10 @@ public:
 
 private:
     mutable uint32_t _refCount;
-	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
-    Core::ProxyType<RPC::CommunicatorClient> _client;
-    OCDM::IAccessorOCDM* _remote;
-    OCDM::IAccessorOCDMExt* _remoteExt;
+    Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
+    mutable Core::ProxyType<RPC::CommunicatorClient> _client;
+    mutable OCDM::IAccessorOCDM* _remote;
+    mutable OCDM::IAccessorOCDMExt* _remoteExt;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
