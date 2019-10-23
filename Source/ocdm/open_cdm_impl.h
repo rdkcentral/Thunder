@@ -24,8 +24,8 @@ struct OpenCDMSystem {
     std::string _metadata;
 };
 
-struct OpenCDMAccessor : public OCDM::IAccessorOCDM,
-                         public OCDM::IAccessorOCDMExt {
+struct OpenCDMAccessor : public OCDM::IAccessorOCDM {
+
 private:
     OpenCDMAccessor() = delete;
     OpenCDMAccessor(const OpenCDMAccessor&) = delete;
@@ -40,7 +40,6 @@ private:
 		, _engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()))
         , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), Core::ProxyType<Core::IIPCServer>(_engine)))
         , _remote(nullptr)
-        , _remoteExt(nullptr)
         , _adminLock()
         , _signal(false, true)
         , _interested(0)
@@ -60,10 +59,7 @@ private:
 
             ASSERT(_remote != nullptr);
 
-            if (_remote != nullptr) {
-                _remoteExt = _remote->QueryInterface<OCDM::IAccessorOCDMExt>();
-            }
-            else {
+            if (_remote == nullptr) {
                 _client.Release();
             }
         }
@@ -72,7 +68,6 @@ private:
 public:
     static OpenCDMAccessor* Instance()
     {
-
         _systemLock.Lock();
 
         if (_singleton == nullptr) {
@@ -204,48 +199,48 @@ public:
 
     virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetDrmSystemTime(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetDrmSystemTime(keySystem);
     }
 
     virtual std::string
     GetVersionExt(const std::string& keySystem) const override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetVersionExt(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetVersionExt(keySystem);
     }
 
     virtual uint32_t GetLdlSessionLimit(const std::string& keySystem) const
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetLdlSessionLimit(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetLdlSessionLimit(keySystem);
     }
 
     virtual bool IsSecureStopEnabled(const std::string& keySystem) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->IsSecureStopEnabled(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->IsSecureStopEnabled(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT EnableSecureStop(const std::string& keySystem,
         bool enable) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->EnableSecureStop(keySystem, enable);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->EnableSecureStop(keySystem, enable);
     }
 
     virtual uint32_t ResetSecureStops(const std::string& keySystem) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->ResetSecureStops(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->ResetSecureStops(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStopIds(const std::string& keySystem,
         uint8_t ids[], uint8_t idSize,
         uint32_t& count)
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetSecureStopIds(keySystem, ids, idSize, count);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetSecureStopIds(keySystem, ids, idSize, count);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStop(const std::string& keySystem,
@@ -254,8 +249,8 @@ public:
         uint8_t rawData[],
         uint16_t& rawSize)
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetSecureStop(keySystem, sessionID, sessionIDLength,
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetSecureStop(keySystem, sessionID, sessionIDLength,
             rawData, rawSize);
     }
 
@@ -264,31 +259,31 @@ public:
         uint32_t sessionIDLength, const uint8_t serverResponse[],
         uint32_t serverResponseLength) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->CommitSecureStop(keySystem, sessionID, sessionIDLength,
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->CommitSecureStop(keySystem, sessionID, sessionIDLength,
             serverResponse, serverResponseLength);
     }
 
     virtual OCDM::OCDM_RESULT
     DeleteKeyStore(const std::string& keySystem) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->DeleteKeyStore(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->DeleteKeyStore(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT
     DeleteSecureStore(const std::string& keySystem) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->DeleteSecureStore(keySystem);
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->DeleteSecureStore(keySystem);
     }
 
     virtual OCDM::OCDM_RESULT
     GetKeyStoreHash(const std::string& keySystem, uint8_t keyStoreHash[],
         uint32_t keyStoreHashLength) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetKeyStoreHash(keySystem, keyStoreHash,
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetKeyStoreHash(keySystem, keyStoreHash,
             keyStoreHashLength);
     }
 
@@ -296,8 +291,8 @@ public:
     GetSecureStoreHash(const std::string& keySystem, uint8_t secureStoreHash[],
         uint32_t secureStoreHashLength) override
     {
-        ASSERT(_remoteExt && "This method only works on IAccessorOCDMExt implementations.");
-        return _remoteExt->GetSecureStoreHash(keySystem, secureStoreHash,
+        ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
+        return _remote->GetSecureStoreHash(keySystem, secureStoreHash,
             secureStoreHashLength);
     }
 
@@ -305,10 +300,9 @@ public:
 
 private:
     mutable uint32_t _refCount;
-    Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
+	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
     mutable Core::ProxyType<RPC::CommunicatorClient> _client;
     mutable OCDM::IAccessorOCDM* _remote;
-    mutable OCDM::IAccessorOCDMExt* _remoteExt;
     mutable Core::CriticalSection _adminLock;
     mutable Core::Event _signal;
     mutable volatile uint32_t _interested;
