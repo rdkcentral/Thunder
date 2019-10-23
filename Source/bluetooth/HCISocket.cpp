@@ -522,12 +522,12 @@ uint32_t ManagementSocket::Name(const string& shortName, const string& longName)
     Management::DeviceName message(_deviceId);
     std::string shortName2(Core::ToString(shortName.substr(0, sizeof(message->short_name) - 1)));
     std::string longName2(Core::ToString(longName.substr(0, sizeof(message->name) - 1)));
-    
+
     strcpy (reinterpret_cast<char*>(message->short_name), shortName2.c_str());
     strcpy (reinterpret_cast<char*>(message->name), longName2.c_str());
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Discoverable(const bool enabled)
@@ -536,7 +536,7 @@ uint32_t ManagementSocket::Discoverable(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Power(const bool enabled)
@@ -545,7 +545,7 @@ uint32_t ManagementSocket::Power(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Connectable(const bool enabled)
@@ -554,7 +554,7 @@ uint32_t ManagementSocket::Connectable(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::FastConnectable(const bool enabled)
@@ -563,7 +563,7 @@ uint32_t ManagementSocket::FastConnectable(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Block(const Address::type type, const Address& address)
@@ -573,7 +573,7 @@ uint32_t ManagementSocket::Block(const Address::type type, const Address& addres
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Unblock(const Address::type type, const Address& address)
@@ -583,27 +583,27 @@ uint32_t ManagementSocket::Unblock(const Address::type type, const Address& addr
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::Connection(const Address::type type, const Address& address, const mode value)
+uint32_t ManagementSocket::AddDevice(const Address::type type, const Address& address, const autoconnmode value)
 {
-    if (value == REMOVE) {
-        Management::RemoveDevice message(_deviceId);
-        message->addr.type = type;
-        ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
-
-        uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
-    }
-
     Management::AddDevice message(_deviceId);
-    message->action = value;
+    message->action = (type == Address::BREDR_ADDRESS? 0 : value); // ignore autoconnect for classic BT devices
     message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::RemoveDevice(const Address::type type, const Address& address)
+{
+    Management::RemoveDevice message(_deviceId);
+    ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16])
@@ -623,7 +623,7 @@ uint32_t ManagementSocket::Privacy(const uint8_t mode, const uint8_t identity[16
         }
 
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
-        result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+        result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
 
     return (result);
@@ -635,7 +635,7 @@ uint32_t ManagementSocket::Bondable(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Advertising(const bool enabled)
@@ -644,7 +644,7 @@ uint32_t ManagementSocket::Advertising(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::SimplePairing(const bool enabled)
@@ -653,7 +653,7 @@ uint32_t ManagementSocket::SimplePairing(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::LowEnergy(const bool enabled)
@@ -662,7 +662,7 @@ uint32_t ManagementSocket::LowEnergy(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::SecureLink(const bool enabled)
@@ -680,10 +680,10 @@ uint32_t ManagementSocket::SecureConnection(const bool enabled)
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
-    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_GENERAL));
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys) 
+uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys)
 {
     Management::LinkKeys message = Management::LinkKeys::Instance(_deviceId, keys);
     message->key_count = htobs(keys.Entries());
@@ -693,7 +693,7 @@ uint32_t ManagementSocket::LinkKey(const LinkKeys& keys, const bool debugKeys)
     return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys) 
+uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys)
 {
     Management::LongTermKeys message = Management::LongTermKeys::Instance(_deviceId, keys);
     message->key_count = htobs(keys.Entries());
@@ -702,7 +702,7 @@ uint32_t ManagementSocket::LongTermKey(const LongTermKeys& keys)
     return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys) 
+uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys)
 {
     Management::IdentityKeys message = Management::IdentityKeys::Instance(_deviceId, keys);
     message->irk_count = htobs(keys.Entries());
@@ -711,7 +711,7 @@ uint32_t ManagementSocket::IdentityKey(const IdentityKeys& keys)
     return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const bool lowEnergy) 
+uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const bool lowEnergy)
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
     uint8_t mode = (regular ? 1 : 0) | (lowEnergy ? 6 : 0);
@@ -722,14 +722,13 @@ uint32_t ManagementSocket::Discovering(const bool on, const bool regular, const 
     if (on == true) {
         Management::StartDiscovery message(_deviceId);
         message->type = mode;
-     
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
         result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
     else {
         Management::StopDiscovery message(_deviceId);
         message->type = mode;
-     
+
         result = Exchange(MANAGMENT_TIMEOUT, message, message);
         result = (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
     }
@@ -741,7 +740,7 @@ ManagementSocket::Info ManagementSocket::Settings() const
 {
     Info result;
     Management::Settings message(_deviceId);
-    
+
     if (const_cast<ManagementSocket*>(this)->Exchange(MANAGMENT_TIMEOUT, message, message) == Core::ERROR_NONE) {
         result = Info(message.Response());
     }

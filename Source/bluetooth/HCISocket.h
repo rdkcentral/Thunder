@@ -819,10 +819,10 @@ namespace Bluetooth {
 		bool IsFastConnectable() const {
                     return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
                 }
-		bool HasDiscovery() const {
+		bool IsDiscoverable() const {
                     return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
                 }
-		bool HasPairing() const {
+		bool IsBondable() const {
                     return ((_value & MGMT_SETTING_BONDABLE) != 0);
                 }
 		bool HasLinkLevelSecurity() const {
@@ -840,7 +840,7 @@ namespace Bluetooth {
 		bool HasLowEnergy() const {
                     return ((_value & MGMT_SETTING_LE) != 0);
                 }
-		bool HasAdvertising() const {
+		bool IsAdvertising() const {
                     return ((_value & MGMT_SETTING_ADVERTISING) != 0);
                 }
 		bool HasSecureConnections() const {
@@ -946,10 +946,10 @@ namespace Bluetooth {
             INVALID = 0xFF
         };
 
-        enum mode : uint8_t {
-            REMOVE = 0x00,
-            WHITELIST = 0x01,
-            AUTOCONNECT = 0x02
+        enum autoconnmode : uint8_t {
+            REPORT = 0x00,
+            DIRECT = 0x01, // reconnect on direct advertisement
+            ALWAYS = 0x02
         };
 
     public:
@@ -1038,7 +1038,8 @@ namespace Bluetooth {
         uint32_t IdentityKey(const IdentityKeys& keys);
         uint32_t Name(const string& shortName, const string& longName);
 
-        uint32_t Connection(const Address::type type, const Address& address, const mode value);
+        uint32_t AddDevice(const Address::type type, const Address& address, const autoconnmode value = REPORT);
+        uint32_t RemoveDevice(const Address::type type, const Address& address);
         uint32_t Discovering(const bool on, const bool regular, const bool LowEnergy);
         uint32_t Pair(const Address& remote, const Address::type type, const capabilities cap = NO_INPUT_NO_OUTPUT);
         uint32_t Unpair(const Address& remote, const Address::type type);
