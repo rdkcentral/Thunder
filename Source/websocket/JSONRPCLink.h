@@ -1119,5 +1119,8 @@ namespace JSONRPC {
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
     };
+
+    // This is for backward compatibility. Please use the template and not the typedef below!!!
+    typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
 }
 } // namespace WPEFramework::JSONRPC
