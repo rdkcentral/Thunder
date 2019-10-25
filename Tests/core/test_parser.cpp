@@ -22,9 +22,10 @@ TEST(test_path_parser, simple_path_parser)
 {
     TextFragment inputFile("C://Service/testing/pathparsertest.txt");
     PathParser pathparser(inputFile);
-    pathparser.Drive();
-    pathparser.Path();
-    pathparser.FileName();
-    pathparser.BaseFileName();
-    pathparser.Extension();
+    
+    EXPECT_EQ(pathparser.Drive().Value(),'C');
+    EXPECT_STREQ(pathparser.Path().Value().Text().c_str(),_T("//Service/testing"));
+    EXPECT_STREQ(pathparser.FileName().Value().Text().c_str(),_T("pathparsertest.txt"));
+    EXPECT_STREQ(pathparser.BaseFileName().Value().Text().c_str(),_T("pathparsertest"));
+    EXPECT_STREQ(pathparser.Extension().Value().Text().c_str(),_T("txt"));;
 }
