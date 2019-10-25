@@ -623,7 +623,6 @@ int Display::FileDescriptor() const
 Compositor::IDisplay::ISurface* Display::Create(
     const std::string& name, const uint32_t width, const uint32_t height)
 {
-
     SurfaceImplementation* retval = (Core::Service<SurfaceImplementation>::Create<SurfaceImplementation>(this, name, width, height));
 
     OfferClientInterface(retval);
@@ -664,12 +663,14 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
 
-    _adminLock.Lock();
-    uint32_t result = _compositerServerRPCConnection->Offer(client);
-    _adminLock.Unlock();
+    if (_compositerServerRPCConnection.IsValid()) {
+        _adminLock.Lock();
+        uint32_t result = _compositerServerRPCConnection->Offer(client);
+        _adminLock.Unlock();
 
-    if (result != Core::ERROR_NONE) {
-        TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        if (result != Core::ERROR_NONE) {
+            TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        }
     }
 }
 
@@ -677,12 +678,14 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
 {
     ASSERT(client != nullptr);
 
-    _adminLock.Lock();
-    uint32_t result = _compositerServerRPCConnection->Revoke(client);
-    _adminLock.Unlock();
+    if (_compositerServerRPCConnection.IsValid()) {
+        _adminLock.Lock();
+        uint32_t result = _compositerServerRPCConnection->Revoke(client);
+        _adminLock.Unlock();
 
-    if (result != Core::ERROR_NONE) {
-        TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        if (result != Core::ERROR_NONE) {
+            TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
+        }
     }
 }
 
