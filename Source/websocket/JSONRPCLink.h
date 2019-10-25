@@ -1101,11 +1101,11 @@ namespace JSONRPC {
         }
         void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
         {
-            response->FromString(message.Parameters.Value());
+            response->FromString(message.Result.Value());
         }
         void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {
-            std::vector<uint8_t> values(message.Parameters.Value().begin(), message.Parameters.Value().end());
+            std::vector<uint8_t> values(message.Result.Value().begin(), message.Result.Value().end());
             response->FromBuffer(values);
         }
 
