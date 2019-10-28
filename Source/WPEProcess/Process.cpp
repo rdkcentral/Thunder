@@ -21,9 +21,7 @@ namespace WPEFramework {
         if (_server.IsValid() == true) {
 
             // We are done, close the channel and unregister all shit we added...
-            if (_server->IsOpen()) {
-                _server->Close(2 * RPC::CommunicationTimeOut);
-            }
+            _server->Close(2 * RPC::CommunicationTimeOut);
 
             _proxyStubs.clear();
 
@@ -415,9 +413,7 @@ int main(int argc, char** argv)
                 if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
                     invokeServer->Run();
-                    if (_server->IsOpen()) {
-                        _server->Close(Core::infinite);
-                    }
+                    _server->Close(Core::infinite);
                 } else {
                     TRACE_L1("Could not open the connection, error (%d)", result);
                 }
