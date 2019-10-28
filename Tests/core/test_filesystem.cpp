@@ -77,4 +77,5 @@ TEST (test_file, directory)
     EXPECT_EQ(dirOne.Name(), ".");
     EXPECT_TRUE(dirOne.IsDirectory());
     dirOne.Reset();
+    EXPECT_TRUE(dirOne.Next());
 }
