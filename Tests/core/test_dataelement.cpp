@@ -76,6 +76,7 @@ TEST(test_linkeddata, simple_linkeddata)
     ob1.SetBuffer(offset,size,arr);
     ob1.GetBuffer(offset,size,arr1);
     uint64_t copyOb = 0;
+    EXPECT_EQ(opertr.Copy(offset,ob2), copyOb);
     EXPECT_EQ(ob2.Copy(offset,ob3), copyOb);
 
     ob1.Enclosed();
