@@ -34,6 +34,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_jsonparser.cpp
    test_library.cpp
+   test_lockablecontainer.cpp
    test_logging.cpp
    test_measurementtype.cpp
    test_messageException.cpp
