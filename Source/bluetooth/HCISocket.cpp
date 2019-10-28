@@ -2,6 +2,12 @@
 
 namespace WPEFramework {
 
+ENUM_CONVERSION_BEGIN(Bluetooth::Address::type)
+    { Bluetooth::Address::BREDR_ADDRESS, _TXT(_T("bredr")) },
+    { Bluetooth::Address::LE_PUBLIC_ADDRESS, _TXT(_T("le_public")) },
+    { Bluetooth::Address::LE_RANDOM_ADDRESS, _TXT(_T("le_random")) },
+ENUM_CONVERSION_END(Bluetooth::Address::type)
+
 namespace Bluetooth {
 
 uint32_t HCISocket::Advertising(const bool enable, const uint8_t mode)
