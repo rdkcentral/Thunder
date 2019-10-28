@@ -17,8 +17,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_iterator.cpp
    test_json.cpp
    test_jsonparser.cpp
-   test_keyvalue.cpp
-   #test_library.cpp
+   test_library.cpp
    test_lockablecontainer.cpp
    test_logging.cpp
    test_measurementtype.cpp
