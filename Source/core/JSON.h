@@ -1494,7 +1494,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if ((_scopeCount & NullBit) == 0) {
+                    if ((_scopeCount & NullBit) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
                         _unaccountedCount = 0;
@@ -1516,13 +1516,18 @@ namespace Core {
                 if (offset != 0) {
                     while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
                         stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset))) & 0xFF);
+                        offset++;
+                    }
+                    if (offset > _unaccountedCount) {
+                        offset--;
                     }
 
-                    while ((loaded < maxLength) && (offset == 0)) {
+                    while ((loaded < maxLength) && (offset == _unaccountedCount)) {
                         loaded += static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
                         offset += loaded;
 
                         if (offset - _unaccountedCount >= _value.length()) {
+                            _unaccountedCount = offset;
                             offset = 0;
                         }
                     }
@@ -1538,7 +1543,7 @@ namespace Core {
                     if (stream[loaded] == IMessagePack::NullValue) {
                         _scopeCount |= NullBit;
                         loaded++;
-                    } else if (stream[loaded] == 0xA0) {
+                    } else if ((stream[loaded] & 0xA0) == 0xA0) {
                         _unaccountedCount = stream[loaded] & 0x1F;
                         offset = 3;
                         loaded++;
@@ -1550,6 +1555,8 @@ namespace Core {
                         _unaccountedCount = 0;
                         offset = 1;
                         loaded++;
+                    } else {
+                        loaded = maxLength;
                     }
                 }
 
@@ -3078,7 +3085,7 @@ namespace Core {
                         offset += PARSE;
                     } else {
                         const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
-                        if (element == nullptr) {
+                        if (element != nullptr) {
                             loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
                         } else {
                             stream[loaded++] = IMessagePack::NullValue;
@@ -3126,27 +3133,30 @@ namespace Core {
 
                 while ((loaded < maxLength) && (offset >= PARSE)) {
 
-                    if (_current.pack == nullptr) {
-                        offset -= PARSE;
-                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
-                        offset += PARSE;
-                    } else if (_fieldName.IsSet() == true) {
-                        _current.pack = dynamic_cast<IMessagePack*>(Find(_fieldName.Value().c_str()));
-                        if (_current.pack == nullptr) {
-                            _current.pack = &(static_cast<IMessagePack&>(_fieldName));
+                    if (_fieldName.IsSet() == true) {
+                        if (_current.pack != nullptr) {
+                            offset -= PARSE;
+                           loaded += _current.pack->Deserialize(&stream[loaded], maxLength, offset);
+                            offset += PARSE;
+                            _fieldName.Clear();
+                            if (offset == PARSE) {
+                            // Seems like another field is completed. Reduce the count
+                                _count--;
+                                if (_count == 0) {
+                                    offset = 0;
+                                }
+                            }
+                        } else {
+                            _current.pack = dynamic_cast<IMessagePack*>(Find(_fieldName.Value().c_str()));
+                            if (_current.pack == nullptr) {
+                                _current.pack = &(static_cast<IMessagePack&>(_fieldName));
+                            }
                         }
-                        _fieldName.Clear();
                     } else {
                         offset -= PARSE;
                         loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
                         offset += PARSE;
-                        if (offset == PARSE) {
-                            // Seems like another field is completed. Reduce the count
-                            _count--;
-                            if (_count == 0) {
-                                offset = 0;
-                            }
-                        }
+                        _current.pack = nullptr;
                     }
                 }
 
