@@ -671,6 +671,11 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
         if (result != Core::ERROR_NONE) {
             TRACE(CompositorClient, (_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
         }
+    } else {
+#if defined(COMPOSITORSERVERPLUGIN)
+        SYSLOG(Trace::Fatal, (_T("The CompositorServer plugin is included in the build, but not able to reach!")));
+        ASSERT(false && "The CompositorServer plugin is included in the build, but not able to reach!");
+#endif
     }
 }
 
@@ -686,6 +691,11 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
         if (result != Core::ERROR_NONE) {
             TRACE(CompositorClient, (_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text()));
         }
+    }else {
+#if defined(COMPOSITORSERVERPLUGIN)
+        SYSLOG(Trace::Fatal, (_T("The CompositorServer plugin is included in the build, but not able to reach!")));
+        ASSERT(false && "The CompositorServer plugin is included in the build, but not able to reach!");
+#endif
     }
 }
 
