@@ -135,7 +135,7 @@ private:
 
 extern "C" {
 
-int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *srcPad)
+int gstreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *srcPad)
 {
     struct GstPlayerSink* instance = GstPlayerSink::Instance();
     int result = 0;
@@ -159,7 +159,7 @@ int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *src
     return result;
 }
 
-int gtsreamer_client_unlink_sink (SinkType type, GstElement *pipeline)
+int gstreamer_client_unlink_sink (SinkType type, GstElement *pipeline)
 {
     // pipeline destruction will free allocated elements
     return 0;
