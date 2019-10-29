@@ -262,7 +262,7 @@ namespace Core {
             static constexpr uint8_t NullValue = 0xC0;
 
             template <typename INSTANCEOBJECT>
-            static bool ToBuffer(std::vector<uint8_t> stream, const INSTANCEOBJECT& realObject)
+            static bool ToBuffer(std::vector<uint8_t>& stream, const INSTANCEOBJECT& realObject)
             {
                 uint8_t buffer[1024];
                 uint16_t loaded;
@@ -283,7 +283,7 @@ namespace Core {
                 return (offset == 0);
             }
             template <typename INSTANCEOBJECT>
-            static bool FromBuffer(const std::vector<uint8_t> stream, INSTANCEOBJECT& realObject)
+            static bool FromBuffer(const std::vector<uint8_t>& stream, INSTANCEOBJECT& realObject)
             {
                 uint16_t offset = 0;
 
@@ -371,12 +371,12 @@ namespace Core {
                 return completed;
             }
 
-            bool ToBuffer(std::vector<uint8_t> stream) const
+            bool ToBuffer(std::vector<uint8_t>& stream) const
             {
                 return (Core::JSON::IMessagePack::ToBuffer(stream, *this));
             }
 
-            bool FromBuffer(const std::vector<uint8_t> stream)
+            bool FromBuffer(const std::vector<uint8_t>& stream)
             {
                 return (Core::JSON::IMessagePack::FromBuffer(stream, *this));
             }
