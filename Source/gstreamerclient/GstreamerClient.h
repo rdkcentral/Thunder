@@ -2,7 +2,7 @@
 
 extern "C" {
 
-typedef struct _GstElement GstElement;
+typedef struct _GstPad GstPad;
 
 typedef enum SinkType_t {
     THUNDER_GSTREAMER_CLIENT_AUDIO,
@@ -11,7 +11,7 @@ typedef enum SinkType_t {
 } SinkType;
 
 /**/
-int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstElement *appSrc);
+int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *srcPad);
 
 /**/
 int gtsreamer_client_unlink_sink (SinkType type, GstElement *pipeline);

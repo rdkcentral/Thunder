@@ -23,7 +23,7 @@ public:
         return (instance);
     }
 
-    bool ConfigureAudioSink(GstElement *pipeline, GstElement *appSrc) {
+    bool ConfigureAudioSink(GstElement *pipeline, GstPad *srcPad) {
 
         TRACE_L1("Configure audio sink");
         // Setup audio decodebin
@@ -41,12 +41,15 @@ public:
             return false;
 
         gst_bin_add_many (GST_BIN (pipeline), _audioDecodeBin, _audioSink, nullptr);
-        gst_element_link(appSrc, _audioDecodeBin);
+
+        GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
+        gst_pad_link (srcPad, pSinkPad);
+        gst_object_unref(pSinkPad);
 
         return true;
     }
 
-    bool ConfigureVideoSink(GstElement *pipeline, GstElement *appSrc) {
+    bool ConfigureVideoSink(GstElement *pipeline, GstPad *srcPad) {
 
         TRACE_L1("Configure video sink");
         // Setup video decodebin
@@ -63,7 +66,10 @@ public:
             return false;
 
         gst_bin_add_many (GST_BIN (pipeline), _videoDecodeBin, _videoSink, nullptr);
-        gst_element_link(appSrc, _videoDecodeBin);
+
+        GstPad *pSinkPad = gst_element_get_static_pad(_videoDecodeBin, "sink");
+        gst_pad_link (srcPad, pSinkPad);
+        gst_object_unref (pSinkPad);
 
         return true;
     }
@@ -129,19 +135,19 @@ private:
 
 extern "C" {
 
-int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstElement *appSrc)
+int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *srcPad)
 {
     struct GstPlayerSink* instance = GstPlayerSink::Instance();
     int result = 0;
 
     switch (type) {
         case THUNDER_GSTREAMER_CLIENT_AUDIO:
-            if (!instance->ConfigureAudioSink(pipeline, appSrc)) {
+            if (!instance->ConfigureAudioSink(pipeline, srcPad)) {
                 result = -1;
             }
             break;
         case THUNDER_GSTREAMER_CLIENT_VIDEO:
-            if (!instance->ConfigureVideoSink(pipeline, appSrc)) {
+            if (!instance->ConfigureVideoSink(pipeline, srcPad)) {
                 result = -1;
             }
             break;
