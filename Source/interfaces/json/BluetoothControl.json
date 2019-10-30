@@ -22,12 +22,12 @@
       "example": "Connected"
     },
     "devicetype": {
-      "description": "Device type",
+      "description": "Bluetooth device type",
       "type": "string",
-      "enum": [ "Bluetooth", "BluetoothLowEnergy" ],
+      "enum": [ "Classic", "LowEnergy" ],
       "example": "BluetoothLowEnergy"
     }
-},
+  },
   "methods": {
     "scan": {
       "summary": "Starts scanning for Bluetooth devices",
@@ -166,48 +166,51 @@
     }
   },
   "properties": {
-    "deviceinfo": {
+    "devices": {
+      "readonly": true,
+      "summary": "Known device list",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/deviceaddress"
+        }
+      }
+    },
+    "device": {
       "readonly": true,
       "summary": "Device information",
       "index": {
         "name": "Device address",
-        "example": "81:6F:B0:91:9B:FE",
-        "description": "If the *device address* is omitted, then information about all known devices is returned."
+        "example": "81:6F:B0:91:9B:FE"
       },
       "params": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "address": {
-              "$ref": "#/definitions/deviceaddress"
-            },
-            "name": {
-              "type": "string",
-              "example": "Acme Bluetooth Device",
-              "description": "Name of the device"
-            },
-            "type": {
-              "$ref": "#/definitions/devicetype"
-            },
-            "connected": {
-              "description": "Denotes if the device is currently connected to host",
-              "type": "boolean",
-              "example": true
-            },
-            "paired": {
-              "description": "Denotes if the device is currently paired with host",
-              "type": "boolean",
-              "example": true
-            }
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Acme Bluetooth Device",
+            "description": "Name of the device"
           },
-          "required": [
-            "name",
-            "type",
-            "connected",
-            "paired"
-          ]
-        }
+          "type": {
+            "$ref": "#/definitions/devicetype"
+          },
+          "connected": {
+            "description": "Denotes if the device is currently connected to host",
+            "type": "boolean",
+            "example": true
+          },
+          "paired": {
+            "description": "Denotes if the device is currently paired with host",
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "connected",
+          "paired"
+        ]
       },
       "errors": [
         {
@@ -236,7 +239,8 @@
           },
           "disconnectreason": {
             "type": "string",
-            "enum": [ "ConnectionTimeout", "RemoteLowOnResources", "RemotePoweredOff", "AuthenticationFailure", "TerminatedByUser", "TerminatedByHost" ],
+            "enum": [ "ConnectionTimeout", "AuthenticationFailure", "RemoteLowOnResources", "RemotePoweredOff","TerminatedByRemote", "TerminatedByHost" ],
+            "example": "Disconnected",
             "description": "Disconnection reason in case of *Disconnected* event"
           }
         },

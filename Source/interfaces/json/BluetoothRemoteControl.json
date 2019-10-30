@@ -150,6 +150,91 @@
           "description": "Failed to retrieve battery level"
         }
       ]
+    },
+    "audioprofiles" : {
+      "summary": "Supported audio profiles",
+      "readonly": true,
+      "params": {
+        "description": "List of supported audio profiles",
+        "type": "array",
+        "items": {
+            "type": "string",
+            "example": "adpcm-hq",
+            "description": "Name of the audio profile"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/unavailable",
+          "description": "The unit does not support voice functionality"
+        }
+      ]
+    },
+    "audioprofile" : {
+      "summary": "Audio profile details",
+      "readonly": true,
+      "index": {
+        "name": "Audio profile",
+        "example": "adpcm-hq"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "codec": {
+            "type": "string",
+            "example": "ima-adpcm",
+            "description": "Name of the audio codec (*pcm* for uncompressed audio)"
+          },
+          "channels": {
+            "type": "number",
+            "size": 8,
+            "example": 1,
+            "description": "Number of audio channels (1: mono, 2: stereo, etc.)"
+          },
+          "rate": {
+            "type": "number",
+            "size": 16,
+            "example": 16000,
+            "description": "Sample rate (in Hz)"
+          },
+          "resolution": {
+            "type": "number",
+            "size": 8,
+            "example": 16,
+            "description": "Sample resolution (in bits per sample)"
+          },
+          "be": {
+            "type": "boolean",
+            "example": true,
+            "description": "Denotes if samples byte order is big-endian (default: *false*)"
+          },
+          "unsigned": {
+            "type": "boolean",
+            "example": true,
+            "description": "Denotes if samples values are unsigned (default: *false*)"
+          }
+        },
+        "required": [
+          "codec",
+          "channels",
+          "rate",
+          "resolution"
+        ]
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "The supplied audio profile is unknown"
+        }
+      ]
     }
   },
   "events": {
@@ -159,12 +244,13 @@
       "params": {
         "type": "object",
         "properties": {
-          "format": {
+          "profile": {
             "type": "string",
-            "example": "pcm",
-            "description": "Type of audio data marking beginning of transmission or *end* for end of transmission"
+            "example": "pcm-hq",
+            "description": "Type of audio profile, marking start of transmission; empty in case of end of transmission"
           }
-        }
+        },
+        "required": []
       }
     },
     "audioframe": {
