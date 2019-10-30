@@ -2,16 +2,11 @@ set(TARGET gstreamerclient)
 
 message("Setup ${TARGET} v${VERSION}...")
 
-find_package(NEXUS REQUIRED)
-find_package(NXCLIENT REQUIRED)
-
 add_library(${TARGET} SHARED Implementation.cpp)
 
 target_link_libraries(${TARGET}
     PRIVATE
         ${NAMESPACE}Core::${NAMESPACE}Core
-        NEXUS::NEXUS
-        NXCLIENT::NXCLIENT
         ${GSTREAMER_LIBRARIES}
         ${GSTREAMER_BASE_LIBRARIES}
         )
@@ -19,6 +14,7 @@ target_link_libraries(${TARGET}
 target_include_directories(${TARGET}
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>
         $<INSTALL_INTERFACE:include/${NAMESPACE}>
         ${GSTREAMER_INCLUDES}
         ${GSTREAMER_BASE_INCLUDES}
