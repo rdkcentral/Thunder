@@ -3,7 +3,7 @@
   "jsonrpc": "2.0",
   "info": {
     "title": "Bluetooth Remote Control API",
-    "class": "BTRemoteControl",
+    "class": "BluetoothRemoteControl",
     "description": "Bluetooth Remote Control JSON-RPC interface"
   },
   "common": {
