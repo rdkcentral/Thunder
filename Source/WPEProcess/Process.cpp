@@ -58,6 +58,8 @@ namespace Process {
         }
         ~WorkerPoolImplementation()
         {
+            // Diable the queue so the minions can stop, even if they are processing and waiting for work..
+            Stop();
             _minions.clear();
             delete Snapshot().Slot;
         }
