@@ -432,20 +432,16 @@ namespace Bluetooth {
                 uint16_t Max() const {
                     return (_end);
                 }
-                uint32_t Length() const {
-                    return static_cast<uint32_t>(_value.length());
-                }
-                const uint8_t* Value() const {
-                    return reinterpret_cast<const uint8_t*>(_value.data());
+               
+                /* 
+                template<typename DATA>
+                void Value (const DATA& value) {
                 }
                 template<typename DATA>
-                void Value(DATA& value) const {
-                    ASSERT(Length() >= sizeof(DATA));
-                    value = (*reinterpret_cast<const DATA*>(_value.data()));
+                void Value (DATA& value) {
                 }
-                void Value(string& value) const {
-                    value = _value;
-                }
+                */
+
             private:
                 friend class Profile;
                 void Descriptors (GATTSocket::Command::Response& response) {
