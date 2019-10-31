@@ -739,7 +739,7 @@ namespace Core {
                     if (header == IMessagePack::NullValue) {
                         _set = UNDEFINED;
                     } else if ((header >= 0xCC) && (header <= 0xCF)) {
-                        _set = (1 < (header - 0xCC)) << 12;
+                        _set = (1 << (header - 0xCC)) << 12;
                         offset = 1;
                     } else if ((header >= 0xD0) && (header <= 0xD3)) {
                         _set = (1 << (header - 0xD0)) << 12;
@@ -1502,15 +1502,15 @@ namespace Core {
                     if ((_scopeCount & NullBit) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
-                        _unaccountedCount = 0;
+                        _unaccountedCount = 1;
                         stream[loaded++] = static_cast<uint8_t>(_value.length() | 0xA0);
                         offset++;
                     } else if (_value.length() <= 0xFF) {
-                        _unaccountedCount = 1;
+                        _unaccountedCount = 2;
                         stream[loaded++] = 0xD9;
                         offset++;
                     } else if (_value.length() <= 0xFFFF) {
-                        _unaccountedCount = 2;
+                        _unaccountedCount = 3;
                         stream[loaded++] = 0xDA;
                         offset++;
                     } else {
@@ -1519,20 +1519,22 @@ namespace Core {
                 }
 
                 if (offset != 0) {
-                    while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
-                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset))) & 0xFF);
+                    while ((loaded < maxLength) && (offset < _unaccountedCount)) {
+                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset - 1))) & 0xFF);
                         offset++;
                     }
-                    if (offset > _unaccountedCount) {
-                        offset--;
-                    }
 
-                    while ((loaded < maxLength) && (offset == _unaccountedCount)) {
-                        loaded += static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
-                        offset += loaded;
+                    uint16_t copied = 0;
+                    while ((loaded < maxLength) && (offset != 0)) {
+                        copied = static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
+                        offset += copied;
+                        loaded += copied;
+                        if (_unaccountedCount) {
+                           offset -=_unaccountedCount;
+                           _unaccountedCount = 0;
+                        }
 
-                        if (offset - _unaccountedCount >= _value.length()) {
-                            _unaccountedCount = offset;
+                        if (offset >= _value.length()) {
                             offset = 0;
                         }
                     }
@@ -1576,7 +1578,7 @@ namespace Core {
                         offset++;
                     }
 
-                    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                    if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
                         offset = 0;
                     }
                 }
