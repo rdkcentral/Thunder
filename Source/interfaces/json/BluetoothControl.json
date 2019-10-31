@@ -25,7 +25,7 @@
       "description": "Bluetooth device type",
       "type": "string",
       "enum": [ "Classic", "LowEnergy" ],
-      "example": "BluetoothLowEnergy"
+      "example": "LowEnergy"
     }
   },
   "methods": {
