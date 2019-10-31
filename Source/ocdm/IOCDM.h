@@ -164,11 +164,6 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     SetServerCertificate(const string& keySystem, const uint8_t* serverCertificate /* @length:serverCertificateLength */,
         const uint16_t serverCertificateLength)
         = 0;
-};
-
-struct IAccessorOCDMExt : virtual public WPEFramework::Core::IUnknown {
-
-    enum { ID = WPEFramework::RPC::ID_ACCESSOROCDM_EXTENSION };
 
     virtual uint64_t GetDrmSystemTime(const std::string& keySystem) const = 0;
 
