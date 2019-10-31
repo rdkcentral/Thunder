@@ -22,7 +22,7 @@
       "params": {
         "type": "object",
         "properties": {
-          "device": {
+          "address": {
             "$ref": "#/definitions/deviceaddress"
           }
         }

@@ -19,7 +19,7 @@
       "description": "Device state",
       "type": "string",
       "enum": [ "Paired", "Unpaired", "Connected", "Disconnected" ],
-      "example": "Connected"
+      "example": "Disconnected"
     },
     "devicetype": {
       "description": "Bluetooth device type",
@@ -53,6 +53,10 @@
         {
           "description": "Failed to scan",
           "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Scan already in progress",
+          "$ref": "#/common/errors/inprogress"
         }
       ]
     },
@@ -77,7 +81,7 @@
         },
         {
           "description": "Device already connected",
-          "$ref": "#/common/errors/illegalstate"
+          "$ref": "#/common/errors/alreadyconnected"
         },
         {
           "description": "Failed to connect the device",
@@ -106,7 +110,7 @@
         },
         {
           "description": "Device not connected",
-          "$ref": "#/common/errors/illegalstate"
+          "$ref": "#/common/errors/alreadyreleased"
         }
       ]
     },
@@ -131,7 +135,7 @@
         },
         {
           "description": "Device already paired",
-          "$ref": "#/common/errors/illegalstate"
+          "$ref": "#/common/errors/alreadyconnected"
         },
         {
           "description": "Failed to pair the device",
@@ -160,7 +164,7 @@
         },
         {
           "description": "Device not paired",
-          "$ref": "#/common/errors/illegalstate"
+          "$ref": "#/common/errors/alreadyreleased"
         }
       ]
     }
@@ -240,7 +244,7 @@
           "disconnectreason": {
             "type": "string",
             "enum": [ "ConnectionTimeout", "AuthenticationFailure", "RemoteLowOnResources", "RemotePoweredOff","TerminatedByRemote", "TerminatedByHost" ],
-            "example": "Disconnected",
+            "example": "ConnectionTimeout",
             "description": "Disconnection reason in case of *Disconnected* event"
           }
         },
