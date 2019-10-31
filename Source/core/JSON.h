@@ -748,6 +748,7 @@ namespace Core {
                         _value = (header & 0x7F);
                     } else if ((header & 0xE0) == 0xE0) {
                         _value = (header & 0x0F);
+                        _set = NEGATIVE;
                     } else {
                         _set = ERROR;
                     }
@@ -757,6 +758,10 @@ namespace Core {
                     _value = _value << 8;
                     _value += stream[loaded++];
                     offset = (offset == ((_set >> 12) & 0xF) ? 0 : offset + 1);
+                }
+
+                if (_value != 0) {
+                    _set |= SET;
                 }
                 return (loaded);
             }
