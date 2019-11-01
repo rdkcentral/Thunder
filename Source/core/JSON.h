@@ -3061,7 +3061,7 @@ namespace Core {
                 if (offset == 0) {
                     _iterator = _data.begin();
                     if (_data.size() <= 15) {
-                        stream[loaded++] = (0x80 | static_cast<uint8_t>(_data.size()));
+                        stream[loaded++] = 0x80;
                         if (_iterator != _data.end()) {
                             offset = PARSE;
                         }
@@ -3070,7 +3070,11 @@ namespace Core {
                         offset = 1;
                     }
                     if (offset != 0) {
-                        _fieldName = string(_iterator->first);
+                        if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
+                            offset = 0;
+                        } else {
+                            _fieldName = string(_iterator->first);
+                        }
                     }
                 }
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
@@ -3094,16 +3098,20 @@ namespace Core {
                         const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
                         if (element != nullptr) {
                             loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                            if (offset == 0) {
+                                _fieldName.Clear();
+                                stream[0]++;
+                            }
                         } else {
                             stream[loaded++] = IMessagePack::NullValue;
                         }
                         offset += PARSE;
                         if (offset == PARSE) {
-                            _iterator++;
-                            if (_iterator == _data.end()) {
-                                offset = 0;
-                            } else {
+                            if (FindNext() != false) {
                                 _fieldName = string(_iterator->first);
+                            } else {
+                               offset = 0;
+                               _fieldName.Clear();
                             }
                         }
                     }
