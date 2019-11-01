@@ -68,18 +68,21 @@ TEST(test_linkeddata, simple_linkeddata)
     uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};
     uint8_t arr1[] ={};
     const uint64_t offset= 0;
-    DataElement objt1(10,arr);
+    const uint32_t size = 0;
+    DataElement objt1(100,arr);
     LinkedDataElement ob1,ob2;
-    LinkedDataElement ob3(objt1,0,0);
-    LinkedDataElement opertr = ob3;
-    ob1.SetBuffer(offset,size,arr);
-    ob1.GetBuffer(offset,size,arr1);
+    LinkedDataElement ob3(objt1,2,8);
+    LinkedDataElement dataObject;
+    dataObject = ob3;
+    ob3.SetBuffer(offset,size,arr);
+    ob3.GetBuffer(offset,size,arr1);
     uint64_t copyOb = 0;
-    EXPECT_EQ(opertr.Copy(offset,ob2), copyOb);
+    EXPECT_EQ(dataObject.Copy(offset,ob2), copyOb);
     EXPECT_EQ(ob2.Copy(offset,ob3), copyOb);
 
     ob1.Enclosed();
-    EXPECT_EQ(ob2.LinkedSize(), unsigned(10));
+    uint64_t LinkedSize = 0;
+    EXPECT_EQ(ob2.LinkedSize(), LinkedSize);
     EXPECT_EQ(ob2.LinkedElements(),unsigned(1));
 }
 
