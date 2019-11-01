@@ -22,8 +22,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_logging.cpp
    test_measurementtype.cpp
    test_messageException.cpp
-   #test_networkinfo.cpp
-   test_nodeid.cpp
+   test_networkinfo.cpp
    test_numbertype.cpp
    test_optional.cpp
    test_parser.cpp

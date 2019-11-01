@@ -85,8 +85,3 @@ TEST(test_adapteriterator, simple_adapteriterator)
     uint8_t buffer[32];
     adapter.MACAddress(buffer,32);
 }
-TEST(test_adapterobserver, simple_adapterobserver)
-{
-    AdapterObserver::INotification* callback;
-    AdapterObserver observer(callback);
-}
