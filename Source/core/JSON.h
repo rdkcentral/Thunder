@@ -2897,6 +2897,7 @@ namespace Core {
                 if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
                     stream[loaded++] = '}';
                     offset = 0;
+                    _fieldName.Clear();
                 }
 
                 return (loaded);
@@ -3058,9 +3059,10 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
+                uint16_t elementSize = Size();
                 if (offset == 0) {
                     _iterator = _data.begin();
-                    if (Size() <= 15) {
+                    if (elementSize <= 15) {
                         stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
                         if (_iterator != _data.end()) {
                             offset = PARSE;
@@ -3079,10 +3081,10 @@ namespace Core {
                 }
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
                     if (offset == 1) {
-                        stream[loaded++] = (Size() >> 8) & 0xFF;
+                        stream[loaded++] = (elementSize >> 8) & 0xFF;
                         offset = 2;
                     } else if (offset == 2) {
-                        stream[loaded++] = Size() & 0xFF;
+                        stream[loaded++] = elementSize & 0xFF;
                         offset = PARSE;
                     }
                 }
@@ -3150,10 +3152,10 @@ namespace Core {
                     if (_fieldName.IsSet() == true) {
                         if (_current.pack != nullptr) {
                             offset -= PARSE;
-                           loaded += _current.pack->Deserialize(&stream[loaded], maxLength, offset);
+                           loaded += _current.pack->Deserialize(&stream[loaded], maxLength - loaded, offset);
                             offset += PARSE;
-                            _fieldName.Clear();
                             if (offset == PARSE) {
+                                _fieldName.Clear();
                             // Seems like another field is completed. Reduce the count
                                 _count--;
                                 if (_count == 0) {
@@ -3168,7 +3170,7 @@ namespace Core {
                         }
                     } else {
                         offset -= PARSE;
-                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
+                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength - loaded, offset);
                         offset += PARSE;
                         _current.pack = nullptr;
                     }
