@@ -17,4 +17,10 @@ int gstreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *src
 /**/
 int gstreamer_client_unlink_sink (SinkType type, GstElement *pipeline);
 
+int gstreamer_client_post_eos (GstElement * element);
+
+int gstreamer_client_can_report_stale_pts ();
+
+int gstreamer_client_set_volume(GstElement *pipeline, float volume);
+
 };

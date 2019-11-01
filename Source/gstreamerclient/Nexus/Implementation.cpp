@@ -3,6 +3,7 @@
 #include "../GstreamerClient.h"
 
 #include <gst/gst.h>
+#include <gst/app/gstappsrc.h>
 
 struct GstPlayerSink {
 private:
@@ -163,6 +164,29 @@ int gstreamer_client_unlink_sink (SinkType type, GstElement *pipeline)
 {
     // pipeline destruction will free allocated elements
     return 0;
+}
+
+int gstreamer_client_post_eos (GstElement * element)
+{
+   // Nexus:
+   gst_app_src_end_of_stream(GST_APP_SRC(element));
+   // Rest:
+   // gst_element_post_message(mSrc, gst_message_new_eos(GST_OBJECT(mSrc)));
+   // See: https://github.com/Metrological/netflix/blob/f5646af2f6b5fd9690681366908a2e711ae1d021/partner/dpi/gstreamer/ESPlayerGst.cpp#L334
+   return 0;
+}
+
+int gstreamer_client_can_report_stale_pts ()
+{
+    return 1;
+    // All others will return 0
+    // See: https://github.com/Metrological/netflix/blob/f5646af2f6b5fd9690681366908a2e711ae1d021/partner/dpi/gstreamer/ESPlayerGst.cpp#L747
+}
+
+int gstreamer_client_set_volume(GstElement *pipeline, float volume)
+{
+   const float scaleFactor = 100.0f; // For all others is 1.0f (so no scaling)
+   
 }
 
 };
