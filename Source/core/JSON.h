@@ -3060,8 +3060,8 @@ namespace Core {
 
                 if (offset == 0) {
                     _iterator = _data.begin();
-                    if (_data.size() <= 15) {
-                        stream[loaded++] = 0x80;
+                    if (Size() <= 15) {
+                        stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
                         if (_iterator != _data.end()) {
                             offset = PARSE;
                         }
@@ -3079,10 +3079,10 @@ namespace Core {
                 }
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
                     if (offset == 1) {
-                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                        stream[loaded++] = (Size() >> 8) & 0xFF;
                         offset = 2;
                     } else if (offset == 2) {
-                        stream[loaded++] = _data.size() & 0xFF;
+                        stream[loaded++] = Size() & 0xFF;
                         offset = PARSE;
                     }
                 }
@@ -3100,7 +3100,6 @@ namespace Core {
                             loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
                             if (offset == 0) {
                                 _fieldName.Clear();
-                                stream[0]++;
                             }
                         } else {
                             stream[loaded++] = IMessagePack::NullValue;
@@ -3211,6 +3210,21 @@ namespace Core {
                     _iterator++;
                 }
                 return (_iterator != _data.end());
+            }
+
+            uint16_t Size() const
+            {
+                uint16_t count = 0;
+                if (_data.size() > 0) {
+                    JSONElementList::const_iterator iterator = _data.begin();
+                    while (iterator != _data.end()) {
+                        if (iterator->second->IsSet() != false) {
+                            count++;
+                        }
+                        iterator++;
+                    }
+                }
+                return count;
             }
 
             virtual bool Request(const TCHAR label[])
