@@ -34,14 +34,14 @@ TEST(test_datafile, simple_test)
     File fileSample(file);
     DataFile obj1(fileSample);
     DataFile object(fileName, 1, 10);
-    EXPECT_EQ(obj1.ErrorCode(),unsigned(0));
+    EXPECT_EQ(obj1.ErrorCode(),unsigned(2));
     DataFile obj2(fileName, 1, 50);
     obj1.Sync();
     obj2.MemoryMap();
 
     const string& Name = obj1.Name();
     EXPECT_EQ(Name.c_str(), fileName);
-    EXPECT_TRUE(obj2.IsValid());
+    EXPECT_FALSE(obj2.IsValid());
     obj1.Storage();
     obj1.ReloadFileInfo();
     obj1.MemoryMap();
