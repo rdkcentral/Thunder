@@ -1,6 +1,7 @@
 #ifndef __IOPENCDMI_H
 #define __IOPENCDMI_H
 
+#include "Module.h"
 #include <com/com.h>
 #include <core/core.h>
 
@@ -212,7 +213,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
         = 0;
 };
 
-class KeyId {
+class EXTERNAL KeyId {
 private:
     static const KeyId InvalidKey;
 

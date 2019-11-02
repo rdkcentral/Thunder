@@ -1,8 +1,9 @@
 #ifndef __VIRTUAL_INPUT__
 #define __VIRTUAL_INPUT__
 
-#include "Module.h"
 #include "../virtualinput/IVirtualInput.h"
+
+#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -704,7 +705,7 @@ namespace PluginHost {
             ASSERT(_keyHandler == nullptr);
 #if defined(__WIN32__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
-            _inputHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
+            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
 #else
             if (t == VIRTUAL) {
