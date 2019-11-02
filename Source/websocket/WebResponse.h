@@ -193,6 +193,8 @@ namespace Web {
                 , _current()
                 , _state(VERSION)
                 , _parser(*this)
+                , _zlib()
+				, _zlibResult(0)
             {
             }
 #ifdef __WIN32__

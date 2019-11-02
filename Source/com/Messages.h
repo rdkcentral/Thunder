@@ -185,7 +185,7 @@ namespace RPC {
             }
 
         public:
-            enum type {
+            enum type : uint8_t {
                 AQUIRE = 0,
                 OFFER = 1,
                 REVOKE = 2,
@@ -196,19 +196,13 @@ namespace RPC {
 
         public:
             Init()
-                : _implementation(nullptr)
+                : _id(0)
+				, _implementation(nullptr)
                 , _interfaceId(~0)
                 , _exchangeId(~0)
+                , _versionId(0)
             {
             }
-            /*
-            Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
-                : _implementation(implementation)
-                , _interfaceId(interfaceId)
-                , _exchangeId(exchangeId)
-            {
-            }
-            */
             ~Init()
             {
             }

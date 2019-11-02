@@ -322,7 +322,7 @@ namespace RPC {
             {
                 ASSERT(_channel.IsValid() == true);
 
-                return (Core::ProxyType<Core::IPCChannel> (_channel));
+                return (Core::ProxyType<Core::IPCChannel>(_channel));
             }
             void Open(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t id)
             {
@@ -428,7 +428,10 @@ namespace RPC {
             LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
 
         private:
-            LocalRemoteProcess() = default;
+            LocalRemoteProcess()
+                : _id(0)
+            {
+            }
 
             ~LocalRemoteProcess() = default;
 
@@ -945,6 +948,7 @@ namespace RPC {
             ChannelLink(Core::IPCChannelType<Core::SocketPort, ChannelLink>* channel)
                 : _channel(channel->Source())
                 , _connectionMap(nullptr)
+                , _id(0)
             {
                 // We are a composit of the Channel, no need (and do not for cyclic references) not maintain a reference...
                 ASSERT(channel != nullptr);

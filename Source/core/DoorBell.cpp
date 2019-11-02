@@ -133,11 +133,17 @@ namespace Core {
 #endif
     }
 
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
     DoorBell::DoorBell(const TCHAR sourceName[])
         : _connectPoint(*this, Core::NodeId(sourceName))
         , _signal(false, true)
     {
     }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
     DoorBell::~DoorBell()
     {
