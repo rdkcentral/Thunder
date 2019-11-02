@@ -53,7 +53,6 @@ namespace PluginHost {
         }
     };
 
-#ifndef __WIN32__
     class ExitHandler : public Core::Thread {
     private:
         ExitHandler(const ExitHandler&) = delete;
@@ -131,8 +130,6 @@ namespace PluginHost {
 
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
-
-#endif
 
     extern "C" {
 
