@@ -143,7 +143,7 @@ namespace PluginHost {
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            Core::ExitHandler::Construct();
+            ExitHandler::Construct();
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
