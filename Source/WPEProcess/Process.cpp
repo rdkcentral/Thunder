@@ -2,46 +2,92 @@
 //
 
 #include "Module.h"
-#include "ExitHandler.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
 
     static std::list<Core::Library> _proxyStubs;
-    static Core::ProxyType<RPC::CommunicatorClient> _server;
+	static Core::ProxyType<RPC::CommunicatorClient> _server;
 
-    Core::ExitHandler* Core::ExitHandler::_instance = nullptr;
-    Core::CriticalSection Core::ExitHandler::_adminLock;
+    class ExitHandler : public Core::Thread {
+    private:
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
 
-    void Core::ExitHandler::CloseDown()
-    {
-        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-        if (_server.IsValid() == true) {
-
-            // We are done, close the channel and unregister all shit we added...
-            _server->Close(2 * RPC::CommunicationTimeOut);
-
-            _proxyStubs.clear();
-
-            _server.Release();
+    public:
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+        }
+        virtual ~ExitHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
-        Core::Singleton::Dispose();
-        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-    }
+        static void Construct()
+        {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct()
+        {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            CloseDown();
+            Block();
+            return (Core::infinite);
+        }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_server.IsValid() == true) {
+
+                // We are done, close the channel and unregister all shit we added...
+                _server->Close(2 * RPC::CommunicationTimeOut);
+
+                _proxyStubs.clear();
+
+                _server.Release();
+            }
+
+            Core::Singleton::Dispose();
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+
+    private:
+        static ExitHandler* _instance;
+        static Core::CriticalSection _adminLock;
+    };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
 
 namespace Process {
 
     class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
-    private:
+    public:
         WorkerPoolImplementation() = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-
-    public:
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
             : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
             , _minions()
@@ -303,9 +349,9 @@ int main(int argc, char** argv)
     // Give the debugger time to attach to this process..
     // Sleep(20000);
 
-    if (atexit(Core::ExitHandler::Destruct) != 0) {
+    if (atexit(ExitHandler::Destruct) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-        Core::ExitHandler::Destruct();
+        ExitHandler::Destruct();
         exit(EXIT_FAILURE);
     } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
@@ -423,6 +469,6 @@ int main(int argc, char** argv)
         }
     }
 
-    Core::ExitHandler::Destruct();
+    ExitHandler::Destruct();
     return 0;
 }
