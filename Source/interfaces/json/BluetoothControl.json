@@ -1,0 +1,255 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Bluetooth Control API",
+    "class": "BluetoothControl",
+    "description": "Bluetooth Control JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "deviceaddress": {
+      "description": "Bluetooth address",
+      "type": "string",
+      "example": "81:6F:B0:91:9B:FE"
+    },
+    "devicestate": {
+      "description": "Device state",
+      "type": "string",
+      "enum": [ "Paired", "Unpaired", "Connected", "Disconnected" ],
+      "example": "Disconnected"
+    },
+    "devicetype": {
+      "description": "Bluetooth device type",
+      "type": "string",
+      "enum": [ "Classic", "LowEnergy" ],
+      "example": "LowEnergy"
+    }
+  },
+  "methods": {
+    "scan": {
+      "summary": "Starts scanning for Bluetooth devices",
+      "events": [ "scancomplete" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/definitions/devicetype"
+          },
+          "timeout": {
+            "description": "Duration of the scan (in seconds); default: 10s",
+            "type": "number",
+            "example": 10
+          }
+        },
+        "required": [ "type" ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Failed to scan",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Scan already in progress",
+          "$ref": "#/common/errors/inprogress"
+        }
+      ]
+    },
+    "connect": {
+      "summary": "Connects to a Bluetooth device",
+      "events": [ "devicestatechange" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device already connected",
+          "$ref": "#/common/errors/alreadyconnected"
+        },
+        {
+          "description": "Failed to connect the device",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "disconnect": {
+      "summary": "Disconnects from a Bluetooth device",
+      "events": [ "devicestatechange" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device not connected",
+          "$ref": "#/common/errors/alreadyreleased"
+        }
+      ]
+    },
+    "pair": {
+      "summary": "Pairs a Bluetooth device",
+      "events": [ "devicestatechange" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device already paired",
+          "$ref": "#/common/errors/alreadyconnected"
+        },
+        {
+          "description": "Failed to pair the device",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "unpair": {
+      "summary": "Unpairs a Bluetooth device",
+      "events": [ "devicestatechange" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device not paired",
+          "$ref": "#/common/errors/alreadyreleased"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "devices": {
+      "readonly": true,
+      "summary": "Known device list",
+      "params": {
+        "type": "array",
+        "items": {
+          "$ref": "#/definitions/deviceaddress"
+        }
+      }
+    },
+    "device": {
+      "readonly": true,
+      "summary": "Device information",
+      "index": {
+        "name": "Device address",
+        "example": "81:6F:B0:91:9B:FE"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Acme Bluetooth Device",
+            "description": "Name of the device"
+          },
+          "type": {
+            "$ref": "#/definitions/devicetype"
+          },
+          "connected": {
+            "description": "Denotes if the device is currently connected to host",
+            "type": "boolean",
+            "example": true
+          },
+          "paired": {
+            "description": "Denotes if the device is currently paired with host",
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "connected",
+          "paired"
+        ]
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    }
+  },
+  "events": {
+    "scancomplete": {
+      "summary": "Notifies about scan completion",
+      "description": "Register to this event to be notified about device scan completion"
+    },
+    "devicestatechange": {
+      "summary": "Notifies about device state change",
+      "description": "Register to this event to be notified about device state changes",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "state": {
+            "$ref": "#/definitions/devicestate"
+          },
+          "disconnectreason": {
+            "type": "string",
+            "enum": [ "ConnectionTimeout", "AuthenticationFailure", "RemoteLowOnResources", "RemotePoweredOff","TerminatedByRemote", "TerminatedByHost" ],
+            "example": "ConnectionTimeout",
+            "description": "Disconnection reason in case of *Disconnected* event"
+          }
+        },
+        "required": [ "address", "state" ]
+      }
+    }
+  }
+}

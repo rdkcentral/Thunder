@@ -37,6 +37,27 @@ ENUM_CONVERSION_BEGIN(Exchange::IComposition::ScreenResolution)
     { Exchange::IComposition::ScreenResolution_2160p60Hz, _TXT("2160p60Hz") },
 ENUM_CONVERSION_END(Exchange::IComposition::ScreenResolution)
 
+ENUM_CONVERSION_BEGIN(Exchange::IStream::streamtype)
+    { Exchange::IStream::streamtype::Undefined, _TXT(_T("Undefined")) },
+    { Exchange::IStream::streamtype::Cable, _TXT(_T("Cable")) },
+    { Exchange::IStream::streamtype::Handheld, _TXT(_T("Handheld")) },
+    { Exchange::IStream::streamtype::Satellite, _TXT(_T("Satellite")) },
+    { Exchange::IStream::streamtype::Terrestrial, _TXT(_T("Terrestrial")) },
+    { Exchange::IStream::streamtype::DAB, _TXT(_T("DAB")) },
+    { Exchange::IStream::streamtype::RF, _TXT(_T("RF")) },
+    { Exchange::IStream::streamtype::Unicast, _TXT(_T("Unicast")) },
+    { Exchange::IStream::streamtype::Multicast, _TXT(_T("Multicast")) },
+    { Exchange::IStream::streamtype::IP, _TXT(_T("IP")) },
+ENUM_CONVERSION_END(Exchange::IStream::streamtype)
+
+ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
+    { Exchange::IStream::state::Idle, _TXT(_T("Idle")) },
+    { Exchange::IStream::state::Loading, _TXT(_T("Loading")) },
+    { Exchange::IStream::state::Prepared, _TXT(_T("Prepared")) },
+    { Exchange::IStream::state::Controlled, _TXT(_T("Controlled")) },
+    { Exchange::IStream::state::Error, _TXT(_T("Error")) },
+ENUM_CONVERSION_END(Exchange::IStream::state)
+
 namespace Exchange
 {
 

@@ -1,0 +1,279 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Bluetooth Remote Control API",
+    "class": "BluetoothRemoteControl",
+    "description": "Bluetooth Remote Control JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "deviceaddress": {
+      "description": "Bluetooth address",
+      "type": "string",
+      "example": "81:6F:B0:91:9B:FE"
+    }
+  },
+  "methods": {
+    "assign": {
+      "summary": "Assigns a bluetooth device as a remote control unit",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Bluetooth unavailable",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Device unknown",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Failed to assign the device",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "revoke": {
+      "summary": "Revokes the current remote control assignment",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Remote not assigned",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "name": {
+      "readonly": true,
+      "summary": "Unit name",
+      "params": {
+        "type": "string",
+        "description": "Name of the remote control unit",
+        "example": "Acme Bluetooth RCU"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        }
+      ]
+    },
+    "address": {
+      "readonly": true,
+      "summary": "Bluetooth address",
+      "params": {
+        "$ref": "#/definitions/deviceaddress"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        }
+      ]
+    },
+    "info": {
+      "summary": "Unit auxiliary information",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "description": "RCU model name or number",
+            "example": "Acme 1500 Plus"
+          },
+          "serial": {
+            "type": "string",
+            "description": "RCU serial number",
+            "example": "1234567890"
+          },
+          "firmware": {
+            "type": "string",
+            "description": "RCU firmware revision",
+            "example": "1.0"
+          },
+          "software": {
+            "type": "string",
+            "description": "RCU software revision",
+            "example": "1.0"
+          },
+          "manufacturer": {
+            "type": "string",
+            "description": "RCU manufacturer name",
+            "example": "Acme Inc."
+          }
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to retrieve information"
+        }
+      ]
+    },
+    "batterylevel": {
+      "summary": "Battery level",
+      "readonly": true,
+      "params": {
+        "type": "number",
+        "size": 8,
+        "example": 50,
+        "description": "Remote control unit's battery level in percentage"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/general",
+          "description": "Failed to retrieve battery level"
+        }
+      ]
+    },
+    "audioprofiles" : {
+      "summary": "Supported audio profiles",
+      "readonly": true,
+      "params": {
+        "description": "List of supported audio profiles",
+        "type": "array",
+        "items": {
+            "type": "string",
+            "example": "adpcm-hq",
+            "description": "Name of the audio profile"
+        }
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/unavailable",
+          "description": "The unit does not support voice functionality"
+        }
+      ]
+    },
+    "audioprofile" : {
+      "summary": "Audio profile details",
+      "readonly": true,
+      "index": {
+        "name": "Audio profile",
+        "example": "adpcm-hq"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "codec": {
+            "type": "string",
+            "example": "ima-adpcm",
+            "description": "Name of the audio codec (*pcm* for uncompressed audio)"
+          },
+          "channels": {
+            "type": "number",
+            "size": 8,
+            "example": 1,
+            "description": "Number of audio channels (1: mono, 2: stereo, etc.)"
+          },
+          "rate": {
+            "type": "number",
+            "size": 16,
+            "example": 16000,
+            "description": "Sample rate (in Hz)"
+          },
+          "resolution": {
+            "type": "number",
+            "size": 8,
+            "example": 16,
+            "description": "Sample resolution (in bits per sample)"
+          },
+          "be": {
+            "type": "boolean",
+            "example": true,
+            "description": "Denotes if samples byte order is big-endian (default: *false*)"
+          },
+          "unsigned": {
+            "type": "boolean",
+            "example": true,
+            "description": "Denotes if samples values are unsigned (default: *false*)"
+          }
+        },
+        "required": [
+          "codec",
+          "channels",
+          "rate",
+          "resolution"
+        ]
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/illegalstate",
+          "description": "No remote has been assigned"
+        },
+        {
+          "$ref": "#/common/errors/unknownkey",
+          "description": "The supplied audio profile is unknown"
+        }
+      ]
+    }
+  },
+  "events": {
+    "audiotransmission": {
+      "summary": "Notifies about new audio data transmission",
+      "description": "Register to this event to be notified about audio transmission status",
+      "params": {
+        "type": "object",
+        "properties": {
+          "profile": {
+            "type": "string",
+            "example": "pcm-hq",
+            "description": "Type of audio profile, marking start of transmission; empty in case of end of transmission"
+          }
+        },
+        "required": []
+      }
+    },
+    "audioframe": {
+      "summary": "Notifies about new audio data available",
+      "description": "Register to this event to be notified about audio data",
+      "params": {
+        "type": "object",
+        "properties": {
+          "seq": {
+            "type": "number",
+            "example": 1,
+            "description": "Sequence number of the audio frame within current audio transmission"
+          },
+          "data": {
+            "type": "string",
+            "example": "yKMHiYh6qJiDspB6S7ihlKOAbivApYEQDCgY0aECCQhpkAqZogP1ECk9GbHGEAkwG8Ax8wArgaAtEMjGQIoYCKKgGCuzBSA/iuWkKEwamLKzOKoCeR2hwQQZKqgBKKqELoGQwQ==",
+            "description": "Base64 representation of the binary audio data"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      }
+    }
+  }
+}

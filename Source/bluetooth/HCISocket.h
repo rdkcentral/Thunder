@@ -59,7 +59,6 @@ namespace Bluetooth {
         static Address Default()
         {
             int deviceId = hci_get_route(nullptr);
-          
             return ((deviceId >= 0) ? Address(static_cast<uint16_t>(deviceId)) : Address());
         }
         static Address AnyInterface()
@@ -145,26 +144,34 @@ namespace Bluetooth {
         KeyListType<KEYTYPE>& operator= (const KeyListType<KEYTYPE>&) = delete;
 
     public:
-        static uint8_t Length () {
+        using ConstIterator =  Core::IteratorType<const std::list<KEYTYPE>, const KEYTYPE&, typename std::list<KEYTYPE>::const_iterator>;
+
+        static uint8_t Length() {
             return (KEYTYPE::Length());
         }
         void Add(const KEYTYPE& key) {
             _list.push_back(key);
         }
-        uint32_t Purge(const Address& device) {
-            uint32_t count = 0;
-            for (auto it = _list.cbegin(); it != _list.cend(); ) {
-                if (device == (*it).Locator()) {
-                    _list.erase(it++);
-                    count++;
-                } else {
-                    ++it;
-                }
+        void Add(const KeyListType<KEYTYPE>& keylist) {
+            auto index = keylist.Elements();
+            while (index.Next() == true) {
+                Add(index.Current());
             }
-            return (count);
         }
         uint8_t Entries() const {
             return (_list.size());
+        }
+        void Clear() {
+            _list.clear();
+        }
+        bool IsValid() const {
+            auto index = Elements();
+            while (index.Next() == true) {
+                if (index.Current().IsValid() != true) {
+                    return (false);
+                }
+            }
+            return (true);
         }
         uint16_t Clone(const uint16_t length, uint8_t buffer[]) const {
             uint16_t result = 0;
@@ -176,11 +183,8 @@ namespace Bluetooth {
             }
             return (result);
         }
-        void Clear() {
-            _list.clear();
-        }
-        std::list<KEYTYPE>& Elements() {
-            return (_list);
+        ConstIterator Elements() const {
+            return (ConstIterator(_list));
         }
 
     private:
@@ -194,7 +198,6 @@ namespace Bluetooth {
             _key.addr.type = ~0;
         }
         LinkKey(const Address& address, const uint8_t key[16], const uint8_t pinLength, const uint8_t type) {
-            LinkKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), key, sizeof(_key.val));
             _key.addr.type = BDADDR_BREDR;
@@ -202,9 +205,17 @@ namespace Bluetooth {
             _key.type = type;
         }
         LinkKey(const uint8_t buffer[], const uint16_t length) {
-            LinkKey();
-            if (length >= sizeof(_key)) {
+            if (length == sizeof(_key)) {
                 ::memcpy(&_key, buffer, sizeof(_key));
+            } else {
+                LinkKey();
+            }
+        }
+        LinkKey(const string& keyString) {
+            if (keyString.length() == (sizeof(_key) * 2)) {
+                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
+            } else {
+                LinkKey();
             }
         }
         LinkKey(const LinkKey& copy) {
@@ -238,6 +249,11 @@ namespace Bluetooth {
         static uint8_t Length() {
             return (sizeof(_key));
         }
+        string ToString() const {
+            string hexKey;
+            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
+            return (hexKey);
+        }
 
     private:
         struct mgmt_link_key_info _key;
@@ -252,7 +268,6 @@ namespace Bluetooth {
         LongTermKey(const Address& address, const uint8_t address_type, const uint8_t type, const uint8_t master, const uint8_t encryptionSize,
                     const uint16_t diversifier, const uint64_t random, const uint8_t value[16])
         {
-            LongTermKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
             _key.addr.type = address_type;
@@ -263,9 +278,17 @@ namespace Bluetooth {
             _key.rand = htobll(random); // 64 bits
         }
         LongTermKey(const uint8_t buffer[], const uint16_t length) {
-            LongTermKey();
-            if (length >= sizeof(_key)) {
+            if (length == sizeof(_key)) {
                 ::memcpy(&_key, buffer, sizeof(_key));
+            } else {
+                LongTermKey();
+            }
+        }
+        LongTermKey(const string& keyString) {
+            if (keyString.length() == (sizeof(_key) * 2)) {
+                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
+            } else {
+                LongTermKey();
             }
         }
         LongTermKey(const LongTermKey& copy) {
@@ -309,6 +332,11 @@ namespace Bluetooth {
         static uint8_t Length() {
             return (sizeof(_key));
         }
+        string ToString() const {
+            string hexKey;
+            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
+            return (hexKey);
+        }
 
     private:
         struct mgmt_ltk_info _key;
@@ -321,15 +349,22 @@ namespace Bluetooth {
             _key.addr.type = ~0;
         }
         IdentityKey(const Address& address, const uint8_t addressType, const uint8_t value[16]) {
-            IdentityKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
             _key.addr.type = addressType;
         }
         IdentityKey(const uint8_t buffer[], const uint16_t length) {
-            IdentityKey();
-            if (length >= sizeof(_key)) {
+            if (length == sizeof(_key)) {
                 ::memcpy(&_key, buffer, sizeof(_key));
+            } else {
+                IdentityKey();
+            }
+        }
+        IdentityKey(const string& keyString) {
+            if (keyString.length() == (sizeof(_key) * 2)) {
+                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
+            } else {
+                IdentityKey();
             }
         }
         IdentityKey(const IdentityKey& copy) {
@@ -357,6 +392,11 @@ namespace Bluetooth {
         static uint8_t Length() {
             return (sizeof(_key));
         }
+        string ToString() const {
+            string hexKey;
+            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
+            return (hexKey);
+        }
 
     private:
         struct mgmt_irk_info _key;
@@ -369,16 +409,23 @@ namespace Bluetooth {
             _key.addr.type = ~0;
         }
         SignatureKey(const Address& address, const uint8_t address_type, const uint8_t type, const uint8_t value[16]) {
-            SignatureKey();
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             ::memcpy(&(_key.val), value, sizeof(_key.val));
             _key.addr.type = address_type;
             _key.type = type;
         }
         SignatureKey(const uint8_t buffer[], const uint16_t length) {
-            SignatureKey();
-            if (length >= sizeof(_key)) {
+            if (length == sizeof(_key)) {
                 ::memcpy(&_key, buffer, sizeof(_key));
+            } else {
+                SignatureKey();
+            }
+        }
+        SignatureKey(const string& keyString) {
+            if (keyString.length() == (sizeof(_key) * 2)) {
+                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
+            } else {
+                SignatureKey();
             }
         }
         SignatureKey(const SignatureKey& copy) {
@@ -409,6 +456,11 @@ namespace Bluetooth {
         }
         static uint8_t Length() {
             return (sizeof(_key));
+        }
+        string ToString() const {
+            string hexKey;
+            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
+            return (hexKey);
         }
 
     private:

@@ -1,5 +1,5 @@
 #include "PluginServer.h"
-// #include "Portability.h"
+#include "ExitHandler.h"
 
 #ifndef __WIN32__
 #include <dlfcn.h> // for dladdr
@@ -13,10 +13,40 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
-namespace PluginHost {
-
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+
+    Core::ExitHandler* Core::ExitHandler::_instance = nullptr;
+    Core::CriticalSection Core::ExitHandler::_adminLock;
+
+    void Core::ExitHandler::CloseDown () {
+        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        if (_dispatcher != nullptr) {
+            PluginHost::Server* destructor = _dispatcher;
+            destructor->Close();
+            _dispatcher = nullptr;
+            delete destructor;
+
+#ifndef __WIN32__
+            if (_background) {
+                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+            } else
+#endif
+            {
+               fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+            }
+
+#ifndef __WIN32__
+            closelog();
+#endif
+            // Now clear all singeltons we created.
+            Core::Singleton::Dispose();
+        }
+
+        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+    }
+
+namespace PluginHost {
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -144,7 +174,7 @@ namespace PluginHost {
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            ExitHandler::Construct();
+            Core::ExitHandler::Construct();
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
@@ -289,9 +319,9 @@ namespace PluginHost {
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(ExitHandler::Destruct) != 0) {
+        if (atexit(Core::ExitHandler::Destruct) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            ExitHandler::Destruct();
+            Core::ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
 #ifndef __WIN32__
@@ -643,7 +673,7 @@ namespace PluginHost {
             } while (keyPress != 'Q');
         }
 
-        ExitHandler::Destruct();
+        Core::ExitHandler::Destruct();
         return 0;
 
     } // End main.

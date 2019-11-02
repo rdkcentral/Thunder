@@ -1191,11 +1191,18 @@ namespace RPC {
 
             while (loop2 != pendingInterfaces.end()) {
                 const Core::IUnknown* source = loop2->first;
-                uint32_t count = loop2->second;
-                Cleanup(source, count);
-                while (count != 0) {
-                    source->Release();
-                    count--;
+
+                // This is a situation that should not occure. Needs further 
+                // investigation if this ASSERT fires !!!
+                ASSERT (source != nullptr);
+
+                if (source != nullptr) {
+                    uint32_t count = loop2->second;
+                    Cleanup(source, count);
+                    while (count != 0) {
+                        source->Release();
+                        count--;
+                    }
                 }
                 loop2++;
             }

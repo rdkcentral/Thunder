@@ -3,7 +3,7 @@
 import argparse, sys, re, os, json, posixpath, urllib, glob
 from collections import OrderedDict
 
-VERSION="1.3.6"
+VERSION="1.3.7"
 
 class Trace:
     def __init__(self):
@@ -572,7 +572,8 @@ class ObjectTracker:
                     return False
                 elif "enum" in prop:
                     if "enum" in rhs[name]:
-                        return prop["enum"] == rhs[name]["enum"]
+                        if prop["enum"] != rhs[name]["enum"]:
+                            return False
                     else:
                         return False
             for name, prop in rhs.iteritems():
@@ -582,7 +583,8 @@ class ObjectTracker:
                     return False
                 elif "enum" in prop:
                     if "enum" in lhs[name]:
-                        return prop["enum"] == lhs[name]["enum"]
+                        if prop["enum"] != lhs[name]["enum"]:
+                            return False
                     else:
                         return False
             return True

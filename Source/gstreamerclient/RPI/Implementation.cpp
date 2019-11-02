@@ -1,8 +1,11 @@
 #include "Module.h"
 
 #include "gstreamerclient.h"
+#include "compositorclient/Client.h"
+#include "interfaces/IComposition.h"
 
 #include <gst/gst.h>
+#include <gst/video/videooverlay.h>
 
 struct GstPlayerSink {
 private:
@@ -13,7 +16,8 @@ private:
             : _audioDecodeBin(nullptr)
             , _videoDecodeBin(nullptr)
             , _audioSink(nullptr)
-            , _videoSink(nullptr) {
+            , _videoSink(nullptr)
+            , _surface(nullptr) {
     }
 
 public:
@@ -25,49 +29,98 @@ public:
 
     bool ConfigureAudioSink(GstElement *pipeline, GstElement *appSrc) {
 
-        TRACE_L1("Configure audio sink");
         // Setup audio decodebin
         _audioDecodeBin = gst_element_factory_make ("decodebin", "audio_decode");
         if (!_audioDecodeBin)
             return false;
 
         g_signal_connect(_audioDecodeBin, "pad-added", G_CALLBACK(OnAudioPad), this);
-        g_object_set(_audioDecodeBin, "caps", gst_caps_from_string("audio/x-raw; audio/x-brcm-native"), nullptr);
+        g_object_set(_audioDecodeBin, "caps", gst_caps_from_string("audio/x-raw;"), nullptr);
 
         // Create an audio sink
-        _audioSink = gst_element_factory_make ("brcmaudiosink", "audio-sink");
-
+        _audioSink = gst_element_factory_make ("autoaudiosink", "audio-sink");
         if (!_audioSink)
             return false;
 
         gst_bin_add_many (GST_BIN (pipeline), _audioDecodeBin, _audioSink, nullptr);
-        gst_element_link(appSrc, _audioDecodeBin);
+
+        if (gst_element_link(appSrc, _audioDecodeBin) == false) {
+            TRACE_L1("Failed to link video source with decoder");
+            return false;
+        }
 
         return true;
     }
 
     bool ConfigureVideoSink(GstElement *pipeline, GstElement *appSrc) {
 
-        TRACE_L1("Configure video sink");
+        // Initialize Surface
+        if (!_surface)
+            _surface = WPEFramework::Compositor::IDisplay::Instance("AmazonPlayer")->Create("AmazonVideo", 0, 0);
+
         // Setup video decodebin
         _videoDecodeBin = gst_element_factory_make ("decodebin", "video_decode");
         if(!_videoDecodeBin)
             return false;
 
         g_signal_connect(_videoDecodeBin, "pad-added", G_CALLBACK(OnVideoPad), this);
-        g_object_set(_videoDecodeBin, "caps", gst_caps_from_string("video/x-raw; video/x-brcm-native"), nullptr);
+        g_object_set(_videoDecodeBin, "caps", gst_caps_from_string("video/x-raw;"), nullptr);
 
         // Create video sink
-        _videoSink       = gst_element_factory_make ("brcmvideosink", "video-sink");
-        if (!_videoSink)
+        _videoSink       = gst_element_factory_make ("videoscale", "video_scale");
+        if (!_videoSink) {
+            TRACE_L1("Failed to create video-scaling bin!");
             return false;
+        }
 
-        gst_bin_add_many (GST_BIN (pipeline), _videoDecodeBin, _videoSink, nullptr);
-        gst_element_link(appSrc, _videoDecodeBin);
+        _glImage = gst_element_factory_make ("glimagesink", "glimagesink0");
+        if (_glImage == nullptr) {
+            TRACE_L1("Failed to create glimagesink!");
+            return false;
+        }
+
+        gst_bin_add_many (GST_BIN (pipeline), _videoDecodeBin, _videoSink, _glImage, nullptr);
+
+        if (gst_element_link(appSrc, _videoDecodeBin) == false) {
+            TRACE_L1("Failed to link video source with decoder");
+            return false;
+        }
+
+        if (gst_element_link_filtered(_videoSink, _glImage, gst_caps_from_string("video/x-raw,width=1280,height=720")) == false) {
+            TRACE_L1("Failed to link video scaling with image sink");
+            return false;
+        }
+
+        GstBus *bus = gst_pipeline_get_bus (GST_PIPELINE (pipeline));
+        gst_bus_set_sync_handler (bus, (GstBusSyncHandler) createWindow, this, NULL);
+        gst_object_unref(bus);
 
         return true;
     }
+
+    void Deinitialise() {
+
+        if (_surface) {
+            // Delete surface
+            _surface->Release();
+            _surface = nullptr;
+        }
+    }
 private:
+
+    static GstBusSyncReply createWindow (GstBus * bus, GstMessage * message, gpointer user_data) {
+        // ignore anything but 'prepare-window-handle' element messages
+        if (!gst_is_video_overlay_prepare_window_handle_message(message))
+            return GST_BUS_PASS;
+
+        GstPlayerSink *self = (GstPlayerSink*)(user_data);
+
+        GstVideoOverlay *overlay = GST_VIDEO_OVERLAY (GST_MESSAGE_SRC (message));
+        gst_video_overlay_set_window_handle (overlay, (guintptr)self->_surface->Native());
+
+        return GST_BUS_DROP;
+
+    }
     static void OnVideoPad (GstElement *decodebin2, GstPad *pad, gpointer user_data) {
 
         GstPlayerSink *self = (GstPlayerSink*)(user_data);
@@ -83,15 +136,7 @@ private:
         if (g_strrstr(name, "video/x-"))
         {
 
-            GValue window_set = {0, };
-            static char str[40];
-            std::snprintf(str, 40, "%d,%d,%d,%d", 0,0, 1280, 720);
-
-            g_value_init(&window_set, G_TYPE_STRING);
-            g_value_set_static_string(&window_set, str);
-            g_object_set(self->_videoSink, "window_set", str, nullptr);
-            g_object_set(self->_videoSink, "zorder", 0, nullptr);
-            g_object_set(self->_videoSink, "zoom-mode", 1, nullptr); // By default box mode
+            //self->_surface->setLayer(-1);
 
             if (gst_element_link(self->_videoDecodeBin, self->_videoSink) == FALSE) {
                 TRACE_L1("Could not make link video sink to bin");
@@ -114,7 +159,7 @@ private:
         if (g_strrstr(name, "audio/x-"))
         {
             if (gst_element_link(self->_audioDecodeBin, self->_audioSink) == FALSE) {
-                TRACE_L1("Could not make link video sink to bin");
+                printf("Could not make link audio sink to bin\n");
             }
         }
         gst_caps_unref(caps);
@@ -125,6 +170,9 @@ private:
     GstElement *_videoDecodeBin;
     GstElement *_audioSink;
     GstElement *_videoSink;
+    GstElement *_glImage;
+
+    WPEFramework::Compositor::IDisplay::ISurface* _surface;
 };
 
 extern "C" {
@@ -155,7 +203,10 @@ int gtsreamer_client_link_sink (SinkType type, GstElement *pipeline, GstElement 
 
 int gtsreamer_client_unlink_sink (SinkType type, GstElement *pipeline)
 {
+
     // pipeline destruction will free allocated elements
+    GstPlayerSink::Instance()->Deinitialise();
+
     return 0;
 }
 

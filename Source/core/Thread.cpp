@@ -120,7 +120,7 @@ namespace Core {
 
         StateTrigger<thread_state>& stateObject = cClassPointer->m_enumState;
 
-        stateObject.WaitState(INITIALIZED | RUNNING | STOPPED | STOPPING, Core::infinite);
+        stateObject.WaitState(INITIALIZED | DEACTIVATE | RUNNING | STOPPED | STOPPING, Core::infinite);
 
         if (((stateObject & (STOPPED | STOPPING)) == 0) && (cClassPointer->Initialize())) {
             CriticalSection& adminLock = cClassPointer->m_syncAdmin;
@@ -128,7 +128,7 @@ namespace Core {
             // O.K. befor using the state, lock it.
             adminLock.Lock();
 
-            if (stateObject == INITIALIZED) {
+            if ( (stateObject == INITIALIZED) || (stateObject == DEACTIVATE) ) {
                 cClassPointer->State(BLOCKED);
             }
 
