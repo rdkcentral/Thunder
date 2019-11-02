@@ -1280,7 +1280,7 @@ namespace Core {
                             }
                         } else {
                             uint8_t depth = ((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
-                            if ((current == '{') || current == '[') {
+                            if ((current == '{') || (current == '[')) {
                                 if (depth + 1 > MaxOpaqueObjectDepth<ScopeMask>()) {
                                     error = Error{ "Opaque object nesting too deep" };
                                     finished = true;
@@ -1288,18 +1288,18 @@ namespace Core {
                                     ++depth;
                                     uint32_t scope = _scopeCount & ScopeMask;
                                     scope <<= 1;
-                                    scope |= current == '{' ? static_cast<bool>(ScopeBracket::CURLY_BRACKET) : static_cast<bool>(ScopeBracket::SQUARE_BRACKET);
+                                    scope |= static_cast<uint32_t>(current == '{' ? ScopeBracket::CURLY_BRACKET : ScopeBracket::SQUARE_BRACKET);
                                     _scopeCount &= ~(DepthCountMask | ScopeMask);
                                     _scopeCount |= (depth << MaxOpaqueObjectDepth<ScopeMask>()) | scope;
                                 }
                             } else if ((current == '}') || (current == ']')) {
                                 if (depth > 0) {
                                     uint32_t scope = _scopeCount & ScopeMask;
-                                    bool bracket = (scope & 0x1);
-                                    if (current == '}' && bracket != static_cast<bool>(ScopeBracket::CURLY_BRACKET)) {
+                                    ScopeBracket bracket = static_cast<ScopeBracket>(scope & 0x1);
+                                    if ((current == '}') && (bracket != ScopeBracket::CURLY_BRACKET)) {
                                         error = Error{ "Expected \"]\" but got \"}\" in opaque object" };
                                         finished = true;
-                                    } else if (current == ']' && bracket != static_cast<bool>(ScopeBracket::SQUARE_BRACKET)) {
+                                    } else if ((current == ']') && (bracket != ScopeBracket::SQUARE_BRACKET)) {
                                         error = Error{ "Expected \"}\" but got \"]\" in opaque object" };
                                         finished = true;
                                     } else {

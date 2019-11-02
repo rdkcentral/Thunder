@@ -83,6 +83,84 @@ namespace PluginHost {
         }
     };
 
+    class ExitHandler : public Core::Thread {
+    private:
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
+
+    public:
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+        }
+        virtual ~ExitHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+        static void Construct() {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new WPEFramework::PluginHost::ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct() {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            CloseDown();
+            Block();
+            return (Core::infinite);
+        }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_dispatcher != nullptr) {
+                PluginHost::Server* destructor = _dispatcher;
+                destructor->Close();
+                _dispatcher = nullptr;
+                delete destructor;
+
+#ifndef __WIN32__
+                if (_background) {
+                    syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+                } else
+#endif
+                {
+                   fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+                }
+
+#ifndef __WIN32__
+                closelog();
+#endif
+                // Now clear all singeltons we created.
+                Core::Singleton::Dispose();
+            }
+
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+        private:
+            static ExitHandler* _instance;
+            static Core::CriticalSection _adminLock;
+    };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
+
     extern "C" {
 
 #ifndef __WIN32__
