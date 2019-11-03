@@ -76,7 +76,7 @@
     },
     "address": {
       "readonly": true,
-      "summary": "Bluetooth address",
+      "summary": "Bluetooth address of the unit",
       "params": {
         "$ref": "#/definitions/deviceaddress"
       },
@@ -95,30 +95,31 @@
         "properties": {
           "model": {
             "type": "string",
-            "description": "RCU model name or number",
+            "description": "Unit model name or number",
             "example": "Acme 1500 Plus"
           },
           "serial": {
             "type": "string",
-            "description": "RCU serial number",
+            "description": "Unit serial number",
             "example": "1234567890"
           },
           "firmware": {
             "type": "string",
-            "description": "RCU firmware revision",
+            "description": "Unit firmware revision",
             "example": "1.0"
           },
           "software": {
             "type": "string",
-            "description": "RCU software revision",
+            "description": "Unit software revision",
             "example": "1.0"
           },
           "manufacturer": {
             "type": "string",
-            "description": "RCU manufacturer name",
+            "description": "Unit manufacturer name",
             "example": "Acme Inc."
           }
-        }
+        },
+        "required": [ ]
       },
       "errors": [
         {
@@ -133,6 +134,7 @@
     },
     "batterylevel": {
       "summary": "Battery level",
+      "event": [ "batterylevel" ],
       "readonly": true,
       "params": {
         "type": "number",
@@ -239,7 +241,7 @@
   },
   "events": {
     "audiotransmission": {
-      "summary": "Notifies about new audio data transmission",
+      "summary": "Notifies about audio data transmission",
       "description": "Register to this event to be notified about audio transmission status",
       "params": {
         "type": "object",
@@ -267,12 +269,27 @@
           "data": {
             "type": "string",
             "example": "yKMHiYh6qJiDspB6S7ihlKOAbivApYEQDCgY0aECCQhpkAqZogP1ECk9GbHGEAkwG8Ax8wArgaAtEMjGQIoYCKKgGCuzBSA/iuWkKEwamLKzOKoCeR2hwQQZKqgBKKqELoGQwQ==",
-            "description": "Base64 representation of the binary audio data"
+            "description": "Base64 representation of the binary data of the audio frame; format of the data is specified by the audio profile denoted by the most recent *audiotransmission* notification"
           }
         },
         "required": [
           "data"
         ]
+      }
+    },
+    "batterylevelchange": {
+      "summary": "Notifies about battery level changes",
+      "description": "Register to this event to be notified about battery level drops",
+      "params": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "type": "number",
+            "size": 8,
+            "example": 50,
+            "description": "Battery level (in percentage)"
+          }
+        }
       }
     }
   }
