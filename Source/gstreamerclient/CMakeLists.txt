@@ -9,6 +9,6 @@ if (NOT "${GSTREAMER_CLIENT_IMPLEMENTATION}" STREQUAL "None")
 endif()
 
 install(
-	FILES GstreamerClient.h
+	FILES gstreamerclient.h
         DESTINATION include/${NAMESPACE}/gstreamerclient/
 )

@@ -1,6 +1,6 @@
 #include "Module.h"
 
-#include "../GstreamerClient.h"
+#include "../gstreamerclient.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
