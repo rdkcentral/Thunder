@@ -134,6 +134,41 @@ private:
     GstElement *_videoSink;
 };
 
+static GstElement* findElement(GstElement *element, const char* targetName)
+{
+    GstElement *re = NULL;
+    if (GST_IS_BIN(element)) {
+        GstIterator* it = gst_bin_iterate_elements(GST_BIN(element));
+        GValue item = G_VALUE_INIT;
+        bool done = false;
+        while(!done) {
+            switch (gst_iterator_next(it, &item)) {
+                case GST_ITERATOR_OK:
+                {
+                    GstElement *next = GST_ELEMENT(g_value_get_object(&item));
+                    done = (re = findElement(next, targetName)) != NULL;
+                    g_value_reset (&item);
+                    break;
+                }
+                case GST_ITERATOR_RESYNC:
+                    gst_iterator_resync (it);
+                    break;
+                case GST_ITERATOR_ERROR:
+                case GST_ITERATOR_DONE:
+                    done = true;
+                    break;
+            }
+        }
+        g_value_unset (&item);
+        gst_iterator_free(it);
+    } else {
+        if (strstr(gst_element_get_name(element), targetName)) {
+            re = element;
+        }
+    }
+    return re;
+}
+
 extern "C" {
 
 int gstreamer_client_link_sink (SinkType type, GstElement *pipeline, GstPad *srcPad)
@@ -183,10 +218,12 @@ int gstreamer_client_can_report_stale_pts ()
     // See: https://github.com/Metrological/netflix/blob/f5646af2f6b5fd9690681366908a2e711ae1d021/partner/dpi/gstreamer/ESPlayerGst.cpp#L747
 }
 
-int gstreamer_client_set_volume(GstElement *pipeline, float volume)
+int gstreamer_client_set_volume(GstElement *pipeline, double volume)
 {
-   const float scaleFactor = 100.0f; // For all others is 1.0f (so no scaling)
+   const float scaleFactor = 100.0; // For all others is 1.0 (so no scaling)
+   GstElement * audioSink = findElement(pipeline, "audio-sink");
    
+   return 0;
 }
 
 };

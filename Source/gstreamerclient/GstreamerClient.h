@@ -21,6 +21,6 @@ int gstreamer_client_post_eos (GstElement * element);
 
 int gstreamer_client_can_report_stale_pts ();
 
-int gstreamer_client_set_volume(GstElement *pipeline, float volume);
+int gstreamer_client_set_volume(GstElement *pipeline, double volume);
 
 };
