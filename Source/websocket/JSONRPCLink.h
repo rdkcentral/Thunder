@@ -1104,8 +1104,7 @@ namespace JSONRPC {
              std::vector<uint8_t> values;
              parameters->ToBuffer(values);
              if (values.empty() != true) {
-                 string strValues;
-                 Core::ToString(values.data(), values.size(), false, strValues);
+                 string strValues(values.begin(), values.end());
                  message->Parameters = strValues;
              }
              return;
@@ -1125,13 +1124,9 @@ namespace JSONRPC {
         }
         void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {
-            uint16_t length = message.Result.Value().size();
-            uint8_t* values = static_cast<uint8_t*> (malloc(sizeof(uint8_t) * length));
+            string values(message.Result.Value().begin(), message.Result.Value().end());
 
-            Core::FromString(message.Result.Value(), values, length);
-
-            std::vector<uint8_t> result(values, values + length);
-            free(values);
+            std::vector<uint8_t> result(values.begin(), values.end());
 
             response->FromBuffer(result);
         }

@@ -818,7 +818,11 @@ namespace Core {
 
                 if (offset == 0) {
                     if (bytes == 0) {
-                        stream[loaded++] = static_cast<uint8_t>(_value);
+                        if (_value != 0) {
+                            stream[loaded++] = static_cast<uint8_t>(_value);
+                        } else {
+                            stream[loaded++] = IMessagePack::NullValue;
+                        }
                     } else {
                         switch (bytes) {
                         case 1:
