@@ -1124,10 +1124,8 @@ namespace JSONRPC {
         }
         void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {
-            string values(message.Result.Value().begin(), message.Result.Value().end());
-
-            std::vector<uint8_t> result(values.begin(), values.end());
-
+            string value = message.Result.Value();
+            std::vector<uint8_t> result(value.begin(), value.end());
             response->FromBuffer(result);
         }
 
