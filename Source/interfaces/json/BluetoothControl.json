@@ -170,9 +170,72 @@
     }
   },
   "properties": {
+    "adapters": {
+      "readonly": true,
+      "summary": "List of local Bluetooth adapters",
+      "params": {
+        "type": "array",
+        "items": {
+          "description": "Adapter ID",
+          "type": "number",
+          "size": 16,
+          "example": 0
+        }
+      }
+    },
+    "adapter": {
+      "readonly": true,
+      "summary": "Local Bluetooth adapter information",
+      "index": {
+       "name": "Adapter ID",
+       "example": "0"
+      } ,
+      "params": {
+        "type": "object",
+        "properties": {
+          "interface": {
+            "type": "string",
+            "example": "hci0",
+            "description": "Ndapter interface name"
+          },
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "version": {
+            "type": "number",
+            "description": "Device version",
+            "size": 8,
+            "example": 8
+          },
+          "manufacturer": {
+            "type": "number",
+            "size": 16,
+            "description": "Device manfuacturer Company Identifer"
+          },
+          "name": {
+            "type": "string",
+            "description": "Device name",
+            "example": "Thunder"
+          },
+          "shortname": {
+            "type": "string",
+            "description": "Device short name",
+            "example": "Thunder"
+          }
+        },
+        "required": [ "interface", "address", "version", "deviceclass" ]
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
     "devices": {
       "readonly": true,
-      "summary": "Known device list",
+      "summary": "List of known remote Bluetooth devices",
+      "descrption": "Use this method to retrieve a combined list of previously bonded devices and results of the most recent device scan",
       "params": {
         "type": "array",
         "items": {
@@ -182,7 +245,7 @@
     },
     "device": {
       "readonly": true,
-      "summary": "Device information",
+      "summary": "Remote Bluetooth device information",
       "index": {
         "name": "Device address",
         "example": "81:6F:B0:91:9B:FE"
