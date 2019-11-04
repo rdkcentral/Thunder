@@ -1086,7 +1086,9 @@ namespace JSONRPC {
              std::vector<uint8_t> values;
              parameters->ToBuffer(values);
              if (values.empty() != true) {
-                 message->Parameters = string(values.begin(), values.end());;
+                 string strValues;
+                 Core::ToString(values.data(), values.size(), false, strValues);
+                 message->Parameters = strValues;
              }
              return;
         }
