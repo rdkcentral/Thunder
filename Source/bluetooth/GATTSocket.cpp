@@ -250,7 +250,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
             break;
         }
         case ATT_OP_READ_RESP: {
-            _response.Add(_frame.Handle(), length, &(stream[1]));
+            _response.Add(_frame.Handle(), length - 1, &(stream[1]));
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
             }
