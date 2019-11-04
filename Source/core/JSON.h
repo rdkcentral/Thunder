@@ -1547,6 +1547,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
+                    _value.clear();
                     if (stream[loaded] == IMessagePack::NullValue) {
                         _scopeCount |= NullBit;
                         loaded++;
@@ -1580,6 +1581,7 @@ namespace Core {
 
                     if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
                         offset = 0;
+                        _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
                     }
                 }
 
@@ -3128,13 +3130,13 @@ namespace Core {
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
                         _state = UNDEFINED;
-                        loaded = 1;
                     } else if ((stream[0] & 0x80) == 0x80) {
                         _count = (stream[0] & 0x0F);
                         offset = (_count > 0 ? PARSE : 0);
                     } else if (stream[0] & 0xDE) {
                         offset = 1;
                     }
+                    loaded = 1;
                 }
 
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
@@ -3152,7 +3154,7 @@ namespace Core {
                     if (_fieldName.IsSet() == true) {
                         if (_current.pack != nullptr) {
                             offset -= PARSE;
-                           loaded += _current.pack->Deserialize(&stream[loaded], maxLength - loaded, offset);
+                            loaded += _current.pack->Deserialize(&stream[loaded], maxLength - loaded, offset);
                             offset += PARSE;
                             if (offset == PARSE) {
                                 _fieldName.Clear();
@@ -3170,7 +3172,7 @@ namespace Core {
                         }
                     } else {
                         offset -= PARSE;
-                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength - loaded, offset);
+                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(&stream[loaded], maxLength - loaded, offset);
                         offset += PARSE;
                         _current.pack = nullptr;
                     }
