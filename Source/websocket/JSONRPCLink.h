@@ -134,17 +134,11 @@ namespace JSONRPC {
                 }
                 virtual void Send(Core::ProxyType<INTERFACE>& jsonObject) override
                 {
-                    #ifdef __DEBUG__
-                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
-    
-                    ASSERT(inbound.IsValid() == true);
-    
-                    if (inbound.IsValid() == true) {
-                        string message;
-                        inbound->ToString(message);
-                        TRACE_L1("Message: %s send", message.c_str());
-                    }
-                    #endif
+#ifdef __DEBUG__
+                    string message;
+                    ToMessage(jsonObject, message);
+                    TRACE_L1("Message: %s send", message.c_str());
+#endif
                 }
                 virtual void StateChange() override
                 {
@@ -154,7 +148,31 @@ namespace JSONRPC {
                 {
                     return (true);
                 }
-    
+
+            private:
+                void ToMessage(const Core::ProxyType<Core::JSON::IElement>& jsonObject, string& message) const
+                {
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+
+                    ASSERT(inbound.IsValid() == true);
+                    if (inbound.IsValid() == true) {
+                        inbound->ToString(message);
+                    }
+                }
+                void ToMessage(const Core::ProxyType<Core::JSON::IMessagePack>& jsonObject, string& message) const
+                {
+                    Core::ProxyType<Core::JSONRPC::Message> inbound(Core::proxy_cast<Core::JSONRPC::Message>(jsonObject));
+
+                    ASSERT(inbound.IsValid() == true);
+                    if (inbound.IsValid() == true) {
+                        std::vector<uint8_t> values;
+                        inbound->ToBuffer(values);
+                        if (values.empty() != true) {
+                            Core::ToString(values.data(), values.size(), false, message);
+                        }
+                    }
+                }
+
             private:
                 CommunicationChannel& _parent;
             };
@@ -1069,19 +1087,19 @@ namespace JSONRPC {
         }
 
     private:
-        void ToMessage(string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
         {
            if (parameters.empty() != true) {
                message->Parameters = parameters;
            }
         }
         template <typename PARAMETERS>
-        void ToMessage(PARAMETERS& parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(PARAMETERS& parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
         {
              ToMessage((INTERFACE*)(&parameters), message);
              return;
         }
-        void ToMessage(Core::JSON::IMessagePack* parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(Core::JSON::IMessagePack* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
         {
              std::vector<uint8_t> values;
              parameters->ToBuffer(values);
@@ -1092,7 +1110,7 @@ namespace JSONRPC {
              }
              return;
         }
-        void ToMessage(Core::JSON::IElement* parameters, Core::ProxyType<Core::JSONRPC::Message>& message)
+        void ToMessage(Core::JSON::IElement* parameters, Core::ProxyType<Core::JSONRPC::Message>& message) const
         {
              string values;
              parameters->ToString(values);
