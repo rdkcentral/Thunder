@@ -183,6 +183,7 @@ namespace PluginHost
     {
         // The derived class shoud set, the initial value of the modifiers...
         _repeatKey.AddRef();
+        _repeatKey.AddReference();
     }
 #ifdef __WIN32__
 #pragma warning(default : 4355)

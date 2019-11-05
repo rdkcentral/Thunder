@@ -36,9 +36,8 @@ namespace PluginHost {
                 , _intervalTime(0)
                 , _code(0)
                 , _nextSlot()
-                , _job(*this)
+                , _job()
             {
-                ASSERT(_job.IsValid() == true);
             }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
@@ -48,6 +47,11 @@ namespace PluginHost {
             }
 
         public:
+            void AddReference()
+            {
+                _job = Core::ProxyType<Core::IDispatch>(static_cast<Core::IDispatch&>(*this));
+            }
+
             void DropReference()
             {
                 _job.Release();
@@ -362,7 +366,7 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
-    
+
     inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
         {
             _repeatKey.Interval(startTime, intervalTime);
