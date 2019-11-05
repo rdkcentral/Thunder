@@ -1312,7 +1312,7 @@ namespace Core {
                                     finished = true;
                                 }
                             } else if (depth == 0) {
-                                finished = ((current == ',') || (current == ' ') || (current == '\t'));
+                                finished = ((current == ',') || (current == ' ') || (current == '\t') || (current == '\0'));
                             }
                         }
                     }
