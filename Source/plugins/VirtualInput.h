@@ -362,6 +362,12 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
+    
+    inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
+        {
+            _repeatKey.Interval(startTime, intervalTime);
+        }
+
 	inline void RepeatLimit(const uint16_t limit)
         {
             _repeatLimit = limit;
