@@ -25,8 +25,6 @@ namespace PluginHost {
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
-            static constexpr uint32_t RepeatStackSize = 64 * 1024;
-
         public:
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
@@ -364,7 +362,7 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
-		inline void RepeatLimit(uint16_t limit)
+	inline void RepeatLimit(const uint16_t limit)
         {
             _repeatLimit = limit;
         }
