@@ -5,11 +5,11 @@
 #define MODULE_NAME VirtualInput
 #endif
 
-#include <stdbool.h>
 #include "../core/core.h"
 
 #ifdef _MSVC_LANG
 #undef EXTERNAL
+#undef INPUT_MOUSE
 #ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else

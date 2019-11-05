@@ -1,5 +1,4 @@
 #include "PluginServer.h"
-// #include "Portability.h"
 
 #ifndef __WIN32__
 #include <dlfcn.h> // for dladdr
@@ -13,10 +12,10 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
-namespace PluginHost {
-
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+
+namespace PluginHost {
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -53,7 +52,6 @@ namespace PluginHost {
         }
     };
 
-#ifndef __WIN32__
     class ExitHandler : public Core::Thread {
     private:
         ExitHandler(const ExitHandler&) = delete;
@@ -131,8 +129,6 @@ namespace PluginHost {
 
     ExitHandler* ExitHandler::_instance = nullptr;
     Core::CriticalSection ExitHandler::_adminLock;
-
-#endif
 
     extern "C" {
 

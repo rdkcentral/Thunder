@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Configuration.h"
+#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
