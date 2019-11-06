@@ -137,12 +137,14 @@ namespace Bluetooth {
         }
         bool FromString(const string& uuidStr)
         {
-            const uint16_t size = ((16 * 2) + 4);
-
-            if (uuidStr.length() == size) {
+            if ((uuidStr.length() == 4) || (uuidStr.length() == ((16 * 2) + 4))) {
                 uint8_t buf[16];
+                if (uuidStr.length() == 4) {
+                    memcpy(buf, BASE, sizeof(buf));
+                }
                 uint8_t* p = (buf + sizeof(buf));
                 int16_t idx = 0;
+                uint16_t size = uuidStr.length();
 
                 while (idx < size) {
                     if ((idx == 8) || (idx == 13) || (idx == 18) || (idx == 23)) {
