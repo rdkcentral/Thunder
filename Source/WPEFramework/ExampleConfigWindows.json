@@ -1,14 +1,14 @@
 {
   "port": 80,
   "binding_": "0.0.0.0",
-  "interface": "NETWORK",
+  "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
-  "volatilepath": "D:/WPEFramework/artifacts/temp",
-  "datapath": "D:/WPEFramework/artifacts/Debug",
-  "systempath": "D:/WPEFramework/artifacts/Debug",
-  "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
+  "persistentpath": "D:/Thunder/artifacts/Persistent",
+  "volatilepath": "D:/Thunder/artifacts/temp",
+  "datapath": "D:/Thunder/artifacts/Debug",
+  "systempath": "D:/Thunder/artifacts/Debug",
+  "proxystubpath": "D:/Thunder/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "tracing": [
@@ -73,22 +73,23 @@
       "autostart": true,
       "configuration": {
         "observables": [
-        {
-          "callsign":"WebKitBrowser",
-          "memory":5,
-          "memorylimit":850000,
-          "operational":1,
-          "restart": {
-            "memory": {
-              "window":0,
-              "limit":0
-            },
-            "operational": {
-              "window":60,
-              "limit":3
+          {
+            "callsign": "WebKitBrowser",
+            "memory": 5,
+            "memorylimit": 850000,
+            "operational": 1,
+            "restart": {
+              "memory": {
+                "window": 0,
+                "limit": 0
+              },
+              "operational": {
+                "window": 60,
+                "limit": 3
+              }
             }
           }
-        }]
+        ]
       }
     },
     {

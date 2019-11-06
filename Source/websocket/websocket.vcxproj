@@ -29,6 +29,7 @@
     <ClCompile Include="WebSocketLink.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="JSONRPCLink.h" />
     <ClInclude Include="JSONWebToken.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="URL.h" />

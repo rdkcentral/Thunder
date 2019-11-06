@@ -291,7 +291,7 @@ namespace Core {
 
                 if (stream.size() != 0) {
                     // Deserialize object
-                    uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&stream[0], stream.size() + 1, offset);
+                    uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&stream[0], static_cast<uint16_t>(stream.size() + 1), offset);
 
                     ASSERT(loaded <= (stream.size() + 1));
                     DEBUG_VARIABLE(loaded);
