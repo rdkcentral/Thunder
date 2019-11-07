@@ -384,6 +384,9 @@ namespace PluginHost
                 event.Action =  (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED);
                 event.Code = sendCode;
                 Send(event);
+                DispatchRegisteredKey(
+                    (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED),
+                    sendCode | (sendModifiers << 16));
 
                 if (pressed == false) {
                     if (sendModifiers != 0) {
