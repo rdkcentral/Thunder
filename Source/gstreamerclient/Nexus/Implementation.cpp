@@ -165,6 +165,17 @@ public:
        return true;
     }
 
+    GstClockTime GetCurrentPosition(GstElement *pipeline)
+    {
+       GstClockTime currentPts = GST_CLOCK_TIME_NONE;
+       GstElement* videoDec = findElement(pipeline, "brcmvideodecoder");
+       if (videoDec) {
+          g_object_get(videoDec, "video_pts", &currentPts, NULL);
+          currentPts = (currentPts * GST_MSECOND) / 45;
+       }
+       return currentPts;
+    }
+
 private:
     static void OnVideoPad (GstElement *decodebin2, GstPad *pad, gpointer user_data) {
 
@@ -486,5 +497,13 @@ int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint
    bool success = sink->GetResolution(pipeline, *width, *height);
    return (success ? 1 : 0);
 }
+
+GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
+{
+   GstPlayer* instance = GstPlayer::Instance();
+   GstPlayerSink *sink =  instance->Find(pipeline);
+   return sink->GetCurrentPosition(pipeline);
+}
+
 
 };

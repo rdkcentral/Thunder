@@ -4,8 +4,11 @@
 extern "C" {
 #endif
 
+// TODO: include gst headers?
+typedef unsigned long long guint64;
 typedef struct _GstPad GstPad;
 typedef struct _GstElement GstElement;
+typedef guint64 GstClockTime;
 
 typedef enum SinkType_t {
     THUNDER_GSTREAMER_CLIENT_AUDIO,
@@ -41,6 +44,8 @@ int gstreamer_client_can_report_stale_pts ();
 int gstreamer_client_set_volume(GstElement *pipeline, double volume);
 
 int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height);
+
+GstClockTime gstreamer_client_get_current_position(GstElement *pipeline);
 
 #ifdef __cplusplus
 }
