@@ -23,7 +23,7 @@ public:
 public:
 
 
-    bool ConfigureAudioSink(GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
+    bool ConfigureAudioSink(GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks *callbacks, bool forcePcm) {
 
         TRACE_L1("Configure audio sink");
 
@@ -31,30 +31,45 @@ public:
             TRACE_L1("Audio Sink is already configured");
             return false;
         }
+        
+        if (!forcePcm) {
+           // Setup audio decodebin
+           _audioDecodeBin = gst_element_factory_make ("decodebin", "audio_decode");
+           if (!_audioDecodeBin)
+               return false;
 
-        // Setup audio decodebin
-        _audioDecodeBin = gst_element_factory_make ("decodebin", "audio_decode");
-        if (!_audioDecodeBin)
-            return false;
+           g_signal_connect(_audioDecodeBin, "pad-added", G_CALLBACK(OnAudioPad), this);
+           g_signal_connect(_audioDecodeBin, "element-added", G_CALLBACK(OnAudioElementAdded), this);
+           g_signal_connect(_audioDecodeBin, "element-removed", G_CALLBACK(OnAudioElementRemoved), this);
+           g_object_set(_audioDecodeBin, "caps", gst_caps_from_string("audio/x-raw; audio/x-brcm-native"), nullptr);
 
-        g_signal_connect(_audioDecodeBin, "pad-added", G_CALLBACK(OnAudioPad), this);
-        g_signal_connect(_audioDecodeBin, "element-added", G_CALLBACK(OnAudioElementAdded), this);
-        g_signal_connect(_audioDecodeBin, "element-removed", G_CALLBACK(OnAudioElementRemoved), this);
-        g_object_set(_audioDecodeBin, "caps", gst_caps_from_string("audio/x-raw; audio/x-brcm-native"), nullptr);
+           // Create an audio sink
+           _audioSink = gst_element_factory_make ("brcmaudiosink", "audio-sink");
 
-        // Create an audio sink
-        _audioSink = gst_element_factory_make ("brcmaudiosink", "audio-sink");
+           if (!_audioSink)
+               return false;
 
-        if (!_audioSink)
-            return false;
+           gst_bin_add_many (GST_BIN (pipeline), _audioDecodeBin, _audioSink, nullptr);
 
-        _audioCallbacks = callbacks;
+           GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
+           gst_pad_link (srcPad, pSinkPad);
+           gst_object_unref(pSinkPad);
 
-        gst_bin_add_many (GST_BIN (pipeline), _audioDecodeBin, _audioSink, nullptr);
+           _audioCallbacks = callbacks;
+        } else {
+           _audioSink = gst_element_factory_make ("brcmpcmsink", "audio-sink");
 
-        GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
-        gst_pad_link (srcPad, pSinkPad);
-        gst_object_unref(pSinkPad);
+           if (!_audioSink)
+               return false;
+
+           gst_bin_add_many (GST_BIN (pipeline), _audioSink, nullptr);
+
+           GstPad *pSinkPad = gst_element_get_static_pad(_audioSink, "sink");
+           gst_pad_link (srcPad, pSinkPad);
+           gst_object_unref(pSinkPad);
+
+           _audioCallbacks = callbacks;
+        }
 
         return true;
     }
@@ -339,7 +354,7 @@ static GstElement* findElement(GstElement *element, const char* targetName)
 
 extern "C" {
 
-int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks* callbacks)
+int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks* callbacks, bool forcePcm)
 {
     struct GstPlayer* instance = GstPlayer::Instance();
     int result = 0;
@@ -352,7 +367,7 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *src
 
     switch (type) {
         case THUNDER_GSTREAMER_CLIENT_AUDIO:
-            if (!sink->ConfigureAudioSink(pipeline, srcPad, callbacks)) {
+            if (!sink->ConfigureAudioSink(pipeline, srcPad, callbacks, forcePcm)) {
                 result = -1;
             }
             break;
@@ -437,7 +452,9 @@ int gstreamer_client_set_volume(GstElement *pipeline, double volume)
 {
    const float scaleFactor = 100.0; // For all others is 1.0 (so no scaling)
    GstElement * audioSink = findElement(pipeline, "audio-sink");
-   
+
+   g_object_set(G_OBJECT(audioSink), "volume", 1.0 * scaleFactor, NULL);
+
    return 0;
 }
 
