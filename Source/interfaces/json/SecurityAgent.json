@@ -12,14 +12,24 @@
   "methods": {
     "createtoken": {
       "summary": "Creates Token",
-      "description": "Create a signed Json Web token from provided payload.",
+      "description": "Create a signed JsonWeb token from provided payload.",
       "params": {
         "type": "object",
         "properties": {
-          "payload": {
-            "description": "Payload that will be signed",
+          "url": {
             "type": "string",
-            "example": ""
+            "description": "Url of application origin",
+            "example": "https://test.comcast.com"
+          },
+          "user": {
+            "type": "string",
+            "description": "Username",
+            "example": "Test"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Random hash",
+            "example": "1CLYex47SY"
           }
         }
       },
@@ -27,7 +37,7 @@
         "type": "object",
         "properties": {
           "token": {
-            "description": "Created token",
+            "description": "Signed JsonWeb token",
             "type": "string",
             "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICAgImpzb25ycGMiOiAiMi4wIiwgCiAgICAiaWQiOiAxMjM0NTY3ODkwLCAKICAgICJtZXRob2QiOiAiQ29udHJvbGxlci4xLmFjdGl2YXRlIiwgCiAgICAicGFyYW1zIjogewogICAgICAgICJjYWxsc2lnbiI6ICJTZWN1cml0eUFnZW50IgogICAgfQp9.lL40nTwRyBvMwiglZhl5_rB8ycY1uhAJRFx9pGATMRQ"
           }
