@@ -40,6 +40,8 @@ int gstreamer_client_can_report_stale_pts ();
 
 int gstreamer_client_set_volume(GstElement *pipeline, double volume);
 
+int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height);
+
 #ifdef __cplusplus
 }
 #endif

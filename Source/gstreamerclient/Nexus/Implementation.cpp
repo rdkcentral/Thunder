@@ -5,6 +5,8 @@
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
 
+static GstElement* findElement(GstElement *element, const char* targetName);
+
 struct GstPlayerSink {
 private:
     GstPlayerSink(const GstPlayerSink&) = delete;
@@ -145,6 +147,24 @@ public:
         return droppedFrames;
     }
 
+    bool GetResolution(GstElement *pipeline, uint32_t& width, uint32_t& height)
+    {
+       gint sourceHeight = 0;
+       gint sourceWidth = 0;
+
+       GstElement* videoDec = findElement(pipeline, "brcmvideodecoder");
+       if (!videoDec) {
+          return false;
+       }
+
+       g_object_get(videoDec, "video_height", &sourceHeight, NULL);
+       g_object_get(videoDec, "video_width", &sourceWidth, NULL);
+
+       width = static_cast<uint32_t>(sourceWidth);
+       height = static_cast<uint32_t>(sourceHeight);
+       return true;
+    }
+
 private:
     static void OnVideoPad (GstElement *decodebin2, GstPad *pad, gpointer user_data) {
 
@@ -261,6 +281,7 @@ private:
     GstElement *_videoSink;
     GstreamerClientCallbacks *_audioCallbacks;
     GstreamerClientCallbacks *_videoCallbacks;
+    // TODO: store pipeline, video decoder, audio decoder
 };
 
 struct GstPlayer {
@@ -456,6 +477,14 @@ int gstreamer_client_set_volume(GstElement *pipeline, double volume)
    g_object_set(G_OBJECT(audioSink), "volume", 1.0 * scaleFactor, NULL);
 
    return 0;
+}
+
+int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height)
+{
+   GstPlayer* instance = GstPlayer::Instance();
+   GstPlayerSink *sink =  instance->Find(pipeline);
+   bool success = sink->GetResolution(pipeline, *width, *height);
+   return (success ? 1 : 0);
 }
 
 };
