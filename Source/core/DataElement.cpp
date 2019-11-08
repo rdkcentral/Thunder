@@ -76,7 +76,7 @@ namespace Core {
             ::memcpy(buffer, &(Buffer()[offset]), size);
         } else {
             // If we want to read more than 4Gb ASSERT !!
-            ASSERT(Size() - offset > 0xFFFFFFFF);
+            ASSERT(Size() - offset < 0xFFFFFFFF);
 
             // oops partial read untill we got it all
             uint32_t bytesToRead = static_cast<uint32_t>(Size() - offset);
@@ -98,7 +98,7 @@ namespace Core {
             ::memcpy(&(Buffer()[offset]), buffer, size);
         } else {
             // If we want to write more than 4Gb ASSERT !!
-            ASSERT(Size() - offset > 0xFFFFFFFF);
+            ASSERT(Size() - offset < 0xFFFFFFFF);
 
             // oops partial read untill we got it all
             uint32_t bytesToWrite = static_cast<uint32_t>(Size() - offset);
