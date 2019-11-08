@@ -541,7 +541,7 @@ namespace JSONRPC {
         }
         static uint8_t DetermineVersion(const string& designator)
         {
-            uint8_t version = Core::JSONRPC::Message::Version(designator);
+            uint8_t version = (designator.length() > 1 ? Core::JSONRPC::Message::Version(designator) : ~0);
             return (version == static_cast<uint8_t>(~0) ? 1 : version);
         }
 
@@ -554,8 +554,8 @@ namespace JSONRPC {
             : _adminLock()
             , _connectId(RemoteNodeId())
             , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign))
-            , _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign) })
-            , _callsign(callsign)
+            , _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign + '.') })
+            , _callsign(callsign.empty() ? string() : Core::JSONRPC::Message::Callsign(callsign + '.'))
             , _localSpace()
             , _pendingQueue()
             , _scheduledTime(0)
