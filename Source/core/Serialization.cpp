@@ -147,10 +147,12 @@ namespace Core {
     {
         ASSERT(object != nullptr);
 
-        result.resize(length * 2, hex_chars[object[0] >> 4]);
+        uint16_t index = result.length();
+        result.resize(index + (length * 2));
+
         result[1] = hex_chars[object[0] & 0xF];
 
-        for (uint16_t i = 1, j = 2; i < length; i++) {
+        for (uint16_t i = 0, j = index; i < length; i++) {
             result[j++] = hex_chars[object[i] >> 4];
             result[j++] = hex_chars[object[i] & 0xF];
         }

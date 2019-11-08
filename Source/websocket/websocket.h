@@ -5,6 +5,7 @@
 
 #include "URL.h"
 #include "JSONWebToken.h"
+#include "JSONRPCLink.h"
 #include "WebLink.h"
 #include "WebRequest.h"
 #include "WebResponse.h"

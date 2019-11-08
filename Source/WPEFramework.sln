@@ -36,12 +36,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "plugins", "plugins\plugins.
 		{A7B258FF-15DD-4769-966C-703530E26530} = {A7B258FF-15DD-4769-966C-703530E26530}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jsonrpc", "jsonrpc\jsonrpc.vcxproj", "{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6A3B427D-D8AF-4D2A-B400-924D2596DCF7} = {6A3B427D-D8AF-4D2A-B400-924D2596DCF7}
-		{0936A7B8-E995-452D-8062-CA9311854018} = {0936A7B8-E995-452D-8062-CA9311854018}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "proxystubs", "proxystubs\proxystubs.vcxproj", "{A39F195B-4FD2-424D-A8C7-3D323C281438}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0936A7B8-E995-452D-8062-CA9311854018} = {0936A7B8-E995-452D-8062-CA9311854018}
@@ -168,7 +162,11 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "JSONRPCClient", "..\..\ThunderNanoServices\examples\JSONRPCClient\JSONRPCClient.vcxproj", "{DFA83275-7232-4F2B-912A-BD362AA228B3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0936A7B8-E995-452D-8062-CA9311854018} = {0936A7B8-E995-452D-8062-CA9311854018}
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6} = {E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Configuration", "Configuration", "{008FC636-F920-4BA2-B90F-F100E723FA51}"
+	ProjectSection(SolutionItems) = preProject
+		WPEFramework\ExampleConfigWindows.json = WPEFramework\ExampleConfigWindows.json
 	EndProjectSection
 EndProject
 Global
@@ -227,14 +225,6 @@ Global
 		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}.Release|x64.Build.0 = Release|x64
 		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}.Release|x86.ActiveCfg = Release|Win32
 		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}.Release|x86.Build.0 = Release|Win32
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Debug|x64.ActiveCfg = Debug|x64
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Debug|x64.Build.0 = Debug|x64
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Debug|x86.ActiveCfg = Debug|Win32
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Debug|x86.Build.0 = Debug|Win32
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Release|x64.ActiveCfg = Release|x64
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Release|x64.Build.0 = Release|x64
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Release|x86.ActiveCfg = Release|Win32
-		{E79C61E4-338F-4FEC-84A9-6A7E3AFD62B6}.Release|x86.Build.0 = Release|Win32
 		{A39F195B-4FD2-424D-A8C7-3D323C281438}.Debug|x64.ActiveCfg = Debug|x64
 		{A39F195B-4FD2-424D-A8C7-3D323C281438}.Debug|x64.Build.0 = Debug|x64
 		{A39F195B-4FD2-424D-A8C7-3D323C281438}.Debug|x86.ActiveCfg = Debug|Win32

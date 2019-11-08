@@ -30,6 +30,7 @@ set(SOURCES_WEBSOCKETS
         websocket/WebSocketLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
+        websocket/JSONRPCLink.h
         websocket/WebLink.h
         websocket/WebRequest.h
         websocket/WebResponse.h
@@ -59,6 +60,7 @@ set(COM_INCLUDES
 set(PROTOCOLS_INCLUDES
         URL.h
         JSONWebToken.h
+        JSONRPCLink.h
         WebLink.h
         WebRequest.h
         WebResponse.h
@@ -139,3 +141,8 @@ install(
         FILES ${PROTOCOLS_INCLUDES} ../websocket/Module.h
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket
 )
+
+#FIXME: If every one moved to the JSONRPCLink in websocket, the mimic of the jsonrpc lib can be removed !!!
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/jsonrpc)")
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket/jsonrpc.h)")
+

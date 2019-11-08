@@ -438,7 +438,7 @@ namespace PluginHost {
             Core::File data(tableName);
             if (data.Open(true) == true) {
                 PostLookupTable info;
-                info.FromFile(data);
+                info.IElement::FromFile(data);
                 Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
                 _lock.Lock();

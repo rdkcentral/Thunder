@@ -47,7 +47,7 @@ namespace PluginHost
             if (mappingFile.Open(true) == true) {
                 result = Core::ERROR_NONE;
 
-                mappingTable.FromFile(mappingFile);
+                mappingTable.IElement::FromFile(mappingFile);
 
                 // Build the device info array..
                 Core::JSON::ArrayType<KeyMapEntry>::Iterator index(mappingTable.Elements());
@@ -162,7 +162,7 @@ namespace PluginHost
                 mappingTable.Add(element);
                 index++;
             }
-            mappingTable.ToFile(mappingFile);
+            mappingTable.IElement::ToFile(mappingFile);
         }
 
         return (result);

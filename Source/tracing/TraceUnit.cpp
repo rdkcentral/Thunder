@@ -295,7 +295,7 @@ namespace Trace {
 
     void TraceUnit::Defaults(Core::File& file) {
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        serialized.FromFile(file);
+        serialized.IElement::FromFile(file);
 
         // Deal with existing categories that might need to be enable/disabled.
         UpdateEnabledCategories(serialized);
