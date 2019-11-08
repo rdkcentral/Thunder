@@ -9,6 +9,7 @@ add_library(${TARGET} SHARED Implementation.cpp)
 
 target_link_libraries(${TARGET}
     PRIVATE
+        CompileSettings::CompileSettings
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
         ${NAMESPACE}Definitions::${NAMESPACE}Definitions

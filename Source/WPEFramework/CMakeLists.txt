@@ -25,6 +25,7 @@ endif()
 
 target_link_libraries(${TARGET}
         PRIVATE
+          CompileSettings::CompileSettings
           ${CMAKE_DL_LIBS}
           ${LIBEXECINFO_LIBRARY}
           ${NAMESPACE}Core::${NAMESPACE}Core

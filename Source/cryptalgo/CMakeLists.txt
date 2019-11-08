@@ -22,6 +22,8 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
+        PRIVATE
+          CompileSettings::CompileSettings
         )
 
 set_target_properties(${TARGET} PROPERTIES

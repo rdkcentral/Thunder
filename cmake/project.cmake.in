@@ -18,21 +18,8 @@ endif()
 # installation dir of cmakepp
 
 set(NAMESPACE "@NAMESPACE@")
-set(BUILD_TYPE "@BUILD_TYPE@")
 
 set(JSON_GENERATOR "@JSON_GENERATOR@")
-
-if("${BUILD_TYPE}" STREQUAL "DebugOptimized" OR "${BUILD_TYPE}" STREQUAL "Debug")
-    set(CMAKE_BUILD_TYPE "Debug")
-elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
-    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
-elseif("${BUILD_TYPE}" STREQUAL "Release")
-    set(CMAKE_BUILD_TYPE "Release")
-elseif("${BUILD_TYPE}" STREQUAL "Production")
-    set(CMAKE_BUILD_TYPE "MinSizeRel")
-else()
-    message(AUTHOR_WARNING "Unknown BUILD_TYPE: '${BUILD_TYPE}'")
-endif()
 
 set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 

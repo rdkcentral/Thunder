@@ -11,7 +11,6 @@ option(BLUETOOTH
 
 find_package(Threads REQUIRED)
 
-include(CompileSettings)
 
 add_library(${TARGET} SHARED
 	DoorBell.cpp
@@ -152,9 +151,8 @@ if(DEADLOCK_DETECTION)
 endif()
 
 target_link_libraries(${TARGET}
-        PUBLIC
-          CompileSettings::CompileSettings
         PRIVATE
+          CompileSettings::CompileSettings
           ${CMAKE_DL_LIBS}
 	  ${LIBEXECINFO_LIBRARY}
           LIBRT::LIBRT
@@ -196,7 +194,7 @@ endif()
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
+        TARGETS ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries

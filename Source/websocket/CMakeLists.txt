@@ -27,6 +27,7 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+          CompileSettings::CompileSettings
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo

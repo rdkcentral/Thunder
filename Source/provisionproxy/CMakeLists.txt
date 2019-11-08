@@ -18,6 +18,11 @@ target_link_libraries(${TARGET}
           libprovision::libprovision
         )
 
+target_link_libraries(${TARGET}
+        PRIVATE
+          CompileSettings::CompileSettings
+        )
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES

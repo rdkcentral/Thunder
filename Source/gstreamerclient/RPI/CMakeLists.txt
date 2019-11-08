@@ -9,6 +9,7 @@ target_link_libraries(${TARGET}
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${GSTREAMER_LIBRARIES}
         ${GSTREAMER_BASE_LIBRARIES}
+        CompileSettings::CompileSettings
         )
 
 target_include_directories(${TARGET}
