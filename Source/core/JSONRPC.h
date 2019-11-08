@@ -443,7 +443,7 @@ namespace Core {
                 }
                 bool Next()
                 {
-                    if (_position == ~0) {
+                    if (_position == static_cast<uint16_t>(~0)) {
                         if (_container != nullptr) {
                             _position = 0;
                             _index = _container->cbegin();
