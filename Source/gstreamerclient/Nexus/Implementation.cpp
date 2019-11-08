@@ -239,7 +239,7 @@ private:
         if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder"))
         {
             g_signal_connect(element, "buffer-underflow-callback",
-                             G_CALLBACK(self->_videoCallbacks->buffer_underflow_callback), self);
+                             G_CALLBACK(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
         }
     }
 
@@ -253,7 +253,7 @@ private:
         if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder"))
         {
             g_signal_handlers_disconnect_by_func (element,
-                                                  reinterpret_cast<gpointer>(self->_videoCallbacks->buffer_underflow_callback), self);
+                                                  reinterpret_cast<gpointer>(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
         }
     }
 
@@ -267,7 +267,7 @@ private:
         if (g_strrstr(GST_ELEMENT_NAME(element), "brcmaudiodecoder"))
         {
             g_signal_connect(element, "buffer-underflow-callback",
-                             G_CALLBACK(self->_audioCallbacks->buffer_underflow_callback), self);
+                             G_CALLBACK(self->_audioCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
         }
     }
 
@@ -281,7 +281,7 @@ private:
         if (g_strrstr(GST_ELEMENT_NAME(element), "brcmaudiodecoder"))
         {
             g_signal_handlers_disconnect_by_func(element,
-                                                 reinterpret_cast<gpointer>(self->_audioCallbacks->buffer_underflow_callback), self);
+                                                 reinterpret_cast<gpointer>(self->_audioCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
         }
     }
 
@@ -503,6 +503,9 @@ GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
    GstPlayer* instance = GstPlayer::Instance();
    GstPlayerSink *sink =  instance->Find(pipeline);
    return sink->GetCurrentPosition(pipeline);
+
+   // For other platforms, see:
+   // https://github.com/Metrological/netflix/blob/1fb2cb81c75efd7c89f25f84aae52919c6d1fece/partner/dpi/gstreamer/PlaybackGroupNative.cpp#L1003-L1010
 }
 
 

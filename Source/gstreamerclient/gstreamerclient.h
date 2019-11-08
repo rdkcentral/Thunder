@@ -21,7 +21,9 @@ typedef enum SinkType_t {
  */
 typedef struct {
     /**/
+    // TODO: check these arguments, seems like gstreamer doesn't use uint32_t
     void (*buffer_underflow_callback)(GstElement *element, uint32_t value1, uint32_t value2, void* user_data);
+    void *user_data;
 
 } GstreamerClientCallbacks;
 
