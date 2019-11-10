@@ -379,8 +379,14 @@ namespace Core {
 #ifdef BEGIN_INTERFACE_MAP
 #undef BEGIN_INTERFACE_MAP
 #endif
+#ifdef INTERFACE_ENTRY
+#undef INTERFACE_ENTRY
+#endif
 #ifdef INTERFACE_AGGREGATE
 #undef INTERFACE_AGGREGATE
+#endif
+#ifdef INTERFACE_RELAY
+#undef INTERFACE_RELAY
 #endif
 #ifdef END_INTERFACE_MAP
 #undef END_INTERFACE_MAP
@@ -410,18 +416,26 @@ namespace Core {
         return (nullptr);                                 \
     }
 
-#define INTERFACE_RELAY(TYPE, RELAY)                              \
-    else if (interfaceNumber == TYPE::ID) {                       \
-        if (RELAY != nullptr) {                                   \
-           AddRef();                                              \
-           return (static_cast<void*>(static_cast<TYPE*>(this))); \
-        }                                                         \
+
+#define INTERFACE_RELAY(TYPE, RELAY)                               \
+    else if (interfaceNumber == TYPE::ID) {                        \
+        if (RELAY != nullptr) {                                    \
+           AddRef();                                               \
+           return (static_cast<void*>(static_cast<TYPE*>(RELAY))); \
+        }                                                          \
+        return (nullptr);                                          \
+    }
+
+#define NEXT_INTERFACE_MAP(BASECLASS)                             \
+        return (BASECLASS::QueryInterface(interfaceNumber));      \
+    }
+
+#define END_INTERFACE_MAP                                         \
         return (nullptr);                                         \
     }
 
-#define END_INTERFACE_MAP \
-    return (nullptr);     \
-    }
+// #define END_INTERFACE_MAP(...) CONCAT(END_INTERFACE_MAP_, VARGS(__VA_ARGS__))(__VA_ARGS__)
+
 }
 } // namespace Core
 
