@@ -7,25 +7,7 @@ add_library(CompileSettingsDebug INTERFACE)
 add_library(CompileSettingsDebug::CompileSettingsDebug ALIAS CompileSettingsDebug)
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/CompileSettingsDebugConfigVersion.cmake"
-    VERSION ${VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
 
-file(WRITE "${PROJECT_SOURCE_DIR}/cmake/CompileSettingsDebugConfig.cmake.in"
-"@PACKAGE_INIT@
-
-include(\"${CMAKE_CURRENT_LIST_DIR}/CompileSettingsDebugTargets.cmake\")
-check_required_components(\"@PROJECT_NAME@\")")
-
-configure_package_config_file(
-    "${PROJECT_SOURCE_DIR}/cmake/CompileSettingsDebugConfig.cmake.in"
-   "${CMAKE_CURRENT_SOURCE_DIR}/CompileSettingsDebugConfig.cmake"
-    INSTALL_DESTINATION lib/cmake/CompileSettingsDebug
-)
-message("VERSION == ")
-message(${VERSION})
 #
 # Build type specific options
 #
@@ -58,7 +40,3 @@ else()
 endif()
 
 install(TARGETS CompileSettingsDebug EXPORT CompileSettingsDebugTargets)
-install(EXPORT CompileSettingsDebugTargets DESTINATION lib/cmake/CompileSettingsDebug)
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/CompileSettingsDebugConfigVersion.cmake"
-              "${CMAKE_CURRENT_SOURCE_DIR}/CompileSettingsDebugConfig.cmake"
-        DESTINATION lib/cmake/CompileSettingsDebug)

@@ -216,3 +216,6 @@ InstallPackageConfig(
 
 InstallCMakeConfig(
         TARGETS ${TARGET})
+
+InstallCMakeConfig(
+        TARGETS CompileSettingsDebug)
