@@ -1,5 +1,5 @@
 include(config)
-include(CompileSettings)
+include(CompileSettingsDebug)
 
 option(CORE
         "Include the core library." ON)
