@@ -23,7 +23,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
         PRIVATE
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 set_target_properties(${TARGET} PROPERTIES

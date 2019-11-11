@@ -25,7 +25,7 @@ target_link_libraries(${TargetMarshalling}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_link_libraries(${TargetDefinitions}
@@ -33,7 +33,7 @@ target_link_libraries(${TargetDefinitions}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         PRIVATE
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 if (PROTOCOLS)

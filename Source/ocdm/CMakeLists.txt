@@ -57,7 +57,7 @@ target_link_libraries(${TARGET}
         PRIVATE
         ${GSTREAMER_LIBRARIES}
         ${GSTREAMER_BASE_LIBRARIES}
-        CompileSettings::CompileSettings
+        CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_include_directories( ${TARGET}

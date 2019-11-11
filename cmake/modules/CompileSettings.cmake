@@ -36,33 +36,33 @@ target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 #
 # Build type specific options
 #
-if("${BUILD_TYPE}" STREQUAL "Debug")
-    target_compile_definitions(CompileSettings INTERFACE _DEBUG)
-    set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
+#if("${BUILD_TYPE}" STREQUAL "Debug")
+#    target_compile_definitions(CompileSettings INTERFACE _DEBUG)
+#    set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
 
-elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
-    target_compile_definitions(CompileSettings INTERFACE _DEBUG)
-    set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
-        target_compile_options(CompileSettings INTERFACE -g)
-    endif()
+#elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+#    target_compile_definitions(CompileSettings INTERFACE _DEBUG)
+#    set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
+#    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
+#        target_compile_options(CompileSettings INTERFACE -g)
+#    endif()
 
-elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
-    target_compile_definitions(CompileSettings INTERFACE NDEBUG)
-    set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
-    target_compile_options(CompileSettings INTERFACE "${CMAKE_C_FLAGS_DEBUG}")
+#elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
+#    target_compile_definitions(CompileSettings INTERFACE NDEBUG)
+#    set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
+#    target_compile_options(CompileSettings INTERFACE "${CMAKE_C_FLAGS_DEBUG}")
 
-elseif("${BUILD_TYPE}" STREQUAL "Release")
-    set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
-    target_compile_definitions(CompileSettings INTERFACE NDEBUG)
+#elseif("${BUILD_TYPE}" STREQUAL "Release")
+#    set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
+#    target_compile_definitions(CompileSettings INTERFACE NDEBUG)
 
-elseif("${BUILD_TYPE}" STREQUAL "Production")
-    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
-    target_compile_definitions(CompileSettings INTERFACE NDEBUG PRODUCTION)
+#elseif("${BUILD_TYPE}" STREQUAL "Production")
+#    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
+#    target_compile_definitions(CompileSettings INTERFACE NDEBUG PRODUCTION)
 
-else()
-    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
-endif()
+#else()
+#    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+#endif()
 
 #
 # Compiler specific options

@@ -20,7 +20,7 @@ target_link_libraries(${TARGET}
 
 target_link_libraries(${TARGET}
         PRIVATE
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 set_target_properties(${TARGET} PROPERTIES

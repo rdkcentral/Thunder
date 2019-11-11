@@ -95,7 +95,7 @@ add_library(${TARGET} SHARED
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing

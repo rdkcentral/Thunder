@@ -37,7 +37,7 @@ find_package(LXC REQUIRED)
 target_link_libraries(${TARGET}
         PRIVATE
         LXC::LXC
-        CompileSettings::CompileSettings
+        CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_include_directories( ${TARGET}

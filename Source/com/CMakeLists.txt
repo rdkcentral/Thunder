@@ -29,7 +29,7 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         PRIVATE
-          CompileSettings::CompileSettings
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 if(PROCESSCONTAINERS)

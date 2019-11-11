@@ -1,4 +1,5 @@
 set(TARGET ${NAMESPACE}Core)
+include(CompileSettings)
 
 option(DEADLOCK_DETECTION 
         "Enable deadlock detection tooling." OFF)
@@ -151,8 +152,10 @@ if(DEADLOCK_DETECTION)
 endif()
 
 target_link_libraries(${TARGET}
-        PRIVATE
+        PUBLIC
           CompileSettings::CompileSettings
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
 	  ${LIBEXECINFO_LIBRARY}
           LIBRT::LIBRT
@@ -194,7 +197,7 @@ endif()
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
