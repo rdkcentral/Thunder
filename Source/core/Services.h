@@ -421,7 +421,7 @@ namespace Core {
     else if (interfaceNumber == TYPE::ID) {                        \
         if (RELAY != nullptr) {                                    \
            AddRef();                                               \
-           return (static_cast<void*>(static_cast<TYPE*>(RELAY))); \
+           return (static_cast<void*>(static_cast<TYPE*>(this)));  \
         }                                                          \
         return (nullptr);                                          \
     }
@@ -433,8 +433,6 @@ namespace Core {
 #define END_INTERFACE_MAP                                         \
         return (nullptr);                                         \
     }
-
-// #define END_INTERFACE_MAP(...) CONCAT(END_INTERFACE_MAP_, VARGS(__VA_ARGS__))(__VA_ARGS__)
 
 }
 } // namespace Core
