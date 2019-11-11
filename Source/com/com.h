@@ -2,6 +2,7 @@
 
 #include "Administrator.h"
 #include "Communicator.h"
+#include "IRPCIterator.h"
 #include "IStringIterator.h"
 #include "ITracing.h"
 #include "IUnknown.h"
