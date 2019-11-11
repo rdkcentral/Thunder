@@ -25,7 +25,7 @@ public:
 public:
 
 
-    bool ConfigureAudioSink(GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks *callbacks, bool forcePcm) {
+    bool ConfigureAudioSink(GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
 
         TRACE_L1("Configure audio sink");
 
@@ -33,8 +33,23 @@ public:
             TRACE_L1("Audio Sink is already configured");
             return false;
         }
-        
-        if (!forcePcm) {
+
+        // Special case: BCM audio decoder doesn't support PCM. If PCM is requested, we need
+        // to create a PCM sink instead and connect the source to it.
+        GValue capsValue = G_VALUE_INIT;
+        g_value_init (&capsValue, GST_TYPE_CAPS);
+        g_object_get_property(G_OBJECT(srcElement), "caps", &capsValue);
+        const GstCaps * caps = gst_value_get_caps(&capsValue);
+        gchar * capsStr = gst_caps_to_string(caps);
+
+        // Check if it is "audio/x-raw" (PCM).
+        bool isPcm = false;
+        if (capsStr) {
+           isPcm = strstr(capsStr, "audio/x-raw");
+        }
+        g_free(capsStr);
+
+        if (!isPcm) {
            // Setup audio decodebin
            _audioDecodeBin = gst_element_factory_make ("decodebin", "audio_decode");
            if (!_audioDecodeBin)
@@ -78,7 +93,7 @@ public:
         return true;
     }
 
-    bool ConfigureVideoSink(GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
+    bool ConfigureVideoSink(GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
 
         TRACE_L1("Configure video sink");
 
@@ -391,7 +406,7 @@ static GstElement* findElement(GstElement *element, const char* targetName)
 
 extern "C" {
 
-int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks* callbacks, bool forcePcm)
+int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks* callbacks)
 {
     struct GstPlayer* instance = GstPlayer::Instance();
     int result = 0;
@@ -405,13 +420,13 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *src
 
     switch (type) {
         case THUNDER_GSTREAMER_CLIENT_AUDIO:
-            if (!sink->ConfigureAudioSink(pipeline, srcPad, callbacks, forcePcm)) {
+            if (!sink->ConfigureAudioSink(pipeline, srcElement, srcPad, callbacks)) {
                 gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }
             break;
         case THUNDER_GSTREAMER_CLIENT_VIDEO:
-            if (!sink->ConfigureVideoSink(pipeline, srcPad, callbacks)) {
+            if (!sink->ConfigureVideoSink(pipeline, srcElement, srcPad, callbacks)) {
                 gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }

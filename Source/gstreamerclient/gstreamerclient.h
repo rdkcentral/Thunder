@@ -28,7 +28,7 @@ typedef struct {
 } GstreamerClientCallbacks;
 
 /**/
-int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *srcPad, GstreamerClientCallbacks* callbacks, bool forcePcm = false);
+int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks* callbacks);
 
 /**/
 int gstreamer_client_sink_unlink (SinkType type, GstElement *pipeline);
