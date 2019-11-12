@@ -34,6 +34,34 @@ message(STATUS "Selected platform ${PLATFORM}")
 target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
 #
+# Build type specific options
+#
+if("${BUILD_TYPE}" STREQUAL "Debug")
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
+
+elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_DEBUG)
+    set(CONFIG_DIR "DebugOptimized" CACHE STRING "Build config directory" FORCE)
+
+elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
+
+elseif("${BUILD_TYPE}" STREQUAL "Release")
+    set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+
+elseif("${BUILD_TYPE}" STREQUAL "Production")
+    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
+    target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG _THUNDER_PRODUCTION)
+
+else()
+    message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+endif()
+
+
+#
 # Compiler specific options
 #
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
