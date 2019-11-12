@@ -195,6 +195,20 @@ public:
        }
        return currentPts;
     }
+    
+    bool MoveVideoRectangle(GstElement * pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+    {
+       if (_videoSink == nullptr) {
+          TRACE_L1("No video sink to move rectangle for");
+          return false;
+       }
+    
+       char rectString[64];
+       sprintf(rectString,"%d,%d,%d,%d", x, y, width, height);
+       g_object_set(_videoSink, "rectangle", rectString, nullptr);
+      
+       return true;
+    }
 
 private:
     static void OnVideoPad (GstElement *decodebin2, GstPad *pad, gpointer user_data) {
@@ -525,5 +539,18 @@ GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
    // https://github.com/Metrological/netflix/blob/1fb2cb81c75efd7c89f25f84aae52919c6d1fece/partner/dpi/gstreamer/PlaybackGroupNative.cpp#L1003-L1010
 }
 
+int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+{
+  GstPlayer* instance = GstPlayer::Instance();
+  GstPlayerSink *sink =  instance->Find(pipeline);
+  if (sink == nullptr) {
+      TRACE_L1("Trying to move video rectangle for unregistered pipeline");
+      return 0;
+  }
+  
+  bool success = sink->MoveVideoRectangle(pipeline, x, y, width, height);
+  return (success ? 1 : 0);
+}
 
 };
+

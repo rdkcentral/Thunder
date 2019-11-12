@@ -49,6 +49,8 @@ int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint
 
 GstClockTime gstreamer_client_get_current_position(GstElement *pipeline);
 
+int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+
 #ifdef __cplusplus
 }
 #endif
