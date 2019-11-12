@@ -366,7 +366,7 @@ public:
 
     virtual CDMi_RESULT GetSecureStopIds(
         uint8_t ids[],
-        uint8_t idSize,
+        uint16_t idsLength,
         uint32_t& count)
         = 0;
 
