@@ -57,6 +57,8 @@ public:
            gst_pad_link (srcPad, pSinkPad);
            gst_object_unref(pSinkPad);
 
+           gst_element_sync_state_with_parent(_audioDecodeBin);
+           gst_element_sync_state_with_parent(_audioSink);
            _audioCallbacks = callbacks;
         } else {
            _audioSink = gst_element_factory_make ("brcmpcmsink", "audio-sink");
@@ -106,6 +108,9 @@ public:
         GstPad *pSinkPad = gst_element_get_static_pad(_videoDecodeBin, "sink");
         gst_pad_link (srcPad, pSinkPad);
         gst_object_unref (pSinkPad);
+
+        gst_element_sync_state_with_parent(_videoDecodeBin);
+        gst_element_sync_state_with_parent(_videoSink);
 
         return true;
     }
@@ -318,7 +323,7 @@ public:
         if (index == _sinks.end()) {
             _sinks.insert(std::pair<GstElement*, GstPlayerSink*>(pipeline, sink));
         } else {
-            printf("Same pipeline created!");
+            printf("Same pipeline created!\n");
         }
     }
 
@@ -395,16 +400,19 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *src
     if (!sink) {
         // create a new sink
         sink = new GstPlayerSink();
+        instance->Add(pipeline, sink);
     }
 
     switch (type) {
         case THUNDER_GSTREAMER_CLIENT_AUDIO:
             if (!sink->ConfigureAudioSink(pipeline, srcPad, callbacks, forcePcm)) {
+                gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }
             break;
         case THUNDER_GSTREAMER_CLIENT_VIDEO:
             if (!sink->ConfigureVideoSink(pipeline, srcPad, callbacks)) {
+                gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }
             break;
@@ -412,12 +420,6 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstPad *src
         default:
             result = -1;
             break;
-    }
-
-    if (result == 0) {
-        instance->Add(pipeline, sink);
-    } else {
-        delete sink;
     }
 
     return result;
