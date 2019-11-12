@@ -49,12 +49,12 @@ elseif("${BUILD_TYPE}" STREQUAL "ReleaseSymbols")
     set(CONFIG_DIR "ReleaseSymbols" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "Release")
-    set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG)
+    set(CONFIG_DIR "Release" CACHE STRING "Build config directory" FORCE)
 
 elseif("${BUILD_TYPE}" STREQUAL "Production")
-    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
     target_compile_definitions(CompileSettings INTERFACE _THUNDER_NDEBUG _THUNDER_PRODUCTION)
+    set(CONFIG_DIR "Production" CACHE STRING "Build config directory" FORCE)
 
 else()
     message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
