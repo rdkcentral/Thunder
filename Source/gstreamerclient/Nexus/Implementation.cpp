@@ -4,6 +4,12 @@
 
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
+#include <core/core.h>
+
+using namespace WPEFramework;
+using SafeCriticalSection = Core::SafeSyncType<Core::CriticalSection>;
+
+static Core::CriticalSection g_adminLock;
 
 static GstElement* findElement(GstElement *element, const char* targetName);
 
@@ -422,6 +428,7 @@ extern "C" {
 
 int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks* callbacks)
 {
+    SafeCriticalSection lock(g_adminLock);
     struct GstPlayer* instance = GstPlayer::Instance();
     int result = 0;
 
@@ -456,6 +463,7 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement 
 
 int gstreamer_client_sink_unlink (SinkType type, GstElement *pipeline)
 {
+    SafeCriticalSection lock(g_adminLock);
     struct GstPlayer* instance = GstPlayer::Instance();
 
     GstPlayerSink *sink =  instance->Find(pipeline);
@@ -474,6 +482,7 @@ int gstreamer_client_sink_unlink (SinkType type, GstElement *pipeline)
 
 unsigned long gtsreamer_client_sink_frames_rendered (GstElement *pipeline)
 {
+    SafeCriticalSection lock(g_adminLock);
     struct GstPlayer* instance = GstPlayer::Instance();
     GstPlayerSink *sink =  instance->Find(pipeline);
 
@@ -485,6 +494,7 @@ unsigned long gtsreamer_client_sink_frames_rendered (GstElement *pipeline)
 
 unsigned long gtsreamer_client_sink_frames_dropped (GstElement *pipeline)
 {
+    SafeCriticalSection lock(g_adminLock);
     struct GstPlayer* instance = GstPlayer::Instance();
     GstPlayerSink *sink =  instance->Find(pipeline);
 
@@ -496,6 +506,7 @@ unsigned long gtsreamer_client_sink_frames_dropped (GstElement *pipeline)
 
 int gstreamer_client_post_eos (GstElement * element)
 {
+    SafeCriticalSection lock(g_adminLock);
    // Nexus:
    gst_app_src_end_of_stream(GST_APP_SRC(element));
    // Rest:
@@ -506,6 +517,7 @@ int gstreamer_client_post_eos (GstElement * element)
 
 int gstreamer_client_can_report_stale_pts ()
 {
+    SafeCriticalSection lock(g_adminLock);
     return 1;
     // All others will return 0
     // See: https://github.com/Metrological/netflix/blob/f5646af2f6b5fd9690681366908a2e711ae1d021/partner/dpi/gstreamer/ESPlayerGst.cpp#L747
@@ -513,6 +525,7 @@ int gstreamer_client_can_report_stale_pts ()
 
 int gstreamer_client_set_volume(GstElement *pipeline, double volume)
 {
+   SafeCriticalSection lock(g_adminLock);
    const float scaleFactor = 100.0; // For all others is 1.0 (so no scaling)
    GstElement * audioSink = findElement(pipeline, "audio-sink");
 
@@ -523,6 +536,7 @@ int gstreamer_client_set_volume(GstElement *pipeline, double volume)
 
 int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height)
 {
+   SafeCriticalSection lock(g_adminLock);
    GstPlayer* instance = GstPlayer::Instance();
    GstPlayerSink *sink =  instance->Find(pipeline);
    bool success = sink->GetResolution(pipeline, *width, *height);
@@ -531,6 +545,7 @@ int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint
 
 GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
 {
+   SafeCriticalSection lock(g_adminLock);
    GstPlayer* instance = GstPlayer::Instance();
    GstPlayerSink *sink =  instance->Find(pipeline);
    return sink->GetCurrentPosition(pipeline);
@@ -541,6 +556,7 @@ GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
 
 int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 {
+  SafeCriticalSection lock(g_adminLock);
   GstPlayer* instance = GstPlayer::Instance();
   GstPlayerSink *sink =  instance->Find(pipeline);
   if (sink == nullptr) {
