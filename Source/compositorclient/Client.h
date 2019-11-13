@@ -21,7 +21,9 @@ namespace Compositor {
 
             enum state {
                 released = 0,
-                pressed
+                pressed,
+                repeated,
+                completed
             };
 
             // Lifetime management
