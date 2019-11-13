@@ -19,8 +19,9 @@ private:
     GstPlayerSink& operator= (const GstPlayerSink&) = delete;
 
 public:
-    GstPlayerSink()
-            : _audioDecodeBin(nullptr)
+    GstPlayerSink(GstElement * pipeline)
+            : _pipeline(pipeline)
+            , _audioDecodeBin(nullptr)
             , _videoDecodeBin(nullptr)
             , _audioSink(nullptr)
             , _videoSink(nullptr)
@@ -31,7 +32,7 @@ public:
 public:
 
 
-    bool ConfigureAudioSink(GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
+    bool ConfigureAudioSink(GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
 
         TRACE_L1("Configure audio sink");
 
@@ -72,7 +73,7 @@ public:
            if (!_audioSink)
                return false;
 
-           gst_bin_add_many (GST_BIN (pipeline), _audioDecodeBin, _audioSink, nullptr);
+           gst_bin_add_many (GST_BIN (_pipeline), _audioDecodeBin, _audioSink, nullptr);
 
            GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
            gst_pad_link (srcPad, pSinkPad);
@@ -87,7 +88,7 @@ public:
            if (!_audioSink)
                return false;
 
-           gst_bin_add_many (GST_BIN (pipeline), _audioSink, nullptr);
+           gst_bin_add_many (GST_BIN (_pipeline), _audioSink, nullptr);
 
            GstPad *pSinkPad = gst_element_get_static_pad(_audioSink, "sink");
            gst_pad_link (srcPad, pSinkPad);
@@ -99,7 +100,7 @@ public:
         return true;
     }
 
-    bool ConfigureVideoSink(GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
+    bool ConfigureVideoSink(GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks *callbacks) {
 
         TRACE_L1("Configure video sink");
 
@@ -124,7 +125,7 @@ public:
             return false;
 
         _videoCallbacks = callbacks;
-        gst_bin_add_many (GST_BIN (pipeline), _videoDecodeBin, _videoSink, nullptr);
+        gst_bin_add_many (GST_BIN (_pipeline), _videoDecodeBin, _videoSink, nullptr);
 
         GstPad *pSinkPad = gst_element_get_static_pad(_videoDecodeBin, "sink");
         gst_pad_link (srcPad, pSinkPad);
@@ -173,12 +174,12 @@ public:
         return droppedFrames;
     }
 
-    bool GetResolution(GstElement *pipeline, uint32_t& width, uint32_t& height)
+    bool GetResolution(uint32_t& width, uint32_t& height)
     {
        gint sourceHeight = 0;
        gint sourceWidth = 0;
 
-       GstElement* videoDec = findElement(pipeline, "brcmvideodecoder");
+       GstElement* videoDec = findElement(_pipeline, "brcmvideodecoder");
        if (!videoDec) {
           return false;
        }
@@ -191,10 +192,10 @@ public:
        return true;
     }
 
-    GstClockTime GetCurrentPosition(GstElement *pipeline)
+    GstClockTime GetCurrentPosition()
     {
        GstClockTime currentPts = GST_CLOCK_TIME_NONE;
-       GstElement* videoDec = findElement(pipeline, "brcmvideodecoder");
+       GstElement* videoDec = findElement(_pipeline, "brcmvideodecoder");
        if (videoDec) {
           g_object_get(videoDec, "video_pts", &currentPts, NULL);
           currentPts = (currentPts * GST_MSECOND) / 45;
@@ -202,13 +203,13 @@ public:
        return currentPts;
     }
     
-    bool MoveVideoRectangle(GstElement * pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+    bool MoveVideoRectangle(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
     {
        if (_videoSink == nullptr) {
           TRACE_L1("No video sink to move rectangle for");
           return false;
        }
-    
+
        char rectString[64];
        sprintf(rectString,"%d,%d,%d,%d", x, y, width, height);
        g_object_set(_videoSink, "rectangle", rectString, nullptr);
@@ -326,6 +327,7 @@ private:
     }
 
 private:
+    GstElement *_pipeline;
     GstElement *_audioDecodeBin;
     GstElement *_videoDecodeBin;
     GstElement *_audioSink;
@@ -435,19 +437,19 @@ int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement 
     GstPlayerSink *sink =  instance->Find(pipeline);
     if (!sink) {
         // create a new sink
-        sink = new GstPlayerSink();
+        sink = new GstPlayerSink(pipeline);
         instance->Add(pipeline, sink);
     }
 
     switch (type) {
         case THUNDER_GSTREAMER_CLIENT_AUDIO:
-            if (!sink->ConfigureAudioSink(pipeline, srcElement, srcPad, callbacks)) {
+            if (!sink->ConfigureAudioSink(srcElement, srcPad, callbacks)) {
                 gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }
             break;
         case THUNDER_GSTREAMER_CLIENT_VIDEO:
-            if (!sink->ConfigureVideoSink(pipeline, srcElement, srcPad, callbacks)) {
+            if (!sink->ConfigureVideoSink(srcElement, srcPad, callbacks)) {
                 gstreamer_client_sink_unlink(type, pipeline);
                 result = -1;
             }
@@ -539,7 +541,11 @@ int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint
    SafeCriticalSection lock(g_adminLock);
    GstPlayer* instance = GstPlayer::Instance();
    GstPlayerSink *sink =  instance->Find(pipeline);
-   bool success = sink->GetResolution(pipeline, *width, *height);
+   if (sink == nullptr) {
+      TRACE_L1("Trying to get resolution for unregistered pipeline");
+      return 0;
+   }
+   bool success = sink->GetResolution(*width, *height);
    return (success ? 1 : 0);
 }
 
@@ -548,7 +554,11 @@ GstClockTime gstreamer_client_get_current_position(GstElement *pipeline)
    SafeCriticalSection lock(g_adminLock);
    GstPlayer* instance = GstPlayer::Instance();
    GstPlayerSink *sink =  instance->Find(pipeline);
-   return sink->GetCurrentPosition(pipeline);
+   if (sink == nullptr) {
+      TRACE_L1("Trying to get current position for unregistered pipeline");
+      return 0;
+   }
+   return sink->GetCurrentPosition();
 
    // For other platforms, see:
    // https://github.com/Metrological/netflix/blob/1fb2cb81c75efd7c89f25f84aae52919c6d1fece/partner/dpi/gstreamer/PlaybackGroupNative.cpp#L1003-L1010
@@ -564,7 +574,7 @@ int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint
       return 0;
   }
   
-  bool success = sink->MoveVideoRectangle(pipeline, x, y, width, height);
+  bool success = sink->MoveVideoRectangle(x, y, width, height);
   return (success ? 1 : 0);
 }
 
