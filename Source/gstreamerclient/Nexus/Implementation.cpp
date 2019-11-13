@@ -48,6 +48,7 @@ public:
         g_object_get_property(G_OBJECT(srcElement), "caps", &capsValue);
         const GstCaps * caps = gst_value_get_caps(&capsValue);
         gchar * capsStr = gst_caps_to_string(caps);
+        g_value_unset(&capsValue);
 
         // Check if it is "audio/x-raw" (PCM).
         bool isPcm = false;
