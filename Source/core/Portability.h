@@ -337,10 +337,10 @@ inline void SleepS(unsigned int a_Time)
 #define DEPRECATED
 #endif
 
-#if defined(_DEBUG) || !defined(NDEBUG)
+#if defined(_THUNDER_DEBUG) || !defined(_THUNDER_NDEBUG)
 #define __DEBUG__
-#ifdef PRODUCTION
-#error "Productiona and Debug is not a good match. Select Production or Debug, not both !!"
+#ifdef _THUNDER_PRODUCTION
+#error "Production and Debug is not a good match. Select Production or Debug, not both !!"
 #endif
 #endif
 

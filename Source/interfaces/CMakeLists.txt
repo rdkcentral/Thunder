@@ -25,12 +25,15 @@ target_link_libraries(${TargetMarshalling}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_link_libraries(${TargetDefinitions}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
         )
 
 if (PROTOCOLS)

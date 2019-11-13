@@ -14,6 +14,7 @@ target_link_libraries(${TARGET}
         NXCLIENT::NXCLIENT
         ${GSTREAMER_LIBRARIES}
         ${GSTREAMER_BASE_LIBRARIES}
+        CompileSettingsDebug::CompileSettingsDebug
         )
 
 target_include_directories(${TARGET}
