@@ -648,12 +648,13 @@ namespace Web {
             std::size_t start = 0;
             std::size_t end = 0;
 
+            string strValue = Core::EnumerateType<SCANVALUE>(value).Data();
             do {
                 end = buffer.find_first_of(DELIMETERS, start);
                 if (end - start > 0) {
                     string word = string(buffer, start, end - start);
                     std::transform(word.begin(), word.end(), word.begin(), std::ptr_fun<int, int>(std::toupper));
-                    if (word == Core::EnumerateType<SCANVALUE>(value).Data()) {
+                    if (word == strValue) {
                         status = true;
                         break;
                     }
