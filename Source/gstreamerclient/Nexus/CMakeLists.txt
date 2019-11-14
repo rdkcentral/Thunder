@@ -4,6 +4,8 @@ message("Setup ${TARGET} v${VERSION}...")
 
 find_package(NEXUS REQUIRED)
 find_package(NXCLIENT REQUIRED)
+find_package(GSTREAMER REQUIRED)
+find_package(GSTREAMER_BASE REQUIRED)
 
 add_library(${TARGET} SHARED Implementation.cpp)
 
