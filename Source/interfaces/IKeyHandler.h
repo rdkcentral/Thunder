@@ -13,10 +13,14 @@ namespace Exchange {
     struct ITouchProducer;
 
     enum ProducerEvents {
-        ePairingStarted = 1,
-        ePairingSuccess,
-        ePairingFailed,
-        ePairingTimedout
+        PairingStarted = 1,
+        PairingSuccess,
+        PairingFailed,
+        PairingTimedout,
+        UnpairingStarted,
+        UnpairingSuccess,
+        UnpairingFailed,
+        UnpairingTimedout
     };
 
     struct IKeyHandler : virtual public Core::IUnknown {
