@@ -629,7 +629,7 @@ namespace PluginHost {
                     if (threadId != static_cast<uint32_t>(~0)) {
                         PublishCallstack(threadId);
                     } else {
-                       printf("The given Thread ID is not in a valid range, please give thread id between 0 and THREADPOOL_COUNT:%d'\n", THREADPOOL_COUNT);
+                       printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
                     }
 
                     break;
