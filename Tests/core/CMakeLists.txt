@@ -52,7 +52,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
-   test_socketstreamjson.cpp
+   #test_socketstreamjson.cpp
    test_socketstreamtext.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
@@ -64,9 +64,10 @@ add_executable(${TEST_RUNNER_NAME}
    test_timer.cpp
    test_tracing.cpp
    test_tristate.cpp
+   test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
-   test_websocketjson.cpp
+   #test_websocketjson.cpp
    test_websockettext.cpp
    test_xgetopt.cpp
 )
