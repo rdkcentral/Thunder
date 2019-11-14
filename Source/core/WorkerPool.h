@@ -123,13 +123,13 @@ namespace Core {
         };
 
     public:
-	static WorkerPool& Instance() {
+	    static WorkerPool& Instance() {
             ASSERT(_instance != nullptr);
             return (*_instance);
-	}
-	static bool IsAvailable() {
+	    }
+	    static bool IsAvailable() {
             return (_instance != nullptr);
-	}
+	    }
         ~WorkerPool();
 
     public:
@@ -152,9 +152,9 @@ namespace Core {
             _metadata.Pending = _handleQueue.Length();
             return (_metadata);
         }
-	void Join() {
+	    void Join() {
             Process(0);
-	}
+	    }
         void Run()
         {
             _handleQueue.Enable();
