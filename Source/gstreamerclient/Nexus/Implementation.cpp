@@ -1,6 +1,6 @@
 #include "Module.h"
 
-#include "../gstreamerclient.h"
+#include "gstreamerclient.h"
 
 #include <gst/gst.h>
 #include <gst/app/gstappsrc.h>
@@ -86,8 +86,6 @@ public:
            }
 
            gst_element_sync_state_with_parent(_audioDecodeBin);
-           gst_element_sync_state_with_parent(_audioSink);
-           _audioCallbacks = callbacks;
         } else {
            _audioSink = gst_element_factory_make ("brcmpcmsink", "audio-sink");
 
@@ -104,8 +102,10 @@ public:
               gst_element_link(srcElement, _audioDecodeBin);
            }
 
-           _audioCallbacks = callbacks;
+
         }
+        _audioCallbacks = callbacks;
+        gst_element_sync_state_with_parent(_audioSink);
 
         return true;
     }
@@ -258,8 +258,7 @@ private:
         structure = gst_caps_get_structure(caps,0);
         name = gst_structure_get_name(structure);
 
-        if (g_strrstr(name, "video/x-"))
-        {
+        if (g_strrstr(name, "video/x-")) {
 
             GValue window_set = {0, };
             static char str[40];
@@ -289,8 +288,7 @@ private:
         structure = gst_caps_get_structure(caps,0);
         name = gst_structure_get_name(structure);
 
-        if (g_strrstr(name, "audio/x-"))
-        {
+        if (g_strrstr(name, "audio/x-")) {
             if (gst_element_link(self->_audioDecodeBin, self->_audioSink) == FALSE) {
                 TRACE_L1("Could not make link video sink to bin");
             }
@@ -302,14 +300,15 @@ private:
 
         GstPlayerSink *self = (GstPlayerSink*)(user_data);
 
-        if (!self->_videoCallbacks)
-            return;
-
-        if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder"))
-        {
-            g_signal_connect(element, "buffer-underflow-callback",
-                             G_CALLBACK(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
+        if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder")) {
             self->_videoDec = element;
+
+            if (self->_videoCallbacks) {
+
+                g_signal_connect(element, "buffer-underflow-callback",
+                                 G_CALLBACK(self->_videoCallbacks->buffer_underflow_callback),
+                                 self->_videoCallbacks->user_data);
+            }
         }
     }
 
@@ -317,14 +316,14 @@ private:
 
         GstPlayerSink *self = (GstPlayerSink*)(user_data);
 
-        if (!self->_videoCallbacks)
-            return;
+        if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder")) {
 
-        if (g_strrstr(GST_ELEMENT_NAME(element), "brcmvideodecoder"))
-        {
-            g_signal_handlers_disconnect_by_func (element,
-                                                  reinterpret_cast<gpointer>(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
             self->_videoDec = nullptr;
+            if (self->_videoCallbacks) {
+                g_signal_handlers_disconnect_by_func(element,
+                                                     reinterpret_cast<gpointer>(self->_videoCallbacks->buffer_underflow_callback),
+                                                     self->_videoCallbacks->user_data);
+            }
         }
     }
 
@@ -365,7 +364,6 @@ private:
     GstElement *_videoDec;
     GstreamerClientCallbacks *_audioCallbacks;
     GstreamerClientCallbacks *_videoCallbacks;
-    // TODO: store pipeline, video decoder, audio decoder
 };
 
 struct GstPlayer {
@@ -391,7 +389,7 @@ public:
         if (index == _sinks.end()) {
             _sinks.insert(std::pair<GstElement*, GstPlayerSink*>(pipeline, sink));
         } else {
-            printf("Same pipeline created!\n");
+            TRACE_L1("Same pipeline created!");
         }
     }
 
@@ -402,7 +400,7 @@ public:
         if (index != _sinks.end()) {
             _sinks.erase(index);
         } else {
-            printf("Could not find a pipeline to remove");
+            TRACE_L1("Could not find a pipeline to remove");
         }
     }
 
