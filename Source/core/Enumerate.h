@@ -21,7 +21,7 @@ namespace Core { template<> EXTERNAL const typename Core::EnumerateConversion<EN
 #define ENUM_CONVERSION_BEGIN(ENUMERATE)                                                            \
     namespace Core {                                                                                \
         template <>                                                                                 \
-        EXTERNAL const EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
+        EXTERNAL const Core::EnumerateConversion<ENUMERATE>* EnumerateType<ENUMERATE>::Table(const uint16_t index) \
         {                                                                                           \
             static WPEFramework::Core::EnumerateConversion<ENUMERATE> table[] = {
 
