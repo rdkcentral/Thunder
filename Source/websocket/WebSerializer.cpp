@@ -22,6 +22,7 @@ static const TCHAR __WEBSOCKET[] = _T("WEBSOCKET");
 static const TCHAR __CONNECTION_UPGRADE[] = _T("UPGRADE");
 static const TCHAR __CONNECTION_CLOSE[] = _T("CLOSE");
 static const TCHAR __CONNECTION_KEEPALIVE[] = _T("KEEP-ALIVE");
+static const TCHAR __CONNECTION_KEEPALIVE_UPGRADE[] = _T("KEEP-ALIVE, UPGRADE");
 static const TCHAR __ENCODING_GZIP[] = _T("GZIP");
 
 static const TCHAR __HOST[] = _T("HOST:");
@@ -227,6 +228,7 @@ ENUM_CONVERSION_BEGIN(Web::Request::connection)
     { Web::Request::CONNECTION_CLOSE, __TXT(__CONNECTION_CLOSE) },
     { Web::Request::CONNECTION_UPGRADE, __TXT(__CONNECTION_UPGRADE) },
     { Web::Request::CONNECTION_KEEPALIVE, __TXT(__CONNECTION_KEEPALIVE) },
+    { Web::Request::CONNECTION_UPGRADE, __TXT(__CONNECTION_KEEPALIVE_UPGRADE) },
     { Web::Request::CONNECTION_UNKNOWN, __TXT(__UNKNOWN) },
 
 ENUM_CONVERSION_END(Web::Request::connection)
