@@ -11,8 +11,6 @@ using SafeCriticalSection = Core::SafeSyncType<Core::CriticalSection>;
 
 static Core::CriticalSection g_adminLock;
 
-static GstElement* findElement(GstElement *element, const char* targetName);
-
 struct GstPlayerSink {
 private:
     GstPlayerSink(const GstPlayerSink&) = delete;
@@ -25,6 +23,7 @@ public:
             , _videoDecodeBin(nullptr)
             , _audioSink(nullptr)
             , _videoSink(nullptr)
+            , _videoDec(nullptr)
             , _audioCallbacks(nullptr)
             , _videoCallbacks(nullptr) {
     }
@@ -180,13 +179,13 @@ public:
        gint sourceHeight = 0;
        gint sourceWidth = 0;
 
-       GstElement* videoDec = findElement(_pipeline, "brcmvideodecoder");
-       if (!videoDec) {
+       if (!_videoDec) {
+          TRACE_L1("No video decoder when querying resolution");
           return false;
        }
 
-       g_object_get(videoDec, "video_height", &sourceHeight, NULL);
-       g_object_get(videoDec, "video_width", &sourceWidth, NULL);
+       g_object_get(_videoDec, "video_height", &sourceHeight, NULL);
+       g_object_get(_videoDec, "video_width", &sourceWidth, NULL);
 
        width = static_cast<uint32_t>(sourceWidth);
        height = static_cast<uint32_t>(sourceHeight);
@@ -196,11 +195,14 @@ public:
     GstClockTime GetCurrentPosition()
     {
        GstClockTime currentPts = GST_CLOCK_TIME_NONE;
-       GstElement* videoDec = findElement(_pipeline, "brcmvideodecoder");
-       if (videoDec) {
-          g_object_get(videoDec, "video_pts", &currentPts, NULL);
-          currentPts = (currentPts * GST_MSECOND) / 45;
+       if (!_videoDec) {
+          TRACE_L1("No video decoder when querying position");
+          return false;
        }
+
+       g_object_get(_videoDec, "video_pts", &currentPts, NULL);
+       currentPts = (currentPts * GST_MSECOND) / 45;
+
        return currentPts;
     }
     
@@ -216,6 +218,15 @@ public:
        g_object_set(_videoSink, "rectangle", rectString, nullptr);
       
        return true;
+    }
+
+    bool SetVolume(double volume)
+    {
+      const float scaleFactor = 100.0; // For all others is 1.0 (so no scaling)
+
+      g_object_set(G_OBJECT(_audioSink), "volume", volume * scaleFactor, NULL);
+
+      return true;
     }
 
 private:
@@ -282,6 +293,7 @@ private:
         {
             g_signal_connect(element, "buffer-underflow-callback",
                              G_CALLBACK(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
+            self->_videoDec = element;
         }
     }
 
@@ -296,6 +308,7 @@ private:
         {
             g_signal_handlers_disconnect_by_func (element,
                                                   reinterpret_cast<gpointer>(self->_videoCallbacks->buffer_underflow_callback), self->_videoCallbacks->user_data);
+            self->_videoDec = nullptr;
         }
     }
 
@@ -333,6 +346,7 @@ private:
     GstElement *_videoDecodeBin;
     GstElement *_audioSink;
     GstElement *_videoSink;
+    GstElement *_videoDec;
     GstreamerClientCallbacks *_audioCallbacks;
     GstreamerClientCallbacks *_videoCallbacks;
     // TODO: store pipeline, video decoder, audio decoder
@@ -390,42 +404,6 @@ public:
 private:
     SinkMap _sinks;
 };
-
-
-static GstElement* findElement(GstElement *element, const char* targetName)
-{
-    GstElement *re = NULL;
-    if (GST_IS_BIN(element)) {
-        GstIterator* it = gst_bin_iterate_elements(GST_BIN(element));
-        GValue item = G_VALUE_INIT;
-        bool done = false;
-        while(!done) {
-            switch (gst_iterator_next(it, &item)) {
-                case GST_ITERATOR_OK:
-                {
-                    GstElement *next = GST_ELEMENT(g_value_get_object(&item));
-                    done = (re = findElement(next, targetName)) != NULL;
-                    g_value_reset (&item);
-                    break;
-                }
-                case GST_ITERATOR_RESYNC:
-                    gst_iterator_resync (it);
-                    break;
-                case GST_ITERATOR_ERROR:
-                case GST_ITERATOR_DONE:
-                    done = true;
-                    break;
-            }
-        }
-        g_value_unset (&item);
-        gst_iterator_free(it);
-    } else {
-        if (strstr(gst_element_get_name(element), targetName)) {
-            re = element;
-        }
-    }
-    return re;
-}
 
 extern "C" {
 
@@ -529,12 +507,14 @@ int gstreamer_client_can_report_stale_pts ()
 int gstreamer_client_set_volume(GstElement *pipeline, double volume)
 {
    SafeCriticalSection lock(g_adminLock);
-   const float scaleFactor = 100.0; // For all others is 1.0 (so no scaling)
-   GstElement * audioSink = findElement(pipeline, "audio-sink");
-
-   g_object_set(G_OBJECT(audioSink), "volume", 1.0 * scaleFactor, NULL);
-
-   return 0;
+   GstPlayer* instance = GstPlayer::Instance();
+   GstPlayerSink *sink =  instance->Find(pipeline);
+   if (sink == nullptr) {
+      TRACE_L1("Trying to set volume for unregistered pipeline");
+      return 0;
+   }
+   bool success = sink->SetVolume(volume);
+   return (success ? 1 : 0);
 }
 
 int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height)
