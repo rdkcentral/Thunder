@@ -1,5 +1,7 @@
 get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
+set(THREADPOOL_COUNT 4 CACHE STRING "The number of threads in the thread pool")
+
 add_executable(${TARGET}
         Controller.cpp
         ControllerJsonRpc.cpp
@@ -13,7 +15,7 @@ target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
-          THREADPOOL_COUNT=4
+          THREADPOOL_COUNT=${THREADPOOL_COUNT}
         )
 
 if (TREE_REFERENCE)
