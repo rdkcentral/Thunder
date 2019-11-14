@@ -295,7 +295,7 @@ namespace Trace {
 
     void TraceUnit::Defaults(Core::File& file) {
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        serialized.FromFile(file);
+        serialized.IElement::FromFile(file);
 
         // Deal with existing categories that might need to be enable/disabled.
         UpdateEnabledCategories(serialized);
@@ -305,7 +305,6 @@ namespace Trace {
     {
         Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
 
-        ASSERT (m_EnabledCategories.size() == 0);
         m_EnabledCategories.clear();
 
         while (index.Next()) {

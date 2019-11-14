@@ -128,8 +128,11 @@ namespace VirtualInput{
         Controller& operator=(const Controller&) = delete;
 
     public:
-        Controller(const string& name, const Core::NodeId& source)
+        Controller(const string& name, const Core::NodeId& source, FNKeyEvent keyCallback = nullptr, FNMouseEvent mouseCallback = nullptr, FNTouchEvent touchCallback = nullptr)
             : _channel(source, 32)
+            , _keyCallback((keyCallback != nullptr) ? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(keyCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _mouseCallback((mouseCallback != nullptr) ? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(mouseCallback))) : (Core::ProxyType<Core::IIPCServer>()))
+            , _touchCallback((touchCallback != nullptr) ? (Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(touchCallback))) : (Core::ProxyType<Core::IIPCServer>()))
         {
             if (_keyCallback.IsValid() ==  true) {
                 _channel.CreateFactory<IVirtualInput::KeyMessage>(1);
@@ -158,16 +161,19 @@ namespace VirtualInput{
             if (_keyCallback.IsValid() == true) {
                 _channel.Unregister(IVirtualInput::KeyMessage::Id());
                 _channel.DestroyFactory<IVirtualInput::KeyMessage>();
+                _keyCallback.Release();
             }
 
             if (_mouseCallback.IsValid() == true) {
                 _channel.Unregister(IVirtualInput::MouseMessage::Id());
                 _channel.DestroyFactory<IVirtualInput::MouseMessage>();
+                _mouseCallback.Release();
             }
 
             if (_touchCallback.IsValid() == true) {
                 _channel.Unregister(IVirtualInput::TouchMessage::Id());
                 _channel.DestroyFactory<IVirtualInput::TouchMessage>();
+                _touchCallback.Release();
             }
 
             _channel.Unregister(IVirtualInput::NameMessage::Id());
@@ -180,51 +186,12 @@ namespace VirtualInput{
                    (_mouseCallback.IsValid() ? IVirtualInput::INPUT_MOUSE : 0) |
                    (_touchCallback.IsValid() ? IVirtualInput::INPUT_TOUCH : 0) ;
         }
-
-        static void KeyHandler(FNKeyEvent callback) 
-        {
-            ASSERT ((_keyCallback.IsValid() == false) ^ (callback == nullptr));
-           
-            if (callback == nullptr) {
-                _keyCallback.Release();
-            }
-            else { 
-                _keyCallback = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<KeyEventHandler>::Create(callback));
-            }
-        } 
-        static void MouseHandler(FNMouseEvent callback) 
-        {
-            ASSERT ( (_mouseCallback.IsValid() == false) ^ (callback == nullptr) );
-            
-            if (callback == nullptr) {
-                _mouseCallback.Release();
-            }
-            else { 
-                _mouseCallback = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<MouseEventHandler>::Create(callback));
-            }
-        } 
-        static void TouchHandler(FNTouchEvent callback) 
-        {
-            ASSERT ( (_touchCallback.IsValid() == false) ^ (callback == nullptr) );
-            
-            if (callback == nullptr) {
-                _touchCallback.Release();
-            }
-            else { 
-                _touchCallback = Core::ProxyType<Core::IIPCServer>(Core::ProxyType<TouchEventHandler>::Create(callback));
-            }
-        } 
- 
     private:
         Core::IPCChannelClientType<Core::Void, false, true> _channel;
-        static Core::ProxyType<Core::IIPCServer> _keyCallback;
-        static Core::ProxyType<Core::IIPCServer> _mouseCallback;
-        static Core::ProxyType<Core::IIPCServer> _touchCallback;
+        Core::ProxyType<Core::IIPCServer> _keyCallback;
+        Core::ProxyType<Core::IIPCServer> _mouseCallback;
+        Core::ProxyType<Core::IIPCServer> _touchCallback;
     };
-
-    Core::ProxyType<Core::IIPCServer> Controller::_keyCallback;
-    Core::ProxyType<Core::IIPCServer> Controller::_mouseCallback;
-    Core::ProxyType<Core::IIPCServer> Controller::_touchCallback;
 }
 }
 
@@ -234,29 +201,14 @@ extern "C" {
 
 using namespace WPEFramework;
 
-void callback_keyboard(FNKeyEvent callback) 
-{
-    VirtualInput::Controller::KeyHandler(callback);
-}
-
-void callback_mouse(FNMouseEvent callback) 
-{
-    VirtualInput::Controller::MouseHandler(callback);
-}
-
-void callback_touch(FNTouchEvent callback)
-{
-    VirtualInput::Controller::TouchHandler(callback);
-}
-
 // Producer, Consumer, We produce the virtual keyboard, the receiver needs
 // to destruct it once the done with the virtual keyboard.
 // Use the Destruct, to destruct it.
-void* virtualinput_open(const char listenerName[], const char connector[])
+void* virtualinput_open(const char listenerName[], const char connector[], FNKeyEvent keyCallback, FNMouseEvent mouseCallback, FNTouchEvent touchCallback)
 {
     Core::NodeId remoteId(connector);
 
-    return (new VirtualInput::Controller(listenerName, remoteId));
+    return (new VirtualInput::Controller(listenerName, remoteId, keyCallback, mouseCallback, touchCallback));
 }
 
 void virtualinput_close(void* handle)

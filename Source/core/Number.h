@@ -452,7 +452,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
@@ -559,7 +559,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {
@@ -632,7 +632,7 @@ namespace Core {
                 if ((Value == 0) && (*Text == '0') && (Base == BASE_UNKNOWN)) {
                     // Base change, move over to an OCTAL conversion
                     Base = BASE_OCTAL;
-                } else if ((Value == 0) && (toupper(*Text) == 'X') && (Base == BASE_OCTAL)) {
+                } else if ((Value == 0) && (toupper(*Text) == 'X') && ((Base == BASE_OCTAL) || (Base == BASE_HEXADECIMAL))) {
                     // Base change, move over to an HEXADECIMAL conversion
                     Base = BASE_HEXADECIMAL;
                 } else if ((Value == 0) && ((*Text == '+') || ((*Text == '-')) || (*Text == ' ') || (*Text == '\t') || (*Text == '0'))) {

@@ -574,4 +574,3 @@ int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint
 }
 
 };
-

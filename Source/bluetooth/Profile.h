@@ -636,7 +636,7 @@ namespace Bluetooth {
             uint16_t begin = _characteristics.Current().Handle();
             uint16_t end = _characteristics.Current().Max();
 
-            _adminLock.Unlock();
+            _adminLock.Lock();
 
             if (_socket != nullptr) {
                 if ((begin + 1) < end){
@@ -782,8 +782,6 @@ namespace Bluetooth {
                     else {
                         LoadCharacteristics(waitTime);
                     }
-
-                    _adminLock.Unlock();
                 }
             }
         }

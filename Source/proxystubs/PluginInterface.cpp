@@ -392,6 +392,15 @@ namespace ProxyStubs {
 
             response.Boolean(message->Parameters().Implementation<IShell>()->Resumed());
         },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual string ConfigSubstitution(const string& input) const = 0;
+            //
+            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<IShell>()->ConfigSubstitution(reader.Text()));
+        },
         nullptr
     };
     // IShell stub definitions
@@ -1054,7 +1063,20 @@ namespace ProxyStubs {
 
             return (result);
         }
- 
+        virtual string ConfigSubstitution(const string& input) const override
+        {
+            IPCMessage newMessage(BaseClass::Message(29));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(input);
+            string result;
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                result = newMessage->Response().Reader().Text();
+            }
+
+            return (result);
+        }
         virtual ICOMLink* COMLink() override
         {
             return (nullptr);

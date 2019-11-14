@@ -237,7 +237,7 @@ public:
     virtual ~IMediaKeySession(void) {}
 
     // Retrieves keysystem-specific metadata of the session
-    virtual void Metadata(std::string& metadata) const { }
+    virtual std::string GetMetadata() const { return std::string(); }
 
     // Kicks off the process of acquiring a key. A MediaKeySession callback is supplied
     // to receive notifications during the process.
@@ -320,7 +320,7 @@ public:
     virtual ~IMediaKeys(void) {}
 
     // Retrieves keysystem-specific metadata
-    virtual void Metadata(std::string& metadata) const { }
+    virtual std::string GetMetadata() const { return std::string(); }
 
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
@@ -354,11 +354,6 @@ public:
 
     virtual uint64_t GetDrmSystemTime() const = 0;
 
-    // Destroy a MediaKeySession instance.
-    virtual CDMi_RESULT DestroyMediaKeySessionExt(
-        IMediaKeySession* f_piMediaKeySession)
-        = 0;
-
     virtual std::string GetVersionExt() const = 0;
 
     virtual uint32_t GetLdlSessionLimit() const = 0;
@@ -371,7 +366,7 @@ public:
 
     virtual CDMi_RESULT GetSecureStopIds(
         uint8_t ids[],
-        uint8_t idSize,
+        uint16_t idsLength,
         uint32_t& count)
         = 0;
 

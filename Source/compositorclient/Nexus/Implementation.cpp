@@ -79,7 +79,24 @@ namespace Nexus {
                 windowInfo.height = _height;
                 windowInfo.stretch = true;
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT
-                windowInfo.zOrder = 0;
+                // YouTube using EspialBrowser plugin is using 2 surfaces for managing the
+                // Graphics and Video. But only the graphics is using the wpeframework
+                // interface i.e the Compositor plugin, and the video is using a Simple
+                // Nexus decoder client provided along with EspialBrowser. Both the surfaces
+                // are trying to set the zorder to '0'. And results in the video surface coming
+                // on top of the graphics surface.
+                // 
+                // As a workaround the default zorder of the Compositor graphics surface is
+                // changed to '100' (A higher value than '0'). This will force the graphics
+                // surface to be on top of the video surface.
+                //
+                // After applying the workaround NOS videos and YouTube app was checked and the
+                // graphics was coming on top of video as expected.
+                // 
+                // If in the future this leads to issues with other stacks, the suggestion is
+                // to use the Client ID here to determine the zOrder. For now we are not 
+                // expecting any issues form this patch.
+                windowInfo.zOrder = 100;
 #endif
                 windowInfo.clientID = display.NexusClientId();
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
@@ -175,6 +192,7 @@ namespace Nexus {
            NEXUS_Error rc = NEXUS_Platform_Join();
            BDBG_ASSERT(!rc);
 #endif
+           NxClient_UnregisterAcknowledgeStandby(NxClient_RegisterAcknowledgeStandby());
 
            NXPL_RegisterNexusDisplayPlatform(&_nxplHandle, displayHandle);
 
@@ -183,10 +201,7 @@ namespace Nexus {
                g_pipefd[1] = -1;
            }
 
-           // on nexus we will for now only have Keyboard support
-           callback_keyboard(VirtualKeyboardCallback);
-
-           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName);
+           _virtualkeyboard = virtualinput_open(name.c_str(), connectorName, VirtualKeyboardCallback, nullptr, nullptr);
 
            if (_virtualkeyboard == nullptr) {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");

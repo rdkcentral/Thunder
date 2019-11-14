@@ -9,9 +9,24 @@
         abort();                                                      \
     }
 
-struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
+DEPRECATED struct OpenCDMSystem* opencdm_create_system(const char keySystem[])
 {
-    return new OpenCDMSystem(keySystem);
+    struct OpenCDMSystem* result = nullptr;
+    opencdm_create_system_extended(keySystem, &result);
+    return result;
+}
+
+OpenCDMError opencdm_create_system_extended(const char keySystem[], struct OpenCDMSystem** system)
+{
+    ASSERT(system != nullptr);
+    *system = nullptr;
+    std::string metadata;
+    OpenCDMError result = static_cast<OpenCDMError>(OpenCDMAccessor::Instance()->Metadata(std::string(keySystem), metadata));
+    if( result == OpenCDMError::ERROR_NONE ) {
+        *system = new OpenCDMSystem(keySystem, metadata);
+    }
+
+    return result;
 }
 
 OpenCDMError opencdm_system_get_version(struct OpenCDMSystem* system,
@@ -67,13 +82,13 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystem* system)
 
 OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystem* system,
     uint8_t ids[],
-    uint8_t idSize,
+    uint16_t idsLength,
     uint32_t* count)
 {
     ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->GetSecureStopIds(system->keySystem(), ids,
-        idSize, *count);
+        idsLength, *count);
 }
 
 OpenCDMError opencdm_system_ext_get_secure_stop(OpenCDMSystem* system,

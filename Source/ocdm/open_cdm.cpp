@@ -39,6 +39,36 @@ extern "C" {
 }
 #endif
 
+namespace 
+{
+
+template<typename SIZETYPE> 
+OpenCDMError StringToAllocatedBuffer(const std::string& source, char* destinationBuffer, SIZETYPE& bufferSize)
+{
+    using sizetype = SIZETYPE;
+
+    OpenCDMError result = ERROR_NONE;
+    
+    sizetype sizeneeded = ( (source.size()+1) > std::numeric_limits<sizetype>::max() ) ? std::numeric_limits<sizetype>::max() : (source.size()+1);
+
+    if(destinationBuffer == nullptr) {
+        bufferSize = sizeneeded;
+        result = ERROR_MORE_DATA_AVAILBALE;
+    } else if ( bufferSize < sizeneeded ) {
+        strncpy(destinationBuffer, source.c_str(), bufferSize-1);
+        destinationBuffer[bufferSize-1] = '\0';
+        bufferSize = sizeneeded;
+        result = ERROR_MORE_DATA_AVAILBALE;      
+    } else { // buffersize >= sizeneeded
+        strncpy(destinationBuffer, source.c_str(), sizeneeded-1);
+        destinationBuffer[sizeneeded-1] = '\0';
+        bufferSize = sizeneeded;
+    }
+    return result;
+}
+
+} // namespace
+
 KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
 {
 
@@ -101,35 +131,28 @@ OpenCDMError opencdm_is_type_supported(const char keySystem[],
 /**
  * \brief Retrieves DRM system specific metadata.
  *
- * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \return Zero on success, non-zero on error.
- * \remark The caller shall free() the received metadata buffer.
-*/
-OpenCDMError opencdm_metadata(const char keySystem[], char* pMetadata[])
+ * \param system Instance of \ref OpenCDMAccessor.
+ * \param metadata, buffer to write metadata into, always 0 terminated (also when not large enough to hold all data) except when metadata is
+ *     Null of course. Null allowed to retrieve required size needed for this buffer in metadataSize to be able to allocate required buffer 
+ *     for subsequent call to opencdm_is_type_supported
+ * \param metadataSize, in: size of metadata buffer, out: required size to hold all data available when return value is ERROR_MORE_DATA_AVAILBALE,
+ *     , number of characters written into metadata (incl 0 terminator) otherwise. Note in case metadata could not hold all data but was not of zero
+ *     length it is filled up to the maximum size (still zero terminated) but also ERROR_MORE_DATA_AVAILBALE is returned with the required size needed
+ *     to hold all data
+ * \return Zero on success, non-zero on error. ERROR_MORE_DATA_AVAILBALE when the buffer was not large enough to hold all the data available. 
+ */
+OpenCDMError opencdm_system_get_metadata(struct OpenCDMSystem* system, 
+    char metadata[], 
+    uint16_t* metadataSize)
 {
-    OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
-    OpenCDMError result(OpenCDMError::ERROR_INVALID_ACCESSOR);
+    OpenCDMError result(ERROR_INVALID_ACCESSOR);
 
-    if (accessor != nullptr) {
-        string metadata;
-        if (accessor->Metadata(std::string(keySystem), metadata) == OCDM::OCDM_SUCCESS) {
-            if (pMetadata != nullptr) {
-                (*pMetadata) = nullptr;
-                if (metadata.empty() == false) {
-                    (*pMetadata) = reinterpret_cast<char *>(malloc(metadata.length() + 1));
-                    strcpy(*pMetadata, metadata.c_str());
-                }
-            }
-
-            result = OpenCDMError::ERROR_NONE;
-        } else {
-            result = OpenCDMError::ERROR_KEYSYSTEM_NOT_SUPPORTED;
-        }
+    if(system != nullptr) {
+        result = StringToAllocatedBuffer(system->Metadata(), metadata, *metadataSize);
     }
-
-    return (result);
+    return result;
 }
+
 
 /**
  * \brief Maps key ID to \ref OpenCDMSession instance.
@@ -225,32 +248,28 @@ OpenCDMError opencdm_session_load(struct OpenCDMSession* session)
 }
 
 /**
- * \brief Retrieves DRM system specific metadata of the session.
- *
- * \param keySystem Name of required key system (e.g. "com.microsoft.playready").
- * \param[out] metadata Buffer to store a pointer to the metadata.
- * \return Zero on success, non-zero on error.
- * \remark The caller shall free() the received metadata buffer.
-*/
-OpenCDMError opencdm_session_metadata(struct OpenCDMSession* session, char* pMetadata[])
+ * Retrieves DRM session specific metadata of a session.
+ * \param session \ref OpenCDMSession instance.
+* \param metadata, buffer to write metadata into, always 0 terminated (also when not large enough to hold all data) except when metadata is
+ *     Null of course. Null allowed to retrieve required size needed for this buffer in metadataSize to be able to allocate required buffer 
+ *     for subsequent call to opencdm_session_metadata
+ * \param metadataSize, in: size of metadata buffer, out: required size to hold all data available when return value is ERROR_MORE_DATA_AVAILBALE,
+ *     , number of characters written into metadata (incl 0 terminator) otherwise. Note in case metadata could not hold all data but was not of zero
+ *     length it is filled up to the maximum size (still zero terminated) but also ERROR_MORE_DATA_AVAILBALE is returned with the required size needed
+ *     to hold all data
+ * \return Zero on success, non-zero on error. ERROR_MORE_DATA_AVAILBALE when the buffer was not large enough to hold all the data available. 
+
+ */
+OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* session, 
+    char metadata[], 
+    uint16_t* metadataSize)
 {
-    OpenCDMError result(OpenCDMError::ERROR_INVALID_SESSION);
+    OpenCDMError result(ERROR_INVALID_SESSION);
 
-    if (session != nullptr) {
-        string metadata;
-        session->Metadata(metadata);
-        if (pMetadata != nullptr) {
-            (*pMetadata) = nullptr;
-            if (metadata.empty() == false) {
-                (*pMetadata) = reinterpret_cast<char *>(malloc(metadata.length() + 1));
-                strcpy(*pMetadata, metadata.c_str());
-            }
-        }
-
-        result = OpenCDMError::ERROR_NONE;
+    if(session != nullptr) {
+        result = StringToAllocatedBuffer(session->Metadata(), metadata, *metadataSize);
     }
-
-    return (result);
+    return result;
 }
 
 /**

@@ -11,7 +11,7 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-   typedef Core::WorkerPool WorkerPool;
+    typedef Core::WorkerPool WorkerPool;
 
     class EXTERNAL Factories {
     private:

@@ -33,6 +33,10 @@ namespace Bluetooth {
                 _uuid[0] = 16;
             }
         }
+        explicit UUID(const string& uuidStr)
+        {
+            FromString(uuidStr);
+        }
         UUID(const UUID& copy)
         {
             ::memcpy(_uuid, copy._uuid, sizeof(_uuid));
@@ -66,6 +70,14 @@ namespace Bluetooth {
         {
             return !(operator==(rhs));
         }
+        bool operator==(const uint16_t shortUuid) const
+        {
+            return ((HasShort() == true) && (Short() == shortUuid));
+        }
+        bool operator!=(const uint16_t shortUuid) const
+        {
+            return !(operator==(shortUuid));
+        }
         bool HasShort() const
         {
             return (_uuid[0] == 2);
@@ -78,8 +90,8 @@ namespace Bluetooth {
         {
              return (_uuid[0] == 2 ? &(_uuid[15]) :  &(_uuid[1]));
         }
-        string ToString(const bool full = false) const {
-
+        string ToString(const bool full = false) const
+        {
             // 00002a23-0000-1000-8000-00805f9b34fb
             static const TCHAR hexArray[] = "0123456789abcdef";
 
@@ -122,6 +134,38 @@ namespace Bluetooth {
                 }
             }
             return (result);
+        }
+        bool FromString(const string& uuidStr)
+        {
+            if ((uuidStr.length() == 4) || (uuidStr.length() == ((16 * 2) + 4))) {
+                uint8_t buf[16];
+                if (uuidStr.length() == 4) {
+                    memcpy(buf, BASE, sizeof(buf));
+                }
+                uint8_t* p = (buf + sizeof(buf));
+                int16_t idx = 0;
+                uint16_t size = uuidStr.length();
+
+                while (idx < size) {
+                    if ((idx == 8) || (idx == 13) || (idx == 18) || (idx == 23)) {
+                        if (uuidStr[idx] != '-') {
+                            break;
+                        } else {
+                            idx++;
+                        }
+                    } else {
+                        (*--p) = ((Core::FromHexDigits(uuidStr[idx]) << 4) | Core::FromHexDigits(uuidStr[idx + 1]));
+                        idx += 2;
+                    }
+                }
+
+                if (idx == size) {
+                    (*this) = UUID(buf);
+                    return true;
+                }
+            }
+
+            return false;
         }
 
     private:
@@ -882,7 +926,7 @@ namespace Bluetooth {
         }
 
     private:
-        virtual void Notification(const uint8_t[], const uint16_t) = 0;
+        virtual void Notification(const uint16_t handle, const uint8_t[], const uint16_t) = 0;
         virtual void Operational() = 0;
 
         void StateChange() override;
@@ -890,10 +934,12 @@ namespace Bluetooth {
         uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t availableData) override {
             uint32_t result = 0;
 
-            if (availableData >= 2) {
+            if (availableData >= 1) {
+                const uint8_t& opcode = dataFrame[0];
 
-                if (dataFrame[0] == ATT_OP_HANDLE_NOTIFY) {
-                    Notification(&(dataFrame[1]), availableData);
+                if ((opcode == ATT_OP_HANDLE_NOTIFY) && (availableData >= 3)) {
+                    uint16_t handle = ((dataFrame[2] << 8) | dataFrame[1]);
+                    Notification(handle, &dataFrame[3], (availableData - 3));
                     result = availableData;
                 }
                 else {

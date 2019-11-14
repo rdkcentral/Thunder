@@ -179,7 +179,7 @@ namespace Core {
         {
 #if defined(__WIN32__) || defined(__APPLE__)
 #pragma warning(disable : 4312)
-            return (reinterpret_cast<::ThreadId>(m_ThreadId));
+            return (reinterpret_cast<const ::ThreadId>(m_ThreadId));
 #pragma warning(default : 4312)
 #else
             return (static_cast<::ThreadId>(m_ThreadId));
@@ -457,9 +457,6 @@ namespace Core {
                     // Yield the processor, just to make sure that the gap, between the comparison
                     // of the Executing(.....) ended up in the lock, before we pulse it :-)
                     ::SleepMs(0);
-
-                    // Do not wait keep on processing !!!
-                    return (0);
                 }
 
                 // Oops queue disabled, wait for queue to start us again..

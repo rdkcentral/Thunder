@@ -230,6 +230,7 @@ namespace Core {
             Close(infinite);
 
             if (_clients.size() > 0) {
+                InternalCleanup();
 
                 TRACE_L1("Closing clients that should have been closed before destruction [%d].", static_cast<uint32_t>(_clients.size()));
                 CloseClients();

@@ -27,6 +27,7 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
@@ -57,5 +58,8 @@ install(
         PUBLIC_HEADER DESTINATION include/${NAMESPACE}/websocket COMPONENT devel   # headers for mac (note the different component -> different package)
         INCLUDES DESTINATION include/${NAMESPACE}   # default include path
 )
+
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/jsonrpc)")
+install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket/jsonrpc.h)")
 
 InstallCMakeConfig(TARGETS ${TARGET})

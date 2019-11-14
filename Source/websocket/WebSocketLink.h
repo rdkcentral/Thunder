@@ -39,8 +39,8 @@ namespace Web {
                 : _setFlags((masking ? 0x80 : 0x00) | (binary ? 0x02 : 0x01))
                 , _progressInfo(0)
                 , _pendingReceiveBytes(0)
+                , _frameType(TEXT)
                 , _controlStatus(0)
-
             {
             }
             ~Protocol()

@@ -335,10 +335,14 @@ function(InstallCMakeConfig)
             break()
         endif()
 
-        get_target_property(_version ${_target} VERSION)
-        get_target_property(_name ${_target} OUTPUT_NAME)
-        get_target_property(_dependencies ${_target} INTERFACE_LINK_LIBRARIES)
-    
+        get_target_property(_type ${_target} TYPE)
+
+        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY")
+            get_target_property(_version ${_target} VERSION)
+            get_target_property(_name ${_target} OUTPUT_NAME)
+            get_target_property(_dependencies ${_target} INTERFACE_LINK_LIBRARIES)
+        endif()
+
         if(NOT _name)
             get_target_property(_name ${_target} NAME)
         endif()
@@ -357,59 +361,61 @@ function(InstallCMakeConfig)
 
         message(STATUS "${_target} added support for cmake consumers via '${_name}Config.cmake'")
 
-        # The alias is used by local targets project
-        add_library(${_name}::${_name} ALIAS ${_target})
+        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY")
+            # The alias is used by local targets project
+            add_library(${_name}::${_name} ALIAS ${_target})
 
-        if(_dependencies)
-            foreach(_dependency ${_dependencies})
-                if ("${_dependency}" MATCHES "LINK_ONLY")
-                    string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_dependency})
-                    string(REGEX REPLACE ">$" "" _dependency ${__fix})
-                endif()
-
-                if(TARGET ${_dependency})
-                    get_target_property(_type ${_dependency} TYPE)
-
-                    if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
-                        set(_type_is_ok TRUE)
-                    else()
-                        set(_type_is_ok FALSE)
+            if(_dependencies)
+                foreach(_dependency ${_dependencies})
+                    if("${_dependency}" MATCHES "LINK_ONLY")
+                        string(REGEX REPLACE "\\$<LINK_ONLY:" "" __fix ${_dependency})
+                        string(REGEX REPLACE ">$" "" _dependency ${__fix})
                     endif()
 
-                    get_target_property(_is_imported ${_dependency} IMPORTED)
-                    
-                    if (_type_is_ok)
-                        if(_is_imported)
-                            get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
-                            
-                            if (_configurations)
-                                list(LENGTH _configurations _configurations_count)
+                    if(TARGET ${_dependency})
+                        get_target_property(_type ${_dependency} TYPE)
 
-                                list(GET _configurations 0 _config)
-                                set (config _${_config})
-
-                                if (_configurations_count GREATER 1)
-                                    message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
-                                endif()
-                            endif()
-                            
-                            get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
-                            
-                            _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                        if(NOT "${_type}" STREQUAL "INTERFACE_LIBRARY" OR Argument_NO_SKIP_INTERFACE_LIBRARIES)
+                           set(_type_is_ok TRUE)
                         else()
-                            get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
-
-                            if(NOT _dep_name)
-                                get_target_property( _dep_name ${_dependency} NAME)
-                            endif()
-                        endif(_is_imported)
-                        
-                        if(_dep_name)
-                            list(APPEND dependencies  ${_dep_name})
+                            set(_type_is_ok FALSE)
                         endif()
-                    endif()
-               endif()
-            endforeach()
+
+                        get_target_property(_is_imported ${_dependency} IMPORTED)
+                    
+                        if(_type_is_ok)
+                            if(_is_imported)
+                                get_target_property(_configurations ${_dependency} IMPORTED_CONFIGURATIONS)
+                            
+                                if (_configurations)
+                                    list(LENGTH _configurations _configurations_count)
+
+                                    list(GET _configurations 0 _config)
+                                    set (config _${_config})
+
+                                    if (_configurations_count GREATER 1)
+                                        message(AUTHOR_WARNING "Multiple configs not yet supported, got ${_configurations} and picked the first one")
+                                    endif()
+                                endif()
+                            
+                                get_target_property(_dep_loc ${_dependency} IMPORTED_LOCATION${config})
+                            
+                                _get_default_link_name(${_dep_loc} _dep_name _dep_dir)
+                            else()
+                                get_target_property(_dep_name ${_dependency} OUTPUT_NAME)
+
+                                if(NOT _dep_name)
+                                    get_target_property( _dep_name ${_dependency} NAME)
+                                endif()
+                            endif(_is_imported)
+                        
+                            if(_dep_name)
+                                list(APPEND dependencies  ${_dep_name})
+                            endif()
+                        endif()
+                   endif()
+                endforeach()
+            endif()
         endif()
 
         configure_file( "${_config_template}"

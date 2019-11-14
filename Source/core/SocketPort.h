@@ -227,6 +227,7 @@ namespace Core {
         SOCKET ConstructSocket(NodeId& localNode, const string& interfaceName);
         uint32_t WaitForOpen(const uint32_t time) const;
         uint32_t WaitForClosure(const uint32_t time) const;
+        uint32_t WaitForWriteComplete(const uint32_t time) const;
 
     private:
         NodeId m_LocalNode;
