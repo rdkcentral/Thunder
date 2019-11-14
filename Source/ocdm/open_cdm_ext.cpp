@@ -82,13 +82,13 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystem* system)
 
 OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystem* system,
     uint8_t ids[],
-    uint8_t idSize,
+    uint16_t idsLength,
     uint32_t* count)
 {
     ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->GetSecureStopIds(system->keySystem(), ids,
-        idSize, *count);
+        idsLength, *count);
 }
 
 OpenCDMError opencdm_system_ext_get_secure_stop(OpenCDMSystem* system,

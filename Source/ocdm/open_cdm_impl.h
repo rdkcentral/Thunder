@@ -236,11 +236,11 @@ public:
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStopIds(const std::string& keySystem,
-        uint8_t ids[], uint8_t idSize,
+        uint8_t ids[], uint16_t idsLength,
         uint32_t& count)
     {
         ASSERT(_remote && "This method only works on IAccessorOCDM implementations.");
-        return _remote->GetSecureStopIds(keySystem, ids, idSize, count);
+        return _remote->GetSecureStopIds(keySystem, ids, idsLength, count);
     }
 
     virtual OCDM::OCDM_RESULT GetSecureStop(const std::string& keySystem,

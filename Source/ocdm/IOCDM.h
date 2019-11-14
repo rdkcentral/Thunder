@@ -181,7 +181,7 @@ struct IAccessorOCDM : virtual public WPEFramework::Core::IUnknown {
     virtual uint32_t ResetSecureStops(const std::string& keySystem) = 0;
 
     virtual OCDM_RESULT GetSecureStopIds(const std::string& keySystem,
-        uint8_t ids[] /* @out @length:idSize */, uint8_t idSize,
+        uint8_t ids[] /* @out @length:idsLength */, uint16_t idsLength,
         uint32_t& count /* @inout */)
         = 0;
 
