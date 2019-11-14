@@ -685,7 +685,8 @@ namespace JSONRPC {
         typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
         Invoke(const uint32_t waitTime, const string& method)
         {
-            return InternalInvoke<string>(waitTime, method, EMPTY_STRING);
+            string emptyString(EMPTY_STRING);
+            return InternalInvoke<string>(waitTime, method, emptyString);
         }
 
         template <typename PARAMETERS, typename RESPONSE>
@@ -699,7 +700,8 @@ namespace JSONRPC {
         typename std::enable_if<(std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
         Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
         {
-            return InternalInvoke<string>(waitTime, method, EMPTY_STRING, inbound);
+            string emptyString(EMPTY_STRING);
+            return InternalInvoke<string>(waitTime, method, emptyString, inbound);
         }
 
         template <typename PARAMETERS, typename HANDLER>
@@ -708,11 +710,12 @@ namespace JSONRPC {
         {
             using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
 
+            string emptyString(EMPTY_STRING);
             return (InternalInvoke<string, HANDLER>(
                 ::TemplateIntToType<std::is_same<ERRORCODE, Core::JSONRPC::Error*>::value>(),
                 waitTime,
                 method,
-                EMPTY_STRING,
+                emptyString,
                 callback));
         }
         template <typename PARAMETERS, typename HANDLER>
@@ -734,11 +737,12 @@ namespace JSONRPC {
         {
             using ERRORCODE = typename Core::TypeTraits::func_traits<HANDLER>::template argument<1>::type;
 
+            string emptyString(EMPTY_STRING);
             return (InternalInvoke<string, HANDLER, REALOBJECT>(
                 ::TemplateIntToType<std::is_same<ERRORCODE, Core::JSONRPC::Error*>::value>(),
                 waitTime,
                 method,
-                EMPTY_STRING,
+                emptyString,
                 callback,
                 objectPtr));
         }
@@ -800,7 +804,8 @@ namespace JSONRPC {
         uint32_t Get(const uint32_t waitTime, const string& method, PARAMETERS& sendObject)
         {
             Core::ProxyType<Core::JSONRPC::Message> response;
-            uint32_t result = Send(waitTime, method, EMPTY_STRING, response);
+            string emptyString(EMPTY_STRING);
+            uint32_t result = Send(waitTime, method, emptyString, response);
             if (result == Core::ERROR_NONE) {
                 if (response->Error.IsSet() == true) {
                     result = response->Error.Code.Value();
@@ -837,7 +842,8 @@ namespace JSONRPC {
         DEPRECATED uint32_t Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
         // Note: use of Invoke without indicating both Parameters and Response type is deprecated -> replace this one by Invoke<void, ResponeType>(..
         {
-            return InternalInvoke<string>(waitTime, method, EMPTY_STRING, inbound);
+            string emptyString(EMPTY_STRING);
+            return InternalInvoke<string>(waitTime, method, emptyString, inbound);
         }
         //template <typename PARAMETERS = Core::JSON::VariantContainer, typename RESPONSE = Core::JSON::VariantContainer>
         template <typename PARAMETERS = Core::JSON::VariantContainer>
