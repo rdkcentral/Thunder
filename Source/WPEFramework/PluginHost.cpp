@@ -626,7 +626,12 @@ namespace PluginHost {
                     uint32_t threadId = _dispatcher->WorkerPool().ThreadId(keyPress - '0');
                     printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
-                    PublishCallstack(threadId);
+                    if (threadId != static_cast<uint32_t>(~0)) {
+                        PublishCallstack(threadId);
+                    } else {
+                       printf("The given Thread ID is not in a valid range, please give thread id between 0 and THREADPOOL_COUNT:%d'\n", THREADPOOL_COUNT);
+                    }
+
                     break;
                 }
 #endif
