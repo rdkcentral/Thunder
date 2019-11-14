@@ -197,6 +197,9 @@ namespace Web {
     };
 
     class EXTERNAL Request {
+    private:
+        static constexpr const TCHAR* DELIMETERS = _T(" ,");
+
     public:
         typedef Request BaseElement;
 
@@ -639,7 +642,27 @@ namespace Web {
         {
             return (_marshalMode);
         }
+        template<typename SCANVALUE>
+        static bool ScanForKeyword (const string& buffer, const SCANVALUE value) {
+            bool status = false;
+            std::size_t start = 0;
+            std::size_t end = 0;
 
+            do {
+                end = buffer.find_first_of(DELIMETERS, start);
+                if (end - start > 0) {
+                    string word = string(buffer, start, end - start);
+                    std::transform(word.begin(), word.end(), word.begin(), std::ptr_fun<int, int>(std::toupper));
+                    if (word == Core::EnumerateType<SCANVALUE>(value).Data()) {
+                        status = true;
+                        break;
+                    }
+                }
+                start = end + 1;
+            } while (end != std::string::npos);
+
+            return status;
+        }
     private:
         Core::ProxyType<IBody> _body;
         MarshalType _marshalMode;
