@@ -2,8 +2,6 @@
 
 #include "Module.h"
 #include "WebSocketLink.h"
-#include "../plugins/Channel.h"
-#include "../plugins/IShell.h"
 
 namespace WPEFramework {
 
@@ -1188,6 +1186,14 @@ namespace JSONRPC {
 
     // This is for backward compatibility. Please use the template and not the typedef below!!!
     typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
+    enum JSONPluginState {
+        DEACTIVATED,
+        DEACTIVATION,
+        ACTIVATED,
+        ACTIVATION,
+        PRECONDITION,
+        DESTROYED
+    };
 
     template <typename INTERFACE>
     class SmartLinkType {
@@ -1215,13 +1221,13 @@ namespace JSONRPC {
 
             public:
                 Core::JSON::String Callsign; // Callsign of the plugin that changed state
-                Core::JSON::EnumType<PluginHost::IShell::state> State; // State of the plugin
+                Core::JSON::EnumType<JSONRPC::JSONPluginState> State; // State of the plugin
             }; // class StatechangeParamsData
             class CurrentState : public Core::JSON::Container {
             public:
                 CurrentState()
                     : Core::JSON::Container()
-                    , State(PluginHost::IShell::state::DEACTIVATED)
+                    , State(JSONRPC::JSONPluginState::DEACTIVATED)
                 {
                     Add(_T("state"), &State);
                 }
@@ -1235,7 +1241,7 @@ namespace JSONRPC {
                 CurrentState& operator=(const CurrentState&) = delete;
 
             public:
-                Core::JSON::EnumType<PluginHost::IShell::state> State; // State of the plugin
+                Core::JSON::EnumType<JSONRPC::JSONPluginState> State; // State of the plugin
             }; // class State
 
         public:
@@ -1281,9 +1287,9 @@ namespace JSONRPC {
             }
 
         private:
-            void SetState(const PluginHost::IShell::state value)
+            void SetState(const JSONRPC::JSONPluginState value)
             {
-                if (value == PluginHost::IShell::state::ACTIVATED) {
+                if (value == JSONRPC::JSONPluginState::ACTIVATED) {
                     if ((_state != ACTIVATED) && (_state != LOADING)) {
                         _state = state::LOADING;
                         auto index(Client::Events());
@@ -1298,7 +1304,7 @@ namespace JSONRPC {
 
                     }
                 }
-                else if (value == PluginHost::IShell::state::DEACTIVATED) {
+                else if (value == JSONRPC::JSONPluginState::DEACTIVATED) {
                     if (_state != DEACTIVATED) {
                         _state = DEACTIVATED;
                         _parent.Deactivated();
@@ -1333,7 +1339,7 @@ namespace JSONRPC {
                     Client::Dispatch<string>(3000, "register", parameters, &Connection::next_event, this);
                 }
                 else {
-                    SetState(PluginHost::IShell::state::ACTIVATED);
+                    SetState(JSONRPC::JSONPluginState::ACTIVATED);
                 }
             }
 

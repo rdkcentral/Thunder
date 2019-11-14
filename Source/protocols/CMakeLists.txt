@@ -28,6 +28,7 @@ set(SOURCES_WEBSOCKETS
         websocket/JSONWebToken.cpp
         websocket/WebSerializer.cpp
         websocket/WebSocketLink.cpp
+        websocket/JSONRPCLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
         websocket/JSONRPCLink.h
@@ -86,6 +87,7 @@ add_library(${TARGET} SHARED
         IUnknown.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
+        JSONRPCLink.cpp
         Administrator.cpp
         Communicator.cpp
         IStringIterator.cpp
