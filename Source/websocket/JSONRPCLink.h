@@ -3,8 +3,6 @@
 #include "Module.h"
 #include "WebSocketLink.h"
 #include "../plugins/Channel.h"
-#include "../plugins/Configuration.h"
-#include "../plugins/IPlugin.h"
 #include "../plugins/IShell.h"
 
 namespace WPEFramework {
