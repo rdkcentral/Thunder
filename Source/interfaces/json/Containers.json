@@ -139,7 +139,7 @@
             "items": {
               "type": "number",
               "size": 64,
-              "example": "12314235"
+              "example": "2871287421"
             }
           }
         }
@@ -156,11 +156,11 @@
       ]
     },
     "logpath": {
-      "summary": "Containers log",
+      "summary": "Containers log path",
       "readonly": true,
       "params": {
         "type": "string",
-        "description": "logs from the container"
+        "description": "Path to file containing logs from the container"
       },
       "index": {
         "name": "Name",
@@ -174,11 +174,11 @@
       ]
     },
     "configpath": {
-      "summary": "Container's configuration",
+      "summary": "Path to container's configuration",
       "readonly": true,
       "params": {
         "type": "string",
-        "description": "configuraiton of the container"
+        "description": "Path to file containing the configuration of the container"
       },
       "index": {
         "name": "Name",
@@ -193,6 +193,45 @@
     }
   },
   "methods": {
+    "start": {
+      "summary": "Starts a new container",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "Name of container",
+            "type": "string", 
+            "example": "ContainerName"
+          },
+          "command": {
+            "description": "Command that will be started in the container",
+            "type": "string", 
+            "example": "lsof"
+          },
+          "parameters": {
+            "type": "array",
+            "description": "List of parameters supplied to command",
+            "items": {
+              "type": "string",
+              "example": "-i"
+            } 
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Container not found",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Failed to start container",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
     "stop": {
       "summary": "Stops a container",
       "params": {
