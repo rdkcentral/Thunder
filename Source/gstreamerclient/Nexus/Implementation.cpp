@@ -75,9 +75,15 @@ public:
 
            gst_bin_add_many (GST_BIN (_pipeline), _audioDecodeBin, _audioSink, nullptr);
 
-           GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
-           gst_pad_link (srcPad, pSinkPad);
-           gst_object_unref(pSinkPad);
+           if (srcPad != nullptr) {
+              // Link via pad
+              GstPad *pSinkPad = gst_element_get_static_pad(_audioDecodeBin, "sink");
+              gst_pad_link (srcPad, pSinkPad);
+              gst_object_unref(pSinkPad);
+           } else {
+              // Link elements
+              gst_element_link(srcElement, _audioDecodeBin);
+           }
 
            gst_element_sync_state_with_parent(_audioDecodeBin);
            gst_element_sync_state_with_parent(_audioSink);
@@ -90,9 +96,13 @@ public:
 
            gst_bin_add_many (GST_BIN (_pipeline), _audioSink, nullptr);
 
-           GstPad *pSinkPad = gst_element_get_static_pad(_audioSink, "sink");
-           gst_pad_link (srcPad, pSinkPad);
-           gst_object_unref(pSinkPad);
+           if (srcPad != nullptr) {
+              GstPad *pSinkPad = gst_element_get_static_pad(_audioSink, "sink");
+              gst_pad_link (srcPad, pSinkPad);
+              gst_object_unref(pSinkPad);
+           } else {
+              gst_element_link(srcElement, _audioDecodeBin);
+           }
 
            _audioCallbacks = callbacks;
         }
@@ -127,9 +137,15 @@ public:
         _videoCallbacks = callbacks;
         gst_bin_add_many (GST_BIN (_pipeline), _videoDecodeBin, _videoSink, nullptr);
 
-        GstPad *pSinkPad = gst_element_get_static_pad(_videoDecodeBin, "sink");
-        gst_pad_link (srcPad, pSinkPad);
-        gst_object_unref (pSinkPad);
+        if (srcPad != nullptr) {
+           // Link via pad
+           GstPad *pSinkPad = gst_element_get_static_pad(_videoDecodeBin, "sink");
+           gst_pad_link (srcPad, pSinkPad);
+           gst_object_unref(pSinkPad);
+        } else {
+           // Link elements
+           gst_element_link(srcElement, _videoDecodeBin);
+        }
 
         gst_element_sync_state_with_parent(_videoDecodeBin);
         gst_element_sync_state_with_parent(_videoSink);
