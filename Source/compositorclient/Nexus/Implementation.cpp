@@ -265,7 +265,7 @@ namespace Nexus {
                     // PRESSED   = 1,
                     // REPEAT    = 2,
 
-                    (*index)->SendKey(message.code, (message.type == 0 ? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed), time(nullptr));
+                    (*index)->SendKey(message.code, ((message.type == KEY_RELEASED) ? IDisplay::IKeyboard::released : ((message.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed)), time(nullptr));
                     index++;
                 }
             }
