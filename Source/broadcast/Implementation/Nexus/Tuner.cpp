@@ -147,6 +147,7 @@ namespace Broadcast {
             }
 
         public:
+            bool IsSupported(const ITuner::modus mode) { return (mode == ITuner::Cable); }
             inline bool Joined() const { return (_rc == 0); }
             inline ITuner::DTVStandard Standard() const { return (_standard); }
             inline ITuner::annex Annex() const { return (_annex); }
@@ -908,6 +909,8 @@ namespace Broadcast {
             uint32_t result = Core::ERROR_UNAVAILABLE;
             uint32_t id = (pid << 16) | tableId;
 
+            _state.Lock();
+
             if (callback != nullptr) {
                 auto entry = _sections.emplace(std::piecewise_construct, std::forward_as_tuple(id),
                     std::forward_as_tuple());
@@ -921,9 +924,12 @@ namespace Broadcast {
                 if (index != _sections.end()) {
                     index->second.Close();
                     _sections.erase(index);
+                    result = Core::ERROR_NONE;
                 }
-                result = Core::ERROR_NONE;
             }
+
+            _state.Unlock();
+
             return (result);
         }
 
@@ -1160,6 +1166,13 @@ namespace Broadcast {
     {
         Tuner::NexusInformation::Instance().Deinitialize();
         return (Core::ERROR_NONE);
+    }
+
+    // See if the tuner supports the requested mode, or is configured for the requested mode. This method
+    // only returns proper values if the Initialize has been called before.
+    /* static */ bool ITuner::IsSupported(const ITuner::modus mode)
+    {
+        return (Tuner::NexusInformation::Instance().IsSupported(mode));
     }
 
     // Accessor to create a tuner.
