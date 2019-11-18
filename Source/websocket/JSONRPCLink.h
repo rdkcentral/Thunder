@@ -1186,13 +1186,11 @@ namespace JSONRPC {
 
     // This is for backward compatibility. Please use the template and not the typedef below!!!
     typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
-    enum JSONPluginState {
+    enum JSONPluginState { //Align enum values against PluginHost::IShell:state
         DEACTIVATED,
         DEACTIVATION,
         ACTIVATED,
-        ACTIVATION,
-        PRECONDITION,
-        DESTROYED
+        ACTIVATION
     };
 
     template <typename INTERFACE>
@@ -1285,6 +1283,10 @@ namespace JSONRPC {
 
                 return Client::Subscribe(waitTime, eventName);
             }
+            bool IsActivated()
+            {
+                return (_state == ACTIVATED);
+            }
 
         private:
             void SetState(const JSONRPC::JSONPluginState value)
@@ -1300,14 +1302,14 @@ namespace JSONRPC {
                     }
                     else if (_state == LOADING) {
                         _state = state::ACTIVATED;
-                        _parent.Activated();
+                        _parent.StateChange();
 
                     }
                 }
                 else if (value == JSONRPC::JSONPluginState::DEACTIVATED) {
                     if (_state != DEACTIVATED) {
                         _state = DEACTIVATED;
-                        _parent.Deactivated();
+                        _parent.StateChange();
                     }
                 }
             }
@@ -1361,6 +1363,7 @@ namespace JSONRPC {
     public:
         SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign)
                 : _connection(*this, remoteCallsign, localCallsign)
+                , _callsign(remoteCallsign)
         {
         }
         ~SmartLinkType()
@@ -1487,19 +1490,23 @@ namespace JSONRPC {
         {
                 return (_connection.Get<Core::JSON::VariantContainer>(waitTime, method, object));
         }
-
-    private:
-        void Activated()
+        bool IsActivated()
         {
-                printf("Monitor Plugin Activated\n");
+            return (_connection.IsActivated());
         }
-        void Deactivated()
+    private:
+        virtual void StateChange()
         {
-                printf("Monitor Plugin Deactivated\n");
+            if (_connection.IsActivated() == true) {
+                printf("%s Plugin is Activated\n", _callsign.c_str());
+            } else {
+                printf("%s Plugin is Deactivated\n", _callsign.c_str());
+            }
         }
 
     private:
         Connection _connection;
+        string _callsign;
     };
 }
 } // namespace WPEFramework::JSONRPC
