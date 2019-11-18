@@ -571,7 +571,7 @@ int Display::Process(const uint32_t data)
         time_t timestamp = time(nullptr);
         std::function<void(SurfaceImplementation*)> action = nullptr;
         if (message.type == KEYBOARD) {
-            const IDisplay::IKeyboard::state state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : IDisplay::IKeyboard::pressed);
+            const IDisplay::IKeyboard::state state = ((message.keyData.type == KEY_RELEASED)? IDisplay::IKeyboard::released : ((message.keyData.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed));
             action = [=](SurfaceImplementation* s) { s->SendKey(message.keyData.code, state, timestamp); };
         } else if (message.type == MOUSE) {
             // Clamp movement to display size
