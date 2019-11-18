@@ -1497,11 +1497,6 @@ namespace JSONRPC {
     private:
         virtual void StateChange()
         {
-            if (_connection.IsActivated() == true) {
-                printf("%s Plugin is Activated\n", _callsign.c_str());
-            } else {
-                printf("%s Plugin is Deactivated\n", _callsign.c_str());
-            }
         }
 
     private:
