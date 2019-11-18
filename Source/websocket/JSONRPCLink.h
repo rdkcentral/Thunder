@@ -560,17 +560,16 @@ namespace JSONRPC {
             , _pendingQueue()
             , _scheduledTime(0)
         {
-			if (localCallsign == nullptr) {            
-	            static uint32_t sequence;
-
+            if (localCallsign == nullptr) {
+	        static uint32_t sequence;
                 _localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
             } else {
                 _localSpace = localCallsign;
             }
         }
-		void Announce() {
-            _channel->Register(*this);
-		}
+        void Announce() {
+           _channel->Register(*this);
+        }
 
     public:
         LinkType(const string& callsign, const bool directed = false)
@@ -1187,5 +1186,325 @@ namespace JSONRPC {
 
     // This is for backward compatibility. Please use the template and not the typedef below!!!
     typedef LinkType<Core::JSON::IElement> DEPRECATED Client;
+    enum JSONPluginState {
+        DEACTIVATED,
+        ACTIVATED
+    };
+
+    template <typename INTERFACE>
+    class SmartLinkType {
+    private:
+        class Connection : public Client {
+        private:
+            static constexpr uint32_t DefaultWaitTime = 3000;
+        private:
+            class Statechange : public Core::JSON::Container {
+            public:
+                Statechange()
+                    : Core::JSON::Container()
+                    , State(JSONRPC::JSONPluginState::DEACTIVATED)
+                {
+                    Add(_T("callsign"), &Callsign);
+                    Add(_T("state"), &State);
+                }
+
+                Statechange(const Statechange& copy)
+                    : Core::JSON::Container()
+                    , Callsign(copy.Callsign)
+                    , State(copy.State)
+                {
+                    Add(_T("callsign"), &Callsign);
+                    Add(_T("state"), &State);
+                }
+                Statechange& operator=(const Statechange&) = delete;
+
+            public:
+                Core::JSON::String Callsign; // Callsign of the plugin that changed state
+                Core::JSON::EnumType<JSONRPC::JSONPluginState> State; // State of the plugin
+            }; // class StatechangeParamsData
+            class CurrentState : public Core::JSON::Container {
+            public:
+                CurrentState()
+                    : Core::JSON::Container()
+                    , State(JSONRPC::JSONPluginState::DEACTIVATED)
+                {
+                    Add(_T("state"), &State);
+                }
+
+                CurrentState(const CurrentState& copy)
+                    : Core::JSON::Container()
+                    , State(copy.State)
+                {
+                    Add(_T("state"), &State);
+                }
+                CurrentState& operator=(const CurrentState&) = delete;
+
+            public:
+                Core::JSON::EnumType<JSONRPC::JSONPluginState> State; // State of the plugin
+            }; // class State
+
+        public:
+            enum state {
+                 UNKNOWN,
+                 DEACTIVATED,
+                 LOADING,
+                 ACTIVATED
+            };
+        public:
+            Connection() = delete;
+            Connection(const Connection&) = delete;
+            Connection& operator=(const Connection&) = delete;
+
+            // TODO: Constructos of the Client with version are bogus. Clean i tup
+            Connection(SmartLinkType<INTERFACE>& parent, const string& callsign, const TCHAR* localCallsign)
+                    : Client(callsign, string(), localCallsign)
+                    , _monitor(string(), false)
+                    , _parent(parent)
+                    , _state(UNKNOWN)
+            {
+                _monitor.Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
+                Announce();
+            }
+            ~Connection() override
+            {
+                _monitor.Revoke(_T("statechange"));
+            }
+
+        public:
+            template <typename INBOUND, typename METHOD>
+            uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
+            {
+                Client::Subscribe<INBOUND, METHOD>(eventName, method);
+                return Client::Subscribe(waitTime, eventName);
+            }
+            template <typename INBOUND, typename METHOD, typename REALOBJECT>
+            uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
+            {
+                Client::Subscribe<INBOUND, METHOD, REALOBJECT>(eventName, method, objectPtr);
+
+                return Client::Subscribe(waitTime, eventName);
+            }
+            bool IsActivated()
+            {
+                return (_state == ACTIVATED);
+            }
+
+        private:
+            void SetState(const JSONRPC::JSONPluginState value)
+            {
+                if (value == JSONRPC::JSONPluginState::ACTIVATED) {
+                    if ((_state != ACTIVATED) && (_state != LOADING)) {
+                        _state = state::LOADING;
+                        auto index(Client::Events());
+                        while (index.Next() == true) {
+                            _events.push_back(index.Event());
+                        }
+                        next_event(Core::JSON::String(), nullptr);
+                    }
+                    else if (_state == LOADING) {
+                        _state = state::ACTIVATED;
+                        _parent.StateChange();
+
+                    }
+                }
+                else if (value == JSONRPC::JSONPluginState::DEACTIVATED) {
+                    if (_state != DEACTIVATED) {
+                        _state = DEACTIVATED;
+                        _parent.StateChange();
+                    }
+                }
+            }
+            void state_change(const Statechange& info)
+            {
+                if ((info.State.IsSet() == true) && (info.Callsign.Value() == Client::Callsign())) {
+                    SetState(info.State.Value());
+                }
+            }
+            void monitor_response(const Core::JSON::ArrayType<CurrentState>& info, const Core::JSONRPC::Error* result)
+            {
+                if ((result == nullptr) && (info.Length() == 1)) {
+                    if (info[0].State.IsSet() == true) {
+                        SetState(info[0].State.Value());
+                    }
+                }
+            }
+            void monitor_on(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+            {
+                if (result == nullptr) {
+                    string method = string("status@") + Client::Callsign();
+                    _monitor.Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
+                }
+            }
+            void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
+            {
+                // See if there are events pending for registration...
+                if (_events.empty() == false) {
+                    const string parameters("{ \"event\": \"" + _events.front() + "\", \"id\": \"" + Client::Namespace() + "\"}");
+                    _events.pop_front();
+                    Client::Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::next_event, this);
+                }
+                else {
+                    SetState(JSONRPC::JSONPluginState::ACTIVATED);
+                }
+            }
+
+            void Opened() override
+            {
+                // Time to open up the monitor
+                const string parameters("{ \"event\": \"statechange\", \"id\": \"" + _monitor.Namespace() + "\"}");
+
+                _monitor.Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
+            }
+
+        private:
+            LinkType<INTERFACE> _monitor;
+            SmartLinkType<INTERFACE>& _parent;
+            std::list<string> _events;
+            state _state;
+        };
+
+    public:
+        SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign)
+                : _connection(*this, remoteCallsign, localCallsign)
+                , _callsign(remoteCallsign)
+        {
+        }
+        ~SmartLinkType()
+        {
+        }
+    public:
+        template <typename INBOUND, typename METHOD>
+        uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
+        {
+                return _connection.Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
+        }
+        template <typename INBOUND, typename METHOD, typename REALOBJECT>
+        uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
+        {
+                return _connection.Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
+        }
+        void Unsubscribe(const uint32_t waitTime, const string& eventName)
+        {
+                return _connection.Unsubscribe(waitTime, eventName);
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Synchronous invoke methods
+        // -------------------------------------------------------------------------------------------
+        template <typename PARAMETERS, typename RESPONSE>
+        inline typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
+                Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
+        {
+                return _connection.Invoke<PARAMETERS, RESPONSE>(waitTime, method, parameters, inbound);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        inline typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
+                Invoke(const uint32_t waitTime, const string& method)
+        {
+                return _connection.Invoke<void, void>(waitTime, method);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        inline typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
+                Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
+        {
+                return _connection.Invoke<PARAMETERS, void>(waitTime, method, parameters);
+        }
+
+        template <typename PARAMETERS, typename RESPONSE>
+        inline typename std::enable_if<(std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
+                Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
+        {
+                return _connection.Invoke<void, RESPONSE>(waitTime, method, inbound);
+        }
+        // -------------------------------------------------------------------------------------------
+        // A-Synchronous invoke methods
+        // -------------------------------------------------------------------------------------------
+        template <typename PARAMETERS, typename HANDLER>
+        inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
+        {
+                return (_connection.Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
+        }
+        template <typename PARAMETERS, typename HANDLER, typename REALOBJECT = typename Core::TypeTraits::func_traits<HANDLER>::classtype>
+        inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
+        {
+                return (_connection.Dispatch<PARAMETERS, HANDLER, REALOBJECT>(waitTime, method, callback, objectPtr));
+        }
+        // -------------------------------------------------------------------------------------------
+        // SET Properties
+        // -------------------------------------------------------------------------------------------
+        template <typename PARAMETERS, typename... TYPES>
+        inline uint32_t Set(const uint32_t waitTime, const string& method, const TYPES&&... args)
+        {
+                PARAMETERS sendObject(args...);
+                return (_connection.Set<PARAMETERS>(waitTime, method, sendObject));
+        }
+        template <typename PARAMETERS>
+        inline uint32_t Set(const uint32_t waitTime, const string& method, const string& index, const PARAMETERS& sendObject)
+        {
+                return (_connection.Set<PARAMETERS>(waitTime, method, index, sendObject));
+        }
+        template <typename PARAMETERS, typename NUMBER>
+        inline uint32_t Set(const uint32_t waitTime, const string& method, const NUMBER index, const PARAMETERS& sendObject)
+        {
+                return (_connection.Set<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
+        }
+        template <typename PARAMETERS>
+        inline uint32_t Set(const uint32_t waitTime, const string& method, const PARAMETERS& sendObject)
+        {
+                return (_connection.Set<PARAMETERS>(waitTime, method, sendObject));
+        }
+        // -------------------------------------------------------------------------------------------
+        // GET Properties
+        // -------------------------------------------------------------------------------------------
+        template <typename PARAMETERS>
+        inline uint32_t Get(const uint32_t waitTime, const string& method, const string& index, PARAMETERS& sendObject)
+        {
+                return (_connection.Get<PARAMETERS>(waitTime, method, index, sendObject));
+        }
+        template <typename PARAMETERS, typename NUMBER>
+        inline uint32_t Get(const uint32_t waitTime, const string& method, const NUMBER& index, PARAMETERS& sendObject)
+        {
+                return (_connection.Get<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
+        }
+        template <typename PARAMETERS>
+        inline uint32_t Get(const uint32_t waitTime, const string& method, PARAMETERS& sendObject)
+        {
+                return (_connection.Get<PARAMETERS>(waitTime, method, sendObject));
+        }
+        inline uint32_t Invoke(const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response)
+        {
+                return (_connection.Invoke(waitTime, method, parameters, response));
+        }
+
+        // Opaque JSON structure methods.
+        // Anything goes!
+        // ===================================================================================
+        uint32_t Invoke(const char method[], const Core::JSON::VariantContainer& parameters, Core::JSON::VariantContainer& response, const uint32_t waitTime = Client::DefaultWaitTime)
+        {
+                return (_connection.Invoke(waitTime, method, parameters, response));
+        }
+        uint32_t SetProperty(const char method[], const Core::JSON::VariantContainer& object, const uint32_t waitTime = Client::DefaultWaitTime)
+        {
+                return (_connection.Set(waitTime, method, object));
+        }
+        uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = Client::DefaultWaitTime)
+        {
+                return (_connection.Get<Core::JSON::VariantContainer>(waitTime, method, object));
+        }
+        bool IsActivated()
+        {
+            return (_connection.IsActivated());
+        }
+    private:
+        virtual void StateChange()
+        {
+        }
+
+    private:
+        Connection _connection;
+        string _callsign;
+    };
 }
 } // namespace WPEFramework::JSONRPC

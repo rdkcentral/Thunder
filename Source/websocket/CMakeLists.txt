@@ -6,6 +6,7 @@ add_library(${TARGET} SHARED
         JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
+        JSONRPCLink.cpp
         )
 
 find_package(ZLIB REQUIRED)
