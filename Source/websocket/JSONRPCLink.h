@@ -1202,6 +1202,7 @@ namespace JSONRPC {
             public:
                 Statechange()
                     : Core::JSON::Container()
+                    , State(JSONRPC::JSONPluginState::DEACTIVATED)
                 {
                     Add(_T("callsign"), &Callsign);
                     Add(_T("state"), &State);
@@ -1315,14 +1316,16 @@ namespace JSONRPC {
             }
             void state_change(const Statechange& info)
             {
-                if (info.Callsign.Value() == Client::Callsign()) {
+                if ((info.State.IsSet() == true) && (info.Callsign.Value() == Client::Callsign())) {
                     SetState(info.State.Value());
                 }
             }
             void monitor_response(const Core::JSON::ArrayType<CurrentState>& info, const Core::JSONRPC::Error* result)
             {
                 if ((result == nullptr) && (info.Length() == 1)) {
-                    SetState(info[0].State.Value());
+                    if (info[0].State.IsSet() == true) {
+                        SetState(info[0].State.Value());
+                    }
                 }
             }
             void monitor_on(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
