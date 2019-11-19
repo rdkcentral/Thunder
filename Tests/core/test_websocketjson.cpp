@@ -51,16 +51,17 @@ namespace JsonWebSocketTest {
 		}
 	};
 
-	class JsonSocketServer : public Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory& > {
+    template<typename INTERFACE>
+	class JsonSocketServer : public Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory&, INTERFACE> {
 	private:
-		typedef Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory& > BaseClass;
+		typedef Core::StreamJSONType< Web::WebSocketServerType<Core::SocketStream>, Factory&, INTERFACE> BaseClass;
 
 	private:
 		JsonSocketServer(const JsonSocketServer&) = delete;
 		JsonSocketServer& operator=(const JsonSocketServer&) = delete;
 
 	public:
-		JsonSocketServer(const SOCKET& socket, const Core::NodeId& remoteNode, Core::SocketServerType<JsonSocketServer>*)
+		JsonSocketServer(const SOCKET& socket, const Core::NodeId& remoteNode, Core::SocketServerType<JsonSocketServer<INTERFACE>>*)
 			: BaseClass(2, _objectFactory, false, false, false, socket, remoteNode, 512, 512)
 			, _objectFactory(1) {
 		}
@@ -72,15 +73,15 @@ namespace JsonWebSocketTest {
             return (true);
         }
 		virtual void StateChange() {
-			if (IsOpen())
+			if (this->IsOpen())
                 JsonWebSocketTest::g_done = true;
 		}
 
 		bool IsAttached() const {
-			return (IsOpen());
+			return (this->IsOpen());
 		}
 		virtual void Received(Core::ProxyType<Core::JSON::IElement>& jsonObject) {
-            Submit(jsonObject);
+            this->Submit(jsonObject);
 		}
 		virtual void Send(Core::ProxyType<Core::JSON::IElement>& jsonObject) {
 		}
@@ -88,9 +89,10 @@ namespace JsonWebSocketTest {
 		Factory _objectFactory;
 	};
 
-	class JsonSocketClient : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&> {
+    template<typename INTERFACE>
+	class JsonSocketClient : public Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&, INTERFACE> {
 	private:
-		typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&> BaseClass;
+		typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, Factory&, INTERFACE> BaseClass;
 
 	private:
 		JsonSocketClient(const JsonSocketClient&) = delete;
@@ -149,7 +151,7 @@ namespace JsonWebSocketTest {
     TEST(WebSocket, Json)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JsonSocketServer> jsonWebSocketServer(Core::NodeId(JsonWebSocketTest::g_connector));
+            Core::SocketServerType<JsonSocketServer<Core::JSON::IElement>> jsonWebSocketServer(Core::NodeId(JsonWebSocketTest::g_connector));
             jsonWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             while(!JsonWebSocketTest::g_done);
@@ -166,7 +168,7 @@ namespace JsonWebSocketTest {
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JsonSocketClient jsonWebSocketClient(Core::NodeId(JsonWebSocketTest::g_connector));
+            JsonSocketClient<Core::JSON::IElement> jsonWebSocketClient(Core::NodeId(JsonWebSocketTest::g_connector));
             jsonWebSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             jsonWebSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
