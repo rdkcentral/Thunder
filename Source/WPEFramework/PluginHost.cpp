@@ -171,7 +171,11 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
-                    pluginConfig.IElement::FromFile(file);
+                    Core::OptionalType<Core::JSON::Error> error;
+                    pluginConfig.IElement::FromFile(file, error);
+                    if (error.IsSet() == true) {
+                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                    }
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
@@ -334,7 +338,11 @@ namespace PluginHost {
         Server::Config serviceConfig;
 
         if (configFile.Open(true) == true) {
-            serviceConfig.IElement::FromFile(configFile);
+            Core::OptionalType<Core::JSON::Error> error;
+            serviceConfig.IElement::FromFile(configFile, error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             configFile.Close();
         } else {

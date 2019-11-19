@@ -1,4 +1,5 @@
 #include "JSONWebToken.h"
+#include "Logging.h"
 
 namespace WPEFramework {
 
@@ -33,7 +34,11 @@ namespace Web
             Add(_T("alg"), &Algorithm);
             Add(_T("typ"), &Type);
 
-			FromString(string(data, length));
+            Core::OptionalType<Core::JSON::Error> error;
+            FromString(string(data, length), error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
         }
         ~JSONWebData()
         {

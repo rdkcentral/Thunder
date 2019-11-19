@@ -47,7 +47,11 @@ namespace PluginHost
             if (mappingFile.Open(true) == true) {
                 result = Core::ERROR_NONE;
 
-                mappingTable.IElement::FromFile(mappingFile);
+                Core::OptionalType<Core::JSON::Error> error;
+                mappingTable.IElement::FromFile(mappingFile, error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
 
                 // Build the device info array..
                 Core::JSON::ArrayType<KeyMapEntry>::Iterator index(mappingTable.Elements());

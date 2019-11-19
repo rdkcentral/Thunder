@@ -1165,7 +1165,11 @@ namespace JSONRPC {
         }
         void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
         {
-            response->FromString(message.Result.Value());
+            Core::OptionalType<Core::JSON::Error> error;
+            response->FromString(message.Result.Value(), error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
         }
         void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {

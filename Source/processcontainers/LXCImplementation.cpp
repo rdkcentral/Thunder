@@ -106,7 +106,11 @@ public:
 #endif
         {
             Config config;
-            config.FromString(configuration);
+            Core::OptionalType<Core::JSON::Error> error;
+            config.FromString(configuration, error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
 #ifdef __DEBUG__
             _attach = config.Attach.Value();
