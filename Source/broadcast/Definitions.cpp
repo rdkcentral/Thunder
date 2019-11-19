@@ -2,21 +2,34 @@
 
 namespace WPEFramework {
 
-ENUM_CONVERSION_BEGIN(Broadcast::ITuner::DTVStandard){ Broadcast::ITuner::DVB, _TXT("DVB") },
+ENUM_CONVERSION_BEGIN(Broadcast::ITuner::DTVStandard)
+    { Broadcast::ITuner::DVB, _TXT("DVB") },
     { Broadcast::ITuner::ATSC, _TXT("ATSC") },
-    ENUM_CONVERSION_END(Broadcast::ITuner::DTVStandard)
+    { Broadcast::ITuner::ISDB, _TXT("ISDB") },
+    { Broadcast::ITuner::DAB, _TXT("DAB") },
+ENUM_CONVERSION_END(Broadcast::ITuner::DTVStandard)
 
-        ENUM_CONVERSION_BEGIN(Broadcast::ITuner::Annex){ Broadcast::ITuner::A, _TXT("A") },
+ENUM_CONVERSION_BEGIN(Broadcast::ITuner::annex)
+    { Broadcast::ITuner::NoAnnex, _TXT("None") },
+    { Broadcast::ITuner::A, _TXT("A") },
     { Broadcast::ITuner::B, _TXT("B") },
     { Broadcast::ITuner::C, _TXT("C") },
-    ENUM_CONVERSION_END(Broadcast::ITuner::Annex)
+ENUM_CONVERSION_END(Broadcast::ITuner::annex)
 
-        ENUM_CONVERSION_BEGIN(Broadcast::SpectralInversion){ Broadcast::Auto, _TXT("Auto") },
+ENUM_CONVERSION_BEGIN(Broadcast::ITuner::modus)
+    { Broadcast::ITuner::Cable, _TXT("Cable") },
+    { Broadcast::ITuner::Terrestrial, _TXT("Terrestrial") },
+    { Broadcast::ITuner::Satellite, _TXT("Satellite") },
+ENUM_CONVERSION_END(Broadcast::ITuner::modus)
+    
+ENUM_CONVERSION_BEGIN(Broadcast::SpectralInversion)
+    { Broadcast::Auto, _TXT("Auto") },
     { Broadcast::Normal, _TXT("Normal") },
     { Broadcast::Inverted, _TXT("Inverted") },
-    ENUM_CONVERSION_END(Broadcast::SpectralInversion)
+ENUM_CONVERSION_END(Broadcast::SpectralInversion)
 
-        ENUM_CONVERSION_BEGIN(Broadcast::Modulation){ Broadcast::HORIZONTAL_QPSK, _TXT("QPSK_H") },
+ENUM_CONVERSION_BEGIN(Broadcast::Modulation)
+    { Broadcast::HORIZONTAL_QPSK, _TXT("QPSK_H") },
     { Broadcast::HORIZONTAL_8PSK, _TXT("8PSK_H") },
     { Broadcast::HORIZONTAL_QAM16, _TXT("QAM16_H") },
     { Broadcast::VERTICAL_QPSK, _TXT("QPSK_V") },
@@ -37,6 +50,6 @@ ENUM_CONVERSION_BEGIN(Broadcast::ITuner::DTVStandard){ Broadcast::ITuner::DVB, _
     { Broadcast::QAM1024, _TXT("QAM1024") },
     { Broadcast::QAM2048, _TXT("QAM2048") },
     { Broadcast::QAM4096, _TXT("QAM4096") },
-    ENUM_CONVERSION_END(Broadcast::Modulation)
+ENUM_CONVERSION_END(Broadcast::Modulation)
 
 } // namespace WPEFramework

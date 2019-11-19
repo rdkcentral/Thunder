@@ -7,12 +7,11 @@
 namespace WPEFramework {
 namespace Core {
     class EXTERNAL Options {
-    private:
-        Options();
-        Options(const Options&);
-        Options& operator=(const Options&);
-
     public:
+        Options() = delete;
+        Options(const Options&) = delete;
+        Options& operator=(const Options&) = delete;
+
         Options(int argumentCount, TCHAR* arguments[], const TCHAR options[])
             : _argumentCount(argumentCount)
             , _arguments(arguments)

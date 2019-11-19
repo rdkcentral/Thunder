@@ -152,8 +152,8 @@ namespace Core {
         memset(&m_structInfo.L2Socket, 0, sizeof(m_structInfo.L2Socket));
 
         m_structInfo.L2Socket.l2_family = AF_BLUETOOTH;
-        m_structInfo.L2Socket.l2_psm = psm;
-        m_structInfo.L2Socket.l2_cid = cid;
+        m_structInfo.L2Socket.l2_psm = htobs(psm);
+        m_structInfo.L2Socket.l2_cid = htobs(cid);
         m_structInfo.L2Socket.l2_bdaddr_type = addressType;
         m_structInfo.L2Socket.l2_type = BTPROTO_L2CAP;
 

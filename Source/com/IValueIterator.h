@@ -8,7 +8,7 @@
 namespace WPEFramework {
 namespace RPC {
     struct IValueIterator : virtual public Core::IUnknown {
-        enum { ID = ID_STRINGITERATOR };
+        enum { ID = ID_VALUEITERATOR };
 
         virtual ~IValueIterator(){};
 

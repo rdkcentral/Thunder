@@ -30,6 +30,15 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
         )
 
+if(PROCESSCONTAINERS)
+    target_link_libraries(${TARGET}
+        PUBLIC
+            ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            PROCESSCONTAINERS_ENABLED=1)
+endif(PROCESSCONTAINERS)
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
@@ -37,7 +46,6 @@ set_target_properties(${TARGET} PROPERTIES
         PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
-        OUTPUT_NAME ${COM_ARTIFACT}
         )
 
 

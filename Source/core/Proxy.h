@@ -96,73 +96,20 @@ namespace Core {
         {
             __Initialize<CONTEXT>();
         }
-        template <typename arg1>
-        inline ProxyObject(arg1 a_Arg1)
-            : CONTEXT(a_Arg1)
+		template <typename... Args>
+        inline ProxyObject(Args... args)
+            : CONTEXT(args...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
         }
-        template <typename arg1, typename arg2>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2)
-            : CONTEXT(a_Arg1, a_Arg2)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6, typename arg7>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6, arg7 a_Arg7)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6, a_Arg7)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6, typename arg7, typename arg8>
-        inline ProxyObject(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6, arg7 a_Arg7, arg8 a_Arg8)
-            : CONTEXT(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6, a_Arg7, a_Arg8)
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-
         virtual ~ProxyObject()
         {
             __Deinitialize<CONTEXT>();
 
             ASSERT(m_RefCount == 0);
 
-            TRACE_L5("Destructor ProxyObject <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ProxyObject <%p>", (this));
         }
 
     public:
@@ -271,7 +218,7 @@ namespace Core {
             m_RefCount->AddRef();
         }
         template <typename DERIVEDTYPE>
-        ProxyType(const ProxyType<DERIVEDTYPE>& theObject)
+        explicit ProxyType(const ProxyType<DERIVEDTYPE>& theObject)
             : m_RefCount(theObject)
             , _realObject(nullptr)
         {
@@ -316,82 +263,20 @@ namespace Core {
         {
             return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>());
         }
-
-        template <typename arg1>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1)
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> Create(Args... args)
         {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1));
-        }
-
-        template <typename arg1, typename arg2>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2));
-        }
-
-        template <typename arg1, typename arg2, typename arg3>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline static ProxyType<CONTEXT> Create(arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6));
+            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(args...));
         }
 
         inline static ProxyType<CONTEXT> CreateEx(const uint32_t size)
         {
             return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>());
         }
-
-        template <typename arg1>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1)
+        template <typename... Args>
+		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args... args)
         {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1));
-        }
-
-        template <typename arg1, typename arg2>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2));
-        }
-
-        template <typename arg1, typename arg2, typename arg3>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5));
-        }
-
-        template <typename arg1, typename arg2, typename arg3, typename arg4, typename arg5, typename arg6>
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, arg1 a_Arg1, arg2 a_Arg2, arg3 a_Arg3, arg4 a_Arg4, arg5 a_Arg5, arg6 a_Arg6)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(a_Arg1, a_Arg2, a_Arg3, a_Arg4, a_Arg5, a_Arg6));
+            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(args...));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
@@ -486,11 +371,6 @@ namespace Core {
         inline void Construct(const ProxyType<DERIVED>& source, const TemplateIntToType<false>&)
         {
             CONTEXT* result(dynamic_cast<CONTEXT*>(source.operator->()));
-
-            // Although the constructor was called under the assumption that the object could be
-            // casted. It can *NOT* be casted, if we get a nullptr. Please fix your casting request
-            // that caused this assert !!!
-            ASSERT(result != nullptr);
 
             if (result == nullptr) {
                 m_RefCount = nullptr;
@@ -772,12 +652,12 @@ namespace Core {
             // A highwatermark of 0 is bullshit.
             ASSERT(a_HighWaterMark != 0);
 
-            TRACE_L5("Constructor ProxyQueue <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor ProxyQueue <%p>", (this));
         }
 
         ~ProxyQueue()
         {
-            TRACE_L5("Destructor ProxyQueue <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ProxyQueue <%p>", (this));
 
             // Disable the queue and flush all entries.
             Disable();
@@ -1168,10 +1048,11 @@ namespace Core {
 
     private:
         typedef ProxyObjectType<PROXYPOOLELEMENT> ProxyPoolElement;
-        ProxyPoolType(const ProxyPoolType<PROXYPOOLELEMENT>&);
-        ProxyPoolType<PROXYPOOLELEMENT>& operator=(const ProxyPoolType<PROXYPOOLELEMENT>&);
 
     public:
+        ProxyPoolType(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
+        ProxyPoolType<PROXYPOOLELEMENT>& operator=(const ProxyPoolType<PROXYPOOLELEMENT>&) = delete;
+
         ProxyPoolType(const uint32_t initialQueueSize)
             : _createdElements(0)
             , _queue(initialQueueSize)
@@ -1321,10 +1202,10 @@ namespace Core {
 
     private:
         typedef ProxyObjectType<PROXYKEY, PROXYELEMENT> ProxyMapElement;
-        ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&);
-        ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&);
 
     public:
+        ProxyMapType(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
+        ProxyMapType<PROXYKEY, PROXYELEMENT>& operator=(const ProxyMapType<PROXYKEY, PROXYELEMENT>&) = delete;
         ProxyMapType()
             : _map()
             , _lock()
@@ -1335,7 +1216,7 @@ namespace Core {
         }
 
     public:
-        Core::ProxyType<PROXYELEMENT> Create(const PROXYKEY& key)
+        Core::ProxyType<PROXYELEMENT> Instance(const PROXYKEY& key)
         {
             Core::ProxyType<PROXYELEMENT> result;
 

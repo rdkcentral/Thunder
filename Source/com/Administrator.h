@@ -21,14 +21,71 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
+    typedef std::pair<const Core::IUnknown*, const uint32_t> ExposedInterface;
+
     class EXTERNAL Administrator {
     private:
         Administrator();
         Administrator(const Administrator&) = delete;
         Administrator& operator=(const Administrator&) = delete;
 
+        class ExternalReference {
+        public:
+            ExternalReference() = delete;
+            ExternalReference(const ExternalReference&) = delete;
+            ExternalReference& operator=(const ExternalReference&) = delete;
+
+            ExternalReference(Core::IUnknown* baseInterface, void* implementation, const uint32_t id)
+                : _baseInterface(baseInterface)
+                , _implementation(implementation)
+                , _id(id)
+                , _refCount(1)
+            {
+            }
+            ~ExternalReference()
+            {
+            }
+
+        public:
+            bool operator==(const void* source) const
+            {
+                return (source == _implementation);
+            }
+            bool operator!=(const void* source) const
+            {
+                return (!operator==(source));
+            }
+            void Increment()
+            {
+                _refCount++;
+            }
+            bool Decrement(const uint32_t dropCount)
+            {
+                return (_refCount.fetch_sub(dropCount) == dropCount);
+            }
+            uint32_t Id() const
+            {
+                return (_id);
+            }
+            const Core::IUnknown* Source() const
+            {
+                return (_baseInterface);
+            }
+            uint32_t RefCount() const
+            {
+                return (_refCount.load());
+            }
+
+        private:
+            Core::IUnknown* _baseInterface;
+            void* _implementation;
+            const uint32_t _id;
+            std::atomic<uint32_t> _refCount;
+        };
+
         typedef std::list<ProxyStub::UnknownProxy*> ProxyList;
         typedef std::map<const Core::IPCChannel*, ProxyList> ChannelMap;
+        typedef std::map<const Core::IPCChannel*, std::list<ExternalReference>> ReferenceMap;
 
         struct EXTERNAL IMetadata {
             virtual ~IMetadata(){};
@@ -79,11 +136,11 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::IPCChannel* channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
         {
             _adminLock.Lock();
 
-            ChannelMap::iterator index(_channelProxyMap.find(channel));
+            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
             if (index != _channelProxyMap.end()) {
                 ProxyList::iterator loop(index->second.begin());
@@ -92,6 +149,16 @@ namespace RPC {
                     loop++;
                 }
                 _channelProxyMap.erase(index);
+            }
+            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+
+            if (remotes != _channelReferenceMap.end()) {
+                std::list<ExternalReference>::iterator loop(remotes->second.begin());
+                while (loop != remotes->second.end()) {
+                    usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
+                    loop++;
+                }
+                _channelReferenceMap.erase(remotes);
             }
 
             _adminLock.Unlock();
@@ -122,9 +189,43 @@ namespace RPC {
         void RegisterProxy(ProxyStub::UnknownProxy& proxy);
         void UnregisterProxy(ProxyStub::UnknownProxy& proxy);
 
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t id)
+        {
+            RegisterInterface(channel, Convert(reference, id), reference, id);
+        }
+        template <typename ACTUALINTERFACE>
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, ACTUALINTERFACE* reference)
+        {
+            RegisterInterface(channel, static_cast<Core::IUnknown*>(reference), reinterpret_cast<void*>(reference), ACTUALINTERFACE::ID);
+        }
+        void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* reference, const uint32_t interfaceId, const uint32_t dropCount)
+        {
+            ReferenceMap::iterator index(_channelReferenceMap.find(channel.operator->()));
+
+            if (index != _channelReferenceMap.end()) {
+                std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), reference));
+                ASSERT(element != index->second.end());
+
+                if (element != index->second.end()) {
+                    if (element->Decrement(dropCount) == true) {
+                        index->second.erase(element);
+                        if (index->second.size() == 0) {
+                            _channelReferenceMap.erase(index);
+                        }
+                    }
+                } else {
+                    printf("Unregistering an interface [0x%x, %d] which has not been registered!!!\n", interfaceId, Core::ProcessInfo().Id());
+                }
+            } else {
+                printf("Unregistering an interface [0x%x, %d] from a non-existing channel!!!\n", interfaceId, Core::ProcessInfo().Id());
+            }
+        }
+
     private:
+        Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
         void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
         void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
@@ -133,151 +234,132 @@ namespace RPC {
         std::map<uint32_t, IMetadata*> _proxy;
         Core::ProxyPoolType<InvokeMessage> _factory;
         ChannelMap _channelProxyMap;
+        ReferenceMap _channelReferenceMap;
     };
 
-    struct IHandler {
-        virtual ~IHandler() {}
+    class EXTERNAL Job : public Core::IDispatch {
+    public:
+        Job()
+            : _message()
+            , _channel()
+            , _handler(nullptr)
+        {
+        }
+        Job(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message, Core::IIPCServer* handler)
+            : _message(message)
+            , _channel(channel)
+            , _handler(handler)
+        {
+        }
+        Job(const Job& copy)
+            : _message(copy._message)
+            , _channel(copy._channel)
+            , _handler(copy._handler)
+        {
+        }
+        virtual ~Job()
+        {
+        }
 
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() = 0;
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() = 0;
-        virtual void AnnounceHandler(Core::IPCServerType<AnnounceMessage>* handler) = 0;
+        Job& operator=(const Job& rhs) {
+            _message = rhs._message;
+            _channel = rhs._channel;
+            _handler = rhs._handler;
+
+            return (*this);
+        }
+
+    public:
+        static Core::ProxyType<Job> Instance()
+        {
+            return (_factory.Element());
+        }
+        void Clear()
+        {
+            _message.Release();
+            _channel.Release();
+            _handler = nullptr;
+        }
+        void Set(Core::IPCChannel& channel, const Core::ProxyType<Core::IIPC>& message, Core::IIPCServer* handler)
+        {
+            _message = message;
+            _channel = Core::ProxyType<Core::IPCChannel>(channel);
+            _handler = handler;
+        }
+        virtual void Dispatch() override
+        {
+            if (_message->Label() == InvokeMessage::Id()) {
+                Invoke(_channel, _message);
+            } else {
+                ASSERT(_message->Label() == AnnounceMessage::Id());
+                ASSERT(_handler != nullptr);
+
+                _handler->Procedure(*_channel, _message);
+            }
+        }
+
+		static void Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<Core::IIPC>& data)
+		{
+            Core::ProxyType<InvokeMessage> message(data);
+            ASSERT(message.IsValid() == true);
+            _administrator.Invoke(channel, message);
+            channel->ReportResponse(data);
+
+		}
+
+    private:
+        Core::ProxyType<Core::IIPC> _message;
+        Core::ProxyType<Core::IPCChannel> _channel;
+        Core::IIPCServer* _handler;
+
+        static Core::ProxyPoolType<Job> _factory;
+        static Administrator& _administrator;
+    };
+
+    class EXTERNAL InvokeServer : public Core::IIPCServer {
+    public:
+        InvokeServer(const InvokeServer&) = delete;
+        InvokeServer& operator=(const InvokeServer&) = delete;
+
+        InvokeServer(Core::WorkerPool* workers)
+            : _threadPoolEngine(*workers)
+            , _handler(nullptr)
+        {
+            ASSERT(workers != nullptr);
+        }
+        ~InvokeServer()
+        {
+        }
+
+        void Announcements(Core::IIPCServer* announces)
+        {
+            ASSERT((announces != nullptr) ^ (_handler != nullptr));
+            _handler = announces;
+        }
+
+    private:
+        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
+        {
+            Core::ProxyType<Job> job(Job::Instance());
+
+            job->Set(source, message, _handler);
+            _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job));
+        }
+
+    private:
+        Core::WorkerPool& _threadPoolEngine;
+        Core::IIPCServer* _handler;
     };
 
     template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>
-    class InvokeServerType : public IHandler {
-    private:
-        class Info {
-        public:
-            Info()
-                : _message()
-                , _channel()
-                , _parent(nullptr)
-            {
-            }
-            Info(Core::ProxyType<Core::IPCChannel> channel, Core::ProxyType<InvokeMessage> message)
-                : _message(message)
-                , _channel(channel)
-                , _parent(nullptr)
-            {
-            }
-            Info(Core::ProxyType<Core::IPCChannel> channel, Core::ProxyType<AnnounceMessage> message, InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& parent)
-                : _message(message)
-                , _channel(channel)
-                , _parent(&parent)
-            {
-            }
-            Info(const Info& copy)
-                : _message(copy._message)
-                , _channel(copy._channel)
-                , _parent(copy._parent)
-            {
-            }
-            ~Info()
-            {
-            }
-            Info& operator=(const Info& rhs)
-            {
-                _message = rhs._message;
-                _channel = rhs._channel;
-                _parent = rhs._parent;
-
-                return (*this);
-            }
-
-        public:
-            inline void Dispatch()
-            {
-                if (_message->Label() == InvokeMessage::Id()) {
-                    Core::ProxyType<InvokeMessage> message(Core::proxy_cast<InvokeMessage>(_message));
-
-                    Administrator::Instance().Invoke(_channel, message);
-                    _channel->ReportResponse(_message);
-                } else {
-                    ASSERT(_message->Label() == AnnounceMessage::Id());
-                    ASSERT(_parent != nullptr);
-
-                    Core::ProxyType<AnnounceMessage> message(Core::proxy_cast<AnnounceMessage>(_message));
-
-                    _parent->Dispatch(*_channel, message);
-                }
-            }
-
-        private:
-            Core::ProxyType<Core::IIPC> _message;
-            Core::ProxyType<Core::IPCChannel> _channel;
-            InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>* _parent;
-        };
-        class InvokeHandlerImplementation : public Core::IPCServerType<InvokeMessage> {
-        private:
-            InvokeHandlerImplementation() = delete;
-            InvokeHandlerImplementation(const InvokeHandlerImplementation&) = delete;
-            InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
-
-        public:
-            InvokeHandlerImplementation(InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>* parent)
-                : _parent(*parent)
-            {
-            }
-            virtual ~InvokeHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<InvokeMessage>& data)
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Core::ProxyType<Core::IPCChannel> refChannel(channel);
-
-                ASSERT(refChannel.IsValid());
-
-                if (refChannel.IsValid() == true) {
-                    _parent.Submit(Info(refChannel, data));
-                }
-            }
-
-        private:
-            InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& _parent;
-        };
-        class AnnounceHandlerImplementation : public Core::IPCServerType<AnnounceMessage> {
-        private:
-            AnnounceHandlerImplementation() = delete;
-            AnnounceHandlerImplementation(const AnnounceHandlerImplementation&) = delete;
-            AnnounceHandlerImplementation& operator=(const AnnounceHandlerImplementation&) = delete;
-
-        public:
-            AnnounceHandlerImplementation(InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>* parent)
-                : _parent(*parent)
-            {
-            }
-            virtual ~AnnounceHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data)
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Core::ProxyType<Core::IPCChannel> refChannel(channel);
-
-                ASSERT(refChannel.IsValid());
-
-                if (refChannel.IsValid() == true) {
-                    _parent.Submit(Info(refChannel, data, _parent));
-                }
-            }
-
-        private:
-            InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& _parent;
-        };
-
-        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT, MESSAGESLOTS>&) = delete;
-        InvokeServerType<THREADPOOLCOUNT, MESSAGESLOTS>& operator=(const InvokeServerType<THREADPOOLCOUNT, MESSAGESLOTS>&) = delete;
-
+    class InvokeServerType : public Core::IIPCServer {
     public:
+        InvokeServerType() = delete;
+        InvokeServerType(const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
+        InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& operator = (const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
+
         InvokeServerType(const uint32_t stackSize = Core::Thread::DefaultStackSize())
             : _threadPoolEngine(stackSize, _T("IPCInterfaceMessageHandler"))
-            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(this))
-            , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(this))
             , _handler(nullptr)
         {
         }
@@ -285,50 +367,29 @@ namespace RPC {
         {
         }
 
-    public:
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override
+        void Announcements(Core::IIPCServer* announces)
         {
-            return (_invokeHandler);
-        }
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override
-        {
-            return (_announceHandler);
-        }
-        virtual void AnnounceHandler(Core::IPCServerType<AnnounceMessage>* handler) override
-        {
-
-            // Concurrency aspect is out of scope as the implementation of this interface is currently limited
-            // to the RPC::COmmunicator and RPC::CommunicatorClient. Both of these implementations will first
-            // set this callback before any communication is happeing (Open happens after this)
-            // Also the announce handler will not be removed until the line is closed and the server (or client)
-            // is destructed!!!
-            ASSERT((handler == nullptr) ^ (_handler == nullptr));
-
-            _handler = handler;
+            ASSERT((announces != nullptr) ^ (_handler != nullptr));
+            _handler = announces;
         }
 
     private:
-        inline void Submit(const Info& data)
+        virtual void Procedure(Core::IPCChannel& source, Core::ProxyType<Core::IIPC>& message)
         {
-
             if (_threadPoolEngine.Pending() >= ((MESSAGESLOTS * 80) / 100)) {
                 TRACE_L1("_threadPoolEngine.Pending() == %d", _threadPoolEngine.Pending());
             }
-            _threadPoolEngine.Submit(data, Core::infinite);
-        }
-        inline void Dispatch(Core::IPCChannel& channel, Core::ProxyType<AnnounceMessage>& data)
-        {
 
-            ASSERT(_handler != nullptr);
-
-            _handler->Procedure(channel, data);
+            if (message->Label() == AnnounceMessage::Id()) {
+	            _handler->Procedure(source, message);
+	        } else {
+                _threadPoolEngine.Submit(Job(source, message, _handler), Core::infinite);
+            }        
         }
 
     private:
-        Core::ThreadPoolType<Info, THREADPOOLCOUNT, MESSAGESLOTS> _threadPoolEngine;
-        Core::ProxyType<Core::IPCServerType<InvokeMessage>> _invokeHandler;
-        Core::ProxyType<Core::IPCServerType<AnnounceMessage>> _announceHandler;
-        Core::IPCServerType<AnnounceMessage>* _handler;
+        Core::ThreadPoolType<Job, THREADPOOLCOUNT, MESSAGESLOTS> _threadPoolEngine;
+        Core::IIPCServer* _handler;
     };
 }
 

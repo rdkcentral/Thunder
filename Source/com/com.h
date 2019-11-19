@@ -5,6 +5,7 @@
 #include "IStringIterator.h"
 #include "ITracing.h"
 #include "IUnknown.h"
+#include "IValueIterator.h"
 #include "Ids.h"
 #include "Messages.h"
 

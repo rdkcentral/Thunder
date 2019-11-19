@@ -6,7 +6,7 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-string g_connectorName = _T("/tmp/wperpc01");
+static string g_connectorName = _T("/tmp/wperpc01");
 
 namespace WPEFramework {
 namespace Exchange {
@@ -14,7 +14,7 @@ namespace Exchange {
         enum { ID = 0x80000001 };
         virtual uint32_t GetValue() = 0;
         virtual void Add(uint32_t value) = 0;
-        virtual pid_t GetPid() = 0;
+        virtual uint32_t GetPid() = 0;
     };
 }
 }
@@ -40,7 +40,7 @@ public:
         m_value += value;
     }
 
-    pid_t GetPid()
+    uint32_t GetPid()
     {
         return getpid();
     }
@@ -55,97 +55,153 @@ private:
 
 // Proxystubs.
 namespace WPEFramework {
+    using namespace Exchange;
+
+    // -----------------------------------------------------------------
+    // STUB
+    // -----------------------------------------------------------------
+
+    //
+    // IAdder interface stub definitions
+    //
+    // Methods:
+    //  (0) virtual uint32_t GetValue() = 0
+    //  (1) virtual void Add(uint32_t) = 0
+    //  (2) virtual uint32_t GetPid() = 0
+    //
+
     ProxyStub::MethodHandler AdderStubMethods[] = {
-          [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-              //
-              // virtual uint32_t GetValue = 0;
-              //
-              RPC::Data::Frame::Writer response(message->Response().Writer());
+        // virtual uint32_t GetValue() = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
 
-              response.Number(message->Parameters().Implementation<Exchange::IAdder>()->GetValue());
-          },
-          [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-              //
-              // virtual void Add(uint32_t value) = 0;
-              //
-              RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
+            // call implementation
+            IAdder* implementation = input.Implementation<IAdder>();
+            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            const uint32_t output = implementation->GetValue();
 
-              uint32_t value = parameters.Number<uint32_t>();
+            // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            writer.Number<const uint32_t>(output);
+        },
 
-              message->Parameters().Implementation<Exchange::IAdder>()->Add(value);
-          },
-          [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-              //
-              // virtual pid_t GetPid() = 0;
-              //
-              RPC::Data::Frame::Writer response(message->Response().Writer());
+        // virtual void Add(uint32_t) = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
 
-              response.Number(message->Parameters().Implementation<Exchange::IAdder>()->GetPid());
-          },
-    };
+            // read parameters
+            RPC::Data::Frame::Reader reader(input.Reader());
+            const uint32_t param0 = reader.Number<uint32_t>();
 
-    typedef ProxyStub::StubType<Exchange::IAdder, AdderStubMethods, ProxyStub::UnknownStub> AdderStub;
+            // call implementation
+            IAdder* implementation = input.Implementation<IAdder>();
+            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            implementation->Add(param0);
+        },
 
-    class AdderProxy : public ProxyStub::UnknownProxyType<Exchange::IAdder> {
+        // virtual uint32_t GetPid() = 0
+        //
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
+            RPC::Data::Input& input(message->Parameters());
+
+            // call implementation
+            IAdder* implementation = input.Implementation<IAdder>();
+            ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
+            const uint32_t output = implementation->GetPid();
+
+            // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            writer.Number<const uint32_t>(output);
+        },
+
+        nullptr
+    }; // AdderStubMethods[]
+
+    // -----------------------------------------------------------------
+    // PROXY
+    // -----------------------------------------------------------------
+
+    //
+    // IAdder interface proxy definitions
+    //
+    // Methods:
+    //  (0) virtual uint32_t GetValue() = 0
+    //  (1) virtual void Add(uint32_t) = 0
+    //  (2) virtual uint32_t GetPid() = 0
+    //
+
+    class AdderProxy final : public ProxyStub::UnknownProxyType<IAdder> {
     public:
-        AdderProxy(Core::ProxyType<Core::IPCChannel>& channel, void* implementation,
-            const bool otherSideInformed)
+        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
 
-        virtual ~AdderProxy()
-        {
-        }
-
-        virtual uint32_t GetValue()
+        uint32_t GetValue() override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
-            Invoke(newMessage);
+            // invoke the method handler
+            uint32_t output{};
+            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+                // read return value
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<uint32_t>();
+            }
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<uint32_t>());
+            return output;
         }
 
-        virtual void Add(uint32_t value)
+        void Add(uint32_t param0) override
         {
             IPCMessage newMessage(BaseClass::Message(1));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number(value);
 
+            // write parameters
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+            writer.Number<const uint32_t>(param0);
+
+            // invoke the method handler
             Invoke(newMessage);
         }
 
-        virtual pid_t GetPid()
+        uint32_t GetPid() override
         {
             IPCMessage newMessage(BaseClass::Message(2));
 
-            Invoke(newMessage);
+            // invoke the method handler
+            uint32_t output{};
+            if ((output = Invoke(newMessage)) == Core::ERROR_NONE) {
+                // read return value
+                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
+                output = reader.Number<uint32_t>();
+            }
 
-            RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-
-            return (reader.Number<pid_t>());
+            return output;
         }
-    };
+    }; // class AdderProxy
+
+    // -----------------------------------------------------------------
+    // REGISTRATION
+    // -----------------------------------------------------------------
 
     namespace {
-        class Instantiation {
+
+        typedef ProxyStub::UnknownStubType<IAdder, AdderStubMethods> AdderStub;
+
+        static class Instantiation {
         public:
             Instantiation()
             {
-                RPC::Administrator::Instance().Announce<Exchange::IAdder, AdderProxy, AdderStub>();
+                RPC::Administrator::Instance().Announce<IAdder, AdderProxy, AdderStub>();
             }
+        } ProxyStubRegistration;
 
-            ~Instantiation()
-            {
-            }
-
-        } instantiation;
-    }
+    } // namespace
 }
 
+namespace {
 class ExternalAccess : public RPC::Communicator
 {
 private:
@@ -155,7 +211,7 @@ private:
 
 public:
     ExternalAccess(const Core::NodeId & source)
-        : RPC::Communicator(source, Core::ProxyType< RPC::InvokeServerType<4, 1> >::Create(), _T(""))
+        : RPC::Communicator(source, _T(""))
     {
         Open(Core::infinite);
     }
@@ -178,6 +234,7 @@ private:
         return result;
     }
 };
+}
 
 TEST(Core_RPC, adder)
 {
@@ -198,12 +255,15 @@ TEST(Core_RPC, adder)
    testAdmin.Sync("setup server");
 
    {
-      // Setup handler.
-      Core::ProxyType<RPC::IHandler> handler(Core::ProxyType<RPC::InvokeServerType<4,1> >::Create(Core::Thread::DefaultStackSize()));
-
-      // Setup client.
       Core::NodeId remoteNode(g_connectorName.c_str());
-      Core::ProxyType<RPC::CommunicatorClient> client(Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, handler));
+
+      Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
+      Core::ProxyType<RPC::CommunicatorClient> client(
+           Core::ProxyType<RPC::CommunicatorClient>::Create(
+               remoteNode,
+               Core::ProxyType<Core::IIPCServer>(engine)
+           ));
+      engine->Announcements(client->Announcement());
 
       // Create remote instance of "IAdder".
       Exchange::IAdder * adder = client->Open<Exchange::IAdder>(_T("Adder"));
@@ -221,8 +281,8 @@ TEST(Core_RPC, adder)
       adder->Release();
 
       client->Close(Core::infinite);
-      WPEFramework::Core::Singleton::Dispose();
    }
 
    testAdmin.Sync("done testing");
+   Core::Singleton::Dispose();
 }

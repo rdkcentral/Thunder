@@ -83,6 +83,7 @@ namespace Core {
 #endif
         {
         }
+
         ~ResourceMonitorType()
         {
 
@@ -90,12 +91,14 @@ namespace Core {
             ASSERT(_resourceList.size() == 0);
 
             if (_monitor != nullptr) {
+
+                _monitor->Stop();
+                Break();
+                _monitor->Wait(Thread::STOPPED, Core::infinite);
+
                 _adminLock.Lock();
 
                 _resourceList.clear();
-
-                _monitor->Block();
-                Break();
 
                 _adminLock.Unlock();
 
@@ -158,8 +161,12 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
+#ifdef __WIN32__
+                _resourceList.erase(index);
+#else
                 *index = nullptr;
                 Break();
+#endif
             }
 
             _adminLock.Unlock();

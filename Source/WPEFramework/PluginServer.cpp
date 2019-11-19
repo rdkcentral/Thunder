@@ -5,6 +5,10 @@
 #include <syslog.h>
 #endif
 
+#ifdef PROCESSCONTAINERS_ENABLED 
+    #include "../processcontainers/ProcessContainer.h"
+#endif
+
 namespace WPEFramework {
 
 ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
@@ -15,20 +19,21 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-            { PluginHost::InputHandler::DEVICE, _TXT("device") },
+    { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-        namespace PluginHost
+namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::WebRequestJob::_missingResponse(Core::ProxyType<Web::Response>::Create());
+    /* static */ Core::ProxyType<Web::Response> Server::Channel::_unauthorizedRequest(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_missingHandler(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Service::_unavailableHandler(Core::ProxyType<Web::Response>::Create());
 
@@ -43,11 +48,93 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 #endif
 
     /* static */ const TCHAR* Server::PluginOverrideFile = _T("PluginHost/override.json");
-    /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins");
+    /* static */ const TCHAR* Server::PluginConfigDirectory = _T("plugins/");
     /* static */ const TCHAR* Server::CommunicatorConnector = _T("COMMUNICATOR_CONNECTOR");
 
     static const TCHAR _defaultControllerCallsign[] = _T("Controller");
     static const TCHAR _defaultDispatcherCallsign[] = _T("Dispatcher");
+
+    class DefaultSecurity : public ISecurity {
+    public:
+        DefaultSecurity() = delete;
+        DefaultSecurity(const DefaultSecurity&) = delete;
+        DefaultSecurity& operator=(const DefaultSecurity&) = delete;
+
+        DefaultSecurity(const string& prefix, const string jsonrpcPath, const string& controllerName)
+            : _hasSecurity(true)
+            , _controllerPath(prefix + '/' + controllerName)
+            , _jsonrpcPath(jsonrpcPath)
+            , _controllerName(controllerName)
+        {
+        }
+        ~DefaultSecurity()
+        {
+        }
+
+    public:
+		inline void Security(const bool enabled) {
+            _hasSecurity = enabled;
+		}
+        // Allow a request to be checked before it is offered for processing.
+        virtual bool Allowed(const Web::Request& request) const override
+        {
+            bool result = (_hasSecurity == false);
+
+            if (result == false) {
+                // If there is security, maybe this is a valid reuest, althoug this
+                // validation is not done by an instance issued by the SecurityOfficer.
+                result = ((request.Verb == Web::Request::HTTP_GET) && (request.Path.substr(0, _controllerPath.length()) == _controllerPath));
+
+                if ((result == false) && (request.Verb == Web::Request::HTTP_POST) && (request.HasBody() == true) && (request.Path == _jsonrpcPath)) {
+
+					// Now dig into the message, if the method is for the controller and the method is to get info
+                    // it is good to go... Other wise NO
+                    Core::ProxyType<const Core::JSONRPC::Message> body = request.Body<const Core::JSONRPC::Message>();
+
+					if (body.IsValid() == true)
+					{
+                        result = CheckMessage(*body);
+					}	
+				}
+
+
+				// Temporary allow the API REST Full API to get security to be called directly.
+				// TODO: Remove this check if security is fully operational!!!
+                result = (result == true) || ((request.Verb == Web::Request::HTTP_POST) && (request.Path == "/Service/SecurityOfficer/Token"));
+            }
+            return (result);
+        }
+        //! Allow a JSONRPC message to be checked before it is offered for processing.
+		virtual bool Allowed(const Core::JSONRPC::Message& message) const override {
+            return ((_hasSecurity == false) || CheckMessage(message));
+        }
+
+        //  IUnknown methods
+        // -------------------------------------------------------------------------------------------------------
+        BEGIN_INTERFACE_MAP(DefaultSecurity)
+        INTERFACE_ENTRY(ISecurity)
+        END_INTERFACE_MAP
+
+	private:
+        bool CheckMessage(const Core::JSONRPC::Message& message) const
+        {
+            bool result = false;
+
+            if (message.Callsign() == _controllerName)
+            {
+				result = (message.Method() == _T("exists"));
+            }
+
+			return (result);
+		}
+
+    private:
+        bool _hasSecurity;
+        const string _controllerPath;
+        const string _jsonrpcPath;
+        const string _controllerName;
+    };
+
 
     static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
     {
@@ -134,18 +221,25 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
 
-        // First, move them all to deactivated
+        // First, move them all to deactivated except Controller
+        Core::ProxyType<Service> controller;
         do {
             index--;
 
             ASSERT(index->second.IsValid());
 
-            index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
-
+            if (index->first.c_str() == _server._controller->Callsign()) {
+                controller = index->second;
+            } else {
+                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
+            }
         } while (index != _services.begin());
 
         TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
-        // Now release them all, once they are deactivated..
+        // Now deactivate controller plugin, once other plugins are deactivated
+        controller->Deactivate(PluginHost::IShell::SHUTDOWN);
+
+        // Now release them all
         index = _services.begin();
 
         while (index != _services.end()) {
@@ -164,52 +258,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         ASSERT(_notifiers.size() == 0);
 
-        std::list<uint32_t> pidList;
+        _processAdministrator.Close(Core::infinite);
 
-        // See if there are still pending processes, we need to shoot and kill..
-        Processes(pidList);
-
-        if (pidList.size() > 0) {
-            uint16_t waitSlots = 50; /* each slot is 100ms, so we wait for 5 Seconds for all processes to terminte !!! */
-
-            std::list<uint32_t>::iterator index(pidList.begin());
-
-            while (index != pidList.end()) {
-                _processAdministrator.Destroy(*index);
-
-                SYSLOG(Logging::Shutdown, (_T("Process [%d] requested to be shutdown."), *index));
-
-                index++;
-            }
-
-            // Now it is time to wait, for a certain amount of time to see
-            // if all processes are killed.
-            while ((waitSlots-- != 0) && (pidList.size() > 0)) {
-                SleepMs(100);
-
-                // Now chek the process in the list if they are still alive..
-                std::list<uint32_t>::iterator check(pidList.begin());
-
-                while (check != pidList.end()) {
-                    Core::ProcessInfo process(*check);
-
-                    if (process.IsActive() == false) {
-                        check = pidList.erase(check);
-                    } else {
-                        check++;
-                    }
-                }
-            }
-
-            if (pidList.size() > 0) {
-                index = pidList.begin();
-
-                while (index != pidList.end()) {
-                    SYSLOG(Logging::Shutdown, (_T("Process [%d] could not be destroyed in time."), *index));
-                    index++;
-                }
-            }
-        }
+	_processAdministrator.Destroy();
     }
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
@@ -250,7 +301,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     }
 
     // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
-    /* virtual */ PluginHost::IShell::IProcess* Server::Service::Process()
+    /* virtual */ PluginHost::IShell::ICOMLink* Server::Service::COMLink()
     {
         return (&_administrator);
     }
@@ -258,7 +309,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     // Methods to stop/start/update the service.
     uint32_t Server::Service::Activate(const PluginHost::IShell::reason why)
     {
-
         uint32_t result = Core::ERROR_NONE;
 
         Lock();
@@ -309,8 +359,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                         index++;
                     }
 
-                    Activity information(_T("Delta preconditions: %s"), feedback.c_str());
-                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(information);
+                    Activity newData(_T("Delta preconditions: %s"), feedback.c_str());
+                    Trace::TraceType<Activity, &Core::System::MODULE_NAME> traceData(newData);
                     Trace::TraceUnit::Instance().Trace(__FILE__, __LINE__, className.c_str(), &traceData);
                 }
             } else {
@@ -335,22 +385,36 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
                     State(DEACTIVATED);
                     _administrator.StateChange(this);
                 } else {
+                    const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
                     const string webUI(PluginHost::Service::Configuration().WebUI.Value());
                     if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (webUI.empty() == false)) {
                         EnableWebServer(webUI, EMPTY_STRING);
                     }
 
-                    PluginHost::IDispatcher* dispatcher = dynamic_cast<PluginHost::IDispatcher*>(_handler);
+                    IDispatcher* dispatcher = _handler->QueryInterface<IDispatcher>();
 
                     if (dispatcher != nullptr) {
                         dispatcher->Activate(this);
+                        dispatcher->Release();
                     }
 
                     SYSLOG(Logging::Startup, (_T("Activated plugin [%s]:[%s]"), className.c_str(), callSign.c_str()));
                     Lock();
                     State(ACTIVATED);
                     _administrator.StateChange(this);
-                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"activated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
+
+                    #ifdef RESTFULL_API
+                    _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+                    #endif
+
+                    _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
+
+                    IStateControl* stateControl = nullptr;
+                    if ((Resumed() == true) && ((stateControl = _handler->QueryInterface<PluginHost::IStateControl>()) != nullptr)) {
+
+                        stateControl->Request(PluginHost::IStateControl::RESUME);
+                        stateControl->Release();
+                    }
                 }
             }
         }
@@ -374,6 +438,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         } else if ((currentState == IShell::ACTIVATION) || (currentState == IShell::DESTROYED)) {
             result = Core::ERROR_ILLEGAL_STATE;
         } else if ((currentState == IShell::ACTIVATED) || (currentState == IShell::PRECONDITION)) {
+
+            const Core::EnumerateType<PluginHost::IShell::reason> textReason(why);
 
             ASSERT(_handler != nullptr);
 
@@ -413,8 +479,12 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             State(DEACTIVATED);
 
             _administrator.StateChange(this);
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + IShell::ToString(why) + _T("\"}"));
 
+            #ifdef RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));			
+            #endif
+
+            _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
             if (State() != ACTIVATED) {
                 // We have no need for his module anymore..
                 ReleaseInterfaces();
@@ -438,12 +508,14 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
     /* virtual */ void Server::Service::Notify(const string& message)
     {
-        const string fullMessage("{\"callsign\":\"" + PluginHost::Service::Callsign() + "\", \"data\": " + message + " }");
+        const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
+		#ifdef RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
+		#endif
 
-        _administrator.Notification(fullMessage);
+        _administrator.Notification(forwarder);
     }
 
     uint32_t Server::ServiceMap::FromLocator(const string& identifier, Core::ProxyType<PluginHost::Server::Service>& service, bool& serviceCall)
@@ -491,6 +563,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     Server::Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent)
         : PluginHost::Channel(connector, remoteId)
         , _parent(static_cast<ChannelMap&>(*parent).Parent())
+        , _security(_parent.Officer())
+        , _service()
     {
         TRACE(Activity, (_T("Construct a link with ID: [%d] to [%s]"), Id(), remoteId.QualifiedName().c_str()));
     }
@@ -504,6 +578,10 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             _service->Unsubscribe(*this);
 
             _service.Release();
+        }
+        if (_security != nullptr) {
+            _security->Release();
+            _security = nullptr;
         }
 
         Close(0);
@@ -525,7 +603,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 #pragma warning(disable : 4355)
 #endif
 
-    Server::Server(Server::Config & configuration, ISecurity * securityHandler, const bool background)
+    Server::Server(Server::Config & configuration, const bool background)
         : _accessor()
         , _dispatcher(configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
         , _connections(*this, DetermineAccessor(configuration, _accessor), configuration.IdleTime)
@@ -542,8 +620,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
               configuration.Signature.Value(),
               _accessor,
               Core::NodeId(configuration.Communicator.Value().c_str()),
-              configuration.Redirect.Value(),
-              securityHandler)
+              configuration.Redirect.Value())
         , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
         , _controller()
     {
@@ -553,6 +630,10 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         if (persistentPath.IsDirectory() == false) {
             Core::Directory(persistentPath.Name().c_str()).Create();
+        }
+
+        if (configuration.Environments.IsSet() == true) {
+            _environment.Set(_config, configuration.Environments);
         }
 
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
@@ -607,6 +688,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig);
+
+#ifdef PROCESSCONTAINERS_ENABLED 
+
+        // turn on ProcessContainer logging
+        ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
+        admin.Logging(configuration.VolatilePath.Value(), EXPAND_AND_QUOTE(APPLICATION_NAME), configuration.ProcessContainers.Logging.Value());
+        admin.Release();
+
+#endif
+
     }
 
 #ifdef __WIN32__
@@ -617,12 +708,51 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     {
     }
 
+    void Server::Notification(const ForwardMessage& data)
+    {
+        if ((_controller.IsValid() == false) || (_controller->ClassType<Plugin::Controller>() == nullptr)) {
+            DumpCallStack();
+        } else {
+
+            _controller->ClassType<Plugin::Controller>()->Notification(data);
+
+#ifdef RESTFULL_API
+           string result;
+            data.ToString(result);
+           _controller->Notification(result);
+#endif
+        }
+    }
+
     void Server::Open()
     {
+        // Before we do anything with the subsystems (notifications)
+        // Lets see if security is already set..
+        DefaultSecurity* securityProvider = 
+			Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
+                _config.WebPrefix(),
+                _config.JSONRPCPrefix(),
+                _controller->Callsign());
+
+        _config.Security(securityProvider);
+
         _controller->Activate(PluginHost::IShell::STARTUP);
+
+        if ((_services.SubSystemInfo() & (1 << ISubSystem::SECURITY)) != 0) {
+            // The controller is on control of the security, so I guess all systems green
+            // as the controller does not know anything about security :-)
+            securityProvider->Security(false);
+        }
+        else {
+            SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
+        }
+
+        securityProvider->Release();
+
         _controller->ClassType<Plugin::Controller>()->SetServer(this);
         _controller->ClassType<Plugin::Controller>()->AddRef();
-        _controllerName = _controller->Callsign();
+
+        _dispatcher.Run();
 
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());
@@ -632,8 +762,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             Core::ProxyType<Service> service(*iterator);
 
             if (service->AutoStart() == true) {
-
-                _dispatcher.Submit(PluginHost::IShell::Job::Create(&(*service), PluginHost::IShell::ACTIVATED, PluginHost::IShell::STARTUP));
+		service->Activate(PluginHost::IShell::STARTUP);
             } else {
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
             }
@@ -644,13 +773,12 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
-        _dispatcher.Block();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();
+        _dispatcher.Stop();
         destructor->Release();
         _inputHandler.Deinitialize();
-        _dispatcher.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
     }
 }
 }

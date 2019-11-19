@@ -10,38 +10,13 @@ namespace Plugin {
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     // typedef Web::SignedJSONBodyType<Plugin::Config, Crypto::SHA256HMAC> SignedConfig;
-    // typedef Web::SignedJSONBodyType<Controller::Download, Crypto::SHA256HMAC> SignedDownload;
     // Signing will be done on BackOffice level. The Controller I/F will never be exposed to the outside world.
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData>> jsonBodyMetaDataFactory(1);
     static Core::ProxyPoolType<Web::JSONBodyType<PluginHost::MetaData::Service>> jsonBodyServiceFactory(1);
     static Core::ProxyPoolType<Web::TextBody> jsonBodyTextFactory(2);
-    static Core::ProxyPoolType<Web::JSONBodyType<Controller::Download>> jsonBodyDownloadFactory(1);
-
-    static void DeleteDirectory(const string& directory)
-    {
-        Core::Directory dir(directory.c_str());
-
-        while (dir.Next() == true) {
-            Core::File file(dir.Current());
-
-            if (file.IsDirectory() == true) {
-
-                string name(file.FileName());
-
-                // We can not delete the "." or  ".." entries....
-                if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
-                    DeleteDirectory(dir.Current());
-                    file.Destroy();
-                }
-            } else {
-                file.Destroy();
-            }
-        }
-    }
 
     void Controller::SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index)
     {
-
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         if (subSystem != nullptr) {
@@ -66,11 +41,11 @@ namespace Plugin {
         }
     }
 
-    // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
+   // Access to this interface will be through the BackOffice Plugin, if external exposure is required !!!
     /* virtual */ const string Controller::Initialize(PluginHost::IShell* service)
     {
+
         ASSERT(_service == nullptr);
-        ASSERT(_downloader == nullptr);
         ASSERT(_probe == nullptr);
 
         _resumes.clear();
@@ -79,13 +54,6 @@ namespace Plugin {
 
         Config config;
         config.FromString(_service->ConfigLine());
-
-        if (config.DownloadStore.IsSet() == false) {
-
-            _downloader = new Downloader(*this, _service->PersistentPath() + _T("DownloadStore"));
-        } else {
-            _downloader = new Downloader(*this, config.DownloadStore.Value());
-        }
 
         _probe = new Probe(_service->Accessor(), config.TTL.Value(), service->Model());
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator eventListIterator(static_cast<const Config&>(config).SubSystems.Elements());
@@ -97,11 +65,9 @@ namespace Plugin {
             while (index.Next() == true) {
                 _resumes.push_back(index.Current().Value());
             }
-
-            if (_resumes.size() > 0) {
-                _service->Register(&_systemInfoReport);
-            }
         }
+
+        _service->Register(&_systemInfoReport);
 
         _service->EnableWebServer(_T("UI"), EMPTY_STRING);
 
@@ -112,7 +78,6 @@ namespace Plugin {
     /* virtual */ void Controller::Deinitialize(PluginHost::IShell* service)
     {
         ASSERT(_service == service);
-        ASSERT(_downloader != nullptr);
 
         // Detach the SubSystems, we are shutting down..
         PluginHost::ISubSystem* subSystems(_service->SubSystems());
@@ -123,15 +88,10 @@ namespace Plugin {
             subSystems->Unregister(&_systemInfoReport);
         }
 
-        delete _downloader;
-        _downloader = nullptr;
-
         delete _probe;
         _probe = nullptr;
 
-        if (_resumes.size() > 0) {
-            _service->Unregister(&_systemInfoReport);
-        }
+        _service->Unregister(&_systemInfoReport);
 
         /* stop the file serving over http.... */
         service->DisableWebServer();
@@ -155,13 +115,8 @@ namespace Plugin {
             // Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
             index.Next();
 
-            // We might be receiving a plugin download request.
-            if (index.Next() == true) {
-                if (index.Remainder() == _T("Download")) {
-                    request.Body(Core::proxy_cast<Web::IBody>(jsonBodyDownloadFactory.Element()));
-                } else if (index.Current() == _T("Configuration")) {
-                    request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
-                }
+            if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
+                request.Body(Core::proxy_cast<Web::IBody>(jsonBodyTextFactory.Element()));
             }
         }
     }
@@ -182,7 +137,7 @@ namespace Plugin {
         if (request.Verb == Web::Request::HTTP_POST) {
             result = PluginHost::Factories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-            result->Message = _T("Request has no JSOBNRPC body!");
+            result->Message = _T("Request has no JSONRPC body!");
 
             if (request.HasBody() == true) {
                 Core::ProxyType<Web::TextBody> response(jsonBodyTextFactory.Element());
@@ -195,7 +150,7 @@ namespace Plugin {
                     result->ErrorCode = Web::STATUS_OK;
                     result->Message = _T("JSONRPC executed succesfully");
                 } else {
-                    result->ErrorCode = Web::STATUS_NO_CONTENT;
+                    result->ErrorCode = Web::STATUS_ACCEPTED;
                     result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(answer->Error.Code).Text();
                 }
             }
@@ -222,7 +177,7 @@ namespace Plugin {
             // No more parameters, flush it all..
             _pluginServer->Dispatcher().GetMetaData(response->Channels);
             _pluginServer->Services().GetMetaData(response->Plugins);
-            PluginHost::WorkerPool::Instance().GetMetaData(response->Process);
+            WorkerPoolMetaData(response->Process);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("Links")) {
@@ -279,7 +234,7 @@ namespace Plugin {
         } else if (index.Current() == _T("Process")) {
             Core::ProxyType<Web::JSONBodyType<PluginHost::MetaData>> response(jsonBodyMetaDataFactory.Element());
 
-            PluginHost::WorkerPool::Instance().GetMetaData(response->Process);
+            WorkerPoolMetaData(response->Process);
 
             result->Body(Core::proxy_cast<Web::IBody>(response));
         } else if (index.Current() == _T("Discovery")) {
@@ -393,48 +348,6 @@ namespace Plugin {
                         }
                     }
                 }
-            } else if (index.Current() == _T("Download")) {
-                if (request.HasBody() == true) {
-                    Core::ProxyType<const Web::JSONBodyType<Controller::Download>> data(request.Body<const Web::JSONBodyType<Controller::Download>>());
-
-                    if (data.IsValid() == true) {
-                        string destination(_service->PersistentPath() + data->Destination.Value());
-
-                        if (Core::File(destination).Create() == false) {
-
-                            result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                            result->Message = _T("Could not open destination file: ") + data->Destination.Value();
-                        } else {
-                            uint8_t hash[Crypto::HASH_SHA256];
-                            uint16_t length = (sizeof(hash));
-
-                            if (Core::FromString(data->Hash.Value(), hash, length) != data->Hash.Value().length()) {
-                                // Oops could not open the destination
-                                result->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                result->Message = _T("The hash was longer than what we expect.");
-                            } else {
-                                uint32_t code = _downloader->Start(data->Source.Value(), destination, hash);
-
-                                if (code == Core::ERROR_INPROGRESS) {
-                                    // Oops could not open the destination
-                                    result->ErrorCode = Web::STATUS_MOVED_TEMPORARY;
-                                    result->Message = _T("A transfer is currently in progress, so please be patient.");
-                                } else if (code == Core::ERROR_INCORRECT_URL) {
-                                    // Oops do not understand the URL
-                                    result->ErrorCode = Web::STATUS_NOT_FOUND;
-                                    result->Message = _T("The URL for the source is incorrect.");
-                                } else if (code != Core::ERROR_NONE) {
-                                    // Uhhhh whatever.. this is unknown
-                                    result->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
-                                    result->Message = _T("oops, have no clue what this error [") + Core::NumberType<uint32_t>(code).Text() + _T("] means");
-                                } else {
-                                    // Download started, add it to the
-                                    result->ErrorCode = Web::STATUS_OK;
-                                }
-                            }
-                        }
-                    }
-                }
             } else if (index.Current() == _T("Discovery")) {
                 ASSERT(_probe != nullptr);
                 Core::URL::KeyValue options(request.Query.Value());
@@ -494,16 +407,11 @@ namespace Plugin {
         return (result);
     }
 
-    void Controller::Transfered(const uint32_t result, const string& source, const string& destination)
-    {
-
-        // Report over a socket a download is completed with its state.
-    }
-
     void Controller::StateChange(PluginHost::IShell* plugin)
     {
+        event_statechange(plugin->Callsign(), plugin->State(), plugin->Reason());
 
-        if (plugin->State() == PluginHost::IShell::ACTIVATED) {
+        if ((plugin->State() == PluginHost::IShell::ACTIVATED) && (_resumes.size() > 0)) {
             string callsign(plugin->Callsign());
             std::list<string>::const_iterator index(_resumes.begin());
 
@@ -530,11 +438,6 @@ namespace Plugin {
                 }
 
                 _resumes.erase(index);
-
-                if (_resumes.size() == 0) {
-                    // No more resumes required, unregister your self...
-                    _service->Unregister(&_systemInfoReport);
-                }
             }
         }
     }
@@ -542,7 +445,10 @@ namespace Plugin {
     void Controller::SubSystems()
     {
         string message;
+#ifdef RESTFULL_API
         PluginHost::MetaData response;
+#endif
+        Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData> responseJsonRpc;
         PluginHost::ISubSystem* subSystem = _service->SubSystems();
 
         // Now prepare a message for the Javascript world.
@@ -560,7 +466,14 @@ namespace Plugin {
                 reportMask |= (subSystem->IsActive(current) ? bit : 0);
 
                 if (((reportMask & bit) != 0) ^ ((_lastReported & bit) != 0)) {
+                    JsonData::Controller::SubsystemsParamsData status;
+                    status.Subsystem = current;
+                    status.Active = ((reportMask & bit) != 0);
+                    responseJsonRpc.Add(status);
+
+#ifdef RESTFULL_API
                     response.SubSystems.Add(current, ((reportMask & bit) != 0));
+#endif
                     sendReport = true;
                 }
                 ++index;
@@ -578,54 +491,78 @@ namespace Plugin {
 
             TRACE_L1("Sending out a SubSystem change notification. %s", message.c_str());
 
-            _pluginServer->Notify(message);
+#ifdef RESTFULL_API
+            _pluginServer->_controller->Notification(message);
+#endif
+            Notify("subsystemchange", responseJsonRpc);
         }
     }
     /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
     {
-        Core::ProxyType<Core::JSONRPC::Message> response;
-        uint32_t result = Validate(inbound);
+        uint32_t result = Core::ERROR_BAD_REQUEST;
         bool asyncCall = false;
+        string callsign(inbound.Callsign());
+        Core::ProxyType<Core::JSONRPC::Message> response;
 
-        if (result == Core::ERROR_NONE) {
-            // Call the real baseclass, we should be able to handle it.
+        if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             response = PluginHost::JSONRPC::Invoke(channelId, inbound);
-        } else {
-            if (result == Core::ERROR_INVALID_DESIGNATOR) {
-                Core::ProxyType<PluginHost::Server::Service> service;
+		}
+		else {
+			Core::ProxyType<PluginHost::Server::Service> service;
 
-                result = _pluginServer->Services().FromIdentifier(inbound.Callsign(), service);
+            uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
 
-                if (result == Core::ERROR_NONE) {
-                    ASSERT(service.IsValid());
-                    PluginHost::IDispatcher* plugin = service->Dispatcher();
+            if (result == Core::ERROR_NONE) {
+                ASSERT(service.IsValid());
+                PluginHost::IDispatcher* plugin = service->Dispatcher();
 
-                    if (plugin == nullptr) {
-                        result = Core::ERROR_BAD_REQUEST;
-                    } else if (service->State() != PluginHost::IShell::ACTIVATED) {
-                        result = Core::ERROR_UNAVAILABLE;
-                    } else {
-                        Core::JSONRPC::Message forwarder;
+                if (plugin == nullptr) {
+                    result = Core::ERROR_BAD_REQUEST;
+                } else if (service->State() != PluginHost::IShell::ACTIVATED) {
+                    result = Core::ERROR_UNAVAILABLE;
+                } else {
+                    Core::JSONRPC::Message forwarder;
 
-                        forwarder.Id = inbound.Id;
-                        forwarder.Parameters = inbound.Parameters;
-                        forwarder.Designator = inbound.Method();
-                        response = plugin->Invoke(channelId, forwarder);
-                        asyncCall = (response.IsValid() == false);
-                    }
+                    forwarder.Id = inbound.Id;
+                    forwarder.Parameters = inbound.Parameters;
+                    
+                    forwarder.Designator = inbound.VersionedFullMethod();
+                    response = plugin->Invoke(channelId, forwarder);
+                    asyncCall = (response.IsValid() == false);
                 }
             }
+		}
 
-            if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
-                response = Message();
-                response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-                response->Error.SetError(result);
-                response->Error.Text = "Invalid JSONRPC Request";
-                response->Id = inbound.Id.Value();
-            }
+        if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
+            response = Message();
+            response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
+            response->Error.SetError(result);
+            response->Error.Text = "Invalid JSONRPC Request";
+            response->Id = inbound.Id.Value();
         }
 
         return (response);
+    }
+
+    void Controller::DeleteDirectory(const string& directory)
+    {
+        Core::Directory dir(directory.c_str());
+
+        while (dir.Next() == true) {
+            Core::File file(dir.Current());
+
+            if (file.IsDirectory() == true) {
+                string name(file.FileName());
+
+                // We can not delete the "." or  ".." entries....
+                if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
+                    DeleteDirectory(dir.Current());
+                    file.Destroy();
+                }
+            } else {
+                file.Destroy();
+            }
+        }
     }
 }
 }

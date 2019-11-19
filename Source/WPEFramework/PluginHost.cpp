@@ -1,5 +1,4 @@
 #include "PluginServer.h"
-// #include "Portability.h"
 
 #ifndef __WIN32__
 #include <dlfcn.h> // for dladdr
@@ -13,10 +12,10 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
-namespace PluginHost {
-
     static PluginHost::Server* _dispatcher = nullptr;
     static bool _background = false;
+
+namespace PluginHost {
 
     class ConsoleOptions : public Core::Options {
     public:
@@ -53,59 +52,87 @@ namespace PluginHost {
         }
     };
 
-    class SecurityOptions : public ISecurity {
+    class ExitHandler : public Core::Thread {
     private:
-        SecurityOptions(const SecurityOptions&) = delete;
-        SecurityOptions& operator=(const SecurityOptions&) = delete;
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
 
     public:
-        SecurityOptions()
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
         {
         }
-        ~SecurityOptions()
+        virtual ~ExitHandler()
         {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
         }
 
-    public:
-        // Allow a request to be checked before it is offered for processing.
-        virtual bool Allowed(const Web::Request& /* request */) override
-        {
-            // Regardless of the WebAgent, there is no differnt priocessing and we allow it :-)
-            return (true);
+        static void Construct() {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new WPEFramework::PluginHost::ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct() {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
         }
 
-        // What options are allowed to be passed to this service???
-        virtual Core::ProxyType<Web::Response> Options(const Web::Request& request) override
+    private:
+        virtual uint32_t Worker() override
         {
-            Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
-
-            TRACE_L1("Filling the Options on behalf of: %s", request.Path.c_str());
-            result->ErrorCode = Web::STATUS_NO_CONTENT;
-            result->Message = _T("No Content"); // Core::EnumerateType<Web::WebStatus>(_optionResponse->ErrorCode).Text();
-            result->Allowed = request.AccessControlMethod.Value();
-            result->AccessControlMethod = Request::HTTP_GET | Request::HTTP_POST | Request::HTTP_PUT | Request::HTTP_DELETE;
-            result->AccessControlOrigin = _T("*");
-            result->AccessControlHeaders = _T("Content-Type");
-
-            // This will last for an hour, try again after an hour :-)
-            result->AccessControlMaxAge = 60 * 60;
-
-            result->Date = Core::Time::Now();
-
-            return (result);
+            CloseDown();
+            Block();
+            return (Core::infinite);
         }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
 
-        //  IUnknown methods
-        // -------------------------------------------------------------------------------------------------------
-        BEGIN_INTERFACE_MAP(SecurityOptions)
-        INTERFACE_ENTRY(ISecurity)
-        END_INTERFACE_MAP
+            if (_dispatcher != nullptr) {
+                PluginHost::Server* destructor = _dispatcher;
+                destructor->Close();
+                _dispatcher = nullptr;
+                delete destructor;
+
+#ifndef __WIN32__
+                if (_background) {
+                    syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
+                } else
+#endif
+                {
+                   fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
+                }
+
+#ifndef __WIN32__
+                closelog();
+#endif
+                // Now clear all singeltons we created.
+                Core::Singleton::Dispose();
+            }
+
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+        private:
+            static ExitHandler* _instance;
+            static Core::CriticalSection _adminLock;
     };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
 
     extern "C" {
 
 #ifndef __WIN32__
-    static Core::Event g_QuitEvent(false, true);
 
     void ExitDaemonHandler(int signo)
     {
@@ -115,45 +142,17 @@ namespace PluginHost {
             fprintf(stderr, "Signal received %d.\n", signo);
         }
 
-        if (signo == SIGTERM) {
-            g_QuitEvent.SetEvent();
-        }
-        else if (signo == SIGSEGV) {
+        if ((signo == SIGTERM) || (signo == SIGQUIT)) {
+            ExitHandler::Construct();
+        } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
             signal(signo, SIG_DFL);
             kill(getpid(), signo);
         }
     }
+
 #endif
-    static void CloseDown()
-    {
-        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-        if (_dispatcher != nullptr) {
-            PluginHost::Server* destructor = _dispatcher;
-            destructor->Close();
-            _dispatcher = nullptr;
-            delete destructor;
-
-#ifndef __WIN32__
-            if (_background) {
-                syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
-            } else
-#endif
-            {
-                fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
-            }
-
-#ifndef __WIN32__
-            closelog();
-#endif
-            // Now clear all singeltons we created.
-            Core::Singleton::Dispose();
-        }
-
-        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-    }
 
     void LoadPlugins(const string& name, Server::Config& config)
     {
@@ -257,8 +256,9 @@ namespace PluginHost {
             if (dladdr(callstack[i], &info) && info.dli_sname) {
                 char* demangled = NULL;
                 int status = -1;
-                if (info.dli_sname[0] == '_')
+                if (info.dli_sname[0] == '_') {
                     demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
+                }
                 fprintf(stdout, "%-3d %*p %s + %zd\n", i, int(2 + sizeof(void*) * 2), callstack[i],
                     status == 0 ? demangled : info.dli_sname == 0 ? symbols[i] : info.dli_sname,
                     (char*)callstack[i] - (char*)info.dli_saddr);
@@ -288,9 +288,9 @@ namespace PluginHost {
 
         ConsoleOptions options(argc, argv);
 
-        if (atexit(CloseDown) != 0) {
+        if (atexit(ExitHandler::Destruct) != 0) {
             TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-            CloseDown();
+            ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
 #ifndef __WIN32__
@@ -315,6 +315,7 @@ namespace PluginHost {
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
             sigaction(SIGSEGV, &sa, nullptr);
+            sigaction(SIGQUIT, &sa, nullptr);
         }
 
         if (_background == true) {
@@ -379,30 +380,45 @@ namespace PluginHost {
 #ifndef __WIN32__
         ::umask(serviceConfig.Process.Umask.Value());
 #endif
+        // Time to start loading the config of the plugins.
+        string pluginPath(serviceConfig.Configs.Value());
 
+        if (pluginPath.empty() == true) {
+            pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
+            pluginPath += Server::PluginConfigDirectory;
+        }
+        else {
+            pluginPath = Core::Directory::Normalize(pluginPath);
+        }
+
+        string traceSettings (options.configFile);
+ 
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
-        const string tracePath(serviceConfig.VolatilePath.Value());
-        Trace::TraceUnit::Instance().Open(tracePath);
+        Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
 
-        // Time to open up the LOG tracings by default.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable(true);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable(true);
+        if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
-        Trace::TraceUnit::Instance().SetDefaultCategoriesJson(serviceConfig.DefaultTraceCategories.Value());
+            traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + serviceConfig.DefaultTraceCategories.Value();
 
-        // Set the path for the out-of-process thingies
-        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, tracePath);
+            Core::File input (traceSettings, true);
 
-        ISecurity* securityOptions = Core::Service<SecurityOptions>::Create<ISecurity>();
+            if (input.Open(true)) {
+                Trace::TraceUnit::Instance().Defaults(input);
+            }
+        }
+        else {
+            Trace::TraceUnit::Instance().Defaults(serviceConfig.DefaultTraceCategories.Value());
+        }
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME))));
         SYSLOG(Logging::Startup, (_T("Starting time: %s"), Core::Time::Now().ToRFC1123(false).c_str()));
+        SYSLOG(Logging::Startup, (_T("Process Id:    %d"), Core::ProcessInfo().Id()));
         SYSLOG(Logging::Startup, (_T("SystemId:      %s"), Core::SystemInfo::Instance().Id(Core::SystemInfo::Instance().RawDeviceId(), ~0).c_str()));
         SYSLOG(Logging::Startup, (_T("Tree ref:      " _T(EXPAND_AND_QUOTE(TREE_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Build ref:     " _T(EXPAND_AND_QUOTE(BUILD_REFERENCE)))));
         SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
+        SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
 #ifndef __WIN32__
         // We need at least the loopback interface before we continue...
@@ -415,38 +431,23 @@ namespace PluginHost {
             Core::NodeId::ClearIPV6Enabled();
         }
 
-        // TIme to start loading the config of the plugins.
-        string pluginPath(serviceConfig.Configs.Value());
-
-        if (pluginPath.empty() == true) {
-            pluginPath = Core::Directory::Normalize(Core::File::PathName(options.configFile));
-            pluginPath += Server::PluginConfigDirectory;
-        }
-
         // Load plugin configs from a directory.
         LoadPlugins(pluginPath, serviceConfig);
 
         // Startup/load/initialize what we found in the configuration.
-        _dispatcher = new PluginHost::Server(serviceConfig, securityOptions, _background);
-
-        // We don't need it anymore..
-        securityOptions->Release();
+        _dispatcher = new PluginHost::Server(serviceConfig, _background);
 
         SYSLOG(Logging::Startup, (_T(EXPAND_AND_QUOTE(APPLICATION_NAME) " actively listening.")));
-
-        // Assign a worker pool in this process!!
-        PluginHost::WorkerPool::Instance(_dispatcher->WorkerPool());
 
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
 
 #ifndef __WIN32__
         if (_background == true) {
-            g_QuitEvent.Lock(Core::infinite);
+            Core::WorkerPool::Instance().Join();
         } else
 #endif
         {
-
             char keyPress;
 
             do {
@@ -482,18 +483,18 @@ namespace PluginHost {
                         printf("Locator:    %s\n", index.Current().Locator.Value().c_str());
                         printf("Classname:  %s\n", index.Current().ClassName.Value().c_str());
                         printf("Autostart:  %s\n", (index.Current().AutoStart.Value() == true ? _T("true") : _T("false")));
+#ifdef RESTFULL_API
+
                         printf("Observers:  %d\n", index.Current().Observers.Value());
+#endif
                         printf("Requests:   %d\n", index.Current().ProcessedRequests.Value());
                         printf("JSON:       %d\n\n", index.Current().ProcessedObjects.Value());
                     }
                     break;
                 }
                 case 'S': {
-                    uint32_t count = 0;
-                    MetaData::Server metaData;
-                    PluginHost::WorkerPool::Instance().GetMetaData(metaData);
+                    const Core::WorkerPool::Metadata metaData = Core::WorkerPool::Instance().Snapshot();
                     PluginHost::ISubSystem* status(_dispatcher->Services().SubSystemsInterface());
-                    Core::JSON::ArrayType<Core::JSON::DecUInt32>::Iterator index(metaData.ThreadPoolRuns.Elements());
 
                     printf("\nServer statistics:\n");
                     printf("============================================================\n");
@@ -519,6 +520,9 @@ namespace PluginHost {
                         printf("State:\n");
                         printf("Platform:     %s\n",
                             (status->IsActive(PluginHost::ISubSystem::PLATFORM) == true) ? "Available"
+                                                                                         : "Unavailable");
+                        printf("Security:     %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::SECURITY) == true) ? "Available"
                                                                                          : "Unavailable");
                         printf("Network:      %s\n",
                             (status->IsActive(PluginHost::ISubSystem::NETWORK) == true) ? "Available"
@@ -547,11 +551,12 @@ namespace PluginHost {
                         printf("WebSource:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::WEBSOURCE) == true) ? "Available"
                                                                                           : "Unavailable");
-
                         printf("Streaming:    %s\n",
                             (status->IsActive(PluginHost::ISubSystem::STREAMING) == true) ? "Available"
                                                                                           : "Unavailable");
-
+                        printf("Bluetooth:    %s\n",
+                            (status->IsActive(PluginHost::ISubSystem::BLUETOOTH) == true) ? "Available"
+                                                                                          : "Unavailable");
                         printf("------------------------------------------------------------\n");
                         if (status->IsActive(PluginHost::ISubSystem::INTERNET) == true) {
                             printf("Network Type: %s\n",
@@ -590,11 +595,11 @@ namespace PluginHost {
                         printf("SystemState: UNKNOWN\n");
                         printf("------------------------------------------------------------\n");
                     }
-                    printf("Pending:     %d\n", metaData.PendingRequests.Value());
-                    printf("Occupation:  %d\n", metaData.PoolOccupation.Value());
+                    printf("Pending:     %d\n", metaData.Pending);
+                    printf("Occupation:  %d\n", metaData.Occupation);
                     printf("Poolruns:\n");
-                    while (index.Next() == true) {
-                        printf("  Thread%02d:  %d\n", count++, index.Current().Value());
+                    for (uint8_t index = 0; index < metaData.Slots; index++) {
+                        printf("  Thread%02d:  %d\n", (index + 1), metaData.Slot[index]);
                     }
                     status->Release();
                     break;
@@ -617,12 +622,13 @@ namespace PluginHost {
                 case '5':
                 case '6':
                 case '7':
-                case '8':
-
-                    printf("\nThreadPool thread[%c] callstack:\n", keyPress);
+                case '8': {
+                    uint32_t threadId = _dispatcher->WorkerPool().ThreadId(keyPress - '0');
+                    printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
-                    PublishCallstack(_dispatcher->WorkerPool().ThreadId((keyPress - '0')));
+                    PublishCallstack(threadId);
                     break;
+                }
 #endif
 
                 case '?':
@@ -635,7 +641,8 @@ namespace PluginHost {
 
             } while (keyPress != 'Q');
         }
-        CloseDown();
+
+        ExitHandler::Destruct();
         return 0;
 
     } // End main.

@@ -64,13 +64,13 @@ namespace Core {
         , m_InterestCount(0)
         , m_State(a_State)
     {
-        TRACE_L5("Constructor StateTrigger <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor StateTrigger <%p>", (this));
     }
 
     template <class enumerate>
     StateTrigger<enumerate>::~StateTrigger()
     {
-        TRACE_L5("Destructor StateTrigger <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor StateTrigger <%p>", (this));
     }
 
     template <class enumerate>

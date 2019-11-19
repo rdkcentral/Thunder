@@ -25,13 +25,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Enumerations.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="ProxyStubs.cpp" />
     <ClCompile Include="ProxyStubs_AVNClient.cpp" />
     <ClCompile Include="ProxyStubs_Browser.cpp" />
     <ClCompile Include="ProxyStubs_Composition.cpp" />
@@ -40,15 +33,17 @@
     <ClCompile Include="ProxyStubs_Guide.cpp" />
     <ClCompile Include="ProxyStubs_Netflix.cpp" />
     <ClCompile Include="ProxyStubs_Packager.cpp" />
+    <ClCompile Include="ProxyStubs_Performance.cpp" />
     <ClCompile Include="ProxyStubs_PlayGiga.cpp" />
     <ClCompile Include="ProxyStubs_Power.cpp" />
     <ClCompile Include="ProxyStubs_Provisioning.cpp" />
     <ClCompile Include="ProxyStubs_RPCLink.cpp" />
     <ClCompile Include="ProxyStubs_RtspClient.cpp" />
-    <ClCompile Include="ProxyStubs_Streaming.cpp" />
+    <ClCompile Include="ProxyStubs_Stream.cpp" />
     <ClCompile Include="ProxyStubs_TestController.cpp" />
-    <ClCompile Include="ProxyStubs_TVControl.cpp" />
+    <ClCompile Include="ProxyStubs_TestUtility.cpp" />
     <ClCompile Include="ProxyStubs_WebDriver.cpp" />
+    <ClCompile Include="ProxyStubs_WebPA.cpp" />
     <ClCompile Include="ProxyStubs_WebServer.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -70,6 +65,7 @@
     <ClInclude Include="IMemory.h" />
     <ClInclude Include="INetflix.h" />
     <ClInclude Include="IPackager.h" />
+    <ClInclude Include="IPerformance.h" />
     <ClInclude Include="IPlayGiga.h" />
     <ClInclude Include="IPower.h" />
     <ClInclude Include="IProvisioning.h" />
@@ -92,32 +88,32 @@
     <ProjectGuid>{3DA3B4B6-916E-4F21-88C6-512DF0C0A38C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>interfaces</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -144,24 +140,32 @@
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
     <TargetExt>.so</TargetExt>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
     <TargetExt>.so</TargetExt>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
     <TargetExt>.so</TargetExt>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
     <TargetExt>.so</TargetExt>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -181,6 +185,20 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -196,6 +214,20 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -211,6 +243,20 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -230,6 +276,20 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Create ProxyStub code</Message>
+    </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>
+      </Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>
+      </Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

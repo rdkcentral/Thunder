@@ -3,6 +3,7 @@
 
 namespace WPEFramework {
 namespace RPC {
+
     Administrator::Administrator()
         : _adminLock()
         , _stubs()
@@ -180,6 +181,10 @@ namespace RPC {
                 if (entry != index->second.end()) {
                     result = (*entry);
 
+                    if (refCounted == true) {
+                        (*entry)->AddRefCachedCount();
+                    }
+
                     if (piggyBack == true) {
                         // Reference counting can be cached on this on object for now. This is a request
                         // from an incoming interface of which the lifetime is guaranteed by the callee.
@@ -225,5 +230,43 @@ namespace RPC {
         }
         return (result);
     }
+
+    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id)
+    {
+        ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
+
+        if (index == _channelReferenceMap.end()) {
+            auto result = _channelReferenceMap.emplace(std::piecewise_construct,
+                std::forward_as_tuple(channel.operator->()),
+                std::forward_as_tuple());
+            index = result.first;
+        } else {
+            // See that it does not already exists on this channel, no need to register
+            // it again!!!
+            std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), rawImplementation));
+
+            if (element != index->second.end()) {
+                element->Increment();
+                rawImplementation = nullptr;
+            }
+        }
+
+        if (rawImplementation != nullptr) {
+            index->second.emplace_back(
+                reference,
+                rawImplementation,
+                id);
+        }
+    }
+
+    Core::IUnknown* Administrator::Convert(void* rawImplementation, const uint32_t id) 
+    {
+        std::map<uint32_t, ProxyStub::UnknownStub*>::const_iterator index (_stubs.find(id));
+        return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
+    }
+
+    /* static */ Administrator& Job::_administrator= Administrator::Instance();
+	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
+
 }
 } // namespace Core

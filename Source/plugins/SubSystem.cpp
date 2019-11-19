@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "ISubSystem.h"
 
 namespace WPEFramework {
@@ -9,6 +10,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::subsystem)
 
     { PluginHost::ISubSystem::subsystem::NETWORK, _TXT("Network") },
     { PluginHost::ISubSystem::subsystem::NOT_NETWORK, _TXT("!Network") },
+
+    { PluginHost::ISubSystem::subsystem::SECURITY, _TXT("Security") },
+    { PluginHost::ISubSystem::subsystem::NOT_SECURITY, _TXT("!Security") },
 
     { PluginHost::ISubSystem::subsystem::IDENTIFIER, _TXT("Identifier") },
     { PluginHost::ISubSystem::subsystem::NOT_IDENTIFIER, _TXT("!Identifier") },
@@ -36,6 +40,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::ISubSystem::subsystem)
 
     { PluginHost::ISubSystem::subsystem::STREAMING, _TXT("Streaming") },
     { PluginHost::ISubSystem::subsystem::NOT_STREAMING, _TXT("!Streaming") },
+
+    { PluginHost::ISubSystem::subsystem::BLUETOOTH, _TXT("Bluetooth") },
+    { PluginHost::ISubSystem::subsystem::NOT_BLUETOOTH, _TXT("!Bluetooth") },
 
     ENUM_CONVERSION_END(PluginHost::ISubSystem::subsystem)
 

@@ -234,6 +234,12 @@ namespace Core {
     }
 
     //------------------------------------------------------------------------
+    // Serialize: binary buffer
+    //------------------------------------------------------------------------
+    void EXTERNAL ToHexString(const uint8_t object[], const uint16_t length, string& result);
+    uint16_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint16_t maxLength);
+
+    //------------------------------------------------------------------------
     // Serialize: Base64
     //------------------------------------------------------------------------
     void EXTERNAL ToString(const uint8_t object[], const uint16_t length, const bool padding, string& result);

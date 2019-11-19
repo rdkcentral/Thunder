@@ -141,6 +141,44 @@ namespace Core {
 #pragma warning(default : 4996)
 #endif
 
+    static const TCHAR hex_chars[] = "0123456789abcdef";
+
+    void EXTERNAL ToHexString(const uint8_t object[], const uint16_t length, string& result)
+    {
+        ASSERT(object != nullptr);
+
+        result.resize(length * 2, hex_chars[object[0] >> 4]);
+        result[1] = hex_chars[object[0] & 0xF];
+
+        for (uint16_t i = 1, j = 2; i < length; i++) {
+            result[j++] = hex_chars[object[i] >> 4];
+            result[j++] = hex_chars[object[i] & 0xF];
+        }
+    }
+
+    uint16_t EXTERNAL FromHexString(const string& hexString, uint8_t* object, const uint16_t maxLength) {
+        ASSERT(object != nullptr || maxLength == 0); 
+        uint8_t highNibble;
+        uint8_t lowNibble;
+        uint16_t bufferIndex = 0, strIndex = 0;
+
+        // assume first character is 0 if length is odd. 
+        if (hexString.length() % 2 == 1) {
+            lowNibble = FromHexDigits(hexString[strIndex++]);
+            object[bufferIndex++] = lowNibble;
+        }
+
+        while ((bufferIndex < maxLength) && (strIndex < hexString.length())) {
+            highNibble = FromHexDigits(hexString[strIndex++]);
+            lowNibble = FromHexDigits(hexString[strIndex++]);
+
+            object[bufferIndex++] = (highNibble << 4) + lowNibble; 
+        }
+
+        // return buffer length
+        return bufferIndex;
+    }
+
     static const TCHAR base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                                         "abcdefghijklmnopqrstuvwxyz"
                                         "0123456789+/";

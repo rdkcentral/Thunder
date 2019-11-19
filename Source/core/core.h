@@ -21,6 +21,7 @@
 #include "IObserver.h"
 
 #include "ASN1.h"
+#include "DoorBell.h"
 #include "CyclicBuffer.h"
 #include "DataBuffer.h"
 #include "DataElement.h"
@@ -60,12 +61,14 @@
 #include "SocketPort.h"
 #include "SocketServer.h"
 #include "StateTrigger.h"
+#include "StopWatch.h"
 #include "Stream.h"
 #include "StreamJSON.h"
 #include "StreamText.h"
 #include "StreamTypeLengthValue.h"
 #include "Sync.h"
 #include "Synchronize.h"
+#include "SynchronousChannel.h"
 #include "SystemInfo.h"
 #include "TextFragment.h"
 #include "TextReader.h"
@@ -77,6 +80,7 @@
 #include "TypeTraits.h"
 #include "ValueRecorder.h"
 #include "XGetopt.h"
+#include "WorkerPool.h"
 
 #ifdef __WIN32__
 #pragma comment(lib, "core.lib")

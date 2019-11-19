@@ -1,6 +1,8 @@
 #ifndef __VIRTUAL_INPUT__
 #define __VIRTUAL_INPUT__
 
+#include "../virtualinput/IVirtualInput.h"
+
 #include "Module.h"
 
 namespace WPEFramework {
@@ -8,38 +10,52 @@ namespace PluginHost {
 
     class EXTERNAL VirtualInput {
     private:
-        VirtualInput(const VirtualInput&) = delete;
-        VirtualInput& operator=(const VirtualInput&) = delete;
+        enum enumModifier {
+            LEFTSHIFT = 0, //  0..3  bits are for LeftShift reference counting (max 15)
+            RIGHTSHIFT = 4, //  4..7  bits are for RightShift reference counting (max 15)
+            LEFTALT = 8, //  8..11 bits are for LeftAlt reference counting (max 15)
+            RIGHTALT = 12, // 12..15 bits are for RightAlt reference counting (max 15)
+            LEFTCTRL = 16, // 16..19 bits are for LeftCtrl reference counting (max 15)
+            RIGHTCTRL = 20 // 20..23 bits are for RightCtrl reference counting (max 15)
+        };
 
-        class RepeatKeyTimer : Core::WatchDogType<RepeatKeyTimer&> {
+		class RepeatKeyTimer : public Core::IDispatch {
         private:
             RepeatKeyTimer() = delete;
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
-            typedef Core::WatchDogType<RepeatKeyTimer&> BaseClass;
-            static constexpr uint32_t RepeatStackSize = 64 * 1024;
-
         public:
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
 #endif
-            RepeatKeyTimer(VirtualInput& parent)
-                : BaseClass(RepeatStackSize, _T("RepeatKeyTimer"), *this)
-                , _parent(parent)
+            RepeatKeyTimer(VirtualInput* parent)
+                : _parent(*parent)
+                , _adminLock()
                 , _startTime(0)
                 , _intervalTime(0)
                 , _code(0)
+                , _nextSlot()
+                , _job()
             {
             }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
 #endif
-            ~RepeatKeyTimer()
+            ~RepeatKeyTimer() override
             {
             }
 
         public:
+            void AddReference()
+            {
+                _job = Core::ProxyType<Core::IDispatch>(static_cast<Core::IDispatch&>(*this));
+            }
+
+            void DropReference()
+            {
+                _job.Release();
+            }
             void Interval(const uint16_t startTime, const uint16_t intervalTime)
             {
                 _startTime = startTime;
@@ -48,46 +64,52 @@ namespace PluginHost {
             void Arm(const uint16_t code)
             {
                 if (_startTime != 0) {
-                    BaseClass::Lock();
+                    _adminLock.Lock();
 
-                    BaseClass::Arm(_startTime);
+                    _nextSlot = Core::Time::Now().Add(_startTime);
+
                     _code = code;
+                    Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
 
-                    BaseClass::Unlock();
+                    _adminLock.Unlock();
                 }
             }
             void Reset()
             {
-                if (_startTime != 0) {
-                    BaseClass::Reset();
-                }
+                _adminLock.Lock();
+
+                _nextSlot = Core::Time();
+                Core::WorkerPool::Instance().Revoke(_job);
+
+                _adminLock.Unlock();
             }
-            uint32_t Expired()
+
+		private:
+            void Dispatch() override
             {
                 _parent.RepeatKey(_code);
 
-                // Let's retrigger at the same time..
-                return (_intervalTime);
-            }
+                _adminLock.Lock();
 
-            virtual void SelectListener(const string& /* listener */)
-            {
+                if (_nextSlot.IsValid() == true) {
+
+					_nextSlot.Add(_intervalTime);
+
+                    // Let's schedule ourselves for the retrigger..
+                    Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
+                }
+
+                _adminLock.Unlock();
             }
 
         private:
             VirtualInput& _parent;
+            Core::CriticalSection _adminLock;
             uint16_t _startTime;
             uint16_t _intervalTime;
             uint16_t _code;
-        };
-
-        enum enumModifier {
-            LEFTSHIFT = 0, //  0..3  bits are for LeftShift reference counting (max 15)
-            RIGHTSHIFT = 4, //  4..7  bits are for RightShift reference counting (max 15)
-            LEFTALT = 8, //  8..11 bits are for LeftAlt reference counting (max 15)
-            RIGHTALT = 12, // 12..15 bits are for RightAlt reference counting (max 15)
-            LEFTCTRL = 16, // 16..19 bits are for LeftCtrl reference counting (max 15)
-            RIGHTCTRL = 20 // 20..23 bits are for RightCtrl reference counting (max 15)
+            Core::Time _nextSlot;
+            Core::ProxyType<Core::IDispatch> _job;
         };
 
     public:
@@ -163,18 +185,6 @@ namespace PluginHost {
             ~KeyMap()
             {
 
-                std::map<uint16_t, int16_t> removedKeys;
-
-                while (_keyMap.size() > 0) {
-
-                    // Negative reference counts
-                    removedKeys[_keyMap.begin()->second.Code]--;
-
-                    _keyMap.erase(_keyMap.begin());
-                }
-
-                ChangeIterator removed(removedKeys);
-                _parent.MapChanges(removed);
             }
 
         public:
@@ -228,27 +238,41 @@ namespace PluginHost {
             }
 
         private:
+            void ClearKeyMap() {
+                std::map<uint16_t, int16_t> removedKeys;
+
+                while (_keyMap.size() > 0) {
+
+                    // Negative reference counts
+                    removedKeys[_keyMap.begin()->second.Code]--;
+
+                    _keyMap.erase(_keyMap.begin());
+                }
+
+                if (removedKeys.size() > 0) {
+                    ChangeIterator removed(removedKeys);
+                    _parent.MapChanges(removed);
+                }
+            }
+
+        private:
+            friend class VirtualInput;
+
+        private:
             VirtualInput& _parent;
             LookupMap _keyMap;
             bool _passThrough;
         };
 
     public:
-        enum actiontype {
-            RELEASED = 0,
-            PRESSED = 1,
-            REPEAT = 2,
-            COMPLETED = 3
-        };
-
-        struct INotifier {
+        struct EXTERNAL INotifier {
             virtual ~INotifier() {}
-            virtual void Dispatch(const actiontype action, const uint32_t code) = 0;
+            virtual void Dispatch(const IVirtualInput::KeyData::type type, const uint32_t code) = 0;
         };
         typedef std::map<const uint32_t, const uint32_t> PostLookupEntries;
 
     private:
-        class PostLookupTable : public Core::JSON::Container {
+        class EXTERNAL PostLookupTable : public Core::JSON::Container {
         private:
             PostLookupTable(const PostLookupTable&) = delete;
             PostLookupTable& operator=(const PostLookupTable&) = delete;
@@ -336,16 +360,19 @@ namespace PluginHost {
         typedef std::map<const string, PostLookupEntries> PostLookupMap;
 
     public:
+        VirtualInput(const VirtualInput&) = delete;
+        VirtualInput& operator=(const VirtualInput&) = delete;
         VirtualInput();
         virtual ~VirtualInput();
 
     public:
-        inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
+
+    inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
         {
             _repeatKey.Interval(startTime, intervalTime);
         }
 
-        inline void RepeatLimit(uint16_t limit)
+	inline void RepeatLimit(const uint16_t limit)
         {
             _repeatLimit = limit;
         }
@@ -399,6 +426,10 @@ namespace PluginHost {
         // to announce this key event to the linux system. Repeat event is triggered by the watchdog implementation
         // in this plugin. No need to signal this.
         uint32_t KeyEvent(const bool pressed, const uint32_t code, const string& tablename);
+        uint32_t AxisEvent(const int16_t x, const int16_t y);
+        uint32_t PointerMotionEvent(const int16_t x, const int16_t y);
+        uint32_t PointerButtonEvent(const bool pressed, const uint8_t button);
+        uint32_t TouchEvent(const uint8_t index, const uint16_t state, const uint16_t x, const uint16_t y);
 
         typedef Core::IteratorMapType<const std::map<uint16_t, int16_t>, uint16_t, int16_t, std::map<uint16_t, int16_t>::const_iterator> ChangeIterator;
 
@@ -449,17 +480,25 @@ namespace PluginHost {
             return (linkMap != _postLookupTable.end() ? &(linkMap->second) : nullptr);
         }
 
+    protected:
+        inline void ClearKeyMap() {
+            for (auto& keyMap: _mappingTables) {
+                keyMap.second.ClearKeyMap();
+            }
+        }
+
     private:
+        void RepeatKey(const uint32_t code);
         virtual void MapChanges(ChangeIterator& updated) = 0;
         virtual void LookupChanges(const string&) = 0;
 
-        void RepeatKey(const uint32_t code);
-        void ModifierKey(const actiontype type, const uint16_t modifiers);
-        bool SendModifier(const actiontype type, const enumModifier mode);
-        void AdministerAndSendKey(const actiontype type, const uint32_t code);
-        void DispatchRegisteredKey(const actiontype type, uint32_t code);
+        void ModifierKey(const IVirtualInput::KeyData::type type, const uint16_t modifiers);
+        bool SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode);
+        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code);
 
-        virtual void SendKey(const actiontype type, const uint32_t code) = 0;
+        virtual void Send(const IVirtualInput::KeyData& data) = 0;
+        virtual void Send(const IVirtualInput::MouseData& data) = 0;
+        virtual void Send(const IVirtualInput::TouchData& data) = 0;
 
         inline uint16_t Modifiers(const Core::JSON::ArrayType<Core::JSON::EnumType<KeyMap::modifier>>& modifiers) const
         {
@@ -478,7 +517,7 @@ namespace PluginHost {
         Core::CriticalSection _lock;
 
     private:
-        RepeatKeyTimer _repeatKey;
+        Core::ProxyObject<RepeatKeyTimer> _repeatKey;
         uint32_t _modifiers;
         std::map<const string, KeyMap> _mappingTables;
         KeyMap* _defaultMap;
@@ -506,7 +545,9 @@ namespace PluginHost {
         virtual void MapChanges(ChangeIterator& updated);
 
     private:
-        virtual void SendKey(const actiontype type, const uint32_t code);
+        virtual void Send(const IVirtualInput::KeyData& data) override;
+        virtual void Send(const IVirtualInput::MouseData& data) override;
+        virtual void Send(const IVirtualInput::TouchData& data) override;
         bool Updated(ChangeIterator& updated);
         virtual void LookupChanges(const string&);
 
@@ -518,35 +559,28 @@ namespace PluginHost {
     };
 #endif
 
-    class EXTERNAL IPCKeyboardInput : public VirtualInput {
+    class EXTERNAL IPCUserInput : public VirtualInput {
     private:
-        struct KeyData {
-            VirtualInput::actiontype Action;
-            uint32_t Code;
-        };
-
-        typedef Core::IPCMessageType<0, KeyData, Core::Void> KeyMessage;
-        typedef Core::IPCMessageType<1, Core::Void, Core::IPC::Text<20>> NameMessage;
-
-        IPCKeyboardInput(const IPCKeyboardInput&) = delete;
-        IPCKeyboardInput& operator=(const IPCKeyboardInput&) = delete;
+        IPCUserInput(const IPCUserInput&) = delete;
+        IPCUserInput& operator=(const IPCUserInput&) = delete;
 
     public:
-        class KeyboardLink : public Core::IDispatchType<Core::IIPC> {
+        class EXTERNAL InputDataLink : public Core::IDispatchType<Core::IIPC> {
         private:
-            KeyboardLink(const KeyboardLink&) = delete;
-            KeyboardLink& operator=(const KeyboardLink&) = delete;
+            InputDataLink(const InputDataLink&) = delete;
+            InputDataLink& operator=(const InputDataLink&) = delete;
 
         public:
-            KeyboardLink(Core::IPCChannelType<Core::SocketPort, KeyboardLink>*)
+            InputDataLink(Core::IPCChannelType<Core::SocketPort, InputDataLink>*)
                 : _enabled(false)
                 , _name()
+                , _mode(0)
                 , _parent(nullptr)
                 , _postLookup(nullptr)
-                , _replacement(Core::ProxyType<KeyMessage>::Create())
+                , _replacement(Core::ProxyType<IVirtualInput::KeyMessage>::Create())
             {
             }
-            virtual ~KeyboardLink()
+            virtual ~InputDataLink()
             {
             }
 
@@ -559,13 +593,13 @@ namespace PluginHost {
             {
                 Core::ProxyType<Core::IIPC> result;
 
-                if (_enabled == true) {
-                    if (_postLookup == nullptr) {
+                if ( (_enabled == true) && (Subscribed(element->Label()) == true) ) {
+                    if ( (element->Label() != IVirtualInput::KeyMessage::Id()) || (_postLookup == nullptr) ) {
                         result = element;
                     } else {
-                        KeyMessage& copy(static_cast<KeyMessage&>(*element));
+                        IVirtualInput::KeyMessage& copy(static_cast<IVirtualInput::KeyMessage&>(*element));
 
-                        ASSERT(dynamic_cast<KeyMessage*>(&(*element)) != nullptr);
+                        ASSERT(dynamic_cast<IVirtualInput::KeyMessage*>(&(*element)) != nullptr);
 
                         // See if we need to convert this keycode..
                         PostLookupEntries::const_iterator index(_postLookup->find(copy.Parameters().Code));
@@ -575,7 +609,7 @@ namespace PluginHost {
 
                             _replacement->Parameters().Action = copy.Parameters().Action;
                             _replacement->Parameters().Code = index->second;
-                            result = _replacement;
+                            result = Core::ProxyType<Core::IIPC>(_replacement);
                         }
                     }
                 }
@@ -585,7 +619,7 @@ namespace PluginHost {
             {
                 return (_name);
             }
-            inline void Parent(IPCKeyboardInput& parent)
+            inline void Parent(IPCUserInput& parent)
             {
                 // We assume it will only be set, if the client reports it self in, once !
                 ASSERT(_parent == nullptr);
@@ -597,11 +631,19 @@ namespace PluginHost {
             }
 
         private:
+            bool Subscribed(const uint32_t id) const {
+                uint8_t index (id == IVirtualInput::KeyMessage::Id()   ? IVirtualInput::INPUT_KEY   :
+                              (id == IVirtualInput::MouseMessage::Id() ? IVirtualInput::INPUT_MOUSE :
+                              (id == IVirtualInput::TouchMessage::Id() ? IVirtualInput::INPUT_TOUCH : 0)));
+
+                return ((index & _mode) != 0);
+            }
             virtual void Dispatch(Core::IIPC& element) override
             {
-                ASSERT(dynamic_cast<NameMessage*>(&element) != nullptr);
+                ASSERT(dynamic_cast<IVirtualInput::NameMessage*>(&element) != nullptr);
 
-                _name = (static_cast<NameMessage&>(element).Response().Value());
+                _name = (static_cast<IVirtualInput::NameMessage&>(element).Response().Name);
+                _mode = (static_cast<IVirtualInput::NameMessage&>(element).Response().Mode);
                 _enabled = true;
                 _postLookup = _parent->FindPostLookup(_name);
             }
@@ -609,17 +651,18 @@ namespace PluginHost {
         private:
             bool _enabled;
             string _name;
-            IPCKeyboardInput* _parent;
+            uint8_t _mode;
+            IPCUserInput* _parent;
             const PostLookupEntries* _postLookup;
-            Core::ProxyType<KeyMessage> _replacement;
+            Core::ProxyType<IVirtualInput::KeyMessage> _replacement;
         };
 
-        class VirtualInputChannelServer : public Core::IPCChannelServerType<KeyboardLink, true> {
+        class EXTERNAL VirtualInputChannelServer : public Core::IPCChannelServerType<InputDataLink, true> {
         private:
-            typedef Core::IPCChannelServerType<KeyboardLink, true> BaseClass;
+            typedef Core::IPCChannelServerType<InputDataLink, true> BaseClass;
 
         public:
-            VirtualInputChannelServer(IPCKeyboardInput& parent, const Core::NodeId& sourceName)
+            VirtualInputChannelServer(IPCUserInput& parent, const Core::NodeId& sourceName)
                 : BaseClass(sourceName, 32)
                 , _parent(parent)
             {
@@ -629,7 +672,7 @@ namespace PluginHost {
             {
                 TRACE_L1("VirtualInputChannelServer::Added -- %d", __LINE__);
 
-                Core::ProxyType<Core::IIPC> message(Core::ProxyType<NameMessage>::Create());
+                Core::ProxyType<Core::IIPC> message(Core::ProxyType<IVirtualInput::NameMessage>::Create());
 
                 // TODO: The reference to this should be held by the IPC mechanism.. Testing showed it did
                 //       not, to be further investigated..
@@ -640,12 +683,12 @@ namespace PluginHost {
             }
 
         private:
-            IPCKeyboardInput& _parent;
+            IPCUserInput& _parent;
         };
 
     public:
-        IPCKeyboardInput(const Core::NodeId& sourceName);
-        virtual ~IPCKeyboardInput();
+        IPCUserInput(const Core::NodeId& sourceName);
+        virtual ~IPCUserInput();
 
         virtual uint32_t Open();
         virtual uint32_t Close();
@@ -653,7 +696,9 @@ namespace PluginHost {
         virtual void LookupChanges(const string&);
 
     private:
-        virtual void SendKey(const actiontype type, const uint32_t code);
+        virtual void Send(const IVirtualInput::KeyData& data) override;
+        virtual void Send(const IVirtualInput::MouseData& data) override;
+        virtual void Send(const IVirtualInput::TouchData& data) override;
 
     private:
         VirtualInputChannelServer _service;
@@ -680,27 +725,27 @@ namespace PluginHost {
     public:
         void Initialize(const type t, const string& locator)
         {
-            ASSERT(_inputHandler == nullptr);
+            ASSERT(_keyHandler == nullptr);
 #if defined(__WIN32__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
-            _inputHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
+            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
 #else
             if (t == VIRTUAL) {
-                _inputHandler = new PluginHost::IPCKeyboardInput(Core::NodeId(locator.c_str()));
+                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
             } else {
                 if (Core::File(locator, false).Exists() == true) {
                     TRACE_L1("Creating a /dev/input device for key communication. %d", 0);
 
                     // Seems we have a possibility to use /dev/input, create it.
-                    _inputHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"));
+                    _keyHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"));
                 }
             }
 #endif
-            if (_inputHandler != nullptr) {
+            if (_keyHandler != nullptr) {
                 TRACE_L1("Opening VirtualInput %s", locator.c_str());
-                if (_inputHandler->Open() != Core::ERROR_NONE) {
+                if (_keyHandler->Open() != Core::ERROR_NONE) {
                     TRACE_L1("ERROR: Could not open VirtualInput %s.", locator.c_str());
                 }
             } else {
@@ -710,21 +755,22 @@ namespace PluginHost {
 
         void Deinitialize()
         {
-            if (_inputHandler != nullptr) {
-                _inputHandler->Close();
-                delete (_inputHandler);
-                _inputHandler = nullptr;
+            if (_keyHandler != nullptr) {
+                _keyHandler->Close();
+                delete (_keyHandler);
+                _keyHandler = nullptr;
             }
         }
 
-        static VirtualInput* KeyHandler()
+        static VirtualInput* Handler()
         {
-            return _inputHandler;
+            return _keyHandler;
         }
 
     private:
-        static VirtualInput* _inputHandler;
+        static VirtualInput* _keyHandler;
     };
+
 } // PluginHost
 
 namespace Core {
@@ -737,4 +783,4 @@ namespace Core {
 
 } // namespace WPEFramework
 
-#endif // KeyHandler
+#endif // __VIRTUAL_INPUT__

@@ -14,7 +14,7 @@ namespace PluginHost {
         , _ID(0)
         , _nameOffset(~0)
         , _state(WEB)
-        , _serializer()
+        , _serializer(*this)
         , _deserializer(*this)
         , _text()
         , _offset(0)

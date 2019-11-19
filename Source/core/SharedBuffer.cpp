@@ -104,8 +104,8 @@ namespace Core {
     }
 
     SharedBuffer::SharedBuffer(const TCHAR name[])
-        : DataElementFile(name, READABLE | WRITABLE | SHAREABLE)
-        , _administrationBuffer((string(name) + ".admin"), READABLE | WRITABLE | SHAREABLE)
+        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE)
+        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WIN32__
         , _producer((string(name) + ".producer").c_str())
@@ -118,9 +118,9 @@ namespace Core {
     {
         Align<uint64_t>();
     }
-    SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t bufferSize, const uint16_t administratorSize)
-        : DataElementFile(name, READABLE | WRITABLE | SHAREABLE | CREATE, bufferSize)
-        , _administrationBuffer((string(name) + ".admin"), READABLE | WRITABLE | SHAREABLE | CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
+    SharedBuffer::SharedBuffer(const TCHAR name[], const uint32_t mode, const uint32_t bufferSize, const uint16_t administratorSize)
+        : DataElementFile(name, mode | File::SHAREABLE | File::CREATE, bufferSize)
+        , _administrationBuffer((string(name) + ".admin"), mode | File::SHAREABLE | File::CREATE, administratorSize + sizeof(Administration) + (2 * sizeof(void*)) + 8 /* Align buffer on 64 bits boundary */)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WIN32__
         , _producer((string(name) + ".producer").c_str())

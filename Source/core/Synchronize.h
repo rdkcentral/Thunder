@@ -44,6 +44,7 @@ namespace Core {
         inline void Flush()
         {
             _signal.SetEvent();
+            _response = nullptr;
         }
         void Load(MESSAGE& response)
         {
@@ -65,7 +66,7 @@ namespace Core {
 
             _signal.ResetEvent();
 
-            _response = static_cast<MESSAGE*>(~0);
+            _response = reinterpret_cast<MESSAGE*>(~0);
 
             _adminLock.Unlock();
         }
@@ -73,7 +74,7 @@ namespace Core {
         {
             _adminLock.Lock();
 
-            if (_response == static_cast<MESSAGE*>(~0)) {
+            if (_response == reinterpret_cast<MESSAGE*>(~0)) {
                 _response = nullptr;
                 _signal.SetEvent();
             }

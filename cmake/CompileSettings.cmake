@@ -31,7 +31,7 @@ endif()
 target_compile_definitions(CompileSettings INTERFACE PLATFORM_${PLATFORM}=1)
 message(STATUS "Selected platform ${PLATFORM}")
 
-target_compile_options(CompileSettings INTERFACE -std=c++11)
+target_compile_options(CompileSettings INTERFACE -std=c++11 -Wno-psabi)
 
 #
 # Build type specific options
@@ -40,9 +40,6 @@ if("${BUILD_TYPE}" STREQUAL "Debug")
     target_compile_definitions(CompileSettings INTERFACE _DEBUG)
     set(CONFIG_DIR "Debug" CACHE STRING "Build config directory" FORCE)
     set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "Choose the type of build." FORCE)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR ${CMAKE_COMPILER_IS_GNUCXX} )
-        target_compile_options(CompileSettings INTERFACE -g -Og)
-    endif()
 
 elseif("${BUILD_TYPE}" STREQUAL "DebugOptimized")
     target_compile_definitions(CompileSettings INTERFACE _DEBUG)

@@ -13,7 +13,7 @@
 #define ASSERT_LOGGER(message, ...) fprintf(stderr, message, ##__VA_ARGS__);
 #else
 #define TRACE_PROCESS_ID ::getpid()
-#define ASSERT_LOGGER(message, ...) ::syslog(LOG_CRIT, message, ##__VA_ARGS__);
+#define ASSERT_LOGGER(message, ...) ::fprintf(stderr, message, ##__VA_ARGS__);
 #endif
 
 #ifndef _TRACE_LEVEL
@@ -23,8 +23,6 @@
 #define _TRACE_LEVEL 0
 #endif
 #endif
-
-#define TRACE_POINTER(x) reinterpret_cast<unsigned long>(x)
 
 #if _TRACE_LEVEL > 4
 #define TRACE_L5(x, ...)                                                         \
@@ -80,7 +78,7 @@
         if (!(x)) {                                                                                         \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n", TRACE_PROCESS_ID, __FILE__, __LINE__) \
             DumpCallStack();                                                                                \
-            assert(x);                                                                                      \
+            abort();                                                                                        \
         }                                                                                                   \
     }
 
@@ -89,7 +87,7 @@
         if (!(x)) {                                                                                                                         \
             ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n         " #y "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, ##__VA_ARGS__) \
             DumpCallStack();                                                                                                                \
-            assert(x);                                                                                                                      \
+            abort();                                                                                                                      \
         }                                                                                                                                   \
     }
 

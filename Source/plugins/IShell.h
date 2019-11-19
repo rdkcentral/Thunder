@@ -3,7 +3,6 @@
 
 #include "IPlugin.h"
 #include "ISubSystem.h"
-#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -17,12 +16,12 @@ namespace PluginHost {
         // This interface is only returned if the IShell is accessed in the main process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the main process, it will return a nullptr.
-        struct EXTERNAL IProcess {
-            virtual ~IProcess() {}
-            virtual void Register(RPC::IRemoteProcess::INotification* sink) = 0;
-            virtual void Unregister(RPC::IRemoteProcess::INotification* sink) = 0;
-            virtual RPC::IRemoteProcess* RemoteProcess(const uint32_t pid) = 0;
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& pid, const string& className, const string& callsign) = 0;
+        struct EXTERNAL ICOMLink {
+            virtual ~ICOMLink() {}
+            virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) = 0;
+            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) = 0;
+            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& connectionId, const string& className, const string& callsign) = 0;
         };
 
         virtual ~IShell()
@@ -39,8 +38,6 @@ namespace PluginHost {
             DESTROYED
         };
 
-        static const TCHAR* ToString(const state value);
-
         enum reason {
             REQUESTED,
             AUTOMATIC,
@@ -50,8 +47,6 @@ namespace PluginHost {
             SHUTDOWN,
             CONDITIONS
         };
-
-        static const TCHAR* ToString(const reason value);
 
         class EXTERNAL Job
             : public Core::IDispatchType<void> {
@@ -137,7 +132,7 @@ namespace PluginHost {
         //! WebPrefix: First part of the pathname in the HTTP request to select the webbridge components.
         virtual string WebPrefix() const = 0;
 
-        //! Callsign: Instantiation name of this specific plugin. It is the name given in the config for the classname.
+        //! Locator: The name of the binary (so) that holds the given ClassName code.
         virtual string Locator() const = 0;
 
         //! ClassName: Name of the class to be instantiated for this IShell
@@ -161,8 +156,14 @@ namespace PluginHost {
         //! VolatilePath: <config:volatilepath>/<plugin:callsign>/
         virtual string ProxyStubPath() const = 0;
 
+        //! Substituted Config value
+        virtual string ConfigSubstitution(const string& input) const = 0;
+
         //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
+
+        //! Resumed: boolean to inidcate wheter we need to start a plugin in a Resumed state, i.s.o. the Suspended state
+        virtual bool Resumed() const = 0;
 
         virtual string HashKey() const = 0;
         virtual string ConfigLine() const = 0;
@@ -199,11 +200,11 @@ namespace PluginHost {
 
         // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the main process.
-        virtual IProcess* Process() = 0;
+        virtual ICOMLink* COMLink() = 0;
 
-        inline void Register(RPC::IRemoteProcess::INotification* sink)
+        inline void Register(RPC::IRemoteConnection::INotification* sink)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -212,9 +213,9 @@ namespace PluginHost {
                 handler->Register(sink);
             }
         }
-        inline void Unregister(RPC::IRemoteProcess::INotification* sink)
+        inline void Unregister(RPC::IRemoteConnection::INotification* sink)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -223,31 +224,27 @@ namespace PluginHost {
                 handler->Unregister(sink);
             }
         }
-        inline RPC::IRemoteProcess* RemoteProcess(const uint32_t pid)
+        inline RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
-            return (handler == nullptr ? nullptr : handler->RemoteProcess(pid));
+            return (handler == nullptr ? nullptr : handler->RemoteConnection(connectionId));
         }
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t version = ~0)
         {
-            void* baseptr = Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version);
+            void* baseInterface (Root(pid, waitTime, className, REQUESTEDINTERFACE::ID, version));
 
-            Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseptr);
+            if (baseInterface != nullptr) {
 
-            REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-            if (result == nullptr) {
-
-                result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
-            return (result);
+            return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* QueryInterfaceByCallsign(const string& name)
@@ -255,31 +252,23 @@ namespace PluginHost {
             void* baseInterface(QueryInterfaceByCallsign(REQUESTEDINTERFACE::ID, name));
 
             if (baseInterface != nullptr) {
-                Core::IUnknown* iuptr = reinterpret_cast<Core::IUnknown*>(baseInterface);
-
-                REQUESTEDINTERFACE* result = dynamic_cast<REQUESTEDINTERFACE*>(iuptr);
-
-                if (result == nullptr) {
-                    result = reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface);
-                }
-
-                return (result);
+                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
             }
 
             return (nullptr);
         }
         template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& pid, const string& locator)
+        REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
         {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
 
             if (handler != nullptr) {
-                RPC::Object definition(locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1);
+                RPC::Object definition(Callsign(), locator, className, REQUESTEDINTERFACE::ID, version, string(), string(), 1, RPC::Object::HostType::DISTRIBUTED, string());
 
-                void* baseptr = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
+                void* baseptr = handler->Instantiate(definition, waitTime, connecionId, ClassName(), Callsign());
 
                 REQUESTEDINTERFACE* result = reinterpret_cast<REQUESTEDINTERFACE*>(baseptr);
 

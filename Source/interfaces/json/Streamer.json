@@ -1,0 +1,600 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Streamer API",
+    "class": "Streamer",
+    "description": "Streamer JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "definitions": {
+    "id": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Stream ID",
+          "type": "number",
+          "size": 8,
+          "example": 0
+        }
+      }
+    },
+    "stream": {
+      "type": "string",
+      "enum": [
+        "undefined",
+        "cable",
+        "handheld",
+        "satellite",
+        "terrestrial",
+        "dab",
+        "rf",
+        "unicast",
+        "multicast",
+        "ip"
+      ],
+      "enumvalues": [
+        0,
+        1,
+        2,
+        4,
+        8,
+        16,
+        31,
+        32,
+        64,
+        96
+      ],
+      "description": "Stream type",
+      "example": "cable"
+    },
+    "state": {
+      "description": "Stream state",
+      "type": "string",
+      "enum": [
+        "idle",
+        "loading",
+        "prepared",
+        "controlled",
+        "error"
+      ],
+      "example": "controlled"
+    },
+    "drm": {
+      "description": "DRM used",
+      "type": "string",
+      "enum": [
+        "none",
+        "clearkey",
+        "playready",
+        "widevine",
+        "unknown"
+      ],
+      "example": "clearkey"
+    },
+    "window": {
+      "description": "Geometry of the window",
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "Horizontal position of the window (in pixels)",
+          "example": 0
+        },
+        "y": {
+          "type": "number",
+          "description": "Vertical position of the window (in pixels)",
+          "example": 0
+        },
+        "width": {
+          "type": "number",
+          "description": "Width of the window (in pixels)",
+          "example": 1080
+        },
+        "height": {
+          "type": "number",
+          "description": "Height of the window (in pixels)",
+          "example": 720
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "width",
+        "height"
+      ]
+    },
+    "element": {
+      "description": "Stream element type",
+      "type": "string",
+      "enum": [
+        "video",
+        "audio",
+        "subtitles",
+        "teletext",
+        "data"
+      ],
+      "example": "video"
+    },
+    "streamelement": {
+      "description": "Stream element",
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/element"
+        }
+      },
+      "required": [
+        "type"
+      ]
+    }
+  },
+  "properties": {
+    "speed": {
+      "summary": "Playback speed",
+      "description": "Speed (in percentage)",
+      "events": ["statechange"],
+      "params": {
+        "description": "Speed percentage; e.g.: 0 - pause, 100 - normal playback, -100 - rewind, -200 - reverse at twice the normal speed, 50 - forward at half speed, etc. Must be one of the speeds supported by the player",
+        "type": "number",
+        "signed": true,
+        "example": 100
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Player is not in a valid state or decoder not attached",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "position": {
+      "summary": "Stream position",
+      "params": {
+        "description": "Position (in milliseconds)",
+        "type": "number",
+        "example": 60000,
+        "size": 64
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Player is not in a valid state or decoder not attached",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "window": {
+      "summary": "Stream playback window",
+      "params": {
+       "$ref": "#/definitions/window"
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Player is not in a valid state or decoder not attached",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "speeds": {
+      "summary": "Speeds supported by the stream player",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "Supported speeds (in percentage)",
+        "example": [
+          0,
+          100,
+          -100,
+          200,
+          -200,
+          400,
+          -400
+        ],
+        "items": {
+          "type": "integer",
+          "signed": true,
+          "description": "(speeds in percentage)"
+        }
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Player is not in a valid state or decoder not attached",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "streams": {
+      "summary": "All created stream instance IDs",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "Stream IDs",
+        "example": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "items": {
+          "type": "number",
+          "description": "(a stream ID)"
+        }
+      }
+    },
+    "type": {
+      "summary": "Type of a stream",
+      "readonly": true,
+      "params": {
+        "$ref": "#/definitions/stream"
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "drm": {
+      "readonly": true,
+      "summary": "DRM type associated with a stream",
+      "events": [
+        "drmchange"
+      ],
+      "params": {
+        "$ref": "#/definitions/drm"
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "state": {
+      "readonly": true,
+      "summary": "Current state of a stream",
+      "events": [
+        "statechange"
+      ],
+      "params": {
+        "$ref": "#/definitions/state"
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "metadata": {
+      "readonly": true,
+      "summary": "Metadata associated with the stream",
+      "params": {
+        "type": "string",
+        "description": "Custom implementation-specific metadata",
+        "example": ""
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "error": {
+      "summary": "Most recent error code",
+      "readonly": true,
+      "params": {
+        "type": "number",
+        "description": "Custom implementation-specific error code value",
+        "example": 0
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "elements": {
+      "summary": "Stream elements",
+      "readonly": true,
+      "params": {
+        "type": "array",
+        "description": "List of stream elements",
+        "items": {
+          "$ref": "#/definitions/streamelement"
+        }
+      },
+      "index": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Stream elements retrieval not supported",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    }
+  },
+  "methods": {
+    "Streamer.1.create": {
+      "summary": "Creates a stream instance.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/definitions/stream"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/definitions/id/properties/id"
+      },
+      "errors": [
+        {
+          "$ref": "#/common/errors/badrequest",
+          "description": "Invalid stream type given"
+        },
+        {
+          "$ref": "#/common/errors/unavailable",
+          "description": "Fronted of the selected stream type is not available"
+        }
+      ]
+    },
+    "Streamer.1.destroy": {
+      "summary": "Destroys a stream instance.",
+      "params": {
+        "$ref": "#/definitions/id"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "Streamer.1.load": {
+      "summary": "Loads a source into a stream.",
+      "events": ["statechange"],
+      "params": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/definitions/id/properties/id"
+          },
+          "location": {
+            "description": "Location of the source to load",
+            "type": "string",
+            "example": "http://example.com/sample.m3u8"
+          }
+        },
+        "required": [
+          "id",
+          "location"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Invalid location given",
+          "$ref": "#/common/errors/incorrecturl"
+        },
+        {
+          "description": "Undefined loading error",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Stream is not in a valid state",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "Streamer.1.attach": {
+      "summary": "Attaches a decoder to the streamer.",
+      "params": {
+        "$ref": "#/definitions/id"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Decoder already attached",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "Stream is not in a valid state",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "No free decoders available",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
+    },
+    "Streamer.1.detach": {
+      "summary": "Detaches a decoder from the streamer.",
+      "params": {
+        "$ref": "#/definitions/id"
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown stream ID given",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Stream is not in a valid state or decoder not attached",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Decoder is in use",
+          "$ref": "#/common/errors/inprogress"
+        }
+      ]
+    }
+  },
+  "events": {
+    "statechange": {
+      "summary": "Notifies of stream state change.",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "$ref": "#/definitions/state"
+          }
+        },
+        "required": [
+          "state"
+        ]
+      }
+    },
+    "timeupdate": {
+      "summary": "Notifies of stream position change. This event is fired every second to indicate the current stream position. It does not fire if the stream is paused (i.e. speed is set to 0).",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "number",
+            "description": "Stream position in miliseconds",
+            "size": 64,
+            "example": 30000
+          }
+        }
+      }
+    },
+    "stream": {
+      "summary": "Notifies of a custom stream incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    },
+    "player": {
+      "summary": "Notifies of a custom player incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    },
+    "drm": {
+      "summary": "Notifies of a custom DRM-related incident",
+      "id": {
+        "name": "Stream ID",
+        "example": "0"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "number",
+            "description": "Implementation-specific incident code",
+            "example": 1
+          }
+        }
+      }
+    }
+  }
+}

@@ -16,9 +16,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     ENUM_CONVERSION_END(PluginHost::VirtualInput::KeyMap::modifier)
 
-        namespace PluginHost
+namespace PluginHost
 {
-    /*static */ VirtualInput* InputHandler::_inputHandler;
+    /* static */ VirtualInput* InputHandler::_keyHandler;
 
     uint32_t VirtualInput::KeyMap::Load(const string& keyMap)
     {
@@ -173,7 +173,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 #endif
     VirtualInput::VirtualInput()
         : _lock()
-        , _repeatKey(*this)
+        , _repeatKey(this)
         , _modifiers(0)
         , _defaultMap(nullptr)
         , _notifierMap()
@@ -182,6 +182,8 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         , _repeatLimit(0)
     {
         // The derived class shoud set, the initial value of the modifiers...
+        _repeatKey.AddRef();
+        _repeatKey.AddReference();
     }
 #ifdef __WIN32__
 #pragma warning(default : 4355)
@@ -189,8 +191,9 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     VirtualInput::~VirtualInput()
     {
-
         _mappingTables.clear();
+        _repeatKey.DropReference();
+        _repeatKey.CompositRelease();
     }
 
     void VirtualInput::Register(INotifier * callback, const uint32_t keyCode)
@@ -271,6 +274,51 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         }
     }
 
+    uint32_t VirtualInput::AxisEvent(const int16_t x, const int16_t y)
+    {
+        IVirtualInput::MouseData event;
+        event.Action     = IVirtualInput::MouseData::SCROLL;
+        event.Horizontal = x;
+        event.Vertical   = y;
+        Send(event);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::PointerMotionEvent(const int16_t x, const int16_t y)
+    {
+        IVirtualInput::MouseData event;
+        event.Action     = IVirtualInput::MouseData::MOTION;
+        event.Horizontal = x;
+        event.Vertical   = y;
+        Send(event);
+
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::PointerButtonEvent(const bool pressed, const uint8_t button)
+    {
+        IVirtualInput::MouseData event;
+        event.Action = (pressed ? IVirtualInput::MouseData::PRESSED : IVirtualInput::MouseData::RELEASED);
+        event.Button = button;
+        Send(event);
+ 
+        return (Core::ERROR_NONE);
+    }
+
+    uint32_t VirtualInput::TouchEvent(const uint8_t index, uint16_t state, uint16_t x, uint16_t y)
+    {
+        IVirtualInput::TouchData event;
+        event.Action = (state == 0 ? IVirtualInput::TouchData::MOTION: 
+                       (state == 1 ? IVirtualInput::TouchData::PRESSED : IVirtualInput::TouchData::RELEASED));
+        event.Index = index;
+        event.X = x;
+        event.Y = y;
+        Send(event);
+
+        return (Core::ERROR_NONE);
+    }
+
     uint32_t VirtualInput::KeyEvent(const bool pressed, const uint32_t code, const string& table)
     {
         uint32_t result = Core::ERROR_UNKNOWN_TABLE;
@@ -322,7 +370,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
                     _pressedCode = code;
 
                     if (sendModifiers != 0) {
-                        ModifierKey(PRESSED, sendModifiers);
+                        ModifierKey(IVirtualInput::KeyData::PRESSED, sendModifiers);
                     }
                 } else {
                     if (_pressedCode == code) {
@@ -332,15 +380,22 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
                     }
                 }
 
-                AdministerAndSendKey((pressed ? PRESSED : RELEASED), sendCode);
+                IVirtualInput::KeyData event;
+                event.Action =  (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED);
+                event.Code = sendCode;
+                Send(event);
+                DispatchRegisteredKey(
+                    (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED),
+                    sendCode | (sendModifiers << 16));
 
                 if (pressed == false) {
                     if (sendModifiers != 0) {
-                        ModifierKey(RELEASED, sendModifiers);
+                        ModifierKey(IVirtualInput::KeyData::RELEASED, sendModifiers);
                     }
                 }
 
-                SendKey(COMPLETED, sendCode);
+                event.Action = IVirtualInput::KeyData::COMPLETED;
+                Send(event);
             }
         }
 
@@ -351,40 +406,16 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     void VirtualInput::RepeatKey(const uint32_t code)
     {
-        AdministerAndSendKey(REPEAT, code);
+        IVirtualInput::KeyData event;
+        event.Action = IVirtualInput::KeyData::REPEAT;
+        event.Code = code;
+        Send(event);
         _repeatCounter--;
         if (!_repeatCounter)
             KeyEvent(false, _pressedCode, _keyTable);
     }
 
-    void VirtualInput::AdministerAndSendKey(const actiontype type, const uint32_t code)
-    {
-        bool trigger;
-
-        if (code == KeyMap::modifier::LEFTSHIFT) {
-            trigger = SendModifier(type, enumModifier::LEFTSHIFT);
-        } else if (code == KeyMap::modifier::RIGHTSHIFT) {
-            trigger = SendModifier(type, enumModifier::RIGHTSHIFT);
-        } else if (code == KeyMap::modifier::LEFTALT) {
-            trigger = SendModifier(type, enumModifier::LEFTALT);
-        } else if (code == KeyMap::modifier::RIGHTALT) {
-            trigger = SendModifier(type, enumModifier::RIGHTALT);
-        } else if (code == KeyMap::modifier::LEFTCTRL) {
-            trigger = SendModifier(type, enumModifier::LEFTCTRL);
-        } else if (code == KeyMap::modifier::RIGHTCTRL) {
-            trigger = SendModifier(type, enumModifier::RIGHTCTRL);
-        } else {
-            trigger = true;
-        }
-
-        if (trigger == true) {
-            SendKey(type, code);
-        }
-
-        DispatchRegisteredKey(type, code);
-    }
-
-    bool VirtualInput::SendModifier(const actiontype type, const enumModifier mode)
+    bool VirtualInput::SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode)
     {
         bool trigger = false;
 
@@ -394,7 +425,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         // or decrement.
         uint8_t count((_modifiers >> mode) & 0xF);
 
-        if (type == PRESSED) {
+        if (type == IVirtualInput::KeyData::PRESSED) {
             // Do we need to send the key, trigger required?
             trigger = (count == 0);
 
@@ -405,7 +436,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
             // Then write the incremented value
             _modifiers |= ((count + 1) << mode);
-        } else if (type == RELEASED) {
+        } else if (type == IVirtualInput::KeyData::RELEASED) {
             // Do we need to send the key, trigger required?
             trigger = (count == 1);
 
@@ -421,29 +452,38 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         return (trigger);
     }
 
-    void VirtualInput::ModifierKey(const actiontype type, const uint16_t modifiers)
+    void VirtualInput::ModifierKey(const IVirtualInput::KeyData::type type, const uint16_t modifiers)
     {
+        IVirtualInput::KeyData event;
+        event.Action = type;
+
         if (((modifiers & KeyMap::modifier::LEFTSHIFT) != 0) && (SendModifier(type, enumModifier::LEFTSHIFT) == true)) {
-            SendKey(type, KEY_LEFTSHIFT);
+            event.Code = KEY_LEFTSHIFT;
+            Send(event);
         }
         if (((modifiers & KeyMap::modifier::RIGHTSHIFT) != 0) && (SendModifier(type, enumModifier::RIGHTSHIFT) == true)) {
-            SendKey(type, KEY_RIGHTSHIFT);
+            event.Code = KEY_RIGHTSHIFT;
+            Send(event);
         }
         if (((modifiers & KeyMap::modifier::LEFTALT) != 0) && (SendModifier(type, enumModifier::LEFTALT) == true)) {
-            SendKey(type, KEY_LEFTALT);
+            event.Code = KEY_LEFTALT;
+            Send(event);
         }
         if (((modifiers & KeyMap::modifier::RIGHTALT) != 0) && (SendModifier(type, enumModifier::RIGHTALT) == true)) {
-            SendKey(type, KEY_RIGHTALT);
+            event.Code = KEY_RIGHTALT;
+            Send(event);
         }
         if (((modifiers & KeyMap::modifier::LEFTCTRL) != 0) && (SendModifier(type, enumModifier::LEFTCTRL) == true)) {
-            SendKey(type, KEY_LEFTCTRL);
+            event.Code = KEY_LEFTCTRL;
+            Send(event);
         }
         if (((modifiers & KeyMap::modifier::RIGHTCTRL) != 0) && (SendModifier(type, enumModifier::RIGHTCTRL) == true)) {
-            SendKey(type, KEY_RIGHTCTRL);
+            event.Code = KEY_RIGHTCTRL;
+            Send(event);
         }
     }
 
-    void VirtualInput::DispatchRegisteredKey(const actiontype type, uint32_t code)
+    void VirtualInput::DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code)
     {
         _lock.Lock();
 
@@ -482,6 +522,7 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     /* virtual */ LinuxKeyboardInput::~LinuxKeyboardInput()
     {
+        ClearKeyMap();
         Close();
     }
 
@@ -530,7 +571,6 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
     /* virtual */ void LinuxKeyboardInput::MapChanges(ChangeIterator & updated)
     {
-
         _lock.Lock();
 
         if (Updated(updated) == true) {
@@ -557,21 +597,32 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
         _lock.Unlock();
     }
 
-    /* virtual */ void LinuxKeyboardInput::SendKey(const actiontype type, const uint32_t code)
+    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::KeyData& data)
     {
         if (_eventDescriptor > 0) {
             struct input_event ev;
 
             memset(&ev, 0, sizeof(ev));
 
-            ev.type = ((type == COMPLETED) ? EV_SYN : EV_KEY);
-            ev.value = ((type == COMPLETED) ? SYN_REPORT : ((type == PRESSED) ? 1 : (type == RELEASED ? 0 : 2)));
-            ev.code = ((type == COMPLETED) ? 0 : code);
+            ev.type  = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? EV_SYN : EV_KEY);
+            ev.value = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? SYN_REPORT : 
+                       ((data.Action == IVirtualInput::KeyData::PRESSED) ? 1 : 
+                        (data.Action == IVirtualInput::KeyData::RELEASED ? 0 : 2)));
+            ev.code  = ((data.Action == IVirtualInput::KeyData::COMPLETED) ? 0 : data.Code);
 
-            TRACE_L1("Inserted a keycode: %d", code);
+            TRACE_L1("Inserted a keycode: %d", data.Code);
             (void)write(_eventDescriptor, &ev, sizeof(ev));
         }
     }
+
+    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::MouseData& data)
+    {
+    }
+
+    /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::TouchData& data)
+    {
+    }
+
 
     bool LinuxKeyboardInput::Updated(ChangeIterator & updated)
     {
@@ -612,54 +663,78 @@ ENUM_CONVERSION_BEGIN(PluginHost::VirtualInput::KeyMap::modifier)
 
 #endif
 
-    IPCKeyboardInput::IPCKeyboardInput(const Core::NodeId& sourceName)
+    // Keyboard input
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
+    IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
         : _service(*this, sourceName)
     {
-        TRACE_L1("Constructing IPCKeyboardInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
+        TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
 
-    /* virtual */ IPCKeyboardInput::~IPCKeyboardInput()
+    /* virtual */ IPCUserInput::~IPCUserInput()
     {
+        ClearKeyMap();
     }
 
-    /* virtual */ uint32_t IPCKeyboardInput::Open()
+    /* virtual */ uint32_t IPCUserInput::Open()
     {
         return (_service.Open(2000));
     }
 
-    /* virtual */ uint32_t IPCKeyboardInput::Close()
+    /* virtual */ uint32_t IPCUserInput::Close()
     {
         _service.Close(2000);
         return (Core::ERROR_NONE);
     }
 
-    /* virtual */ void IPCKeyboardInput::SendKey(const actiontype type, const uint32_t code)
+    /* virtual */ void IPCUserInput::Send(const IVirtualInput::KeyData& data)
     {
-        static Core::ProxyType<KeyMessage> message(Core::ProxyType<KeyMessage>::Create());
+        static Core::ProxyType<IVirtualInput::KeyMessage> message(Core::ProxyType<IVirtualInput::KeyMessage>::Create());
 
-        message->Parameters().Action = type;
-        message->Parameters().Code = code;
-
+        message->Parameters() = data;
         Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
-
-        TRACE_L1("Sending keycode to all clients: %d", code);
-        _service.Invoke(base, Core::infinite);
+        _service.Invoke(base, RPC::CommunicationTimeOut);
     }
 
-    /* virtual */ void IPCKeyboardInput::MapChanges(ChangeIterator&) {}
-
-    /* virtual */ void IPCKeyboardInput::LookupChanges(const string& linkName)
+    /* virtual */ void IPCUserInput::Send(const IVirtualInput::MouseData& data)
     {
+        static Core::ProxyType<IVirtualInput::MouseMessage> message(Core::ProxyType<IVirtualInput::MouseMessage>::Create());
 
+        message->Parameters() = data;
+        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        _service.Invoke(base, RPC::CommunicationTimeOut);
+    }
+
+    /* virtual */ void IPCUserInput::Send(const IVirtualInput::TouchData& data)
+    {
+        static Core::ProxyType<IVirtualInput::TouchMessage> message(Core::ProxyType<IVirtualInput::TouchMessage>::Create());
+
+        message->Parameters() = data;
+        Core::ProxyType<Core::IIPC> base(Core::proxy_cast<Core::IIPC>(message));
+        _service.Invoke(base, RPC::CommunicationTimeOut);
+    }
+
+    /* virtual */ void IPCUserInput::MapChanges(ChangeIterator&) {}
+
+    /* virtual */ void IPCUserInput::LookupChanges(const string& linkName)
+    {
         uint16_t index = 0;
-        Core::ProxyType<KeyboardLink> current(_service[index++]);
+        Core::ProxyType<InputDataLink> current(_service[index++]);
 
         while (current.IsValid() == true) {
             if (current->Name() == linkName) {
                 current->Reload();
             }
-            current = _service[index++];
+            current = Core::ProxyType<InputDataLink>(_service[index++]);
         }
     }
-}
+
 } // Namespace PluginHost
+}
+
+

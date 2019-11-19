@@ -9,7 +9,7 @@ target_link_libraries(${TEST_RUNNER_NAME}
     ${GTEST_LIBRARY}
     ${GTEST_MAIN_LIBRARY}
     ${CMAKE_THREAD_LIBS_INIT}
-    Core
-    Tracing
-    Protocols
+    WPEFrameworkCore
+    WPEFrameworkTracing
+    WPEFrameworkProtocols
 )

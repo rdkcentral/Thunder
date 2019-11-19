@@ -44,57 +44,62 @@ namespace PluginHost {
             Core::ProxyType<Core::JSON::IElement> _json;
             string _text;
         };
-        class EXTERNAL SerializerImpl : public Core::JSON::IElement::Serializer {
-        private:
+        class EXTERNAL SerializerImpl {
+        public:
+            SerializerImpl() = delete;
             SerializerImpl(const SerializerImpl&) = delete;
             SerializerImpl& operator=(const SerializerImpl&) = delete;
 
-        public:
-            SerializerImpl()
+            SerializerImpl(Channel& parent)
+                : _parent(parent)
+                , _current()
+                , _offset(0)
             {
             }
-            virtual ~SerializerImpl()
+            ~SerializerImpl()
             {
             }
 
         public:
-            inline void Submit(const Core::ProxyType<Core::JSON::IElement>& entry)
-            {
-                ASSERT(entry.IsValid() == true);
-
-                _current = entry;
-                Core::JSON::IElement::Serializer::Submit(*entry);
-            }
             inline bool IsIdle() const
             {
                 return (_current.IsValid() == false);
             }
+			inline uint16_t Serialize(char* stream, const uint16_t length) const {
+                uint16_t loaded = 0;
 
-        private:
-            virtual void Serialized(const Core::JSON::IElement& element)
-            {
-                ASSERT(&(*(_current)) == &element);
-                DEBUG_VARIABLE(element);
+                if (_current.IsValid() == false) {
+                    _current = Core::ProxyType<const Core::JSON::IElement>(_parent.Element());
+				}
 
-                _current.Release();
+				if (_current.IsValid() == true) {
+                    loaded = _current->Serialize(stream, length, _offset);
+                    if ( (_offset == 0) || (loaded != length) ) {
+                        _current.Release();
+                    }
+                }
+
+				return (loaded);
             }
 
         private:
-            Core::ProxyType<const Core::JSON::IElement> _current;
+            Channel& _parent;
+            mutable Core::ProxyType<const Core::JSON::IElement> _current;
+            mutable uint16_t _offset;
         };
-
-        class EXTERNAL DeserializerImpl : public Core::JSON::IElement::Deserializer {
-        private:
+        class EXTERNAL DeserializerImpl {
+        public:
             DeserializerImpl() = delete;
             DeserializerImpl(const DeserializerImpl&) = delete;
             DeserializerImpl& operator=(const DeserializerImpl&) = delete;
 
-        public:
             DeserializerImpl(Channel& parent)
                 : _parent(parent)
+                , _current()
+                , _offset(0)
             {
             }
-            virtual ~DeserializerImpl()
+            ~DeserializerImpl()
             {
             }
 
@@ -103,35 +108,32 @@ namespace PluginHost {
             {
                 return (_current.IsValid() == false);
             }
-
-        private:
-            virtual Core::JSON::IElement* Element(const string& identifier)
+            inline uint16_t Deserialize(const char* stream, const uint16_t length)
             {
-                if (_parent.IsOpen() == true) {
-                    _current = _parent.Element(identifier);
+			    uint16_t loaded = 0;
 
-                    return (_current.IsValid() == true ? &(*_current) : nullptr);
+                if (_current.IsValid() == false) {
+                    if (_parent.IsOpen() == true) {
+                        _current = _parent.Element(EMPTY_STRING);
+                        _offset = 0;
+                    }
+                } 
+				if (_current.IsValid() == true) {
+                    loaded = _current->Deserialize(stream, length, _offset);
+                    if ( (_offset == 0) || (loaded != length)) {
+                        _parent.Received(_current);
+                        _current.Release();
+                    }
                 }
-                return (nullptr);
-            }
-            virtual void Deserialized(Core::JSON::IElement& element)
-            {
-                ASSERT(&element == &(*_current));
-                DEBUG_VARIABLE(element);
 
-                _parent.Received(_current);
-
-                _current.Release();
+				return (loaded);
             }
 
         private:
             Channel& _parent;
             Core::ProxyType<Core::JSON::IElement> _current;
+            uint16_t _offset;
         };
-
-        Channel() = delete;
-        Channel(const Channel& copy) = delete;
-        Channel& operator=(const Channel&) = delete;
 
     public:
         enum ChannelState {
@@ -144,6 +146,9 @@ namespace PluginHost {
         };
 
     public:
+        Channel() = delete;
+        Channel(const Channel& copy) = delete;
+        Channel& operator=(const Channel&) = delete;
         Channel(const SOCKET& connector, const Core::NodeId& remoteId);
         virtual ~Channel();
 
@@ -213,11 +218,6 @@ namespace PluginHost {
 
                 bool trigger = (_sendQueue.size() == 1);
 
-                if (trigger == true) {
-                    ASSERT(_serializer.IsIdle() == true);
-                    _serializer.Submit(entry);
-                }
-
                 _adminLock.Unlock();
 
                 if (trigger == true) {
@@ -266,7 +266,7 @@ namespace PluginHost {
                 case JSON:
                 case JSONRPC: {
                     // Seems we are sending JSON structs
-                    size = _serializer.Serialize(dataFrame, maxSendSize);
+                    size = _serializer.Serialize(reinterpret_cast<char*>(dataFrame), maxSendSize);
 
                     if (_serializer.IsIdle() == true) {
 
@@ -274,10 +274,6 @@ namespace PluginHost {
                         _adminLock.Lock();
                         _sendQueue.pop_front();
                         bool trigger(_sendQueue.size() > 0);
-
-                        if (trigger == true) {
-                            _serializer.Submit(_sendQueue.front().JSON());
-                        }
                         _adminLock.Unlock();
 
                         if (trigger == true) {
@@ -291,6 +287,7 @@ namespace PluginHost {
                 }
                 case TEXT: {
                     // Seems we need to send plain strings...
+                    _adminLock.Lock();
                     Package& data(_sendQueue.front());
                     uint16_t neededBytes(static_cast<uint16_t>(data.Text().length() - _offset));
 
@@ -300,15 +297,14 @@ namespace PluginHost {
                         _offset = 0;
 
                         // See if there is more to do..
-                        _adminLock.Lock();
                         _sendQueue.pop_front();
-                        _adminLock.Unlock();
                     } else {
                         uint16_t addedBytes = maxSendSize - size;
                         ::memcpy(dataFrame, &(data.Text().c_str()[_offset]), addedBytes);
                         _offset += addedBytes;
                         size = addedBytes;
                     }
+                    _adminLock.Unlock();
 
                     ASSERT(size != 0);
 
@@ -337,7 +333,7 @@ namespace PluginHost {
             switch (State()) {
             case JSON:
             case JSONRPC: {
-                handled = _deserializer.Deserialize(dataFrame, receivedSize);
+                handled = _deserializer.Deserialize(reinterpret_cast<const char*>(dataFrame), receivedSize);
                 break;
             }
             case TEXT: {
@@ -393,6 +389,19 @@ namespace PluginHost {
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
+		Core::ProxyType<Core::JSON::IElement> Element() {
+            Core::ProxyType<Core::JSON::IElement> result;
+
+            _adminLock.Lock();
+
+            if (_sendQueue.size() > 0) {
+                result = _sendQueue.front().JSON();
+
+            }
+            _adminLock.Unlock();
+
+			return (result);
+		}
 
     private:
         mutable Core::CriticalSection _adminLock;

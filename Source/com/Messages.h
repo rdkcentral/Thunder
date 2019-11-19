@@ -173,26 +173,34 @@ namespace RPC {
         private:
             Init(const Init&) = delete;
             Init& operator=(const Init&) = delete;
+            uint32_t ParentId() const 
+            {
+                uint32_t exchangeId = 0;
+                string value; Core::SystemInfo::GetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), value);
+                if (value.empty() == false) {
+                    exchangeId = Core::NumberType<uint32_t>(value.c_str(), static_cast<uint32_t>(value.length())).Value();
+                }
+
+                return (exchangeId);
+            }
 
         public:
-            enum type {
+            enum type : uint8_t {
                 AQUIRE = 0,
                 OFFER = 1,
                 REVOKE = 2,
                 REQUEST = 3
             };
 
+        
+
         public:
             Init()
-                : _implementation(nullptr)
+                : _id(0)
+				, _implementation(nullptr)
                 , _interfaceId(~0)
                 , _exchangeId(~0)
-            {
-            }
-            Init(Core::IUnknown* implementation, const uint32_t interfaceId, const uint32_t exchangeId)
-                : _implementation(implementation)
-                , _interfaceId(interfaceId)
-                , _exchangeId(exchangeId)
+                , _versionId(0)
             {
             }
             ~Init()
@@ -216,28 +224,54 @@ namespace RPC {
             {
                 return (IsRevoke() == false) && (IsOffer() == false) && (IsRequested() == false);
             }
-            void Set(const uint32_t interfaceId, void* implementation, const type whatKind)
+            void Set(const uint32_t myId)
             {
-                ASSERT(whatKind != AQUIRE);
-
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = ParentId();
+                _implementation = nullptr;
+                _interfaceId = ~0;
+                _versionId = ~0;
+                _id = myId;
+                _className[0] = '\0';
+                _className[1] = AQUIRE;
+   
+            }
+            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const uint32_t exchangeId)
+            {
+                _exchangeId = exchangeId;
                 _implementation = implementation;
                 _interfaceId = interfaceId;
                 _versionId = 0;
+                _id = myId;
+                _className[0] = '\0';
+                _className[1] = REQUEST;
+            }
+            void Set(const uint32_t myId, const uint32_t interfaceId, void* implementation, const type whatKind)
+            {
+                ASSERT((whatKind != AQUIRE) && (whatKind != REQUEST));
+
+                _exchangeId = ParentId();
+                _implementation = implementation;
+                _interfaceId = interfaceId;
+                _versionId = 0;
+                _id = myId;
                 _className[0] = '\0';
                 _className[1] = whatKind;
             }
-            void Set(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
-                _exchangeId = Core::ProcessInfo().Id();
+                _exchangeId = ParentId();
                 _implementation = nullptr;
                 _interfaceId = interfaceId;
                 _versionId = versionId;
-                _className[1] = AQUIRE;
+                _id = myId;
                 const std::string converted(Core::ToString(className));
                 ::strncpy(_className, converted.c_str(), sizeof(_className));
             }
-            void* Implementation()
+            uint32_t Id() const
+            {
+                return (_id);
+            }
+            void* Implementation() const
             {
                 return (_implementation);
             }
@@ -259,6 +293,7 @@ namespace RPC {
             }
 
         private:
+            uint32_t _id;
             void* _implementation;
             uint32_t _interfaceId;
             uint32_t _exchangeId;
@@ -288,14 +323,17 @@ namespace RPC {
             void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
             {
                 _data.SetNumber<void*>(0, implementation);
-                uint16_t length = _data.SetText(4, proxyStubPath);
-                _data.SetText(4 + length, traceCategories);
+                uint16_t length = _data.SetText(sizeof(void*), proxyStubPath);
+                _data.SetText(sizeof(void*) + length, traceCategories);
             }
+			inline bool IsSet() const {
+                return (_data.Size() > 0);
+			}
             string ProxyStubPath() const
             {
                 string value;
 
-                _data.GetText(4, value);
+                _data.GetText(sizeof(void*), value);
 
                 return (value);
             }
@@ -303,7 +341,7 @@ namespace RPC {
             {
                 string value;
 
-                _data.GetText(4 + _data.GetText(4, value), value);
+                _data.GetText(sizeof(void*) + _data.GetText(sizeof(void*), value), value);
 
                 return (value);
             }

@@ -6,7 +6,7 @@ option(WCHAR_SUPPORT
         "Enable support for WCHAR." OFF)
 option(DISABLE_TRACING 
         "Disable tracing in debug" OFF)
-option(BLUETOOTH_SUPPORT
+option(BLUETOOTH
         "Enable support for Bluetooth in the core." OFF)
 
 find_package(Threads REQUIRED)
@@ -14,6 +14,7 @@ find_package(Threads REQUIRED)
 include(CompileSettings)
 
 add_library(${TARGET} SHARED
+	DoorBell.cpp
         CyclicBuffer.cpp
         DataElement.cpp
         DataElementFile.cpp
@@ -42,6 +43,7 @@ add_library(${TARGET} SHARED
         Thread.cpp
         Time.cpp
         Trace.cpp
+        WorkerPool.cpp
         XGetopt.cpp
         ResourceMonitor.cpp
         )
@@ -50,6 +52,7 @@ add_library(${TARGET} SHARED
 # All the interface headers are here, these will be installed to staging
 set(PUBLIC_HEADERS
         ASN1.h
+        DoorBell.h
         Config.h
         core.h
         CyclicBuffer.h
@@ -100,12 +103,14 @@ set(PUBLIC_HEADERS
         SocketPort.h
         SocketServer.h
         StateTrigger.h
+        StopWatch.h
         Stream.h
         StreamJSON.h
         StreamText.h
         StreamTypeLengthValue.h
         Sync.h
         Synchronize.h
+        SynchronousChannel.h
         SystemInfo.h
         TextFragment.h
         TextReader.h
@@ -117,6 +122,7 @@ set(PUBLIC_HEADERS
         TypeTraits.h
         ValueRecorder.h
         XGetopt.h
+        WorkerPool.h
         Module.h
         )
 
@@ -126,12 +132,16 @@ if(DISABLE_TRACING)
     message(STATUS "Force trace level to 0")
 endif()
 
+if(BUILD_TESTS)
+    target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)
+endif()
+
 if(NOT WCHAR_SUPPORT)
     target_compile_definitions(${TARGET} PUBLIC __NO_WCHAR_SUPPORT__)
     message(STATUS "Disabled WCHAR support.")
 endif()
 
-if (BLUETOOTH_SUPPORT)
+if (BLUETOOTH)
     target_compile_definitions(${TARGET} PUBLIC CORE_BLUETOOTH)
     message(STATUS "Enable Bluetooth support.")
 endif()

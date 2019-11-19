@@ -585,7 +585,7 @@ namespace Core {
                     m_State = SerialPort::OPEN;
                     ResourceMonitor::Instance().Register(*this);
 
-                    result = OK;
+                    result = Core::ERROR_NONE;
                 }
             }
         }
@@ -623,7 +623,7 @@ namespace Core {
 
                     g_SerialPortMonitor.Monitor(*this);
 
-                    result = OK;
+                    result = Core::ERROR_NONE;
                 }
             }
         }
@@ -645,14 +645,8 @@ namespace Core {
             // subscribtion.
             m_State |= SerialPort::EXCEPTION;
             m_State &= ~SerialPort::OPEN;
-            close(m_Descriptor);
-            m_Descriptor = -1;
             ResourceMonitor::Instance().Break();
-
-            m_syncAdmin.Unlock();
-
-            WaitForClosure(waitTime);
-        } else {
+        } 
 #endif
 
 #ifdef __WIN32__
@@ -660,21 +654,15 @@ namespace Core {
 
                 m_State |= SerialPort::EXCEPTION;
                 m_State &= ~SerialPort::OPEN;
-                ::CloseHandle(m_Descriptor);
-                m_Descriptor = INVALID_HANDLE_VALUE;
                 g_SerialPortMonitor.Break();
-
-                m_syncAdmin.Unlock();
-
-                WaitForClosure(waitTime);
-            } else {
+            } 
 #endif
 
-                m_syncAdmin.Unlock();
-            }
+        WaitForClosure(waitTime);
+        m_syncAdmin.Unlock();
 
-            return (OK);
-        }
+        return (Core::ERROR_NONE);
+    }
 
         uint32_t SerialPort::WaitForClosure(const uint32_t time) const
         {

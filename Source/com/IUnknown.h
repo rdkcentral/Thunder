@@ -28,7 +28,12 @@ namespace ProxyStub {
         {
             return (3);
         }
-        virtual Core::IUnknown* Convert(void* incomingData) const;
+	virtual Core::IUnknown* Convert(void* incomingData) const {
+            return (reinterpret_cast<Core::IUnknown*>(incomingData));
+        }
+	virtual uint32_t InterfaceId() const {
+            return (Core::IUnknown::ID);
+        }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message);
     };
 
@@ -61,9 +66,10 @@ namespace ProxyStub {
         }
         virtual Core::IUnknown* Convert(void* incomingData) const
         {
-            INTERFACE* result = reinterpret_cast<INTERFACE*>(incomingData);
-
-            return (result);
+            return (reinterpret_cast<INTERFACE*>(incomingData));
+        }
+	virtual uint32_t InterfaceId() const {
+            return (INTERFACE::ID);
         }
         virtual void Handle(const uint16_t index, Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message)
         {
@@ -106,6 +112,7 @@ namespace ProxyStub {
             : _remoteAddRef(remoteRefCounted ? REGISTERED : UNREGISTERED)
             , _refCount(remoteRefCounted ? 1 : 0)
             , _interfaceId(interfaceId)
+            , _releaseCount(1)
             , _implementation(implementation)
             , _channel(channel)
             , _parent(*parent)
@@ -116,6 +123,11 @@ namespace ProxyStub {
         }
 
     public:
+        inline void AddRefCachedCount() {
+            if ((_remoteAddRef.load() & REGISTERED) != 0) {
+                _releaseCount++;
+            }
+        }
         inline uint32_t Release()
         {
             return (_parent.Release());
@@ -184,9 +196,10 @@ namespace ProxyStub {
                 uint8_t value(REGISTERED);
                 if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                     RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
-                    RemoteRelease();
+                    result = RemoteRelease();
+                } else{
+                    result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                 }
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             } else if (newValue == 2) {
                 uint8_t value = REGISTERED | CACHING;
                 if (_remoteAddRef.compare_exchange_weak(value, PENDING_RELEASE | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
@@ -232,20 +245,26 @@ namespace ProxyStub {
 
             return (_parent.Release());
         }
-        void RemoteRelease() const
+        uint32_t RemoteRelease() const
         {
 
             // We have reached "0", signal the other side..
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
             message->Parameters().Set(_implementation, _interfaceId, 1);
+            message->Parameters().Writer().Number<uint32_t>(_releaseCount.load());
 
             // Just try the destruction for few Seconds...
             uint32_t result = Invoke(message, RPC::CommunicationTimeOut);
 
             if (result != Core::ERROR_NONE) {
                 TRACE_L1("Could not remote release the Proxy.");
+            } else {
+                // Pass the remote release return value through
+                result = message->Response().Reader().Number<uint32_t>();
             }
+
+            return result;
         }
 
         inline const Core::ProxyType<Core::IPCChannel>& Channel() const
@@ -275,6 +294,7 @@ namespace ProxyStub {
         mutable std::atomic<uint8_t> _remoteAddRef;
         mutable uint32_t _refCount;
         const uint32_t _interfaceId;
+        std::atomic<uint32_t> _releaseCount;
         void* _implementation;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
         Core::IUnknown& _parent;
@@ -291,10 +311,16 @@ namespace ProxyStub {
         typedef Core::ProxyType<RPC::InvokeMessage> IPCMessage;
 
     public:
+#ifdef __WIN32__
+#pragma warning(disable : 4355)
+#endif
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool remoteRefCounted)
             : _unknown(channel, implementation, INTERFACE::ID, remoteRefCounted, this)
         {
         }
+#ifdef __WIN32__
+#pragma warning(default : 4355)
+#endif
         virtual ~UnknownProxyType()
         {
         }
@@ -318,12 +344,15 @@ namespace ProxyStub {
         }
         virtual uint32_t Release() const override
         {
-            uint32_t result = Core::ERROR_NONE;
-
-            if (_unknown.DropReference() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                delete (this);
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            uint32_t result = _unknown.DropReference();
+            if((result != Core::ERROR_NONE) && (result != Core::ERROR_TIMEDOUT) && (result != Core::ERROR_DESTRUCTION_SUCCEEDED)) {
+                result = Core::ERROR_DESTRUCTION_FAILED;
             }
+
+            if (result != Core::ERROR_NONE) {
+                delete (this);
+            }
+
             return (result);
         }
         virtual void* QueryInterface(const uint32_t interfaceNumber) override

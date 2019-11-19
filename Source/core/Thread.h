@@ -49,7 +49,7 @@ namespace Core {
 
         ThreadLocalStorageType()
         {
-            TRACE_L5("Constructor ThreadControlBlockInfo <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor ThreadControlBlockInfo <%p>", (this));
 
 #ifdef __WIN32__
             m_Index = TlsAlloc();
@@ -67,7 +67,7 @@ namespace Core {
     public:
         ~ThreadLocalStorageType()
         {
-            TRACE_L5("Destructor ThreadControlBlockInfo <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor ThreadControlBlockInfo <%p>", (this));
 
 #ifdef __WIN32__
             if (m_Index != -1) {
@@ -179,7 +179,7 @@ namespace Core {
         {
 #if defined(__WIN32__) || defined(__APPLE__)
 #pragma warning(disable : 4312)
-            return (reinterpret_cast<::ThreadId>(m_ThreadId));
+            return (reinterpret_cast<const ::ThreadId>(m_ThreadId));
 #pragma warning(default : 4312)
 #else
             return (static_cast<::ThreadId>(m_ThreadId));
@@ -457,9 +457,6 @@ namespace Core {
                     // Yield the processor, just to make sure that the gap, between the comparison
                     // of the Executing(.....) ended up in the lock, before we pulse it :-)
                     ::SleepMs(0);
-
-                    // Do not wait keep on processing !!!
-                    return (0);
                 }
 
                 // Oops queue disabled, wait for queue to start us again..

@@ -1,0 +1,86 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Location Sync API",
+    "class": "LocationSync",
+    "description": "Location Sync JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "LocationSync.1.sync": {
+      "summary": "Synchronizes the location",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Failed to synchdonize the location",
+          "$ref": "#/common/errors/general"
+        },
+        {
+          "description": "Unavailable locator",
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Incorrect URL",
+          "$ref": "#/common/errors/incorrecturl"
+        },
+        {
+          "description": "Probing in progress",
+          "$ref": "#/common/errors/inprogress"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "location": {
+      "summary": "Location information",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "description": "City name",
+            "type": "string",
+            "example": "Wroclaw"
+          },
+          "country": {
+            "description": "Country name",
+            "type": "string",
+            "example": "Poland"
+          },
+          "region": {
+            "description": "Region name",
+            "type": "string",
+            "example": "Wroclaw"
+          },
+          "timezone": {
+            "description": "Time zone information",
+            "type": "string",
+            "example": "CET-1CEST,M3.5.0,M10.5.0/3"
+          },
+          "publicip": {
+            "description": "Public IP",
+            "type": "string",
+            "example": "78.11.117.118"
+          }
+        },
+        "required": [
+          "city",
+          "country",
+          "region",
+          "timezone",
+          "publicip"
+        ]
+      }
+    }
+  },
+  "events": {
+    "locationchange": {
+      "summary": "Signals a location change"
+    }
+  }
+}

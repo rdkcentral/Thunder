@@ -1,8 +1,8 @@
-# WPEFRAMEWORK
+# Thunder
 
 A C++ platform abstraction layer for generic functionality.
 
-### WPEFRAMEWORK Options
+### Thunder Options
 **Platforms:**
 * INTELCE
 * RPI
@@ -12,11 +12,14 @@ A C++ platform abstraction layer for generic functionality.
 * DAWN
 * Xi5
 
-**WPEFRAMEWORK options:**
+**Thunder options:**
 *  -DCORE=ON ,Include the generics library.
 *  -DCRYPTALGO=ON ,Include the encyption algorithm library.
 *  -DPROTOCOLS=ON ,Include the protocols library.
 *  -DTRACING=ON ,Include the tracing library.
 *  -DPLUGINS=ON ,Include the plugin library.
-*  -DDEBUG=ON ,Enable debug build for WPEFramework.
-*  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in WPEFramework.
+*  -DDEBUG=ON ,Enable debug build for Thunder.
+*  -DWCHAR_SUPPORT=ON ,Enable support for WCHAR in Thunder.
+
+**Internal plugins**
+* [Controller](Source/WPEFramework/ControllerPlugin.md)

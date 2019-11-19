@@ -34,6 +34,21 @@ namespace Core {
             FILE_ENCRYPTED = FILE_ATTRIBUTE_ENCRYPTED
 
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = 0x00000001,
+            USER_WRITE     = 0x00000002,
+            USER_EXECUTE   = 0x00000004,
+            GROUP_READ     = 0x00000008,
+            GROUP_WRITE    = 0x00000010,
+            GROUP_EXECUTE  = 0x00000020,
+            OTHERS_READ    = 0x00000040,
+            OTHERS_WRITE   = 0x00000080,
+            OTHERS_EXECUTE = 0x00000100,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
 #endif
 
 #ifdef __POSIX__
@@ -55,6 +70,22 @@ namespace Core {
             // A device
             FILE_DEVICE = 0x0010
         } Atrributes;
+
+        typedef enum : uint32_t {
+            USER_READ      = S_IRUSR,
+            USER_WRITE     = S_IWUSR,
+            USER_EXECUTE   = S_IXUSR,
+            GROUP_READ     = S_IRGRP,
+            GROUP_WRITE    = S_IWGRP,
+            GROUP_EXECUTE  = S_IXGRP,
+            OTHERS_READ    = S_IROTH,
+            OTHERS_WRITE   = S_IWOTH,
+            OTHERS_EXECUTE = S_IXOTH,
+            SHAREABLE      = 0x10000000,
+            CREATE         = 0x20000000
+       } Mode;
+
+
 #endif
 
     public:
@@ -151,10 +182,6 @@ namespace Core {
         inline bool Exists() const
         {
             return (_attributes != 0);
-        }
-        inline bool IsShared() const
-        {
-            return (_sharable);
         }
         inline bool IsReadOnly() const
         {
@@ -260,17 +287,23 @@ namespace Core {
 #endif
         }
 
-        bool Create()
+        bool Create(const bool exclusive = false)
+        {
+            return (Create((USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE), exclusive));
+        }
+
+        bool Create(const uint32_t mode, const bool exclusive = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | (_sharable ? 0 : O_EXCL), S_IRWXU | S_IRGRP | S_IWGRP);
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WIN32__
-            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | FILE_SHARE_WRITE) : 0), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
             return (IsOpen());
         }
+
         bool Open() const
         {
 #ifdef __POSIX__
@@ -288,7 +321,7 @@ namespace Core {
             _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
 #endif
 #ifdef __WIN32__
-            _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), (_sharable ? (FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE)) : 0), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+            _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
             return (IsOpen());
@@ -522,7 +555,6 @@ namespace Core {
         Core::Time _creation;
         Core::Time _modification;
         Core::Time _access;
-        bool _sharable;
         mutable Handle _handle;
     };
 

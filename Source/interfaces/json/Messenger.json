@@ -1,0 +1,212 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Messenger API",
+    "class": "Messenger",
+    "description": "Messenger JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "Messenger.1.join": {
+      "summary": "Joins a messaging room",
+      "description": "Use this method to join a room. If the specified room does not exist, then it will be created.",
+      "events": [
+        "userupdate"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "description": "User name to join the room under (must not be empty)",
+            "type": "string",
+            "example": "Bob"
+          },
+          "room": {
+            "description": "Name of the room to join (must not be empty)",
+            "type": "string",
+            "example": "Lounge"
+          }
+        },
+        "required": [
+          "user",
+          "room"
+        ]
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "roomid": {
+            "description": "Unique ID of the room",
+            "type": "string",
+            "example": "1e217990dd1cd4f66124"
+          }
+        }
+      },
+      "errors": [
+        {
+          "description": "User name is already taken (i.e. the user has already joined the room)",
+          "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "User name or room name was invalid",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    },
+    "Messenger.1.leave": {
+      "summary": "Leaves a messaging room",
+      "description": "Use this method to leave a room. The room ID becomes invalid after this call. If there are no more users, the room will be destroyed and related resources freed.",
+      "events": [
+        "userupdate"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "roomid": {
+            "description": "ID of the room to leave",
+            "type": "string",
+            "example": "1e217990dd1cd4f66124"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "The given room ID was invalid",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    },
+    "Messenger.1.send": {
+      "summary": "Sends a message to a room",
+      "description": "Use this method to send a message to a room.",
+      "events": [
+        "message"
+      ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "roomid": {
+            "description": "ID of the room to send the message to",
+            "type": "string",
+            "example": "1e217990dd1cd4f66124"
+          },
+          "message": {
+            "description": "The message content to send",
+            "type": "string",
+            "example": "Hello!"
+          }
+        },
+        "required": [
+          "roomid",
+          "message"
+        ]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "The given room ID was invalid",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
+    }
+  },
+  "events": {
+    "roomupdate": {
+      "summary": "Notifies about room status updates",
+      "description": "Register to this event to be notified about room status updates. Immediately after registering to this notification the listener will sequentially receive updates of all rooms that have been created so far.",
+      "statuslistener": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "room": {
+            "description": "Name of the room this notification relates to",
+            "type": "string",
+            "example": "Lounge"
+          },
+          "action": {
+            "description": "Specifies the room status change, e.g. created or destroyed",
+            "type": "string",
+            "enum": [
+              "created",
+              "destroyed"
+            ],
+            "default": "created",
+            "example": "created"
+          }
+        },
+        "required": [
+          "room",
+          "action"
+        ]
+      }
+    },
+    "userupdate": {
+      "summary": "Notifies about user status updates.",
+      "description": "Register to this event to be notified about room status updates. Immediately after registering to this notification the listener will sequentially receive updates of all users that have joined the room so far.",
+      "statuslistener": true,
+      "id": {
+        "name": "room ID",
+        "example": "1e217990dd1cd4f66124"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "description": "Name of the user that has this notification relates to",
+            "type": "string",
+            "example": "Bob"
+          },
+          "action": {
+            "description": "Specifies the user status change, e.g. join or leave a room",
+            "type": "string",
+            "enum": [
+              "joined",
+              "left"
+            ],
+            "default": "joined",
+            "example": "joined"
+          }
+        },
+        "required": [
+          "user",
+          "action"
+        ]
+      }
+    },
+    "message": {
+      "summary": "Notifies about new messages in a room",
+      "description": "Register to this event to be notified about new messages in a room.",
+      "id": {
+        "name": "room ID",
+        "example": "1e217990dd1cd4f66124"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "description": "Name of the user that has sent the message",
+            "type": "string",
+            "example": "Bob"
+          },
+          "message": {
+            "description": "Content of the message",
+            "type": "string",
+            "example": "Hello!"
+          }
+        },
+        "required": [
+          "user",
+          "message"
+        ]
+      }
+    }
+  }
+}

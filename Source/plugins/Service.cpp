@@ -2,21 +2,8 @@
 #include "Channel.h"
 
 namespace WPEFramework {
+
 namespace PluginHost {
-
-    static WorkerPool* _singleton = nullptr;
-
-    /* static */ void WorkerPool::Instance(WorkerPool& instance)
-    {
-        ASSERT(_singleton == nullptr);
-        _singleton = &instance;
-    }
-
-    /* static */ WorkerPool& WorkerPool::Instance()
-    {
-        ASSERT(_singleton != nullptr);
-        return (*_singleton);
-    }
 
     PluginHost::Request::Request()
         : Web::Request()
@@ -42,19 +29,17 @@ namespace PluginHost {
         ASSERT(_service.IsValid() == false);
         ASSERT(State() == INCOMPLETE);
 
+		uint8_t value = (serviceCall ? SERVICE_CALL : 0);
+
         if (service.IsValid() == true) {
-            _state = COMPLETE | SERVICE_CALL;
+            _state = COMPLETE | value;
             _service = service;
         } else if (errorCode == Core::ERROR_BAD_REQUEST) {
-            _state = OBLIVIOUS | SERVICE_CALL;
+            _state = OBLIVIOUS | value;
         } else if (errorCode == Core::ERROR_INVALID_SIGNATURE) {
-            _state = INVALID_VERSION | SERVICE_CALL;
+            _state = INVALID_VERSION | value;
         } else if (errorCode == Core::ERROR_UNAVAILABLE) {
-            _state = MISSING_CALLSIGN | SERVICE_CALL;
-        }
-
-        if (serviceCall == false) {
-            _state &= (~SERVICE_CALL);
+            _state = MISSING_CALLSIGN | value;
         }
     }
 
@@ -80,6 +65,7 @@ namespace PluginHost {
         return (Core::SingletonType<Factories>::Instance());
     }
 
+#ifdef RESTFULL_API
     void Service::Notification(const string& message)
     {
         _notifierLock.Lock();
@@ -96,6 +82,7 @@ namespace PluginHost {
 
         _notifierLock.Unlock();
     }
+#endif
 
     void Service::FileToServe(const string& webServiceRequest, Web::Response& response)
     {

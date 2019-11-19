@@ -1,14 +1,12 @@
 set(TARGET ${NAMESPACE}Broadcast)
 
-find_package(NEXUS REQUIRED)
-find_package(NXCLIENT REQUIRED)
+find_package(NXCLIENT QUIET)
 
 add_library(${TARGET} SHARED 
         ProgramTable.cpp
         Definitions.cpp
         TunerAdministrator.cpp
         Module.cpp
-        implementations/NexusTuner.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -34,9 +32,23 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ${NAMESPACE}Core::${NAMESPACE}Core
-          NEXUS::NEXUS
-          NXCLIENT::NXCLIENT
         )
+
+
+if(NXCLIENT_FOUND)
+    find_package(NEXUS REQUIRED)
+
+     target_sources(${TARGET} PRIVATE implementations/NexusTuner.cpp)
+
+     target_link_libraries(${TARGET}
+        PRIVATE
+            NEXUS::NEXUS
+            NXCLIENT::NXCLIENT
+        )
+else()
+    target_sources(${TARGET} PRIVATE implementations/LinuxDVBTuner.cpp)
+endif()
+
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
@@ -76,3 +88,6 @@ InstallPackageConfig(
 
 InstallCMakeConfig(
         TARGETS ${TARGET})
+
+
+add_subdirectory(test)

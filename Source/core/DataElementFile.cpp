@@ -26,7 +26,6 @@ namespace Core {
 
         // The file needs to be prepared in the same way as we request the Memoerymapped file...
         ASSERT(m_File.IsOpen() == false);
-        ASSERT(m_File.IsShared() == ((type & SHAREABLE) != 0));
 
         if (IsValid()) {
             OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
@@ -35,17 +34,17 @@ namespace Core {
 
     DataElementFile::DataElementFile(const string& fileName, const uint32_t type, const uint32_t requestedSize)
         : DataElement()
-        , m_File(fileName, ((type & SHAREABLE) != 0))
+        , m_File(fileName, ((type & File::SHAREABLE) != 0))
         , m_MemoryMappedFile(INVALID_HANDLE_VALUE)
         , m_Flags(type)
     {
         // What is the use of a file that is not readable nor writable ?
         ASSERT(m_Flags != 0);
 
-        if ((type & CREATE) != 0) {
-            m_File.Create();
+        if ((type & File::CREATE) != 0) {
+            m_File.Create(type);
         } else {
-            m_File.Open((type & WRITABLE) == 0);
+            m_File.Open((type & File::USER_WRITE) == 0);
         }
 
         if (IsValid()) {
@@ -62,7 +61,7 @@ namespace Core {
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {
-            DWORD flags = ((m_Flags & WRITABLE) != 0 ? PAGE_READWRITE : PAGE_READONLY);
+            DWORD flags = ((m_Flags & File::USER_WRITE) != 0 ? PAGE_READWRITE : PAGE_READONLY);
             SYSTEM_INFO systemInfo;
             ::GetSystemInfo(&systemInfo);
             uint32_t mapSize = ((((requiredSize - 1) / systemInfo.dwPageSize) + 1) * systemInfo.dwPageSize);
@@ -74,7 +73,7 @@ namespace Core {
                 DWORD value = GetLastError();
                 m_File.Close();
             } else {
-                flags = ((m_Flags & READABLE) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & WRITABLE) != 0 ? FILE_MAP_WRITE : 0);
+                flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
 
                 void* newBuffer = (::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, mapSize));
 
@@ -87,8 +86,9 @@ namespace Core {
     /* virtual */ DataElementFile::~DataElementFile()
     {
         if ((IsValid()) && (m_MemoryMappedFile != INVALID_HANDLE_VALUE)) {
+            DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
             // Set the last size...
-            ::MapViewOfFile(m_MemoryMappedFile, m_Flags, 0, 0, static_cast<SIZE_T>(AllocatedSize()));
+            ::MapViewOfFile(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(AllocatedSize()));
             ::CloseHandle(m_MemoryMappedFile);
 
             m_MemoryMappedFile = INVALID_HANDLE_VALUE;
@@ -105,7 +105,7 @@ namespace Core {
             uint64_t requestedSize = ((size / systemInfo.dwPageSize) * systemInfo.dwPageSize) + systemInfo.dwPageSize;
 
             if (m_MemoryMappedFile == INVALID_HANDLE_VALUE) {
-                DWORD flags = ((m_Flags & WRITABLE) != 0 ? PAGE_READWRITE : PAGE_READONLY);
+                DWORD flags = ((m_Flags & File::USER_WRITE) != 0 ? PAGE_READWRITE : PAGE_READONLY);
 
                 // Open the file in MM mode as one element.
                 m_MemoryMappedFile = ::CreateFileMapping(m_File, nullptr, flags, 0, static_cast<DWORD>(requestedSize), nullptr);
@@ -118,9 +118,9 @@ namespace Core {
             }
 
             if (m_MemoryMappedFile == INVALID_HANDLE_VALUE) {
-                DWORD flags = ((m_Flags & READABLE) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & WRITABLE) != 0 ? FILE_MAP_WRITE : 0);
+                DWORD flags = ((m_Flags & File::USER_READ) != 0 ? FILE_MAP_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? FILE_MAP_WRITE : 0);
 
-                void* newBuffer = ::MapViewOfFileEx(m_MemoryMappedFile, m_Flags, 0, 0, static_cast<SIZE_T>(requestedSize), Buffer());
+                void* newBuffer = ::MapViewOfFileEx(m_MemoryMappedFile, flags, 0, 0, static_cast<SIZE_T>(requestedSize), Buffer());
 
                 // Seems like everything succeeded. Lets map it.
                 UpdateCache(0, static_cast<uint8_t*>(newBuffer), size, requestedSize);
@@ -142,7 +142,7 @@ namespace Core {
 
     void DataElementFile::Sync()
     {
-        if ((m_Flags & SHAREABLE) != 0) {
+        if ((m_Flags & File::SHAREABLE) != 0) {
             m_File.SetSize(Size());
             ::FlushViewOfFile(Buffer(), static_cast<SIZE_T>(Size()));
         }
@@ -156,10 +156,10 @@ namespace Core {
         if (requiredSize > 0) {
             int pageSize = getpagesize();
             uint64_t mapSize = ((((requiredSize - 1) / pageSize) + 1) * pageSize);
-            int flags = (((m_Flags & READABLE) != 0 ? PROT_READ : 0) | ((m_Flags & WRITABLE) != 0 ? PROT_WRITE : 0));
+            int flags = (((m_Flags & File::USER_READ) != 0 ? PROT_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? PROT_WRITE : 0));
 
             // Open the file in MM mode as one element.
-            m_MemoryMappedFile = mmap(nullptr, mapSize, flags, ((m_Flags & SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
+            m_MemoryMappedFile = mmap(nullptr, mapSize, flags, ((m_Flags & File::SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
 
             if (m_MemoryMappedFile == MAP_FAILED) {
                 m_File.Close();
@@ -202,10 +202,10 @@ namespace Core {
             m_File.SetSize(requestedSize);
 
             if (m_MemoryMappedFile == INVALID_HANDLE_VALUE) {
-                int flags = (((m_Flags & READABLE) != 0 ? PROT_READ : 0) | ((m_Flags & WRITABLE) != 0 ? PROT_WRITE : 0));
+                int flags = (((m_Flags & File::USER_READ) != 0 ? PROT_READ : 0) | ((m_Flags & File::USER_WRITE) != 0 ? PROT_WRITE : 0));
 
                 // Open the file in MM mode as one element.
-                m_MemoryMappedFile = mmap(nullptr, requestedSize, flags, ((m_Flags & SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
+                m_MemoryMappedFile = mmap(nullptr, requestedSize, flags, ((m_Flags & File::SHAREABLE) != 0 ? MAP_SHARED : MAP_PRIVATE), m_File, 0);
             } else {
 
                 // TODO: no need for memcpy, is possible?
@@ -227,7 +227,7 @@ namespace Core {
 
     void DataElementFile::Sync()
     {
-        if ((m_Flags & SHAREABLE) != 0) {
+        if ((m_Flags & File::SHAREABLE) != 0) {
             m_File.SetSize(Size());
             msync(Buffer(), Size(), MS_INVALIDATE | MS_SYNC);
         }

@@ -1,42 +1,17 @@
 #ifndef __CONTROLLER_H
 #define __CONTROLLER_H
 
-#include "DownloadEngine.h"
 #include "Module.h"
 #include "PluginServer.h"
 #include "Probe.h"
+#include "json/JsonData_Controller.h"
+
 
 namespace WPEFramework {
 namespace Plugin {
 
     class Controller : public PluginHost::IPlugin, public PluginHost::IWeb, public PluginHost::JSONRPC {
     private:
-        class Downloader : public PluginHost::DownloadEngine {
-        private:
-            Downloader() = delete;
-            Downloader(const Downloader&) = delete;
-            Downloader& operator=(const Downloader&) = delete;
-
-        public:
-            Downloader(Controller& parent, const string& key)
-                : PluginHost::DownloadEngine(key)
-                , _parent(parent)
-            {
-            }
-            virtual ~Downloader()
-            {
-            }
-
-        private:
-            virtual void Transfered(const uint32_t result, const string& source, const string& destination) override
-            {
-                _parent.Transfered(result, source, destination);
-            }
-
-        private:
-            Controller& _parent;
-        };
-
         class Sink : public PluginHost::IPlugin::INotification,
                      public PluginHost::ISubSystem::INotification {
         private:
@@ -66,7 +41,7 @@ namespace Plugin {
                 {
                     if (_schedule == false) {
                         _schedule = true;
-                        PluginHost::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
+                        Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
                     }
                 }
                 virtual void Dispatch()
@@ -89,7 +64,7 @@ namespace Plugin {
             }
             virtual ~Sink()
             {
-                PluginHost::WorkerPool::Instance().Revoke(_decoupled);
+                Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(_decoupled));
             }
 
         private:
@@ -111,77 +86,11 @@ namespace Plugin {
             Core::ProxyType<Job> _decoupled;
         };
 
-        uint32_t exists(const Core::JSON::String& designator, Core::JSON::DecUInt32& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-            const string locator(designator.Value());
-            string callsign = Core::JSONRPC::Message::Callsign(locator);
-            response = Core::ERROR_UNKNOWN_KEY;
-
-            if (callsign.empty() == true) {
-                if (Exists(locator, Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
-                    response = Core::ERROR_NONE;
-                }
-            } else {
-                uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
-
-                if (result == Core::ERROR_NONE) {
-                    if (service->State() != PluginHost::IShell::ACTIVATED) {
-                        response = Core::ERROR_UNAVAILABLE;
-                    } else {
-                        ASSERT(service.IsValid());
-                        PluginHost::IDispatcher* plugin = service->Dispatcher();
-                        if (plugin != nullptr) {
-                            if (plugin->Exists(Core::JSONRPC::Message::Method(locator), Core::JSONRPC::Message::Version(locator)) == Core::ERROR_NONE) {
-                                response = Core::ERROR_NONE;
-                            }
-                        }
-                    }
-                } else {
-                    response = result;
-                }
-            }
-            return (Core::ERROR_NONE);
-        }
-        uint32_t activate(const Core::JSON::String& designator, Core::JSON::String& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
-
-                ASSERT(service.IsValid() == true);
-
-                if (service->State() == PluginHost::IShell::DEACTIVATED) {
-                    // Activate the plugin.
-                    response = service->Activate(PluginHost::IShell::REQUESTED);
-                }
-            }
-
-            return (Core::ERROR_NONE);
-        }
-        uint32_t deactivate(const Core::JSON::String& designator, Core::JSON::String& response)
-        {
-            Core::ProxyType<PluginHost::Server::Service> service;
-
-            if (_pluginServer->Services().FromIdentifier(designator.Value(), service) == Core::ERROR_NONE) {
-
-                ASSERT(service.IsValid() == true);
-
-                if (service->State() == PluginHost::IShell::ACTIVATED) {
-                    // Deactivate the plugin.
-                    response = service->Deactivate(PluginHost::IShell::REQUESTED);
-                }
-            }
-
-            return (Core::ERROR_NONE);
-        }
-
         // GET -> URL /<MetaDataCallsign>/Plugin/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Configure
         // PUT -> URL /<MetaDataCallsign>/Activate/<Callsign>
         // PUT -> URL /<MetaDataCallsign>/Deactivate/<Callsign>
         // DELETE -> URL /<MetaDataCallsign>/Plugin/<Callsign>
-        // PUT -> URL /<MetaDataCallsign>/Download
     public:
         class Config : public Core::JSON::Container {
         private:
@@ -191,12 +100,10 @@ namespace Plugin {
         public:
             Config()
                 : Core::JSON::Container()
-                , DownloadStore()
                 , TTL(1)
                 , Resumes()
                 , SubSystems()
             {
-                Add(_T("downloadstore"), &DownloadStore);
                 Add(_T("ttl"), &TTL);
                 Add(_T("resumes"), &Resumes);
                 Add(_T("subsystems"), &SubSystems);
@@ -206,32 +113,9 @@ namespace Plugin {
             }
 
         public:
-            Core::JSON::String DownloadStore;
             Core::JSON::DecUInt8 TTL;
             Core::JSON::ArrayType<Core::JSON::String> Resumes;
             Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> SubSystems;
-        };
-        class Download : public Core::JSON::Container {
-        private:
-            Download(const Download&);
-            Download& operator=(const Download&);
-
-        public:
-            Download()
-                : Core::JSON::Container()
-            {
-                Add(_T("source"), &Source);
-                Add(_T("destination"), &Destination);
-                Add(_T("hash"), &Hash);
-            }
-            ~Download()
-            {
-            }
-
-        public:
-            Core::JSON::String Source;
-            Core::JSON::String Destination;
-            Core::JSON::String Hash;
         };
 
     private:
@@ -245,22 +129,24 @@ namespace Plugin {
             , _webPath()
             , _pluginServer(nullptr)
             , _service(nullptr)
-            , _downloader(nullptr)
             , _probe(nullptr)
             , _systemInfoReport(this)
             , _resumes()
             , _lastReported()
         {
-            Register<Core::JSON::String, Core::JSON::DecUInt32>(_T("exists"), &Controller::exists, this);
-            Register<Core::JSON::String, Core::JSON::String>(_T("activate"), &Controller::activate, this);
-            Register<Core::JSON::String, Core::JSON::String>(_T("deactivate"), &Controller::deactivate, this);
+            RegisterAll();
         }
 
     public:
         virtual ~Controller()
         {
+            UnregisterAll();
             SetServer(nullptr);
         }
+		inline void Notification(const PluginHost::Server::ForwardMessage& message) {
+            Notify("all", message);
+		}
+           
         inline void SetServer(PluginHost::Server* pluginServer)
         {
             ASSERT((_pluginServer == nullptr) ^ (pluginServer == nullptr));
@@ -336,14 +222,47 @@ namespace Plugin {
 
             return (service);
         }
+		void WorkerPoolMetaData(PluginHost::MetaData::Server& data) const
+		{
+            const Core::WorkerPool::Metadata& snapshot = Core::WorkerPool::Instance().Snapshot();
+
+            data.PendingRequests = snapshot.Pending;
+            data.PoolOccupation = snapshot.Occupation;
+
+            for (uint8_t teller = 0; teller < snapshot.Slots; teller++) {
+                // Example of why copy-constructor and assignment constructor should be equal...
+                Core::JSON::DecUInt32 newElement;
+                newElement = snapshot.Slot[teller];
+                data.ThreadPoolRuns.Add(newElement);
+            }
+		}
         void SubSystems();
         void SubSystems(Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator& index);
         Core::ProxyType<Web::Response> GetMethod(Core::TextSegmentIterator& index) const;
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
-        void Transfered(const uint32_t result, const string& source, const string& destination);
         void StateChange(PluginHost::IShell* plugin);
         virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
+        void DeleteDirectory(const string& directory);
+
+        void RegisterAll();
+        void UnregisterAll();
+        uint32_t endpoint_activate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_deactivate(const JsonData::Controller::ActivateParamsInfo& params);
+        uint32_t endpoint_startdiscovery(const JsonData::Controller::StartdiscoveryParamsData& params);
+        uint32_t endpoint_storeconfig();
+        uint32_t endpoint_delete(const JsonData::Controller::DeleteParamsData& params);
+        uint32_t endpoint_harakiri();
+        uint32_t get_status(const string& index, Core::JSON::ArrayType<PluginHost::MetaData::Service>& response) const;
+        uint32_t get_links(Core::JSON::ArrayType<PluginHost::MetaData::Channel>& response) const;
+        uint32_t get_processinfo(PluginHost::MetaData::Server& response) const;
+        uint32_t get_subsystems(Core::JSON::ArrayType<JsonData::Controller::SubsystemsParamsData>& response) const;
+        uint32_t get_discoveryresults(Core::JSON::ArrayType<PluginHost::MetaData::Bridge>& response) const;
+        uint32_t get_environment(const string& index, Core::JSON::String& response) const;
+        uint32_t get_configuration(const string& index, Core::JSON::String& response) const;
+        uint32_t set_configuration(const string& index, const Core::JSON::String& params);
+        void event_all(const string& callsign, const Core::JSON::String& data);
+        void event_statechange(const string& callsign, const PluginHost::IShell::state& state, const PluginHost::IShell::reason& reason);
 
     private:
         Core::CriticalSection _adminLock;
@@ -351,7 +270,6 @@ namespace Plugin {
         string _webPath;
         PluginHost::Server* _pluginServer;
         PluginHost::IShell* _service;
-        Downloader* _downloader;
         Probe* _probe;
         Core::Sink<Sink> _systemInfoReport;
         std::list<string> _resumes;

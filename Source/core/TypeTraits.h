@@ -38,9 +38,25 @@ namespace Core {
             struct argument {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
+
+			enum { Arguments = sizeof...(TArgs) };
         };
 
-	template <typename R, typename... TArgs>
+        template <typename TObj, typename R, typename... TArgs>
+        struct func_traits<R (TObj::*)(TArgs...) const> {
+            typedef R result_type;
+
+            typedef TObj classtype;
+
+            template <unsigned Idx>
+            struct argument {
+                typedef typename pick<Idx, TArgs...>::result type;
+            };
+
+            enum { Arguments = sizeof...(TArgs) };
+        };
+
+        template <typename R, typename... TArgs>
         struct func_traits<R (*)(TArgs...)> {
             typedef R result_type;
 
@@ -49,6 +65,8 @@ namespace Core {
             struct argument {
                 typedef typename pick<Idx, TArgs...>::result type;
             };
+
+			enum { Arguments = sizeof...(TArgs) };
         };
 
         template <typename SCALAR>

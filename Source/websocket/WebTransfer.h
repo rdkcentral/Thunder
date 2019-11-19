@@ -115,17 +115,20 @@ namespace Web {
             }
 
         public:
-            void StartTransfer(const Core::ProxyType<Web::Request>& request)
+            uint32_t StartTransfer(const Core::ProxyType<Web::Request>& request)
             {
                 ASSERT(_request->IsValid() == false);
                 ASSERT(_response->IsValid() == false);
+
+                uint32_t result = Core::ERROR_NONE;
 
                 if (BaseClass::IsOpen() == true) {
                     BaseClass::Submit(request);
                 } else {
                     _request = request;
-                    BaseClass::Open(0);
+                    result = BaseClass::Open(0);
                 }
+                return result;
             }
 
         private:
@@ -160,11 +163,9 @@ namespace Web {
                     ASSERT(_request->IsValid() == true);
 
                     BaseClass::Submit(_request);
-                } else if (_response.IsValid() == true) {
+                } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true)) {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
-
-                    _response.Release();
                 }
             }
 
@@ -288,13 +289,14 @@ namespace Web {
                         _state = TRANSFER_UPLOAD;
                         _request->Verb = Web::Request::HTTP_PUT;
                         _request->Path = '/' + destination.Path().Value().Text();
+                        _request->Host = destination.Host().Value().Text();
                         _request->Body(_fileBody);
 
                         // Maybe we need to add a hash value...
                         _SerializedHashValue<LINK, FILEBODY>();
 
                         // Prepare the request for processing
-                        _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(_request);
                     }
                 }
             }
@@ -328,9 +330,10 @@ namespace Web {
                         _state = TRANSFER_DOWNLOAD;
                         _request->Verb = Web::Request::HTTP_GET;
                         _request->Path = '/' + source.Path().Value().Text();
+                        _request->Host = source.Host().Value().Text();
 
                         // Prepare the request for processing
-                        _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(_request);
                     }
                 }
             }
@@ -350,11 +353,15 @@ namespace Web {
 
             // We are done, change state
             _adminLock.Lock();
-
-            if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
+            if (response.IsValid() == true) {
+                if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
+                    errorCode = Core::ERROR_UNAVAILABLE;
+                } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                    errorCode = Core::ERROR_INCORRECT_HASH;
+                }
+                response.Release();
+            } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
-            } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
-                errorCode = Core::ERROR_INCORRECT_HASH;
             }
 
             _state = TRANSFER_IDLE;

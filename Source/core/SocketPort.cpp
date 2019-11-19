@@ -183,7 +183,7 @@ namespace Core {
         , m_SendBuffer(nullptr)
         , m_ReceiveBuffer(nullptr)
     {
-        TRACE_L5("Constructor SocketPort (NodeId&) <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Constructor SocketPort (NodeId&) <%p>", (this));
     }
 
     SocketPort::SocketPort(
@@ -224,7 +224,7 @@ namespace Core {
 
     SocketPort::~SocketPort()
     {
-        TRACE_L5("Destructor SocketPort <0x%X>", TRACE_POINTER(this));
+        TRACE_L5("Destructor SocketPort <%p>", (this));
 
         // Make sure the socket is closed before you destruct. Otherwise
         // the virtuals might be called, which are destructed at this point !!!!
@@ -341,6 +341,7 @@ namespace Core {
                             nStatus = Core::ERROR_UNREACHABLE_NETWORK;
                         } else {
                             nStatus = Core::ERROR_ASYNC_FAILED;
+                            TRACE_L1("Error on socket connect. Error %d", __ERRORRESULT__);
                         }
                     }
                 }
@@ -379,26 +380,28 @@ namespace Core {
 
         if (m_Socket != INVALID_SOCKET) {
 
+            m_syncAdmin.Unlock();
+            WaitForWriteComplete(waitTime);
+            m_syncAdmin.Lock();
+
             if ((m_State != 0) && ((m_State & SHUTDOWN) == 0)) {
 
                 if ((m_State & (LINK | OPEN)) != (LINK | OPEN)) {
                     // This is a connectionless link, do not expect a close from the otherside.
                     // No use to wait on anything !!, Signal a FORCED CLOSURE (EXCEPTION && SHUTDOWN)
                     m_State |= (SHUTDOWN | EXCEPTION);
-
-                    ResourceMonitor::Instance().Break();
                 } else {
                     m_State |= SHUTDOWN;
 
-// Block new data from coming in, signal the other side that we close !!
-#ifdef __LINUX__
-                    shutdown(m_Socket, SHUT_RDWR);
-#endif
-
+					// Block new data from coming in, signal the other side that we close !!
 #ifdef __WIN32__
                     shutdown(m_Socket, SD_BOTH);
+#else
+                    shutdown(m_Socket, SHUT_RDWR);
 #endif
                 }
+
+                ResourceMonitor::Instance().Break();
             }
 
             if (waitTime > 0) {
@@ -614,6 +617,36 @@ namespace Core {
         uint32_t result = (((time == 0) || (IsOpen() == true)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 
         m_syncAdmin.Unlock();
+
+        return (result);
+    }
+
+    uint32_t SocketPort::WaitForWriteComplete(const uint32_t time) const
+    {
+        uint32_t waiting = (time == Core::infinite ? Core::infinite : time); // Expect time in MS.
+
+        uint16_t state = 0;
+        // Right, a wait till connection is closed is requested..
+        while ((waiting > 0) && (IsOpen() == true)) {
+            m_syncAdmin.Lock();
+            state =  m_State & SocketPort::WRITESLOT; //Read the state and check write slot is cleared
+            m_syncAdmin.Unlock();
+            if (state == 0) {
+                break;
+            }
+            // Make sure we aren't in the monitor thread waiting for close completion.
+            ASSERT(Core::Thread::ThreadId() != ResourceMonitor::Instance().Id());
+
+            uint32_t sleepSlot = (waiting > SLEEPSLOT_TIME ? SLEEPSLOT_TIME : waiting);
+
+            // Right, lets sleep in slices of 100 ms
+            SleepMs(sleepSlot);
+
+
+            waiting -= (waiting == Core::infinite ? 0 : sleepSlot);
+        }
+
+        uint32_t result = (((time == 0) || (state == 0)) ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 
         return (result);
     }

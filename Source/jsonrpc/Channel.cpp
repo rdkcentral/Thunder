@@ -6,7 +6,7 @@ namespace JSONRPC {
 
     /* static */ Channel::FactoryImpl& Channel::FactoryImpl::Instance()
     {
-        static FactoryImpl _singleton;
+        static FactoryImpl& _singleton = Core::SingletonType<FactoryImpl>::Instance();
 
         return (_singleton);
     }
@@ -74,7 +74,7 @@ namespace JSONRPC {
                 } else {
                     ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign);
                     _callsignMap[searchLine] = entry;
-                    result = Core::ProxyType<ChannelProxy>(*entry);
+                    result = Core::ProxyType<Channel>(*entry);
                 }
                 _adminLock.Unlock();
 

@@ -4,7 +4,6 @@
 #include "Definitions.h"
 #include "Descriptors.h"
 #include "TDT.h"
-#include "TunerAdministrator.h"
 
 namespace WPEFramework {
 
@@ -15,7 +14,7 @@ namespace Broadcast {
         TimeDate(const TimeDate&) = delete;
         TimeDate& operator=(const TimeDate&) = delete;
 
-        class Sink : public TunerAdministrator::INotification {
+        class Sink : public ITuner::INotification {
         private:
             Sink() = delete;
             Sink(const Sink&) = delete;
@@ -116,11 +115,11 @@ namespace Broadcast {
             , _scan(true)
             , _time()
         {
-            TunerAdministrator::Instance().Register(&_sink);
+            ITuner::Register(&_sink);
         }
         virtual ~TimeDate()
         {
-            TunerAdministrator::Instance().Unregister(&_sink);
+            ITuner::Unregister(&_sink);
         }
 
     public:

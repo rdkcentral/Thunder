@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 2.8.7)
 
 get_property(is_included GLOBAL PROPERTY INCLUDE_GUARD)
 if(is_included)
-  _return()
+  return()
 endif()
 set_property(GLOBAL PROPERTY INCLUDE_GUARD true)
 
@@ -19,6 +19,8 @@ endif()
 
 set(NAMESPACE "@NAMESPACE@")
 set(BUILD_TYPE "@BUILD_TYPE@")
+
+set(JSON_GENERATOR "@JSON_GENERATOR@")
 
 if("${BUILD_TYPE}" STREQUAL "DebugOptimized" OR "${BUILD_TYPE}" STREQUAL "Debug")
     set(CMAKE_BUILD_TYPE "Debug")

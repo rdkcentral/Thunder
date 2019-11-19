@@ -65,32 +65,15 @@ static void* GetPCFromUContext(void* secret)
 
 static void OverrideStackTopWithPC(void** stack, int stackSize, void* secret)
 {
-    bool foundNull = false;
-
-    int i;
-    for (i = 0; i < stackSize; i++) {
-        void* ptr = stack[i];
-
-        if (ptr != nullptr && foundNull) {
-            // Found first non-null entry.
-            --i;
-            break;
-        } else if (ptr == nullptr) {
-            foundNull = true;
-        }
-    }
-
-    if (i == stackSize) {
-        return;
-    }
-
-    stack[i] = GetPCFromUContext(secret);
-
-    // Remove unneeded stack entries.
-    memmove(stack, stack + i, sizeof(void*) * (stackSize - i));
+    // Move all stack entries one to the right, make sure not to write beyond buffer.
+    uint32_t movedCount = std::min(stackSize, g_threadCallstackBufferSize - 1);
+    memmove(stack + 1, stack, sizeof(void*) * movedCount);
 
     // Set rest to zeroes.
-    memset(stack + stackSize - i, 0, sizeof(void*) * i);
+    memset(stack + 1 + movedCount, 0, sizeof(void*) * (g_threadCallstackBufferSize - movedCount - 1));
+
+    // Assign PC to first entry.
+    stack[0] = GetPCFromUContext(secret);
 }
 
 static void CallstackSignalHandler(int signr VARIABLE_IS_NOT_USED, siginfo_t* info VARIABLE_IS_NOT_USED, void* secret)
@@ -167,8 +150,8 @@ uint32_t GetCallStack(const ThreadId threadId, void* addresses[], const uint32_t
 
 void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount)
 {
-    unsigned char* destination = static_cast<unsigned char*>(_Dst) + _MaxCount;
-    const unsigned char* source = static_cast<const unsigned char*>(_Src) + _MaxCount;
+    unsigned char* destination = static_cast<unsigned char*>(_Dst) + _MaxCount - 1;
+    const unsigned char* source = static_cast<const unsigned char*>(_Src) + _MaxCount - 1;
 
     while (_MaxCount) {
         *destination-- = *source--;

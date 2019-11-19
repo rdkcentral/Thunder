@@ -6,213 +6,173 @@
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
-namespace Process {
 
-    class InvokeServer : public RPC::IHandler {
+    static std::list<Core::Library> _proxyStubs;
+	static Core::ProxyType<RPC::CommunicatorClient> _server;
+
+    class ExitHandler : public Core::Thread {
     private:
-        InvokeServer() = delete;
-        InvokeServer(const InvokeServer&) = delete;
-        InvokeServer& operator=(const InvokeServer&) = delete;
-
-        struct Info {
-            Core::ProxyType<Core::IIPC> message;
-            Core::ProxyType<Core::IPCChannel> channel;
-        };
-        typedef Core::QueueType<Info> MessageQueue;
-
-        class Minion : public Core::Thread {
-        private:
-            Minion() = delete;
-            Minion(const Minion&) = delete;
-            Minion& operator=(const Minion&) = delete;
-
-        public:
-            Minion(InvokeServer& parent)
-                : _parent(parent)
-            {
-            }
-            virtual ~Minion()
-            {
-                Stop();
-                Wait(Core::Thread::STOPPED, Core::infinite);
-            }
-
-        public:
-            virtual uint32_t Worker() override
-            {
-                _parent.ProcessProcedures();
-                Block();
-                return (Core::infinite);
-            }
-
-        private:
-            InvokeServer& _parent;
-        };
-
-        class InvokeHandlerImplementation : public Core::IPCServerType<RPC::InvokeMessage> {
-        private:
-            InvokeHandlerImplementation() = delete;
-            InvokeHandlerImplementation(const InvokeHandlerImplementation&) = delete;
-            InvokeHandlerImplementation& operator=(const InvokeHandlerImplementation&) = delete;
-
-        public:
-            InvokeHandlerImplementation(MessageQueue* queue, std::atomic<uint8_t>* runningFree)
-                : _handleQueue(*queue)
-                , _runningFree(*runningFree)
-            {
-            }
-            virtual ~InvokeHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::InvokeMessage>& data)
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Info newElement;
-                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
-                newElement.message = data;
-
-                ASSERT(newElement.channel.IsValid() == true);
-
-                if (_runningFree == 0) {
-                    SYSLOG(Logging::Notification, ("Possible DEADLOCK in the hosting"));
-                }
-
-                _handleQueue.Insert(newElement, Core::infinite);
-            }
-
-        private:
-            MessageQueue& _handleQueue;
-            std::atomic<uint8_t>& _runningFree;
-        };
-        class AnnounceHandlerImplementation : public Core::IPCServerType<RPC::AnnounceMessage> {
-        private:
-            AnnounceHandlerImplementation() = delete;
-            AnnounceHandlerImplementation(const AnnounceHandlerImplementation&) = delete;
-            AnnounceHandlerImplementation& operator=(const AnnounceHandlerImplementation&) = delete;
-
-        public:
-            AnnounceHandlerImplementation(MessageQueue* queue)
-                : _handleQueue(*queue)
-            {
-            }
-            virtual ~AnnounceHandlerImplementation()
-            {
-            }
-
-        public:
-            virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<RPC::AnnounceMessage>& data)
-            {
-                // Oke, see if we can reference count the IPCChannel
-                Info newElement;
-                newElement.channel = Core::ProxyType<Core::IPCChannel>(channel);
-                newElement.message = data;
-
-                ASSERT(newElement.channel.IsValid() == true);
-
-                _handleQueue.Insert(newElement, Core::infinite);
-            }
-
-        private:
-            MessageQueue& _handleQueue;
-        };
+        ExitHandler(const ExitHandler&) = delete;
+        ExitHandler& operator=(const ExitHandler&) = delete;
 
     public:
-        InvokeServer(const uint8_t threads)
-            : _handleQueue(64)
-            , _runningFree(threads)
-            , _handler(RPC::Administrator::Instance())
-            , _invokeHandler(Core::ProxyType<InvokeHandlerImplementation>::Create(&_handleQueue, &_runningFree))
-            , _announceHandler(Core::ProxyType<AnnounceHandlerImplementation>::Create(&_handleQueue))
-            , _announcements(nullptr)
+        ExitHandler()
+            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+        {
+        }
+        virtual ~ExitHandler()
+        {
+            Stop();
+            Wait(Core::Thread::STOPPED, Core::infinite);
+        }
+
+        static void Construct()
+        {
+            _adminLock.Lock();
+            if (_instance == nullptr) {
+                _instance = new ExitHandler();
+                _instance->Run();
+            }
+            _adminLock.Unlock();
+        }
+        static void Destruct()
+        {
+            _adminLock.Lock();
+            if (_instance != nullptr) {
+                delete _instance; //It will wait till the worker execution completed
+                _instance = nullptr;
+            } else {
+                CloseDown();
+            }
+            _adminLock.Unlock();
+        }
+
+    private:
+        virtual uint32_t Worker() override
+        {
+            CloseDown();
+            Block();
+            return (Core::infinite);
+        }
+        static void CloseDown()
+        {
+            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+            if (_server.IsValid() == true) {
+
+                // We are done, close the channel and unregister all shit we added...
+                _server->Close(2 * RPC::CommunicationTimeOut);
+
+                _proxyStubs.clear();
+
+                _server.Release();
+            }
+
+            Core::Singleton::Dispose();
+            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        }
+
+    private:
+        static ExitHandler* _instance;
+        static Core::CriticalSection _adminLock;
+    };
+
+    ExitHandler* ExitHandler::_instance = nullptr;
+    Core::CriticalSection ExitHandler::_adminLock;
+
+namespace Process {
+
+    class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
+    public:
+        WorkerPoolImplementation() = delete;
+        WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+        WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
+
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
+            : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
             , _minions()
+            , _announceHandler(nullptr)
+            , _administration(Core::ServiceAdministrator::Instance())
         {
             for (uint8_t index = 1; index < threads; index++) {
-                _minions.emplace_back(*this);
+                _minions.emplace_back();
             }
+
             if (threads > 1) {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
         }
-        ~InvokeServer()
+        ~WorkerPoolImplementation()
         {
-            _handleQueue.Disable();
+            // Diable the queue so the minions can stop, even if they are processing and waiting for work..
+            Stop();
             _minions.clear();
+            delete Snapshot().Slot;
         }
-
-        virtual Core::ProxyType<Core::IIPCServer> InvokeHandler() override
+        void Announcements(Core::IIPCServer* announces)
         {
-            return (_invokeHandler);
+            ASSERT((announces != nullptr) ^ (_announceHandler != nullptr));
+            _announceHandler = announces;
         }
-        virtual Core::ProxyType<Core::IIPCServer> AnnounceHandler() override
-        {
-            return (_announceHandler);
+        void Run() {
+ 
+            Core::WorkerPool::Run();
+            Core::WorkerPool::Join();
         }
-        virtual void AnnounceHandler(Core::IPCServerType<RPC::AnnounceMessage>* handler) override
-        {
+        void Stop() {
+            Core::WorkerPool::Stop();
+	}
 
-            // Concurrency aspect is out of scope as the implementation of this interface is currently limited
-            // to the RPC::COmmunicator and RPC::CommunicatorClient. Both of these implementations will first
-            // set this callback before any communication is happeing (Open happens after this)
-            // Also the announce handler will not be removed until the line is closed and the server (or client)
-            // is destructed!!!
-            ASSERT((handler == nullptr) ^ (_announcements == nullptr));
+    protected:
+        virtual Core::WorkerPool::Minion& Index(const uint8_t index) override {
+            uint8_t count = index;
+            std::list<Core::WorkerPool::Minion>::iterator element (_minions.begin());
 
-            _announcements = handler;
-        }
-        void ProcessProcedures()
-        {
-            Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
-            Info newRequest;
-
-            while ((admin.Instances() > 0) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
-                _runningFree--;
-                if (newRequest.message->Label() == RPC::InvokeMessage::Id()) {
-                    Core::ProxyType<RPC::InvokeMessage> message(Core::proxy_cast<RPC::InvokeMessage>(newRequest.message));
-
-                    _handler.Invoke(newRequest.channel, message);
-                } else {
-                    ASSERT(newRequest.message->Label() == RPC::AnnounceMessage::Id());
-                    ASSERT(_announcements != nullptr);
-
-                    Core::ProxyType<RPC::AnnounceMessage> message(Core::proxy_cast<RPC::AnnounceMessage>(newRequest.message));
-
-                    _announcements->Procedure(*(newRequest.channel), message);
-                }
-
-                _runningFree++;
-                newRequest.channel->ReportResponse(newRequest.message);
-
-                // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
-                Core::ServiceAdministrator::Instance().FlushLibraries();
+            while ((element != _minions.end()) && (count > 1)) {
+                count--;
+                element++;
             }
 
-            _handleQueue.Disable();
-        }
+            ASSERT (element != _minions.end());
 
+            return (*element);
+        }
+        virtual bool Running() override {
+            // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
+            _administration.FlushLibraries();
+
+            return (_administration.Instances() > 0);
+	}
+        virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
+        {
+            Core::ProxyType<RPC::Job> job(RPC::Job::Instance());
+
+            job->Set(channel, data, _announceHandler);
+
+            WorkerPool::Submit(Core::ProxyType<Core::IDispatch>(job));
+        }
+ 
     private:
-        MessageQueue _handleQueue;
-        std::atomic<uint8_t> _runningFree;
-        RPC::Administrator& _handler;
-        Core::ProxyType<Core::IPCServerType<RPC::InvokeMessage>> _invokeHandler;
-        Core::ProxyType<Core::IPCServerType<RPC::AnnounceMessage>> _announceHandler;
-        Core::IPCServerType<RPC::AnnounceMessage>* _announcements;
-        std::list<Minion> _minions;
+        std::list<Core::WorkerPool::Minion> _minions;
+        Core::IIPCServer* _announceHandler;
+        Core::ServiceAdministrator& _administration;
     };
 
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:"))
+            : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
+            , Callsign(nullptr)
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
+            , Exchange(0)
             , PersistentPath(nullptr)
             , SystemPath(nullptr)
             , DataPath(nullptr)
+            , VolatilePath(nullptr)
             , AppPath(nullptr)
             , ProxyStubPath(nullptr)
             , User(nullptr)
@@ -227,14 +187,17 @@ namespace Process {
         }
 
     public:
+        const TCHAR* Callsign;
         const TCHAR* Locator;
         const TCHAR* ClassName;
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
+        uint32_t Exchange;
         const TCHAR* PersistentPath;
         const TCHAR* SystemPath;
         const TCHAR* DataPath;
+        const TCHAR* VolatilePath;
         const TCHAR* AppPath;
         const TCHAR* ProxyStubPath;
         const TCHAR* User;
@@ -246,6 +209,9 @@ namespace Process {
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
+            case 'C':
+                Callsign = argument;
+                break;
             case 'l':
                 Locator = argument;
                 break;
@@ -263,6 +229,9 @@ namespace Process {
                 break;
             case 'd':
                 DataPath = argument;
+                break;
+            case 'v':
+                VolatilePath = argument;
                 break;
             case 'a':
                 AppPath = argument;
@@ -282,8 +251,11 @@ namespace Process {
             case 'e':
                 EnabledLoggings = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
-            case 'v':
+            case 'V':
                 Version = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
+                break;
+            case 'x':
+                Exchange = Core::NumberType<uint32_t>(Core::TextFragment(argument)).Value();
                 break;
             case 't':
                 Threads = Core::NumberType<uint8_t>(Core::TextFragment(argument)).Value();
@@ -345,39 +317,28 @@ namespace Process {
 
         return (result);
     }
+
 }
 } // Process
 
 using namespace WPEFramework;
 
-static std::list<Core::Library> _proxyStubs;
-static Core::ProxyType<Process::InvokeServer> _invokeServer;
-static Core::ProxyType<RPC::CommunicatorClient> _server;
-
-//
-// It as allowed to call exit from anywhere in the process by any code loaded. This is like using
-// a goto in disguise (bad programming). However we need to be robust against mallicious program
-// activities.
-// To ovecome this jumping and skipping all kinds of code, we install an @exit handler. This should
-// one exit and on leaving main always be Called. In this code, we cleanup.
-void CloseDown()
+#ifndef __WIN32__
+void ExitDaemonHandler(int signo)
 {
-    TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+    TRACE_L1("Signal received %d.", signo);
+    syslog(LOG_NOTICE, "Signal received %d.", signo);
 
-    if (_server.IsValid() == true) {
-        ASSERT(_invokeServer.IsValid() == true);
-
-        // We are done, close the channel and unregister all shit we added...
-        _server->Close(2 * RPC::CommunicationTimeOut);
-
-        _proxyStubs.clear();
+    if ((signo == SIGTERM) || (signo == SIGQUIT)) {
+        ExitHandler::Construct();
+    } else if (signo == SIGSEGV) {
+        DumpCallStack();
+        // now invoke the default segfault handler
+        signal(signo, SIG_DFL);
+        kill(getpid(), signo);
     }
-
-    // Now clear all singeltons we created.
-    Core::Singleton::Dispose();
-
-    TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
 }
+#endif
 
 #ifdef __WIN32__
 int _tmain(int argc, _TCHAR* argv[])
@@ -388,29 +349,44 @@ int main(int argc, char** argv)
     // Give the debugger time to attach to this process..
     // Sleep(20000);
 
-    if (atexit(CloseDown) != 0) {
+    if (atexit(ExitHandler::Destruct) != 0) {
         TRACE_L1("Could not register @exit handler. Argc %d.", argc);
-        CloseDown();
+        ExitHandler::Destruct();
         exit(EXIT_FAILURE);
     } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
+#ifndef __WIN32__
+            struct sigaction sa;
+            memset(&sa, 0, sizeof(struct sigaction));
+            sigemptyset(&sa.sa_mask);
+            sa.sa_handler = ExitDaemonHandler;
+            sa.sa_flags = 0; // not SA_RESTART!;
+
+            sigaction(SIGINT, &sa, nullptr);
+            sigaction(SIGTERM, &sa, nullptr);
+            sigaction(SIGSEGV, &sa, nullptr);
+            sigaction(SIGQUIT, &sa, nullptr);
+#endif
     }
 
     Process::ConsoleOptions options(argc, argv);
 
-    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr)) {
+    if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");
+        printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
+        printf("         -x <eXchange identifier>\n");
         printf("        [-i <interface ID>]\n");
         printf("        [-t <thread count>\n");
-        printf("        [-v <version>]\n");
+        printf("        [-V <version>]\n");
         printf("        [-u <user>]\n");
         printf("        [-g <group>]\n");
         printf("        [-p <persistent path>]\n");
         printf("        [-s <system path>]\n");
         printf("        [-d <data path>]\n");
+        printf("        [-v <volatile path>]\n");
         printf("        [-a <app path>]\n");
         printf("        [-m <proxy stub library path>]\n");
         printf("        [-e <enabled SYSLOG categories>]\n\n");
@@ -430,10 +406,18 @@ int main(int argc, char** argv)
     } else {
         Core::NodeId remoteNode(options.RemoteChannel);
 
+        // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
+        Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
+
+        TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
+
+        // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
+        Trace::TraceUnit::Instance().Open(options.VolatilePath, options.Exchange);
+
         // Time to open up the LOG tracings as specified by the caller.
-        Trace::TraceType<Logging::Startup, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000001) != 0);
-        Trace::TraceType<Logging::Shutdown, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000002) != 0);
-        Trace::TraceType<Logging::Notification, &Logging::MODULE_LOGGING>::Enable((options.EnabledLoggings & 0x00000004) != 0);
+        Logging::LoggingType<Logging::Startup>::Enable((options.EnabledLoggings & 0x00000001) != 0);
+        Logging::LoggingType<Logging::Shutdown>::Enable((options.EnabledLoggings & 0x00000002) != 0);
+        Logging::LoggingType<Logging::Notification>::Enable((options.EnabledLoggings & 0x00000004) != 0);
 
         if (remoteNode.IsValid()) {
             void* base = nullptr;
@@ -450,8 +434,9 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            _invokeServer = Core::ProxyType<Process::InvokeServer>::Create(options.Threads);
-            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, _invokeServer));
+            Core::ProxyType<Process::WorkerPoolImplementation> invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
+            _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(invokeServer)));
+            invokeServer->Announcements(_server->Announcement());
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
@@ -473,10 +458,9 @@ int main(int argc, char** argv)
                 uint32_t result;
 
                 // We have something to report back, do so...
-                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base)) == Core::ERROR_NONE) {
+                if ((result = _server->Open((RPC::CommunicationTimeOut != Core::infinite ? 2 * RPC::CommunicationTimeOut : RPC::CommunicationTimeOut), options.InterfaceId, base, options.Exchange)) == Core::ERROR_NONE) {
                     TRACE_L1("Process up and running: %d.", Core::ProcessInfo().Id());
-                    _invokeServer->ProcessProcedures();
-
+                    invokeServer->Run();
                     _server->Close(Core::infinite);
                 } else {
                     TRACE_L1("Could not open the connection, error (%d)", result);
@@ -485,5 +469,6 @@ int main(int argc, char** argv)
         }
     }
 
+    ExitHandler::Destruct();
     return 0;
 }

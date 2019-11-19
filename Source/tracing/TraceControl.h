@@ -44,17 +44,11 @@ namespace Trace {
         template <typename CONTROLCATEGORY, const char** CONTROLMODULE>
         class TraceControl : public ITraceControl {
         private:
-            // -------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error/link error.
-            // -------------------------------------------------------------------
-            TraceControl(const TraceControl<CONTROLCATEGORY, CONTROLMODULE>&);
-            TraceControl<CONTROLCATEGORY, CONTROLMODULE>& operator=(const TraceControl<CONTROLCATEGORY, CONTROLMODULE>&);
 
         public:
+            TraceControl(const TraceControl<CONTROLCATEGORY, CONTROLMODULE>&) = delete;
+            TraceControl<CONTROLCATEGORY, CONTROLMODULE>& operator=(const TraceControl<CONTROLCATEGORY, CONTROLMODULE>&) = delete;
+
             TraceControl()
                 : m_CategoryName(Core::ClassNameOnly(typeid(CONTROLCATEGORY).name()).Text())
                 , m_Enabled(0x02)
@@ -112,18 +106,11 @@ namespace Trace {
             uint8_t m_Enabled;
         };
 
-    private:
-        // -------------------------------------------------------------------
-        // This object should not be copied or assigned. Prevent the copy
-        // constructor and assignment constructor from being used. Compiler
-        // generated assignment and copy methods will be blocked by the
-        // following statments.
-        // Define them but do not implement them, compile error/link error.
-        // -------------------------------------------------------------------
+
+    public:
         TraceType(const TraceType<CATEGORY, MODULENAME>&) = delete;
         TraceType<CATEGORY, MODULENAME>& operator=(const TraceType<CATEGORY, MODULENAME>&) = delete;
 
-    public:
         TraceType(CATEGORY& category)
             : _traceInfo(category)
         {

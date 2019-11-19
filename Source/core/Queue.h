@@ -41,12 +41,12 @@ namespace Core {
             // A highwatermark of 0 is bullshit.
             ASSERT(m_MaxSlots != 0);
 
-            TRACE_L5("Constructor QueueType <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Constructor QueueType <%p>", (this));
         }
 
         ~QueueType()
         {
-            TRACE_L5("Destructor QueueType <0x%X>", TRACE_POINTER(this));
+            TRACE_L5("Destructor QueueType <%p>", (this));
 
             // Disable the queue and flush all entries.
             Disable();
@@ -257,12 +257,10 @@ namespace Core {
         {
             m_State.WaitState(false, DISABLED | ENTRIES | EMPTY, Core::infinite);
         }
-
         inline bool IsEmpty() const
         {
             return (m_Queue.empty());
         }
-
         inline bool IsFull() const
         {
             return (m_Queue.size() >= m_MaxSlots);

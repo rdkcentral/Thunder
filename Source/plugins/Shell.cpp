@@ -1,3 +1,4 @@
+#include "Module.h"
 #include "IShell.h"
 
 namespace WPEFramework {
@@ -27,17 +28,6 @@ ENUM_CONVERSION_END(PluginHost::IShell::reason)
 
 namespace PluginHost
 {
-
-    /* static */ const TCHAR* IShell::ToString(const state value)
-    {
-        return (Core::EnumerateType<state>(value).Data());
-    }
-
-    /* static */ const TCHAR* IShell::ToString(const reason value)
-    {
-        return (Core::EnumerateType<reason>(value).Data());
-    }
-
     class EXTERNAL Object : public Core::JSON::Container {
     private:
         class RootObject : public Core::JSON::Container {
@@ -47,7 +37,7 @@ namespace PluginHost
 
         public:
             RootObject()
-                : Config(true)
+                : Config(false)
             {
                 Add(_T("root"), &Config);
             }
@@ -58,18 +48,30 @@ namespace PluginHost
         };
 
     public:
+
+        enum class ModeType {
+            OFF,
+            LOCAL,
+            CONTAINER,
+            DISTRIBUTED
+        };
+
         Object()
             : Locator()
             , User()
             , Group()
             , Threads(1)
             , OutOfProcess(true)
+            , Mode(ModeType::LOCAL)
+            , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
         }
         Object(const IShell* info)
             : Locator()
@@ -77,12 +79,16 @@ namespace PluginHost
             , Group()
             , Threads()
             , OutOfProcess(true)
+            , Mode(ModeType::LOCAL)
+            , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
 
             RootObject config;
             config.FromString(info->ConfigLine());
@@ -91,7 +97,6 @@ namespace PluginHost
                 // Yip we want to go out-of-process
                 Object settings;
                 settings.FromString(config.Config.Value());
-
                 *this = settings;
 
                 if (Locator.Value().empty() == true) {
@@ -105,12 +110,16 @@ namespace PluginHost
             , Group(copy.Group)
             , Threads(copy.Threads)
             , OutOfProcess(true)
+            , Mode(copy.Mode)
+            , Configuration(copy.Configuration)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
             Add(_T("outofprocess"), &OutOfProcess);
+            Add(_T("mode"), &Mode);
+            Add(_T("configuration"), &Configuration);
         }
         virtual ~Object()
         {
@@ -124,8 +133,26 @@ namespace PluginHost
             Group = RHS.Group;
             Threads = RHS.Threads;
             OutOfProcess = RHS.OutOfProcess;
+            Mode = RHS.Mode;
+            Configuration = RHS.Configuration;
 
             return (*this);
+        }
+
+        RPC::Object::HostType HostType() const {
+            RPC::Object::HostType result = RPC::Object::HostType::LOCAL;
+            switch( Mode.Value() ) {
+                case ModeType::CONTAINER :
+                    result = RPC::Object::HostType::CONTAINER;
+                    break;
+                case ModeType::DISTRIBUTED:
+                    result = RPC::Object::HostType::DISTRIBUTED;
+                    break;
+                default:
+                    result = RPC::Object::HostType::LOCAL;
+                    break;
+            }
+            return result;
         }
 
     public:
@@ -134,6 +161,8 @@ namespace PluginHost
         Core::JSON::String Group;
         Core::JSON::DecUInt8 Threads;
         Core::JSON::Boolean OutOfProcess;
+        Core::JSON::EnumType<ModeType> Mode; 
+        Core::JSON::String Configuration; 
     };
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
@@ -141,7 +170,10 @@ namespace PluginHost
         void* result = nullptr;
         Object rootObject(this);
 
-        if (rootObject.OutOfProcess.Value() == false) {
+        bool inProcessOldConfiguration = ( !rootObject.Mode.IsSet() ) && ( rootObject.OutOfProcess.Value() == false ); //note: when both new and old not set this one will revert to the old default which was true
+        bool inProcessNewConfiguration = ( rootObject.Mode.IsSet() ) && ( rootObject.Mode == Object::ModeType::OFF ); // when both set the Old one is ignored
+
+        if ( (inProcessNewConfiguration == true) || (inProcessOldConfiguration == true) ) {
 
             string locator(rootObject.Locator.Value());
 
@@ -164,7 +196,7 @@ namespace PluginHost
                 }
             }
         } else {
-            IProcess* handler(Process());
+            ICOMLink* handler(COMLink());
 
             // This method can only be used in the main process. Only this process, can instantiate a new process
             ASSERT(handler != nullptr);
@@ -174,13 +206,15 @@ namespace PluginHost
                 if (locator.empty() == true) {
                     locator = Locator();
                 }
-                RPC::Object definition(locator,
+                RPC::Object definition(Callsign(), locator,
                     className,
                     interface,
                     version,
                     rootObject.User.Value(),
                     rootObject.Group.Value(),
-                    rootObject.Threads.Value());
+                    rootObject.Threads.Value(),
+                    rootObject.HostType(), 
+                    rootObject.Configuration.Value());
 
                 result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());
             }
@@ -189,4 +223,17 @@ namespace PluginHost
         return (result);
     }
 }
-} // namespace PluginHost
+
+ENUM_CONVERSION_BEGIN(PluginHost::Object::ModeType)
+
+    { PluginHost::Object::ModeType::OFF, _TXT("Off") },
+    { PluginHost::Object::ModeType::LOCAL, _TXT("Local") },
+    { PluginHost::Object::ModeType::CONTAINER, _TXT("Container") },
+    { PluginHost::Object::ModeType::DISTRIBUTED, _TXT("Distributed") },
+
+ENUM_CONVERSION_END(PluginHost::Object::ModeType);
+
+} // namespace 
+
+
+

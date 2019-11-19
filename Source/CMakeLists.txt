@@ -4,6 +4,8 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
+option(BLUETOOTH
+        "Include the bluetooth library." OFF)
 option(BROADCAST
         "Include the broadcasting library." OFF)
 option(WEBSOCKET
@@ -21,7 +23,7 @@ option(PROTOCOLS
 option(CDMI
         "Include OpenCDM interface." OFF)
 option(PROCESS
-        "Include WPEProcess executable." ON)
+        "Include the COM hosting process executable." ON)
 option(PROXY_STUB
         "Include proxy/stubs." ON)
 option(PLUGINS
@@ -32,8 +34,14 @@ option(EXECUTABLE
         "Include the hosting executable." ON)
 option(VIRTUALINPUT
         "Include VirtualInput for external applications." OFF)
+option(COMPOSITORCLIENT
+        "Include a graphics backend abstraction for external applications." OFF)
+option(GSTREAMERCLIENT
+        "Include a gstreamer sink abstraction for external applications." OFF)
 option(JSONRPC
         "Include JSONRPC C++ utility library for external applications." ON)
+option(PROCESSCONTAINERS
+        "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
 option(UNIT_TESTS
@@ -64,6 +72,10 @@ if(CRYPTALGO)
     add_subdirectory(cryptalgo)
 endif()
 
+if(PROCESSCONTAINERS)
+    add_subdirectory(processcontainers)
+endif()
+
 if(BROADCAST)
     add_subdirectory(broadcast)
 endif()
@@ -84,6 +96,10 @@ if(TRACING)
     add_subdirectory(tracing)
 endif()
 
+if(BLUETOOTH)
+    add_subdirectory(bluetooth)
+endif()
+
 if(PROFILER)
     message(FATAL_ERROR "PROFILER option does not exist?")
     set(PROFILER_INCLUDE_DIR "${ROOT}/Source/profiler")
@@ -102,9 +118,9 @@ if(PROCESS)
     add_subdirectory(WPEProcess)
 endif()
 
-    add_subdirectory(memoryoverview)
+add_subdirectory(memoryoverview)
 
-    add_subdirectory(WPEMemoryOverview)
+add_subdirectory(WPEMemoryOverview)
 
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
@@ -118,16 +134,28 @@ if(INTERFACES)
     add_subdirectory(interfaces)
 endif()
 
-if(EXECUTABLE)
-    add_subdirectory(WPEFramework)
-endif()
-
 if(VIRTUALINPUT)
     add_subdirectory(virtualinput)
 endif()
 
 if(JSONRPC)
     add_subdirectory(jsonrpc)
+endif()
+
+if(COMPOSITORCLIENT)
+    add_subdirectory(compositorclient)
+endif()
+
+if(GSTREAMERCLIENT)
+    add_subdirectory(gstreamerclient)
+endif()
+
+if(PROCESS)
+    add_subdirectory(WPEProcess)
+endif()
+
+if(EXECUTABLE)
+    add_subdirectory(WPEFramework)
 endif()
 
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake

@@ -31,6 +31,10 @@ option(BUILD_TESTS "Build tests (requires gtest)" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
+find_package(PythonInterp 2.7 REQUIRED)
+set(JSON_GENERATOR "${PROJECT_SOURCE_DIR}/Tools/JsonGenerator/JsonGenerator.py")
+set(PROXYSTUB_GENERATOR "${PROJECT_SOURCE_DIR}/Tools/ProxyStubGenerator/StubGenerator.py")
+
 if (INSTALL_LOCALLY)
     set(CMAKE_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/install")
     set(CMAKE_PREFIX_PATH "${PROJECT_BINARY_DIR}/cmake")

@@ -21,12 +21,6 @@
     <None Include="DataModel.json" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Enumerations.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ProxyStubs.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs_AVNClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,19 +60,25 @@
     <ClCompile Include="ProxyStubs_RtspClient.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProxyStubs_Streaming.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ProxyStubs_TestController.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ProxyStubs_TVControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProxyStubs_WebDriver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ProxyStubs_WebServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Performance.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_Stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_TestUtility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_WebPA.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -183,6 +183,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Module.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPerformance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

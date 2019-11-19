@@ -254,34 +254,6 @@ namespace Core {
 #endif
     };
 
-    // ===========================================================================
-    // class DoorBell
-    // ===========================================================================
-    // MF2018, note: usage of this class is currently not supported when the system time can make large jumps. Do not use SharedBuffer class when
-    //         the Time subsystem is not yet available.
-    class EXTERNAL DoorBell {
-    private:
-        DoorBell() = delete;
-        DoorBell(const DoorBell&) = delete;
-        DoorBell& operator=(const DoorBell&) = delete;
-
-    public:
-        DoorBell(const TCHAR sourceName[]);
-        ~DoorBell();
-
-    public:
-        void Ring();
-        uint32_t Wait(const uint32_t waitTime) const;
-        void Acknowledge();
-
-    private:
-#ifdef __WIN32__
-        HANDLE _doorBell;
-#else
-        sem_t* _doorBell;
-#endif
-    };
-
     template <typename SYNCOBJECT>
     class SafeSyncType {
     private:
@@ -290,7 +262,7 @@ namespace Core {
         SafeSyncType<SYNCOBJECT>& operator=(const SafeSyncType<SYNCOBJECT>&) = delete;
 
     public:
-        SafeSyncType(SYNCOBJECT& _cs)
+        explicit SafeSyncType(SYNCOBJECT& _cs)
             : m_Lock(_cs)
         {
             m_Lock.Lock();

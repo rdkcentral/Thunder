@@ -1,27 +1,27 @@
 {
   "port": 80,
-  "binding": "0.0.0.0",
+  "binding_": "0.0.0.0",
+  "interface": "NETWORK",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "D:/WPEFrameworkPlugins/artifacts/Persistent",
   "volatilepath": "D:/WPEFramework/artifacts/temp",
-  "datapath": "D:/WPEFrameworkPlugins/artifacts/Debug",
+  "datapath": "D:/WPEFramework/artifacts/Debug",
   "systempath": "D:/WPEFramework/artifacts/Debug",
   "proxystubpath": "D:/WPEFramework/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
+  "tracing": [
+    {
+      "module": "Plugin_OCDM",
+      "enabled": true
+    }
+  ],
   "plugins": [
     {
       "callsign": "Controller",
       "configuration": {
-        "switch": {
-          "callsigns": [
-            "WebKitBrowser",
-            "YouTube",
-            "Netflix"
-          ],
-          "default": "WebKitBrowser"
-        }
+        "subsystems": [ "Decryption" ]
       }
     },
     {
@@ -37,25 +37,77 @@
       }
     },
     {
+      "callsign": "SecurityAgent",
+      "locator": "libSecurityAgent.so",
+      "classname": "SecurityAgent",
+      "precondition": [
+        "Platform"
+      ],
+      "autostart": false,
+      "configuration": {
+        "acl": "data.json"
+      }
+    },
+    {
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": true
+      "autostart": false
+    },
+    {
+      "callsign": "OpenCDMi",
+      "locator": "libOpenCDMi.so",
+      "classname": "OCDM",
+      "autostart": true,
+      "configuration": {
+        "connector": "127.0.0.1:7912",
+        "root": {
+          "outofprocess": true
+        }
+      }
+    },
+    {
+      "callsign": "Monitor",
+      "locator": "libMonitor.so",
+      "classname": "Monitor",
+      "autostart": true,
+      "configuration": {
+        "observables": [
+        {
+          "callsign":"WebKitBrowser",
+          "memory":5,
+          "memorylimit":850000,
+          "operational":1,
+          "restart": {
+            "memory": {
+              "window":0,
+              "limit":0
+            },
+            "operational": {
+              "window":60,
+              "limit":3
+            }
+          }
+        }]
+      }
     },
     {
       "callsign": "WebServer",
-      "locator": "libwebserver.so",
+      "locator": "libWebServer.so",
       "classname": "WebServer",
       "autostart": false,
       "configuration": {
-        "outofprocess": true
+
+        "root": {
+          "outofprocess": true
+        }
       }
     },
     {
       "callsign": "DeviceInfo",
       "locator": "libdeviceinfo.so",
       "classname": "DeviceInfo",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "location": "external",
         "identifier": "internal",
@@ -146,32 +198,40 @@
       "callsign": "Tracing",
       "locator": "libtracecontrol.so",
       "classname": "TraceControl",
-      "autostart": false
+      "autostart": true
+    },
+    {
+      "callsign": "RemoteControl",
+      "locator": "libremotecontrol.so",
+      "classname": "RemoteControl",
+      "autostart": true,
+      "configuration": {
+        "mapfile": "ir-remote.json"
+      }
     },
     {
       "autostart": false,
       "callsign": "WebKitBrowser",
       "classname": "OutOfProcessTest",
+      "locator": "liboutofprocesstest.so",
       "configuration": {
         "outofprocess": true,
-        "url": "http://webkit.org/tv",
+        "url": "http://webkit.org/tveee",
         "sleep": "720",
         "compositor": "noaa",
-        "inspector": "0.0.0.0:9998",
-        "cookiestorage": "/root"
-      },
-      "locator": "liboutofprocesstest.so"
+        "inspector": "0.0.0.0:9998"
+      }
     },
     {
       "autostart": false,
       "callsign": "Netflix",
       "classname": "OutOfProcessTest",
+      "locator": "liboutofprocesstest.so",
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
         "sleep": "720"
-      },
-      "locator": "liboutofprocesstest.so"
+      }
     },
     {
       "callsign": "YouTube",

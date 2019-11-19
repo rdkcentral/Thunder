@@ -172,7 +172,6 @@ namespace Core {
 
     bool Time::FromANSI(const string& buffer, const bool localTime)
     {
-
         // Sun Nov  6 08:49:37 1994       ; ANSI C's asctime() format [18]
         uint32_t index = 4;
         uint16_t year = static_cast<uint16_t>(~0);
@@ -368,6 +367,122 @@ namespace Core {
         return (false);
     }
 
+    bool Time::FromISO8601(const std::string& buffer)
+    {
+        // ISO8601 extended notation only, hour/minute/second must not be omitted
+        // Variants supported:
+        // 1994-11-06T08:49:37              ; local time
+        // 1994-11-06T08:49:37Z             ; UTC time
+        // 1994-11-06T08:49:37.123          ; local time with fractions of seconds
+        // 1994-11-06T08:49:37.123Z         ; UTC time with fractions of seconds
+        // 1994-11-06T08:49:37+01           ; time with hour offset
+        // 1994-11-06T08:49:37+06:45        ; time with hour:minute offset
+        // 1994-11-06T08:49:37.123+01       ; time with fractions of seconds and hour offset
+        // 1994-11-06T08:49:37.123+06:45    ; time with fractions of seconds and hour:minute offset
+
+        bool result = false;
+        int year = -1;
+        int month = -1;
+        int day = -1;
+        int hours = -1;
+        int minutes = -1;
+        int seconds = -1;
+        int miliseconds = 0;
+        int offset = 0;
+        bool offsetNegative = false;
+        bool localTime = false;
+
+        if ((buffer.length() >= 19) && ::isdigit(buffer[0])) {
+            const char *cbuffer = buffer.c_str();
+            char *endptr = nullptr;
+
+            year = std::strtol(cbuffer, &endptr, 10);
+            if ((year >= 1582) && (year <= 9999) && *endptr == '-') { // 1582 = start of Gregorian calendar
+                month = std::strtol(cbuffer + 5, &endptr, 10);
+                if ((month >= 1) && (month <= 12) && (*endptr == '-')) {
+                    day = std::strtol(cbuffer + 8, &endptr, 10);
+                    if ((day >= 1) && (day <= 31) && (*endptr == 'T')) {
+                        hours = std::strtol(cbuffer + 11, &endptr, 10);
+                        if ((hours >= 0) && (hours <= 23) && (*endptr == ':')) {
+                            minutes = std::strtol(cbuffer + 14, &endptr, 10);
+                            if ((minutes >= 0) && (minutes <= 59) && (*endptr == ':')) {
+                                seconds = std::strtol(cbuffer + 17, &endptr, 10);
+                                if ((seconds >= 0) && (seconds <= 59)) {
+                                    result = true; // date and time was OK
+
+                                    // Handle fractions of seconds
+                                    if (*endptr == '.') {
+                                        if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 2)) {
+                                            miliseconds = static_cast<int>(floor(std::strtof(endptr, &endptr) * MilliSecondsPerSecond));
+                                        } else {
+                                            result = false;
+                                        }
+                                    }
+
+                                    if (result == true) {
+                                        if ((*endptr == ' ') || (*endptr == '\0')) {
+                                            // No timezone offset information, assume it's local time
+                                            localTime = true;
+                                        } else if ((*endptr == '+') || (*endptr == '-')) {
+                                            // Handle timezone
+                                            offsetNegative = (*endptr == '-');
+
+                                            if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 3)) {
+                                                int timezoneHr = std::strtol(endptr + 1, &endptr, 10);
+                                                int timezoneMin = 0;
+                                                if (*endptr == ':') {
+                                                    if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 3)) {
+                                                        timezoneMin = std::strtol(endptr + 1, &endptr, 10);
+                                                    } else {
+                                                        result = false;
+                                                    }
+                                                }
+
+                                                if (result == true) {
+                                                    if ((*endptr != ' ') && (*endptr != '\0')) {
+                                                        // Nothing more expected after timezone offset
+                                                        result = false;
+                                                    } else {
+                                                        if ((timezoneHr >= -23) && (timezoneHr <= 23) && (timezoneMin >= 0) && (timezoneMin <= 59)){
+                                                            offset = (timezoneHr * 60) + timezoneMin;
+                                                        } else {
+                                                            result = false;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            else {
+                                                result = false;
+                                            }
+                                        }
+                                        else if (*endptr != 'Z') {
+                                            // Nothing else except time offset or 'Z' is allowed at the end of the string
+                                            result = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (result) {
+            *this = Time(year, month, day, hours, minutes, seconds, miliseconds, localTime);
+
+            if (offset != 0) {
+                if (offsetNegative == true) {
+                    Sub(offset * SecondsPerMinute * MilliSecondsPerSecond);
+                } else {
+                    Add(offset * SecondsPerMinute * MilliSecondsPerSecond);
+                }
+            }
+        }
+
+        return (result);
+    }
+
 #ifdef __WIN32__
 
     // jUST USED FOR A 1 TIME CALCULATION. THE RESULT IS FIXED SO "PASTED" INTO THE VALUE.
@@ -558,6 +673,36 @@ namespace Core {
         return (string(buffer));
     }
 
+    string Time::ToISO8601(const bool localTime) const
+    {
+        TCHAR buffer[32];
+
+        if (!IsValid())
+            return string();
+
+        const TCHAR* zone = (localTime == false ? _T("Z") : _T(""));
+
+        if (localTime != IsLocalTime()) {
+            SYSTEMTIME convertedTime;
+            if (IsLocalTime()) {
+                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            } else {
+                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+            }
+
+            Time converted(convertedTime, localTime);
+#pragma warning(disable : 4996)
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
+                converted.Minutes(), converted.Seconds(), zone);
+#pragma warning(default : 4996)
+        } else
+#pragma warning(disable : 4996)
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
+#pragma warning(default : 4996)
+
+        return (string(buffer));
+    }
+
     /* static */ Time Time::Now()
     {
         SYSTEMTIME systemTime;
@@ -718,6 +863,34 @@ namespace Core {
         return (string(buffer));
     }
 
+    string Time::ToISO8601(const bool localTime) const
+    {
+        TCHAR buffer[32];
+        const TCHAR* zone = (localTime == false) ? _T("Z") : _T("");
+
+        if (!IsValid())
+            return string();
+
+        if (localTime != IsLocalTime()) {
+            // We need to convert from local to GMT or vv
+            time_t epochTimestamp;
+            struct tm originalTime = _time;
+            if (IsLocalTime())
+                epochTimestamp = mktime(&originalTime);
+            else
+                epochTimestamp = mktimegm(&originalTime);
+
+            timespec convertedTime{ epochTimestamp, 0 };
+            Time converted(convertedTime, localTime);
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), converted.Year(), converted.Month(), converted.Day(), converted.Hours(),
+                converted.Minutes(), converted.Seconds(), zone);
+        } else {
+            _stprintf(buffer, _T("%04d-%02d-%02dT%02d:%02d:%02d%s"), Year(), Month(), Day(), Hours(),Minutes(), Seconds(), zone);
+        }
+
+        return (string(buffer));
+    }
+
     string Time::Format(const TCHAR* formatter) const
     {
         TCHAR buffer[200];
@@ -740,6 +913,11 @@ namespace Core {
     string Time::ToRFC1123() const
     {
         return ToRFC1123(IsLocalTime());
+    }
+
+    string Time::ToISO8601() const
+    {
+        return ToISO8601(IsLocalTime());
     }
 
     Time& Time::Add(const uint32_t timeInMilliseconds)

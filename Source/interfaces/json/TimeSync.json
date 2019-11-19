@@ -1,0 +1,76 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Time Sync API",
+    "class": "TimeSync",
+    "description": "TimeSync JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "synchronize": {
+      "summary": "Synchronizes time",
+      "description": "Use this method to synchronize the system time with the currently configured time source. If automatic time synchronization is initially disabled or stopped, it will be restarted.",
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Returned when the method is called while previously triggered synchronization is in progress.",
+          "$ref": "#/common/errors/inprogress"
+        },
+        {
+          "description": "Returned when the source configuration is missing or invalid.",
+          "$ref": "#/common/errors/incompleteconfig"
+        }
+      ]
+    }
+  },
+  "properties": {
+    "synctime": {
+      "summary": "Most recent synchronized time",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "description": "Synchronized time (in ISO8601 format); empty string if the time has never been synchronized",
+            "example": "2019-05-07T07:20:26Z",
+            "type": "string"
+          },
+          "source": {
+            "description": "The synchronization source e.g. an NTP server",
+            "example": "ntp://example.com",
+            "type": "string"
+          }
+        },
+        "required": [
+          "time"
+        ]
+      }
+    },
+    "time": {
+      "summary": "Current system time",
+      "description": "Upon setting this property automatic time synchronization will be stopped. If not already active, the framework's *time* subsystem will become activated. If the property is set empty then the *time* subsystem will still become activated but without setting the time (thereby notifying the framework that the time has been set externally).",
+      "params": {
+        "description": "System time (in ISO8601 format)",
+        "example": "2019-05-07T07:20:26Z",
+        "type": "string"
+      },
+      "errors": [
+        {
+          "description": "The time is invalid",
+          "$ref": "#/common/errors/badrequest"
+        }
+      ]
+    }
+  }
+  ,
+  "events": {
+    "timechange": {
+      "summary": "Signals a time change"
+    }
+  }
+}

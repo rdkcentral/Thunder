@@ -12,6 +12,7 @@ namespace PluginHost {
         , _identifier(nullptr)
         , _location(nullptr)
         , _internet(nullptr)
+        , _security(nullptr)
         , _time(nullptr)
         , _flags(0)
     {
@@ -99,6 +100,17 @@ namespace PluginHost {
     bool SystemInfo::Internet::Set(const PluginHost::ISubSystem::IInternet* info)
     {
         return Set(info->PublicIPAddress());
+    }
+
+    // Security information
+    /* virtual */ string SystemInfo::Security::Callsign() const
+    {
+        return (_callsign);
+    }
+
+    bool SystemInfo::Security::Set(const PluginHost::ISubSystem::ISecurity* info)
+    {
+        return Set(info->Callsign());
     }
 
     // Location Information

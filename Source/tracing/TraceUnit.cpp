@@ -1,6 +1,9 @@
 #include "TraceUnit.h"
 #include "TraceCategories.h"
 
+#define TRACE_CYCLIC_BUFFER_FILENAME _T("TRACE_FILENAME")
+#define TRACE_CYCLIC_BUFFER_DOORBELL _T("TRACE_DOORBELL")
+
 namespace WPEFramework {
 namespace Trace {
 
@@ -43,6 +46,7 @@ namespace Trace {
         }
     }
 
+
     ///
     /// \brief Format message
     /// \param dst String to store formatted message
@@ -81,24 +85,29 @@ namespace Trace {
     {
         toString(dst, format, ap);
     }
+
+    /* static */ const TCHAR* CyclicBufferName = _T("tracebuffer");
+
     TraceUnit::TraceUnit()
         : m_Categories()
         , m_Admin()
         , m_OutputChannel(nullptr)
         , m_DirectOut(false)
     {
-        string pathName;
-
-        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_ENVIRONMENT, pathName);
-
-        if (pathName.empty() == false) {
-            Open(pathName);
-        }
     }
 
-    TraceUnit::TraceBuffer::TraceBuffer(const string& name)
-        : Core::CyclicBuffer(name + '.' + Core::NumberType<uint32_t>(Core::ProcessInfo().Id()).Text(), TRACE_CYCLIC_BUFFER_SIZE, true)
-        , _doorBell(TRACE_CYCLIC_BUFFER_PREFIX)
+    TraceUnit::TraceBuffer::TraceBuffer(const string& doorBell, const string& name)
+        : Core::CyclicBuffer(name, 
+                                Core::File::USER_READ    | 
+                                Core::File::USER_WRITE   | 
+                                Core::File::USER_EXECUTE | 
+                                Core::File::GROUP_READ   |
+                                Core::File::GROUP_WRITE  |
+                                Core::File::OTHERS_READ  |
+                                Core::File::OTHERS_WRITE | 
+                                Core::File::SHAREABLE,
+                             CyclicBufferSize, true)
+        , _doorBell(doorBell.c_str())
     {
     }
 
@@ -145,17 +154,40 @@ namespace Trace {
         m_Admin.Unlock();
     }
 
-    uint32_t TraceUnit::Open(const string& pathName)
+    uint32_t TraceUnit::Open(const uint32_t identifier)
     {
-        ASSERT(m_OutputChannel == nullptr);
+        uint32_t result = Core::ERROR_UNAVAILABLE;
 
-        string actualPath(Core::Directory::Normalize(pathName) + TRACE_CYCLIC_BUFFER_PREFIX);
+        string fileName;
+        string doorBell;
+        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
+        Core::SystemInfo::GetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
 
-        m_OutputChannel = new TraceBuffer(actualPath);
+        ASSERT(fileName.empty() == false);
+        ASSERT(doorBell.empty() == false);
 
-        ASSERT(m_OutputChannel->IsValid());
+        if (fileName.empty() == false) {
+       
+            fileName +=  '.' + Core::NumberType<uint32_t>(identifier).Text();
+            result = Open(doorBell, fileName);
+        }
 
-        return (Core::ERROR_NONE);
+        return (result);
+    }
+
+    uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
+    {
+        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName + '.' + Core::NumberType<uint32_t>(identifier).Text());
+        #ifdef __WIN32__
+        string doorBell("127.0.0.1:61234");
+        #else
+        string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell" );
+        #endif
+
+        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_FILENAME, fileName);
+        Core::SystemInfo::SetEnvironment(TRACE_CYCLIC_BUFFER_DOORBELL, doorBell);
+
+        return (Open(doorBell, fileName));
     }
 
     uint32_t TraceUnit::Close()
@@ -237,35 +269,61 @@ namespace Trace {
         return (modifications);
     }
 
-    void TraceUnit::GetDefaultCategoriesJson(string& jsonCategories)
+    string TraceUnit::Defaults() const
     {
-        m_EnabledCategories.ToString(jsonCategories);
+        string result;
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        Settings::const_iterator index = m_EnabledCategories.begin();
+        
+        while (index != m_EnabledCategories.end()) {
+            serialized.Add(Setting::JSON(*index));
+            index++;
+        }
+
+        serialized.ToString(result);
+        return (result);
     }
 
-    void TraceUnit::SetDefaultCategoriesJson(const string& jsonCategories)
+    void TraceUnit::Defaults(const string& jsonCategories)
     {
-        m_EnabledCategories.FromString(jsonCategories);
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        serialized.FromString(jsonCategories);
 
         // Deal with existing categories that might need to be enable/disabled.
-        UpdateEnabledCategories();
+        UpdateEnabledCategories(serialized);
     }
 
-    void TraceUnit::UpdateEnabledCategories()
+    void TraceUnit::Defaults(Core::File& file) {
+        Core::JSON::ArrayType<Setting::JSON> serialized;
+        serialized.FromFile(file);
+
+        // Deal with existing categories that might need to be enable/disabled.
+        UpdateEnabledCategories(serialized);
+    }
+
+    void TraceUnit::UpdateEnabledCategories(const Core::JSON::ArrayType<Setting::JSON>& info)
     {
+        Core::JSON::ArrayType<Setting::JSON>::ConstIterator index = info.Elements();
+
+        m_EnabledCategories.clear();
+
+        while (index.Next()) {
+            m_EnabledCategories.emplace_back(Setting(index.Current()));
+        }
+
         for (ITraceControl* traceControl : m_Categories) {
-            // TODO: should be ConstIterator
-            EnabledCategories::Iterator i = m_EnabledCategories.Elements();
-            while (i.Next()) {
-                EnabledCategory& category = i.Current();
+            Settings::const_iterator index = m_EnabledCategories.begin();
+            while (index != m_EnabledCategories.end()) {
+                const Setting& setting = *index;
 
-                if ((!category.Module.Value().empty()) && (category.Module != traceControl->Module()))
-                    continue;
+                if ( ((setting.HasModule()   == false) || (setting.Module()   == traceControl->Module())   ) && 
+                     ((setting.HasCategory() == false) || (setting.Category() == traceControl->Category()) ) ) {
+                    if (setting.Enabled() != traceControl->Enabled()) {
+                        traceControl->Enabled(setting.Enabled());
+                    }
+                }
 
-                if ((!category.Category.Value().empty()) && (category.Category != traceControl->Category()))
-                    continue;
-
-                if (category.Enabled != traceControl->Enabled())
-                    traceControl->Enabled(category.Enabled);
+                index++;
             }
         }
     }
@@ -274,19 +332,17 @@ namespace Trace {
     {
         bool isDefaultCategory = false;
 
-        EnabledCategories::ConstIterator i = m_EnabledCategories.Elements();
-        while (i.Next()) {
-            const EnabledCategory& enabledCategory = i.Current();
+        Settings::const_iterator index = m_EnabledCategories.begin();
+        while (index != m_EnabledCategories.end()) {
+            const Setting& setting = *index;
 
-            if ((!enabledCategory.Module.Value().empty()) && (enabledCategory.Module.Value() != module))
-                continue;
-
-            if ((!enabledCategory.Category.Value().empty()) && (enabledCategory.Category.Value() != category))
-                continue;
-
-            // Register match of category and update enabled flag.
-            isDefaultCategory = true;
-            enabled = enabledCategory.Enabled.Value();
+            if ( ((module.empty() == true)   || (setting.HasModule()   == false) || (setting.Module()   == module)   ) && 
+                 ((category.empty() == true) || (setting.HasCategory() == false) || (setting.Category() == category) ) ) {
+                // Register match of category and update enabled flag.
+                isDefaultCategory = true;
+                enabled = setting.Enabled();
+            }
+            index++;
         }
 
         return isDefaultCategory;

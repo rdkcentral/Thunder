@@ -209,8 +209,6 @@ namespace ProxyStubs {
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
-            // Careful, out of order due to HashKey() in incorrect position.
-            //
             // virtual bool AutoStart() const = 0;
             //
             RPC::Data::Frame::Writer response(message->Response().Writer());
@@ -344,15 +342,18 @@ namespace ProxyStubs {
 
             response.Text(message->Parameters().Implementation<IShell>()->Model());
         },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
             // Careful, out of order.
             //
             // virtual ISubSystem* SubSystems() = 0;
             //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
+            ISubSystem* output = message->Parameters().Implementation<IShell>()->SubSystems();
 
-            response.Number<ISubSystem*>(message->Parameters().Implementation<IShell>()->SubSystems());
+            // write return value
+            RPC::Data::Frame::Writer writer(message->Response().Writer());
+            writer.Number<ISubSystem*>(output);
+            RPC::Administrator::Instance().RegisterInterface(channel, output);
         },
         [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
             //
@@ -382,6 +383,23 @@ namespace ProxyStubs {
             RPC::Data::Frame::Writer response(message->Response().Writer());
 
             response.Text(message->Parameters().Implementation<IShell>()->Version());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual bool Resumed() const = 0;
+            //
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Boolean(message->Parameters().Implementation<IShell>()->Resumed());
+        },
+        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
+            //
+            // virtual string ConfigSubstitution(const string& input) const = 0;
+            //
+            RPC::Data::Frame::Reader reader(message->Parameters().Reader());
+            RPC::Data::Frame::Writer response(message->Response().Writer());
+
+            response.Text(message->Parameters().Implementation<IShell>()->ConfigSubstitution(reader.Text()));
         },
         nullptr
     };
@@ -714,6 +732,7 @@ namespace ProxyStubs {
         // virtual string DataPath() const = 0;
         // virtual string HashKey() const = 0;
         // virtual bool AutoStart() const = 0;
+        // virtual bool Resumed() const = 0;
         // virtual void Notify(const string& message) = 0;
         // virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
         // virtual void Register(IPlugin::INotification* sink) = 0;
@@ -1033,7 +1052,32 @@ namespace ProxyStubs {
 
             return (result);
         }
-        virtual IProcess* Process() override
+        virtual bool Resumed() const override
+        {
+            bool result = false;
+            IPCMessage newMessage(BaseClass::Message(28));
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                result = newMessage->Response().Reader().Boolean();
+            }
+
+            return (result);
+        }
+        virtual string ConfigSubstitution(const string& input) const override
+        {
+            IPCMessage newMessage(BaseClass::Message(29));
+            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
+
+            writer.Text(input);
+            string result;
+
+            if (Invoke(newMessage) == Core::ERROR_NONE) {
+                result = newMessage->Response().Reader().Text();
+            }
+
+            return (result);
+        }
+        virtual ICOMLink* COMLink() override
         {
             return (nullptr);
         }

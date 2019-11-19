@@ -7,12 +7,14 @@
 
 #include "../core/core.h"
 
-#ifdef __WIN32__
+#ifdef _MSVC_LANG
 #undef EXTERNAL
+#undef INPUT_MOUSE
 #ifdef VIRTUALINPUT_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
+#define EXTERNAL __declspec(dllexport)
 #else
-#define EXTERNAL EXTERNAL_IMPORT
+#define EXTERNAL __declspec(dllimport)
+#pragma comment(lib, "virtualinput.lib")
 #endif
 #else
 #define EXTERNAL

@@ -1,7 +1,8 @@
-set(TARGET WPEFramework)
+get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 add_executable(${TARGET}
         Controller.cpp
+        ControllerJsonRpc.cpp
         PluginHost.cpp
         PluginServer.cpp
         Probe.cpp
@@ -12,8 +13,7 @@ target_compile_definitions(${TARGET}
         PRIVATE
           NAMESPACE=${NAMESPACE}
           APPLICATION_NAME=${TARGET}
-          THREADPOOL_COUNT=3
-          RPCPOOL_COUNT=3
+          THREADPOOL_COUNT=4
         )
 
 if (TREE_REFERENCE)
@@ -26,13 +26,22 @@ endif()
 target_link_libraries(${TARGET}
         PRIVATE
           ${CMAKE_DL_LIBS}
-	  ${LIBEXECINFO_LIBRARY}
+          ${LIBEXECINFO_LIBRARY}
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
+        
+if(PROCESSCONTAINERS)
+    target_link_libraries(${TARGET}
+        PUBLIC
+            ${NAMESPACE}ProcessContainers::${NAMESPACE}ProcessContainers)
+    target_compile_definitions(${TARGET}
+        PUBLIC
+            PROCESSCONTAINERS_ENABLED=1)
+endif(PROCESSCONTAINERS)
 
 if (PROTOCOLS)
     target_link_libraries(${TARGET}

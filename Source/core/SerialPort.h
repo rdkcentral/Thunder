@@ -216,6 +216,9 @@ namespace Core {
                 if (tcsetattr(m_Descriptor, TCSANOW, &m_PortSettings) < 0) {
                     TRACE_L1("Error setting a new speed: %d", -errno);
                 }
+                else {
+                    ::tcflush(m_Descriptor, TCIOFLUSH);
+                }
             }
 #endif
         }
@@ -240,6 +243,17 @@ namespace Core {
         void Closed()
         {
             StateChange();
+
+#ifdef __LINUX__
+            close(m_Descriptor);
+            m_Descriptor = -1;
+#endif
+
+#ifdef __WIN32__
+            ::CloseHandle(m_Descriptor);
+            m_Descriptor = INVALID_HANDLE_VALUE;
+#endif
+
             m_State = 0;
         }
         uint32_t WaitForClosure(const uint32_t time) const;

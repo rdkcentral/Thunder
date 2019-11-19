@@ -39,8 +39,8 @@ namespace Web {
                 : _setFlags((masking ? 0x80 : 0x00) | (binary ? 0x02 : 0x01))
                 , _progressInfo(0)
                 , _pendingReceiveBytes(0)
+                , _frameType(TEXT)
                 , _controlStatus(0)
-
             {
             }
             ~Protocol()
@@ -871,7 +871,7 @@ namespace Web {
                                 waitTime -= sleepTime;
                             }
                         }
-                        if ((IsSuspended() == true) && (_serializerImpl.IsIdle() == true) && (_deserialiserImpl.IsIdle() == true) && (_parent.IsIdle() == true)) {
+                        if ((IsOpen() == false) || ((IsSuspended() == true) && (_serializerImpl.IsIdle() == true) && (_deserialiserImpl.IsIdle() == true) && (_parent.IsIdle() == true))) {
                             result = ACTUALLINK::Close(waitTime);
 
                             waitTime = 0;
@@ -1482,6 +1482,10 @@ namespace Web {
         {
             return (_channel.IsOpen());
         }
+        inline bool IsClosed() const
+        {
+            return (_channel.IsClosed());
+        }
         inline bool IsWebServer() const
         {
             return (_channel.IsWebServer());
@@ -1714,7 +1718,7 @@ namespace Web {
         }
         inline bool IsOpen() const
         {
-            return (_channel.IsWebSocket());
+            return (_channel.IsOpen() && _channel.IsWebSocket());
         }
         inline bool IsClosed() const
         {

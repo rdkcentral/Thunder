@@ -137,6 +137,14 @@ private:
     size_t pos_;
 };
 
+namespace WPEFramework
+{
+   namespace PluginHost
+   {
+      struct IShell;
+   }
+}
+
 namespace CDMi {
 
 // EME error code to which CDMi errors are mapped. Please
@@ -148,20 +156,6 @@ namespace CDMi {
 #define MEDIA_KEYERR_OUTPUT 4
 #define MEDIA_KEYERR_HARDWARECHANGE 5
 #define MEDIA_KEYERR_DOMAIN 6
-
-// The status code returned by CDMi APIs.
-typedef int32_t CDMi_RESULT;
-
-// REVIEW: Why make up new truth values, what's wrong with true/false?
-#define CDMi_SUCCESS ((CDMi_RESULT)0)
-#define CDMi_S_FALSE ((CDMi_RESULT)1)
-#define CDMi_E_OUT_OF_MEMORY ((CDMi_RESULT)0x80000002)
-#define CDMi_E_FAIL ((CDMi_RESULT)0x80004005)
-#define CDMi_E_INVALID_ARG ((CDMi_RESULT)0x80070057)
-
-#define CDMi_E_SERVER_INTERNAL_ERROR ((CDMi_RESULT)0x8004C600)
-#define CDMi_E_SERVER_INVALID_MESSAGE ((CDMi_RESULT)0x8004C601)
-#define CDMi_E_SERVER_SERVICE_SPECIFIC ((CDMi_RESULT)0x8004C604)
 
 // More CDMi status codes can be defined. In general
 // CDMi status codes should use the same PK error codes.
@@ -179,10 +173,37 @@ typedef int32_t CDMi_RESULT;
 #define MEDIA_KEY_STATUS_KEY_STATUS_MAX KEY_STATUS_PENDING
 
 typedef enum {
+    CDMi_SUCCESS = 0,
+    CDMi_S_FALSE = 1,
+    CDMi_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
+    CDMi_INVALID_SESSION = 0x80000003,
+    CDMi_INVALID_DECRYPT_BUFFER = 0x80000004,
+    CDMi_OUT_OF_MEMORY = 0x80000005,
+    CDMi_FAIL = 0x80004005,
+    CDMi_INVALID_ARG = 0x80070057,
+    CDMi_SERVER_INTERNAL_ERROR = 0x8004C600,
+    CDMi_SERVER_INVALID_MESSAGE = 0x8004C601,
+    CDMi_SERVER_SERVICE_SPECIFIC = 0x8004C604,
+} CDMi_RESULT;
+
+typedef enum {
     Temporary,
     PersistentUsageRecord,
     PersistentLicense
 } LicenseType;
+
+typedef enum {
+    Invalid = 0,
+    LimitedDuration,
+    Standard
+} LicenseTypeExt;
+
+typedef enum {
+    LicenseAcquisitionState = 0,
+    InactiveDecryptionState,
+    ActiveDecryptionState,
+    InvalidState
+} SessionStateExt;
 
 // IMediaKeySessionCallback defines the callback interface to receive
 // events originated from MediaKeySession.
@@ -194,14 +215,11 @@ public:
     virtual void OnKeyMessage(
         const uint8_t* f_pbKeyMessage, //__in_bcount(f_cbKeyMessage)
         uint32_t f_cbKeyMessage, //__in
-        char* f_pszUrl)
+        const char* f_pszUrl)
         = 0; //__in_z_opt
 
-    // Event fired when MediaKeySession has found a usable key.
-    virtual void OnKeyReady(void) = 0;
-
     // Event fired when MediaKeySession encounters an error.
-    virtual void OnKeyError(
+    virtual void OnError(
         int16_t f_nError,
         CDMi_RESULT f_crSysError,
         const char* errorMessage)
@@ -209,6 +227,7 @@ public:
 
     //Event fired on key status update
     virtual void OnKeyStatusUpdate(const char* keyMessage, const uint8_t* buffer, const uint8_t length) = 0;
+    virtual void OnKeyStatusesUpdated() const = 0;
 };
 
 // IMediaKeySession defines the MediaKeySession interface.
@@ -216,6 +235,9 @@ class IMediaKeySession {
 public:
     IMediaKeySession(void) {}
     virtual ~IMediaKeySession(void) {}
+
+    // Retrieves keysystem-specific metadata of the session
+    virtual std::string GetMetadata() const { return std::string(); }
 
     // Kicks off the process of acquiring a key. A MediaKeySession callback is supplied
     // to receive notifications during the process.
@@ -257,7 +279,8 @@ public:
         uint32_t* f_pcbOpaqueClearContent,
         uint8_t** f_ppbOpaqueClearContent,
         const uint8_t keyIdLength,
-        const uint8_t* keyId)
+        const uint8_t* keyId,
+        bool initWithLast15)
         = 0;
 
     virtual CDMi_RESULT ReleaseClearContent(
@@ -268,14 +291,40 @@ public:
         = 0;
 };
 
+// IMediaKeySession defines the MediaKeySession interface.
+class IMediaKeySessionExt {
+public:
+    IMediaKeySessionExt(void) {}
+    virtual ~IMediaKeySessionExt(void) {}
+
+    virtual uint32_t GetSessionIdExt(void) const = 0;
+
+    virtual CDMi_RESULT SetDrmHeader(const uint8_t drmHeader[], uint32_t drmHeaderLength) = 0;
+
+    virtual CDMi_RESULT GetChallengeDataExt(uint8_t* challenge, uint32_t& challengeSize, uint32_t isLDL) = 0;
+
+    virtual CDMi_RESULT CancelChallengeDataExt() = 0;
+    ;
+
+    virtual CDMi_RESULT StoreLicenseData(const uint8_t licenseData[], uint32_t licenseDataSize, uint8_t* secureStopId) = 0;
+
+    virtual CDMi_RESULT SelectKeyId(const uint8_t keyLength, const uint8_t keyId[]) = 0;
+
+    virtual CDMi_RESULT CleanDecryptContext() = 0;
+};
+
 // IMediaKeys defines the MediaKeys interface.
 class IMediaKeys {
 public:
     IMediaKeys(void) {}
     virtual ~IMediaKeys(void) {}
 
+    // Retrieves keysystem-specific metadata
+    virtual std::string GetMetadata() const { return std::string(); }
+
     // Create a MediaKeySession using the supplied init data and CDM data.
     virtual CDMi_RESULT CreateMediaKeySession(
+        const std::string& keySystem,
         int32_t licenseType,
         const char* f_pwszInitDataType,
         const uint8_t* f_pbInitData,
@@ -297,11 +346,65 @@ public:
         = 0;
 };
 
+// IMediaKeySession defines the MediaKeySessionExt interface.
+class IMediaKeysExt {
+public:
+    IMediaKeysExt(void) {}
+    virtual ~IMediaKeysExt(void) {}
+
+    virtual uint64_t GetDrmSystemTime() const = 0;
+
+    virtual std::string GetVersionExt() const = 0;
+
+    virtual uint32_t GetLdlSessionLimit() const = 0;
+
+    virtual bool IsSecureStopEnabled() = 0;
+
+    virtual CDMi_RESULT EnableSecureStop(bool enable) = 0;
+
+    virtual uint32_t ResetSecureStops() = 0;
+
+    virtual CDMi_RESULT GetSecureStopIds(
+        uint8_t ids[],
+        uint8_t idSize,
+        uint32_t& count)
+        = 0;
+
+    virtual CDMi_RESULT GetSecureStop(
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        uint8_t* rawData,
+        uint16_t& rawSize)
+        = 0;
+
+    virtual CDMi_RESULT CommitSecureStop(
+        const uint8_t sessionID[],
+        uint32_t sessionIDLength,
+        const uint8_t serverResponse[],
+        uint32_t serverResponseLength)
+        = 0;
+
+    virtual CDMi_RESULT DeleteKeyStore() = 0;
+
+    virtual CDMi_RESULT DeleteSecureStore() = 0;
+
+    virtual CDMi_RESULT GetKeyStoreHash(
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
+        = 0;
+
+    virtual CDMi_RESULT GetSecureStoreHash(
+        uint8_t secureStoreHash[],
+        uint32_t secureStoreHashLength)
+        = 0;
+};
+
 struct ISystemFactory {
     virtual IMediaKeys* Instance() = 0;
     virtual const char* KeySystem() const = 0;
     virtual const std::vector<std::string>& MimeTypes() const = 0;
-    virtual void SystemConfig(const std::string& configline) = 0;
+    virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline) = 0;
+    virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell) = 0;
 };
 
 template <typename IMPLEMENTATION>
@@ -335,9 +438,17 @@ public:
         return (typeid(IMPLEMENTATION).name());
     }
 
-    virtual void SystemConfig(const std::string& configline)
+    virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
-        OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+        if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
+           OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
+        } else {
+           Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
+        }
+    }
+    virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell)
+    {
+        Deinitialize(shell, std::integral_constant<bool, HasOnShellAndSystemDeinitialize<IMPLEMENTATION>::Has>());
     }
 
 private:
@@ -359,6 +470,49 @@ private:
     }
 
     void OnSystemConfig(const std::string&, std::false_type)
+    {
+    }
+
+    template <typename T>
+    struct HasOnShellAndSystemInitialize {
+        template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
+        struct SFINAE {
+        };
+        template <typename U>
+        static uint8_t Test(SFINAE<U, &U::Initialize>*);
+        template <typename U>
+        static uint32_t Test(...);
+        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
+    };
+
+    template <typename T>
+    struct HasOnShellAndSystemDeinitialize {
+        template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *)>
+        struct SFINAE {
+        };
+        template <typename U>
+        static uint8_t Test(SFINAE<U, &U::Deinitialize>*);
+        template <typename U>
+        static uint32_t Test(...);
+        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
+    };
+
+
+    void Initialize(const WPEFramework::PluginHost::IShell * service, const std::string& configline, std::true_type)
+    {
+        _instance.Initialize(service, configline);
+    }
+
+    void Initialize(const WPEFramework::PluginHost::IShell *, const std::string&, std::false_type)
+    {
+    }
+
+    void Deinitialize(const WPEFramework::PluginHost::IShell * service, std::true_type)
+    {
+        _instance.Deinitialize(service);
+    }
+
+    void Deinitialize(const WPEFramework::PluginHost::IShell *, std::false_type)
     {
     }
 

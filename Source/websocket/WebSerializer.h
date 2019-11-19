@@ -15,6 +15,7 @@ namespace Web {
 
     public:
         TextBody()
+            : _lastPosition(0)
         {
         }
         virtual ~TextBody()
@@ -288,46 +289,16 @@ namespace Web {
     private:
         typedef JSONBodyType<JSONOBJECT> ThisClass;
 
-        class JSONDeserializer : public Core::JSON::IElement::Deserializer {
-        private:
-            JSONDeserializer() = delete;
-            JSONDeserializer(const JSONDeserializer&) = delete;
-            JSONDeserializer& operator=(const JSONDeserializer&) = delete;
-
-        public:
-            JSONDeserializer(JSONOBJECT& jsonElement)
-                : Core::JSON::IElement::Deserializer()
-                , _element(jsonElement)
-            {
-            }
-            ~JSONDeserializer()
-            {
-            }
-
-        public:
-            virtual Core::JSON::IElement* Element(const string& identifier) override
-            {
-                return &_element;
-            }
-            virtual void Deserialized(Core::JSON::IElement& /* element */) override
-            {
-            }
-
-        private:
-            JSONOBJECT& _element;
-        };
-
-    private:
-        JSONBodyType(const JSONBodyType<JSONOBJECT>&);
-        JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&);
-
     public:
+        JSONBodyType(const JSONBodyType<JSONOBJECT>&) = delete;
+        JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&) = delete;
+
 #ifdef __WIN32__
 #pragma warning(disable : 4355)
 #endif
         JSONBodyType()
             : JSONOBJECT()
-            , _deserializer(*this)
+            , _offset(0)
         {
         }
 #ifdef __WIN32__
@@ -357,6 +328,7 @@ namespace Web {
         inline void Clear()
         {
             JSONOBJECT::Clear();
+            _offset = 0;
         }
 
     protected:
@@ -388,16 +360,16 @@ namespace Web {
         }
         virtual void Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            _deserializer.Deserialize(stream, maxLength);
+            static_cast<Core::JSON::IElement&>(*this).Deserialize(reinterpret_cast<const char*>(stream), maxLength, _offset);
         }
         virtual void End() const override
         {
         }
 
     private:
-        JSONDeserializer _deserializer;
         mutable uint32_t _lastPosition;
         mutable string _body;
+        uint16_t _offset;
     };
 
     template <typename JSONOBJECT, typename HASHALGORITHM>
