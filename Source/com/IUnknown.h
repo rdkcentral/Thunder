@@ -235,15 +235,13 @@ namespace ProxyStub {
             }
         }
         // This method is used to forcefully clear out the Proxies for channels that have unexpectedly closed !!!
-        uint32_t Destroy()
+        void Destroy()
         {
             uint8_t value(REGISTERED);
 
             if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                 RPC::Administrator::Instance().UnregisterProxy(*this);
             }
-
-            return (_parent.Release());
         }
         uint32_t RemoteRelease() const
         {

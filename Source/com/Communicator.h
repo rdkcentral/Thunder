@@ -1181,9 +1181,7 @@ namespace RPC {
             while (loop != deadProxies.end()) {
                 Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
                 Revoke(base, (*loop)->InterfaceId());
-                if ((*loop)->Destroy() == Core::ERROR_DESTRUCTION_SUCCEEDED) {
-                    TRACE_L1("Could not destruct a Proxy on a failing channel!!!");
-                }
+                (*loop)->Destroy();
                 loop++;
             }
 
