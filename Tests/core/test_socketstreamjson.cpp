@@ -86,9 +86,10 @@ namespace StreamJsonTest {
         }
     };
 
-    class JSONConnector : public Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&> {
+    template<typename INTERFACE>
+    class JSONConnector : public Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&, INTERFACE> {
     private:
-        typedef Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&> BaseClass;
+        typedef Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&, INTERFACE> BaseClass;
 
         JSONConnector();
         JSONConnector(const JSONConnector& copy);
@@ -102,7 +103,7 @@ namespace StreamJsonTest {
             , _objectFactory(1)
         {
         }
-        JSONConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONConnector>*)
+        JSONConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONConnector<INTERFACE>>*)
             : BaseClass(5, _objectFactory, false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
             , _dataPending(false, false)
@@ -120,7 +121,7 @@ namespace StreamJsonTest {
             newElement->ToString(textElement);
 
             if (_serverSocket)
-                Submit(newElement);
+                this->Submit(newElement);
             else {
                 _dataReceived = textElement;
                 _dataPending.Unlock();
@@ -131,7 +132,7 @@ namespace StreamJsonTest {
         }
         virtual void StateChange()
         {
-            if (IsOpen()) {
+            if (this->IsOpen()) {
                 if (_serverSocket)
                     StreamJsonTest::g_done = true;
             }
@@ -159,7 +160,7 @@ namespace StreamJsonTest {
     TEST(Core_Socket, StreamJSON)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONConnector> jsonSocketServer(Core::NodeId(StreamJsonTest::g_connector));
+            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(StreamJsonTest::g_connector));
             jsonSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             while(!StreamJsonTest::g_done);
@@ -177,7 +178,7 @@ namespace StreamJsonTest {
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JSONConnector jsonSocketClient(Core::NodeId(StreamJsonTest::g_connector));
+            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(StreamJsonTest::g_connector));
             jsonSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             jsonSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
