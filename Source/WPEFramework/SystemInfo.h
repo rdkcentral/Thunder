@@ -61,6 +61,53 @@ namespace PluginHost {
             uint8_t* _identifier;
         };
 
+        class Provisioning : public PluginHost::ISubSystem::IProvisioning, RPC::StringIterator {
+        public:
+            Provisioning () = delete;
+            Provisioning(const Provisioning&) = delete;
+            Provisioning& operator=(const Provisioning&) = delete;
+
+            Provisioning (RPC::IStringIterator* info) : RPC::StringIterator(info)
+            {
+            }
+            ~Provisioning() override
+            {
+            }
+
+
+        public:
+            BEGIN_INTERFACE_MAP(Provisioning)
+            INTERFACE_ENTRY(PluginHost::ISubSystem::IProvisioning)
+            END_INTERFACE_MAP
+
+        public:
+            bool Next(string& result) override 
+            {
+                return (RPC::StringIterator::Next(result));
+            }
+            bool Previous(string& result) override
+            {
+                return (RPC::StringIterator::Previous(result));
+            }
+            void Reset(const uint32_t position) override
+            {
+                RPC::StringIterator::Reset(position);
+            }
+            bool IsValid() const override
+            {
+                return (RPC::StringIterator::IsValid());
+            }
+            uint32_t Count() const override
+            {
+                return (RPC::StringIterator::Count());
+            }
+            string Current() const override
+            {
+                return (RPC::StringIterator::Current());
+            }
+        };
+
+
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:
             Internet()
@@ -429,6 +476,22 @@ namespace PluginHost {
                 break;
             }
             case PROVISIONING: {
+                RPC::IStringIterator* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
+
+                _adminLock.Lock();
+
+                if (_provisioning != nullptr) {
+                    _provisioning->Release();
+                }
+
+                _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
+
+                _adminLock.Unlock();
+
+                if (info != nullptr) {
+                    info->Release();
+                }
+
                 /* No information to set yet */
                 SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
                 break;
@@ -577,7 +640,7 @@ namespace PluginHost {
                     break;
                 }
                 case PROVISIONING: {
-                    /* No information to get yet */
+                    result = _provisioning;
                     break;
                 }
                 case DECRYPTION: {
@@ -635,6 +698,7 @@ namespace PluginHost {
         Internet* _internet;
         Security* _security;
         Time* _time;
+        IProvisioning* _provisioning;
         uint32_t _flags;
     };
 }
