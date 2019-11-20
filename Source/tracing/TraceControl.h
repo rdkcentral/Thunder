@@ -12,10 +12,10 @@
 
 // ---- Helper types and constants ----
 #define TRACE(CATEGORY, PARAMETERS)                                                    \
-    if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
+    if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                  \
-        Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                            \
+        WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                            \
             __FILE__,                                                                  \
             __LINE__,                                                                  \
             typeid(*this).name(),                                                      \
@@ -23,13 +23,13 @@
     }
 
 #define TRACE_GLOBAL(CATEGORY, PARAMETERS)                                             \
-    if (Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME>::IsEnabled() == true) { \
+    if (WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME>::IsEnabled() == true) { \
         CATEGORY __data__ PARAMETERS;                                                  \
-        Trace::TraceType<CATEGORY, &Core::System::MODULE_NAME> __message__(__data__);  \
-        Trace::TraceUnit::Instance().Trace(                                            \
+        WPEFramework::Trace::TraceType<CATEGORY, &WPEFramework::Core::System::MODULE_NAME> __message__(__data__);  \
+        WPEFramework::Trace::TraceUnit::Instance().Trace(                                            \
             __FILE__,                                                                  \
             __LINE__,                                                                  \
-            "<<Global>>",                                                              \
+            __FUNCTION__,                                                              \
             &__message__);                                                             \
     }
 
