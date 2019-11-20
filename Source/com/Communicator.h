@@ -32,6 +32,7 @@ namespace RPC {
             , _user()
             , _group()
             , _threads()
+            , _priority()
             , _type(HostType::LOCAL)
             , _configuration()
         {
@@ -45,6 +46,7 @@ namespace RPC {
             , _user(copy._user)
             , _group(copy._group)
             , _threads(copy._threads)
+            , _priority(copy._priority)
             , _type(copy._type)
             , _configuration(copy._configuration)
         {
@@ -57,6 +59,7 @@ namespace RPC {
             const string& user,
             const string& group,
             const uint8_t threads,
+            const int8_t priority,
             const HostType type,
             const string& configuration)
             : _callsign(callsign)
@@ -67,6 +70,7 @@ namespace RPC {
             , _user(user)
             , _group(group)
             , _threads(threads)
+            , _priority(priority)
             , _type(type)
             , _configuration(configuration)
         {
@@ -85,6 +89,7 @@ namespace RPC {
             _user = RHS._user;
             _group = RHS._group;
             _threads = RHS._threads;
+            _priority = RHS._priority;
             _type = RHS._type;
             _configuration = RHS._configuration;
 
@@ -124,6 +129,10 @@ namespace RPC {
         {
             return (_threads);
         }
+        inline int8_t Priority() const
+        {
+            return (_priority);
+        }
         inline HostType Type() const
         {
             return (_type);
@@ -142,6 +151,7 @@ namespace RPC {
         string _user;
         string _group;
         uint8_t _threads;
+        int8_t _priority;
         HostType _type;
         string _configuration;
     };
@@ -366,7 +376,7 @@ namespace RPC {
             }
 
         private:
-            virtual void LaunchProcess(const Core::Process::Options& options) = 0;
+            virtual void LaunchProcess(const Object& instance, const Core::Process::Options& options) = 0;
 
         public:
             inline void Launch(const Object& instance, const Config& config)
@@ -417,7 +427,7 @@ namespace RPC {
                     options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
                 }
 
-                LaunchProcess(options);
+                LaunchProcess(instance, options);
             }
         };
         class EXTERNAL LocalRemoteProcess : public RemoteProcess {
@@ -436,12 +446,17 @@ namespace RPC {
             ~LocalRemoteProcess() = default;
 
         private:
-            void LaunchProcess(const Core::Process::Options& options) override
+            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
             {
                 // Start the external process launch..
                 Core::Process fork(false);
 
                 fork.Launch(options, &_id);
+
+                if (instance.Priority() != 0) {
+                    Core::ProcessInfo newProcess(_id);
+                    newProcess.Priority(newProcess.Priority() + instance.Priority());
+                }
             }
 
             void Terminate() override;
@@ -527,7 +542,7 @@ namespace RPC {
             }
 
         private:
-            void LaunchProcess(const Core::Process::Options& options) override
+            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
             {
                 if (_container != nullptr) {
 
@@ -575,7 +590,7 @@ namespace RPC {
             }
 
         private:
-            void LaunchProcess(const Core::Process::Options& options) override
+            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
             {
             }
 
@@ -853,7 +868,6 @@ namespace RPC {
             void Activated(RPC::IRemoteConnection* connection)
             {
                 std::list<RPC::IRemoteConnection::INotification*>::iterator index(_observers.begin());
-
                 while (index != _observers.end()) {
                     (*index)->Activated(connection);
                     index++;
