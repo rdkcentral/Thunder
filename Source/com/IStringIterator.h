@@ -59,9 +59,11 @@ namespace RPC {
             : _container()
             , _index(0)
         {
-            string result;
-            while (index->Next(result) == true) {
-                _container.push_back(result);
+            if (index != nullptr) {
+                string result;
+                while (index->Next(result) == true) {
+                    _container.push_back(result);
+                }
             }
             _iterator = _container.begin();
         }
