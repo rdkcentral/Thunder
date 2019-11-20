@@ -1179,8 +1179,7 @@ namespace RPC {
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
-                Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
-                Revoke(base, (*loop)->InterfaceId());
+                Revoke((*loop)->Parent(), (*loop)->InterfaceId());
                 (*loop)->Destroy();
                 loop++;
             }

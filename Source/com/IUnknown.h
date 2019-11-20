@@ -7,6 +7,10 @@
 
 namespace WPEFramework {
 
+namespace RPC {
+    class Communicator;
+}
+
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB
@@ -286,9 +290,15 @@ namespace ProxyStub {
         {
             return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
         }
+    private:
+        // note returned pointer might be invalid and should not be dereferenced
+        const Core::IUnknown* Parent() const {
+            return &_parent;
+        }
 
     private:
         friend class RPC::Administrator;
+        friend class RPC::Communicator;
         mutable std::atomic<uint8_t> _remoteAddRef;
         mutable uint32_t _refCount;
         const uint32_t _interfaceId;
