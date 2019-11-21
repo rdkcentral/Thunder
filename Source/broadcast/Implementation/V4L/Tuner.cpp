@@ -5,6 +5,8 @@
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/dmx.h>
 
+#define __DEBUG__
+
 // --------------------------------------------------------------------
 // SOURCE: https://linuxtv.org/downloads/v4l-dvb-apis/uapi/dvb
 // --------------------------------------------------------------------
@@ -151,7 +153,7 @@ static constexpr conversion_entry _tableRollOff[] = {
             Observer(const Observer&) = delete;
             Observer& operator=(const Observer&) = delete;
 
-            Observer() : _adminLock(), _entries() {
+            Observer() : Core::Thread(Thread::DefaultStackSize(), _T("Tuner")), _adminLock(), _entries() {
             }
             ~Observer() override {
             }
@@ -166,7 +168,7 @@ static constexpr conversion_entry _tableRollOff[] = {
                 _adminLock.Lock();
                 ASSERT (std::find(_entries.begin(), _entries.end(), &callback) == _entries.end());
                 _entries.push_back(&callback);
-                Run();
+                Thread::Run();
                 _adminLock.Unlock();
             }
             void Unregister(Tuner& callback) {
@@ -223,7 +225,7 @@ static constexpr conversion_entry _tableRollOff[] = {
                 _mux = open(deviceName, O_RDWR|O_NONBLOCK);
 
                 if (_mux == -1) {
-                    printf("Could not open the filter[%s]: %d\n", deviceName, errno);
+                    TRACE_L1("Could not open the filter[%s]: %d\n", deviceName, errno);
                 }
                 else {
                 
@@ -237,7 +239,7 @@ static constexpr conversion_entry _tableRollOff[] = {
                     sctFilterParams.filter.mask[0] = 0xFF;
 
                     if (ioctl(_mux, DMX_SET_FILTER, &sctFilterParams) < 0) {
-                        printf("Could not configue the filter[%d,%d]: %d\n", pid, tableId, errno);
+                        TRACE_L1("Could not configue the filter[%d,%d]: %d\n", pid, tableId, errno);
                         ::close(_mux);
                         _mux = -1;
                     }
@@ -483,7 +485,8 @@ static constexpr conversion_entry _tableRollOff[] = {
                         close(_frontend);
                         _frontend = -1;
                     }
-                    TRACE_L1("Opened frontend %s.", _info.name);
+                    TRACE_L1("Opened frontend %s. Second Generation Support: %s", _info.name, (IsSecondGeneration() ? _T("true") : _T("false")));
+                    TRACE_L1("Support auto FEC: %s", (HasAutoFEC() ? _T("true") : _T("false")));
                 } else {
                     TRACE_L1("Can not open frontend %s error: %d.", deviceName, errno);
                 }
@@ -527,6 +530,12 @@ static constexpr conversion_entry _tableRollOff[] = {
         }
 
     public:
+        bool HasAutoFEC() const {
+            return ((_info.caps & FE_CAN_FEC_AUTO) != 0);
+        }
+        bool IsSecondGeneration() const {
+            return ((_info.caps & FE_CAN_2G_MODULATION) != 0);
+        }
         bool IsValid() const
         {
             return (_frontend != -1);
@@ -607,23 +616,21 @@ static constexpr conversion_entry _tableRollOff[] = {
             if (ioctl(_frontend, FE_SET_PROPERTY, &dtv_prop) == -1) {
                 perror("ioctl");
             } else {
-                TRACE_L1("Tuning request send out !!!\n");
-
                 #ifdef __DEBUG__
-                printf("Tuning requests\n");
-                printf("    Delivery:       %d \n", props[0].u.data);
-                printf("    Frequency:      %d Hz\n", props[1].u.data);
-                printf("    Modulation:     %d \n", props[2].u.data);
-                printf("    Inversion:      %d \n", props[3].u.data);
-                printf("    Symbolrate:     %d \n", props[4].u.data);
-                printf("    Inner FEC:      %d \n", props[5].u.data);
+                TRACE_L1("Tuning request send out !!!");
+                TRACE_L1("    Delivery:       %d ", props[0].u.data);
+                TRACE_L1("    Frequency:      %d Hz", props[1].u.data);
+                TRACE_L1("    Modulation:     %d ", props[2].u.data);
+                TRACE_L1("    Inversion:      %d ", props[3].u.data);
+                TRACE_L1("    Symbolrate:     %d ", props[4].u.data);
+                TRACE_L1("    Inner FEC:      %d ", props[5].u.data);
                 if (propertyCount > 6) {
-                    printf("    Bandwidth:      %d \n", props[6].u.data);
-                    printf("    Coderate HP:    %d \n", props[7].u.data);
-                    printf("    Coderate LP:    %d \n", props[8].u.data);
-                    printf("    Transmission:   %d \n", props[9].u.data);
-                    printf("    Guard Interval: %d \n", props[10].u.data);
-                    printf("    Hierarchy:      %d \n", props[11].u.data);
+                    TRACE_L1("    Bandwidth:      %d ", props[6].u.data);
+                    TRACE_L1("    Coderate HP:    %d ", props[7].u.data);
+                    TRACE_L1("    Coderate LP:    %d ", props[8].u.data);
+                    TRACE_L1("    Transmission:   %d ", props[9].u.data);
+                    TRACE_L1("    Guard Interval: %d ", props[10].u.data);
+                    TRACE_L1("    Hierarchy:      %d ", props[11].u.data);
                 }
                 _lastState = 0;
                 #endif
@@ -637,7 +644,7 @@ static constexpr conversion_entry _tableRollOff[] = {
         // programId have been found, and set, the Tuner will reach its PREPARED state.
         virtual uint32_t Prepare(const uint16_t programId) override
         {
-            printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
+            TRACE_L1("%s:%d %s", __FILE__, __LINE__, __FUNCTION__);
             return 0;
         }
 
@@ -679,12 +686,12 @@ static constexpr conversion_entry _tableRollOff[] = {
         // Using the next two methods, the frontends will be hooked up to decoders or file, and be removed from a decoder or file.
         virtual uint32_t Attach(const uint8_t index) override
         {
-            printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
+            TRACE_L1("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
             return 0;
         }
         virtual uint32_t Detach(const uint8_t index) override
         {
-            printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
+            TRACE_L1("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
             return 0;
         }
 
@@ -711,27 +718,48 @@ static constexpr conversion_entry _tableRollOff[] = {
             //   FE_HAS_LOCK Digital TV were locked and everything is working.
             // PREPARED = 0x04,
             // STREAMING = 0x08
-
-            if (::ioctl(_frontend, FE_READ_STATUS, &status) >= 0) {
+               
+            if (::ioctl(_frontend, FE_READ_STATUS, &status) < 0) {
+                TRACE_L1("Status could not be read!. Error: %d", errno);
+            }
+            else {
                 if ((status & FE_HAS_LOCK) != 0) {
                     remove = true;
                     _state = ITuner::LOCKED;
+                    TRACE_L1 ("FE_HAS_LOCK:    true");
                 }
                 else if ((status & FE_TIMEDOUT) != 0) {
                     _state = ITuner::IDLE;
                     remove = true;
+                    TRACE_L1 ("FE_TIMEDOUT:    true");
                 }
                 else {
                     #ifdef __DEBUG__
+                    uint16_t snr, signal;
+		    uint32_t ber, uncorrected_blocks;
+
+		    if (::ioctl(_frontend, FE_READ_SIGNAL_STRENGTH, &signal) < 0) {
+                        signal = ~0;
+                    }
+		    if (::ioctl(_frontend, FE_READ_SNR, &snr) < 0) {
+                        snr = ~0;
+                    }
+		    if (::ioctl(_frontend, FE_READ_BER, &ber) < 0) {
+                        ber = ~0;
+                    }
+		    if (::ioctl(_frontend, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks) < 0) {
+                        uncorrected_blocks = ~0;
+                    }
+		    TRACE_L1("Signal,SNR,BER,UNC: %d,%d,%d,%d", signal, snr, ber, uncorrected_blocks);
                     unsigned int delta = _lastState ^ status;
-                    if (delta & FE_NONE)        printf ("FE_NONE:        %s\n", status & FE_NONE        ? _T("true") : _T("false"));
-                    if (delta & FE_HAS_SIGNAL)  printf ("FE_HAS_SIGNAL:  %s\n", status & FE_HAS_SIGNAL  ? _T("true") : _T("false"));
-                    if (delta & FE_HAS_CARRIER) printf ("FE_HAS_CARRIER: %s\n", status & FE_HAS_CARRIER ? _T("true") : _T("false"));
-                    if (delta & FE_HAS_VITERBI) printf ("FE_HAS_VITERBI: %s\n", status & FE_HAS_VITERBI ? _T("true") : _T("false"));
-                    if (delta & FE_HAS_SYNC)    printf ("FE_HAS_SYNC:    %s\n", status & FE_HAS_SYNC    ? _T("true") : _T("false"));
-                    if (delta & FE_TIMEDOUT)    printf ("FE_TIMEDOUT:    %s\n", status & FE_TIMEDOUT    ? _T("true") : _T("false"));
-                    if (delta & FE_REINIT)      printf ("FE_REINIT:      %s\n", status & FE_REINIT      ? _T("true") : _T("false"));
-                    if (delta & FE_HAS_LOCK)    printf ("FE_HAS_LOCK:    %s\n", status & FE_HAS_LOCK    ? _T("true") : _T("false"));
+                    if (delta & FE_NONE)        TRACE_L1 ("FE_NONE:        %s", status & FE_NONE        ? _T("true") : _T("false"));
+                    if (delta & FE_HAS_SIGNAL)  TRACE_L1 ("FE_HAS_SIGNAL:  %s", status & FE_HAS_SIGNAL  ? _T("true") : _T("false"));
+                    if (delta & FE_HAS_CARRIER) TRACE_L1 ("FE_HAS_CARRIER: %s", status & FE_HAS_CARRIER ? _T("true") : _T("false"));
+                    if (delta & FE_HAS_VITERBI) TRACE_L1 ("FE_HAS_VITERBI: %s", status & FE_HAS_VITERBI ? _T("true") : _T("false"));
+                    if (delta & FE_HAS_SYNC)    TRACE_L1 ("FE_HAS_SYNC:    %s", status & FE_HAS_SYNC    ? _T("true") : _T("false"));
+                    if (delta & FE_TIMEDOUT)    TRACE_L1 ("FE_TIMEDOUT:    %s", status & FE_TIMEDOUT    ? _T("true") : _T("false"));
+                    if (delta & FE_REINIT)      TRACE_L1 ("FE_REINIT:      %s", status & FE_REINIT      ? _T("true") : _T("false"));
+                    if (delta & FE_HAS_LOCK)    TRACE_L1 ("FE_HAS_LOCK:    %s", status & FE_HAS_LOCK    ? _T("true") : _T("false"));
                     _lastState = status;
                     #endif
                 }
