@@ -1278,15 +1278,12 @@ namespace JSONRPC {
             template <typename INBOUND, typename METHOD>
             uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
             {
-                Client::Subscribe<INBOUND, METHOD>(eventName, method);
-                return Client::Subscribe(waitTime, eventName);
+                return Client::Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
             }
             template <typename INBOUND, typename METHOD, typename REALOBJECT>
             uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
             {
-                Client::Subscribe<INBOUND, METHOD, REALOBJECT>(eventName, method, objectPtr);
-
-                return Client::Subscribe(waitTime, eventName);
+                return Client::Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
             }
             bool IsActivated()
             {
