@@ -265,6 +265,39 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
+    {
+        _adminLock.Lock();
+
+        ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
+
+        if (index != _channelProxyMap.end()) {
+            ProxyList::iterator loop(index->second.begin());
+            while (loop != index->second.end()) {
+                // There is a small possibility that the last reference to this proxy
+                // interface is released in the same time before we report this interface
+                // to be dead. So lets keep a refernce so we can work on a real object
+                // still. This race condition, was observed by NOS testing.
+                (*loop)->AddReference();
+                pendingProxies.push_back(*loop);
+                loop++;
+            }
+            _channelProxyMap.erase(index);
+        }
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+
+        if (remotes != _channelReferenceMap.end()) {
+            std::list<ExternalReference>::iterator loop(remotes->second.begin());
+            while (loop != remotes->second.end()) {
+                usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
+                loop++;
+            }
+            _channelReferenceMap.erase(remotes);
+        }
+
+        _adminLock.Unlock();
+    }
+
     /* static */ Administrator& Job::_administrator= Administrator::Instance();
 	/* static */ Core::ProxyPoolType<Job> Job::_factory(6);
 

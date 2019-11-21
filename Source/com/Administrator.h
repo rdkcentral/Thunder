@@ -136,33 +136,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
-        {
-            _adminLock.Lock();
-
-            ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
-
-            if (index != _channelProxyMap.end()) {
-                ProxyList::iterator loop(index->second.begin());
-                while (loop != index->second.end()) {
-                    pendingProxies.push_back(*loop);
-                    loop++;
-                }
-                _channelProxyMap.erase(index);
-            }
-            ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
-
-            if (remotes != _channelReferenceMap.end()) {
-                std::list<ExternalReference>::iterator loop(remotes->second.begin());
-                while (loop != remotes->second.end()) {
-                    usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
-                    loop++;
-                }
-                _channelReferenceMap.erase(remotes);
-            }
-
-            _adminLock.Unlock();
-        }
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl)
