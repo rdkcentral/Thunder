@@ -278,8 +278,9 @@ namespace RPC {
                 // interface is released in the same time before we report this interface
                 // to be dead. So lets keep a refernce so we can work on a real object
                 // still. This race condition, was observed by NOS testing.
-                (*loop)->AddReference();
-                pendingProxies.push_back(*loop);
+                if( (*loop)->DropRegistration() == true ) {
+                    pendingProxies.push_back(*loop);
+                }
                 loop++;
             }
             _channelProxyMap.erase(index);

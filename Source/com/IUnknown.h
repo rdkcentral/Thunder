@@ -187,6 +187,10 @@ namespace ProxyStub {
                 }
             }
         }
+        bool DropRegistration() const {
+            uint8_t value(REGISTERED);
+            return (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true);
+        }
         uint32_t DropReference() const
         {
             uint32_t result(Core::ERROR_NONE);
@@ -200,9 +204,11 @@ namespace ProxyStub {
                 uint8_t value(REGISTERED);
                 if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                     RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
-                    result = RemoteRelease();
-                } else{
+                    RemoteRelease();
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                    _refCount = 0;
+                } else{
+                    result = Core::ERROR_NONE;
                 }
             } else if (newValue == 2) {
                 uint8_t value = REGISTERED | CACHING;
@@ -353,9 +359,6 @@ namespace ProxyStub {
         virtual uint32_t Release() const override
         {
             uint32_t result = _unknown.DropReference();
-            if((result != Core::ERROR_NONE) && (result != Core::ERROR_TIMEDOUT) && (result != Core::ERROR_DESTRUCTION_SUCCEEDED)) {
-                result = Core::ERROR_DESTRUCTION_FAILED;
-            }
 
             if (result != Core::ERROR_NONE) {
                 delete (this);
