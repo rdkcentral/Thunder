@@ -186,9 +186,15 @@
       "params": {
         "type": "object",
         "properties": {
+          "name": {
+            "type": "string",
+            "example": "adpcm-hq",
+            "description": "Name of the audio profile"
+          },
           "codec": {
             "type": "string",
-            "example": "ima-adpcm",
+            "enum" : [ "PCM", "ADPCM" ],
+            "example": "ADPCM",
             "description": "Name of the audio codec (*pcm* for uncompressed audio)"
           },
           "channels": {
@@ -208,19 +214,10 @@
             "size": 8,
             "example": 16,
             "description": "Sample resolution (in bits per sample)"
-          },
-          "be": {
-            "type": "boolean",
-            "example": true,
-            "description": "Denotes if samples byte order is big-endian (default: *false*)"
-          },
-          "unsigned": {
-            "type": "boolean",
-            "example": true,
-            "description": "Denotes if samples values are unsigned (default: *false*)"
           }
         },
         "required": [
+          "name",
           "codec",
           "channels",
           "rate",
