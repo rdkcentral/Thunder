@@ -91,12 +91,20 @@ namespace PluginHost
             Add(_T("configuration"), &Configuration);
 
             RootObject config;
-            config.FromString(info->ConfigLine());
+            Core::OptionalType<Core::JSON::Error> error;
+            config.FromString(info->ConfigLine(), error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             if (config.Config.IsSet() == true) {
                 // Yip we want to go out-of-process
                 Object settings;
-                settings.FromString(config.Config.Value());
+                Core::OptionalType<Core::JSON::Error> error;
+                settings.FromString(config.Config.Value(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
                 *this = settings;
 
                 if (Locator.Value().empty() == true) {

@@ -128,6 +128,42 @@ namespace Logging {
         std::string _text;
     };
 
+    class EXTERNAL ParsingError {
+    private:
+        ParsingError() = delete;
+        ParsingError(const ParsingError& a_Copy) = delete;
+        ParsingError& operator=(const ParsingError& a_RHS) = delete;
+
+    public:
+        ParsingError(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Trace::Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit ParsingError(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
+        ~ParsingError()
+        {
+        }
+
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+
     template <typename CATEGORY>
     class LoggingType : public Trace::ITrace {
     private:

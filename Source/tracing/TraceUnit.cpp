@@ -1,5 +1,6 @@
 #include "TraceUnit.h"
 #include "TraceCategories.h"
+#include "Logging.h"
 
 #define TRACE_CYCLIC_BUFFER_FILENAME _T("TRACE_FILENAME")
 #define TRACE_CYCLIC_BUFFER_DOORBELL _T("TRACE_DOORBELL")
@@ -287,7 +288,11 @@ namespace Trace {
     void TraceUnit::Defaults(const string& jsonCategories)
     {
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        serialized.FromString(jsonCategories);
+        Core::OptionalType<Core::JSON::Error> error;
+        serialized.FromString(jsonCategories, error);
+        if (error.IsSet() == true) {
+            SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+        }
 
         // Deal with existing categories that might need to be enable/disabled.
         UpdateEnabledCategories(serialized);
@@ -295,7 +300,11 @@ namespace Trace {
 
     void TraceUnit::Defaults(Core::File& file) {
         Core::JSON::ArrayType<Setting::JSON> serialized;
-        serialized.IElement::FromFile(file);
+        Core::OptionalType<Core::JSON::Error> error;
+        serialized.IElement::FromFile(file, error);
+        if (error.IsSet() == true) {
+            SYSLOG(WPEFramework::Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+        }
 
         // Deal with existing categories that might need to be enable/disabled.
         UpdateEnabledCategories(serialized);
