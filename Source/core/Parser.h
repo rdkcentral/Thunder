@@ -80,7 +80,7 @@ namespace Core {
         {
             _state |= FLUSH_LINE;
         }
-        inline void PassThrough(const uint16_t passThroughBytes)
+        inline void PassThrough(const uint64_t passThroughBytes)
         {
             _state |= EXTERNALPASS | SKIP_WHITESPACE;
             _byteCounter = passThroughBytes;
@@ -204,7 +204,7 @@ namespace Core {
 
     private:
         uint16_t _state;
-        uint16_t _byteCounter;
+        uint64_t _byteCounter;
         string _buffer;
         HANDLER& _parent;
         TCHAR _splitChar;
