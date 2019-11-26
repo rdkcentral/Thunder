@@ -457,11 +457,12 @@ namespace Core {
             if (IsOpen()) {
 #ifdef __POSIX__
                 result = lseek(_handle, 0, SEEK_CUR);
+                ASSERT(result >= 0);
+
                 if (result == -1) {
                     result = 0;
                 }
 
-                ASSERT(result > 0);
 #endif
 #ifdef __WIN32__
                 DWORD newPos = ::SetFilePointer(_handle, 0, nullptr, FILE_CURRENT);
