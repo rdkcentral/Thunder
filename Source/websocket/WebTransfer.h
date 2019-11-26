@@ -117,8 +117,8 @@ namespace Web {
         public:
             uint32_t StartTransfer(const Core::ProxyType<Web::Request>& request)
             {
-                ASSERT(_request->IsValid() == false);
-                ASSERT(_response->IsValid() == false);
+                ASSERT(_request.IsValid() == false);
+                ASSERT(_response.IsValid() == false);
 
                 uint32_t result = Core::ERROR_NONE;
 
