@@ -1266,7 +1266,7 @@ namespace JSONRPC {
                     , _parent(parent)
                     , _state(UNKNOWN)
             {
-                _monitor.Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
+                _monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
                 Announce();
             }
             ~Connection() override
@@ -1333,7 +1333,7 @@ namespace JSONRPC {
             {
                 if (result == nullptr) {
                     string method = string("status@") + Client::Callsign();
-                    _monitor.Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
+                    _monitor.template Dispatch<void>(DefaultWaitTime, method, &Connection::monitor_response, this);
                 }
             }
             void next_event(const Core::JSON::String& parameters, const Core::JSONRPC::Error* result)
@@ -1354,7 +1354,7 @@ namespace JSONRPC {
                 // Time to open up the monitor
                 const string parameters("{ \"event\": \"statechange\", \"id\": \"" + _monitor.Namespace() + "\"}");
 
-                _monitor.Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
+                _monitor.template Dispatch<string>(DefaultWaitTime, "register", parameters, &Connection::monitor_on, this);
             }
 
         private:
@@ -1377,12 +1377,12 @@ namespace JSONRPC {
         template <typename INBOUND, typename METHOD>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method)
         {
-                return _connection.Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
+                return _connection.template Subscribe<INBOUND, METHOD>(waitTime, eventName, method);
         }
         template <typename INBOUND, typename METHOD, typename REALOBJECT>
         uint32_t Subscribe(const uint32_t waitTime, const string& eventName, const METHOD& method, REALOBJECT* objectPtr)
         {
-                return _connection.Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
+                return _connection.template Subscribe<INBOUND, METHOD, REALOBJECT>(waitTime, eventName, method, objectPtr);
         }
         void Unsubscribe(const uint32_t waitTime, const string& eventName)
         {
@@ -1396,28 +1396,28 @@ namespace JSONRPC {
         inline typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
                 Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters, RESPONSE& inbound)
         {
-                return _connection.Invoke<PARAMETERS, RESPONSE>(waitTime, method, parameters, inbound);
+                return _connection.template Invoke<PARAMETERS, RESPONSE>(waitTime, method, parameters, inbound);
         }
 
         template <typename PARAMETERS, typename RESPONSE>
         inline typename std::enable_if<(std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
                 Invoke(const uint32_t waitTime, const string& method)
         {
-                return _connection.Invoke<void, void>(waitTime, method);
+                return _connection.template Invoke<void, void>(waitTime, method);
         }
 
         template <typename PARAMETERS, typename RESPONSE>
         inline typename std::enable_if<(!std::is_same<PARAMETERS, void>::value && std::is_same<RESPONSE, void>::value), uint32_t>::type
                 Invoke(const uint32_t waitTime, const string& method, const PARAMETERS& parameters)
         {
-                return _connection.Invoke<PARAMETERS, void>(waitTime, method, parameters);
+                return _connection.template Invoke<PARAMETERS, void>(waitTime, method, parameters);
         }
 
         template <typename PARAMETERS, typename RESPONSE>
         inline typename std::enable_if<(std::is_same<PARAMETERS, void>::value && !std::is_same<RESPONSE, void>::value), uint32_t>::type
                 Invoke(const uint32_t waitTime, const string& method, RESPONSE& inbound)
         {
-                return _connection.Invoke<void, RESPONSE>(waitTime, method, inbound);
+                return _connection.template Invoke<void, RESPONSE>(waitTime, method, inbound);
         }
         // -------------------------------------------------------------------------------------------
         // A-Synchronous invoke methods
@@ -1425,12 +1425,12 @@ namespace JSONRPC {
         template <typename PARAMETERS, typename HANDLER>
         inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback)
         {
-                return (_connection.Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
+                return (_connection.template Dispatch<PARAMETERS, HANDLER>(waitTime, method, callback));
         }
         template <typename PARAMETERS, typename HANDLER, typename REALOBJECT = typename Core::TypeTraits::func_traits<HANDLER>::classtype>
         inline uint32_t Dispatch(const uint32_t waitTime, const string& method, const HANDLER& callback, REALOBJECT* objectPtr)
         {
-                return (_connection.Dispatch<PARAMETERS, HANDLER, REALOBJECT>(waitTime, method, callback, objectPtr));
+                return (_connection.template Dispatch<PARAMETERS, HANDLER, REALOBJECT>(waitTime, method, callback, objectPtr));
         }
         // -------------------------------------------------------------------------------------------
         // SET Properties
@@ -1439,22 +1439,22 @@ namespace JSONRPC {
         inline uint32_t Set(const uint32_t waitTime, const string& method, const TYPES&&... args)
         {
                 PARAMETERS sendObject(args...);
-                return (_connection.Set<PARAMETERS>(waitTime, method, sendObject));
+                return (_connection.template Set<PARAMETERS>(waitTime, method, sendObject));
         }
         template <typename PARAMETERS>
         inline uint32_t Set(const uint32_t waitTime, const string& method, const string& index, const PARAMETERS& sendObject)
         {
-                return (_connection.Set<PARAMETERS>(waitTime, method, index, sendObject));
+                return (_connection.template Set<PARAMETERS>(waitTime, method, index, sendObject));
         }
         template <typename PARAMETERS, typename NUMBER>
         inline uint32_t Set(const uint32_t waitTime, const string& method, const NUMBER index, const PARAMETERS& sendObject)
         {
-                return (_connection.Set<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
+                return (_connection.template Set<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
         }
         template <typename PARAMETERS>
         inline uint32_t Set(const uint32_t waitTime, const string& method, const PARAMETERS& sendObject)
         {
-                return (_connection.Set<PARAMETERS>(waitTime, method, sendObject));
+                return (_connection.template Set<PARAMETERS>(waitTime, method, sendObject));
         }
         // -------------------------------------------------------------------------------------------
         // GET Properties
@@ -1462,17 +1462,17 @@ namespace JSONRPC {
         template <typename PARAMETERS>
         inline uint32_t Get(const uint32_t waitTime, const string& method, const string& index, PARAMETERS& sendObject)
         {
-                return (_connection.Get<PARAMETERS>(waitTime, method, index, sendObject));
+                return (_connection.template Get<PARAMETERS>(waitTime, method, index, sendObject));
         }
         template <typename PARAMETERS, typename NUMBER>
         inline uint32_t Get(const uint32_t waitTime, const string& method, const NUMBER& index, PARAMETERS& sendObject)
         {
-                return (_connection.Get<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
+                return (_connection.template Get<PARAMETERS, NUMBER>(waitTime, method, index, sendObject));
         }
         template <typename PARAMETERS>
         inline uint32_t Get(const uint32_t waitTime, const string& method, PARAMETERS& sendObject)
         {
-                return (_connection.Get<PARAMETERS>(waitTime, method, sendObject));
+                return (_connection.template Get<PARAMETERS>(waitTime, method, sendObject));
         }
         inline uint32_t Invoke(const uint32_t waitTime, const string& method, const string& parameters, Core::ProxyType<Core::JSONRPC::Message>& response)
         {
@@ -1492,7 +1492,7 @@ namespace JSONRPC {
         }
         uint32_t GetProperty(const char method[], Core::JSON::VariantContainer& object, const uint32_t waitTime = Client::DefaultWaitTime)
         {
-                return (_connection.Get<Core::JSON::VariantContainer>(waitTime, method, object));
+                return (_connection.template Get<Core::JSON::VariantContainer>(waitTime, method, object));
         }
         bool IsActivated()
         {
