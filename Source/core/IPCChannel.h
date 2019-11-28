@@ -358,6 +358,7 @@ namespace Core {
             _adminLock.Lock();
 
             InternalCleanup();
+            CloseClients();
 
             _adminLock.Unlock();
         }
@@ -394,22 +395,25 @@ namespace Core {
             return (command);
         }
 
+        inline void UnregisterHandlers(typename ClientMap::iterator client)
+        {
+            // Make sure all handlers form the server are attached to the client...
+            std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
+
+            while (index != _handlers.end()) {
+                client->second->Unregister(index->first);
+                index++;
+            }
+
+            Removed(client->second);
+        }
         void InternalCleanup()
         {
             typename ClientMap::iterator cleaner(_clients.begin());
 
             while (cleaner != _clients.end()) {
                 if (cleaner->second->IsClosed() == true) {
-
-                    // Make sure all handlers form the server are attached to the client...
-                    std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
-
-                    while (index != _handlers.end()) {
-                        cleaner->second->Unregister(index->first);
-                        index++;
-                    }
-
-                    Removed(cleaner->second);
+                    UnregisterHandlers(cleaner);
                     cleaner = _clients.erase(cleaner);
                 } else {
                     cleaner++;
@@ -421,7 +425,6 @@ namespace Core {
             uint32_t result = Core::ERROR_NONE;
 
             _adminLock.Lock();
-
             typename ClientMap::iterator index(_clients.begin());
 
             while (index != _clients.end()) {
@@ -449,6 +452,8 @@ namespace Core {
 
                     _adminLock.Lock();
                 } else {
+                    // Ensure there is no pending handlers to cleanup after client force close.
+                    UnregisterHandlers(_clients.begin());
                     _clients.erase(_clients.begin());
                 }
             }
