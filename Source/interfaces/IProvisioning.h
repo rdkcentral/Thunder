@@ -15,7 +15,7 @@ namespace Exchange {
             virtual ~INotification() {}
 
             // Signal changes on the subscribed namespace..
-            virtual void Provisioned(const string& component) = 0;
+            virtual void Provisioned(RPC::IStringIterator* labels) = 0;
         };
 
         virtual ~IProvisioning() {}
