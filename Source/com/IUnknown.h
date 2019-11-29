@@ -127,10 +127,15 @@ namespace ProxyStub {
         }
 
     public:
-        inline void AddRefCachedCount() {
-            if ((_remoteAddRef.load() & REGISTERED) != 0) {
+        inline bool AddRefCachedCount() {
+            bool result = false;
+
+            uint8_t value = REGISTERED;
+            if (_remoteAddRef.compare_exchange_weak(value, REGISTERED | PENDING_ADDREF, std::memory_order_release, std::memory_order_relaxed) == true) {
                 _releaseCount++;
+                result = true;
             }
+            return result;
         }
         inline uint32_t Release()
         {
@@ -175,10 +180,13 @@ namespace ProxyStub {
         {
             uint32_t newValue = Core::InterlockedIncrement(_refCount);
 
+           uint8_t value(REGISTERED | PENDING_ADDREF);
+           _remoteAddRef.compare_exchange_weak(value, REGISTERED, std::memory_order_release, std::memory_order_relaxed);
+ 
             // By definition we can only reach the AddRef of 2
             if (newValue == 2) {
 
-                uint8_t value(UNREGISTERED | CACHING);
+                value = (UNREGISTERED | CACHING);
 
                 // Seems we really would like to "preserve" this interface, so report it in use
                 if (_remoteAddRef.compare_exchange_weak(value, PENDING_ADDREF | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
