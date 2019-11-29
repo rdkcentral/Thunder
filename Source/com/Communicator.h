@@ -259,6 +259,7 @@ namespace RPC {
         virtual uint32_t RemoteId() const = 0;
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
+        virtual string Callsign() const = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
@@ -340,6 +341,11 @@ namespace RPC {
                     _channel->Source().Close(0);
                 }
             }
+            virtual string Callsign() const override
+            {
+                string emptyString;
+                return emptyString;
+            }
 
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
@@ -386,6 +392,8 @@ namespace RPC {
                 options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
                 options[_T("-x")] = Core::NumberType<uint32_t>(Id()).Text();
 
+                _callsign = instance.Callsign();
+
                 if (instance.Version() != static_cast<uint32_t>(~0)) {
                     options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
                 }
@@ -419,6 +427,13 @@ namespace RPC {
 
                 LaunchProcess(options);
             }
+            virtual string Callsign() const override
+            {
+                return _callsign;
+            }
+
+        private:
+            string _callsign;
         };
         class EXTERNAL LocalRemoteProcess : public RemoteProcess {
         public:
