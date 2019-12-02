@@ -92,7 +92,7 @@ namespace Core {
             while (current < maxLength) {
                 // Pass through if requested..
                 while (((_state & EXTERNALPASS) != 0) && (current < maxLength)) {
-                    uint16_t passOn = ((maxLength - current) > _byteCounter ? _byteCounter : (maxLength - current));
+                    uint16_t passOn = (static_cast<uint32_t>(maxLength - current) > _byteCounter ? static_cast<uint16_t>(_byteCounter) : (maxLength - current));
 
                     _parent.Parse(&stream[current], passOn);
 
