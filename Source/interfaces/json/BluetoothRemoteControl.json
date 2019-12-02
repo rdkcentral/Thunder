@@ -153,44 +153,12 @@
         }
       ]
     },
-    "audioprofiles" : {
-      "summary": "Supported audio profiles",
-      "readonly": true,
-      "params": {
-        "description": "List of supported audio profiles",
-        "type": "array",
-        "items": {
-            "type": "string",
-            "example": "adpcm-hq",
-            "description": "Name of the audio profile"
-        }
-      },
-      "errors": [
-        {
-          "$ref": "#/common/errors/illegalstate",
-          "description": "No remote has been assigned"
-        },
-        {
-          "$ref": "#/common/errors/unavailable",
-          "description": "The unit does not support voice functionality"
-        }
-      ]
-    },
     "audioprofile" : {
       "summary": "Audio profile details",
       "readonly": true,
-      "index": {
-        "name": "Audio profile",
-        "example": "adpcm-hq"
-      },
       "params": {
         "type": "object",
         "properties": {
-          "name": {
-            "type": "string",
-            "example": "adpcm-hq",
-            "description": "Name of the audio profile"
-          },
           "codec": {
             "type": "string",
             "enum" : [ "PCM", "ADPCM" ],
@@ -217,7 +185,6 @@
           }
         },
         "required": [
-          "name",
           "codec",
           "channels",
           "rate",
@@ -245,7 +212,7 @@
         "properties": {
           "profile": {
             "type": "string",
-            "example": "pcm-hq",
+            "example": "pcm",
             "description": "Type of audio profile, marking start of transmission; empty in case of end of transmission"
           }
         },
