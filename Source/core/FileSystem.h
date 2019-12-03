@@ -627,7 +627,7 @@ namespace Core {
         }
         inline bool IsDirectory() const
         {
-            return ((_entry->d_type & DT_DIR) != 0);
+            return (entry != nullptr ? ((_entry->d_type & DT_DIR) != 0) : false);
         }
 #endif
 
