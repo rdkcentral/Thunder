@@ -409,7 +409,7 @@ namespace PluginHost {
             return (index->second);
         }
 
-        inline void ClearTable(const std::string& name)
+        inline void ClearTable(const string& name)
         {
             TableMap::iterator index(_mappingTables.find(name));
 

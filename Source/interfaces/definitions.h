@@ -8,6 +8,7 @@
 
 #include "IComposition.h"
 #include "IStream.h"
+#include "IVoiceHandler.h"
 
 #undef EXTERNAL
 

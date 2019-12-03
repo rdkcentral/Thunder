@@ -58,6 +58,12 @@ ENUM_CONVERSION_BEGIN(Exchange::IStream::state)
     { Exchange::IStream::state::Error, _TXT(_T("Error")) },
 ENUM_CONVERSION_END(Exchange::IStream::state)
 
+ENUM_CONVERSION_BEGIN(Exchange::IVoiceProducer::IProfile::codec)
+    { Exchange::IVoiceProducer::IProfile::codec::UNDEFINED, _TXT(_T("undefined")) },
+    { Exchange::IVoiceProducer::IProfile::codec::PCM, _TXT(_T("pcm")) },
+    { Exchange::IVoiceProducer::IProfile::codec::ADPCM, _TXT(_T("adpcm")) },
+ENUM_CONVERSION_END(Exchange::IVoiceProducer::IProfile::codec)
+
 namespace Exchange
 {
 
