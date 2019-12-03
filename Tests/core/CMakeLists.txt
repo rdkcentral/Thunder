@@ -24,10 +24,11 @@ add_executable(${TEST_RUNNER_NAME}
    test_measurementtype.cpp
    test_messageException.cpp
    test_networkinfo.cpp
+   test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
    test_parser.cpp
-   #test_portability.cpp
+   test_portability.cpp
    test_processinfo.cpp
    test_queue.cpp
    test_rangetype.cpp
@@ -43,6 +44,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_stopwatch.cpp
    test_synchronize.cpp
    test_synchronous.cpp
+   test_systeminfo.cpp
    test_textfragment.cpp
    test_textreader.cpp
    #test_thread.cpp
