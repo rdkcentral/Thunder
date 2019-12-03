@@ -1,48 +1,17 @@
-#ifndef __CONTAINERS_H
-#define __CONTAINERS_H
+#include "containers.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
 
-#include <stdint.h>
-#include <string.h>
+struct Container_t {
+    char name[32];
+    char configPath[256];
+    char logPath[256];
+    uint8_t running;
+    ContainerMemory memory;
 
-#define EXTERNAL
-
-/**
- * Sometimes the compiler would like to be smart, if we do not reference
- * anything here
- * and you enable the rightflags, the linker drops the dependency. Than
- * Proxy/Stubs do
- * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
- */
-extern "C" {
-EXTERNAL void ForceLinkingOfOpenCDM();
-}
-#else
-#define EXTERNAL
-#endif
-
-#ifdef __cplusplus
-
-extern "C" {
-
-#endif
-
-struct Container_t;
-
-/**
- * OpenCDM error code. Zero always means success.
- */
-typedef enum {
-    ERROR_NONE = 0,
-    ERROR_UNKNOWN = 1,
-    ERROR_MORE_DATA_AVAILBALE=2,
-    ERROR_OUT_OF_BOUNDS = 3,
-    ERROR_INVALID_KEY = 4
-} ContainerError;
-
-struct ContainerMemory {
-    uint64_t allocated; // in bytes
-    uint64_t resident; // in bytes
-    uint64_t shared; // in bytes
+    char networkInterface[16];
+    char address[256];
 };
 
 /**
@@ -56,7 +25,25 @@ struct ContainerMemory {
  *                      container matching provided name will be selected & initialized
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_create(struct Container_t** container, const char* name, const char** searchpaths, const char* logPath, const char* configuration);
+EXTERNAL ContainerError container_create(struct Container_t** container, const char* name, const char** searchpaths, const char* logPath, const char* configuration)
+{
+    Container_t* output = (Container_t*)malloc(sizeof(Container_t));
+
+    strncpy(output->name, name, 32);
+    strncpy(output->logPath, logPath, 256);
+
+    output->running = 1;
+    output->memory.allocated = rand() % (1024 * 1024);
+    output->memory.resident = rand() % (1024 * 1024);
+    output->memory.shared = rand() % (1024 * 1024);
+
+    strncpy(output->networkInterface, "container0", sizeof(output->networkInterface);
+    strncpy(output->address, "127.0.0.23", sizeof(output->address));
+
+    *container = output;
+
+    return ContainerError::ERROR_NONE;    
+}
 
 /**
  * \brief Enables logging.
@@ -69,7 +56,10 @@ EXTERNAL ContainerError container_create(struct Container_t** container, const c
  * \param loggingOptions - Logging configuration
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_enableLogging(const char* logpath, const char* logId, const char* loggingOptions);
+EXTERNAL ContainerError container_enableLogging(const char* logpath, const char* logId, const char* loggingOptions)
+{
+    return ContainerError::ERROR_NONE;
+}
 
 /**
  * \brief Releases a container.
@@ -79,7 +69,10 @@ EXTERNAL ContainerError container_enableLogging(const char* logpath, const char*
  * \param container - Container that will be released
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_release(struct Container_t* container);
+EXTERNAL ContainerError container_release(struct Container_t* container)
+{
+    free(container);
+}
 
 /**
  * \brief Starts a container.
@@ -90,7 +83,10 @@ EXTERNAL ContainerError container_release(struct Container_t* container);
  * \param params - List of parameters provied to command
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_start(struct Container_t* container, const char* command, const char** params, uint32_t numParams);
+EXTERNAL ContainerError container_start(struct Container_t* container, const char* command, const char** params, uint32_t numParams)
+{
+    printf("Executed %s command!\n", command);
+}
 
 /**
  * \brief Stops a container.
@@ -99,7 +95,10 @@ EXTERNAL ContainerError container_start(struct Container_t* container, const cha
  * \param container - Container that is to be initialized
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_stop(struct Container_t* container);
+EXTERNAL ContainerError container_stop(struct Container_t* container)
+{
+    container->running = false;
+}
 
 /**
  * \brief Gives information if the container is running.
@@ -110,7 +109,10 @@ EXTERNAL ContainerError container_stop(struct Container_t* container);
  * \param container - Container that is checked
  * \return 1 if is running, 0 otherwise.
  */
-EXTERNAL uint8_t container_isRunning(struct Container_t* container);
+EXTERNAL uint8_t container_isRunning(struct Container_t* container)
+{
+    return container->running;
+}
 
 /**
  * \brief Information about memory usage.
@@ -123,7 +125,12 @@ EXTERNAL uint8_t container_isRunning(struct Container_t* container);
  * information
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getMemory(struct Container_t* container, ContainerMemory* memory);
+EXTERNAL ContainerError container_getMemory(struct Container_t* container, ContainerMemory* memory)
+{
+    memcpy(memory, &(container->memory), sizeof(ContainerMemory);
+
+    return ContainerError::ERROR_NONE;
+}
 
 /**
  * \brief Information about cpu usage.
@@ -136,7 +143,18 @@ EXTERNAL ContainerError container_getMemory(struct Container_t* container, Conta
  * \param usage - Usage of cpu time in nanoseconds
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getCpuUsage(struct Container_t* container, int32_t threadNum, uint64_t* usage);
+EXTERNAL ContainerError container_getCpuUsage(struct Container_t* container, int32_t threadNum, uint64_t* usage)
+{
+    ContainerError result = ContainerError::ERROR_NONE;
+
+    if (threadNum > sysconf(_SC_NPROCESSORS_ONLN)) {
+        result = ContainerError::ERROR_OUT_OF_BOUNDS;
+    } else {
+        *usage = rand() % (1024 * 1024 * 256);
+    }
+
+    return result;
+}
 
 
 /**
@@ -149,7 +167,12 @@ EXTERNAL ContainerError container_getCpuUsage(struct Container_t* container, int
  *  
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNumNetworkInterfaces(struct Container_t* container, uint32_t* numNetworks);
+EXTERNAL ContainerError container_getNumNetworkInterfaces(struct Container_t* container, uint32_t* numNetworks)
+{
+    *numNetworks = 1;
+
+    return ContainerError::ERROR_NONE;
+}
 
 /**
  * \brief Containers's network interfaces.
@@ -164,7 +187,20 @@ EXTERNAL ContainerError container_getNumNetworkInterfaces(struct Container_t* co
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNetworkInterfaceName(struct Container_t* container, uint32_t interfaceNum, char* name, uint32_t maxNameLength = 16);
+EXTERNAL ContainerError container_getNetworkInterfaceName(struct Container_t* container, uint32_t interfaceNum, char* name, uint32_t maxNameLength = 16)
+{
+    ContainerError error = ContainerError::ERROR_NONE;
+
+    if (interfaceNum > 0) {
+        error = ContainerError::ERROR_OUT_OF_BOUNDS;
+    } else {
+        size_t maxLength = maxNameLength < sizeof(container->networkInterface) ? maxNameLength : sizeof(container->networkInterface);
+
+        strncpy(name, container->networkInterface, maxLength);
+    }
+
+    return error;
+}
 
 /**
  * \brief Number of IP addresses asssigend to interface.
@@ -178,7 +214,19 @@ EXTERNAL ContainerError container_getNetworkInterfaceName(struct Container_t* co
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNumIPs(struct Container_t* container, const char* interfaceName, uint32_t* numIPs);
+EXTERNAL ContainerError container_getNumIPs(struct Container_t* container, const char* interfaceName, uint32_t* numIPs)
+{
+    ContainerError error = ContainerError::ERROR_NONE;
+
+    if ((interfaceName != nullptr) && (strcmp(interfaceName, container->networkInterface) != 0))
+    {
+        error = ContainerError::ERROR_INVALID_KEY;
+    } else {
+        *numIPs = 1;
+    }
+
+    return error;
+}
 
 /**
  * \brief List of IP addresses given to a container.
@@ -198,7 +246,25 @@ EXTERNAL ContainerError container_getNumIPs(struct Container_t* container, const
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getIP(struct Container_t* container, const char* interfaceName, uint32_t addressNum, char* address, uint32_t maxAddressLength);
+EXTERNAL ContainerError container_getIP(struct Container_t* container, const char* interfaceName, uint32_t addressNum, char* address, uint32_t maxAddressLength)
+{
+    ContainerError error = ContainerError::ERROR_NONE;
+
+    if ((interfaceName != nullptr) && (strcmp(interfaceName, container->networkInterface) != 0))
+    {
+        error = ContainerError::ERROR_INVALID_KEY;
+    } else {
+        if (addressNum > 1) {
+            error = ContainerError::ERROR_OUT_OF_BOUNDS;
+        } else {
+            size_t maxLength = maxAddressLength < sizeof(container->address) ? maxAddressLength : sizeof(container->address);
+
+            strncpy(address, container->address, maxLength);
+        }
+    }
+
+    return error;
+}
 
 /**
  * \brief Container's config path.
@@ -212,7 +278,14 @@ EXTERNAL ContainerError container_getIP(struct Container_t* container, const cha
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getConfigPath(struct Container_t* container, char* path, uint32_t maxPathLength);
+EXTERNAL ContainerError container_getConfigPath(struct Container_t* container, char* path, uint32_t maxPathLength)
+{
+    size_t maxLength = maxPathLength < sizeof(container->configPath) ? maxPathLength : sizeof(container->configPath);
+
+    strncpy(path, container->configPath, maxLength);
+
+    return ContainerError::ERROR_NONE;
+}
 
 /**
  * \brief Containers name.
@@ -225,10 +298,11 @@ EXTERNAL ContainerError container_getConfigPath(struct Container_t* container, c
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getName(struct Container_t* container, char* name, uint32_t maxNameLength);
+EXTERNAL ContainerError container_getName(struct Container_t* container, char* name, uint32_t maxNameLength)
+{
+    size_t maxLength = maxNameLength < sizeof(container->name) ? maxNameLength : sizeof(container->configPath);
 
-#ifdef __cplusplus
+    strncpy(name, container->name, maxLength);
+
+    return ContainerError::ERROR_NONE;
 }
-#endif
-
-#endif // __CONTAINERS_H

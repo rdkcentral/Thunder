@@ -569,7 +569,7 @@ namespace RPC {
             }
 
         private:
-            ProcessContainers::IContainerAdministrator::IContainer* _container;
+            ProcessContainers::IContainer* _container;
         };
 
 #endif

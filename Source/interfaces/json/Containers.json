@@ -95,31 +95,6 @@
         }
       ]
     },
-    "status": {
-      "summary": "Operational status of the container",
-      "readonly": true,
-      "params": {
-        "type": "string",
-        "description": "Status of the container",
-        "enum": [
-          "stopped",
-          "starting",
-          "running",
-          "aborting",
-          "stopping"
-        ]  
-      },
-      "index": {
-        "name": "Name",
-        "example": "ContainerName"
-      },
-      "errors": [
-        {
-          "description": "Container not found",
-          "$ref": "#/common/errors/unavailable"
-        }
-      ]
-    },
     "cpu": {
       "summary": "CPU time",
       "readonly": true,

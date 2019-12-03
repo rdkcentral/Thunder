@@ -3,7 +3,7 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    IContainerAdministrator::IContainer* IContainerAdministrator::Find(const string& name)
+    IContainer* IContainerAdministrator::Find(const string& name)
     {
         auto iterator = Containers();
         IContainer* result = nullptr;

@@ -138,7 +138,7 @@ namespace RPC {
     private:
         friend class ProcessShutdown;
 
-        explicit ContainerClosingInfo(ProcessContainers::IContainerAdministrator::IContainer* container)
+        explicit ContainerClosingInfo(ProcessContainers::IContainer* container)
             : ClosingInfo()
             , _process(static_cast<uint32_t>(container->Pid()))
             , _container(container)
@@ -185,7 +185,7 @@ namespace RPC {
 
     private:
         Core::Process _process;
-        ProcessContainers::IContainerAdministrator::IContainer* _container;
+        ProcessContainers::IContainer* _container;
     };
 
 #endif
