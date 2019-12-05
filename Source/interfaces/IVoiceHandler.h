@@ -32,10 +32,11 @@ namespace Exchange {
             virtual uint8_t Resolution() const = 0;
         };
 
-        virtual uint32_t PrefferedProfile(const string& profile) = 0;
-        virtual string PrefferedProfile() const = 0;
-
+        virtual string Name() const = 0;
         virtual uint32_t Callback(IVoiceHandler* callback) = 0;
+        virtual uint32_t Error() const = 0;
+        virtual string MetaData() const = 0;
+        virtual void Configure(const string& settings) = 0;
     };
 
     struct IVoiceHandler : virtual public Core::IUnknown {
