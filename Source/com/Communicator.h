@@ -49,7 +49,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(const string callsign,
+        Object(const string& callsign,
             const string& locator,
             const string& className,
             const uint32_t interface,
@@ -259,7 +259,6 @@ namespace RPC {
         virtual uint32_t RemoteId() const = 0;
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
-        virtual string Callsign() const = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
@@ -273,6 +272,13 @@ namespace RPC {
 
             return (nullptr);
         }
+    };
+
+    struct EXTERNAL IProcess : virtual public Core::IUnknown {
+        enum { ID = ID_COMPROCESS };
+
+        virtual ~IProcess() {}
+        virtual string& Callsign() = 0;
     };
 
     class EXTERNAL Communicator {
@@ -341,11 +347,6 @@ namespace RPC {
                     _channel->Source().Close(0);
                 }
             }
-            virtual string Callsign() const override
-            {
-                string emptyString;
-                return emptyString;
-            }
 
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
@@ -392,8 +393,6 @@ namespace RPC {
                 options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
                 options[_T("-x")] = Core::NumberType<uint32_t>(Id()).Text();
 
-                _callsign = instance.Callsign();
-
                 if (instance.Version() != static_cast<uint32_t>(~0)) {
                     options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
                 }
@@ -427,15 +426,8 @@ namespace RPC {
 
                 LaunchProcess(options);
             }
-            virtual string Callsign() const override
-            {
-                return _callsign;
-            }
-
-        private:
-            string _callsign;
         };
-        class EXTERNAL LocalRemoteProcess : public RemoteProcess {
+        class EXTERNAL LocalRemoteProcess : public RemoteProcess, public IProcess {
         public:
             friend class Core::Service<LocalRemoteProcess>;
 
@@ -453,6 +445,10 @@ namespace RPC {
         private:
             void LaunchProcess(const Core::Process::Options& options) override
             {
+                Core::Process::Options &opt =
+                        const_cast<Core::Process::Options&>(options);
+                _callsign.assign(opt[_T("-C")]);
+
                 // Start the external process launch..
                 Core::Process fork(false);
 
@@ -462,8 +458,19 @@ namespace RPC {
             void Terminate() override;
             uint32_t RemoteId() const override;
 
+            string& Callsign() override
+            {
+                return _callsign;
+            }
+
+            BEGIN_INTERFACE_MAP(LocalRemoteProcess)
+            INTERFACE_ENTRY(RPC::IRemoteConnection)
+            INTERFACE_ENTRY(RPC::IProcess)
+            END_INTERFACE_MAP
+
         private:
             uint32_t _id;
+            string _callsign;
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 

@@ -189,18 +189,6 @@ namespace ProxyStub {
 
             return (id);
         }
-        virtual string Callsign() const
-        {
-            string callsign;
-
-            IPCMessage newMessage(BaseClass::Message(2));
-
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                callsign = newMessage->Response().Reader().Text();
-            }
-
-            return (callsign);
-        }
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
         {
             void* result = nullptr;
