@@ -20,7 +20,11 @@
 #include <sys/sysinfo.h>
 #endif
 
-#if defined(PLATFORM_RPI)
+#if defined(PLATFORM_BRCM)
+#include <nexus_config.h>
+#include <nexus_platform.h>
+
+#elif defined(PLATFORM_RPI)
 #include <bcm_host.h>
 
 namespace {
@@ -295,7 +299,10 @@ namespace Core {
     {
         // Save result in gpu field.
         SystemInfo::m_totalgpuram = 0;
-#if defined(PLATFORM_RPI)
+#if defined(PLATFORM_BRCM)
+        NexusUpdateGpuRam();
+
+#elif defined(PLATFORM_RPI)
         if (SystemInfo::m_totalgpuram != 0) {
             return;
         }
@@ -332,8 +339,10 @@ namespace Core {
     {
         // Save result in gpu field.
         SystemInfo::m_freegpuram = 0;
+#if defined(PLATFORM_BRCM)
+        NexusUpdateGpuRam();
 
-#if defined(PLATFORM_RPI)
+#elif defined(PLATFORM_RPI)
         static Core::CriticalSection mutualExclusion;
 
         if (SystemInfo::m_totalgpuram == 0) {
@@ -367,6 +376,23 @@ namespace Core {
         }
 #endif
     }
+
+#if defined(PLATFORM_BRCM)
+    void SystemInfo::NexusUpdateGpuRam()
+    {
+        NEXUS_PlatformConfiguration platformConfig;
+        NEXUS_MemoryStatus status;
+
+        NEXUS_Platform_GetConfiguration(&platformConfig);
+        NEXUS_Error rc = NEXUS_Heap_GetStatus_driver(platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP], &status);
+        if (rc == NEXUS_SUCCESS) {
+            TRACE_L1("Total Size = 0x%-8x %3dMB\n", static_cast<unsigned>(status.size), static_cast<unsigned>(status.size/(1024*1024)));
+            TRACE_L1("Free Size = 0x%-8x %3dMB\n", static_cast<unsigned>(status.size-status.free), static_cast<unsigned>(status.size-status.free/(1024*1024)));
+            SystemInfo::m_totalgpuram = static_cast<uint64_t>(status.size);
+            SystemInfo::m_freegpuram = static_cast<uint64_t>(status.size-status.free);
+        }
+    }
+#endif
 
 #if defined(__LINUX__) && !defined(__APPLE__)
 

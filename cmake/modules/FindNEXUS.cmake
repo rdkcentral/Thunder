@@ -77,4 +77,7 @@ if(EXISTS "${LIBNEXUS_LIBRARY}")
                     )
         endif()
     endif()
+    set_target_properties(NEXUS::NEXUS PROPERTIES
+            INTERFACE_COMPILE_DEFINITIONS "PLATFORM_BRCM"
+            )
 endif()
