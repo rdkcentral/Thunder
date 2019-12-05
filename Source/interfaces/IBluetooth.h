@@ -58,7 +58,6 @@ namespace Exchange {
 
             virtual type Type () const = 0;
             virtual bool IsValid() const = 0;
-            virtual bool IsPaired() const = 0;
             virtual bool IsBonded() const = 0;
             virtual bool IsConnected() const = 0;
             virtual string LocalId() const = 0;
