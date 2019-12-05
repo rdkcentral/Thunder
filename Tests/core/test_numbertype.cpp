@@ -14,6 +14,70 @@ namespace Tests {
         EXPECT_TRUE(NEGATIVE == num.Negative());
         return num;
     }
+    
+    TEST(Core_NumberType, generic)
+    {
+        Core::NumberType<uint8_t> numbertype();
+        string buffer = "/Service/testing/numbertype";
+        Core::NumberType<Core::TextFragment> typetextfragment(Core::TextFragment(string(buffer)));
+
+        string valdata = "90";
+        Core::NumberType<uint8_t> val1 = Tester<Core::NumberType<uint8_t>>(valdata);
+        Core::NumberType<int8_t> val2 = Tester<Core::NumberType<int8_t>>(valdata);
+        EXPECT_EQ(Core::NumberType<uint8_t>::ToNetwork(val1),'Z');
+        EXPECT_EQ(Core::NumberType<uint8_t>::FromNetwork(val1),'Z');
+        EXPECT_EQ(Core::NumberType<int8_t>::ToNetwork(val2),'Z');
+        EXPECT_EQ(Core::NumberType<int8_t>::FromNetwork(val2),'Z');
+
+        Core::NumberType<int16_t> val3 = Tester<Core::NumberType<int16_t>>(valdata);
+        Core::NumberType<uint16_t> val4 = Tester<Core::NumberType<uint16_t>>(valdata);
+        EXPECT_EQ(Core::NumberType<int16_t>::ToNetwork(val3),23040);
+        EXPECT_EQ(Core::NumberType<int16_t>::FromNetwork(val3),23040);
+        EXPECT_EQ(Core::NumberType<uint16_t>::ToNetwork(val4),23040);
+        EXPECT_EQ(Core::NumberType<uint16_t>::FromNetwork(val4),23040);
+
+        Core::NumberType<int32_t> val5 = Tester<Core::NumberType<int32_t>>(valdata);
+        Core::NumberType<uint32_t> val6 = Tester<Core::NumberType<uint32_t>>(valdata);
+        EXPECT_EQ(Core::NumberType<int32_t>::ToNetwork(val5),1509949440);
+        EXPECT_EQ(Core::NumberType<int32_t>::FromNetwork(val5),1509949440);
+        EXPECT_EQ(Core::NumberType<uint32_t>::ToNetwork(val6),1509949440);
+        EXPECT_EQ(Core::NumberType<uint32_t>::FromNetwork(val6),1509949440);
+
+        Core::NumberType<int64_t> val7 = Tester<Core::NumberType<int64_t>>(valdata);
+        Core::NumberType<uint64_t> val8 = Tester<Core::NumberType<uint64_t>>(valdata);
+        EXPECT_EQ(Core::NumberType<int64_t>::ToNetwork(val7),90);
+        EXPECT_EQ(Core::NumberType<int64_t>::FromNetwork(val7),90);
+        EXPECT_EQ(Core::NumberType<uint64_t>::ToNetwork(val8),90);
+        EXPECT_EQ(Core::NumberType<uint64_t>::FromNetwork(val8),90);
+
+        val8.MaxSize();
+        EXPECT_EQ(val8.Serialize(valdata),2);
+        EXPECT_EQ(val8.Deserialize(valdata),2);
+        
+        string valdata1 = "90";
+        Core::NumberType<int8_t> num1 = Tester<Core::NumberType<int8_t>, false>(valdata);
+        Core::NumberType<int8_t> num2 = Tester<Core::NumberType<int8_t>, false>(valdata1);
+
+        EXPECT_TRUE(num1==num2);
+        EXPECT_FALSE(num1!=num2);
+        EXPECT_TRUE(num1<=num2);
+        EXPECT_TRUE(num1>=num2);
+        EXPECT_FALSE(num1<num2);
+        EXPECT_FALSE(num1>num2);
+     
+        EXPECT_STREQ((num1+num1).Text().c_str(),"-76");
+        EXPECT_STREQ((num1-num2).Text().c_str(),"0");
+        EXPECT_STREQ((num2*num1).Text().c_str(),"-92");
+        EXPECT_STREQ((num2/num1).Text().c_str(),"1");
+        num2/=num1;
+        EXPECT_STREQ(num2.Text().c_str(),"1");
+        num2-=num1;
+        EXPECT_STREQ(num2.Text().c_str(),"-89");
+        num1+=num1;
+        EXPECT_STREQ(num1.Text().c_str(),"-76");
+        num1*=num2;
+        EXPECT_STREQ(num1.Text().c_str(),"108");
+    }
 
     TEST(Core_NumberType, PositiveNumber)
     {
@@ -64,6 +128,9 @@ namespace Tests {
         EXPECT_STREQ(num5.Text().c_str(), "90");
         Core::NumberType<int8_t> num6 = Tester<Core::NumberType<int8_t>>(data);
         EXPECT_STREQ(num6.Text().c_str(), "90");
+
+        Core::NumberType<int8_t, true, BASE_HEXADECIMAL> num7(num4);
+        Core::NumberType<int8_t, true, BASE_HEXADECIMAL> num8 = num4;
     }
 
     TEST(Core_NumberType, NegativeHexNumber)
@@ -140,6 +207,25 @@ namespace Tests {
 
         EXPECT_EQ(Core::ToBase64(26), 'a');
         EXPECT_EQ(Core::ToDirect(97), 'a');
+    }
+    TEST(Core_NumberType, Fractional_test)
+    {
+        Core::Fractional fractional();
+        Core::Fractional fractional1(3,2);
+        Core::Fractional fractional2(fractional1);
+        Core::Fractional fractional3;
+        fractional3 = fractional1;
+        EXPECT_EQ(fractional1.Integer(),3);
+        EXPECT_EQ(fractional1.Remainder(),2);
+
+        Core::NumberType<Core::Fractional, true> num1;
+        fractional3 = num1.Max();
+
+        EXPECT_EQ(fractional3.Integer(),2147483647);
+        EXPECT_EQ(fractional3.Remainder(),4294967295);
+        fractional3 = num1.Min();
+        EXPECT_EQ(fractional3.Integer(),-2147483648);
+        EXPECT_EQ(fractional3.Remainder(),4294967295);
     }
 } // Tests
 } // WPEFramework
