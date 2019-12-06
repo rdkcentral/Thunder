@@ -744,6 +744,8 @@ namespace RPC {
 
                     // Kill the Event registration. We are no longer interested in what will be hapening..
                     _announcements.erase(locator.first);
+
+                    result->Release();
                 }
                 _adminLock.Unlock();
 
