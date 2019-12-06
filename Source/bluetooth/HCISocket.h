@@ -838,11 +838,8 @@ namespace Bluetooth {
                 }
                 void Updated(const Core::IOutbound& data, const uint32_t error_code) override {
                     //ASSERT(_cmd == data);
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                     _handler(_cmd, error_code);
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                     delete this;
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                 }
 
             private:
