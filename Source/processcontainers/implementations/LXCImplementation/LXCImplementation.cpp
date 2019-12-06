@@ -3,48 +3,83 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    LXCContainer::LXCContainer(const string& name, LxcContainerType* lxccontainer, const string& logpath, const string& configuration, const string& lxcpath)
+    LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& rhs) 
+        : Core::JSON::Container()
+        , Key(rhs.Key)
+        , Value(rhs.Value)
+    {
+        Add(_T("key"), &Key);
+        Add(_T("value"), &Value); 
+    }
+
+    LXCContainer::Config::ConfigItem::ConfigItem()
+        : Core::JSON::Container()
+        , Key()
+        , Value()
+    {
+        Add(_T("key"), &Key);
+        Add(_T("value"), &Value); 
+    }
+    
+    LXCContainer::Config::Config()
+        : Core::JSON::Container()
+        , ConsoleLogging("0")
+        , ConfigItems()
+#ifdef __DEBUG__
+        , Attach(false)
+#endif
+    {
+        Add(_T("console"), &ConsoleLogging); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB', 0 is off, auto is auto determined
+
+        Add(_T("items"), &ConfigItems);
+
+#ifdef __DEBUG__
+        Add(_T("attach"), &Attach);
+#endif
+    }
+
+    LXCContainer::LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath)
         : _name(name)
         , _pid(0)
-        , _lxcpath(lxcpath)
-        , _logpath(logpath)
+        , _lxcPath(lxcPath)
+        , _containerLogDir(containerLogDir)
         , _referenceCount(1)
-        , _lxccontainer(lxccontainer)
-        #ifdef __DEBUG__
-            , _attach(false)
-        #endif
+        , _lxcContainer(lxcContainer)
+#ifdef __DEBUG__
+        , _attach(false)
+#endif
     {
         Config config;
         Core::OptionalType<Core::JSON::Error> error;
         config.FromString(configuration, error);
         if (error.IsSet() == true) {
-            SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            SYSLOG(Logging::ParsingError, (_T("Parsing container %s configuration failed with %s"), name.c_str(), ErrorDisplayMessage(error.Value()).c_str()));
         }
 
-        #ifdef __DEBUG__
+#ifdef __DEBUG__
             _attach = config.Attach.Value();
-        #endif
+#endif
         string pathName;
         Core::SystemInfo::GetEnvironment("PATH", pathName);
         string key("PATH");
         key += "=";
         key += pathName;
-        _lxccontainer->set_config_item(_lxccontainer, "lxc.environment", key.c_str());
+        _lxcContainer->set_config_item(_lxcContainer, "lxc.environment", key.c_str());
 
         if( config.ConsoleLogging.Value() != _T("0") ) {
 
-            Core::Directory logdirectory(logpath.c_str());
+            Core::Directory logdirectory(_containerLogDir.c_str());
             logdirectory.CreatePath(); //note: lxc API does not create the complate path for logging, it must exist
 
-            string filename(logpath + "console.log");
+            string filename(_containerLogDir + "/console.log");
 
-            _lxccontainer->set_config_item(_lxccontainer, "lxc.console.size", config.ConsoleLogging.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
-            _lxccontainer->set_config_item(_lxccontainer, "lxc.console.logfile", filename.c_str());
+            _lxcContainer->set_config_item(_lxcContainer, "lxc.console.size", config.ConsoleLogging.Value().c_str()); // yes this one is important!!! Otherwise file logging will not work
+            _lxcContainer->set_config_item(_lxcContainer, "lxc.console.logfile", filename.c_str());
         }
 
         Core::JSON::ArrayType<Config::ConfigItem>::Iterator index(config.ConfigItems.Elements());
         while( index.Next() == true ) {
-            _lxccontainer->set_config_item(_lxccontainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
+            _lxcContainer->set_config_item(_lxcContainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
         };
 
         _networkInterfaces = GetNetworkInterfaces();
@@ -62,13 +97,13 @@ namespace ProcessContainers {
 
     LXCContainer::MemoryInfo LXCContainer::Memory() const  
     {
-        ASSERT(_lxccontainer != nullptr);
+        ASSERT(_lxcContainer != nullptr);
 
         MemoryInfo result {UINT64_MAX, UINT64_MAX, UINT64_MAX};
         char buffer[2048];
-        int32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
+        int32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
 
-        // Not sure if "read < sizeof(buffer)" is realy needed, but it is checked in offical lxc tools sources
+        // Not sure if "read < sizeof(buffer)" is really needed, but it is checked in official lxc tools sources
         if ((read > 0) && (read < sizeof(buffer))) {
             int32_t scanned = sscanf(buffer, "%llu", &result.allocated);
 
@@ -77,7 +112,7 @@ namespace ProcessContainers {
             }
         }
 
-        read = _lxccontainer->get_cgroup_item(_lxccontainer, "memory.stat", buffer, sizeof(buffer));
+        read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.stat", buffer, sizeof(buffer));
 
         if ((read > 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
             char name[128];
@@ -109,11 +144,11 @@ namespace ProcessContainers {
 
     LXCContainer::CPUInfo LXCContainer::Cpu() const
     {
-        ASSERT(_lxccontainer != nullptr);
+        ASSERT(_lxcContainer != nullptr);
 
         CPUInfo result;
         char buffer[512];
-        uint32_t read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage", buffer, sizeof(buffer));
+        uint32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage", buffer, sizeof(buffer));
 
         if (read != 0 && read < sizeof(buffer)) {
             result.total = strtoll(buffer, nullptr, 10);
@@ -121,16 +156,16 @@ namespace ProcessContainers {
             TRACE(Trace::Warning, ("Could not read total cpu usage of LXC container"));
         } 
 
-        read = _lxccontainer->get_cgroup_item(_lxccontainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
+        read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
 
         if ((read != 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
             char* pos = buffer;
             char* end;
 
-            // We might now maximum number of threads in advance
-            static const uint32_t numThreads = std::thread::hardware_concurrency();
-            if (numThreads != 0)
-                result.threads.reserve(numThreads);
+            // We might know maximum number of cores in advance
+            static const uint32_t numCores = std::thread::hardware_concurrency();
+            if (numCores != 0)
+                result.cores.reserve(numCores);
 
             while(true) {
                 uint64_t value = strtoull(pos, &end, 10);
@@ -138,7 +173,7 @@ namespace ProcessContainers {
                 if (pos == end)
                     break;
 
-                result.threads.push_back(value);
+                result.cores.push_back(value);
                 pos = end;
             }
         } else {
@@ -148,29 +183,19 @@ namespace ProcessContainers {
         return result;
     }
 
-    string LXCContainer::ConfigPath() const 
-    {
-        return (_lxcpath + Id() + "/" + LXCContainerAdministrator::configFileName);
-    }
-
-    string LXCContainer::LogPath() const 
-    {
-        return (_logpath + LXCContainerAdministrator::logFileName);
-    }
-
     IConstStringIterator LXCContainer::NetworkInterfaces() const
     {
         return ProcessContainers::IConstStringIterator(_networkInterfaces);
     }
 
-    std::vector<Core::NodeId> LXCContainer::IPs(const string& interface) const 
+    std::vector<string> LXCContainer::IPs(const string& interface) const 
     {
-        std::vector<Core::NodeId> result;
+        std::vector<string> result;
 
         // if no interface name is specified, all addresess will be returned
         const char* interfaceName = interface.empty() ? nullptr : interface.c_str(); 
 
-        char **addresses = _lxccontainer->get_ips(_lxccontainer, interfaceName, NULL, 0);
+        char **addresses = _lxcContainer->get_ips(_lxcContainer, interfaceName, NULL, 0);
         if (addresses) {
             for (int i = 0; addresses[i] != nullptr; i++) {
                 result.emplace_back(addresses[i]);
@@ -182,7 +207,7 @@ namespace ProcessContainers {
 
     bool LXCContainer::IsRunning() const 
     {
-        return _lxccontainer->is_running(_lxccontainer);
+        return _lxcContainer->is_running(_lxcContainer);
     }
 
     bool LXCContainer::Start(const string& command, IStringIterator& parameters) 
@@ -200,9 +225,9 @@ namespace ProcessContainers {
         params[pos++] = nullptr;
         ASSERT(pos == parameters.Count()+2);
 
-        #ifdef __DEBUG__
+#ifdef __DEBUG__
             if( _attach == true ) {
-                result = _lxccontainer->start(_lxccontainer, 0, NULL);
+                result = _lxcContainer->start(_lxcContainer, 0, NULL);
                 if( result == true ) {
 
                     lxc_attach_command_t lxccommand;
@@ -210,20 +235,20 @@ namespace ProcessContainers {
                     lxccommand.argv = const_cast<char**>(params.data());
 
                     lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-                    int ret = _lxccontainer->attach(_lxccontainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
+                    int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
                     if( ret != 0 ) {
-                        _lxccontainer->shutdown(_lxccontainer, 0);
+                        _lxcContainer->shutdown(_lxcContainer, 0);
                     }
                     result = ret == 0;
                 }
             } else
-        #endif
+#endif
         {
-            result = _lxccontainer->start(_lxccontainer, 0, const_cast<char**>(params.data()));
+            result = _lxcContainer->start(_lxcContainer, 0, const_cast<char**>(params.data()));
         }
 
         if( result == true )  {
-            _pid = _lxccontainer->init_pid(_lxccontainer);
+            _pid = _lxcContainer->init_pid(_lxcContainer);
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] was started successfully! pid=%u"), _name.c_str(), _pid));
         } else {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] could not be started!"), _name.c_str()));
@@ -235,28 +260,30 @@ namespace ProcessContainers {
     bool LXCContainer::Stop(const uint32_t timeout /*ms*/) 
     {
         bool result = true;
-        if( _lxccontainer->is_running(_lxccontainer)  == true ) {
+        if( _lxcContainer->is_running(_lxcContainer)  == true ) {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container name [%s] Stop activated"), _name.c_str()));
             int internaltimeout = timeout/1000;
             if( timeout == Core::infinite ) {
                 internaltimeout = -1;
             }
-            result = _lxccontainer->shutdown(_lxccontainer, internaltimeout);
+            result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
         }
         return result;
     }
 
     void LXCContainer::AddRef() const {
         WPEFramework::Core::InterlockedIncrement(_referenceCount);
-        lxc_container_get(_lxccontainer);
+        lxc_container_get(_lxcContainer);
     }
 
-    uint32_t LXCContainer::Release() const {
+    uint32_t LXCContainer::Release() {
         uint32_t retval = WPEFramework::Core::ERROR_NONE;
-        uint32_t lxcresult = lxc_container_put(_lxccontainer);
+        uint32_t lxcresult = lxc_container_put(_lxcContainer);
         if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
             ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
+
+            static_cast<LXCContainerAdministrator&>(LXCContainerAdministrator::Instance()).RemoveContainer(this);
 
             delete this;
             retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -267,6 +294,8 @@ namespace ProcessContainers {
 
     LXCContainerAdministrator::LXCContainerAdministrator() 
         : _lock() 
+        ,_containers()
+        , _globalLogDir()
     {
         TRACE(ProcessContainers::ProcessContainerization, (_T("LXC library initialization, version: %s"), lxc_get_version()));
     }
@@ -276,19 +305,8 @@ namespace ProcessContainers {
             lxc_log_close();
     }
 
-    void LXCContainerAdministrator::AddRef() const 
+    IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) 
     {
-
-    }
-    uint32_t LXCContainerAdministrator::Release() const 
-    {
-        return Core::ERROR_NONE;
-    }
-
-    IContainer* LXCContainerAdministrator::Container(const string& name, ProcessContainers::IStringIterator& searchpaths, const string& logpath, const string& configuration) 
-    {
-        searchpaths.Reset(0);
-
         _lock.Lock();
 
         ProcessContainers::IContainer* container { nullptr };
@@ -300,7 +318,7 @@ namespace ProcessContainers {
             while( ( container == nullptr) && ( index < numberofcontainersfound ) ) {
                 LxcContainerType *c = clist[index];
                 if( name == c->name ) {
-                    container = new LXCContainer(name, c, logpath, configuration, searchpaths.Current());
+                    container = new LXCContainer(name, c, containerLogDir, configuration, searchpaths.Current());
 
                     _containers.push_back(container);
                 }
@@ -323,27 +341,32 @@ namespace ProcessContainers {
         return container;
     }
 
-    void LXCContainerAdministrator::Logging(const string& logpath, const string& logid, const string& loggingoptions) 
+    void LXCContainerAdministrator::Logging(const string& globalLogDir, const string& loggingOptions) 
     {
         // Valid logging values: NONE and the ones below
         // 0 = trace, 1 = debug, 2 = info, 3 = notice, 4 = warn, 5 = error, 6 = critical, 7 = alert, and 8 = fatal, but also string is allowed:
         // (case insensitive) TRACE, DEBUG, INFO, NOTICE, WARN, ERROR, CRIT, ALERT, FATAL
 
-        const char* logstring = loggingoptions.c_str();
+        const char* logstring = loggingOptions.c_str();
+        _globalLogDir = globalLogDir;
 
-        if( ( loggingoptions.size() != 4 ) || ( std::toupper(logstring[0]) != _T('N') ) 
+        if( ( loggingOptions.size() != 4 ) || ( std::toupper(logstring[0]) != _T('N') ) 
                                         || ( std::toupper(logstring[1]) != _T('O') ) 
                                         || ( std::toupper(logstring[2]) != _T('N') ) 
-                                        || ( std::toupper(logstring[3]) != _T('E') ) 
-            ) {
-            string filename(logpath + logFileName);
+                                        || ( std::toupper(logstring[3]) != _T('E') )) 
+        {
+            // Create logging directory
+            Core::Directory logDir(_globalLogDir.c_str());
+            logDir.CreatePath();
+
+            string filename(_globalLogDir + "/" + logFileName);
 
             lxc_log log;
-            log.name = logid.c_str();
-            log.lxcpath = logpath.c_str(); //we don't have a correct lxcpath were all containers are stored...
+            log.name = "WPE_LXC";
+            log.lxcpath = _globalLogDir.c_str(); //we don't have a correct lxcPath were all containers are stored...
             log.file = filename.c_str();
             log.level = logstring;
-            log.prefix = logid.c_str();
+            log.prefix = "";
             log.quiet = false;
             lxc_log_init(&log);
         }
@@ -354,6 +377,17 @@ namespace ProcessContainers {
         return ContainerIterator(_containers);
     }
 
+    void LXCContainerAdministrator::AddRef() const
+    {
+
+    }
+
+    uint32_t LXCContainerAdministrator::Release()
+    {
+        return (Core::ERROR_NONE);
+    }
+
+
     IContainerAdministrator& IContainerAdministrator::Instance()
     {
         static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
@@ -361,16 +395,21 @@ namespace ProcessContainers {
         return myLXCContainerAdministrator;
     }
 
+    void LXCContainerAdministrator::RemoveContainer(ProcessContainers::IContainer* container)
+    {
+        this->_containers.remove(container);
+    }
+
     std::vector<string> LXCContainer::GetNetworkInterfaces() {
         char buf[256];
         std::vector<string> result;
 
-        ASSERT(_lxccontainer != nullptr);
+        ASSERT(_lxcContainer != nullptr);
 
         for(int netnr = 0; ;netnr++) {
             sprintf(buf, "lxc.net.%d.type", netnr);
 
-            char* type = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+            char* type = _lxcContainer->get_running_config_item(_lxcContainer, buf);
             if (!type)
                 break;
 
@@ -381,7 +420,7 @@ namespace ProcessContainers {
             }
             free(type);
 
-            char* ifname = _lxccontainer->get_running_config_item(_lxccontainer, buf);
+            char* ifname = _lxcContainer->get_running_config_item(_lxcContainer, buf);
             if (!ifname)
                 break;
 
@@ -392,8 +431,8 @@ namespace ProcessContainers {
         return result;
     }
 
-    constexpr char* LXCContainerAdministrator::logFileName;
-    constexpr char* LXCContainerAdministrator::configFileName;
+    constexpr char const* LXCContainerAdministrator::logFileName;
+    constexpr char const* LXCContainerAdministrator::configFileName;
     constexpr uint32_t LXCContainerAdministrator::maxReadSize;
 
 }

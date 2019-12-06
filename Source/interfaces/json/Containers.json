@@ -108,9 +108,9 @@
             "description": "CPU-time spent on container, in nanoseconds",
             "example": "2871287421"
           },
-          "threads": {
+          "cores": {
             "type": "array",
-            "description": "Time spent on each cpu-thread, in nanoseconds",
+            "description": "Time spent on each cpu core, in nanoseconds",
             "items": {
               "type": "number",
               "size": 64,
@@ -118,42 +118,6 @@
             }
           }
         }
-      },
-      "index": {
-        "name": "Name",
-        "example": "ContainerName"
-      },
-      "errors": [
-        {
-          "description": "Container not found",
-          "$ref": "#/common/errors/unavailable"
-        }
-      ]
-    },
-    "logpath": {
-      "summary": "Containers log path",
-      "readonly": true,
-      "params": {
-        "type": "string",
-        "description": "Path to file containing logs from the container"
-      },
-      "index": {
-        "name": "Name",
-        "example": "ContainerName"
-      },
-      "errors": [
-        {
-          "description": "Container not found",
-          "$ref": "#/common/errors/unavailable"
-        }
-      ]
-    },
-    "configpath": {
-      "summary": "Path to container's configuration",
-      "readonly": true,
-      "params": {
-        "type": "string",
-        "description": "Path to file containing the configuration of the container"
       },
       "index": {
         "name": "Name",

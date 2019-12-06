@@ -17,7 +17,7 @@ namespace ProcessContainers {
 
         struct CPUInfo {
             uint64_t total; // total usage of cpu, in nanoseconds;
-            std::vector<uint64_t> threads; // cpu usage per thread;
+            std::vector<uint64_t> cores; // cpu usage per core in nanoseconds;
         };
 
         using NetworkInfo = std::map<string, std::vector<Core::NodeId>>;
@@ -29,17 +29,15 @@ namespace ProcessContainers {
         virtual pid_t Pid() const = 0;
         virtual MemoryInfo Memory() const = 0;
         virtual CPUInfo Cpu() const = 0;
-        virtual string ConfigPath() const = 0;
-        virtual string LogPath() const = 0;
         virtual IConstStringIterator NetworkInterfaces() const = 0;
-        virtual std::vector<Core::NodeId> IPs(const string& interface) const = 0;
+        virtual std::vector<string> IPs(const string& interface) const = 0;
         virtual bool IsRunning() const = 0;
 
         virtual bool Start(const string& command, IStringIterator& parameters) = 0; // returns true when started
         virtual bool Stop(const uint32_t timeout /*ms*/) = 0; // returns true when stopped, note if timeout == 0 asynchronous
 
         virtual void AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
+        virtual uint32_t Release() = 0;
     };
 
     struct IContainerAdministrator {
@@ -50,20 +48,19 @@ namespace ProcessContainers {
         IContainerAdministrator() = default;
         virtual ~IContainerAdministrator() = default;
 
-        // Lifetime management
-        virtual void AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
-
         // Methods
         virtual IContainer* Container(const string& id, 
                                       IStringIterator& searchpaths, 
-                                      const string& logpath,
+                                      const string& containerLogPath,
                                       const string& configuration) = 0; //searchpaths will be searched in order in which they are iterated
 
-        virtual void Logging(const string& logpath, const string& logid, const string& loggingoptions) = 0;
+        virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
         virtual ContainerIterator Containers() = 0;
         
         virtual IContainer* Find(const string& name);
+
+        virtual void AddRef() const = 0;
+        virtual uint32_t Release() = 0;
     };
 } // ProcessContainers
 } // WPEFramework

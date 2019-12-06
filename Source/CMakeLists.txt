@@ -40,7 +40,7 @@ option(COMPOSITORCLIENT
 option(GSTREAMERCLIENT
         "Include a gstreamer sink abstraction for external applications." OFF)
 option(PROCESSCONTAINERS
-        "Include containerization in the build." ON)
+        "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
 option(UNIT_TESTS

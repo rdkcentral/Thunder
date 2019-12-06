@@ -13,13 +13,6 @@
  * Proxy/Stubs do
  * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
  */
-extern "C" {
-EXTERNAL void ForceLinkingOfOpenCDM();
-}
-#else
-#define EXTERNAL
-#endif
-
 #ifdef __cplusplus
 
 extern "C" {
@@ -46,30 +39,46 @@ struct ContainerMemory {
 };
 
 /**
+ * \brief Initializes container framework.
+ * This functions setups container logging. Bear in mind that it might be called 
+ * before pcontainer_initialize() or after pcontainer_deinitialize()
+ * 
+ * \param logpath - Path to folder where the global container logs will be stored
+ * \param loggingOptions - Logging configuration
+ * 
+ * \return Zero on success, non-zero on error.
+ */
+EXTERNAL ContainerError pcontainer_logging(const char* logPath, const char* loggingOptions);
+
+
+/**
+ * \brief Initializes container framework.
+ * This function initializes container framework
+ * 
+ * \return Zero on success, non-zero on error.
+ */
+EXTERNAL ContainerError pcontainer_initialize();
+
+/**
+ * \brief Frees resources held by containers api.
+ * This functions releases resources held by containers framework
+ * 
+ * \return Zero on success, non-zero on error.
+ */
+EXTERNAL ContainerError pcontainer_deinitialize();
+
+/**
  * \brief Initializes a container.
  * This function initializes a container and prepares it to be started
  * 
  * \param container - (output) Container that is to be initialized
  * \param name - Name of started container
- * \param searchpaths - Null-terminated list of locations where container can be located. 
+ * \param searchPaths - Null-terminated list of locations where container can be located. 
  *                      List is processed in the order it is provided, and the first 
  *                      container matching provided name will be selected & initialized
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_create(struct Container_t** container, const char* name, const char** searchpaths, const char* logPath, const char* configuration);
-
-/**
- * \brief Enables logging.
- * This functions setups logging of containers
- * 
- * \param logpath - Path to folder where the logging will be stored
- * \param logId - Null-terminated list of locations where container can be located. 
- *                      List is processed in the order it is provided, and the first 
- *                      container matching provided name will be selected & initialized
- * \param loggingOptions - Logging configuration
- * \return Zero on success, non-zero on error.
- */
-EXTERNAL ContainerError container_enableLogging(const char* logpath, const char* logId, const char* loggingOptions);
+EXTERNAL ContainerError pcontainer_create(struct Container_t** container, const char* name, const char** searchPaths, const char* logPath, const char* configuration);
 
 /**
  * \brief Releases a container.
@@ -79,7 +88,7 @@ EXTERNAL ContainerError container_enableLogging(const char* logpath, const char*
  * \param container - Container that will be released
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_release(struct Container_t* container);
+EXTERNAL ContainerError pcontainer_release(struct Container_t* container);
 
 /**
  * \brief Starts a container.
@@ -90,7 +99,7 @@ EXTERNAL ContainerError container_release(struct Container_t* container);
  * \param params - List of parameters provied to command
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_start(struct Container_t* container, const char* command, const char** params, uint32_t numParams);
+EXTERNAL ContainerError pcontainer_start(struct Container_t* container, const char* command, const char** params, uint32_t numParams);
 
 /**
  * \brief Stops a container.
@@ -99,7 +108,7 @@ EXTERNAL ContainerError container_start(struct Container_t* container, const cha
  * \param container - Container that is to be initialized
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError container_stop(struct Container_t* container);
+EXTERNAL ContainerError pcontainer_stop(struct Container_t* container);
 
 /**
  * \brief Gives information if the container is running.
@@ -110,7 +119,7 @@ EXTERNAL ContainerError container_stop(struct Container_t* container);
  * \param container - Container that is checked
  * \return 1 if is running, 0 otherwise.
  */
-EXTERNAL uint8_t container_isRunning(struct Container_t* container);
+EXTERNAL uint8_t pcontainer_isRunning(struct Container_t* container);
 
 /**
  * \brief Information about memory usage.
@@ -123,7 +132,7 @@ EXTERNAL uint8_t container_isRunning(struct Container_t* container);
  * information
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getMemory(struct Container_t* container, ContainerMemory* memory);
+EXTERNAL ContainerError pcontainer_getMemory(struct Container_t* container, struct ContainerMemory* memory);
 
 /**
  * \brief Information about cpu usage.
@@ -131,12 +140,12 @@ EXTERNAL ContainerError container_getMemory(struct Container_t* container, Conta
  * used for the container
  * 
  * \param container - Container that is checked
- * \param threadNum - Ordinal number of thread of which usage will be returned. 
+ * \param threadNum - id core of (0,1,2...) which usage will be returned. 
  *                    If -1 is provided, total CPU usage will be reported. 
- * \param usage - Usage of cpu time in nanoseconds
+ * \param usage - Usage of cpu in nanoseconds
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getCpuUsage(struct Container_t* container, int32_t threadNum, uint64_t* usage);
+EXTERNAL ContainerError pcontainer_getCpuUsage(struct Container_t* container, int32_t threadNum, uint64_t* usage);
 
 
 /**
@@ -149,7 +158,7 @@ EXTERNAL ContainerError container_getCpuUsage(struct Container_t* container, int
  *  
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNumNetworkInterfaces(struct Container_t* container, uint32_t* numNetworks);
+EXTERNAL ContainerError pcontainer_getNumNetworkInterfaces(struct Container_t* container, uint32_t* numNetworks);
 
 /**
  * \brief Containers's network interfaces.
@@ -158,13 +167,14 @@ EXTERNAL ContainerError container_getNumNetworkInterfaces(struct Container_t* co
  * 
  * \param container - Container that is checked
  * \param interfaceNum - Ordinal number of interface. Can take value from 0 to value returned by  
- *                       container_getNumNetworkInterfaces - 1. Otherwise ERROR_OUT_OF_BOUNDS is returned
- * \param name - (output) Name of network interface
- * \param maxNameLength - Maximum length of name buffer.
+ *                       pcontainer_getNumNetworkInterfaces - 1. Otherwise ERROR_OUT_OF_BOUNDS is returned
+ * \param name - (output) Name of network interface. Can be NULL - then only nameLength will be set to length of a name
+ * \param nameLength - (output) Length of name. Can be NULL
+ * \param maxNameLength - Maximum length of name buffer. Default is 16 bytes
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNetworkInterfaceName(struct Container_t* container, uint32_t interfaceNum, char* name, uint32_t maxNameLength = 16);
+EXTERNAL ContainerError pcontainer_getNetworkInterfaceName(struct Container_t* container, uint32_t interfaceNum, char* name, uint32_t* nameLength, uint32_t maxNameLength);
 
 /**
  * \brief Number of IP addresses asssigend to interface.
@@ -178,7 +188,7 @@ EXTERNAL ContainerError container_getNetworkInterfaceName(struct Container_t* co
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getNumIPs(struct Container_t* container, const char* interfaceName, uint32_t* numIPs);
+EXTERNAL ContainerError pcontainer_getNumIPs(struct Container_t* container, const char* interfaceName, uint32_t* numIPs);
 
 /**
  * \brief List of IP addresses given to a container.
@@ -190,42 +200,30 @@ EXTERNAL ContainerError container_getNumIPs(struct Container_t* container, const
  *                        If set to NULL, function will return addresses from of 
  *                        all container's addresses
  * \param addressNum - Ordinal number of ip assigned to interface. Can range from 0 to value obtained from
- *                     container_getNumIPs() for a given interface. If other address is given, 
+ *                     pcontainer_getNumIPs() for a given interface. If other address is given, 
  *                     ERROR_OUT_OF_BOUNDS is returned
- * \param address - (output) IP Address of container
+ * \param address - (output) IP Address of container. Can be set to NULL - then only addresLength will be set
+ * \param addresLength - (output) Length of IP addres string. Can be NULL
  * \param maxAddressLength - Maximum length of address. If address length is higher than maxAddressLength,
  *                           ERROR_MORE_DATA_AVAILABLE is returned
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getIP(struct Container_t* container, const char* interfaceName, uint32_t addressNum, char* address, uint32_t maxAddressLength);
-
-/**
- * \brief Container's config path.
- * Function gives path of configuration that was used to  
- * initialize container
- * 
- * \param container - Container that is checked
- * \param path - Buffer where the containers config path will be placed
- * \param maxPathLength - Maximum length of path. If path is longer than 
- *                        this, ERROR_MORE_DATA will be returned
- * 
- * \return Zero on success, error-code otherwise
- */
-EXTERNAL ContainerError container_getConfigPath(struct Container_t* container, char* path, uint32_t maxPathLength);
+EXTERNAL ContainerError pcontainer_getIP(struct Container_t* container, const char* interfaceName, uint32_t addressNum, char* address, uint32_t* addresLength, uint32_t maxAddressLength);
 
 /**
  * \brief Containers name.
  * Function gives name of the container
  * 
  * \param container - Container that is checked
- * \param id - Name of the container
- * \param maxIdLength - Maximum length of containers name. If name is longer than 
+ * \param name - (output) Name of the container
+ * \param nameLength - (output) Total length of name. Can be NULL if not intrested
+ * \param maxNameLength - Maximum length of containers name. If name is longer than 
  *                      this, ERROR_MORE_DATA will be returned
  * 
  * \return Zero on success, error-code otherwise
  */
-EXTERNAL ContainerError container_getName(struct Container_t* container, char* name, uint32_t maxNameLength);
+EXTERNAL ContainerError pcontainer_getName(struct Container_t* container, char* name, uint32_t* nameLength, uint32_t maxNameLength);
 
 #ifdef __cplusplus
 }

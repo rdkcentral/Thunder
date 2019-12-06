@@ -15,30 +15,14 @@ namespace ProcessContainers {
 
     class LXCContainer : public IContainer {
     private:
-
         class Config : public Core::JSON::Container {
         public:
             class ConfigItem : public Core::JSON::Container {
             public:
                 ConfigItem& operator=(const ConfigItem&) = delete;
 
-                ConfigItem(const ConfigItem& rhs) 
-                    : Core::JSON::Container()
-                    , Key(rhs.Key)
-                    , Value(rhs.Value)
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value); 
-                }
-
-                ConfigItem()
-                    : Core::JSON::Container()
-                    , Key()
-                    , Value()
-                {
-                    Add(_T("key"), &Key);
-                    Add(_T("value"), &Value); 
-                }
+                ConfigItem(const ConfigItem& rhs);
+                ConfigItem();
                 
                 ~ConfigItem() = default;
 
@@ -49,23 +33,7 @@ namespace ProcessContainers {
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
 
-            Config()
-                : Core::JSON::Container()
-                , ConsoleLogging("0")
-                , ConfigItems()
-        #ifdef __DEBUG__
-                , Attach(false)
-        #endif
-            {
-                Add(_T("console"), &ConsoleLogging); // should be a power of 2 when converted to bytes. Valid size prefixes are 'KB', 'MB', 'GB', 0 is off, auto is auto determined
-
-                Add(_T("items"), &ConfigItems);
-
-#ifdef __DEBUG__
-                Add(_T("attach"), &Attach);
-#endif
-            }
-            
+            Config();
             ~Config() = default;
 
             Core::JSON::String ConsoleLogging;
@@ -80,23 +48,21 @@ namespace ProcessContainers {
         LXCContainer(const LXCContainer&) = delete;
         LXCContainer& operator=(const LXCContainer&) = delete;
 
-        LXCContainer(const string& name, LxcContainerType* lxccontainer, const string& logpath, const string& configuration, const string& lxcpath);
+        LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
 
         const string Id() const override;
         pid_t Pid() const override;
         MemoryInfo Memory() const override;
         CPUInfo Cpu() const override;
-        string ConfigPath() const override;
-        string LogPath() const override;
         ProcessContainers::IConstStringIterator NetworkInterfaces() const override;
-        std::vector<Core::NodeId> IPs(const string& interface) const override;
+        std::vector<string> IPs(const string& interface) const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
         void AddRef() const override;
-        uint32_t Release() const override;
+        uint32_t Release() override;
 
         private:
             inline std::vector<string> GetNetworkInterfaces();
@@ -104,15 +70,15 @@ namespace ProcessContainers {
         private:
             const string _name;
             pid_t _pid;
-            string _lxcpath;
-            string _logpath;
+            string _lxcPath;
+            string _containerLogDir;
             mutable Core::CriticalSection _adminLock;
             mutable uint32_t _referenceCount;
-            LxcContainerType* _lxccontainer;
+            LxcContainerType* _lxcContainer;
             std::vector<string> _networkInterfaces;
-            #ifdef __DEBUG__
-                bool _attach;
-            #endif
+#ifdef __DEBUG__
+            bool _attach;
+#endif
     };
 
     class LXCContainerAdministrator : public ProcessContainers::IContainerAdministrator {
@@ -120,8 +86,8 @@ namespace ProcessContainers {
         friend class LXCContainer;
 
     private:
-        static constexpr char* logFileName = "lxclogging.log";
-        static constexpr char* configFileName = "config";
+        static constexpr char const* logFileName = "lxclogging.log";
+        static constexpr char const* configFileName = "config";
         static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
     public:
         LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
@@ -130,22 +96,20 @@ namespace ProcessContainers {
         LXCContainerAdministrator();
         virtual ~LXCContainerAdministrator();
 
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() const override;
+        ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
 
-        ProcessContainers::IContainer* Container(const string& name, 
-                                                                        ProcessContainers::IStringIterator& searchpaths, 
-                                                                        const string& logpath,
-                                                                        const string& configuration) override;
-
-        void Logging(const string& logpath, const string& logid, const string& logging) override;
+        void Logging(const string& globalLogDir, const string& loggingOptions) override;
         ContainerIterator Containers() override;
 
+        void AddRef() const override;
+        uint32_t Release() override;
+    protected:
+        void RemoveContainer(ProcessContainers::IContainer* container);
 
     private:
         mutable Core::CriticalSection _lock;
         std::list<IContainer*> _containers;
+        string _globalLogDir;
     };
 
 }
