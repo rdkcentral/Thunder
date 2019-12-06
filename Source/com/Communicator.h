@@ -278,6 +278,7 @@ namespace RPC {
         enum { ID = ID_COMPROCESS };
 
         virtual ~IProcess() {}
+        virtual void SetCallsign(string& callsign) = 0;
         virtual string& Callsign() = 0;
     };
 
@@ -427,7 +428,27 @@ namespace RPC {
                 LaunchProcess(options);
             }
         };
-        class EXTERNAL LocalRemoteProcess : public RemoteProcess, public IProcess {
+        class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IProcess {
+        public:
+            void SetCallsign(string& callsign) override
+            {
+                _callsign.assign(callsign);
+            }
+
+            string& Callsign() override
+            {
+                return _callsign;
+            }
+
+            BEGIN_INTERFACE_MAP(MonitorableRemoteProcess)
+            INTERFACE_ENTRY(RPC::IRemoteConnection)
+            INTERFACE_ENTRY(RPC::IProcess)
+            END_INTERFACE_MAP
+
+        private:
+            string _callsign;
+        };
+        class EXTERNAL LocalRemoteProcess : public MonitorableRemoteProcess {
         public:
             friend class Core::Service<LocalRemoteProcess>;
 
@@ -447,7 +468,7 @@ namespace RPC {
             {
                 Core::Process::Options &opt =
                         const_cast<Core::Process::Options&>(options);
-                _callsign.assign(opt[_T("-C")]);
+                SetCallsign(opt[_T("-C")]);
 
                 // Start the external process launch..
                 Core::Process fork(false);
@@ -458,23 +479,12 @@ namespace RPC {
             void Terminate() override;
             uint32_t RemoteId() const override;
 
-            string& Callsign() override
-            {
-                return _callsign;
-            }
-
-            BEGIN_INTERFACE_MAP(LocalRemoteProcess)
-            INTERFACE_ENTRY(RPC::IRemoteConnection)
-            INTERFACE_ENTRY(RPC::IProcess)
-            END_INTERFACE_MAP
-
         private:
             uint32_t _id;
-            string _callsign;
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        class EXTERNAL ContainerRemoteProcess : public MonitorableRemoteProcess {
         private:
             class Config : public Core::JSON::Container {
             public:
@@ -517,6 +527,7 @@ namespace RPC {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 string volatilecallsignpath(volatilepath + callsign + _T('/'));
+                SetCallsign(callsign);
 
                 Config config;
                 config.FromString(configuration);
