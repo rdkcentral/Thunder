@@ -294,7 +294,7 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
 // ------------------------------------------------------------------------
 // Create definitions for the Management commands
 // ------------------------------------------------------------------------
-// https://github.com/pauloborges/bluez/blob/master/doc/mgmt-api.txt
+// https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt
 // ------------------------------------------------------------------------
 
 template <const uint16_t OPCODE, typename OUTBOUND, typename INBOUND>
