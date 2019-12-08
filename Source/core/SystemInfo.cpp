@@ -24,30 +24,197 @@
 #include <nexus_config.h>
 #include <nexus_platform.h>
 
+namespace {
+
+class SystemPlatform {
+private::
+    SystemPlatform() {
+        NEXUS_Platform_GetConfiguration(&_platformConfig);
+    }
+
+public:
+    SystemPlatform(const SystemPlatform&) = delete;
+    SystemPlatform& operator= (const SystemPlatform&) = delete;
+    ~SystemPlatform() {
+    }
+
+    static SystemPlatform& Instance()
+    {
+        static SystemPlatform instance;
+        return (instance);
+    }
+
+public:
+    void FreeGPURam(uint64_t& freeRam) const
+    {
+        NEXUS_MemoryStatus status;
+
+        NEXUS_Error rc = NEXUS_UNKNOWN;
+#if NEXUS_MEMC0_GRAPHICS_HEAP
+        if (_platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                freeRam = static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+#if NEXUS_MEMC1_GRAPHICS_HEAP
+        if (_platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                freeRam += static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+#if NEXUS_MEMC2_GRAPHICS_HEAP
+        if (_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                freeRam  += static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+    }
+
+    uint64_t TotalGPURam() const
+    {
+        uint64_t totalRam = 0;
+
+        NEXUS_MemoryStatus status;
+
+        NEXUS_Error rc = NEXUS_UNKNOWN;
+#if NEXUS_MEMC0_GRAPHICS_HEAP
+        if (_platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                totalRam = static_cast<uint64_t>(status.size);
+            }
+        }
+#endif
+#if NEXUS_MEMC1_GRAPHICS_HEAP
+        if (_platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                totalRam += static_cast<uint64_t>(status.size);
+            }
+        }
+#endif
+#if NEXUS_MEMC2_GRAPHICS_HEAP
+        if (g_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                totalRam += static_cast<uint64_t>(status.size);
+            }
+        }
+#endif
+        return (totalRam);
+    }
+
+private:
+    NEXUS_PlatformConfiguration _platformConfig;
+};
+
+}
+
 #elif defined(PLATFORM_RPI)
 #include <bcm_host.h>
 
 namespace {
 
-class BCMHostInit {
-public:
-    BCMHostInit(const BCMHostInit&) = delete;
-    BCMHostInit& operator=(const BCMHostInit&) = delete;
-
-    BCMHostInit()
+class SystemPlatform {
+private:
+    SystemPlatform()
     {
         bcm_host_init();
     }
 
-    ~BCMHostInit()
+public:
+    SystemPlatform(const SystemPlatform&) = delete;
+    SystemPlatform& operator= (const SystemPlatform&) = delete;
+    ~SystemPlatform()
     {
         bcm_host_deinit();
     }
 
-    static void DoBCMHostInit()
+    static SystemPlatform& Instance()
     {
-        static BCMHostInit bcmhostinit;
+        static SystemPlatform instance;
+        return (instance);
     }
+
+public:
+    void FreeGPURam(uint64_t& freeRam) const 
+    {
+        Command("get_mem reloc ", freeRam);
+    }
+    uint64_t TotalGPURam() const
+    {
+        uint64_t result;
+        Command("get_mem reloc_total ", result);
+        return (result);
+    }
+
+private:
+    void Command(const char request[], std::string& value) const
+    {
+        char buffer[512];
+
+        // Reset the string
+        buffer[0] = '\0';
+
+        // Most VC API calls are guarded but we want to be sure anyway
+        _mutualExclusion.Lock();
+
+        int VARIABLE_IS_NOT_USED status = vc_gencmd(buffer, sizeof(buffer), &request[0]);
+        assert((status == 0) && "Error: vc_gencmd failed.\n");
+
+        _mutualExclusion.Unlock();
+
+        // Make sure it is null-terminated
+        buffer[sizeof(buffer) - 1] = '\0';
+
+        // We do not need the stuff that is before the '=', we know what we requested :-)
+        char* equal = strchr(buffer, '=');
+        if (equal != nullptr) {
+            equal++;
+        }
+        else {
+            equal = buffer;
+        }
+
+        // Create string from buffer.
+        value = std::string (equal);
+    }
+    template<typename VALUE>
+    void Command(const char request[], VALUE& result) const
+    {
+        std::string response;
+
+        Command(request, response);
+
+        const char* start = response.c_str();
+        const char* index = start;
+
+        // move the index to the unit inidicatuion type
+        while (::isdigit(*index) || (*index == ' ') || (*index == '.') || (*index == ',')) {
+            index++;
+        }
+
+        result = WPEFramework::Core::NumberType<VALUE>(WPEFramework::Core::TextFragment(start, (index - start))).Value();
+
+        // Convert into bytes, if necessary.
+        if ( (*index == 'M') && (index[1] == '\0') ) {
+            // Multiply with MB
+            result *= (1024 * 1024);
+        }
+        else if ( (*index == 'K') && (index[1] == '\0') ) {
+            // Multiply with KB
+            result *= 1024;
+        }
+    }
+
+private:
+    mutable WPEFramework::Core::CriticalSection _mutualExclusion;
 };
 }
 
@@ -159,35 +326,6 @@ namespace Core {
             KeyLength));
     }
 
-#if defined(PLATFORM_RPI)
-    static std::string vcgencmd_request(const char request[])
-    {
-        // Most VC API calls are guarded but we want to be sure anyway
-        BCMHostInit::DoBCMHostInit();
-
-        static Core::CriticalSection mutualExclusion;
-        mutualExclusion.Lock();
-
-        char buffer[512];
-
-        // Reset the string
-        buffer[0] = '\0';
-
-        int VARIABLE_IS_NOT_USED status = vc_gencmd(buffer, sizeof(buffer), &request[0]);
-        assert((status == 0) && "Error: vc_gencmd failed.\n");
-
-        // Make sure it is null-terminated
-        buffer[sizeof(buffer) - 1] = '\0';
-
-        // Create string from buffer.
-        std::string response(buffer);
-
-        mutualExclusion.Unlock();
-
-        return response;
-    }
-#endif
-
     SystemInfo::SystemInfo()
         : m_HostName(ConstructHostname())
         , m_lastUpdateCpuStats(0)
@@ -210,11 +348,10 @@ namespace Core {
 #endif
 #endif
 
-#if defined(PLATFORM_RPI)
-        // Init GPU resources.
-        // We can call it always. If we are not the first it does not do anything (harmful).
-        // Moreover, it takes care of all underlying necessary API init's
+#if defined(PLATFORM_RPI) || defined(PLATFORM_BRCM)
+        m_totalgpuram = SystemPlatform::Instance().TotalGPURam();
 #endif
+
         UpdateCpuStats();
     }
 
@@ -297,124 +434,15 @@ namespace Core {
 
     void SystemInfo::UpdateTotalGpuRam()
     {
-        // Save result in gpu field.
-        SystemInfo::m_totalgpuram = 0;
-#if defined(PLATFORM_BRCM)
-        NexusUpdateGpuRam();
-
-#elif defined(PLATFORM_RPI)
-        if (SystemInfo::m_totalgpuram != 0) {
-            return;
-        }
-
-        std::string response = vcgencmd_request("get_mem reloc_total ");
-
-        // Erase prefix in order to get value.
-        std::size_t prefix = response.find("=");
-        response.erase(0, prefix + 1);
-
-        // Find unit of response and omit from response.
-        std::string unit;
-        std::size_t postfix = response.find_first_not_of("0123456789,. ");
-        if (postfix != std::string::npos) {
-            unit = response.substr(postfix, response.length());
-            response.erase(postfix, response.length());
-        }
-
-        // Convert string to integer.
-        SystemInfo::m_totalgpuram = NumberType<uint64_t>(TextFragment(response)).Value();
-
-        // Convert into bytes, if necessary.
-        if (unit.compare("M") == 0) {
-            // Multiply with MB = 1024*1024.
-            SystemInfo::m_totalgpuram *= 1048576;
-        } else if (unit.compare("K") == 0) {
-            // Multiply with KB = 1024.
-            SystemInfo::m_totalgpuram *= 1024;
-        }
-#endif
+        // Probably during runtime, the Total GPU Memory will not change
     }
 
     void SystemInfo::UpdateFreeGpuRam()
     {
-        // Save result in gpu field.
-        SystemInfo::m_freegpuram = 0;
-#if defined(PLATFORM_BRCM)
-        NexusUpdateGpuRam();
-
-#elif defined(PLATFORM_RPI)
-        static Core::CriticalSection mutualExclusion;
-
-        if (SystemInfo::m_totalgpuram == 0) {
-            SystemInfo::UpdateTotalGpuRam();
-        }
-
-        std::string response = vcgencmd_request("get_mem reloc ");
-
-        // Erase prefix in order to get value.
-        std::size_t prefix = response.find("=");
-        response.erase(0, prefix + 1);
-
-        // Find unit of response and omit from response.
-        std::string unit;
-        std::size_t postfix = response.find_first_not_of("0123456789,. ");
-        if (postfix != std::string::npos) {
-            unit = response.substr(postfix, response.length());
-            response.erase(postfix, response.length());
-        }
-
-        // Convert string to integer.
-        SystemInfo::m_freegpuram = NumberType<uint64_t>(TextFragment(response)).Value();
-
-        // Convert into bytes, if necessary.
-        if (unit.compare("M") == 0) {
-            // Multiply with MB = 1024*1024.
-            SystemInfo::m_freegpuram *= 1048576;
-        } else if (unit.compare("K") == 0) {
-            // Multiply with KB = 1024.
-            SystemInfo::m_freegpuram *= 1024;
-        }
+#if defined(PLATFORM_BRCM) || defined(PLATFORM_RPI)
+        SystemPlatform::Instance().FreeGPURam(m_freegpuram);
 #endif
     }
-
-#if defined(PLATFORM_BRCM)
-    void SystemInfo::NexusUpdateGpuRam()
-    {
-        NEXUS_MemoryStatus status;
-
-        NEXUS_PlatformConfiguration platformConfig;
-        NEXUS_Platform_GetConfiguration(&platformConfig);
-
-        NEXUS_Error rc = NEXUS_UNKNOWN;
-#if NEXUS_MEMC0_GRAPHICS_HEAP
-        if (platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP]) {
-            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP], &status);
-            if (rc == NEXUS_SUCCESS) {
-                SystemInfo::m_totalgpuram = static_cast<uint64_t>(status.size);
-                SystemInfo::m_freegpuram = static_cast<uint64_t>(status.free);
-            }
-        }
-#endif
-#if NEXUS_MEMC1_GRAPHICS_HEAP
-        if (platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP]) {
-            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP], &status);
-            if (rc == NEXUS_SUCCESS) {
-                SystemInfo::m_totalgpuram += static_cast<uint64_t>(status.size);
-                SystemInfo::m_freegpuram += static_cast<uint64_t>(status.free);
-            }
-        }
-#endif
-#if NEXUS_MEMC2_GRAPHICS_HEAP
-        if (platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
-            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP], &status);
-            if (rc == NEXUS_SUCCESS) {
-                SystemInfo::m_totalgpuram += static_cast<uint64_t>(status.size);
-                SystemInfo::m_freegpuram += static_cast<uint64_t>(status.free);
-            }
-        }
-#endif
-    }
-#endif
 
 #if defined(__LINUX__) && !defined(__APPLE__)
 
