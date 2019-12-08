@@ -191,6 +191,14 @@ if(BCM_HOST_FOUND)
             PRIVATE
               BCM_HOST::BCM_HOST
             )
+else()
+find_package(NEXUS)
+    if(NEXUS_FOUND)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                  NEXUS::NEXUS
+                )
+    endif()
 endif()
 
 # ===========================================================================================

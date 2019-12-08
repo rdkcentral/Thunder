@@ -20,7 +20,11 @@
 #include <sys/sysinfo.h>
 #endif
 
-#if defined(PLATFORM_RPI)
+#if defined(PLATFORM_BRCM)
+#include <nexus_config.h>
+#include <nexus_platform.h>
+
+#elif defined(PLATFORM_RPI)
 #include <bcm_host.h>
 
 namespace {
@@ -295,7 +299,10 @@ namespace Core {
     {
         // Save result in gpu field.
         SystemInfo::m_totalgpuram = 0;
-#if defined(PLATFORM_RPI)
+#if defined(PLATFORM_BRCM)
+        NexusUpdateGpuRam();
+
+#elif defined(PLATFORM_RPI)
         if (SystemInfo::m_totalgpuram != 0) {
             return;
         }
@@ -332,8 +339,10 @@ namespace Core {
     {
         // Save result in gpu field.
         SystemInfo::m_freegpuram = 0;
+#if defined(PLATFORM_BRCM)
+        NexusUpdateGpuRam();
 
-#if defined(PLATFORM_RPI)
+#elif defined(PLATFORM_RPI)
         static Core::CriticalSection mutualExclusion;
 
         if (SystemInfo::m_totalgpuram == 0) {
@@ -367,6 +376,45 @@ namespace Core {
         }
 #endif
     }
+
+#if defined(PLATFORM_BRCM)
+    void SystemInfo::NexusUpdateGpuRam()
+    {
+        NEXUS_MemoryStatus status;
+
+        NEXUS_PlatformConfiguration platformConfig;
+        NEXUS_Platform_GetConfiguration(&platformConfig);
+
+        NEXUS_Error rc = NEXUS_UNKNOWN;
+#if NEXUS_MEMC0_GRAPHICS_HEAP
+        if (platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC0_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                SystemInfo::m_totalgpuram = static_cast<uint64_t>(status.size);
+                SystemInfo::m_freegpuram = static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+#if NEXUS_MEMC1_GRAPHICS_HEAP
+        if (platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC1_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                SystemInfo::m_totalgpuram += static_cast<uint64_t>(status.size);
+                SystemInfo::m_freegpuram += static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+#if NEXUS_MEMC2_GRAPHICS_HEAP
+        if (platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
+            rc = NEXUS_Heap_GetStatus(platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP], &status);
+            if (rc == NEXUS_SUCCESS) {
+                SystemInfo::m_totalgpuram += static_cast<uint64_t>(status.size);
+                SystemInfo::m_freegpuram += static_cast<uint64_t>(status.free);
+            }
+        }
+#endif
+    }
+#endif
 
 #if defined(__LINUX__) && !defined(__APPLE__)
 

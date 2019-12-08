@@ -229,6 +229,9 @@ namespace Core {
 
         void UpdateTotalGpuRam();
         void UpdateFreeGpuRam();
+#if defined(PLATFORM_BRCM)
+        void NexusUpdateGpuRam();
+#endif
 
         static SystemInfo _systemInfo;
 
