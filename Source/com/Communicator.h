@@ -759,6 +759,8 @@ namespace RPC {
 
                     // Kill the Event registration. We are no longer interested in what will be hapening..
                     _announcements.erase(locator.first);
+
+                    result->Release();
                 }
                 _adminLock.Unlock();
 
@@ -1193,9 +1195,11 @@ namespace RPC {
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
-                Core::IUnknown* base = (*loop)->QueryInterface<Core::IUnknown>();
-                Revoke(base, (*loop)->InterfaceId());
+                Revoke((*loop)->Parent(), (*loop)->InterfaceId());
                 (*loop)->Destroy();
+                // To avoid race conditions, the creation of the deadProxies took a reference
+                // on the interfaces, we presented here. Do not forget to release this reference.
+                (*loop)->Release();
                 loop++;
             }
 
