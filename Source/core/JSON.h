@@ -2093,8 +2093,8 @@ namespace Core {
                             _value = converted.Value();
                             _state = SET;
                         } else {
-                            _state = ERROR;
-                            error = Error{ "Unknown enum value \"" + _parser.Value() + "\"" };
+                            _state = UNDEFINED;
+                            TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
                         }
                     } else {
                         error = Error{ "Invalid enum" };
