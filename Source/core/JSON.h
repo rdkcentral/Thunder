@@ -62,7 +62,7 @@ namespace Core {
             size_t _pos;
         };
 
-        string ErrorDisplayMessage(const Error& err);
+        string EXTERNAL ErrorDisplayMessage(const Error& err);
 
         struct EXTERNAL IElement {
 
