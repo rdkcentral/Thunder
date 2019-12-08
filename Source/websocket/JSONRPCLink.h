@@ -1198,7 +1198,7 @@ namespace JSONRPC {
     template <typename INTERFACE>
     class SmartLinkType {
     private:
-        class Connection : public Client {
+        class Connection : public LinkType<INTERFACE> {
         private:
             static constexpr uint32_t DefaultWaitTime = 3000;
         private:
