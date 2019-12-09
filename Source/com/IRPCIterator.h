@@ -66,9 +66,11 @@ namespace RPC {
             : _container()
             , _index(0)
         {
-            typename INTERFACE::Element result;
-            while (index->Next(result) == true) {
-                _container.push_back(result);
+            if (index != nullptr) {
+                typename INTERFACE::Element result;
+                 while (index->Next(result) == true) {
+                    _container.push_back(result);
+                }
             }
             _iterator = _container.begin();
         }
