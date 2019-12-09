@@ -1267,7 +1267,7 @@ namespace JSONRPC {
                     , _state(UNKNOWN)
             {
                 _monitor.template Assign<Statechange>(_T("statechange"), &Connection::state_change, this);
-                Announce();
+                LinkType<INTERFACE>::Announce();
             }
             ~Connection() override
             {
