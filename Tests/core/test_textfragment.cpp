@@ -11,8 +11,8 @@ TEST(test_textfragment, simple_textfragement)
     string buffer = "/Service/testing/test";
     TextFragment result;
     result = TextFragment(string(buffer));
-    Core::TextFragment(string(buffer));
-    Core::TextSegmentIterator index(Core::TextFragment(string(buffer), 16, 5), false,'/');
+    TextFragment(string(buffer));
+    TextSegmentIterator index(TextFragment(string(buffer), 16, 5), false,'/');
     index.Next();
     index.Next();
 
@@ -22,12 +22,37 @@ TEST(test_textfragment, simple_textfragement)
     EXPECT_EQ(index.Remainder().Length(), (unsigned)4) << "The length of the string is not 4.";
     EXPECT_FALSE(index.Remainder().IsEmpty());
     
-    Core::TextFragment textFragment();
+    TextFragment textFragment();
     const TCHAR buffer_new[] = "/Service/testing/test";
-    Core::TextFragment textFragment1(buffer_new);
-    Core::TextFragment textFragment2(buffer_new,21);
-    Core::TextFragment textFragment3(buffer_new,16,5);
+    TextFragment textFragment1(buffer_new);
+    TextFragment textFragment2(buffer_new,21);
+    TextFragment textFragment3(buffer_new,16,5);
 
     char delimiter[] = {'/'};
     EXPECT_EQ(textFragment1.ForwardFind(delimiter),(unsigned)0);
+    textFragment1.Clear();
+    EXPECT_EQ(textFragment2[1],'S');
+
+    EXPECT_FALSE(textFragment1 == buffer_new);
+    EXPECT_FALSE(textFragment1 == buffer);
+    EXPECT_TRUE(textFragment1 != buffer_new);
+    EXPECT_TRUE(textFragment1 != buffer);
+
+    EXPECT_TRUE(textFragment2.OnMarker(buffer_new));
+    EXPECT_TRUE(textFragment2.EqualText(buffer_new));
+
+    const TCHAR begin[] = "Service";
+    const TCHAR end[] = "test";
+    const TCHAR middle[] = "testing";
+    textFragment2.TrimBegin(begin);
+    textFragment2.TrimEnd(end);
+    EXPECT_EQ(textFragment2.ReverseFind(middle),15);
+    EXPECT_EQ(textFragment2.ReverseSkip(middle),16);
+
+    const TCHAR splitters[] ={'/',','};
+    TextSegmentIterator iterator1(TextFragment(string(buffer), 16, 5), false,splitters);
+    TextSegmentIterator iterator2(iterator1);
+    index = iterator2;
+    iterator2.Reset();
+    TextSegmentIterator iterator3();
 }
