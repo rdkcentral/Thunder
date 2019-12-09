@@ -185,7 +185,7 @@
   },
   "events": {
     "connectionchange": {
-      "summary": "Notifies about connection status (update, connected or connectionfailed)",
+      "summary": "Notifies about connection status (created, updated, removed, connected and connectionfailed)",
       "params": {
         "type": "object",
         "properties": {
@@ -202,7 +202,9 @@
           "status": {
             "type": "string",
             "enum": [
-                "update",
+                "created",
+                "updated",
+                "removed",
                 "connected",
                 "connectionfailed"
               ],
