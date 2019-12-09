@@ -1110,6 +1110,7 @@ namespace Bluetooth {
         uint32_t LongTermKey(const LongTermKeys& keys);
         uint32_t IdentityKey(const IdentityKeys& keys);
         uint32_t Name(const string& shortName, const string& longName);
+        uint32_t PublicAddress(const Address& address);
 
         uint32_t AddDevice(const Address::type type, const Address& address, const autoconnmode value = REPORT);
         uint32_t RemoveDevice(const Address::type type, const Address& address);
