@@ -1,0 +1,36 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Display Info API",
+    "class": "DisplayInfo",
+    "description": "DisplayInfo JSON-RPC interface"
+  },
+  "properties": {
+    "displayinfo": {
+      "summary": "Display general information",
+      "readonly": true,
+      "params": {
+        "type": "object",
+        "properties": {
+          "totalgpuram": {
+            "description": "Total GPU DRAM memory (in bytes)",
+            "example": 381681664,
+            "type": "number",
+            "size": 64
+          },
+          "freegpuram": {
+            "description": "Free GPU DRAM memory (in bytes)",
+            "example": 358612992,
+            "type": "number",
+            "size": 64
+          }
+        },
+        "required": [
+          "totalgpuram",
+          "freegpuram"
+        ]
+      }
+    }
+  }
+}

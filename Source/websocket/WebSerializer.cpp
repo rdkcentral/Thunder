@@ -1499,9 +1499,10 @@ namespace Web
             }
             case Request::CONNECTION: {
                 Core::EnumerateType<Request::connection> enumValue(buffer.c_str(), false);
-
                 if (enumValue.IsSet() == true) {
                     _current->Connection = enumValue.Value();
+                } else if (Request::ScanForKeyword(buffer, Request::connection::CONNECTION_UPGRADE) == true) {
+                    _current->Connection = Request::connection::CONNECTION_UPGRADE;
                 } else {
                     _current->Connection = Request::CONNECTION_UNKNOWN;
                 }

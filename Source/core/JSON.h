@@ -62,7 +62,7 @@ namespace Core {
             size_t _pos;
         };
 
-        string ErrorDisplayMessage(const Error& err);
+        string EXTERNAL ErrorDisplayMessage(const Error& err);
 
         struct EXTERNAL IElement {
 
@@ -2093,8 +2093,8 @@ namespace Core {
                             _value = converted.Value();
                             _state = SET;
                         } else {
-                            _state = ERROR;
-                            error = Error{ "Unknown enum value \"" + _parser.Value() + "\"" };
+                            _state = UNDEFINED;
+                            TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
                         }
                     } else {
                         error = Error{ "Invalid enum" };
@@ -2254,7 +2254,7 @@ namespace Core {
 
                 inline uint32_t Count() const
                 {
-                    return (_container == nullptr ? 0 : _container->size());
+                    return (_container == nullptr ? 0 : static_cast<uint32_t>(_container->size()));
                 }
 
             private:

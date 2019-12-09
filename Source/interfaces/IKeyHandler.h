@@ -1,7 +1,5 @@
 #pragma once
 
-// @stubgen:skip
-
 #include "Module.h"
 
 namespace WPEFramework {
@@ -13,10 +11,14 @@ namespace Exchange {
     struct ITouchProducer;
 
     enum ProducerEvents {
-        ePairingStarted = 1,
-        ePairingSuccess,
-        ePairingFailed,
-        ePairingTimedout
+        PairingStarted = 1,
+        PairingSuccess,
+        PairingFailed,
+        PairingTimedout,
+        UnpairingStarted,
+        UnpairingSuccess,
+        UnpairingFailed,
+        UnpairingTimedout
     };
 
     struct IKeyHandler : virtual public Core::IUnknown {
@@ -72,13 +74,14 @@ namespace Exchange {
 
         virtual ~IKeyProducer(){};
 
-        virtual const TCHAR* Name() const = 0;
-        virtual bool Pair() = 0;
-        virtual bool Unpair(string bindingId) = 0;
+        virtual string Name() const = 0;
         virtual uint32_t Callback(IKeyHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
         virtual string MetaData() const = 0;
         virtual void Configure(const string& settings) = 0;
+
+        virtual bool Pair() = 0;
+        virtual bool Unpair(string bindingId) = 0;
     };
 
     struct IWheelProducer : virtual public Core::IUnknown {
@@ -86,7 +89,7 @@ namespace Exchange {
 
         virtual ~IWheelProducer(){};
 
-        virtual const TCHAR* Name() const = 0;
+        virtual string Name() const = 0;
         virtual uint32_t Callback(IWheelHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
         virtual string MetaData() const = 0;
@@ -98,7 +101,7 @@ namespace Exchange {
 
         virtual ~IPointerProducer(){};
 
-        virtual const TCHAR* Name() const = 0;
+        virtual string Name() const = 0;
         virtual uint32_t Callback(IPointerHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
         virtual string MetaData() const = 0;
@@ -110,7 +113,7 @@ namespace Exchange {
 
         virtual ~ITouchProducer(){};
 
-        virtual const TCHAR* Name() const = 0;
+        virtual string Name() const = 0;
         virtual uint32_t Callback(ITouchHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
         virtual string MetaData() const = 0;

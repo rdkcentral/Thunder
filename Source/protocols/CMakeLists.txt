@@ -29,6 +29,7 @@ set(SOURCES_WEBSOCKETS
         websocket/JSONWebToken.cpp
         websocket/WebSerializer.cpp
         websocket/WebSocketLink.cpp
+        websocket/JSONRPCLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
         websocket/JSONRPCLink.h
@@ -88,6 +89,7 @@ add_library(${TARGET} SHARED
         IUnknown.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
+        JSONRPCLink.cpp
         Administrator.cpp
         Communicator.cpp
         IStringIterator.cpp
@@ -97,6 +99,7 @@ add_library(${TARGET} SHARED
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing

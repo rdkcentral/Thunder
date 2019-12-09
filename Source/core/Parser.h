@@ -80,7 +80,7 @@ namespace Core {
         {
             _state |= FLUSH_LINE;
         }
-        inline void PassThrough(const uint16_t passThroughBytes)
+        inline void PassThrough(const uint32_t passThroughBytes)
         {
             _state |= EXTERNALPASS | SKIP_WHITESPACE;
             _byteCounter = passThroughBytes;
@@ -92,7 +92,7 @@ namespace Core {
             while (current < maxLength) {
                 // Pass through if requested..
                 while (((_state & EXTERNALPASS) != 0) && (current < maxLength)) {
-                    uint16_t passOn = ((maxLength - current) > _byteCounter ? _byteCounter : (maxLength - current));
+                    uint16_t passOn = (static_cast<uint32_t>(maxLength - current) > _byteCounter ? static_cast<uint16_t>(_byteCounter) : (maxLength - current));
 
                     _parent.Parse(&stream[current], passOn);
 
@@ -204,7 +204,7 @@ namespace Core {
 
     private:
         uint16_t _state;
-        uint16_t _byteCounter;
+        uint32_t _byteCounter;
         string _buffer;
         HANDLER& _parent;
         TCHAR _splitChar;

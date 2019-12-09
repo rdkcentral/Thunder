@@ -7,6 +7,10 @@
 
 namespace WPEFramework {
 
+namespace RPC {
+    class Communicator;
+}
+
 namespace ProxyStub {
     // -------------------------------------------------------------------------------------------
     // STUB
@@ -123,10 +127,15 @@ namespace ProxyStub {
         }
 
     public:
-        inline void AddRefCachedCount() {
-            if ((_remoteAddRef.load() & REGISTERED) != 0) {
+        inline bool AddRefCachedCount() {
+            bool result = false;
+
+            uint8_t value = REGISTERED;
+            if (_remoteAddRef.compare_exchange_weak(value, REGISTERED | PENDING_ADDREF, std::memory_order_release, std::memory_order_relaxed) == true) {
                 _releaseCount++;
+                result = true;
             }
+            return result;
         }
         inline uint32_t Release()
         {
@@ -171,10 +180,13 @@ namespace ProxyStub {
         {
             uint32_t newValue = Core::InterlockedIncrement(_refCount);
 
+           uint8_t value(REGISTERED | PENDING_ADDREF);
+           _remoteAddRef.compare_exchange_weak(value, REGISTERED, std::memory_order_release, std::memory_order_relaxed);
+ 
             // By definition we can only reach the AddRef of 2
             if (newValue == 2) {
 
-                uint8_t value(UNREGISTERED | CACHING);
+                value = (UNREGISTERED | CACHING);
 
                 // Seems we really would like to "preserve" this interface, so report it in use
                 if (_remoteAddRef.compare_exchange_weak(value, PENDING_ADDREF | CACHING, std::memory_order_release, std::memory_order_relaxed) == true) {
@@ -182,6 +194,10 @@ namespace ProxyStub {
                     RPC::Administrator::Instance().RegisterProxy(const_cast<UnknownProxy&>(*this));
                 }
             }
+        }
+        bool DropRegistration() const {
+            uint8_t value(REGISTERED);
+            return (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true);
         }
         uint32_t DropReference() const
         {
@@ -196,9 +212,11 @@ namespace ProxyStub {
                 uint8_t value(REGISTERED);
                 if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                     RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
-                    result = RemoteRelease();
-                } else{
+                    RemoteRelease();
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+                    _refCount = 0;
+                } else{
+                    result = Core::ERROR_NONE;
                 }
             } else if (newValue == 2) {
                 uint8_t value = REGISTERED | CACHING;
@@ -235,15 +253,13 @@ namespace ProxyStub {
             }
         }
         // This method is used to forcefully clear out the Proxies for channels that have unexpectedly closed !!!
-        uint32_t Destroy()
+        void Destroy()
         {
             uint8_t value(REGISTERED);
 
             if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
                 RPC::Administrator::Instance().UnregisterProxy(*this);
             }
-
-            return (_parent.Release());
         }
         uint32_t RemoteRelease() const
         {
@@ -288,9 +304,15 @@ namespace ProxyStub {
         {
             return (reinterpret_cast<ACTUAL_INTERFACE*>(QueryInterface(ACTUAL_INTERFACE::ID)));
         }
+    private:
+        // note returned pointer might be invalid and should not be dereferenced
+        const Core::IUnknown* Parent() const {
+            return &_parent;
+        }
 
     private:
         friend class RPC::Administrator;
+        friend class RPC::Communicator;
         mutable std::atomic<uint8_t> _remoteAddRef;
         mutable uint32_t _refCount;
         const uint32_t _interfaceId;
@@ -345,9 +367,6 @@ namespace ProxyStub {
         virtual uint32_t Release() const override
         {
             uint32_t result = _unknown.DropReference();
-            if((result != Core::ERROR_NONE) && (result != Core::ERROR_TIMEDOUT) && (result != Core::ERROR_DESTRUCTION_SUCCEEDED)) {
-                result = Core::ERROR_DESTRUCTION_FAILED;
-            }
 
             if (result != Core::ERROR_NONE) {
                 delete (this);

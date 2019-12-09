@@ -38,7 +38,7 @@ target_link_libraries(${TARGET}
 if(NXCLIENT_FOUND)
     find_package(NEXUS REQUIRED)
 
-     target_sources(${TARGET} PRIVATE implementations/NexusTuner.cpp)
+     target_sources(${TARGET} PRIVATE Implementation/Nexus/Tuner.cpp)
 
      target_link_libraries(${TARGET}
         PRIVATE
@@ -46,7 +46,7 @@ if(NXCLIENT_FOUND)
             NXCLIENT::NXCLIENT
         )
 else()
-    target_sources(${TARGET} PRIVATE implementations/LinuxDVBTuner.cpp)
+    target_sources(${TARGET} PRIVATE Implementation/V4L/Tuner.cpp)
 endif()
 
 

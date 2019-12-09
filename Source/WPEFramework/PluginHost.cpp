@@ -171,7 +171,11 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
-                    pluginConfig.IElement::FromFile(file);
+                    Core::OptionalType<Core::JSON::Error> error;
+                    pluginConfig.IElement::FromFile(file, error);
+                    if (error.IsSet() == true) {
+                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                    }
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
@@ -334,7 +338,11 @@ namespace PluginHost {
         Server::Config serviceConfig;
 
         if (configFile.Open(true) == true) {
-            serviceConfig.IElement::FromFile(configFile);
+            Core::OptionalType<Core::JSON::Error> error;
+            serviceConfig.IElement::FromFile(configFile, error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             configFile.Close();
         } else {
@@ -626,7 +634,12 @@ namespace PluginHost {
                     uint32_t threadId = _dispatcher->WorkerPool().ThreadId(keyPress - '0');
                     printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
-                    PublishCallstack(threadId);
+                    if (threadId != static_cast<uint32_t>(~0)) {
+                        PublishCallstack(threadId);
+                    } else {
+                       printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
+                    }
+
                     break;
                 }
 #endif

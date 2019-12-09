@@ -157,7 +157,11 @@ namespace PluginHost {
 
                 // Extract the version list from the config
                 Core::JSON::ArrayType<Core::JSON::DecUInt8> versions;
-                versions.FromString(config.Versions.Value());
+                Core::OptionalType<Core::JSON::Error> error;
+                versions.FromString(config.Versions.Value(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
                 Core::JSON::ArrayType<Core::JSON::DecUInt8>::Iterator index(versions.Elements());
 
                 while (index.Next() == true) {

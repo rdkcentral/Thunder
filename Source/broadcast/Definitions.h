@@ -258,6 +258,10 @@ namespace Broadcast {
         static uint32_t Initialize(const string& configuration);
         static uint32_t Deinitialize();
 
+        // See if the tuner supports the requested mode, or is configured for the requested mode. This method
+        // only returns proper values if the Initialize has been called before.
+        static bool IsSupported(const ITuner::modus mode);
+
         // Accessor to create a tuner.
         static ITuner* Create(const string& info);
 

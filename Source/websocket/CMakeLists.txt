@@ -6,6 +6,7 @@ add_library(${TARGET} SHARED
         JSONWebToken.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
+        JSONRPCLink.cpp
         )
 
 find_package(ZLIB REQUIRED)
@@ -27,6 +28,7 @@ set(PUBLIC_HEADERS
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo

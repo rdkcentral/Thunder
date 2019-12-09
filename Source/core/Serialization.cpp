@@ -147,7 +147,7 @@ namespace Core {
     {
         ASSERT(object != nullptr);
 
-        uint16_t index = result.length();
+        uint16_t index = static_cast<uint16_t>(result.length());
         result.resize(index + (length * 2));
 
         result[1] = hex_chars[object[0] & 0xF];

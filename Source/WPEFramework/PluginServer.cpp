@@ -753,6 +753,7 @@ namespace PluginHost
         _controller->ClassType<Plugin::Controller>()->AddRef();
 
         _dispatcher.Run();
+        Dispatcher().Open(MAX_EXTERNAL_WAITS);
 
         // Right we have the shells for all possible services registered, time to activate what is needed :-)
         ServiceMap::Iterator iterator(_services.Services());
@@ -762,12 +763,11 @@ namespace PluginHost
             Core::ProxyType<Service> service(*iterator);
 
             if (service->AutoStart() == true) {
-		service->Activate(PluginHost::IShell::STARTUP);
+                service->Activate(PluginHost::IShell::STARTUP);
             } else {
                 SYSLOG(Logging::Startup, (_T("Activation of plugin [%s]:[%s] blocked"), service->ClassName().c_str(), service->Callsign().c_str()));
             }
         }
-        Dispatcher().Open(MAX_EXTERNAL_WAITS);
     }
 
     void Server::Close()

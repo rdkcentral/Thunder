@@ -32,6 +32,8 @@ set(PUBLIC_HEADERS
         )
 
 target_link_libraries(${TARGET}
+        PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing

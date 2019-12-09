@@ -11,6 +11,5 @@ namespace RPC {
 
     typedef IRPCIteratorType<string, ID_STRINGITERATOR> IStringIterator;
     typedef RPCIteratorType<IStringIterator> StringIterator;
-
 }
 }

@@ -409,7 +409,7 @@ namespace PluginHost {
             return (index->second);
         }
 
-        inline void ClearTable(const std::string& name)
+        inline void ClearTable(const string& name)
         {
             TableMap::iterator index(_mappingTables.find(name));
 
@@ -438,7 +438,12 @@ namespace PluginHost {
             Core::File data(tableName);
             if (data.Open(true) == true) {
                 PostLookupTable info;
-                info.IElement::FromFile(data);
+                Core::OptionalType<Core::JSON::Error> error;
+                info.IElement::FromFile(data, error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
+
                 Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
                 _lock.Lock();

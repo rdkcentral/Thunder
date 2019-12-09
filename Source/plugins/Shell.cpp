@@ -61,6 +61,7 @@ namespace PluginHost
             , User()
             , Group()
             , Threads(1)
+            , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
             , Configuration(false)
@@ -69,6 +70,7 @@ namespace PluginHost
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
             Add(_T("configuration"), &Configuration);
@@ -78,6 +80,7 @@ namespace PluginHost
             , User()
             , Group()
             , Threads()
+            , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
             , Configuration(false)
@@ -86,17 +89,26 @@ namespace PluginHost
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
             Add(_T("configuration"), &Configuration);
 
             RootObject config;
-            config.FromString(info->ConfigLine());
+            Core::OptionalType<Core::JSON::Error> error;
+            config.FromString(info->ConfigLine(), error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             if (config.Config.IsSet() == true) {
                 // Yip we want to go out-of-process
                 Object settings;
-                settings.FromString(config.Config.Value());
+                Core::OptionalType<Core::JSON::Error> error;
+                settings.FromString(config.Config.Value(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
                 *this = settings;
 
                 if (Locator.Value().empty() == true) {
@@ -109,6 +121,7 @@ namespace PluginHost
             , User(copy.User)
             , Group(copy.Group)
             , Threads(copy.Threads)
+            , Priority(copy.Priority)
             , OutOfProcess(true)
             , Mode(copy.Mode)
             , Configuration(copy.Configuration)
@@ -117,6 +130,7 @@ namespace PluginHost
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
             Add(_T("configuration"), &Configuration);
@@ -132,6 +146,7 @@ namespace PluginHost
             User = RHS.User;
             Group = RHS.Group;
             Threads = RHS.Threads;
+            Priority = RHS.Priority;
             OutOfProcess = RHS.OutOfProcess;
             Mode = RHS.Mode;
             Configuration = RHS.Configuration;
@@ -160,6 +175,7 @@ namespace PluginHost
         Core::JSON::String User;
         Core::JSON::String Group;
         Core::JSON::DecUInt8 Threads;
+        Core::JSON::DecSInt8 Priority;
         Core::JSON::Boolean OutOfProcess;
         Core::JSON::EnumType<ModeType> Mode; 
         Core::JSON::String Configuration; 
@@ -213,6 +229,7 @@ namespace PluginHost
                     rootObject.User.Value(),
                     rootObject.Group.Value(),
                     rootObject.Threads.Value(),
+                    rootObject.Priority.Value(),
                     rootObject.HostType(), 
                     rootObject.Configuration.Value());
 

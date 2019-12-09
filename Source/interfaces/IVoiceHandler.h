@@ -1,36 +1,53 @@
-#ifndef __IVOICEHANDLER_H__
-#define __IVOICEHANDLER_H__
-
-// @stubgen:skip
+#pragma once
 
 #include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
 
+    struct IVoiceHandler;
+
+    /*
+     * Interface responsible for producing audio data
+     * The data that is produced must be signed big endian
+     */
+    struct IVoiceProducer : virtual public Core::IUnknown {
+        enum { ID = ID_VOICEPRODUCER };
+
+        virtual ~IVoiceProducer(){};
+
+        struct IProfile : virtual public Core::IUnknown {
+            enum { ID = ID_VOICEPRODUCER_PROFILE };
+            virtual ~IProfile(){};
+
+            enum codec : uint8_t {
+                UNDEFINED = 0,
+                PCM,
+                ADPCM
+            };
+
+            virtual codec Codec() const = 0;
+            virtual uint8_t Channels() const = 0;
+            virtual uint32_t SampleRate() const = 0;
+            virtual uint8_t Resolution() const = 0;
+        };
+
+        virtual string Name() const = 0;
+        virtual uint32_t Callback(IVoiceHandler* callback) = 0;
+        virtual uint32_t Error() const = 0;
+        virtual string MetaData() const = 0;
+        virtual void Configure(const string& settings) = 0;
+    };
+
     struct IVoiceHandler : virtual public Core::IUnknown {
         enum { ID = ID_VOICEHANDLER };
 
         virtual ~IVoiceHandler(){};
 
-        virtual void VoiceEvent(const uint8_t data[], const uint16_t length) = 0;
+        virtual void Start(const IVoiceProducer::IProfile* profile) = 0;
+        virtual void Stop() = 0;
+        virtual void Data(const uint32_t sequenceNo, const uint8_t data[] /* @length:length */, const uint16_t length) = 0;
     };
 
-    struct IVoiceProducer : virtual public Core::IUnknown {
-        enum { ID = ID_VOICEPRODUCER };
-
-        enum audioCodec {
-            PCM,
-            ADPCM
-        };
-
-        virtual ~IVoiceProducer(){};
-
-        virtual const TCHAR* VoiceName() const = 0;
-        virtual void VoiceCallback(IVoiceHandler* callback) = 0; //!< Sets a handle to send the VoiceEvent.
-        virtual const Exchange::IVoiceProducer::audioCodec AudioCodec() = 0; //!< Type of audio codec of this producer
-        virtual uint32_t VoiceError() const = 0;
-    };
-}
-}
-#endif // __IVOICEHANDLER_H__
+} // Exchange
+} // WPEFramework

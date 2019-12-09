@@ -294,7 +294,7 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
 // ------------------------------------------------------------------------
 // Create definitions for the Management commands
 // ------------------------------------------------------------------------
-// https://github.com/pauloborges/bluez/blob/master/doc/mgmt-api.txt
+// https://git.kernel.org/pub/scm/bluetooth/bluez.git/tree/doc/mgmt-api.txt
 // ------------------------------------------------------------------------
 
 template <const uint16_t OPCODE, typename OUTBOUND, typename INBOUND>
@@ -500,6 +500,7 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_READ_INDEX_LIST, Core::Void, uint16_t[33]> Indexes;
     typedef ManagementFixedType<MGMT_OP_SET_LOCAL_NAME, mgmt_cp_set_local_name, mgmt_cp_set_local_name> DeviceName;
     typedef ManagementFixedType<MGMT_OP_SET_PRIVACY, mgmt_cp_set_privacy, Core::Void> Privacy;
+    typedef ManagementFixedType<MGMT_OP_SET_PUBLIC_ADDRESS, mgmt_cp_set_public_address, uint32_t> PublicAddress;
     typedef ManagementFixedType<MGMT_OP_BLOCK_DEVICE, mgmt_cp_block_device, mgmt_addr_info> Block;
     typedef ManagementFixedType<MGMT_OP_UNBLOCK_DEVICE, mgmt_cp_unblock_device, mgmt_addr_info> Unblock;
     typedef ManagementFixedType<MGMT_OP_ADD_DEVICE, mgmt_cp_add_device, mgmt_rp_add_device> AddDevice;
@@ -507,6 +508,7 @@ namespace Management {
     typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, LinkKeys> LinkKeys;
     typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, LongTermKeys> LongTermKeys;
     typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, IdentityKeys> IdentityKeys;
+
 }
 
 /* static */ void ManagementSocket::Devices(std::list<uint16_t>& adapters)
@@ -684,6 +686,15 @@ uint32_t ManagementSocket::SecureConnection(const bool enabled)
 {
     Management::SecureConnection message(_deviceId);
     message->val = (enabled ? ENABLE_MODE : DISABLE_MODE);
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::PublicAddress(const Address& address)
+{
+    Management::PublicAddress message(_deviceId);
+    ::memcpy (&(message->bdaddr), address.Data(), sizeof(message->bdaddr));
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
     return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));

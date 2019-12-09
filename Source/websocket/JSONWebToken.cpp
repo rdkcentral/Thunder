@@ -33,7 +33,7 @@ namespace Web
             Add(_T("alg"), &Algorithm);
             Add(_T("typ"), &Type);
 
-			FromString(string(data, length));
+            FromString(string(data, length));
         }
         ~JSONWebData()
         {

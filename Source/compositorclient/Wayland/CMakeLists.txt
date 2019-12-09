@@ -15,6 +15,7 @@ add_library(${TARGET} SHARED ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}.cpp)
 
 target_link_libraries(${TARGET}
     PRIVATE
+        CompileSettingsDebug::CompileSettingsDebug
         WaylandEGL::WaylandEGL
         ${EGL_LIBRARIES}
         ${NAMESPACE}Core::${NAMESPACE}Core

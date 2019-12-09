@@ -1,4 +1,5 @@
 set(TARGET ${NAMESPACE}Core)
+include(CompileSettings)
 
 option(DEADLOCK_DETECTION 
         "Enable deadlock detection tooling." OFF)
@@ -11,7 +12,6 @@ option(BLUETOOTH
 
 find_package(Threads REQUIRED)
 
-include(CompileSettings)
 
 add_library(${TARGET} SHARED
 	DoorBell.cpp
@@ -155,6 +155,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           CompileSettings::CompileSettings
         PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
 	  ${LIBEXECINFO_LIBRARY}
           LIBRT::LIBRT
@@ -190,13 +191,21 @@ if(BCM_HOST_FOUND)
             PRIVATE
               BCM_HOST::BCM_HOST
             )
+else()
+find_package(NEXUS)
+    if(NEXUS_FOUND)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                  NEXUS::NEXUS
+                )
+    endif()
 endif()
 
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
@@ -215,3 +224,6 @@ InstallPackageConfig(
 
 InstallCMakeConfig(
         TARGETS ${TARGET})
+
+InstallCMakeConfig(
+        TARGETS CompileSettingsDebug)

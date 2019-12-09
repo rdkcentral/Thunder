@@ -154,6 +154,24 @@
       <FileType>Document</FileType>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="json\DHCPServer.json">
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="json\SecurityAgent.json">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CustomBuild>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{577A83B6-66B6-4A98-A3D6-4EBA066A1772}</ProjectGuid>
@@ -269,7 +287,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -279,7 +297,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -312,7 +330,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -322,7 +340,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -359,7 +377,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -369,7 +387,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -406,7 +424,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -416,7 +434,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)..\Tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>

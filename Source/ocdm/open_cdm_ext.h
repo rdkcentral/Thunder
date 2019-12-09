@@ -67,7 +67,7 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystem* system);
  */
 OpenCDMError
 opencdm_system_ext_get_secure_stop_ids(struct OpenCDMSystem* system,
-    uint8_t Ids[], uint8_t idSize,
+    uint8_t Ids[], uint16_t idsLength,
     uint32_t* count);
 
 /**
