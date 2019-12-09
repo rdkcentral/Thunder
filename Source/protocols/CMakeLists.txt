@@ -21,6 +21,7 @@ set(SOURCES_COM
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
+        com/IRPCIterator.h
         )
 
 set(SOURCES_WEBSOCKETS
@@ -54,6 +55,7 @@ set(COM_INCLUDES
         ITracing.h
         IUnknown.h
         Messages.h
+        IRPCIterator.h
         IStringIterator.h
         IValueIterator.h
         )
