@@ -1164,11 +1164,7 @@ namespace JSONRPC {
         }
         void FromMessage(Core::JSON::IElement* response, const Core::JSONRPC::Message& message)
         {
-            Core::OptionalType<Core::JSON::Error> error;
-            response->FromString(message.Result.Value(), error);
-            if (error.IsSet() == true) {
-                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
-            }
+            response->FromString(message.Result.Value());
         }
         void FromMessage(Core::JSON::IMessagePack* response, const Core::JSONRPC::Message& message)
         {
@@ -1365,11 +1361,17 @@ namespace JSONRPC {
         };
 
     public:
+        #ifdef __WIN32__
+        #pragma warning(disable : 4355)
+        #endif
         SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign)
                 : _connection(*this, remoteCallsign, localCallsign)
                 , _callsign(remoteCallsign)
         {
         }
+        #ifdef __WIN32__
+        #pragma warning(default : 4355)
+        #endif
         ~SmartLinkType()
         {
         }

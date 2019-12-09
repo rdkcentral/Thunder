@@ -2254,7 +2254,7 @@ namespace Core {
 
                 inline uint32_t Count() const
                 {
-                    return (_container == nullptr ? 0 : _container->size());
+                    return (_container == nullptr ? 0 : static_cast<uint32_t>(_container->size()));
                 }
 
             private:

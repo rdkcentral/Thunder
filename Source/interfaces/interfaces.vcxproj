@@ -76,8 +76,6 @@
     <ClInclude Include="ISystemCommands.h" />
     <ClInclude Include="ITestController.h" />
     <ClInclude Include="ITimeSync.h" />
-    <ClInclude Include="ITVControl.h" />
-    <ClInclude Include="ITVPlatform.h" />
     <ClInclude Include="IVoiceHandler.h" />
     <ClInclude Include="IWebDriver.h" />
     <ClInclude Include="IWebServer.h" />
@@ -186,7 +184,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -215,7 +213,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -244,7 +242,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -277,7 +275,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)interfaces</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
