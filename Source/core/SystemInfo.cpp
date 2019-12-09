@@ -27,7 +27,7 @@
 namespace {
 
 class SystemPlatform {
-private::
+private:
     SystemPlatform() {
         NEXUS_Platform_GetConfiguration(&_platformConfig);
     }
@@ -100,7 +100,7 @@ public:
         }
 #endif
 #if NEXUS_MEMC2_GRAPHICS_HEAP
-        if (g_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
+        if (_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP]) {
             rc = NEXUS_Heap_GetStatus(_platformConfig.heap[NEXUS_MEMC2_GRAPHICS_HEAP], &status);
             if (rc == NEXUS_SUCCESS) {
                 totalRam += static_cast<uint64_t>(status.size);
