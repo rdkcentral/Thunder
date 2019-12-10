@@ -126,7 +126,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -148,7 +148,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -170,7 +170,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -196,7 +196,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>

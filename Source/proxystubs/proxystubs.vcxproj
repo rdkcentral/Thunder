@@ -19,9 +19,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="CMakeLists.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="Module.cpp" />
     <ClCompile Include="PluginInterface.cpp" />
   </ItemGroup>
