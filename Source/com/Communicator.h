@@ -278,8 +278,8 @@ namespace RPC {
         enum { ID = ID_COMPROCESS };
 
         virtual ~IProcess() {}
-        virtual void SetCallsign(string& callsign) = 0;
-        virtual string& Callsign() = 0;
+        virtual void SetCallsign(const string& callsign) = 0;
+        virtual const string& Callsign() const = 0;
     };
 
     class EXTERNAL Communicator {
@@ -430,12 +430,12 @@ namespace RPC {
         };
         class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IProcess {
         public:
-            void SetCallsign(string& callsign) override
+            void SetCallsign(const string& callsign) override
             {
                 _callsign.assign(callsign);
             }
 
-            string& Callsign() override
+            const string& Callsign() const override
             {
                 return _callsign;
             }
