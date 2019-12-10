@@ -76,18 +76,6 @@ namespace Core {
             return m_cpuload;
         }
 
-        inline uint64_t GetTotalGpuRam()
-        {
-            UpdateTotalGpuRam();
-            return m_totalgpuram;
-        }
-
-        inline uint64_t GetFreeGpuRam()
-        {
-            UpdateFreeGpuRam();
-            return m_freegpuram;
-        }
-
         /*
         * Pentium cycle counter
         */
@@ -221,14 +209,9 @@ namespace Core {
         mutable uint64_t m_freeram;
         mutable double m_cpuload;
         mutable time_t m_lastUpdateCpuStats;
-        mutable uint64_t m_totalgpuram;
-        mutable uint64_t m_freegpuram;
 
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
-
-        void UpdateTotalGpuRam();
-        void UpdateFreeGpuRam();
 
         static SystemInfo _systemInfo;
 
