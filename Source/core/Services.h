@@ -395,9 +395,9 @@ namespace Core {
 #define BEGIN_INTERFACE_MAP(ACTUALCLASS)                                     \
     void* QueryInterface(const uint32_t interfaceNumber) override            \
     {                                                                        \
-        if (interfaceNumber == Core::IUnknown::ID) {                         \
+        if (interfaceNumber == WPEFramework::Core::IUnknown::ID) {                         \
             AddRef();                                                        \
-            return (static_cast<void*>(static_cast<Core::IUnknown*>(this))); \
+            return (static_cast<void*>(static_cast<WPEFramework::Core::IUnknown*>(this))); \
         }
 
 #define INTERFACE_ENTRY(TYPE)                                  \
