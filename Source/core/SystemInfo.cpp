@@ -348,10 +348,6 @@ namespace Core {
 #endif
 #endif
 
-#if defined(PLATFORM_RPI) || defined(PLATFORM_BRCM)
-        m_totalgpuram = SystemPlatform::Instance().TotalGPURam();
-#endif
-
         UpdateCpuStats();
     }
 
@@ -434,7 +430,12 @@ namespace Core {
 
     void SystemInfo::UpdateTotalGpuRam()
     {
-        // Probably during runtime, the Total GPU Memory will not change
+#if defined(PLATFORM_RPI) || defined(PLATFORM_BRCM)
+        // Probably during runtime, the Total GPU Memory will not change, so read it only once
+        if (!m_totalgpuram) {
+            m_totalgpuram = SystemPlatform::Instance().TotalGPURam();
+        }
+#endif
     }
 
     void SystemInfo::UpdateFreeGpuRam()
