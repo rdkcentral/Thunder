@@ -318,7 +318,9 @@ namespace PluginHost {
 
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
+#ifdef __DEBUG__
             sigaction(SIGSEGV, &sa, nullptr);
+#endif
             sigaction(SIGQUIT, &sa, nullptr);
         }
 
