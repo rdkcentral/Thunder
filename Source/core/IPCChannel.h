@@ -229,6 +229,8 @@ namespace Core {
 
             Close(infinite);
 
+            ASSERT(_clients.size() == 0);
+
             if (_clients.size() > 0) {
 
                 TRACE_L1("Closing clients that should have been closed before destruction [%d].", static_cast<uint32_t>(_clients.size()));
@@ -356,7 +358,6 @@ namespace Core {
         {
             _adminLock.Lock();
 
-            InternalCleanup();
             CloseClients();
 
             _adminLock.Unlock();
@@ -396,7 +397,7 @@ namespace Core {
 
         inline void UnregisterHandlers(typename ClientMap::iterator client)
         {
-            // Make sure all handlers form the server are attached to the client...
+            // Make sure all handlers of the server are deattached from the client...
             std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
 
             while (index != _handlers.end()) {
