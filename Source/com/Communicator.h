@@ -272,14 +272,14 @@ namespace RPC {
 
             return (nullptr);
         }
-    };
 
-    struct EXTERNAL IProcess : virtual public Core::IUnknown {
-        enum { ID = ID_COMPROCESS };
+        struct EXTERNAL IProcess : virtual public Core::IUnknown {
+            enum { ID = ID_COMCONNECTION_PROCESS };
 
-        virtual ~IProcess() {}
-        virtual void Callsign(const string callsign) = 0;
-        virtual const string Callsign() const = 0;
+            virtual ~IProcess() {}
+            
+            virtual string Callsign() const = 0;
+        };
     };
 
     class EXTERNAL Communicator {
@@ -428,26 +428,27 @@ namespace RPC {
                 LaunchProcess(options);
             }
         };
-        class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IProcess {
+        class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IRemoteConnection::IProcess {
         public:
-            void Callsign(const string callsign) override
-            {
-                _callsign.assign(callsign);
-            }
+            MonitorableRemoteProcess(const string& callsign) 
+                : RemoteProcess()
+                , IRemoteConnection::IProcess()
+                , _callsign(callsign) 
+                {
+                }
+            ~MonitorableRemoteProcess() override = default;
 
-            const string Callsign() const override
-            {
-                return _callsign;
-            }
+            MonitorableRemoteProcess(const MonitorableRemoteProcess&) = delete;
+            MonitorableRemoteProcess& operator=(const MonitorableRemoteProcess&) = delete;
+            
+            string Callsign() const override;
 
-            BEGIN_INTERFACE_MAP(MonitorableRemoteProcess)
-            INTERFACE_ENTRY(RPC::IRemoteConnection)
-            INTERFACE_ENTRY(RPC::IProcess)
-            END_INTERFACE_MAP
+            void* QueryInterface(const uint32_t id) override;
 
         private:
             string _callsign;
         };
+
         class EXTERNAL LocalRemoteProcess : public MonitorableRemoteProcess {
         public:
             friend class Core::Service<LocalRemoteProcess>;
@@ -456,8 +457,9 @@ namespace RPC {
             LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
 
         private:
-            LocalRemoteProcess()
-                : _id(0)
+            LocalRemoteProcess(const string& callsign)
+                : MonitorableRemoteProcess(callsign)
+                , _id(0)
             {
             }
 
@@ -466,10 +468,6 @@ namespace RPC {
         private:
             void LaunchProcess(const Core::Process::Options& options) override
             {
-                Core::Process::Options &opt =
-                        const_cast<Core::Process::Options&>(options);
-                Callsign(opt[_T("-C")]);
-
                 // Start the external process launch..
                 Core::Process fork(false);
 
@@ -519,7 +517,8 @@ namespace RPC {
                 const string& persistentpath,
                 const string& datapath,
                 const string& volatilepath,
-                const string& configuration)
+                const string& configuration) 
+                : MonitorableRemoteProcess(callsign)
             {
 
                 static constexpr TCHAR ContainerName[] = _T("Container");
@@ -527,7 +526,6 @@ namespace RPC {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 string volatilecallsignpath(volatilepath + callsign + _T('/'));
-                Callsign(callsign);
 
                 Config config;
                 config.FromString(configuration);
@@ -622,7 +620,7 @@ namespace RPC {
 
             switch (instance.Type()) {
             case Object::HostType::LOCAL:
-                result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
+                result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>(instance.Callsign());
                 break;
             case Object::HostType::DISTRIBUTED:
                 result = Core::Service<RemoteHost>::Create<RemoteProcess>(Core::NodeId(_T("127.0.0.1:9120")));

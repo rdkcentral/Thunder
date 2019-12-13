@@ -93,29 +93,14 @@ namespace ProxyStub {
     };
 
     ProxyStub::MethodHandler ProcessStubMethods[] = {
-        // virtual void Callsign(const string) = 0
-        //
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            RPC::Data::Input& input(message->Parameters());
-
-            // read parameters
-            RPC::Data::Frame::Reader reader(input.Reader());
-            const string param0 = reader.Text();
-
-            // call implementation
-            RPC::IProcess* implementation = input.Implementation<RPC::IProcess>();
-            ASSERT((implementation != nullptr) && "Null RPC::IProcess implementation pointer");
-            implementation->Callsign(param0);
-        },
-
-        // virtual const string Callsign() const = 0
+        // virtual string Callsign() const = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            const RPC::IProcess* implementation = input.Implementation<RPC::IProcess>();
-            ASSERT((implementation != nullptr) && "Null RPC::IProcess implementation pointer");
+            const RPC::IRemoteConnection::IProcess* implementation = input.Implementation<RPC::IRemoteConnection::IProcess>();
+            ASSERT((implementation != nullptr) && "Null RPC::IRemoteConnection::IProcess implementation pointer");
             const string output = implementation->Callsign();
 
             // write return value
@@ -170,7 +155,7 @@ namespace ProxyStub {
 
     typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection, RemoteConnectionStubMethods> RemoteConnectionStub;
     typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection::INotification, RemoteConnectionNotificationStubMethods> RemoteConnectionNotificationStub;
-    typedef ProxyStub::UnknownStubType<RPC::IProcess, ProcessStubMethods> ProcessStub;
+    typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection::IProcess, ProcessStubMethods> ProcessStub;
     typedef ProxyStub::UnknownStubType<Trace::ITraceController, TraceControllerStubMethods> TraceControllerStub;
     typedef ProxyStub::UnknownStubType<Trace::ITraceIterator, TraceIteratorStubMethods> TraceIteratorStub;
 
@@ -283,31 +268,19 @@ namespace ProxyStub {
         }
     };
 
-    class ProcessProxy final : public ProxyStub::UnknownProxyType<RPC::IProcess> {
+    class ProcessProxy final : public ProxyStub::UnknownProxyType<RPC::IRemoteConnection::IProcess> {
     public:
         ProcessProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
 
-        void Callsign(const string param0) override
+        string Callsign() const override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
-            // write parameters
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Text(param0);
-
             // invoke the method handler
-            Invoke(newMessage);
-        }
-
-        const string Callsign() const override
-        {
-            IPCMessage newMessage(BaseClass::Message(1));
-
-            // invoke the method handler
-            string output{};
+            string output;
             if (Invoke(newMessage) == Core::ERROR_NONE) {
                 // read return value
                 RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
@@ -387,7 +360,7 @@ namespace ProxyStub {
             {
                 RPC::Administrator::Instance().Announce<RPC::IRemoteConnection, RemoteConnectionProxy, RemoteConnectionStub>();
                 RPC::Administrator::Instance().Announce<RPC::IRemoteConnection::INotification, RemoteConnectionNotificationProxy, RemoteConnectionNotificationStub>();
-                RPC::Administrator::Instance().Announce<RPC::IProcess, ProcessProxy, ProcessStub>();
+                RPC::Administrator::Instance().Announce<RPC::IRemoteConnection::IProcess, ProcessProxy, ProcessStub>();
                 RPC::Administrator::Instance().Announce<Trace::ITraceController, TraceControllerProxy, TraceControllerStub>();
                 RPC::Administrator::Instance().Announce<Trace::ITraceIterator, TraceIteratorProxy, TraceIteratorStub>();
             }
