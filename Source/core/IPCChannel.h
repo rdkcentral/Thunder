@@ -395,7 +395,7 @@ namespace Core {
             return (command);
         }
 
-        inline void UnregisterHandlers(typename ClientMap::iterator client)
+        inline void UnregisterHandlers(const typename ClientMap::iterator& client)
         {
             // Make sure all handlers of the server are deattached from the client...
             std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
