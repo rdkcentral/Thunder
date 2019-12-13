@@ -67,6 +67,14 @@ namespace Core {
         };
 
     public:
+        struct Metadata {
+            signed int descriptor;
+            uint16_t monitor;
+            uint16_t events;
+            const char* classname;
+        };
+
+    public:
         ResourceMonitorType()
             : _monitor(nullptr)
             , _adminLock()
@@ -128,6 +136,39 @@ namespace Core {
         ::ThreadId Id() const
         {
             return (_monitor != nullptr ? _monitor->Id() : 0);
+        }
+        uint32_t Count() const 
+        {
+            return (_resourceList.size());
+        }
+        bool Info (const uint32_t position, Metadata& info) const
+        {
+            uint32_t count = position;
+
+            _adminLock.Lock();
+
+            typename std::list<RESOURCE*>::const_iterator index(_resourceList.cbegin());
+            while ( (count != 0) && (index != _resourceList.cend()) ) { count--; index++; }
+
+            bool found = (index != _resourceList.cend());
+
+            if (found == true) {
+                info.descriptor = (*index)->Descriptor();
+                info.classname  = typeid(*(*index)).name();
+
+#ifdef __LINUX__
+                info.monitor = _descriptorArray[position + 1].events;
+                info.events  = _descriptorArray[position + 1].revents;
+#endif
+#ifdef __WIN32__
+                info.monitor = 0;
+                info.events  = 0;
+#endif
+            }
+
+            _adminLock.Unlock();
+
+            return (found);
         }
         void Register(RESOURCE& resource)
         {

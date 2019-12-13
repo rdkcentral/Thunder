@@ -614,16 +614,61 @@ namespace PluginHost {
                     status->Release();
                     break;
                 }
-#if !defined(__WIN32__) && !defined(__APPLE__)
+                case 'T': {
+                    printf("Triggering the Resource Monitor to do an evaluation.\n");
+                    Core::ResourceMonitor::Instance().Break();
+                    break;
+                }
                 case 'M': {
-                    printf("\nMonitor callstack:\n");
+                    printf("\nResource Monitor Entry states:\n");
                     printf("============================================================\n");
-                    PublishCallstack(Core::ResourceMonitor::Instance().Id());
+                    Core::ResourceMonitor& monitor = Core::ResourceMonitor::Instance();
+                    printf("Currently monitoring: %d resources\n", monitor.Count());
+                    uint32_t index = 0;
+                    Core::ResourceMonitor::Metadata info;
+
+                    while (monitor.Info(index, info) == true) {
+#ifdef __WIN32__
+                        TCHAR flags[12];
+                        flags[0]  = (info.monitor & FD_CLOSE   ? 'C' : '-');
+                        flags[1]  = (info.monitor & FD_READ    ? 'R' : '-');
+                        flags[2]  = (info.monitor & FD_WRITE   ? 'W' : '-');
+                        flags[3]  = (info.monitor & FD_ACCEPT  ? 'A' : '-');
+                        flags[4]  = (info.monitor & FD_CONNECT ? 'O' : '-');
+                        flags[5]  = ':';
+                        flags[6]  = (info.events & FD_CLOSE   ? 'C' : '-');
+                        flags[7]  = (info.events & FD_READ    ? 'R' : '-');
+                        flags[8]  = (info.events & FD_WRITE   ? 'W' : '-');
+                        flags[9]  = (info.events & FD_ACCEPT  ? 'A' : '-');
+                        flags[10] = (info.events & FD_CONNECT ? 'O' : '-');
+                        flags[11] = '\0';
+#else
+                        TCHAR flags[8];
+                        flags[0] = (info.monitor & POLLIN     ? 'I' : '-');
+                        flags[1] = (info.monitor & POLLOUT    ? 'O' : '-');
+                        flags[2] = (info.monitor & POLLHUP    ? 'H' : '-');
+                        flags[3]  = ':';
+                        flags[4] = (info.events & POLLIN     ? 'I' : '-');
+                        flags[5] = (info.events & POLLOUT    ? 'O' : '-');
+                        flags[6] = (info.events & POLLHUP    ? 'H' : '-');
+                        flags[7] = '\0';
+#endif
+                  
+                        printf ("%6d [%s]: %s\n", info.descriptor, flags, Core::ClassNameOnly(info.classname).Text().c_str());
+                        index++;
+                    }
                     break;
                 }
                 case 'Q':
                     break;
 
+#if !defined(__WIN32__) && !defined(__APPLE__)
+                case 'R': {
+                    printf("\nMonitor callstack:\n");
+                    printf("============================================================\n");
+                    PublishCallstack(Core::ResourceMonitor::Instance().Id());
+                    break;
+                }
                 case '0':
                 case '1':
                 case '2':
@@ -647,7 +692,15 @@ namespace PluginHost {
 #endif
 
                 case '?':
-                    printf("\nOptions are: [P]lugins, [C]hannels, [S]erver stats, [M] Socket monitor stack, [0..8] Workerpool stack and [Q]uit\n\n");
+                    printf("\nOptions are: \n");
+                    printf("  [P]lugins\n");
+                    printf("  [C]hannels\n");
+                    printf("  [S]erver stats\n");
+                    printf("  [T]rigger resource monitor\n");
+                    printf("  [M]etadata resource monitor\n");
+                    printf("  [R]esource monitor stack\n");
+                    printf("  [0..%d] Workerpool stacks\n", THREADPOOL_COUNT);
+                    printf("  [Q]uit\n\n");
                     break;
 
                 default:

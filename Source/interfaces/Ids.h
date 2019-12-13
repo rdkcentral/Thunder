@@ -119,6 +119,8 @@ namespace Exchange {
         ID_INPUT_PIN,
         ID_INPUT_PIN_NOTIFICATION,
 
+        ID_MATH,
+
 	ID_VOICEPRODUCER_PROFILE
 
     };
