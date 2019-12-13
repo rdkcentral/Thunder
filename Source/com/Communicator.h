@@ -278,7 +278,7 @@ namespace RPC {
         enum { ID = ID_COMPROCESS };
 
         virtual ~IProcess() {}
-        virtual void SetCallsign(const string callsign) = 0;
+        virtual void Callsign(const string callsign) = 0;
         virtual const string Callsign() const = 0;
     };
 
@@ -430,7 +430,7 @@ namespace RPC {
         };
         class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IProcess {
         public:
-            void SetCallsign(const string callsign) override
+            void Callsign(const string callsign) override
             {
                 _callsign.assign(callsign);
             }
@@ -468,7 +468,7 @@ namespace RPC {
             {
                 Core::Process::Options &opt =
                         const_cast<Core::Process::Options&>(options);
-                SetCallsign(opt[_T("-C")]);
+                Callsign(opt[_T("-C")]);
 
                 // Start the external process launch..
                 Core::Process fork(false);
@@ -527,7 +527,7 @@ namespace RPC {
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 string volatilecallsignpath(volatilepath + callsign + _T('/'));
-                SetCallsign(callsign);
+                Callsign(callsign);
 
                 Config config;
                 config.FromString(configuration);

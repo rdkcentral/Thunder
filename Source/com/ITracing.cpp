@@ -93,7 +93,7 @@ namespace ProxyStub {
     };
 
     ProxyStub::MethodHandler ProcessStubMethods[] = {
-        // virtual void SetCallsign(const string) = 0
+        // virtual void Callsign(const string) = 0
         //
         [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
             RPC::Data::Input& input(message->Parameters());
@@ -105,7 +105,7 @@ namespace ProxyStub {
             // call implementation
             RPC::IProcess* implementation = input.Implementation<RPC::IProcess>();
             ASSERT((implementation != nullptr) && "Null RPC::IProcess implementation pointer");
-            implementation->SetCallsign(param0);
+            implementation->Callsign(param0);
         },
 
         // virtual const string Callsign() const = 0
@@ -290,7 +290,7 @@ namespace ProxyStub {
         {
         }
 
-        void SetCallsign(const string param0) override
+        void Callsign(const string param0) override
         {
             IPCMessage newMessage(BaseClass::Message(0));
 
