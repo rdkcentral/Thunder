@@ -274,6 +274,21 @@ namespace RPC {
         return (_remoteId);
     }
 
+    /* virtual */  string Communicator::MonitorableRemoteProcess::Callsign() const 
+    {
+        return _callsign;
+    }
+
+    /* virtual */  void* Communicator::MonitorableRemoteProcess::QueryInterface(const uint32_t id) 
+    {
+        if (id == IRemoteConnection::IProcess::ID) {
+            AddRef();
+            return (static_cast<IRemoteConnection::IProcess*>(this));
+        } 
+
+        return RemoteProcess::QueryInterface(id);
+    }
+
     /* virtual */ void Communicator::LocalRemoteProcess::Terminate()
     {
         // Do not yet call the close on the connection, the otherside might close down decently and release all opened interfaces..

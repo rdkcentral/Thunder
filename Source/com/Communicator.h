@@ -51,7 +51,7 @@ namespace RPC {
             , _configuration(copy._configuration)
         {
         }
-        Object(const string callsign,
+        Object(const string& callsign,
             const string& locator,
             const string& className,
             const uint32_t interface,
@@ -282,6 +282,14 @@ namespace RPC {
 
             return (nullptr);
         }
+
+        struct EXTERNAL IProcess : virtual public Core::IUnknown {
+            enum { ID = ID_COMCONNECTION_PROCESS };
+
+            virtual ~IProcess() {}
+            
+            virtual string Callsign() const = 0;
+        };
     };
 
     class EXTERNAL Communicator {
@@ -430,7 +438,28 @@ namespace RPC {
                 LaunchProcess(instance, options);
             }
         };
-        class EXTERNAL LocalRemoteProcess : public RemoteProcess {
+        class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IRemoteConnection::IProcess {
+        public:
+            MonitorableRemoteProcess(const string& callsign) 
+                : RemoteProcess()
+                , IRemoteConnection::IProcess()
+                , _callsign(callsign) 
+                {
+                }
+            ~MonitorableRemoteProcess() override = default;
+
+            MonitorableRemoteProcess(const MonitorableRemoteProcess&) = delete;
+            MonitorableRemoteProcess& operator=(const MonitorableRemoteProcess&) = delete;
+            
+            string Callsign() const override;
+
+            void* QueryInterface(const uint32_t id) override;
+
+        private:
+            string _callsign;
+        };
+
+        class EXTERNAL LocalRemoteProcess : public MonitorableRemoteProcess {
         public:
             friend class Core::Service<LocalRemoteProcess>;
 
@@ -438,8 +467,9 @@ namespace RPC {
             LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
 
         private:
-            LocalRemoteProcess()
-                : _id(0)
+            LocalRemoteProcess(const string& callsign)
+                : MonitorableRemoteProcess(callsign)
+                , _id(0)
             {
             }
 
@@ -467,7 +497,7 @@ namespace RPC {
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess : public RemoteProcess {
+        class EXTERNAL ContainerRemoteProcess : public MonitorableRemoteProcess {
         private:
             class Config : public Core::JSON::Container {
             public:
@@ -502,7 +532,8 @@ namespace RPC {
                 const string& persistentpath,
                 const string& datapath,
                 const string& volatilepath,
-                const string& configuration)
+                const string& configuration) 
+                : MonitorableRemoteProcess(callsign)
             {
 
                 static constexpr TCHAR ContainerName[] = _T("Container");
@@ -604,7 +635,7 @@ namespace RPC {
 
             switch (instance.Type()) {
             case Object::HostType::LOCAL:
-                result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>();
+                result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>(instance.Callsign());
                 break;
             case Object::HostType::DISTRIBUTED:
                 result = Core::Service<RemoteHost>::Create<RemoteProcess>(Core::NodeId(_T("127.0.0.1:9120")));
