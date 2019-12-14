@@ -61,52 +61,8 @@ namespace PluginHost {
             uint8_t* _identifier;
         };
 
-        class Provisioning : public PluginHost::ISubSystem::IProvisioning, RPC::StringIterator {
-        public:
-            Provisioning () = delete;
-            Provisioning(const Provisioning&) = delete;
-            Provisioning& operator=(const Provisioning&) = delete;
 
-            Provisioning (RPC::IStringIterator* info) : RPC::StringIterator(info)
-            {
-            }
-            ~Provisioning() override
-            {
-            }
-
-
-        public:
-            BEGIN_INTERFACE_MAP(Provisioning)
-            INTERFACE_ENTRY(PluginHost::ISubSystem::IProvisioning)
-            END_INTERFACE_MAP
-
-        public:
-            bool Next(string& result) override 
-            {
-                return (RPC::StringIterator::Next(result));
-            }
-            bool Previous(string& result) override
-            {
-                return (RPC::StringIterator::Previous(result));
-            }
-            void Reset(const uint32_t position) override
-            {
-                RPC::StringIterator::Reset(position);
-            }
-            bool IsValid() const override
-            {
-                return (RPC::StringIterator::IsValid());
-            }
-            uint32_t Count() const override
-            {
-                return (RPC::StringIterator::Count());
-            }
-            string Current() const override
-            {
-                return (RPC::StringIterator::Current());
-            }
-        };
-
+        typedef RPC::RPCIteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:
@@ -476,7 +432,7 @@ namespace PluginHost {
                 break;
             }
             case PROVISIONING: {
-                RPC::IStringIterator* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
+                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
 
                 _adminLock.Lock();
 

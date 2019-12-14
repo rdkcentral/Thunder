@@ -139,7 +139,7 @@ namespace Core {
         }
         uint32_t Count() const 
         {
-            return (_resourceList.size());
+            return (static_cast<uint32_t>(_resourceList.size()));
         }
         bool Info (const uint32_t position, Metadata& info) const
         {

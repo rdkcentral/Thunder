@@ -123,6 +123,9 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
+        #ifdef __WIN32__
+        #pragma warning(disable : 4355)
+        #endif
         Controller()
             : _adminLock()
             , _skipURL(0)
@@ -136,6 +139,9 @@ namespace Plugin {
         {
             RegisterAll();
         }
+        #ifdef __WIN32__
+        #pragma warning(default : 4355)
+        #endif
 
     public:
         virtual ~Controller()

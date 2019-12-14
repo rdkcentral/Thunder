@@ -1390,12 +1390,18 @@ namespace PluginHost {
                 };
 
             public:
+                #ifdef __WIN32__
+                #pragma warning(disable : 4355)
+                #endif
                 SubSystems(ServiceMap* parent)
                     : SystemInfo(this)
                     , _parent(*parent)
                     , _decoupling(Core::ProxyType<Job>::Create(this))
                 {
                 }
+                #ifdef __WIN32__
+                #pragma warning(default : 4355)
+                #endif
                 virtual ~SubSystems()
                 {
                     _parent.WorkerPool().Revoke(Core::ProxyType<Core::IDispatch>(_decoupling));
@@ -1422,6 +1428,9 @@ namespace PluginHost {
             };
 
         public:
+            #ifdef __WIN32__
+            #pragma warning(disable : 4355)
+            #endif
             ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
                 : _webbridgeConfig(config)
                 , _adminLock()
@@ -1435,6 +1444,9 @@ namespace PluginHost {
                 , _authenticationHandler(nullptr)
             {
             }
+            #ifdef __WIN32__
+            #pragma warning(default : 4355)
+            #endif
             ~ServiceMap()
             {
                 // Make sure all services are deactivated before we are killed (call Destroy on this object);

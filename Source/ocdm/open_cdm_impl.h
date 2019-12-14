@@ -448,6 +448,10 @@ public:
     OpenCDMSession& operator= (const OpenCDMSession&) = delete;
     OpenCDMSession() = delete;
 
+    #ifdef __WIN32__
+    #pragma warning(disable : 4355)
+    #endif
+
     OpenCDMSession(OpenCDMSystem* system,
         const string& initDataType,
         const uint8_t* pbInitData, const uint16_t cbInitData,
@@ -487,6 +491,10 @@ public:
             accessor->AddSession(this);
         }
     }
+
+    #ifdef __WIN32__
+    #pragma warning(default : 4355)
+    #endif
 
     virtual ~OpenCDMSession()
     {
