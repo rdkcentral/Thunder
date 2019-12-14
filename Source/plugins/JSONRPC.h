@@ -169,6 +169,14 @@ namespace PluginHost {
         {
             _handlers.front().Register<INBOUND, METHOD>(methodName, method);
         }
+        void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda) 
+        { 
+            _handlers.front().Register(methodName, lambda);
+        } 
+        void Register(const string& methodName, const Core::JSONRPC::CallbackFunction& lambda) 
+        { 
+            _handlers.front().Register(methodName, lambda);
+        } 
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);

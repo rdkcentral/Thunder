@@ -277,11 +277,11 @@ namespace Core {
             uint32_t _sequence;
         };
 
+        typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
+        typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
+
         class EXTERNAL Handler {
         private:
-            typedef std::function<void(const Connection& channel, const string& parameters)> CallbackFunction;
-            typedef std::function<uint32_t(const string& method, const string& parameters, string& result)> InvokeFunction;
-
             class Entry {
             private:
                 Entry() = delete;

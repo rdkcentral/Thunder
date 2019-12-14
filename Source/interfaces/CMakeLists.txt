@@ -16,6 +16,7 @@ add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
 file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
 file(GLOB JSON_ENUM_SOURCES json/JsonEnum*.cpp)
+file(GLOB JSON_LINK_HEADERS J*.h)
 add_library(${TargetDefinitions} SHARED
         Definitions.cpp
         ${JSON_ENUM_SOURCES}
@@ -91,6 +92,11 @@ install(
 install(
         FILES ${JSON_DATA_HEADERS}
         DESTINATION include/${NAMESPACE}/interfaces/json
+)
+
+install(
+        FILES ${JSON_LINK_HEADERS}
+        DESTINATION include/${NAMESPACE}/interfaces
 )
 
 InstallPackageConfig(
