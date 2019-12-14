@@ -9,7 +9,7 @@
 
 #undef EXTERNAL
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #ifdef CRYPTALGO_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else

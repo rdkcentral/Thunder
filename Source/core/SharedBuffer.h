@@ -7,7 +7,7 @@
 #include "DataElementFile.h"
 #include "Module.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <semaphore.h>
 #endif
 
@@ -53,7 +53,7 @@ namespace Core {
             Semaphore& operator=(const Semaphore&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             Semaphore(const TCHAR name[]);
 #else
             Semaphore(sem_t* storage);
@@ -68,7 +68,7 @@ namespace Core {
             bool IsLocked();
 
         private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             HANDLE _semaphore;
 #else
             sem_t* _semaphore;
@@ -78,7 +78,7 @@ namespace Core {
 
             uint32_t _bytesWritten;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             sem_t _producer;
             sem_t _consumer;
 #endif

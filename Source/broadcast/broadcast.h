@@ -16,7 +16,7 @@
 #include "TDT.h"
 #include "TimeDate.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "broadcast.lib")
 #endif
 

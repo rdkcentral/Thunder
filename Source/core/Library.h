@@ -13,7 +13,7 @@ namespace Core {
 #ifdef __LINUX__
             void* _handle;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             HMODULE _handle;
 #endif
             string _name;

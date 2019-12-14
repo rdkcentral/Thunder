@@ -100,7 +100,7 @@ namespace Core {
         Media<SOURCE> operator=(const Media<SOURCE>&) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         Media()
@@ -200,7 +200,7 @@ namespace Core {
             , _adminLock()
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~Media()

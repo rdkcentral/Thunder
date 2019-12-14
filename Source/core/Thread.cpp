@@ -4,7 +4,7 @@
 #include "Trace.h"
 #include <limits.h>
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <process.h>
 #endif
 
@@ -22,7 +22,7 @@ namespace Core {
         , m_syncAdmin()
         , m_sigExit(false, true)
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         , m_enumSuspendedState(BLOCKED)
         , m_hThreadInstance(nullptr)
         , m_ThreadId(0)
@@ -34,7 +34,7 @@ namespace Core {
         TRACE_L5("Constructor Thread <%p>", (this));
 
 // Create a worker that can do actions in parallel
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
         m_hThreadInstance = ::CreateThread(nullptr,
             0,
@@ -94,14 +94,14 @@ namespace Core {
 
     ::ThreadId Thread::ThreadId()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
 #else
         return static_cast<::ThreadId>(pthread_self());
 #endif
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     void Thread::StartThread(Thread* cClassPointer)
 #endif
 
@@ -179,7 +179,7 @@ namespace Core {
         return (nullptr);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::ExitThread(0);
 #endif
     }
@@ -361,7 +361,7 @@ namespace Core {
 
     void Thread::ThreadName(const char* threadName VARIABLE_IS_NOT_USED)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #ifdef __DEBUG__
 
 #pragma pack(push, 8)
@@ -385,7 +385,7 @@ namespace Core {
         } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
 #endif // __DEBUG__
-#endif // __WIN32__
+#endif // __WINDOWS__
     }
 
 #ifdef __DEBUG__

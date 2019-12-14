@@ -9,7 +9,7 @@
 #include "../tracing/tracing.h"
 #include "Ids.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef COM_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

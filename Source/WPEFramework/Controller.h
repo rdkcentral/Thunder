@@ -123,7 +123,7 @@ namespace Plugin {
         Controller& operator=(const Controller&);
 
     protected:
-        #ifdef __WIN32__
+        #ifdef __WINDOWS__
         #pragma warning(disable : 4355)
         #endif
         Controller()
@@ -139,7 +139,7 @@ namespace Plugin {
         {
             RegisterAll();
         }
-        #ifdef __WIN32__
+        #ifdef __WINDOWS__
         #pragma warning(default : 4355)
         #endif
 

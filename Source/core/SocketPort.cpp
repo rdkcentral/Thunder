@@ -28,7 +28,7 @@
 #include <sys/signalfd.h>
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #define __ERRORRESULT__ ::WSAGetLastError()
@@ -52,7 +52,7 @@ namespace Core {
     // SocketPort::Initialization
     //////////////////////////////////////////////////////////////////////
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     namespace {
 
@@ -127,7 +127,7 @@ namespace Core {
         ::close(socket);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::closesocket(socket);
 #endif
 
@@ -136,7 +136,7 @@ namespace Core {
 
     bool SetNonBlocking(SOCKET socket)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         unsigned long l_Value = 1;
         if (ioctlsocket(socket, FIONBIO, &l_Value) != 0) {
             TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", __ERRORRESULT__);
@@ -241,7 +241,7 @@ namespace Core {
     {
         uint32_t value;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         int size = sizeof(value);
         if (getsockopt(m_Socket, IPPROTO_IP, IP_TTL, reinterpret_cast<char*>(&value), &size) != 0)
 #else
@@ -258,7 +258,7 @@ namespace Core {
     {
         uint32_t result = Core::ERROR_NONE;
         uint32_t value = ttl;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (setsockopt(m_Socket, IPPROTO_IP, IP_TTL, reinterpret_cast<char*>(&value), sizeof(value)) != 0)
 #else
         if (setsockopt(m_Socket, SOL_IP, IP_TTL, reinterpret_cast<char*>(&value), sizeof(value)) != 0)
@@ -394,7 +394,7 @@ namespace Core {
                     m_State |= SHUTDOWN;
 
 					// Block new data from coming in, signal the other side that we close !!
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                     shutdown(m_Socket, SD_BOTH);
 #else
                     shutdown(m_Socket, SHUT_RDWR);
@@ -487,7 +487,7 @@ namespace Core {
 
         SOCKET l_Result = INVALID_SOCKET;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // Check if domain path already exists, if so remove.
         if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             if (access(localNode.HostName().c_str(), F_OK) != -1) {
@@ -500,7 +500,7 @@ namespace Core {
         if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
             TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
         } else if (SetNonBlocking(l_Result) == false) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::closesocket(l_Result);
 #else
             ::close(l_Result);
@@ -516,7 +516,7 @@ namespace Core {
 
             ::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
             // The effect of SO_REUSEADDR  but then on Domain Sockets :-)
             if (unlink(localNode.HostName().c_str()) == -1) {
@@ -533,7 +533,7 @@ namespace Core {
         }
 #endif
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // See if we need to bind to a specific interface.
         if ((l_Result != INVALID_SOCKET) && (specificInterface.empty() == false)) {
 
@@ -560,7 +560,7 @@ namespace Core {
             if ((SocketMode() != SOCK_STREAM) || (m_SocketType == SocketPort::LISTEN) || (((localNode.Type() == NodeId::TYPE_IPV4) || (localNode.Type() == NodeId::TYPE_IPV6)) && (localNode.PortNumber() != 0))) {
                 if (::bind(l_Result, static_cast<const NodeId&>(localNode), localNode.Size()) != SOCKET_ERROR) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                     if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (localNode.Rights() <= 0777)) {
                         if (::chmod(localNode.HostName().c_str(), localNode.Rights()) == 0) {
                             BufferAlignment(l_Result);
@@ -692,7 +692,7 @@ namespace Core {
         uint16_t result = 0;
 
         if (m_State != 0) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             result = FD_CLOSE;
 #else
             result = POLLIN;
@@ -710,7 +710,7 @@ namespace Core {
             if ((m_State & UPDATE) != 0) {
                 m_State ^= UPDATE;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 result |= 0x8000 | ((m_State & SocketPort::ACCEPT) != 0 ? FD_ACCEPT : ((m_State & SocketPort::OPEN) != 0 ? FD_READ | FD_WRITE : FD_CONNECT));
 #endif
             }
@@ -739,7 +739,7 @@ namespace Core {
 
         if ((flagsSet != 0) || (breakIssued == true)) {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if ((flagsSet & FD_CLOSE) != 0) {
                 Closed();
             } else if (IsListening()) {
@@ -928,7 +928,7 @@ namespace Core {
             // Remove socket descriptor for UNIX domain datagram socket.
             if ((m_LocalNode.Type() == NodeId::TYPE_DOMAIN) && ((m_SocketType == SocketPort::LISTEN) || (SocketMode() != SOCK_STREAM))) {
                 TRACE_L1("CLOSED: Remove socket descriptor %s", m_LocalNode.HostName().c_str());
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 _unlink(m_LocalNode.HostName().c_str());
 #else
                 unlink(m_LocalNode.HostName().c_str());
@@ -1064,7 +1064,7 @@ namespace Core {
 
         ASSERT(inputInfo.IPV4Socket.sin_family == AF_INET);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ip_mreq_source multicastRequest;
 #else
         ip_mreq_source multicastRequest;
@@ -1073,7 +1073,7 @@ namespace Core {
         // multicastRequest.imr_interface = in_addr{ 0, 0;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         multicastRequest.imr_interface = static_cast<const NodeId::SocketInfo&>(LocalNode()).IPV4Socket.sin_addr;
 #endif
 
@@ -1094,7 +1094,7 @@ namespace Core {
 
         ASSERT(inputInfo.IPV4Socket.sin_family == AF_INET);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ip_mreq_source multicastRequest;
 #else
         ip_mreq_source multicastRequest;
@@ -1103,7 +1103,7 @@ namespace Core {
         // multicastRequest.imr_interface = 0;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         multicastRequest.imr_interface = static_cast<const NodeId::SocketInfo&>(LocalNode()).IPV4Socket.sin_addr;
 #endif
 

@@ -152,7 +152,7 @@ namespace PluginHost {
             class InputConfig : public Core::JSON::Container {
             public:
                 InputConfig()
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                     : Locator("127.0.0.1:9631")
                     , Type(PluginHost::InputHandler::VIRTUAL)
 #else
@@ -226,13 +226,13 @@ namespace PluginHost {
                 , PersistentPath()
                 , DataPath()
                 , SystemPath()
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 , VolatilePath(_T("c:/temp"))
 #else
                 , VolatilePath(_T("/tmp"))
 #endif
                 , ProxyStubPath()
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 , Communicator(_T("127.0.0.1:7889"))
 #else
                 , Communicator(_T("/tmp/communicator|0777"))
@@ -1133,7 +1133,7 @@ namespace PluginHost {
                     , _volatilePath(volatilePath.empty() == false ? Core::Directory::Normalize(volatilePath) : volatilePath)
                     , _appPath(appPath.empty() == false ? Core::Directory::Normalize(appPath) : appPath)
                     , _proxyStubPath(proxyStubPath.empty() == false ? Core::Directory::Normalize(proxyStubPath) : proxyStubPath)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                     , _application(_systemPath + EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
 #else
                     , _application(EXPAND_AND_QUOTE(HOSTING_COMPROCESS))
@@ -1390,7 +1390,7 @@ namespace PluginHost {
                 };
 
             public:
-                #ifdef __WIN32__
+                #ifdef __WINDOWS__
                 #pragma warning(disable : 4355)
                 #endif
                 SubSystems(ServiceMap* parent)
@@ -1399,7 +1399,7 @@ namespace PluginHost {
                     , _decoupling(Core::ProxyType<Job>::Create(this))
                 {
                 }
-                #ifdef __WIN32__
+                #ifdef __WINDOWS__
                 #pragma warning(default : 4355)
                 #endif
                 virtual ~SubSystems()
@@ -1428,7 +1428,7 @@ namespace PluginHost {
             };
 
         public:
-            #ifdef __WIN32__
+            #ifdef __WINDOWS__
             #pragma warning(disable : 4355)
             #endif
             ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
@@ -1444,7 +1444,7 @@ namespace PluginHost {
                 , _authenticationHandler(nullptr)
             {
             }
-            #ifdef __WIN32__
+            #ifdef __WINDOWS__
             #pragma warning(default : 4355)
             #endif
             ~ServiceMap()
@@ -2407,7 +2407,7 @@ namespace PluginHost {
             };
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
@@ -2424,7 +2424,7 @@ namespace PluginHost {
                     _parent.Schedule(NextTick.Ticks(), _job);
                 }
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             ~ChannelMap()

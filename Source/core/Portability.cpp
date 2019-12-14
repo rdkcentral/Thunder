@@ -196,7 +196,7 @@ void SleepMs(unsigned int a_Time)
 
 #endif
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
 
 uint64_t htonll(const uint64_t& value)
 {

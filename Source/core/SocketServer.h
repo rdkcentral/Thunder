@@ -289,7 +289,7 @@ namespace Core {
         SocketServerType<CLIENT>& operator=(const SocketServerType<CLIENT>&) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         SocketServerType()
@@ -300,7 +300,7 @@ namespace Core {
             : _handler(listeningNode, this)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         ~SocketServerType()

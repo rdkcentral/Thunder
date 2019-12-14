@@ -415,7 +415,7 @@ namespace Core
         int after_scheme,
         Parsed& parsed);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     // We allow both "c:" and "c|" as drive identifiers.
     inline bool IsWindowsDriveSeparator(TCHAR ch)
@@ -427,7 +427,7 @@ namespace Core
         return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
     }
 
-#endif // __WIN32__
+#endif // __WINDOWS__
 
     // Returns the index of the next slash in the input after the given index, or
     // spec_len if the end of the input is reached.
@@ -441,7 +441,7 @@ namespace Core
         return idx;
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     // Returns true if the start_offset in the given spec looks like it begins a
     // drive spec, for example "c:". This function explicitly handles start_offset
@@ -490,7 +490,7 @@ namespace Core
         return IsURLSlash(text[start_offset]) && IsURLSlash(text[start_offset + 1]);
     }
 
-#endif // __WIN32__
+#endif // __WINDOWS__
 
     /* Based on nsURLParsers.cc from Mozilla
  * -------------------------------------

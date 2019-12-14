@@ -11,7 +11,7 @@
 #include "ResourceMonitor.h"
 #include "StateTrigger.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
 #endif
@@ -373,7 +373,7 @@ namespace Core {
         SocketListner& operator=(const SocketListner& a_RHS) = delete;
 
     protected:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         SocketListner()
@@ -388,7 +388,7 @@ namespace Core {
         {
             TRACE_L5("Constructor SocketListner <%p>", (this));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

@@ -1,6 +1,6 @@
 #include "Logging.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <syslog.h>
 #endif
 
@@ -41,7 +41,7 @@ namespace Logging {
         // Time to printf...
         Core::Time now(Core::Time::Now());
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         if (_syslogging == true) {
             string time(now.ToRFC1123(true));
             syslog(LOG_NOTICE, "[%s]:[%s:%d]: %s: %s\n", time.c_str(), Core::FileNameOnly(fileName), lineNumber, information->Category(), information->Data());

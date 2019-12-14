@@ -7,7 +7,7 @@
 #include "Sync.h"
 #include "Trace.h"
 
-#if defined(__WIN32__)
+#if defined(__WINDOWS__)
 #include <WS2tcpip.h>
 #include <Wmistr.h>
 #include <iphlpapi.h>
@@ -51,7 +51,7 @@ namespace WPEFramework {
 
 namespace Core {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
 /* Note: could also use malloc() and free() */
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
@@ -1524,7 +1524,7 @@ namespace Core {
 
 #endif
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     /* virtual */ uint16_t AdapterObserver::Observer::Message::Write(uint8_t stream[], const uint16_t length) const
     {
         return (0);
@@ -1599,13 +1599,13 @@ namespace Core {
 #endif
 
     AdapterObserver::AdapterObserver(INotification* callback)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     {
 #else
         : _link(callback){
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         //IoWMIOpenBlock(&GUID_NDIS_STATUS_LINK_STATE, WMIGUID_NOTIFICATION, . . .);
         //IoWMISetNotificationCallback(. . ., Callback, . . .);
 

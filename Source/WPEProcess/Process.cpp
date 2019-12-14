@@ -323,7 +323,7 @@ namespace Process {
 
 using namespace WPEFramework;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 void ExitDaemonHandler(int signo)
 {
     TRACE_L1("Signal received %d.", signo);
@@ -340,7 +340,7 @@ void ExitDaemonHandler(int signo)
 }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 int _tmain(int argc, _TCHAR* argv[])
 #else
 int main(int argc, char** argv)
@@ -355,7 +355,7 @@ int main(int argc, char** argv)
         exit(EXIT_FAILURE);
     } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             struct sigaction sa;
             memset(&sa, 0, sizeof(struct sigaction));
             sigemptyset(&sa.sa_mask);

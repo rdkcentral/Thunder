@@ -172,7 +172,7 @@ namespace PluginHost
         return (result);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     VirtualInput::VirtualInput()
@@ -189,7 +189,7 @@ namespace PluginHost
         _repeatKey.AddRef();
         _repeatKey.AddReference();
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -507,7 +507,7 @@ namespace PluginHost
         _lock.Unlock();
     }
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
 
     LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName)
         : VirtualInput()
@@ -668,7 +668,7 @@ namespace PluginHost
 #endif
 
     // Keyboard input
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
@@ -676,7 +676,7 @@ namespace PluginHost
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

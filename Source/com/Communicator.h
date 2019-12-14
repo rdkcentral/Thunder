@@ -1097,7 +1097,7 @@ namespace RPC {
             };
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             ChannelServer(
@@ -1125,7 +1125,7 @@ namespace RPC {
                 BaseClass::Register(InvokeMessage::Id(), handler);
                 BaseClass::Register(AnnounceMessage::Id(), handler);
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

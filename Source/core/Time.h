@@ -19,7 +19,7 @@ namespace Core {
 #ifdef __POSIX__
         Time(const struct timespec& time, const bool localTime = false);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         Time(const FILETIME& time, bool localTime = false);
         inline Time(const SYSTEMTIME& time, bool localTime = false)
             : _time(time)
@@ -30,7 +30,7 @@ namespace Core {
 
         Time(const uint64_t time, const bool localTime = false);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline Time()
         {
             _time.wYear = 0;
@@ -74,7 +74,7 @@ namespace Core {
 
         inline Time(const Time& copy)
             : _time(copy._time)
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             , _ticks(copy._ticks)
 #else
             , _isLocalTime(copy._isLocalTime)
@@ -89,7 +89,7 @@ namespace Core {
         {
             _time = RHS._time;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             _ticks = RHS._ticks;
 #else
             _isLocalTime = RHS._isLocalTime;
@@ -129,7 +129,7 @@ namespace Core {
 
         inline uint32_t MilliSeconds() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (_time.wMilliseconds);
 #else
             return ((_ticks / 1000) % 1000);
@@ -137,7 +137,7 @@ namespace Core {
         }
         inline uint8_t Seconds() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wSecond));
 #else
             return (static_cast<uint8_t>(_time.tm_sec));
@@ -145,7 +145,7 @@ namespace Core {
         }
         inline uint8_t Minutes() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wMinute));
 #else
             return (static_cast<uint8_t>(_time.tm_min));
@@ -153,7 +153,7 @@ namespace Core {
         }
         inline uint8_t Hours() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wHour));
 #else
             return (static_cast<uint8_t>(_time.tm_hour));
@@ -161,7 +161,7 @@ namespace Core {
         }
         inline uint8_t Day() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wDay));
 #else
             return (static_cast<uint8_t>(_time.tm_mday));
@@ -169,7 +169,7 @@ namespace Core {
         }
         inline uint8_t Month() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint8_t>(_time.wMonth));
 #else
             return (static_cast<uint8_t>(_time.tm_mon + 1));
@@ -177,7 +177,7 @@ namespace Core {
         }
         inline uint32_t Year() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint32_t>(_time.wYear));
 #else
             return (static_cast<uint32_t>(_time.tm_year + 1900));
@@ -269,7 +269,7 @@ namespace Core {
             return (operator=(Time(Ticks() + rhs.Ticks())));
         }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline const SYSTEMTIME& Handle() const
         {
             return (_time);
@@ -282,7 +282,7 @@ namespace Core {
 #endif
 
     private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         mutable SYSTEMTIME _time;
         bool _isLocalTime;
 #else

@@ -9,7 +9,7 @@
 
 #undef EXTERNAL
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #ifdef __MODULE_BROADCAST__
 #define EXTERNAL EXTERNAL_EXPORT
 #else

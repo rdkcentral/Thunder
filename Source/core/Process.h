@@ -245,7 +245,7 @@ namespace Core {
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             , _stdin(capture ? -1 : 0)
             , _stdout(capture ? -1 : 0)
             , _stderr(capture ? -1 : 0)
@@ -256,13 +256,13 @@ namespace Core {
             , _stderr(capture ? reinterpret_cast<HANDLE>(~0) : nullptr)
 #endif
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::memset(&_info, 0, sizeof(_info));
 #endif
         }
         ~Process()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (_info.hProcess != 0) {
                 //// Close process and thread handles.
                 CloseHandle(_info.hProcess);
@@ -278,7 +278,7 @@ namespace Core {
     public:
         inline uint32_t Id() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (_info.dwProcessId);
 #else
             return (_PID);
@@ -287,7 +287,7 @@ namespace Core {
 
         inline bool IsActive() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD exitCode = _exitCode;
             if ((_info.hProcess != 0) && (_exitCode == static_cast<uint32_t>(~0)) && (GetExitCodeProcess(_info.hProcess, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
@@ -318,7 +318,7 @@ namespace Core {
         }
         inline bool HasConnector() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return ((_stdin != reinterpret_cast<HANDLE>(~0)) && (_stdin != nullptr));
 #else
             return ((_stdin != -1) && (_stdin != 0));
@@ -344,7 +344,7 @@ namespace Core {
         {
             return ((_exitCode != static_cast<uint32_t>(~0)) && ((_exitCode & 0x80000000) == 0));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline uint16_t Input(const uint8_t data[], const uint16_t length)
         {
 
@@ -399,7 +399,7 @@ namespace Core {
                 // If we are "relaunched" make sure we reset the _exitCode.
                 _exitCode = static_cast<uint32_t>(~0);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 STARTUPINFO si;
                 ZeroMemory(&si, sizeof(si));
                 si.cb = sizeof(si);
@@ -577,7 +577,7 @@ namespace Core {
 
         void Kill(const bool hardKill)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (hardKill == true) {
                 TerminateProcess(_info.hProcess, 1234);
             }
@@ -588,7 +588,7 @@ namespace Core {
 
         uint32_t WaitProcessCompleted(const uint32_t waitTime)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (WaitForSingleObject(_info.hProcess, waitTime) == 0) {
                 return (Core::ERROR_NONE);
             }
@@ -620,7 +620,7 @@ namespace Core {
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             , _stdin(0)
             , _stdout(0)
             , _stderr(0)
@@ -631,7 +631,7 @@ namespace Core {
             , _stderr(nullptr)
 #endif
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::memset(&_info, 0, sizeof(_info));
 #endif
         }
@@ -640,7 +640,7 @@ namespace Core {
         uint16_t _argc;
         void* _parameters;
         mutable uint32_t _exitCode;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _stdin;
         HANDLE _stdout;
         HANDLE _stderr;

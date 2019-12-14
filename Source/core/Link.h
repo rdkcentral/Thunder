@@ -206,7 +206,7 @@ namespace Core {
         LinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>& operator=(const LinkType<LINK, INBOUND, OUTBOUND, ALLOCATOR>&);
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -280,7 +280,7 @@ namespace Core {
             , _channel(*this, arg1, arg2, arg3, arg4, arg5)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

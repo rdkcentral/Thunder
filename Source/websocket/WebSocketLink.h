@@ -345,7 +345,7 @@ namespace Web {
             HandlerType<ACTUALLINK>& operator=(const HandlerType<ACTUALLINK>&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             template <typename Arg1>
@@ -586,7 +586,7 @@ namespace Web {
                 , _pingFireTime(0)
             {
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -1060,7 +1060,7 @@ namespace Web {
         };
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -1134,7 +1134,7 @@ namespace Web {
         {
         }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -1420,7 +1420,7 @@ namespace Web {
         WebSocketClientType<LINK>& operator=(const WebSocketClientType<LINK>& RHS) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         WebSocketClientType(const string& path, const string& protocol, const string& query, const string& origin, const bool binary, const bool masking)
@@ -1462,7 +1462,7 @@ namespace Web {
             : _channel(*this, path, protocol, query, origin, binary, masking, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~WebSocketClientType()

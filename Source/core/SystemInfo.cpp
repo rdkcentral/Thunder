@@ -32,7 +32,7 @@ namespace Core {
         const uint8_t SystemPrefixLength,
         const uint8_t KeyLength)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         TCHAR* buffer = reinterpret_cast<TCHAR*>(ALLOCA(KeyLength + 1));
 #else
         TCHAR buffer[KeyLength + 1];
@@ -311,7 +311,7 @@ namespace Core {
 
     void SystemInfo::SetTime(const Time& time)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::SetSystemTime(&(time.Handle()));
 
 #elif defined(__APPLE__)
@@ -379,7 +379,7 @@ namespace Core {
         return SetEnvironment(name, value.c_str(), forced);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     /* static */ SystemInfo& SystemInfo::Instance()
     {
         return (_systemInfo);
@@ -394,7 +394,7 @@ namespace Core {
         {
             uint32_t result = Core::ERROR_ILLEGAL_STATE;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
             // What to do on windows ????
             ASSERT(false);

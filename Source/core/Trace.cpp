@@ -43,7 +43,7 @@ namespace Core {
             std::string newName(_allocationName);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             uint16_t index = 0;
             uint16_t moveTo = 0;
             while ((name[index] != '\0') && (moveTo < (_allocatedSize - 1))) {

@@ -1,7 +1,7 @@
 #ifndef NETLINK_MESSAGE_H_
 #define NETLINK_MESSAGE_H_
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 
 #include "Module.h"
 #include "NodeId.h"
@@ -404,6 +404,6 @@ namespace Core {
 }
 } // namespace WPEFramework::Core
 
-#endif // __WIN32__
+#endif // __WINDOWS__
 
 #endif // NETLINK_MESSAGE_H_

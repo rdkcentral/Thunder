@@ -7,7 +7,7 @@
 
 #include "../core/core.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef TRACING_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

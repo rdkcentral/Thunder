@@ -333,14 +333,14 @@ namespace ProxyStub {
         typedef Core::ProxyType<RPC::InvokeMessage> IPCMessage;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool remoteRefCounted)
             : _unknown(channel, implementation, INTERFACE::ID, remoteRefCounted, this)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~UnknownProxyType()

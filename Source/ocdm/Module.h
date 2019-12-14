@@ -8,7 +8,7 @@
 #include "../core/core.h"
 #include "../com/com.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef OCDM_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

@@ -10,7 +10,7 @@
 #include "../cryptalgo/cryptalgo.h"
 #include "../tracing/tracing.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include "../websocket/windows/include/zlib.h"
 #else
 #include "zlib.h"

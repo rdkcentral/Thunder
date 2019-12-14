@@ -5,7 +5,7 @@
 
 namespace WPEFramework {
 namespace Core {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4996)
 #endif
 
@@ -18,7 +18,7 @@ namespace Core {
         }
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4996)
 #endif
 

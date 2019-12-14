@@ -323,7 +323,7 @@ namespace Core {
             ASSERT(_factory.IsValid());
             ASSERT(SocketListner::IsListening() == false);
             ASSERT(_clients.size() == 0);
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ASSERT(INTERNALFACTORY == true && "This method can only be called if you specify an INTERNAL factory");
 #else
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");

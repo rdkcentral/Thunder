@@ -64,7 +64,7 @@ namespace Core {
         void OpenMemoryMappedFile(uint32_t requiredSize);
 
     private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         typedef HANDLE Handle;
 #else
         typedef void* Handle;

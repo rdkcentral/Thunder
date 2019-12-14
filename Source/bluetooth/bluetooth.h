@@ -5,6 +5,6 @@
 #include "GATTSocket.h"
 #include "Profile.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "bluetooth.lib")
 #endif

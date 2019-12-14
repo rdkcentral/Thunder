@@ -41,9 +41,9 @@
 #include <arpa/inet.h>
 #endif // __LINUX__
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include "Winsock2.h"
-#endif // __WIN32__
+#endif // __WINDOWS__
 
 // --------------------------------------------------------------------------------------------
 // MD5 functionality

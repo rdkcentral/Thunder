@@ -8,13 +8,13 @@
 #include "../core/core.h"
 #include "../cryptalgo/cryptalgo.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include "./windows/include/zlib.h"
 #else
 #include "zlib.h"
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef WEBSOCKET_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

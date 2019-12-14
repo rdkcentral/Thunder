@@ -13,7 +13,7 @@ namespace Trace {
     // [C] => Command
     // [R] => Response
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
@@ -23,7 +23,7 @@ namespace Trace {
         m_Output.Open(0);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

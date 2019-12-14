@@ -242,7 +242,7 @@ namespace Core {
         StreamTextType<SOURCE, TEXTTERMINATOR>& operator=(const StreamTextType<SOURCE, TEXTTERMINATOR>&);
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         StreamTextType()
@@ -365,7 +365,7 @@ namespace Core {
         {
         }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~StreamTextType()
@@ -497,7 +497,7 @@ namespace Core {
                     uint8_t dropCharacters = terminated & 0x03;
 
                     while (dropCharacters != 0) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                         _receiver.pop_back();
 #endif
 #ifdef __POSIX__

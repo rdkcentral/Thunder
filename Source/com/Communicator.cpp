@@ -323,7 +323,7 @@ namespace RPC {
     {
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
@@ -394,7 +394,7 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

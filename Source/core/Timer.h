@@ -15,7 +15,7 @@
 // ---- Helper types and constants ----
 
 // ---- Helper functions ----
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
@@ -432,7 +432,7 @@ namespace Core {
 }
 } // namespace Core
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

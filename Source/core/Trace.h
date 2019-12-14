@@ -4,11 +4,11 @@
 #include "Module.h"
 #include "Portability.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <syslog.h>
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
 #define ASSERT_LOGGER(message, ...) fprintf(stderr, message, ##__VA_ARGS__);
 #else

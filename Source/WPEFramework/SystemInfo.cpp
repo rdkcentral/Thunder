@@ -2,7 +2,7 @@
 namespace WPEFramework {
 namespace PluginHost {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     SystemInfo::SystemInfo(Core::IDispatch* callback)
@@ -18,7 +18,7 @@ namespace PluginHost {
     {
         ASSERT(callback != nullptr);
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

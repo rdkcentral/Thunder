@@ -16,7 +16,7 @@
 #define ERRORRESULT errno
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <Ws2tcpip.h>
 #define ERRORRESULT ::WSAGetLastError()
 #endif
@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Core {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     static string NetlinkName(const NodeId::SocketInfo& input)
     {
 
@@ -111,7 +111,7 @@ namespace Core {
 
         ASSERT(m_structInfo.IPV6Socket.sin6_family == AF_INET6);
     }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     NodeId::NodeId(const struct sockaddr_un& rInfo, const uint16_t access)
         : m_hostName(rInfo.sun_path)
     {
@@ -189,7 +189,7 @@ namespace Core {
 
         m_structInfo.IPV4Socket.sin_family = TYPE_UNSPECIFIED;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         if (strchr(strHostName, '/') != nullptr) {
             // Seems like we have a path, so a domain socket is required....
             const TCHAR* indicator;
@@ -275,13 +275,13 @@ namespace Core {
                 return ((m_structInfo.IPV4Socket.sin_addr.s_addr == rInfo.m_structInfo.IPV4Socket.sin_addr.s_addr) && (m_structInfo.IPV4Socket.sin_port == rInfo.m_structInfo.IPV4Socket.sin_port));
             } else if (m_structInfo.IPV6Socket.sin6_family == AF_INET6) {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 return ((memcmp(m_structInfo.IPV6Socket.sin6_addr.u.Byte, rInfo.m_structInfo.IPV6Socket.sin6_addr.u.Byte, sizeof(m_structInfo.IPV6Socket.sin6_addr.u.Byte)) == 0) && (m_structInfo.IPV6Socket.sin6_port == rInfo.m_structInfo.IPV6Socket.sin6_port));
 #else
                 return ((memcmp(m_structInfo.IPV6Socket.sin6_addr.s6_addr, rInfo.m_structInfo.IPV6Socket.sin6_addr.s6_addr, sizeof(m_structInfo.IPV6Socket.sin6_addr.s6_addr)) == 0) && (m_structInfo.IPV6Socket.sin6_port == rInfo.m_structInfo.IPV6Socket.sin6_port));
 #endif
             }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
                 return (strcmp(m_structInfo.DomainSocket.sun_path, rInfo.m_structInfo.DomainSocket.sun_path) == 0);
             } else if (m_structInfo.DomainSocket.sun_family == AF_NETLINK) {
@@ -343,7 +343,7 @@ namespace Core {
         return (*this);
     }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     NodeId&
     NodeId::operator=(const struct sockaddr_un& rInfo)
     {
@@ -405,7 +405,7 @@ namespace Core {
         // Copy the struct info
         memcpy(&m_structInfo, &rInfo, sizeof(m_structInfo));
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         if (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK) {
             m_hostName = NetlinkName(m_structInfo);
         } else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
@@ -435,7 +435,7 @@ namespace Core {
     bool NodeId::IsMulticast() const
     {
         if (m_structInfo.IPV4Socket.sin_family == AF_INET) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (((m_structInfo.IPV4Socket.sin_addr.S_un.S_un_b.s_b1 & 0xF0) & 0xE0) == 0xE0);
 #else
                 return ((htonl(m_structInfo.IPV4Socket.sin_addr.s_addr) & 0xE0000000) == 0xE0000000);
@@ -501,7 +501,7 @@ namespace Core {
 
                 TCHAR identifier[16];
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4996)
 #endif
 
@@ -511,7 +511,7 @@ namespace Core {
                     ((nAddress & 0x00FF0000) >> 16),
                     ((nAddress & 0xFF000000) >> 24));
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4996)
 #endif
 
@@ -542,7 +542,7 @@ namespace Core {
             result.m_structInfo.IPV6Socket.sin6_port = 0;
             memset(result.m_structInfo.IPV6Socket.sin6_addr.s6_addr, 0, sizeof(result.m_structInfo.IPV6Socket.sin6_addr.s6_addr));
             break;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         case TYPE_DOMAIN:
             result.m_structInfo.DomainSocket.sun_family = AF_UNIX;
             result.m_structInfo.DomainSocket.sun_path[0] = '\0';
@@ -576,7 +576,7 @@ namespace Core {
             }
             return (index == 0);
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             return (m_structInfo.DomainSocket.sun_path[0] == '\0');
         } else if (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK) {
@@ -606,7 +606,7 @@ namespace Core {
             }
             return (index == 0);
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else if ((m_structInfo.DomainSocket.sun_family == AF_UNIX) || (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK)) {
             return (true);
         }
@@ -632,7 +632,7 @@ namespace Core {
 
             response.m_hostName.clear();
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else if (m_structInfo.DomainSocket.sun_family == AF_UNIX) {
             struct sockaddr_un info;
             memset(&info, 0x00, sizeof(info));

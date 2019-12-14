@@ -1,6 +1,6 @@
 #include "PluginServer.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
 #endif
@@ -39,7 +39,7 @@ namespace PluginHost {
             case 'c':
                 configFile = argument;
                 break;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             case 'b':
                 _background = true;
                 break;
@@ -104,7 +104,7 @@ namespace PluginHost {
                 _dispatcher = nullptr;
                 delete destructor;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 if (_background) {
                     syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
                 } else
@@ -113,7 +113,7 @@ namespace PluginHost {
                    fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
                 }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 closelog();
 #endif
                 // Now clear all singeltons we created.
@@ -132,7 +132,7 @@ namespace PluginHost {
 
     extern "C" {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 
     void ExitDaemonHandler(int signo)
     {
@@ -202,7 +202,7 @@ namespace PluginHost {
         }
     }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     void StartLoopbackInterface()
     {
         Core::AdapterIterator adapter;
@@ -250,7 +250,7 @@ namespace PluginHost {
 
     static void PublishCallstack(const ::ThreadId threadId)
     {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         void* callstack[32];
         uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(void*)));
         char** symbols = backtrace_symbols(callstack, entries);
@@ -276,13 +276,13 @@ namespace PluginHost {
 #endif
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
     int main(int argc, char** argv)
 #endif
     {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));
         openlog(argv[0], LOG_PID, LOG_USER);
@@ -297,7 +297,7 @@ namespace PluginHost {
             ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
             if ((_background == false) && (options.RequestUsage())) {
@@ -308,7 +308,7 @@ namespace PluginHost {
             exit(EXIT_FAILURE);
             ;
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else {
             struct sigaction sa;
             memset(&sa, 0, sizeof(struct sigaction));
@@ -348,7 +348,7 @@ namespace PluginHost {
 
             configFile.Close();
         } else {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (_background == true) {
                 syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Config file.");
             } else
@@ -387,7 +387,7 @@ namespace PluginHost {
             }
         }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         ::umask(serviceConfig.Process.Umask.Value());
 #endif
         // Time to start loading the config of the plugins.
@@ -430,7 +430,7 @@ namespace PluginHost {
         SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
         SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // We need at least the loopback interface before we continue...
         StartLoopbackInterface();
 #endif
@@ -452,7 +452,7 @@ namespace PluginHost {
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         if (_background == true) {
             Core::WorkerPool::Instance().Join();
         } else
@@ -628,7 +628,7 @@ namespace PluginHost {
                     Core::ResourceMonitor::Metadata info;
 
                     while (monitor.Info(index, info) == true) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                         TCHAR flags[12];
                         flags[0]  = (info.monitor & FD_CLOSE   ? 'C' : '-');
                         flags[1]  = (info.monitor & FD_READ    ? 'R' : '-');
@@ -662,7 +662,7 @@ namespace PluginHost {
                 case 'Q':
                     break;
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
                 case 'R': {
                     printf("\nMonitor callstack:\n");
                     printf("============================================================\n");

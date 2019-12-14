@@ -10,6 +10,6 @@
 #include "Ids.h"
 #include "Messages.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "com.lib")
 #endif

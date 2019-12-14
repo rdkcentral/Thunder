@@ -9,7 +9,7 @@
 #include "HashStream.h"
 #include "Random.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "cryptalgo.lib")
 #endif
 

@@ -51,7 +51,7 @@ namespace Core {
         {
             TRACE_L5("Constructor ThreadControlBlockInfo <%p>", (this));
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             m_Index = TlsAlloc();
 
             ASSERT(m_Index != -1);
@@ -69,7 +69,7 @@ namespace Core {
         {
             TRACE_L5("Destructor ThreadControlBlockInfo <%p>", (this));
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (m_Index != -1) {
                 TlsFree(m_Index);
             }
@@ -89,7 +89,7 @@ namespace Core {
 
         THREADLOCALSTORAGE& Context()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             void* l_Result = TlsGetValue(m_Index);
 
             if (l_Result == nullptr) {
@@ -111,7 +111,7 @@ namespace Core {
         }
 
     private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         DWORD m_Index;
 #endif
 #ifdef __UNIX__
@@ -177,7 +177,7 @@ namespace Core {
         bool Priority(int priority);
         inline ::ThreadId Id() const
         {
-#if defined(__WIN32__) || defined(__APPLE__)
+#if defined(__WINDOWS__) || defined(__APPLE__)
 #pragma warning(disable : 4312)
             return (reinterpret_cast<const ::ThreadId>(m_ThreadId));
 #pragma warning(default : 4312)
@@ -226,7 +226,7 @@ namespace Core {
         }
 
     private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         static void StartThread(Thread* pObject);
 #endif
 
@@ -245,7 +245,7 @@ namespace Core {
         uint32_t m_ThreadId;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         Event m_sigExit;
         thread_state m_enumSuspendedState;
         HANDLE m_hThreadInstance;

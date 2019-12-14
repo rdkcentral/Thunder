@@ -52,7 +52,7 @@ namespace Web {
             typedef ClientTransferType<LINK, FILEBODY> ThisClass;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             template <typename Arg1>
@@ -105,7 +105,7 @@ namespace Web {
             {
             }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -181,7 +181,7 @@ namespace Web {
         ClientTransferType<LINK, FILEBODY>& operator=(const ClientTransferType<LINK, FILEBODY>& RHS) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -247,7 +247,7 @@ namespace Web {
             , _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -430,7 +430,7 @@ namespace Web {
         ServerTransferType<LINK, FILEBODY>& operator=(const ServerTransferType<LINK, FILEBODY>& RHS) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename Arg1>
@@ -573,7 +573,7 @@ namespace Web {
             // Path should be a directory. End with a slash !!!
             ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

@@ -293,7 +293,7 @@ namespace Web {
         JSONBodyType(const JSONBodyType<JSONOBJECT>&) = delete;
         JSONBodyType<JSONOBJECT>& operator=(const JSONBodyType<JSONOBJECT>&) = delete;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         JSONBodyType()
@@ -301,7 +301,7 @@ namespace Web {
             , _offset(0)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~JSONBodyType()

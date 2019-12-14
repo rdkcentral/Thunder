@@ -80,7 +80,7 @@ namespace Core {
 #endif
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::EnterCriticalSection(&m_syncMutex);
 #endif
         }
@@ -93,7 +93,7 @@ namespace Core {
             }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::LeaveCriticalSection(&m_syncMutex);
 #endif
         }
@@ -102,7 +102,7 @@ namespace Core {
 #ifdef __POSIX__
         pthread_mutex_t m_syncMutex;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         CRITICAL_SECTION m_syncMutex;
 #endif
 
@@ -145,7 +145,7 @@ namespace Core {
         void Unlock();
         bool Locked() const;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline operator SyncHandle()
         {
             return (SyncHandle(m_syncMutex));
@@ -159,7 +159,7 @@ namespace Core {
         volatile bool m_blLocked;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncMutex;
 #endif
     };
@@ -185,7 +185,7 @@ namespace Core {
         uint32_t Unlock(unsigned int nCount = 1);
         uint32_t TryUnlock(unsigned int nSeconds);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline operator SyncHandle()
         {
             return (SyncHandle(m_syncSemaphore));
@@ -201,7 +201,7 @@ namespace Core {
         unsigned int m_nMaxCount;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncSemaphore;
 #endif
     };
@@ -233,7 +233,7 @@ namespace Core {
         void PulseEvent();
         bool IsSet() const;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline operator SyncHandle()
         {
             return (SyncHandle(m_syncEvent));
@@ -249,7 +249,7 @@ namespace Core {
         pthread_cond_t m_syncCondition;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncEvent;
 #endif
     };

@@ -39,7 +39,7 @@ namespace Core {
     }
     void File::LoadFileInfo()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         WIN32_FILE_ATTRIBUTE_DATA data;
         GET_FILEEX_INFO_LEVELS infoLevelId = GetFileExInfoStandard;
 
@@ -88,7 +88,7 @@ namespace Core {
         , _dirFD(nullptr)
         , _entry(nullptr)
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         , _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
@@ -102,7 +102,7 @@ namespace Core {
         _dirFD(nullptr)
         , _entry(nullptr)
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
               _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
@@ -116,7 +116,7 @@ namespace Core {
         _dirFD(nullptr)
         , _entry(nullptr)
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
               _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
@@ -129,7 +129,7 @@ namespace Core {
         _dirFD(nullptr)
         , _entry(nullptr)
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
               _dirFD(INVALID_HANDLE_VALUE)
         , noMoreFiles(false)
 #endif
@@ -144,7 +144,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_dirFD != INVALID_HANDLE_VALUE) {
             ::FindClose(_dirFD);
             _dirFD = INVALID_HANDLE_VALUE;
@@ -160,7 +160,7 @@ namespace Core {
         if (result.empty() == false) {
             uint32_t length = static_cast<uint32_t>(result.length());
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             for (uint32_t teller = 0; teller < length; teller++) {
                 if (result[teller] == '\\') {
                     result[teller] = '/';
@@ -168,7 +168,7 @@ namespace Core {
             }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if ((result[length - 1] != '/') && (result[length - 1] != '\\'))
 #else
             if (result[length - 1] != '/')
@@ -182,7 +182,7 @@ namespace Core {
 
     bool Directory::Create()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (CreateDirectory(_name.c_str(), nullptr) != FALSE);
 #else
         return (mkdir(_name.c_str(), 0775) >= 0);
@@ -217,7 +217,7 @@ namespace Core {
                 /* test path */
                 if (stat(tmp, &sb) != 0) {
 /* path does not exist - create directory */
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                     if (CreateDirectory(tmp, nullptr) == FALSE) {
                         return false;
                     };
@@ -236,7 +236,7 @@ namespace Core {
         /* test path */
         if (stat(tmp, &sb) != 0) {
 /* path does not exist - create directory */
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (CreateDirectory(tmp, nullptr) == FALSE) {
                 return false;
             };

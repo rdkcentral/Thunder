@@ -16,7 +16,7 @@ namespace Core {
         if (_buffer.IsValid() != true) {
             TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
 		} else {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             string strippedName(Core::File::PathName(fileName) + Core::File::FileName(fileName));
             _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
             _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
@@ -26,7 +26,7 @@ namespace Core {
 #endif
             if (bufferSize != 0) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 (_administration)->_signal = PTHREAD_COND_INITIALIZER;
                 (_administration)->_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -243,7 +243,7 @@ namespace Core {
         bool shouldMoveHead = true;
 
         if (_administration->_reservedPID != 0) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             // We are writing because of reservation.
             ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
 #else
@@ -339,7 +339,7 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         DWORD processId = GetCurrentProcessId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
 #else

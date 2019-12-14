@@ -307,7 +307,7 @@ namespace Core {
         using Response = typename DATAEXCHANGE::Response;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename... Args>
@@ -320,7 +320,7 @@ namespace Core {
 
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         virtual ~MessageExchangeType()

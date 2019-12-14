@@ -11,7 +11,7 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL ProcessInfo {
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         enum scheduler {
             BATCH,
             IDLE,
@@ -125,7 +125,7 @@ namespace Core {
 
         inline int8_t Priority() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (0);
 #else
             errno = 0;
@@ -136,7 +136,7 @@ namespace Core {
         }
         inline void Priority(const int8_t priority)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
                 TRACE_L1("Failed to set priority. Error: %d", errno);
             }
@@ -144,7 +144,7 @@ namespace Core {
         }
         inline scheduler Policy() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (OTHER);
 #else
             errno = 0;
@@ -155,7 +155,7 @@ namespace Core {
         }
         inline void Policy(const scheduler priority)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
                 TRACE_L1("Failed to set priority. Error: %d", errno);
             }
@@ -163,7 +163,7 @@ namespace Core {
         }
         inline int8_t OOMAdjust() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (0);
 #else
             int8_t result = 0;
@@ -180,7 +180,7 @@ namespace Core {
         }
         inline void OOMAdjust(const int8_t adjust)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
 
             if (fp) {
@@ -192,7 +192,7 @@ namespace Core {
 
         inline bool IsActive() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD exitCode = 0;
             if ((_handle != 0) && (GetExitCodeProcess(_handle, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
@@ -218,7 +218,7 @@ namespace Core {
 
     private:
         uint32_t _pid;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _handle;
 #endif
     }; // class ProcessInfo

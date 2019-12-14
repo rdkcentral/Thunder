@@ -185,7 +185,7 @@ namespace Web {
             Deserializer& operator=(const Deserializer&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             Deserializer()
@@ -197,7 +197,7 @@ namespace Web {
 				, _zlibResult(0)
             {
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             ~Deserializer()

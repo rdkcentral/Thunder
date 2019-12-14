@@ -197,7 +197,7 @@ namespace Core {
         StreamJSONType(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
         StreamJSONType<SOURCE, ALLOCATOR, INTERFACE >& operator=(const StreamJSONType<SOURCE, ALLOCATOR, INTERFACE>&) = delete;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename... Args>
@@ -215,7 +215,7 @@ namespace Core {
             , _deserializer(*this, slotSize)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

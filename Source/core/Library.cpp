@@ -21,7 +21,7 @@ namespace Core {
 #ifdef __LINUX__
         void* handle = dlopen(fileName, RTLD_LAZY);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HMODULE handle = ::LoadLibrary(fileName);
 #endif
 
@@ -83,7 +83,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         function = ::GetProcAddress(_refCountedHandle->_handle, functionName);
 
         if (function == nullptr) {
@@ -117,7 +117,7 @@ namespace Core {
 #ifdef __LINUX__
                 dlclose(_refCountedHandle->_handle);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 ::FreeLibrary(_refCountedHandle->_handle);
 #endif
                 TRACE_L1("Unloaded library: %s", _refCountedHandle->_name.c_str());

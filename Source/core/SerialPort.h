@@ -17,7 +17,7 @@
 namespace WPEFramework {
 namespace Core {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     class EXTERNAL SerialPort {
 #else
     class EXTERNAL SerialPort : public IResource {
@@ -89,7 +89,7 @@ namespace Core {
             BITS_2 = TWOSTOPBITS
         };
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         typedef enum {
             READ = 0x0001,
             WRITE = 0x0002,
@@ -160,7 +160,7 @@ namespace Core {
             m_ReadBytes = 0;
             m_SendOffset = 0;
             m_SendBytes = 0;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             tcflush(m_Descriptor, TCIOFLUSH);
 #endif
 
@@ -202,7 +202,7 @@ namespace Core {
 
         void SetBaudRate(const BaudRate baudrate)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             m_PortSettings.BaudRate = baudrate;
             if (m_Descriptor != INVALID_HANDLE_VALUE) {
                 // TODO implementa on the fly changes..
@@ -224,7 +224,7 @@ namespace Core {
         }
         void SendBreak()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             // TODO: Implement a windows variant..
             ASSERT(false);
 #else
@@ -249,7 +249,7 @@ namespace Core {
             m_Descriptor = -1;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::CloseHandle(m_Descriptor);
             m_Descriptor = INVALID_HANDLE_VALUE;
 #endif
@@ -257,7 +257,7 @@ namespace Core {
             m_State = 0;
         }
         uint32_t WaitForClosure(const uint32_t time) const;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         void Write(const uint16_t writtenBytes);
         void Read(const uint16_t readBytes);
 #endif
@@ -275,10 +275,10 @@ namespace Core {
 #ifdef __LINUX__
         void BufferAlignment(int descriptor);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         void BufferAlignment(HANDLE descriptor);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         inline HANDLE Descriptor()
         {
             return (m_Descriptor);
@@ -297,7 +297,7 @@ namespace Core {
         uint16_t m_SendOffset;
         uint16_t m_SendBytes;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_Descriptor;
         DCB m_PortSettings;
         uint8_t m_CharBuffer;

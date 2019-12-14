@@ -14,7 +14,7 @@
 #include "Service.h"
 #include "VirtualInput.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "plugins.lib")
 #endif
 

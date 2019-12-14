@@ -35,7 +35,7 @@ namespace Core {
         static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         static SystemInfo& Instance();
 #else
         inline static SystemInfo& Instance()

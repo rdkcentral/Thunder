@@ -12,7 +12,7 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL File {
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         typedef enum {
             // A file that is read-only. Applications can read the file, but cannot write to it or delete it. This attribute is not honored on directories. For more information, see You cannot view or change the Read-only or the System attributes of folders in Windows Server 2003, in Windows XP, in Windows Vista or in Windows 7.
             FILE_READONLY = FILE_ATTRIBUTE_READONLY,
@@ -92,7 +92,7 @@ namespace Core {
 #ifdef __POSIX__
         typedef int Handle;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         typedef HANDLE Handle;
 #endif
 
@@ -168,7 +168,7 @@ namespace Core {
         }
         inline uint32_t ErrorCode() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (static_cast<uint32_t>(::GetLastError()));
 #endif
 #ifdef __POSIX__
@@ -212,7 +212,7 @@ namespace Core {
 #ifdef __POSIX__
             return (false);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return ((_attributes & FILE_COMPRESSED) != 0);
 #endif
         }
@@ -221,7 +221,7 @@ namespace Core {
 #ifdef __POSIX__
             return (false);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return ((_attributes & FILE_ENCRYPTED) != 0);
 #endif
         }
@@ -264,7 +264,7 @@ namespace Core {
         bool SetSize(const uint64_t size)
         {
             bool result;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             LARGE_INTEGER position;
             position.HighPart = (size >> 32);
             position.LowPart = (size & 0xFFFFFFFF);
@@ -280,7 +280,7 @@ namespace Core {
 
         bool Link(const string& symlinkName)
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (::CreateSymbolicLink(symlinkName.c_str(), _name.c_str(), (IsDirectory() ? SYMBOLIC_LINK_FLAG_DIRECTORY : 0)) != FALSE);
 #else
             return (symlink(_name.c_str(), symlinkName.c_str()) >= 0);
@@ -297,7 +297,7 @@ namespace Core {
 #ifdef __POSIX__
             _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
@@ -309,7 +309,7 @@ namespace Core {
 #ifdef __POSIX__
             _handle = open(_name.c_str(), O_RDONLY);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             const_cast<File*>(this)->LoadFileInfo();
@@ -320,7 +320,7 @@ namespace Core {
 #ifdef __POSIX__
             _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
 #endif
             LoadFileInfo();
@@ -335,7 +335,7 @@ namespace Core {
                 return (Create());
             }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
             if (_handle != INVALID_HANDLE_VALUE) {
                 ::SetFilePointer(_handle, 0, nullptr, FILE_END);
@@ -353,7 +353,7 @@ namespace Core {
 #ifdef __POSIX__
                 result = (remove(_name.c_str()) == 0);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 result = (::DeleteFile(_name.c_str()) != FALSE);
 #endif
             }
@@ -369,7 +369,7 @@ namespace Core {
 #ifdef __POSIX__
                 result = (rename(_name.c_str(), newLocation.c_str()) == 0);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 result = (::MoveFile(_name.c_str(), newLocation.c_str()) != FALSE);
 #endif
 
@@ -388,7 +388,7 @@ namespace Core {
                 close(_handle);
                 _handle = -1;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 ::CloseHandle(_handle);
                 _handle = INVALID_HANDLE_VALUE;
 #endif
@@ -409,7 +409,7 @@ namespace Core {
             }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD writtenBytes;
 
             ::WriteFile(_handle, buffer, size, &writtenBytes, nullptr);
@@ -430,7 +430,7 @@ namespace Core {
                 return (static_cast<uint32_t>(value));
             }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD readBytes = 0;
             ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
             return static_cast<uint32_t>(readBytes);
@@ -445,7 +445,7 @@ namespace Core {
 #ifdef __POSIX__
             return (lseek(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (::SetFilePointer(_handle, offset, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)) != INVALID_SET_FILE_POINTER);
 #endif
         }
@@ -464,7 +464,7 @@ namespace Core {
                 }
 
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 DWORD newPos = ::SetFilePointer(_handle, 0, nullptr, FILE_CURRENT);
 
                 if (newPos != INVALID_SET_FILE_POINTER) {
@@ -504,7 +504,7 @@ namespace Core {
 #ifdef __POSIX__
                 return (fdopen(DuplicateHandle(), (IsReadOnly() ? "r" : "r+")));
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 Handle fd = DuplicateHandle();
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4302)
@@ -534,7 +534,7 @@ namespace Core {
             } else {
                 offset = 0;
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             int intermediate;
             if ((intermediate = static_cast<int>(name.find_last_of('\\'))) != -1) {
                 if (intermediate > offset) {
@@ -631,7 +631,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         bool IsValid() const
         {
             return ((_dirFD != INVALID_HANDLE_VALUE) && (noMoreFiles == false));
@@ -685,7 +685,7 @@ namespace Core {
         struct dirent* _entry;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _dirFD;
         WIN32_FIND_DATA _data;
         bool noMoreFiles;

@@ -82,7 +82,7 @@ namespace Core {
             , _monitorRuns(0)
             , _watchDog()
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _action(WSACreateEvent())
 #else
             , _descriptorArrayLength(FileDescriptorAllocation)
@@ -119,7 +119,7 @@ namespace Core {
                 ::close(_signalDescriptor);
             }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             WSACloseEvent(_action);
 #endif
         }
@@ -160,7 +160,7 @@ namespace Core {
                 info.monitor = _descriptorArray[position + 1].events;
                 info.events  = _descriptorArray[position + 1].revents;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 info.monitor = 0;
                 info.events  = 0;
 #endif
@@ -202,7 +202,7 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 _resourceList.erase(index);
 #else
                 *index = nullptr;
@@ -226,7 +226,7 @@ namespace Core {
                 _signalNode.Size());
 #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
-#elif defined(__WIN32__)
+#elif defined(__WINDOWS__)
             ::WSASetEvent(_action);
 #endif
         };
@@ -417,7 +417,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint32_t Worker()
         {
             uint32_t delay = 0;
@@ -508,7 +508,7 @@ namespace Core {
         int _signalDescriptor;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _action;
 #endif
 #ifdef __APPLE__

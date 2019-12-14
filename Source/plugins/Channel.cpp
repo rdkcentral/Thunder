@@ -5,7 +5,7 @@ namespace PluginHost {
 
     /* static */ RequestPool Channel::_requestAllocator(10);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     Channel::Channel(const SOCKET& connector, const Core::NodeId& remoteId)
@@ -21,7 +21,7 @@ namespace PluginHost {
         , _sendQueue()
     {
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

@@ -1,6 +1,6 @@
 #include "DoorBell.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <Winsock2.h>
 #include <ws2tcpip.h>
 #endif
@@ -21,7 +21,7 @@ namespace Core {
         if ((_bound & 0x01) == 1) {
             ResourceMonitor::Instance().Unregister(*this);
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::closesocket(_socket);
 #else
         ::close(_socket);
@@ -32,7 +32,7 @@ namespace Core {
     {
         if (_bound == 0) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             // Check if domain path already exists, if so remove.
             if (_doorbell.Type() == NodeId::TYPE_DOMAIN) {
                 if (access(_doorbell.HostName().c_str(), F_OK) != -1) {
@@ -52,7 +52,7 @@ namespace Core {
                 ::setsockopt(_socket, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
             }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             unsigned long l_Value = 1;
             if (ioctlsocket(_socket, FIONBIO, &l_Value) != 0) {
                 TRACE_L1("Error on port socket NON_BLOCKING call. Error %d", ::WSAGetLastError());
@@ -75,7 +75,7 @@ namespace Core {
 
             if ((_bound == 1) && (::bind(_socket, static_cast<const NodeId&>(_doorbell), _doorbell.Size()) != SOCKET_ERROR)) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 if ((_doorbell.Type() == NodeId::TYPE_DOMAIN) && (_doorbell.Rights() <= 0777)) {
                     _bound = ((::chmod(_doorbell.HostName().c_str(), _doorbell.Rights()) == 0) ? 1 : 0);
                 }
@@ -111,7 +111,7 @@ namespace Core {
 
     /* virtual */ uint16_t DoorBell::Connector::Events()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint16_t result = ((_bound & SocketPort::enumState::UPDATE) | FD_READ);
         _bound &= ~SocketPort::enumState::UPDATE;
         return (result);
@@ -122,7 +122,7 @@ namespace Core {
 
     /* virtual */ void DoorBell::Connector::Handle(const uint16_t events)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if ((events & FD_READ) != 0) {
             Read();
         }
@@ -133,7 +133,7 @@ namespace Core {
 #endif
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     DoorBell::DoorBell(const TCHAR sourceName[])
@@ -141,7 +141,7 @@ namespace Core {
         , _signal(false, true)
     {
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

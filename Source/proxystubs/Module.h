@@ -9,7 +9,7 @@
 #include "../com/com.h"
 #include "../plugins/plugins.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef PROXYSTUBS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

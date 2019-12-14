@@ -448,7 +448,7 @@ public:
     OpenCDMSession& operator= (const OpenCDMSession&) = delete;
     OpenCDMSession() = delete;
 
-    #ifdef __WIN32__
+    #ifdef __WINDOWS__
     #pragma warning(disable : 4355)
     #endif
 
@@ -492,7 +492,7 @@ public:
         }
     }
 
-    #ifdef __WIN32__
+    #ifdef __WINDOWS__
     #pragma warning(default : 4355)
     #endif
 

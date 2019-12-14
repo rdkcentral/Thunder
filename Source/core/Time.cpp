@@ -483,7 +483,7 @@ namespace Core {
         return (result);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     // jUST USED FOR A 1 TIME CALCULATION. THE RESULT IS FIXED SO "PASTED" INTO THE VALUE.
     static uint64_t OffsetTicks()
@@ -522,7 +522,7 @@ namespace Core {
 
     // Invariant for both Linux and Windows: internal time stored is always according to local time specification, so GMT / UTC if local time  is false, local time otherwise.
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
     Time::Time(const uint16_t year, const uint8_t month, const uint8_t day, const uint8_t hour, const uint8_t minute, const uint8_t second, const uint16_t millisecond, const bool localTime)
         : _isLocalTime(localTime)
@@ -949,7 +949,7 @@ namespace Core {
 
     int32_t Time::DifferenceFromGMTSeconds() const
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         TIME_ZONE_INFORMATION timeZoneInfo;
         GetTimeZoneInformation(&timeZoneInfo);
 

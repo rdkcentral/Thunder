@@ -632,7 +632,7 @@ namespace Core {
         typedef PARAMETERS ParameterType;
         typedef RESPONSE ResponseType;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         IPCMessageType()
@@ -645,7 +645,7 @@ namespace Core {
             , _response(*this)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -1130,7 +1130,7 @@ namespace Core {
         };
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         template <typename ARG1>
@@ -1203,7 +1203,7 @@ namespace Core {
             , _extension(this)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

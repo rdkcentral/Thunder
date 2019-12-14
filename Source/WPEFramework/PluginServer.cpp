@@ -1,7 +1,7 @@
 #include "PluginServer.h"
 #include "Controller.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <syslog.h>
 #endif
 
@@ -41,7 +41,7 @@ namespace PluginHost
     /* static */ Core::ProxyPoolType<Server::Channel::JSONElementJob> Server::Channel::_jsonJobs(2);
     /* static */ Core::ProxyPoolType<Server::Channel::TextJob> Server::Channel::_textJobs(2);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     /* static */ const TCHAR* Server::ConfigFile = _T("C:\\Projects\\PluginHost.json");
 #else
     /* static */ const TCHAR* Server::ConfigFile = _T("/etc/" EXPAND_AND_QUOTE(NAMESPACE) "/config.json");
@@ -599,7 +599,7 @@ namespace PluginHost
         return (result);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
@@ -657,7 +657,7 @@ namespace PluginHost
                     metaDataConfig.Configuration = entry.Configuration;
                 } else {
                     // Let's raise an error, this is a bit strange, again, the controller is initialized !!!
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                     if (background == true) {
                         syslog(LOG_NOTICE, "Configuration error. Controller is defined mutiple times [%s].\n", entry.Callsign.Value().c_str());
                     } else
@@ -700,7 +700,7 @@ namespace PluginHost
 
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

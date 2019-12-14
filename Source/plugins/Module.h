@@ -13,7 +13,7 @@
 
 #define RESTFULL_API 1
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #undef EXTERNAL
 #ifdef PLUGINS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT

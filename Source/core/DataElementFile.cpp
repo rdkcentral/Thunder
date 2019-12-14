@@ -8,7 +8,7 @@
 #define INVALID_HANDLE_VALUE nullptr
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
@@ -57,7 +57,7 @@ namespace Core {
         }
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {
         if (requiredSize > 0) {

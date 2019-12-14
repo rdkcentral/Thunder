@@ -16,7 +16,7 @@
 
 #undef EXTERNAL
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #ifdef BLUETOOTH_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else

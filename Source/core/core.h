@@ -82,7 +82,7 @@
 #include "XGetopt.h"
 #include "WorkerPool.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "core.lib")
 #endif
 

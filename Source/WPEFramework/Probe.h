@@ -284,7 +284,7 @@ namespace Plugin {
         typedef Core::IteratorType<const std::list<Instance>, const Instance&, std::list<Instance>::const_iterator> Iterator;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         Probe(const string& responseURL, const uint8_t timeToLive, const string& model)
@@ -297,7 +297,7 @@ namespace Plugin {
 
             ASSERT(timeToLive != 0);
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         ~Probe()

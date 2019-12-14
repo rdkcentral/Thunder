@@ -14,7 +14,7 @@
 #include "WebTransfer.h"
 #include "WebTransform.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma comment(lib, "websocket.lib")
 #endif
 

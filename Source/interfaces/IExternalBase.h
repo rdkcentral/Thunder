@@ -32,7 +32,7 @@ namespace Exchange {
             Job& operator=(const Job&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             Job(ExternalBase* parent)
@@ -42,7 +42,7 @@ namespace Exchange {
             {
                 ASSERT(parent != nullptr);
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             virtual ~Job()
@@ -95,7 +95,7 @@ namespace Exchange {
             Timed& operator=(const Timed&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             Timed(ExternalBase* parent)
@@ -106,7 +106,7 @@ namespace Exchange {
             {
                 ASSERT(parent != nullptr);
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             virtual ~Timed()
@@ -172,7 +172,7 @@ namespace Exchange {
         };
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals)
@@ -199,7 +199,7 @@ namespace Exchange {
             _job.Load();
             _timed.Load();
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 

@@ -26,7 +26,7 @@ namespace PluginHost {
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             RepeatKeyTimer(VirtualInput* parent)
@@ -39,7 +39,7 @@ namespace PluginHost {
                 , _job()
             {
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             ~RepeatKeyTimer() override
@@ -535,7 +535,7 @@ namespace PluginHost {
         uint16_t _repeatLimit;
     };
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
     class EXTERNAL LinuxKeyboardInput : public VirtualInput {
     private:
         LinuxKeyboardInput(const LinuxKeyboardInput&) = delete;
@@ -731,7 +731,7 @@ namespace PluginHost {
         void Initialize(const type t, const string& locator)
         {
             ASSERT(_keyHandler == nullptr);
-#if defined(__WIN32__) || defined(__APPLE__)
+#if defined(__WINDOWS__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
             _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);

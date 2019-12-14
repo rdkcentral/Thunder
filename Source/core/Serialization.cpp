@@ -2,17 +2,17 @@
 
 namespace WPEFramework {
 namespace Core {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4996)
 #endif
 
 #ifndef __NO_WCHAR_SUPPORT__
     void ToString(const wchar_t realString[], std::string& result)
     {
-#if defined(__WIN32__) || defined(__LINUX__)
+#if defined(__WINDOWS__) || defined(__LINUX__)
 
         int requiredSize = static_cast<int>(::wcstombs(nullptr, realString, 0));
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         char* convertedText = static_cast<char*>(::_alloca((requiredSize + 1) * sizeof(char)));
 #else
         char* convertedText = static_cast<char*>(alloca((requiredSize + 1) * sizeof(char)));
@@ -38,9 +38,9 @@ namespace Core {
     {
         int requiredSize = static_cast<int>(::mbstowcs(nullptr, realString, 0));
 
-#if defined(__WIN32__) || defined(__LINUX__)
+#if defined(__WINDOWS__) || defined(__LINUX__)
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         wchar_t* convertedText = static_cast<wchar_t*>(::_alloca((requiredSize + 1) * sizeof(wchar_t)));
 #else
         wchar_t* convertedText = static_cast<wchar_t*>(alloca((requiredSize + 1) * sizeof(wchar_t)));
@@ -74,7 +74,7 @@ namespace Core {
 
         int requiredSize = static_cast<int>(::wcstombs(nullptr, realString, length));
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
         char* convertedText = static_cast<char*>(::_alloca(requiredSize + 1));
 
@@ -113,7 +113,7 @@ namespace Core {
     {
 #ifdef _UNICODE
 
-#if defined(__WIN32__) || defined(__LINUX__)
+#if defined(__WINDOWS__) || defined(__LINUX__)
 
         int requiredSize = ::mbstowcs(nullptr, realString, length);
         wchar_t* convertedText = static_cast<wchar_t*>(::_alloca((requiredSize + 1) * 2));
@@ -137,7 +137,7 @@ namespace Core {
 #endif // _UNICODE
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4996)
 #endif
 
