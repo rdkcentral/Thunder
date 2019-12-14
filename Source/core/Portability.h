@@ -61,10 +61,6 @@
 // W3 -- No matching operator delete found; memory will not be freed if initialization throws an exception
 #pragma warning(disable : 4291)
 
-#ifndef __WIN32__
-#define __WIN32__
-#endif
-
 #ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
@@ -372,13 +368,13 @@ typedef DEPRECATED signed long long sint64;
 #define TRUE (!FALSE)
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #define SYSTEM_SYNC_HANDLE HANDLE
 #else
 #define SYSTEM_SYNC_HANDLE void*
 #endif
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #define HANDLE int
 #endif
 
@@ -391,7 +387,7 @@ extern "C" {
 
 extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if defined(__LINUX__)
 uint64_t htonll(const uint64_t& value);
 uint64_t ntohll(const uint64_t& value);
 #endif
@@ -416,12 +412,12 @@ typedef enum {
 
 } NumberBase;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
 #include <TCHAR.h>
 #define VARIABLE_IS_NOT_USED
 
-#endif // __WIN32__
+#endif 
 
 #ifdef __LINUX__
 
