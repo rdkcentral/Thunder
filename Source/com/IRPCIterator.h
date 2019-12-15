@@ -10,13 +10,13 @@ namespace WPEFramework {
 namespace RPC {
 
     template<typename ELEMENT, const uint32_t INTERFACE_ID>
-    struct IRPCIteratorType : virtual public Core::IUnknown {
+    struct IIteratorType : virtual public Core::IUnknown {
 
         typedef ELEMENT Element;
 
         enum { ID = INTERFACE_ID };
 
-        virtual ~IRPCIteratorType(){};
+        virtual ~IIteratorType(){};
 
         virtual bool Next(ELEMENT& info) = 0;
         virtual bool Previous(ELEMENT& info) = 0;
@@ -27,15 +27,15 @@ namespace RPC {
     };
 
     template<typename INTERFACE>
-    class RPCIteratorType : public INTERFACE {
+    class IteratorType : public INTERFACE {
     private:
-        RPCIteratorType() = delete;
-        RPCIteratorType(const RPCIteratorType&) = delete;
-        RPCIteratorType& operator=(const RPCIteratorType&) = delete;
+        IteratorType() = delete;
+        IteratorType(const IteratorType&) = delete;
+        IteratorType& operator=(const IteratorType&) = delete;
 
     public:
         template <typename CONTAINER, typename PREDICATE>
-        RPCIteratorType(const CONTAINER& container, PREDICATE predicate)
+        IteratorType(const CONTAINER& container, PREDICATE predicate)
             : _container()
             , _index(0)
         {
@@ -43,7 +43,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
         template <typename CONTAINER>
-        RPCIteratorType(const CONTAINER& container)
+        IteratorType(const CONTAINER& container)
             : _container()
             , _index(0)
         {
@@ -51,7 +51,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
-        RPCIteratorType(const std::map<KEY, VALUE>& container)
+        IteratorType(const std::map<KEY, VALUE>& container)
             : _container()
             , _index(0)
         {
@@ -62,7 +62,7 @@ namespace RPC {
             }
             _iterator = _container.begin();
         }
-        RPCIteratorType(INTERFACE* index)
+        IteratorType(INTERFACE* index)
             : _container()
             , _index(0)
         {
@@ -75,7 +75,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
 
-        ~RPCIteratorType()
+        ~IteratorType()
         {
         }
 
@@ -160,7 +160,7 @@ namespace RPC {
             return (*_iterator);
         }
 
-        BEGIN_INTERFACE_MAP(RPCIteratorType<INTERFACE>)
+        BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
             INTERFACE_ENTRY(INTERFACE)
         END_INTERFACE_MAP
 

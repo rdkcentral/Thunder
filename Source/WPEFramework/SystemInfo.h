@@ -62,7 +62,7 @@ namespace PluginHost {
         };
 
 
-        typedef RPC::RPCIteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
+        typedef RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:

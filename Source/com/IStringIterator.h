@@ -9,7 +9,7 @@
 namespace WPEFramework {
 namespace RPC {
 
-    typedef IRPCIteratorType<string, ID_STRINGITERATOR> IStringIterator;
-    typedef RPCIteratorType<IStringIterator> StringIterator;
+    typedef IIteratorType<string, ID_STRINGITERATOR> IStringIterator;
+    typedef IteratorType<IStringIterator> StringIterator;
 }
 }
