@@ -28,7 +28,8 @@ class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
             Create(file);
             Record(10);
             Time();
-            uint32_t value = Value();
+            Source();
+            Value();
         }
 
     private:
@@ -43,6 +44,11 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             ,file(filename)
         {
         }
+        ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
+                : Reader(recorder->Source())
+                , file(recorder->Source())
+        {
+        }
         ~ReaderClass()
         {
         }
@@ -50,12 +56,21 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
     public:
         void ReaderJob()
         {
+            uint32_t time = 20;
+            Core::Time curTime = Core::Time::Now();
+            curTime.Add(time);
+            Store(curTime.Ticks(), 1);
+            
+            StepForward();
+            StepBack();
             ClearData();
             Reader obj1(file, unsigned(1));
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
-            StepForward();
-            StepBack();
+
+            EXPECT_EQ(StartId(),1);;
+            EXPECT_EQ(EndId(),1);
+            Source();
         }
     private:
         string file;
@@ -65,8 +80,11 @@ TEST(test_valuerecorder, test_writer)
 {
     string filename = "baseRecorder.txt";
     WriterClass obj1(filename);
+    obj1.Copy(obj1,1);
+    obj1.Copy(obj1,100);
     obj1.WriterJob();
     ReaderClass obj2(filename);
     obj2.ReaderJob();
+    ReaderClass obj3(ProxyType<WriterClass>(obj1));
 }
 
