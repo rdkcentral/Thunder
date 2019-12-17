@@ -1,6 +1,5 @@
-#define _TRACE_LEVEL 2
-
 #include "SerialDriver.h"
+#include "../HCISocket.h"
 
 namespace WPEFramework {
 
@@ -37,6 +36,7 @@ namespace Bluetooth {
                 , BaudRate(921600)
                 , MACAddress()
                 , Break(false)
+                , SerialAsMAC(false)
             {
                 Add(_T("port"), &Port);
                 Add(_T("firmware"), &Firmware);
@@ -44,6 +44,7 @@ namespace Bluetooth {
                 Add(_T("setup"), &SetupRate);
                 Add(_T("address"), &MACAddress);
                 Add(_T("break"), &Break);
+                Add(_T("serialmac"), &SerialAsMAC);
             }
             ~Config()
             {
@@ -56,6 +57,7 @@ namespace Bluetooth {
             Core::JSON::DecUInt32 BaudRate;
             Core::JSON::String MACAddress;
             Core::JSON::Boolean Break;
+            Core::JSON::Boolean SerialAsMAC;
         };
 
     public:
@@ -67,6 +69,30 @@ namespace Bluetooth {
             , _setupRate(config.SetupRate.Value())
             , _baudRate(config.BaudRate.Value())
         {
+            uint8_t max = 0;
+
+            if (config.MACAddress.IsSet() == true) {
+                Bluetooth::Address address (config.MACAddress.Value().c_str());
+
+                if (address.IsValid() == true) {
+                    max = std::min(address.Length(), static_cast<uint8_t>(sizeof(_MACAddress)));
+                    ::memcpy (_MACAddress, address.Data(), max);
+               }
+            }
+            else if (config.SerialAsMAC.Value() == true) {
+                const uint8_t* rawId = Core::SystemInfo::Instance().RawDeviceId();
+                max = std::min(rawId[0], static_cast<uint8_t>(sizeof(_MACAddress)));
+                for (uint8_t index = 1; index <= max; index++) {
+                    _MACAddress[max - index] = rawId[index];
+                }
+            }
+
+            if (max > 0) {
+                if (max < sizeof(_MACAddress)) {
+                    ::memset(&(_MACAddress[max]), 0, sizeof(_MACAddress) - max);
+                }
+                _MACLength = sizeof(_MACAddress);
+            }
         }
         virtual ~Broadcom43XX()
         {

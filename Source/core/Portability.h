@@ -84,6 +84,7 @@
 #include <memory.h>
 #include <string>
 #include <windows.h>
+#include <unordered_map>
 
 #define AF_NETLINK 16
 
@@ -211,6 +212,7 @@ typedef std::string string;
 #include <termios.h>
 #include <typeinfo>
 #include <unistd.h>
+#include <unordered_map>
 
 #ifdef __APPLE__
 #include <pthread_impl.h>

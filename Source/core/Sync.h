@@ -13,48 +13,6 @@
 
 namespace WPEFramework {
 namespace Core {
-    class EXTERNAL SyncHandle {
-    public:
-        SyncHandle()
-            : m_SyncHandle(reinterpret_cast<SYSTEM_SYNC_HANDLE>(~0))
-        {
-        }
-        SyncHandle(SYSTEM_SYNC_HANDLE a_Handle)
-            : m_SyncHandle(a_Handle)
-        {
-        }
-        SyncHandle(const SyncHandle& a_Copy)
-            : m_SyncHandle(a_Copy.m_SyncHandle)
-        {
-        }
-        ~SyncHandle()
-        {
-        }
-
-        inline SyncHandle& operator=(const SyncHandle& a_RHS)
-        {
-            // Copy my own members
-            return (operator=(a_RHS.m_SyncHandle));
-        }
-
-        SyncHandle& operator=(SYSTEM_SYNC_HANDLE a_SyncHandle)
-        {
-            //  This does not change the base, so...
-            m_SyncHandle = a_SyncHandle;
-
-            return (*this);
-        }
-
-    public:
-        operator SYSTEM_SYNC_HANDLE() const
-        {
-            return (m_SyncHandle);
-        }
-
-    private:
-        SYSTEM_SYNC_HANDLE m_SyncHandle;
-    };
-
     // ===========================================================================
     // class CriticalSection
     // ===========================================================================
@@ -145,13 +103,6 @@ namespace Core {
         void Unlock();
         bool Locked() const;
 
-#ifdef __WINDOWS__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncMutex));
-        }
-#endif
-
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncAdminLock;
@@ -184,13 +135,6 @@ namespace Core {
         uint32_t Lock(unsigned int nSeconds);
         uint32_t Unlock(unsigned int nCount = 1);
         uint32_t TryUnlock(unsigned int nSeconds);
-
-#ifdef __WINDOWS__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncSemaphore));
-        }
-#endif
 
     protected: // Members
 #ifdef __POSIX__
@@ -232,13 +176,6 @@ namespace Core {
         void SetEvent();
         void PulseEvent();
         bool IsSet() const;
-
-#ifdef __WINDOWS__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncEvent));
-        }
-#endif
 
     protected: // Members
         bool m_blManualReset;

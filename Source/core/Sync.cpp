@@ -1,20 +1,3 @@
-// ===========================================================================
-//
-// Filename:    sync.cpp
-//
-// Description: Implementation file for for the CriticalSection,
-//              CBinarySemahore, CountingSemaphore and the Event
-//              synchronisation classes.
-//
-// History
-//
-// Author        Reason                                             Date
-// ---------------------------------------------------------------------------
-// P. Wielders   Initial creation                                   2002/05/24
-// M. Fransen    Switched to monotonic clock where possible         2018/08/22
-//
-// ===========================================================================
-
 #include "Sync.h"
 #include "ProcessInfo.h"
 #include "Trace.h"
