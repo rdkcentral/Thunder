@@ -92,6 +92,14 @@ namespace Core {
         Terminate();
     }
 
+
+    void Thread::Signal(const int signal) const
+    {
+#ifdef __LINUX__
+       ::pthread_kill(m_hThreadInstance, signal);
+#endif
+    }
+
     ::ThreadId Thread::ThreadId()
     {
 #ifdef __WINDOWS__

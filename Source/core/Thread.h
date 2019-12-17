@@ -194,12 +194,7 @@ namespace Core {
 
             return (block.Context());
         }
-#ifdef __LINUX__
-        inline void Signal(const int signal) const
-        {
-            ::pthread_kill(m_hThreadInstance, signal);
-        }
-#endif
+        void Signal(const int signal) const;
 
 #ifdef __DEBUG__
         int GetCallstack(void** buffer, int size);
