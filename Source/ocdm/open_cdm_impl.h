@@ -87,8 +87,6 @@ public:
         } else {
             // Reconnect if server is down
             _singleton->Reconnect();
-
-            _singleton->AddRef();
         }
 
         _systemLock.Unlock();
@@ -510,6 +508,7 @@ public:
             Session(nullptr);
         }
 
+        system->Release();
         TRACE_L1("Destructed the Session Client side: %p", this);
     }
 
