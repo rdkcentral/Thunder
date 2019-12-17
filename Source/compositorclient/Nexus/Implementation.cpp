@@ -106,6 +106,7 @@ namespace Nexus {
 
             virtual ~SurfaceImplementation()
             {
+                NXPL_DestroyNativeWindow(this->Native());
                 NEXUS_SurfaceClient_Release(reinterpret_cast<NEXUS_SurfaceClient*>(_nativeWindow));
                 _parent.Unregister(this);
             }
@@ -223,6 +224,10 @@ namespace Nexus {
 
         virtual ~Display()
         {
+            // Clean all active surfaces to deinitialize nexus properly.
+            for (auto surface : _surfaces) {
+                delete surface;
+            }
             NXPL_UnregisterNexusDisplayPlatform(_nxplHandle);
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT   
             NxClient_Uninit();
