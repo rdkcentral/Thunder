@@ -68,8 +68,8 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
 
-            EXPECT_EQ(StartId(),1);;
-            EXPECT_EQ(EndId(),1);
+            EXPECT_EQ(StartId(),(unsigned)1);;
+            EXPECT_EQ(EndId(),unsigned(1));
             Source();
         }
     private:

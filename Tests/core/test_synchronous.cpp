@@ -22,7 +22,9 @@ public:
     Message(const Message&) = delete;
     Message& operator=(const Message&) = delete;
     Message(const uint16_t size, uint8_t buffer[])
-        : _size(size), _buffer(buffer), _offset(0)
+        : _size(size)
+        , _buffer(buffer)
+        , _offset(0)
     {
     }
     virtual ~Message()
@@ -51,14 +53,17 @@ private:
 
 class InMessage : public Core::IInbound {
 protected:
-    InMessage(uint8_t buffer[]) : _buffer(buffer) {
-        _error = ~0;
+    InMessage(uint8_t buffer[])
+       : _buffer(buffer)
+    {
     }
 public:
     InMessage(const InMessage&) = delete;
     InMessage& operator=(const InMessage&) = delete;
     InMessage()
-        :_error(~0),_buffer()
+        : _buffer()
+        , _error(~0)
+        , _offset(0)
     {
     }
     virtual ~InMessage()
@@ -68,7 +73,7 @@ private:
     virtual uint16_t Deserialize(const uint8_t stream[], const uint16_t length) override
     {
         uint16_t result = 0;
-        uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(stream)), length);
+        uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_buffer)-_offset), length);
         ::memcpy(reinterpret_cast<uint8_t*>(&stream), &(_buffer[_offset]), toCopy);
 
         _error = Core::ERROR_NONE;
@@ -81,8 +86,8 @@ private:
     }
 private:
     uint8_t* _buffer;
-    mutable uint16_t _offset;
     mutable uint16_t _error;
+    mutable uint16_t _offset;
 };
 
 class SynchronousSocket : public Core::SynchronousChannelType<Core::SocketPort> {
@@ -125,7 +130,7 @@ TEST(test_synchronous, simple_synchronous)
         testAdmin.Sync("connect client");
         uint8_t buffer[] = "Hello";
         Message message(5,buffer);
-        EXPECT_EQ(synchronousClientSocket.Exchange(500, message),0);
+        EXPECT_EQ(synchronousClientSocket.Exchange(500, message),(unsigned)0);
         testAdmin.Sync("client msg");
        
         InMessage response; 
