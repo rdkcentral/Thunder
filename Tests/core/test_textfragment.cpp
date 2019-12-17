@@ -46,8 +46,8 @@ TEST(test_textfragment, simple_textfragement)
     const TCHAR middle[] = "testing";
     textFragment2.TrimBegin(begin);
     textFragment2.TrimEnd(end);
-    EXPECT_EQ(textFragment2.ReverseFind(middle),15);
-    EXPECT_EQ(textFragment2.ReverseSkip(middle),16);
+    EXPECT_EQ(textFragment2.ReverseFind(middle),(unsigned)15);
+    EXPECT_EQ(textFragment2.ReverseSkip(middle),(unsigned)16);
 
     const TCHAR splitters[] ={'/',','};
     TextSegmentIterator iterator1(TextFragment(string(buffer), 16, 5), false,splitters);
