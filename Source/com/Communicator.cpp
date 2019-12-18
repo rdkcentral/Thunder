@@ -215,11 +215,6 @@ namespace RPC {
         }
     }
 
-    /* virtual */ uint32_t Communicator::RemoteConnection::Parent() const
-    {
-        return (_parent);
-    }
-
     /* virtual */ uint32_t Communicator::RemoteConnection::Id() const
     {
         return (_id);
