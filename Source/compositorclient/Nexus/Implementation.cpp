@@ -106,6 +106,7 @@ namespace Nexus {
 
             virtual ~SurfaceImplementation()
             {
+                NXPL_DestroyNativeWindow(this->Native());
                 NEXUS_SurfaceClient_Release(reinterpret_cast<NEXUS_SurfaceClient*>(_nativeWindow));
                 _parent.Unregister(this);
             }
@@ -188,11 +189,12 @@ namespace Nexus {
 
            NEXUS_Error rc = NxClient_Join(&joinSettings);
            BDBG_ASSERT(!rc);
+
+           NxClient_UnregisterAcknowledgeStandby(NxClient_RegisterAcknowledgeStandby());
 #else
            NEXUS_Error rc = NEXUS_Platform_Join();
            BDBG_ASSERT(!rc);
-#endif
-           NxClient_UnregisterAcknowledgeStandby(NxClient_RegisterAcknowledgeStandby());
+#endif      
 
            NXPL_RegisterNexusDisplayPlatform(&_nxplHandle, displayHandle);
 
@@ -207,7 +209,7 @@ namespace Nexus {
                fprintf(stderr, "[LibinputServer] Initialization of virtual keyboard failed!!!\n");
            }
 
-           printf("Constructed the Display: %p - %s", this, _displayName.c_str());
+           printf("Constructed the Display: %p - %s\n", this, _displayName.c_str());
         }
 
         uint32_t NexusClientId() const { return _nexusClientId; }
@@ -222,9 +224,15 @@ namespace Nexus {
 
         virtual ~Display()
         {
+            // Clean all active surfaces to deinitialize nexus properly.
+            for (auto surface : _surfaces) {
+                delete surface;
+            }
             NXPL_UnregisterNexusDisplayPlatform(_nxplHandle);
-#ifdef BACKEND_BCM_NEXUS_NXCLIENT
+#ifdef BACKEND_BCM_NEXUS_NXCLIENT   
             NxClient_Uninit();
+#else
+            NEXUS_Platform_Uninit();
 #endif
             if (_virtualkeyboard != nullptr) {
                 virtualinput_close(_virtualkeyboard);
@@ -235,11 +243,11 @@ namespace Nexus {
 
     public:
         // Lifetime management
-        virtual void AddRef() const
+        virtual void AddRef() const override
         {
-        }
-        virtual uint32_t Release() const
-        {
+            }
+        virtual uint32_t Release() const override
+        {               
             // Display can not be destructed, so who cares :-)
             return (0);
         }
@@ -299,7 +307,7 @@ namespace Nexus {
             }
         }
 
-    private:
+    private: 
         const std::string _displayName;
         NXPL_PlatformHandle _nxplHandle;
         void* _virtualkeyboard;
