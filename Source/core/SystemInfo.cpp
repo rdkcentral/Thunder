@@ -186,7 +186,7 @@ namespace Core {
         m_cpuload = ((totalSystemTime + totalUserTime) * 100) / (totalSystemTime + totalUserTime + totalIdleTime);
 #elif defined(__LINUX__)
 
-        static double previousTickCount, previousIdleTime;
+        static uint64_t previousTickCount, previousIdleTime;
 
         // Update once a second to limit file system reads.
         if (difftime(time(nullptr), m_lastUpdateCpuStats) >= RefreshInterval) {
@@ -195,7 +195,7 @@ namespace Core {
             ASSERT(input && "ERROR: Unable to open /proc/stat");
 
             // First line of /proc/stat contains the overall CPU information
-            unsigned long long CpuFields[4];
+            uint64_t CpuFields[4];
 
             int numFields = fscanf(input, _T("cpu %llu %llu %llu %llu"),
                 &CpuFields[0], &CpuFields[1],
@@ -205,17 +205,16 @@ namespace Core {
 
             ASSERT((numFields >= 4) && "ERROR: Read invalid CPU information.");
 
-            unsigned long long CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
-            unsigned long long CurrentTickCount = 0L;
+            uint64_t CurrentIdleTime = CpuFields[3]; // 3 is index of idle ticks time
+            uint64_t CurrentTickCount = 0L;
 
             for (int i = 0; i < numFields && i < 10; ++i) {
                 CurrentTickCount += CpuFields[i];
             }
+            uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
+            uint64_t DeltaIdleTime = CurrentIdleTime - previousIdleTime;
 
-            double DeltaTickCount = CurrentTickCount - previousTickCount;
-            double DeltaIdleTime = CurrentIdleTime - previousIdleTime;
-
-            SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) / DeltaTickCount) * 100;
+            SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
 
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;

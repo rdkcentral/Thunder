@@ -70,7 +70,7 @@ namespace Core {
             return m_freeram;
         }
 
-        inline double GetCpuLoad() const
+        inline uint64_t GetCpuLoad() const
         {
             UpdateCpuStats();
             return m_cpuload;
@@ -207,7 +207,7 @@ namespace Core {
         uint64_t m_totalram;
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
-        mutable double m_cpuload;
+        mutable uint64_t m_cpuload;
         mutable time_t m_lastUpdateCpuStats;
 
         void UpdateCpuStats() const;
