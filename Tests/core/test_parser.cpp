@@ -6,13 +6,45 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
+class Deserializer {
+private:
+    typedef ParserType<TerminatorCarriageReturnLineFeed, Deserializer> Parser;
+public :
+    Deserializer()
+       : _parser(*this)
+    {
+    }
+    void operations()
+    {
+        _parser.Reset();
+        _parser.CollectWord();
+        _parser.CollectWord('/');
+        _parser.CollectWord(Core::ParserType<TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+        _parser.CollectWord('/',Core::ParserType<TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+        _parser.CollectLine();
+        _parser.CollectLine(Core::ParserType<TerminatorCarriageReturnLineFeed, Deserializer>::ParseState::UPPERCASE);
+        _parser.FlushLine();
+        _parser.PassThrough(5);
+    }
+    ~Deserializer()
+    {
+    }
+private:
+    Parser _parser;
+};
+
+TEST(test_parser_type, simple_parser_type)
+{
+    Deserializer deserializer;
+    deserializer.operations();
+}
 TEST(test_text_parser, simple_text_parser)
 {
     TextFragment inputLine("/Service/testing/parsertest");
     TextParser textparser(inputLine);
     textparser.Skip(2);
     textparser.Skip('S');
-    //textparser.Find('t');
+    textparser.Find(_T("e"));
     textparser.SkipWhiteSpace();
     textparser.SkipLine();
     OptionalType<TextFragment> token;
