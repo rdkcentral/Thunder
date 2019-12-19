@@ -264,7 +264,6 @@ namespace RPC {
             virtual void Deactivated(IRemoteConnection* connection) = 0;
         };
 
-        virtual uint32_t Parent() const = 0;
         virtual uint32_t Id() const = 0;
         virtual uint32_t RemoteId() const = 0;
         virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
@@ -306,14 +305,12 @@ namespace RPC {
         protected:
             RemoteConnection()
                 : _channel()
-                , _parent(0)
                 , _id(_sequenceId++)
                 , _remoteId(0)
             {
             }
-            RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId, const uint32_t parent = 0)
+            RemoteConnection(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const uint32_t remoteId)
                 : _channel(channel)
-                , _parent(parent)
                 , _id(_sequenceId++)
                 , _remoteId(remoteId)
             {
@@ -326,7 +323,6 @@ namespace RPC {
 
         public:
             virtual void* QueryInterface(const uint32_t id) override;
-            virtual uint32_t Parent() const override;
             virtual uint32_t Id() const override;
             virtual uint32_t RemoteId() const override;
             virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
@@ -361,7 +357,6 @@ namespace RPC {
 
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
-            uint32_t _parent;
             uint32_t _id;
             uint32_t _remoteId;
             static std::atomic<uint32_t> _sequenceId;
@@ -878,7 +873,7 @@ namespace RPC {
                         // This is an announce message from a process that wasn't created by us. So typically this is
                         // An RPC client reaching out to an RPC server. The RPCServer does not spawn processes it just
                         // listens for clients requesting service.
-                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id(), info.ExchangeId());
+                        Communicator::RemoteConnection* remoteConnection = Core::Service<RemoteConnection>::Create<RemoteConnection>(channel, info.Id());
 
                         channel->Extension().Link(*this, remoteConnection->Id());
                         ASSERT(remoteConnection != nullptr);
