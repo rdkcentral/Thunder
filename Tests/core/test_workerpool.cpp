@@ -63,6 +63,21 @@ class WorkerPoolImplementation : public Core::WorkerPool {
     private:
         std::list<Core::WorkerPool::Minion> _minions;
 };
+class WorkerPoolTypeImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
+public:
+    WorkerPoolTypeImplementation() = delete;
+    WorkerPoolTypeImplementation(const WorkerPoolImplementation&) = delete;
+    WorkerPoolTypeImplementation& operator=(const WorkerPoolImplementation&) = delete;
+
+    WorkerPoolTypeImplementation(const uint32_t stackSize)
+        : Core::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
+        {
+            Core::WorkerPool::Minion minion(Core::Thread::DefaultStackSize());
+        }
+        virtual ~WorkerPoolTypeImplementation()
+        {
+        }
+};
 
 Core::ProxyType<WorkerPoolImplementation> workerpool = Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize());
 
@@ -111,37 +126,28 @@ public:
         g_workerthreadDone = true;
     }
 };
-class WorkerPoolTypeImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
-public:
-    WorkerPoolTypeImplementation() = delete;
-    WorkerPoolTypeImplementation(const WorkerPoolImplementation&) = delete;
-    WorkerPoolTypeImplementation& operator=(const WorkerPoolImplementation&) = delete;
-
-    WorkerPoolTypeImplementation(const uint32_t stackSize)
-        : Core::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
-        {
-        }
-        virtual ~WorkerPoolTypeImplementation()
-        {
-        }
-};
-
 TEST(test_workerpool, simple_workerpool)
 {
     WorkerThreadClass object;
     object.Run();
     workerpool->Run();
+    workerpool->Id(0);
     EXPECT_EQ(workerpool->Id(1),(unsigned)0);
+    EXPECT_EQ(workerpool->Id(-1),(unsigned)0);
     workerpool->Snapshot();
     Core::ProxyType<Core::IDispatch> job(Core::ProxyType<WorkerJob>::Create());
     workerpool->Submit(job);
     workerpool->Schedule(Core::infinite, job);
     workerpool->Revoke(job);
+    workerpool->Instance();
+    EXPECT_TRUE(workerpool->IsAvailable());
 
     object.Stop();
 }
-TEST(DISABLED_test_workerjobpooltype, simple_workerjobpooltype)
+TEST(test_workerjobpooltype, simple_workerjobpooltype)
 {
+    workerpool.Release();
     WorkerPoolTypeImplementation workerpooltype(Core::Thread::DefaultStackSize());
-    workerpooltype.ThreadId(1);
+    workerpooltype.ThreadId(0);
+    Core::Singleton::Dispose();
 }
