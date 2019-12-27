@@ -193,6 +193,7 @@ namespace Core {
 #ifdef __APPLE__
         m_uptime = 0;
         m_totalram = 0;
+        m_pageSize = 0;
         m_freeram = 0;
         m_prevCpuSystemTicks = 0;
         m_prevCpuUserTicks = 0;
@@ -203,6 +204,7 @@ namespace Core {
 
         m_uptime = info.uptime;
         m_totalram = info.totalram;
+        m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = info.freeram;
 #endif
 #endif

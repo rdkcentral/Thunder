@@ -37,6 +37,9 @@ namespace Core {
 
         class EXTERNAL Iterator {
         public:
+            // Get all processes
+            Iterator();
+
             // Get the Child Processes with a name name from a Parent with a certain name
             Iterator(const string& parentname, const string& childname, const bool removepath);
 
@@ -201,7 +204,7 @@ namespace Core {
             return (_pid);
         }
 
-        inline Iterator Children()
+        inline Iterator Children() const
         {
             return (Iterator(_pid));
         }
@@ -295,13 +298,16 @@ namespace Core {
         uint64_t Shared() const;
         string Name() const;
         string Executable() const;
+        std::list<string> CommandLine() const;
         uint32_t Group(const string& groupName);
         string Group() const;
+        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         // Setting, or getting, the user can onl be done for the
         // current process, hence why they are static.
         static uint32_t User(const string& userName);
         static string User();
+        static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
     private:
         uint32_t _pid;
@@ -309,6 +315,20 @@ namespace Core {
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
+
+   class ProcessTree
+   {
+      public:
+         explicit ProcessTree(const uint32_t processId);
+
+         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
+         bool ContainsProcess(uint32_t pid) const;
+         uint32_t RootId() const;
+
+      private:
+         std::list<uint32_t> _pids;
+   };
+
 } // namespace Core
 } // namespace WPEFramework
 

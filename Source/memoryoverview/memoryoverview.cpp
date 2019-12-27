@@ -50,12 +50,12 @@ static void VisitChilds(Core::ProcessInfo::Iterator& it, std::ostringstream& str
 }
 
 std::string MemoryOverview::GetDependencies() {
-    Core::ProcessInfo::Iterator childiterator("bash", "Testapp", true);
+    Core::ProcessInfo::Iterator childiterator("bash", "memapp_parent", true);
 
     std::ostringstream stream;
 
     stream << "{\n";
-    stream << "\"process\" : \"" << "Testapp" << "\"\n";
+    stream << "\"process\" : \"" << childiterator.Current().Executable() << "\"\n";
     stream << "\"instances\" : [\n";
 
     VisitChilds(childiterator, stream);

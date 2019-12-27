@@ -60,6 +60,16 @@ namespace Core {
             return m_totalram;
         }
 
+        inline uint32_t GetPageSize() const
+        {
+           return m_pageSize;
+        }
+
+        inline uint32_t GetPhysicalPageCount() const
+        {
+           return m_totalram / m_pageSize;
+        }
+
         inline uint32_t GetUpTime()
         {
             UpdateRealtimeInfo();
@@ -286,6 +296,7 @@ namespace Core {
         const string m_HostName;
 
         uint64_t m_totalram;
+        uint32_t m_pageSize;
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
         mutable double m_cpuload;

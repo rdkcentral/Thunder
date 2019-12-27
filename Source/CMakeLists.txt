@@ -12,6 +12,8 @@ option(WEBSOCKET
         "Include the websocket library." OFF)
 option(PROTOCOLS
         "Include the protocols library." ON)
+option(MEMORYOVERVIEW
+        "Include memory overview functionality" OFF)
 option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
@@ -114,13 +116,11 @@ if(PROTOCOLS)
     add_subdirectory(protocols)
 endif()
 
-if(PROCESS)
-    add_subdirectory(WPEProcess)
+if(MEMORYOVERVIEW)
+    # TODO: do we still need "memoryoverview"?
+    add_subdirectory(memoryoverview)
+    add_subdirectory(WPEMemoryOverview)
 endif()
-
-add_subdirectory(memoryoverview)
-
-add_subdirectory(WPEMemoryOverview)
 
 if(PROXY_STUB)
     add_subdirectory(proxystubs)
