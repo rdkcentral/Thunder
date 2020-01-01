@@ -72,7 +72,7 @@
           "hdrtype": {
             "description": "HDR Type used",
             "type": "string",
-            "enum": [ "HDROff", "HDR10", "HDRDolbyVision", "HDRTechnicolor" ],
+            "enum": [ "HDROff", "HDR10", "HDR10Plus", "HDRDolbyVision", "HDRTechnicolor" ],
             "example": "HDROff"
           }
         },
