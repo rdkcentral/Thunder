@@ -91,5 +91,11 @@
         ]
       }
     }
+  },
+  "events": {
+    "updated": {
+      "summary": "Notifies about a change/update in the connection",
+      "description": "Register to this event to be notified about any change in the connection"
+    }
   }
 }
