@@ -420,13 +420,13 @@ class JsonRpcSchema(JsonType):
                     for name, method in s["methods"].iteritems():
                         newMethod = JsonMethod(name, self, method, include)
                         self.methods.append(newMethod)
-                if "events" in s:
-                    for name, method in s["events"].iteritems():
-                        newMethod = JsonNotification(name, self, method, include)
-                        self.methods.append(newMethod)
                 if "properties" in s:
                     for name, method in s["properties"].iteritems():
                         newMethod = JsonProperty(name, self, method, include)
+                        self.methods.append(newMethod)
+                if "events" in s:
+                    for name, method in s["events"].iteritems():
+                        newMethod = JsonNotification(name, self, method, include)
                         self.methods.append(newMethod)
 
         method_list = map(lambda x: x.name, self.methods)
@@ -447,6 +447,7 @@ class JsonRpcSchema(JsonType):
 
         if not self.methods:
             raise JsonParseError("no methods, properties or events defined in '%s'" % name)
+
     def CppClass(self):
         return JsonType.CppName(self)
     def Properties(self):
@@ -1627,10 +1628,13 @@ def CreateDocument(schema, path):
                 MdParagraph(description2)
                 MdBr()
 
+            skip_list = []
+
             if section in interface:
                 for method, props in interface[section].iteritems():
                     if props:
                         MethodDump(method, props, plugin_class, event, prop)
+                    skip_list.append(method)
 
             if "include" in interface:
                 for name, s in interface["include"].iteritems():
@@ -1638,7 +1642,8 @@ def CreateDocument(schema, path):
                         cl = s["info"]["class"]
                         if section in s:
                             for method, props in s[section].iteritems():
-                                MethodDump(method, props, plugin_class, event, prop, cl)
+                                if props and method not in skip_list:
+                                    MethodDump(method, props, plugin_class, event, prop, cl)
 
         if method_count:
             SectionDump("Methods", "methods", "method")
@@ -1668,7 +1673,7 @@ if __name__ == "__main__":
     argparser.add_argument("-s", "--stubs", dest="stubs", action="store_true", default=False, help="generate JSON-RPC stub code")
     argparser.add_argument("-p", dest="if_path",  metavar="PATH", action="store", type=str, default=IF_PATH, help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
     argparser.add_argument("-i", dest="if_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
-    argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory (default: output in the same directory as the source json)")
+    argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory, absolute path or directory relative to output file(default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--copy-ctor", dest="copy_ctor", action="store_true", default=False, help="always emit a copy constructor and assignment operator for a class (default: emit only when it appears to be needed)")
     argparser.add_argument("--keep-empty", dest="keep_empty", action="store_true", default=False, help="keep generated files that have no content (default: remove empty cpp/h files)")
@@ -1709,7 +1714,13 @@ if __name__ == "__main__":
                 schema = LoadSchema(path, os.path.abspath(args.if_dir) if args.if_dir else "")
                 output_path = path
                 if args.output_dir:
-                    output_path = os.path.join(args.output_dir, os.path.basename(output_path))
+                    if (args.output_dir[0]) == '/':
+                        output_path = os.path.join(args.output_dir, os.path.basename(output_path))
+                    else:
+                        dir = os.path.join(os.path.dirname(output_path), args.output_dir)
+                        if not os.path.exists(dir):
+                            os.makedirs(dir)
+                        output_path = os.path.join(dir, os.path.basename(output_path))
                 output_path = output_path.replace(".json", "")
                 if generateCode or generateStubs:
                     CreateCode(schema, output_path, generateCode, generateStubs)

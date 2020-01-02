@@ -22,6 +22,6 @@ fi
 
 echo "Generating Plugin markdown documentation..."
 
-./JsonGenerator.py --docs -i ../../Source/interfaces/json $files
+./JsonGenerator.py --docs -i ../../Source/interfaces/json $files -o doc
 
 echo "Done."
