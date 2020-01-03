@@ -7,7 +7,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 TEST(Core_Time, timedetails)
 {
     Time time (Time::Now());
@@ -50,21 +49,56 @@ TEST(Core_Time, from_standards)
     Time time (Time::Now());
     std::string timeString;
     time.ToString(timeString);
+
     time.FromString(timeString,true);
     time.FromString(timeString,false);
+
     time.FromANSI(timeString,true);    
     time.FromANSI(timeString,false);    
-    time.FromRFC1036(timeString);    
-    time.FromISO8601(timeString);    
+
+    time.FromRFC1036(timeString);
+    time.FromRFC1036("19941105T08:49:37.123+06:45"); 
+    time.FromRFC1036("1994-11-06T08:49:37.123+06:45"); 
+    time.FromRFC1036("1994-11-Jan-T08:12:49:37.123+06:45"); 
+    time.FromRFC1036("1994-11-Jan-T08:12:49:37 123+06:45"); 
+    time.FromRFC1036("1994-11-Jan-08:49:07+06:45");
+    time.FromRFC1036("1994Jan07T08:49:37.123+06:45"); 
+    time.FromRFC1036("1994-Jan-09T08:49:37.123+06:45");
+ 
+    time.FromISO8601(timeString);
+    time.FromISO8601("1994-11-06T08:49:37.123+06:45"); 
+    time.FromISO8601("1994-12-06T08:49:37.123+06:45"); 
+    time.FromISO8601("1994-13-06T08:49:37.123+06:45"); 
+    time.FromISO8601("1994-11-06T08:49:37");
+    time.FromISO8601("1994-12-06T08:49:37.123 06:45");
+    time.FromISO8601("1994-11-06T08:49:37.123-06:45"); 
+    time.FromISO8601("1994-11-06T08:49:37."); 
+    time.FromISO8601("1994-11-06T08:49:37.123+06 45"); 
+    time.FromISO8601("1994-11-06T08:49:37.123+24:45"); 
+    time.FromISO8601("1994-11-06T08:49:37.123+24:4"); 
+    time.FromISO8601("1994-11-06T08:49:37.123+06:45:"); 
+    time.FromISO8601("1994-11-06T08:49:37.123+"); 
+    time.FromISO8601("1994-11-06T08:49:37.123a"); 
+
+    time.FromANSI("1994Jan06T08:49:37.123+06:45",true); 
+    time.FromANSI("1994Jan06T08:49:37.803+06:45",true); 
+    time.FromANSI("1994Jan06T0a:49:37.123+06:45",true); 
+    time.FromANSI("1994Feb06T08:4a:37.123+06:45",true); 
+    time.FromANSI("1994Mar06T08:49:5a.123+06:45",true); 
+    time.FromANSI("1994Mara6T08:49:5a.123+06:45",true); 
+    time.FromANSI("1994Mar0aT08:49:5a.123+06:45",true); 
 }
 TEST(Core_Time, to_standards)
 {
     Time time (Time::Now());
     time.ToRFC1123(true);
     time.ToRFC1123(false);
+    Time().ToRFC1123(true);
+
     time.ToISO8601();
     time.ToISO8601(true);
     time.ToISO8601(false);
+    Time().ToISO8601(true);
 }
 TEST(Core_Time, FromRFC1123)
 {
@@ -128,4 +162,15 @@ TEST(Core_Time, FromRFC1123)
     t1.ToString(timeString,false);
     t1.FromRFC1123(timeString); 
     EXPECT_STREQ(timeString.c_str() ,_T("Sun, 23 Dec 2018 11:30:23 GMT"));
+
+    t1 =  Time(70,12,23,11,30,23,21,false);
+    t1.ToString(timeString,false);
+    t1.FromRFC1123(timeString);
+
+    t1 =  Time(80,12,23,11,30,23,21,false);
+    t1.ToString(timeString,false);
+    t1.FromRFC1123(timeString);
+
+    t1.FromRFC1123("1994Jan06T08:49:37.123+06:45");
+    t1.FromRFC1123("1994Jan0aT08:49:37.123+06:45");
 }
