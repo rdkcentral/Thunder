@@ -42,6 +42,18 @@ namespace Tests {
 
         testEnum.Clear();
         EXPECT_FALSE(testEnum.IsSet());
+
+        Core::EnumerateType<TestEnum> testEnum1;
+        testEnum.Assignment(true, "three");
+
+        EXPECT_FALSE(testEnum != testEnum1);
+        EXPECT_TRUE(testEnum != testEnum1.Value());
+
+        Core::EnumerateType<TestEnum> testEnum2(testEnum1);
+        Core::EnumerateType<TestEnum> testEnum3;
+        testEnum3 = testEnum1;
+        EXPECT_TRUE(testEnum3 == testEnum1);
+        testEnum3 = testEnum1.Value(); 
     }
 
     TEST(Core_Enumerate, FromEnumType)
