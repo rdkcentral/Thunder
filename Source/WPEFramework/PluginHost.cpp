@@ -627,6 +627,11 @@ namespace PluginHost {
                     uint32_t index = 0;
                     Core::ResourceMonitor::Metadata info;
 
+                    info.classname = _T("");
+                    info.descriptor = ~0;
+                    info.events = 0;
+                    info.monitor = 0;
+
                     while (monitor.Info(index, info) == true) {
 #ifdef __WINDOWS__
                         TCHAR flags[12];
