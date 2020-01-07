@@ -383,6 +383,8 @@ namespace Core {
                 Reevaluate();
             }
 
+            _responses.Unlock();
+
             return (result);
         }
         uint32_t Exchange(const typename DATAEXCHANGE::Request& request, typename DATAEXCHANGE::Response& response, const uint32_t allowedTime)

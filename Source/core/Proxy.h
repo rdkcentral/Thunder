@@ -1,24 +1,9 @@
-// ===========================================================================
-//
-// Filename:    Proxy.h
-//
-// Description: Header file for the Posix thread functions. This class
-//              encapsulates all posix thread functionality defined by the
-//              system.
-//
-// History
-//
-// Author        Reason                                             Date
-// ---------------------------------------------------------------------------
-// P. Wielders   Initial creation                                   2002/05/24
-//
-// ===========================================================================
-
 #ifndef __PROXY_H
 #define __PROXY_H
 
 // ---- Include system wide include files ----
 #include <map>
+#include <memory>
 
 // ---- Include local include files ----
 #include "StateTrigger.h"
@@ -67,15 +52,12 @@ namespace Core {
             size_t alignedSize = ((stAllocateBlock + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
 
             if (AdditionalSize != 0) {
-                Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(uint32_t) + AdditionalSize));
+                Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(void*) + AdditionalSize));
 
                 if (Space != nullptr) {
                     *(reinterpret_cast<uint32_t*>(&Space[alignedSize])) = AdditionalSize;
                 }
             } else {
-                // If we do not have an additional buffer, it has to be "empty". The elements m_Size and m_Buffer will not be used !!!
-                ASSERT(AdditionalSize == 0);
-
                 Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize));
             }
 
@@ -139,6 +121,30 @@ namespace Core {
         inline operator const CONTEXT&() const
         {
             return (*this);
+        }
+
+        inline uint32_t Size() const {
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+
+            return (*(reinterpret_cast<const uint32_t*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize]))));
+        }
+
+        template<typename TYPE>
+        TYPE* Store() {
+            size_t size = Size();
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
+            void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            return(reinterpret_cast<TYPE*>(result));
+        }
+
+        template<typename TYPE>
+        const TYPE* Store() const {
+            size_t size = Size();
+            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
+            const void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            return(reinterpret_cast<const TYPE*>(result));
         }
 
         inline bool LastRef() const

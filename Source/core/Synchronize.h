@@ -8,11 +8,10 @@ namespace WPEFramework {
 namespace Core {
     template <typename MESSAGE>
     class SynchronizeType {
-    private:
-        SynchronizeType(const SynchronizeType<MESSAGE>&);
-        SynchronizeType<MESSAGE> operator=(const SynchronizeType<MESSAGE>&);
 
     public:
+        SynchronizeType(const SynchronizeType<MESSAGE>&) = delete;
+        SynchronizeType<MESSAGE> operator=(const SynchronizeType<MESSAGE>&) = delete;
         SynchronizeType()
             : _response(nullptr)
             , _signal(false, true)
