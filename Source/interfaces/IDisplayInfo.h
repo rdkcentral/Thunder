@@ -10,8 +10,8 @@ namespace Exchange {
 
         virtual ~IDeviceProperties() { }
 
-        virtual const std::string Chipset() const = 0;
-        virtual const std::string FirmwareVersion() const = 0;
+        virtual const string Chipset() const = 0;
+        virtual const string FirmwareVersion() const = 0;
     };
 
     struct IGraphicsProperties : virtual public Core::IUnknown {
