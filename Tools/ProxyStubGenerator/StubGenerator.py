@@ -7,7 +7,8 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.4.1"
+VERSION = "1.5"
+NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
 INDENT_SIZE = 4
@@ -40,21 +41,24 @@ class Log:
         self.errors = []
         self.infos = []
     def Info(self, text, file = ""):
-        if SHOW_WARNINGS:
-            self.infos.append("INFO: %s%s%s" % (file, ": " if file else "", text))
+        if BE_VERBOSE:
+            self.infos.append("%s: INFO: %s%s%s" % (NAME, file, ": " if file else "", text))
             print self.infos[-1]
     def Warn(self, text, file = ""):
         if SHOW_WARNINGS:
-            self.warnings.append("WARNING: %s%s%s" % (file, ": " if file else "", text))
+            self.warnings.append("%s: WARNING: %s%s%s" % (NAME, file, ": " if file else "", text))
             print self.warnings[-1]
     def Error(self, text, file = ""):
-            self.errors.append("ERROR: %s%s%s" % (file, ": " if file else "", text))
+            self.errors.append("%s: ERROR: %s%s%s" % (NAME, file, ": " if file else "", text))
             print >> sys.stderr, self.errors[-1]
+    def Print(self, text, file = ""):
+        print("%s: %s%s%s" % (NAME, file, ": " if file else "", text))
     def Dump(self):
             if self.errors or self.warnings or self.infos:
                 print ""
                 for item in self.errors + self.warnings + self.infos:
                     print item
+
 
 log = Log()
 
@@ -67,8 +71,13 @@ class SkipFileError(RuntimeError):
 class NoInterfaceError(RuntimeError):
     pass
 
-class GeneratorError(RuntimeError):
-    pass
+
+class TypenameError(RuntimeError):
+    def __init__(self, type, msg):
+        msg = "%s(%s): %s" % (type.parser_file, type.parser_line, msg)
+        super(TypenameError, self).__init__(msg)
+        pass
+
 
 # -------------------------------------------------------------------------
 
@@ -107,10 +116,10 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                 has_id = True
                                                 break
                                 if not has_id:
-                                    log.Error("class %s does not have ID enumerator" % c.full_name, source_file)
-                            elif BE_VERBOSE:
+                                    log.Warn("class %s does not have ID enumerator" % c.full_name, source_file)
+                            else:
                                 log.Info("class %s not does not inherit from %s" % (c.full_name, CLASS_IUNKNOWN), source_file)
-                        elif BE_VERBOSE:
+                        else:
                             log.Info("class %s not in %s namespace" % (c.full_name, INTERFACE_NAMESPACE), source_file)
 
                     __Traverse(c, faces)
@@ -122,7 +131,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
         __Traverse(tree, interfaces)
         return interfaces
 
-    print "\nParsing '%s'..." % source_file
+    if BE_VERBOSE:
+        log.Print("Parsing '%s'..." % source_file)
 
     ids = os.path.join(os.path.dirname(source_file), IDS_DEFINITIONS_FILE)
 
@@ -141,10 +151,10 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
     if scan_only:
         return interfaces
 
+
     interface_header_name = os.path.basename(source_file)
 
     with open(output_file, "w") as file:
-        print "Creating file '%s'..." % output_file
         iface_namespace_l = INTERFACE_NAMESPACE.split("::")
         iface_namespace = iface_namespace_l[-1]
 
@@ -294,18 +304,17 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                     self.is_maxlength = False
                     self.length_type = "uint16_t"
                     self.str_nocv = TypeStr(self.type[typename_idx:typename_idx2 + 1])
+
+                    if not self._IsValid(self.typename):
+                        raise TypenameError(type_, "unable to serialise '%s %s': undefined type '%s'" % (self.str_otype, self.origname, self.str_typename))
                     if not self.obj and self.is_nonconstptr and not self.is_inputptr and not self.is_outputptr:
-                        raise GeneratorError("unable to serialise '%s %s': a non-const pointer requires in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const pointer requires an in/out tag" % (self.str_otype, self.origname))
                     if not self.obj and self.is_nonconstref and not self.is_inputref and not self.is_outputref:
-                        raise GeneratorError("unable to serialise '%s %s': a non-const reference requires in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference requires an in/out tag" % (self.str_otype, self.origname))
                     if self.obj and self.is_nonconstref and self.is_nonconstptr and not self.is_inputref and not self.is_outputref:
-                        raise GeneratorError("unable to serialise '%s %s': a non-const reference to pointer requires in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference to pointer requires an in/out tag" % (self.str_otype, self.origname))
                     if self.obj and self.is_nonconstref and self.is_nonconstptr and self.is_inputref:
-                        raise GeneratorError("unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.str_otype, self.origname))
-                    if BE_VERBOSE:
-                        for t in self.type:
-                            if t in ["std::string"]:
-                                log.Warn("'%s' used instead of 'string' (see class %s)" % (t, face.obj.full_name), source_file)
+                        raise TypenameError(type_, "unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.str_otype, self.origname))
 
                 def CheckRpcType(self):
                     if self.str_rpctype == None:
@@ -325,6 +334,30 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         self.str_rpctype_nocv = self._RpcType(self.str_nocvref)
                     return self.str_rpctype_nocv
 
+                def _IsNumeric(self, type):
+                    if type in ["size_t", "time_t", "float", "uint64_t", "int64_t", "uint32_t", "int32_t", "uint16_t", "int16_t", "uint8_t", "int8_t"] \
+                        or str(type).split(" ")[-1] in ["char", "short", "long", "int", "signed", "unsigned", "double", "wchar_t"]:
+                            return True
+                    return False
+
+                def _IsBoolean(self, type):
+                    return type in ["bool", "Bool", "Boolean"]
+
+                def _IsString(self, type):
+                    return type in ["std::string", "string"]
+
+                def _IsEnum(self, type):
+                    return isinstance(type, CppParser.Enum)
+
+                def _IsTypedef(self, type):
+                    return isinstance(type, CppParser.Typedef)
+
+                def _IsObject(self, type):
+                    return isinstance(type, CppParser.Class)
+
+                def _IsValid(self, type):
+                    return self._IsNumeric(type) or self._IsBoolean(type) or self._IsString(type) or self._IsEnum(type) or self._IsTypedef(type) or self._IsObject(type) or type == "void"
+
                 # Converts a C++ type to RPC types
                 def _RpcType(self, noref):
                     if self.is_ptr:
@@ -332,24 +365,19 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             return "Number<%s>" % noref
                         else:
                             return "Buffer<%s>" % self.length_type
-                    if isinstance(self.typename, CppParser.Enum):
+                    elif self._IsEnum(self.typename):
                         return "Number<%s>" % noref
-                    for t in self.type:
-                        if t in ["time_t", "uint64_t", "int64_t", "uint32_t", "int32_t", "uint16_t", "int16_t", "uint8_t", "int8_t"] \
-                            or str(t).split(" ")[-1] in ["char", "short", "long", "int", "signed", "unsigned", "float", "double", "wchar_t"]:
-                                return "Number<%s>" % noref
-                    for t in self.type:
-                        if t in ["std::string", "string"]:
-                            return "Text"
-                    for t in self.type:
-                        if t in ["bool", "Bool", "Boolean"]:
-                            return "Boolean"
-
-                    if isinstance(t, CppParser.Typedef):
+                    elif self._IsNumeric(self.typename):
+                        return "Number<%s>" % noref
+                    elif self._IsString(self.typename):
+                        return "Text"
+                    elif self._IsBoolean(self.typename):
+                        return "Boolean"
+                    elif self._IsTypedef(self.typename):
                         et = EmitType(self.oclass, self.ocv, True)
                         return et._RpcType(noref)
-
-                    raise GeneratorError("unable to serialise '%s': unsupported type" % self.str_otype)
+                    else:
+                        raise TypenameError(self.oclass, "unable to serialise type '%s'" % self.str_otype)
 
                 def _ExpandTypedefs(self, typ):
                     expanded = []
@@ -419,7 +447,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 return "const_cast<%s>(%s)" % (typ, identifier)
 
             if iface.obj.omit:
-                log.Info("omitted class %s" % iface.obj.full_name, source_file)
+                log.Print("omitted class %s" % iface.obj.full_name, source_file)
                 continue
 
             emit_methods = [m for m in iface.obj.methods if "pure-virtual" in m.specifiers]
@@ -427,7 +455,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 log.Warn("nothing emit for interface class %s" % iface.obj.full_name, source_file)
                 continue
 
-            print "Emitting stub code for interface '%s'..." % iface_name
+            if BE_VERBOSE:
+                log.Print("Emitting stub code for interface '%s'..." % iface_name)
 
             # build the announce list upfront
             announce_list[iface_name] = [class_name, array_name, stub_name, iface]
@@ -466,7 +495,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                     q.length_name = length_name
                                                     q.length_target = target
                                                     if param_type and param_type != q.str_typename:
-                                                        raise GeneratorError(("unable to serialise '%s': %slength variable '%s' type mismatch" % (p.origname, "max" if maxlength else "", token)))
+                                                        raise TypenameError(p.oclass, "unable to serialise '%s': %slength variable '%s' type mismatch" % (p.origname, "max" if maxlength else "", token))
                                                     param_type = q.str_typename
                                                     has_param_ref = True
                                                     param_ref = q
@@ -480,13 +509,13 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                 break
                                             elif token == "sizeof":
                                                 if sizeof_parsing:
-                                                    raise GeneratorError("unable to serialise '%s': %slength variable has nested sizeof" % (p.origname, "max" if maxlength else ""))
+                                                    raise TypenameError(p.oclass, "unable to serialise '%s': %slength variable has nested sizeof" % (p.origname, "max" if maxlength else ""))
                                                 parsed.append(token)
                                                 sizeof_parsing =-True
                                             elif sizeof_parsing:
                                                 parsed.append(token)
                                             else:
-                                                raise GeneratorError("unable to serialise '%s': %slength variable '%s' not found" % (p.origname, "max" if maxlength else "", token))
+                                                raise TypenameError(p.oclass, "unable to serialise '%s': %slength variable '%s' not found" % (p.origname, "max" if maxlength else "", token))
                                         else:
                                             parsed.append(t)
                                     else:
@@ -521,17 +550,17 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(p.ptr_length, False, c, "param%i_length" % c)
                                 p.length_var = "param%i_length" % c
                             if not p.ptr_length:
-                                raise GeneratorError("unable to serialise '%s': length variable not defined" % (p.origname))
+                                raise TypenameError(p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
 
             for m in emit_methods:
                 if m.omit:
-                    log.Info("omitted method %s" % iface.obj.full_name, source_file)
+                    log.Print("omitted method %s" % iface.obj.full_name, source_file)
                     emit.Line("// method omitted")
                     emit.Line("//")
                     emit.Line("")
                     continue
                 elif BE_VERBOSE:
-                     print "  generating code for %s()" % m.full_name
+                     log.Print("  generating code for %s()" % m.full_name)
 
                 proxy_count = 0
                 output_params = 0
@@ -571,6 +600,12 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         emit.Line("// read parameters")
                         emit.Line("RPC::Data::Frame::Reader reader(input.Reader());")
                         for c, p in enumerate(params):
+                            if (p.is_length or p.is_maxlength):
+                                if p.is_ptr:
+                                    raise TypenameError(p.oclass, "unsupported: '%s' length variable is a pointer" % p.origname)
+                                elif p.obj:
+                                    raise TypenameError(p.oclass, "'%s' length variable is an object" % p.origname)
+
                             # if parameter is passed by value or by reference, then try to  decompose it
                             if not p.is_ptr and not p.CheckRpcType():
                                 if p.obj:
@@ -581,9 +616,9 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                         for attr in p.obj.vars:
                                             emit.Line("param%i.%s = reader.%s();" % (c, attr.name, EmitParam(attr).RpcTypeNoCV()))
                                     else:
-                                        raise GeneratorError("unable to decompose '%s': non-POD type" % p.str_typename)
+                                        raise TypenameError(m, "method '%s': unable to decompose parameter '%s': non-POD type" % (m.name, p.str_typename))
                                 elif not p.RpcType():
-                                    raise GeneratorError("unable to decompose '%s': unknown type" % p.str_typename)
+                                    raise TypenameError(m, "method '%s': unable to decompose parameter '%s': unknown type" % (m.name, p.str_typename))
                             else:
                                 if p.is_ptr and not p.obj and not p.is_ref and p.length_type == "void":
                                     emit.Line("%s %s = %s; // storage" % (p.str_typename, p.name, NULLPTR))
@@ -595,7 +630,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 elif p.is_ref and not p.is_input:
                                     emit.Line("%s %s{}; // storage" % (p.str_nocvref, p.name))
                                     if p.is_length or p.is_maxlength:
-                                        raise GeneratorError("%s is a length variable but is write-only" % p.origname)
+                                        raise TypenameError(p.oclass, "'%s' is defined as a length variable but is write-only" % p.origname)
                                 elif not p.is_length or p.is_maxlength or not params[p.length_target].is_input:
                                     emit.Line("%s %s = reader.%s();" % (p.str_nocvref if p.proxy else p.str_noref, p.length_name if p.is_length else p.name, p.RpcTypeNoCV()))
                                 if p.is_length:
@@ -607,7 +642,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             elif not p.is_ptr and not p.CheckRpcType():
                                 pass
                             else:
-                                if p.is_ptr and not p.obj and p.is_output  and p.length_type != "void":
+                                if p.is_ptr and not p.obj and p.is_output and p.length_type != "void":
                                     if p.is_output:
                                         emit.Line()
                                         if p.is_input:
@@ -723,9 +758,9 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                     for attr in retval.obj.vars:
                                         emit.Line("writer.%s(output.%s);" % (EmitParam(attr).RpcTypeNoCV(), attr.name))
                                 else:
-                                    raise GeneratorError("unable to decompose '%s': non-POD type" % retval.str_typename)
+                                    raise TypenameError(m, "method '%s': unable to decompose parameter type '%s': non-POD type" % (m.name, retval.str_typename))
                             elif not retval.RpcType():
-                                raise GeneratorError("unable to decompose '%s': unknown type" % retval.str_typename)
+                                raise TypenameError(m, "method '%s': unable to decompose parameter '%s': unknown type" % (m.name, retval.str_typename))
                         else:
                             emit.Line("writer.%s(output);" % retval.RpcType())
                             if retval.obj:
@@ -779,7 +814,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 emit.Line("}")
 
                 else:
-                    log.Info("stubbed method %s" % m.full_name, source_file)
+                    log.Print("stubbed method %s" % m.full_name, source_file)
                     if params:
                         emit.Line("RPC::Data::Frame::Reader reader(input.Reader());")
                     if retval.has_output:
@@ -817,7 +852,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
             if not emit_methods:
                 continue
 
-            print "Emitting proxy code for interface '%s'..." % iface_name
+            if BE_VERBOSE:
+                log.Print("Emitting proxy code for interface '%s'..." % iface_name)
 
             emit.Line("//")
             emit.Line("// %s interface proxy definitions" % (iface_name))
@@ -899,9 +935,9 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                         for attr in p.obj.vars:
                                             emit.Line("writer.%s(param%i.%s);" % (EmitParam(attr).RpcTypeNoCV(), c, attr.name))
                                     else:
-                                        raise GeneratorError("unable to decompose '%s': non-POD type" % p.str_typename)
+                                        raise TypenameError(m, "method '%s': unable to decompose parameter '%s': non-POD type" % (m.name, p.str_typename))
                                 elif not p.RpcType():
-                                    raise GeneratorError("unable to decompose '%s': unknown type" % p.str_typename)
+                                    raise TypenameError(m, "method '%s': unable to decompose parameter '%s': unknown type" % (m.name, p.str_typename))
                             else:
                                 if p.is_ptr and p.obj:
                                     proxy_params += 1
@@ -955,9 +991,9 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                         for attr in retval.obj.vars:
                                             emit.Line("%s.%s = reader.%s();" % (retval.name, attr.name, EmitParam(attr, cv = ["const"]).RpcTypeNoCV()))
                                     else:
-                                        raise GeneratorError("unable to decompose '%s': non-POD type" % retval.str_typename)
+                                        raise TypenameError(m, "method '%s': unable to decompose return value '%s': non-POD type" % (m.name, retval.str_typename))
                                 elif not retval.RpcType():
-                                    raise GeneratorError("unable to decompose '%s': unknown type" % retval.str_typename)
+                                    raise TypenameError(m, "method '%s': unable to decompose '%s': unknown type" % (m.name, retval.str_typename))
                             else:
                                 emit.Line("%s = reader.%s();" % (retval.name, retval.RpcTypeNoCV()))
 
@@ -1021,7 +1057,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
             emit.Line("}; // class %s" % class_name)
             emit.Line()
 
-        print "Emitting stub registration code..."
+        if BE_VERBOSE:
+            log.Print("Emitting stub registration code...")
 
         #
         # EMIT REGISTRATION CODE
@@ -1076,7 +1113,6 @@ if __name__ == "__main__":
     argparser.add_argument("--help-tags", dest="help_tags", action="store_true", default=False, help="show help on supported source code tags and exit")
     argparser.add_argument("--version", dest="show_version", action="store_true", default=False, help="display version")
     argparser.add_argument("-i", dest="extra_include",  metavar="FILE", action="store", default=DEFAULT_DEFINITIONS_FILE, help="include a C++ header file (default: include '%s')" % DEFAULT_DEFINITIONS_FILE)
-    argparser.add_argument("--scan-ids", dest="scan_ids", action="store_true", default=False, help="scan interface IDs and exit")
     argparser.add_argument("--namespace", dest="if_namespace", metavar="NS", type=str, action="store", default=INTERFACE_NAMESPACE, help="set namespace to look for interfaces in (default: %s)" % INTERFACE_NAMESPACE)
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="set code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--traces", dest="traces", action="store_true", default=False, help="emit traces in generated proxy/stub code (default: no extra traces)")
@@ -1092,7 +1128,7 @@ if __name__ == "__main__":
     BE_VERBOSE = args.verbose
     INTERFACE_NAMESPACE = args.if_namespace
     EMIT_TRACES = args.traces
-    scan_only = args.scan_ids
+    scan_only = False
     keep_incomplete = args.keep_incomplete
 
     if INTERFACE_NAMESPACE[0:2] != "::":
@@ -1141,22 +1177,24 @@ if __name__ == "__main__":
                     output = GenerateStubs(output_file, source_file, os.path.join(os.path.dirname(os.path.realpath(__file__)), DEFAULT_DEFINITIONS_FILE), scan_only)
                     faces += output
 
+                    log.Print("created file '%s'" % output_file)
+
                     # dump interfaces if only scanning
                     for f in sorted(output, key=lambda x: x.id):
                         if scan_only:
                             print f.id, f.obj.full_name
 
                 except SkipFileError as err:
-                    print "skipped file '%s'" % err
+                    log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
                 except NoInterfaceError as err:
                     log.Warn("no interface classes found", source_file)
-                except GeneratorError as err:
-                    log.Error(err, source_file)
+                except TypenameError as err:
+                    log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
                         os.remove(output_file)
                 except CppParser.ParserError as err:
-                    log.Error(err, source_file)
+                    log.Error(err)
 
             if scan_only:
                 print "\nInterface dump:"
@@ -1169,20 +1207,20 @@ if __name__ == "__main__":
                             print "..."
                         print "%s (%s) - '%s'" % (hex(f.id) if isinstance(f.id, (int, long)) else "?", str(f.id), f.obj.full_name)
                     if i and sorted_faces[i - 1].id == f.id:
-                        log.Error("duplicate interface ID %s (%s) of %s" % (hex(f.id) if isinstance(f.id, (int, long)) else "?", str(f.id), f.obj.full_name), f.file)
-                elif BE_VERBOSE:
-                    log.Warn("can't evaluate interface ID \"%s\" of %s" % (str(f.id), f.obj.full_name), f.file)
+                        log.Warn("duplicate interface ID %s (%s) of %s" % (hex(f.id) if isinstance(f.id, (int, long)) else "?", str(f.id), f.obj.full_name), f.file)
+                else:
+                    log.Info("can't evaluate interface ID \"%s\" of %s" % (str(f.id), f.obj.full_name), f.file)
 
-            print ""
-            print ("ProxyStubGenerator: All done. %i file%s processed" % (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) + \
+
+            if len(interface_files) > 1 and BE_VERBOSE:
+                print ""
+
+            log.Print(("all done; %i file%s processed" % (len(interface_files) - len(skipped), "s" if len(interface_files) - len(skipped) > 1 else "")) + \
                 ((" (%i file%s skipped)" % (len(skipped), "s" if len(skipped) > 1 else "")) if skipped else "") + \
-                (". %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) + \
+                ("; %i interface%s parsed:" % (len(faces), "s" if len(faces) > 1 else "")) + \
                 ((" %i error%s" % (len(log.errors), "s" if len(log.errors) > 1 else "")) if log.errors else " no errors") + \
-                ((" (%i warning%s)" % (len(log.warnings), "s" if len(log.warnings) > 1 else "")) if log.warnings else "") + \
-                "."
-
-            log.Dump()
+                ((" (%i warning%s)" % (len(log.warnings), "s" if len(log.warnings) > 1 else "")) if log.warnings else ""))
         else:
-            print "Nothing to do."
+            loig.Print("Nothing to do")
 
         sys.exit(1 if len(log.errors) else 0)
