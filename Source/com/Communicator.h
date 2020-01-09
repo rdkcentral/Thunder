@@ -1017,6 +1017,10 @@ namespace RPC {
             {
                 return (_connectionMap != nullptr);
             }
+            const uint32_t Id() const
+            {
+                return _id;
+            }
 
         private:
             // Non ref-counted reference to our parent, of which we are a composit :-)
@@ -1056,12 +1060,15 @@ namespace RPC {
                     Core::ProxyType<AnnounceMessage> message(Core::proxy_cast<AnnounceMessage>(data));
 
                     ASSERT(message.IsValid() == true);
+                    ASSERT(dynamic_cast<Client*>(&channel) != nullptr);
+
+                    Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
 
                     // Anounce the interface as completed
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
-                    void* result = _parent.Announce(channel, message->Parameters());
+                    void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(result, _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(result, proxyChannel->Extension().Id() ,_parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1141,12 +1148,10 @@ namespace RPC {
             }
 
         private:
-            inline void* Announce(Core::IPCChannel& channel, const Data::Init& info)
+            inline void* Announce(Core::ProxyType<Client>& channel, const Data::Init& info)
             {
                 // We are in business, register the process with this channel.
-                ASSERT(dynamic_cast<Client*>(&channel) != nullptr);
-                Core::ProxyType<Client> proxyChannel(static_cast<Client&>(channel));
-                return (_connections.Announce(proxyChannel, info));
+                return (_connections.Announce(channel, info));
             }
 
         private:
@@ -1348,6 +1353,10 @@ namespace RPC {
             return (&_handler);
         }
 
+        inline uint32_t ConnectionId() const {
+            return _connectionId;
+        }
+
         // Open a communication channel with this process, no need for an initial exchange
         uint32_t Open(const uint32_t waitTime);
 
@@ -1507,6 +1516,7 @@ namespace RPC {
         Core::ProxyType<RPC::AnnounceMessage> _announceMessage;
         Core::Event _announceEvent;
         AnnounceHandlerImplementation _handler;
+        uint32_t _connectionId;
     };
 }
 }
