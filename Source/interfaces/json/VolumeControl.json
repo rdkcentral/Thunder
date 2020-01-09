@@ -1,0 +1,65 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "VolumeControl API",
+    "class": "VolumeControl",
+    "description": "VolumeControl JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "properties": {
+    "volume": {
+      "summary": "Volume in percents",
+      "params": {
+        "type": "number",
+        "size": 8,
+        "example": 50
+      },
+
+      "events": [
+        "volumechange"
+      ]
+    },
+    "muted": {
+      "summary": "Drives whether audop should be muted",
+      "params": {
+        "type": "boolean",
+        "example": true
+      },
+      "events": [
+        "mutedchange"
+      ]
+    }
+  },
+  "events": {
+    "volumechange": {
+      "summary": "Signals change of the volume",
+      "params": {
+        "type": "object",
+        "properties": {
+          "volume": {
+            "description": "Current volume value",
+            "type": "number",
+            "size": 8,
+            "example": 100
+          }
+        }
+      }
+    },
+    "mutedchange": {
+      "summary": "Signals change of the muted property",
+      "params": {
+        "type": "object",
+        "properties": {
+          "muted": {
+            "description": "Muted state",
+            "type": "boolean",
+            "example": true
+          }
+        }
+      }
+    }
+  }
+}
