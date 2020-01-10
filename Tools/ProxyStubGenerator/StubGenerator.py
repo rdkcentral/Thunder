@@ -7,7 +7,7 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.5"
+VERSION = "1.5.1"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -242,46 +242,51 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 return ostr.strip().replace(" *", "*").replace(" &", "&")
 
             class EmitType:
-                def __init__(self, type_, cv = [], expand = False):
+                def __init__(self, type_, cv = []):
+                    def _Typename(type, cv):
+                        is_ref = False
+                        is_ptr = False
+                        typename_idx = len(type) - 1
+                        while type[typename_idx] in ["const", "volatile"]:
+                            typename_idx -= 1
+                        typename_idx2 = typename_idx
+                        if type[typename_idx] == "&":
+                            is_ref = True
+                            typename_idx -= 1
+                        if type[typename_idx] == "*":
+                            is_ptr = True
+                        while self.type[typename_idx] in ["*", "&"]:
+                            typename_idx -= 1
+                        if cv and not is_ptr and not is_ref and (type[-1] != "void") and (type[0] not in ["const", "volatile"]):
+                            type = cv + type
+                            typename_idx += len(cv)
+                        return is_ref, is_ptr, typename_idx, typename_idx2, type
                     type = type_.type
                     input = type_.input
                     output = type_.output
                     length = type_.length
                     maxlength = type_.maxlength
                     origname = type_.name
-                    name = origname
                     self.ocv = cv
                     self.oclass = type_
-                    self.otype = type
-                    self.str_otype = TypeStr(self.otype)
-                    self.type = self._ExpandTypedefs(self.otype) if expand else self.otype
-                    typename_idx = len(self.type) - 1
-                    self.is_ptr = False
-                    self.is_ref = False
-                    while self.type[typename_idx] in ["const", "volatile"]:
-                        typename_idx -= 1
-                    typename_idx2 = typename_idx
-                    if self.type[typename_idx] == "&":
-                        self.is_ref = True
-                        typename_idx -= 1
-                    if self.type[typename_idx] == "*":
-                        self.is_ptr = True
-                    while self.type[typename_idx] in ["*", "&"]:
-                        typename_idx -= 1
-                    if cv and not self.is_ptr and not self.is_ref and (self.type[-1] != "void") and (self.type[0] not in ["const", "volatile"]):
-                        self.type = cv + self.type
-                        typename_idx += len(cv)
+                    self.unexpanded = type
+                    self.type = self._ExpandTypedefs(type)
+                    self.is_ref, self.is_ptr, idx, idx2, self.type = _Typename(self.type, cv)
+                    is_ref, is_ptr, typename_idx, typename_idx2, self.unexpanded = _Typename(self.unexpanded, cv)
                     self.is_nonconstref = self.is_ref and self.type[0] != "const"
                     self.is_nonconstptr = self.is_ptr and self.type[0] != "const"
-                    self.typename = self.type[typename_idx]
-                    self.obj = self.typename if isinstance(self.typename, CppParser.Class) else None
-                    self.str = TypeStr(self.type)
+
+                    self.typename = self.unexpanded[typename_idx]
+                    self.expanded_typename = self.type[idx]
+                    self.obj = self.expanded_typename if isinstance(self.expanded_typename, CppParser.Class) else None
+                    self.str = TypeStr(self.unexpanded)
                     self.str_typename = TypeStr([self.typename])
-                    self.str_noptrref = TypeStr(self.type[:typename_idx + 1])
+                    self.str_noptrref = TypeStr(self.unexpanded[:typename_idx + 1])
                     self.str_nocvref = self.str_typename + ("*" if self.is_ptr else "")
-                    i = len(self.type) - 1
-                    while self.type[i] in ["const", "volatile", "&"]: i -= 1
-                    self.str_noref = TypeStr(self.type[:i + 1])
+                    i = len(self.unexpanded) - 1
+                    while self.unexpanded[i] in ["const", "volatile", "&"]: i -= 1
+                    self.str_noref = TypeStr(self.unexpanded[:i + 1])
+
                     self.str_rpctype = None
                     self.str_rpctype_nocv = None
                     self.is_inputptr = self.is_ptr and (input or not self.is_nonconstptr)
@@ -306,15 +311,16 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                     self.str_nocv = TypeStr(self.type[typename_idx:typename_idx2 + 1])
 
                     if not self._IsValid(self.typename):
-                        raise TypenameError(type_, "unable to serialise '%s %s': undefined type '%s'" % (self.str_otype, self.origname, self.str_typename))
+                        raise TypenameError(type_, "unable to serialise '%s %s': undefined type '%s'" % (self.CppType(), self.origname, self.str_typename))
                     if not self.obj and self.is_nonconstptr and not self.is_inputptr and not self.is_outputptr:
-                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const pointer requires an in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const pointer requires an in/out tag" % (self.CppType(), self.origname))
                     if not self.obj and self.is_nonconstref and not self.is_inputref and not self.is_outputref:
-                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference requires an in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference requires an in/out tag" % (self.CppType(), self.origname))
                     if self.obj and self.is_nonconstref and self.is_nonconstptr and not self.is_inputref and not self.is_outputref:
-                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference to pointer requires an in/out tag" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference to pointer requires an in/out tag" % (self.CppType(), self.origname))
                     if self.obj and self.is_nonconstref and self.is_nonconstptr and self.is_inputref:
-                        raise TypenameError(type_, "unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.str_otype, self.origname))
+                        raise TypenameError(type_, "unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.CppType(), self.origname))
+
 
                 def CheckRpcType(self):
                     if self.str_rpctype == None:
@@ -323,6 +329,9 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         except:
                             pass
                     return self.str_rpctype
+
+                def CppType(self):
+                    return self.str
 
                 def RpcType(self):
                     if self.str_rpctype == None:
@@ -365,19 +374,19 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             return "Number<%s>" % noref
                         else:
                             return "Buffer<%s>" % self.length_type
-                    elif self._IsEnum(self.typename):
+                    elif self._IsEnum(self.expanded_typename):
                         return "Number<%s>" % noref
-                    elif self._IsNumeric(self.typename):
+                    elif self._IsNumeric(self.expanded_typename):
                         return "Number<%s>" % noref
-                    elif self._IsString(self.typename):
+                    elif self._IsString(self.expanded_typename):
                         return "Text"
-                    elif self._IsBoolean(self.typename):
+                    elif self._IsBoolean(self.expanded_typename):
                         return "Boolean"
-                    elif self._IsTypedef(self.typename):
-                        et = EmitType(self.oclass, self.ocv, True)
+                    elif self._IsTypedef(self.expanded_typename):
+                        et = EmitType(self.oclass, self.ocv)
                         return et._RpcType(noref)
                     else:
-                        raise TypenameError(self.oclass, "unable to serialise type '%s'" % self.str_otype)
+                        raise TypenameError(self.oclass, "unable to serialise type '%s'" % self.CppType())
 
                 def _ExpandTypedefs(self, typ):
                     expanded = []
@@ -415,7 +424,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 acc += " [in]"
                             elif p.is_output:
                                 acc += " [out]"
-                    sig += TypeStr(p.type) + acc + (", " if c != len(method.vars)-1 else "")
+                    sig += TypeStr(p.unexpanded if isinstance(p, EmitType) else p.type) + acc + (", " if c != len(method.vars)-1 else "")
                 sig += ")"
                 for q in method.qualifiers:
                     sig += " " + q
@@ -437,7 +446,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 acc += " /* in */"
                             elif p.is_output:
                                 acc += " /* out */"
-                    proto += TypeStr(p.type) + acc +" param%i%s" % (c, (", " if c != len(method.vars)-1 else ""))
+                    proto += TypeStr(p.unexpanded) + acc +" param%i%s" % (c, (", " if c != len(method.vars)-1 else ""))
                 proto += ")"
                 for q in method.qualifiers:
                     proto += " " + q
@@ -1142,7 +1151,7 @@ if __name__ == "__main__":
         print "For non-const pointer and reference method/function parameters:"
         print "   @in               - denotes an input parameter"
         print "   @out              - denotes an output parameter"
-        print "   @inout            - denotes an input/output parameter (or @in @out)"
+        print "   @inout            - denotes an input/output parameter (equivalent of @in @out)"
         print "   @length:<expr>    - specifies a buffer length value (a constant, a parameter name or a math expression)"
         print "   @maxlength:<expr> - specifies a maximum buffer length value (a constant, a parameter name or a math expression),"
         print "                       if not specified @length is used as maximum length, use round parenthesis for expressions,"
@@ -1188,7 +1197,7 @@ if __name__ == "__main__":
                     log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
                 except NoInterfaceError as err:
-                    log.Warn("no interface classes found", source_file)
+                    log.Warn("no interface classes found in %s" %( INTERFACE_NAMESPACE), source_file)
                 except TypenameError as err:
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
@@ -1221,6 +1230,6 @@ if __name__ == "__main__":
                 ((" %i error%s" % (len(log.errors), "s" if len(log.errors) > 1 else "")) if log.errors else " no errors") + \
                 ((" (%i warning%s)" % (len(log.warnings), "s" if len(log.warnings) > 1 else "")) if log.warnings else ""))
         else:
-            loig.Print("Nothing to do")
+            log.Print("Nothing to do")
 
         sys.exit(1 if len(log.errors) else 0)

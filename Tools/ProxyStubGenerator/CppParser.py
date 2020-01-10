@@ -576,7 +576,7 @@ def __Tokenize(contents):
                     current_file = token[idx:]
                 if "@line:" in token:
                     idx = token.index("@line:")+6
-                    if tagtokens[-1].startswith("@LINE:"):
+                    if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
