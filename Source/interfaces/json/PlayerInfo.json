@@ -11,17 +11,17 @@
       "type": "string",
       "enum": [
         "Undefined",
-        "AudioAAC",
-        "AudioAC3",
-        "AudioAC3Plus",
-        "AudioDTS",
-        "AudioMPEG1",
-        "AudioMPEG2",
-        "AudioMPEG3",
-        "AudioMPEG4",
-        "AudioOPUS",
-        "AudioVorbisOGG",
-        "AudioWAV"
+        "AAC",
+        "AC3",
+        "AC3Plus",
+        "DTS",
+        "MPEG1",
+        "MPEG2",
+        "MPEG3",
+        "MPEG4",
+        "OPUS",
+        "VorbisOGG",
+        "WAV"
       ],
       "enumvalues": [
         0,
@@ -44,14 +44,14 @@
       "type": "string",
       "enum": [
         "Undefined",
-        "VideoH263",
-        "VideoH264",
-        "VideoH265",
-        "VideoH26510",
-        "VideoMPEG",
-        "VideoVP8",
-        "VideoVP9",
-        "VideoVP10"
+        "H263",
+        "H264",
+        "H265",
+        "H26510",
+        "MPEG",
+        "VP8",
+        "VP9",
+        "VP10"
       ],
       "enumvalues": [
         0,
