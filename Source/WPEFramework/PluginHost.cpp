@@ -405,7 +405,16 @@ namespace PluginHost {
  
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
-        Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
+        if ( Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value()) != Core::ERROR_NONE){
+#ifndef __WINDOWS__
+            if (_background == true) {
+                syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable trace functionality!");
+            } else
+#endif
+            {
+                fprintf(stdout, "Could not enable trace functionality!\n");
+            }
+        }
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
