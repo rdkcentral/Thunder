@@ -15,6 +15,7 @@ set(PUBLIC_HEADERS
         com.h
         Communicator.h
         Ids.h
+        IRPCIterator.h
         IStringIterator.h
         IValueIterator.h
         ITracing.h
