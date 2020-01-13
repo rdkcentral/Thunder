@@ -287,7 +287,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -297,7 +297,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -330,7 +330,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -340,7 +340,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -377,7 +377,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -387,7 +387,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -424,7 +424,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -434,7 +434,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>

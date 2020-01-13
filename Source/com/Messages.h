@@ -320,28 +320,40 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
+            void Set(void* implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& traceCategories)
             {
                 _data.SetNumber<void*>(0, implementation);
-                uint16_t length = _data.SetText(sizeof(void*), proxyStubPath);
-                _data.SetText(sizeof(void*) + length, traceCategories);
+                _data.SetNumber<uint32_t>(sizeof(void*), sequenceNumber);
+                uint16_t length = _data.SetText(sizeof(void*) + sizeof(uint32_t), proxyStubPath);
+                _data.SetText(sizeof(void*)+ sizeof(uint32_t) + length, traceCategories);
             }
 			inline bool IsSet() const {
                 return (_data.Size() > 0);
 			}
+            uint32_t SequenceNumber() const
+            {
+                uint32_t result;
+                _data.GetNumber<uint32_t>(sizeof(void*), result);
+                return (result);
+            }
             string ProxyStubPath() const
             {
                 string value;
 
-                _data.GetText(sizeof(void*), value);
+                uint16_t length = sizeof(void*) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
 
+                _data.GetText(length, value); 
+                
                 return (value);
             }
             string TraceCategories() const
             {
                 string value;
 
-                _data.GetText(sizeof(void*) + _data.GetText(sizeof(void*), value), value);
+                uint16_t length = sizeof(void*) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                length += _data.GetText(length, value);  // skip proxyStub path
+
+                _data.GetText(length, value); 
 
                 return (value);
             }

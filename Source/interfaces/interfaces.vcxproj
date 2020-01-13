@@ -184,7 +184,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(SolutionDir)src\base\interfaces"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -213,7 +213,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(SolutionDir)src\base\interfaces"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -242,7 +242,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(SolutionDir)src\base\interfaces"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -275,7 +275,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(SolutionDir)src\base\interfaces"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>

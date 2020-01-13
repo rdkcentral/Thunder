@@ -96,6 +96,7 @@ inline void SleepMs(unsigned int a_Time)
 {
     ::Sleep(a_Time);
 }
+
 #ifdef _UNICODE
 typedef std::wstring string;
 #endif
@@ -464,6 +465,10 @@ typedef HANDLE ThreadId;
 #include "Module.h"
 
 extern "C" {
+
+#ifdef __WINDOWS__
+extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
+#endif
 
 extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
 }

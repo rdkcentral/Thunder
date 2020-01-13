@@ -14,6 +14,22 @@
 using namespace WPEFramework;
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+#ifdef __WINDOWS__
+
+#include <ws2tcpip.h>
+
+extern "C" {
+
+    int inet_aton(const char* cp, struct in_addr* inp) {
+#ifdef _UNICODE
+        return (InetPtonW(AF_INET, cp, inp));
+#else
+        return (InetPton(AF_INET, cp, inp));
+#endif
+}
+
+}
+#endif
 
 #ifdef __APPLE__
 extern "C" {

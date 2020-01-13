@@ -176,9 +176,9 @@ namespace Trace {
         return (result);
     }
 
-    uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
+    uint32_t TraceUnit::Open(const string& pathName)
     {
-        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName + '.' + Core::NumberType<uint32_t>(identifier).Text());
+        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
         #ifdef __WINDOWS__
         string doorBell("127.0.0.1:61234");
         #else

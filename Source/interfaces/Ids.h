@@ -121,7 +121,7 @@ namespace Exchange {
 
         ID_MATH,
 
-	ID_VOICEPRODUCER_PROFILE,
+        ID_VOICEPRODUCER_PROFILE,
 
         ID_DEVICE_PROPERTIES,
         ID_GRAPHICS_PROPERTIES,
@@ -130,7 +130,9 @@ namespace Exchange {
 
         ID_PLAYER_PROPERTIES,
         ID_PLAYER_PROPERTIES_AUDIO,
-        ID_PLAYER_PROPERTIES_VIDEO
+        ID_PLAYER_PROPERTIES_VIDEO,
+
+        ID_WEB_BROWSER
     };
 }
 }

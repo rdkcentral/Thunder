@@ -14,6 +14,7 @@ find_package(ZLIB REQUIRED)
 set(PUBLIC_HEADERS
         URL.h
         JSONWebToken.h
+        JSONRPCLink.h
         WebLink.h
         WebRequest.h
         WebResponse.h

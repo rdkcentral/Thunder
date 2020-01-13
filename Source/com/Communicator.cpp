@@ -367,6 +367,7 @@ namespace RPC {
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
         , _handler(this)
+        , _connectionId(~0)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
@@ -382,6 +383,7 @@ namespace RPC {
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
         , _handler(this)
+        , _connectionId(~0)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
@@ -499,6 +501,8 @@ namespace RPC {
             if (jsonDefaultCategories.empty() == false) {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
+
+            _connectionId = announceMessage->Response().SequenceNumber();
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());
             if (proxyStubPath.empty() == false) {

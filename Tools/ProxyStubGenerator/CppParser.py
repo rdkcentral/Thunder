@@ -7,7 +7,10 @@
 import re, uuid, sys
 
 class ParserError(RuntimeError):
-    pass
+    def __init__(self, msg):
+        msg = "%s(%s): parse error: %s" % (CurrentFile(), CurrentLine(), msg)
+        super(ParserError, self).__init__(msg)
+        pass
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -32,7 +35,7 @@ global_namespace = None
 
 # Holds identifier type
 class Type:
-    def __init__(self, parent_block, string, valid_specifiers):
+    def __init__(self, parent_block, string, valid_specifiers, tags_allowed = True):
         self.parent = parent_block
         self.name = ""
         self.specifiers = []
@@ -40,21 +43,22 @@ class Type:
         self.output = False
         self.length = None
         self.maxlength = None
+        self.interface = None
         type = ["?"] # indexing safety
         type_found = False
         nest1 = 0
         nest2 = 0
         array = False
         skip = 0
-        
+
         if string.count("*") > 1:
-            raise ParserError("pointers to pointers are not supported ('%s' in %s)" % (" ".join(string), parent_block.full_name))
+            raise ParserError("pointers to pointers are not supported: '%s'" % (" ".join(string)))
         elif string.count("[") > 1:
-            raise ParserError("multi-dimenstional arrays are not supported ('%s' in %s)" % (" ".join(string), parent_block.full_name))
+            raise ParserError("multi-dimensional arrays are not supported: '%s'" % (" ".join(string)))
         elif "[" in string and "*" in string:
-            raise ParserError("arrays of pointers are not supported ('%s' in %s)" % (" ".join(string), parent_block.full_name))
+            raise ParserError("arrays of pointers are not supported: '%s'" % (" ".join(string)))
         elif "&&" in string :
-            raise ParserError("rvalue references are not supported ('%s' in %s)" % (" ".join(string), parent_block.full_name))
+            raise ParserError("rvalue references are not supported: '%s'" % (" ".join(string)))
 
         for i, token in enumerate(string):
             if skip > 0:
@@ -84,21 +88,33 @@ class Type:
                 type[-1] += " " + token
 
             # handle pointer/reference markers
-            elif token == "@IN":
-                self.input = True
-            elif token == "@OUT":
-                self.output = True
-            elif token == "@INOUT":
-                self.input = True
-                self.output = True
-            elif token == "@LENGTH":
-                self.length = string[i + 1]
-                skip = 1
-                continue
-            elif token == "@MAXLENGTH":
-                self.maxlength = string[i + 1]
-                skip = 1
-                continue
+            elif token[0] == "@":
+                if token[1:] == "IN":
+                    if tags_allowed:
+                        self.input = True
+                    else:
+                        raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "OUT":
+                    if tags_allowed:
+                        self.output = True
+                    else:
+                        raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "LENGTH":
+                    self.length = string[i + 1]
+                    skip = 1
+                    continue
+                elif token[1:] == "MAXLENGTH":
+                    if tags_allowed:
+                        self.maxlength = string[i + 1]
+                    else:
+                        raise ParserError("maxlength tag not allowed on return value")
+                    skip = 1
+                    continue
+                elif token[1:] == "INTERFACE":
+                    self.interface = string[i + 1]
+                    skip = 1
+                else:
+                    raise ParserError("invalid tag: " + token)
 
             # skip C-style explicit struct
             elif token in ["struct", "class", "union"]:
@@ -169,37 +185,46 @@ class Type:
         self.type = type[1:]
 
         # Try to match the type to an already defined class...
-        self._Substitute()
+        self._Substitute(parent_block)
 
-    def _Substitute(self):
+    def _Substitute(self, parent):
+        if isinstance(parent, Method):
+            parent = parent.parent
+
         if self.type:
             def __Search(tree, found, T):
-                if "OCDM" in T:
-                    pass
-                enum_match = [e for e in tree.enums if e.full_name.endswith(T)]
-                typedef_match = [td for td in tree.typedefs if td.full_name.endswith(T)]
-                class_match = [cl for cl in tree.classes if cl.full_name.endswith(T)]
+                qualifiedT = "::" + T
+
+                # need full qualification if the class is a subclass
+                if tree.full_name.startswith(parent.full_name + "::"):
+                    if T.count("::") != tree.full_name.replace(parent.full_name, "").count("::"):
+                        return
+
+                enum_match = [e for e in tree.enums if e.full_name.endswith(qualifiedT)]
+                typedef_match = [td for td in tree.typedefs if td.full_name.endswith(qualifiedT)]
+                class_match = [cl for cl in tree.classes if cl.full_name.endswith(qualifiedT)]
+
                 found += enum_match + typedef_match + class_match
 
-                if isinstance(tree, (Namespace, Class)):
+                if isinstance(tree, (Namespace, Class)) :
                     for c in tree.classes:
                         __Search(c, found, T)
 
                 if isinstance(tree, Namespace):
                     for n in tree.namespaces:
-                        __Search(n, found, T)
+                       __Search(n, found, T)
 
             # find the type to scan for...
             i = -1
             while self.type[i] in ["*", "&", "const", "volatile"]:
                 i -= 1
 
-            found = []
-            __Search(global_namespace, found, "::" + self.type[i])
-            if found:
-                self.type[i] = found[-1]
-            else:
-                pass
+            if self.type[i] not in ["bool", "int", "char", "wchar_t", "short", "long", "signed", "unsigned", "void", "float", "double",
+                                    "int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t", "size_t"]:
+                found = []
+                __Search(global_namespace, found, self.type[i])
+                if found:
+                    self.type[i] = found[-1] # take closest match
 
     def __str__(self):
         return " ".join(self.type)
@@ -216,9 +241,6 @@ def Evaluate(identifiers):
                 val.append(str(int(identifier,16 if identifier[:2] == "0x" else 10)))
             except:
                 def __Search(tree, found, T):
-                    #enum_match = [e for e in tree.enums if e.full_name.endswith(T)]
-                    #typedef_match = [td for td in tree.typedefs if td.full_name.endswith(T)]
-                    #class_match = [cl for cl in tree.classes if cl.full_name.endswith(T)]
                     var_match = [v for v in tree.vars if v.full_name.endswith(T)]
                     enumerator_match = []
                     for e in tree.enums:
@@ -263,6 +285,8 @@ class Identifier:
         # come up with an unique name if none given
         self.name = "__unnamed_" + self.__class__.__name__.lower() + "_" + uuid.uuid4().hex[:8] if (not name and self.parent != None) else name
         self.full_name = ("" if self.parent == None else self.parent.full_name) + ("" if not self.name else "::" + self.name)
+        self.parser_file = CurrentFile()
+        self.parser_line = CurrentLine()
     def __str__(self):
         return self.full_name
     def __repr__(self):
@@ -289,6 +313,8 @@ class Block(Identifier):
         self.typedefs = []
         self.classes = []
         self.unions = []
+        self.parser_file = CurrentFile()
+        self.parser_line = CurrentLine()
     def __str__(self):
         return self.full_name
     def __repr__(self):
@@ -365,7 +391,7 @@ class Enum(Block):
 # Holds functions
 class Function(Type, Block, Identifier):
     def __init__(self, parent_block, name, ret_type, valid_specifiers = ["static", "extern", "inline"]):
-        Type.__init__(self, parent_block, ret_type, valid_specifiers)
+        Type.__init__(self, parent_block, ret_type, valid_specifiers, False)
         Block.__init__(self, parent_block, name if name else self.name)
         Identifier.__init__(self, parent_block, self.name)
         self.omit = False
@@ -441,26 +467,54 @@ class Enumerator(Type, Identifier):
 
 # Source file test into a list of tokens, removing comments and preprocessor directives.
 def __Tokenize(contents):
-    formula = (r"(#.*)"                                                              # preprocessor
-            r"|(/\*(.|[\r\n])*?\*/)"                                                 # multi-line comments
+    global current_file
+    global current_line
+
+    tokens = [s.strip() for s in re.split(r"([\r\n])", contents, flags=re.MULTILINE) if s]
+    eoltokens = []
+    line = 1
+    for token in tokens:
+        if token.startswith("// @file:"):
+            line = 1
+        if token == '':
+            eoltokens.append("// @line:" + str(line) + " ")
+            line = line + 1
+        elif (len(eoltokens) > 1) and eoltokens[-2].endswith("\\"):
+            del eoltokens[-1]
+            eoltokens[-1] = eoltokens[-1][:-1] + token
+        else:
+            eoltokens.append(token)
+
+    contents = "\n".join(eoltokens)
+
+    formula = (
+            r"(#if 0[\S\s]*?#endif)"
+            r"|(#.*)"                                                                # preprocessor
+            r"|(/\*[\S\s]*?\*/)"                                                     # multi-line comments
             r"|(//.*)"                                                               # single line comments
-            r"|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"                                 # two-char operators
-            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"            r"|(\"[^\"]+\")"                                                         # double quotes
+            r"|(\"[^\"]+\")"                                                         # double quotes
             r"|(\'[^\']+\')"                                                         # quotes
-            r"|([ ~,:;?=^/*-\+&<>\{\}\(\)\[\]])"                                     # single-char operators
-            )
-    tokens = [s.strip() for s in re.split(formula, contents, flags=re.MULTILINE) if s]
+            r"|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"                                 # two-char operators
+            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"
+            r"|([,:;~!?=^/*%-\+&<>\{\}\(\)\[\]])"                                    # single-char operators
+            r"|([\r\n\t ])"                                                          # whitespace
+        )
+
+    tokens = [s.strip() for s in re.split(formula, contents, flags=(re.MULTILINE)) if s]
 
     tagtokens = []
     # check for special metadata within comments
     for token in tokens:
         if token:
             def __ParseLength(string, tag):
-                formula = (r"(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
-                            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"
-                            r"|(\"[^\"]+\")"
+                formula = (
+                            r"(\"[^\"]+\")"
                             r"|(\'[^\']+\')"
-                            r"|([ ~,:;?=^/*-\+&<>\{\}\(\)\[\]])")
+                            r"|(\*/)|(::)|(==)|(!=)|(>=)|(<=)|(&&)|(\|\|)"
+                            r"|(\+\+)|(--)|(\+=)|(-=)|(/=)|(\*=)|(%=)|(^=)|(&=)|(\|=)|(~=)"
+                            r"|([,:;~!?=^/*%-\+&<>\{\}\(\)\[\]])"
+                            r"|([\r\n\t ])"
+                        )
                 tagtokens.append(tag.upper())
                 length_str = string[string.index(tag)+len(tag):]
                 length_tokens = [s.strip() for s in re.split(formula, length_str, flags=re.MULTILINE) if isinstance(s, str) and len(s.strip())]
@@ -489,45 +543,104 @@ def __Tokenize(contents):
                         if par_count == 0:
                             break
                 if par_count != 0:
-                    raise ParserError("unmatched parenthesis in length expression")
+                    raise ParserError("unmatched parenthesis in %s expression" % tag)
+                if len(tokens) == 0:
+                    raise ParserError("invalid %s value" % tag)
                 return tokens
 
+            if ((token[:2] == "/*") and (token.count("/*") != token.count("*/"))):
+                raise ParserError("multi-line comment not closed")
+
             if ((token[:2] == "/*") or (token[:2] == "//")):
-                if "@stubgen:skip" in token:
-                    tagtokens.append("@SKIP")
-                if "@stubgen:omit" in token:
-                    tagtokens.append("@OMIT")
-                if "@stubgen:stub" in token:
-                    tagtokens.append("@STUB")
-                if "@in" in token:
+                def _find(word, string):
+                    return re.compile(r"[ \r\n/\*]({0})[: \r\n\*]".format(word), flags=re.IGNORECASE).search(string) != None
+
+                if _find("@stubgen", token):
+                    if "@stubgen:skip" in token:
+                        tagtokens.append("@SKIP")
+                    elif "@stubgen:omit" in token:
+                        tagtokens.append("@OMIT")
+                    elif "@stubgen:stub" in token:
+                        tagtokens.append("@STUB")
+                    else:
+                        raise ParserError("invalid @stubgen tag")
+                if _find("@in", token):
                     tagtokens.append("@IN")
-                if "@out" in token:
+                if _find("@out", token):
                     tagtokens.append("@OUT")
-                if "@inout" in token:
-                    tagtokens.append("@INOUT")
-                if "@length" in token:
+                if _find("@inout", token):
+                    tagtokens.append("@IN")
+                    tagtokens.append("@OUT")
+                if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
-                if "@maxlength" in token:
+                if _find("@maxlength", token):
                     tagtokens.append(__ParseLength(token, "@maxlength"))
-            tagtokens.append(token)
+                if _find("@interface", token):
+                    tagtokens.append(__ParseLength(token, "@interface"))
+                if _find("@file", token):
+                    idx = token.index("@file:")+6
+                    tagtokens.append("@FILE:" + token[idx:])
+                    current_file = token[idx:]
+                if _find("@line", token):
+                    idx = token.index("@line:")+6
+                    if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
+                        del tagtokens[-1]
+                    current_line = int(token[idx:].split()[0])
+                    tagtokens.append("@LINE:" + token[idx:])
+            elif len(token) > 0 and token[0] != '#':
+                tagtokens.append(token)
 
-    # Remove comments, preprocessor directives and empty elements.
-    tokens = [s for s in tagtokens if (s and (s[:2] != '/*' and s[:2] != '//' and s[0] != '#'))]
-    tokens.append(";") # prevent potential out-of-range errors
+    tagtokens.append(";") # prevent potential out-of-range errors
 
-    return tokens
+    return tagtokens
 
 # -------------------------------------------------------------------------
 # EXPORTED FUNCTIONS
 # -------------------------------------------------------------------------
 
+i = 0
+tokens = []
+line_numbers = []
+current_line = 0
+current_file = "undefined"
+
+def CurrentFile():
+    return current_file
+
+def CurrentLine():
+    if i > 0:
+        # error during c++ parsing
+        return line_numbers[i]
+    else:
+        # error during preprocessing
+        return current_line
+
 # Builds a syntax tree (data structures only) of C++ source code
 def Parse(contents):
-    # Split into tokens first
-    tokens = __Tokenize(contents)
-
     # Start in global namespace.
     global global_namespace
+    global current_file
+    global tokens
+    global line_numbers
+    global i
+
+    i = 0
+    tokens = []
+    line_numbers = []
+    line_tokens = []
+    current_line = 0
+    current_file = "undefined"
+
+    # Split into tokens first
+    line_tokens = __Tokenize(contents)
+
+    for token in line_tokens:
+        if isinstance(token, str) and token.startswith("@LINE:"):
+            current_line = int(token[6:].split()[0])
+        else:
+            line_numbers.append(current_line)
+            tokens.append(token)
+
     global_namespace = Namespace(None)
     current_block = [global_namespace]
     next_block = None
@@ -538,9 +651,12 @@ def Parse(contents):
     in_typedef = False
 
     # Main loop.
-    i = 0
     while i < len(tokens):
         # Handle special tokens
+        if not isinstance(tokens[i], str):
+            i = i + 1
+            continue
+
         if tokens[i] == "@SKIP":
             return "Skipped"
         elif tokens[i] == "@OMIT":
@@ -550,6 +666,9 @@ def Parse(contents):
         elif tokens[i] == "@STUB":
             stub_next = True
             tokens[i] = ";"
+            i += 1
+        elif tokens[i].startswith("@FILE:"):
+            current_file = tokens[i][6:]
             i += 1
 
         # Swallow template definitions
@@ -569,7 +688,7 @@ def Parse(contents):
             last_template_def = tokens[s:i]
             min_index = i
 
-        # Parse namespace definiton...
+        # Parse namespace definition...
         elif tokens[i] == "namespace":
             namespace_name = ""
             if is_valid(tokens[i + 1]): # is there a namespace name?
@@ -590,23 +709,26 @@ def Parse(contents):
                 i = j + 1
 
 
-        # Parse new-styl type alias "using"...
+        # Parse "using"...
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "using" and tokens[i + 1] != "namespace" and tokens[i + 2] == "=":
             i += 2
             j = i + 1
             while tokens[j] != ";":  j += 1
             # reuse typedef class but correct name accordingly
-            typedef = Typedef(current_block[-1], tokens[i+1:j])
-            typedef_id = Identifier(current_block[-1], tokens[i-1])
-            typedef.name = typedef_id.name
-            typedef.full_name = typedef_id.full_name
+            if not current_block[-1].omit:
+                typedef = Typedef(current_block[-1], tokens[i+1:j])
+                typedef_id = Identifier(current_block[-1], tokens[i-1])
+                typedef.name = typedef_id.name
+                typedef.full_name = typedef_id.full_name
             i = j + 1
 
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "using" and tokens[i + 1] != "namespace" and tokens[i + 2] != "=":
-            raise ParserError("using-declarations are not supported")
+            if not current_block[-1].omit:
+                raise ParserError("using-declarations are not supported")
 
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == "using" and tokens[i + 1] == "namespace":
-            raise ParserError("'using namespace' directives are not supported")
+            if not current_block[-1].omit:
+                raise ParserError("'using namespace' directives are not supported")
 
         # Parse class definition...
         elif (tokens[i] == "class") or (tokens[i] == "struct") or (tokens[i] == "union"):
@@ -697,7 +819,10 @@ def Parse(contents):
 
             # locate return value
             while j >= min_index and tokens[j] not in  ['{', '}', ';', ':']: j -= 1
-            ret_type = tokens[j + 1:k]
+            if not current_block[-1].omit and not omit_next:
+                ret_type = tokens[j + 1:k]
+            else:
+                ret_type = [ ]
 
             method = Method(current_block[-1], name, ret_type) if isinstance(current_block[-1], Class) \
                         else Function(current_block[-1], name, ret_type)
@@ -748,7 +873,8 @@ def Parse(contents):
                         assignment = param.index('=')
                         param = param[0:assignment]
                         value = param[assignment+1:]
-                    Parameter(method, param, value)
+                    if not current_block[-1].omit and not method.omit:
+                        Parameter(method, param, value)
                 i = j; j += 1
 
             if nest:
@@ -804,8 +930,9 @@ def Parse(contents):
         elif isinstance(current_block[-1], (Namespace, Class)) and tokens[i] == ';' and (is_valid(tokens[i - 1]) or tokens[i-1] == "]"):
             j = i - 1
             while j >= min_index and tokens[j] not in ['{', '}', ';', ":"]: j -= 1
-            Attribute(current_block[-1], tokens[j+1:i]) if isinstance(current_block[-1], Class)  \
-                        else Variable(current_block[-1], tokens[j+1:i])
+            if not current_block[-1].omit:
+                Attribute(current_block[-1], tokens[j+1:i]) if isinstance(current_block[-1], Class)  \
+                            else Variable(current_block[-1], tokens[j+1:i])
             i += 1
 
         # Parse constants and member constants
@@ -813,8 +940,9 @@ def Parse(contents):
             j = i - 1; k = i + 1
             while tokens[j] not in ['{', '}', ';', ":"]: j -= 1
             while tokens[k] != ';': k += 1
-            Attribute(current_block[-1], tokens[j+1:i], tokens[i+1:k]) if isinstance(current_block[-1], Class)  \
-                        else Variable(current_block[-1], tokens[j+1:i], tokens[i+1:k])
+            if not current_block[-1].omit:
+                Attribute(current_block[-1], tokens[j+1:i], tokens[i+1:k]) if isinstance(current_block[-1], Class)  \
+                            else Variable(current_block[-1], tokens[j+1:i], tokens[i+1:k])
             i = k
 
         # Parse an enum block...
@@ -852,6 +980,7 @@ def ParseFiles(source_files):
     for source_file in source_files:
         try:
             with open(source_file) as file:
+                contents += "// @file:%s\n" % source_file
                 contents += file.read()
         except:
             pass
