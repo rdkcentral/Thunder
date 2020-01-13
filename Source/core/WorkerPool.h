@@ -68,48 +68,46 @@ namespace Core {
         };
 
         template <typename IMPLEMENTATION>
-        class EXTERNAL Dispatcher : public Core::IDispatch {
+        class EXTERNAL DispatcherType : public Core::IDispatch {
         public:
-            Dispatcher() = delete;
-            Dispatcher(const Dispatcher&) = delete;
-            Dispatcher& operator=(const Dispatcher&) = delete;
+            DispatcherType() = delete;
+            DispatcherType(const DispatcherType<IMPLEMENTATION>&) = delete;
+            DispatcherType<IMPLEMENTATION>& operator=(const DispatcherType<IMPLEMENTATION>&) = delete;
 
         public:
-            Dispatcher(IMPLEMENTATION* parent)
-                : _pendingJob(false)
-                , _implementation(*parent)
-                , _lock(false)
+            DispatcherType(IMPLEMENTATION* parent)
+                : _implementation(*parent)
+                , _submitted(false)
             {
             }
-            virtual ~Dispatcher()
+
+            virtual ~DispatcherType()
             {
+                _submitted.store(false, std::memory_order_relaxed);
                 Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(*this));
             }
 
          public:
             void Submit()
             {
-                while (_lock.exchange(true, std::memory_order_relaxed));
-                if (_pendingJob != true) {
+                bool expected = false;
+                if (_submitted.compare_exchange_strong(expected, true) == true) {
                     Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(*this));
-                    _pendingJob = true;
                 }
-                _lock.store(false, std::memory_order_relaxed);
             }
 
         private:
             virtual void Dispatch()
             {
-                _implementation.Run();
-                while (_lock.exchange(true, std::memory_order_relaxed));
-                _pendingJob = false;
-                _lock.store(false, std::memory_order_relaxed);
+                bool expected = true;
+                if (_submitted.compare_exchange_strong(expected, false) == true) {
+                    _implementation.Dispatch();
+                }
             }
 
         private:
-            bool _pendingJob;
             IMPLEMENTATION& _implementation;
-            std::atomic<bool> _lock;
+            std::atomic<bool> _submitted;
         };
 
     protected:
