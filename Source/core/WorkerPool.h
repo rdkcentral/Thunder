@@ -67,6 +67,51 @@ namespace Core {
             Core::ProxyType<Core::IDispatch> _job;
         };
 
+        template <typename IMPLEMENTATION>
+        class EXTERNAL Dispatcher : public Core::IDispatch {
+        public:
+            Dispatcher() = delete;
+            Dispatcher(const Dispatcher&) = delete;
+            Dispatcher& operator=(const Dispatcher&) = delete;
+
+        public:
+            Dispatcher(IMPLEMENTATION* parent)
+                : _pendingJob(false)
+                , _implementation(*parent)
+                , _lock(false)
+            {
+            }
+            virtual ~Dispatcher()
+            {
+                Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(*this));
+            }
+
+         public:
+            void Submit()
+            {
+                while (_lock.exchange(true, std::memory_order_relaxed));
+                if (_pendingJob != true) {
+                    Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(*this));
+                    _pendingJob = true;
+                }
+                _lock.store(false, std::memory_order_relaxed);
+            }
+
+        private:
+            virtual void Dispatch()
+            {
+                _implementation.Run();
+                while (_lock.exchange(true, std::memory_order_relaxed));
+                _pendingJob = false;
+                _lock.store(false, std::memory_order_relaxed);
+            }
+
+        private:
+            bool _pendingJob;
+            IMPLEMENTATION& _implementation;
+            std::atomic<bool> _lock;
+        };
+
     protected:
         class Minion : public Core::Thread {
         private:
