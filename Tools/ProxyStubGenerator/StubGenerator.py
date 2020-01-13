@@ -7,7 +7,7 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -261,11 +261,14 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             type = cv + type
                             typename_idx += len(cv)
                         return is_ref, is_ptr, typename_idx, typename_idx2, type
+
                     type = type_.type
                     input = type_.input
+                    self.interface = type_.interface
                     output = type_.output
                     length = type_.length
                     maxlength = type_.maxlength
+                    interface = type_.interface
                     origname = type_.name
                     self.ocv = cv
                     self.oclass = type_
@@ -286,6 +289,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                     i = len(self.unexpanded) - 1
                     while self.unexpanded[i] in ["const", "volatile", "&"]: i -= 1
                     self.str_noref = TypeStr(self.unexpanded[:i + 1])
+                    self.is_interface = interface or (self.is_ptr and self.obj)
 
                     self.str_rpctype = None
                     self.str_rpctype_nocv = None
@@ -297,7 +301,8 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                     self.is_input = self.is_inputptr or self.is_inputref
                     self.ptr_length = length
                     self.ptr_maxlength = maxlength
-                    self.proxy = self.is_ptr and self.obj and (not self.is_ref or self.is_input)
+                    self.ptr_interface = self.interface
+                    self.proxy = self.is_interface and (not self.is_ref or self.is_input)
                     self.origname = origname
                     self.length_constant = False
                     self.maxlength_constant = False
@@ -307,20 +312,21 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                     self.maxlength_var = None
                     self.is_length = False
                     self.is_maxlength = False
+                    self.interface_expr = None
+                    self.interface_type = None
                     self.length_type = "uint16_t"
                     self.str_nocv = TypeStr(self.type[typename_idx:typename_idx2 + 1])
 
                     if not self._IsValid(self.typename):
                         raise TypenameError(type_, "unable to serialise '%s %s': undefined type '%s'" % (self.CppType(), self.origname, self.str_typename))
-                    if not self.obj and self.is_nonconstptr and not self.is_inputptr and not self.is_outputptr:
+                    if not self.obj and self.is_nonconstptr and not self.is_inputptr and not self.is_outputptr and not interface:
                         raise TypenameError(type_, "unable to serialise '%s %s': a non-const pointer requires an in/out tag" % (self.CppType(), self.origname))
-                    if not self.obj and self.is_nonconstref and not self.is_inputref and not self.is_outputref:
+                    if not self.obj and self.is_nonconstref and not self.is_inputref and not self.is_outputref and not interface:
                         raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference requires an in/out tag" % (self.CppType(), self.origname))
-                    if self.obj and self.is_nonconstref and self.is_nonconstptr and not self.is_inputref and not self.is_outputref:
+                    if self.obj and self.is_nonconstref and self.is_nonconstptr and not self.is_inputref and not self.is_outputref and not interface:
                         raise TypenameError(type_, "unable to serialise '%s %s': a non-const reference to pointer requires an in/out tag" % (self.CppType(), self.origname))
-                    if self.obj and self.is_nonconstref and self.is_nonconstptr and self.is_inputref:
+                    if self.obj and self.is_nonconstref and self.is_nonconstptr and self.is_inputref and not interface:
                         raise TypenameError(type_, "unable to serialise '%s %s': an input non-const reference to pointer parameter is not supported" % (self.CppType(), self.origname))
-
 
                 def CheckRpcType(self):
                     if self.str_rpctype == None:
@@ -370,7 +376,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 # Converts a C++ type to RPC types
                 def _RpcType(self, noref):
                     if self.is_ptr:
-                        if self.obj or self.is_ref:
+                        if self.is_interface:
                             return "Number<%s>" % noref
                         else:
                             return "Buffer<%s>" % self.length_type
@@ -406,6 +412,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 def __init__(self, type_, name = "output", cv = []):
                     EmitParam.__init__(self, type_, name, cv)
                     self.has_output = self.type and (self.type[-1] != "void")
+                    self.is_output = True
 
             # Stringify a method object to full signature
             def SignatureStr(method, parameters = None):
@@ -481,10 +488,11 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
             emit.Line("%s %s[] = {" % ("ProxyStub::MethodHandler",  array_name))
             emit.IndentInc()
 
-            def LinkPointers(params):
+            def LinkPointers(retval, parameters):
+                params = [ retval ] + parameters
                 for c, p in enumerate(params):
                     if not p.is_length:
-                        if p.is_ptr and not p.is_ref and not p.obj:
+                        if p.is_ptr and not p.is_ref and (not p.is_interface or p.interface):
                             def __ParseLength(length, maxlength, target, length_name):
                                 parsed = []
                                 has_param_ref = False
@@ -495,7 +503,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 for token in length:
                                     if token[0].isalpha():
                                         t = None
-                                        for d, q in enumerate(params):
+                                        for d, q in enumerate(parameters):
                                             if q.origname == token:
                                                 t = "param"+str(d)
                                                 if not sizeof_parsing:
@@ -511,8 +519,6 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                                 break
                                         if not t:
                                             if token == "void":
-                                                #parsed = [ "sizeof(%s)" % p.typename]
-                                                #param_type = "size_t" if p.typename not in ["int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t", "time_t"] else "uint8_t"
                                                 parsed = []
                                                 param_type = "void"
                                                 break
@@ -549,17 +555,25 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                             pass
                                 return joined, param_type, not has_param_ref, param_ref
 
-                            if p.is_output and p.ptr_maxlength and p.ptr_maxlength != p.ptr_length:
+                            pname =  "param%i" % (c - 1) if c > 0 else "retval"
+
+                            if p.is_output and p.ptr_interface:
+                                p.interface_var = pname + "_interfaceid"
+                                p.interface_expr, p.interface_type, constant, p.interface_ref = __ParseLength(p.ptr_interface, True, c-1, p.interface_var)
+                                if constant:
+                                    raise TypenameError(p.oclass, "unable to serialise '%s': constant not allowed for interface id" % (p.origname))
+                            else:
+                                if p.is_output and p.ptr_maxlength and p.ptr_maxlength != p.ptr_length:
+                                    if p.ptr_length:
+                                        p.maxlength_var = pname + "_maxlength"
+                                        p.maxlength_expr, p.length_type, p.maxlength_constant, p.length_ref = __ParseLength(p.ptr_maxlength, True, c-1, p.maxlength_var)
+                                    else:
+                                        p.ptr_length = p.ptr_maxlength
                                 if p.ptr_length:
-                                    p.maxlength_expr, p.length_type, p.maxlength_constant, p.length_ref = __ParseLength(p.ptr_maxlength, True, c, "param%i_maxlength" % c)
-                                    p.maxlength_var = "param%i_maxlength" % c
-                                else:
-                                    p.ptr_length = p.ptr_maxlength
-                            if p.ptr_length:
-                                p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(p.ptr_length, False, c, "param%i_length" % c)
-                                p.length_var = "param%i_length" % c
-                            if not p.ptr_length:
-                                raise TypenameError(p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
+                                    p.length_var = pname + "_length"
+                                    p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(p.ptr_length, False, c-1, p.length_var)
+                            if not p.ptr_length and not p.ptr_interface:
+                                    raise TypenameError(p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
 
             for m in emit_methods:
                 if m.omit:
@@ -585,7 +599,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         output_params += 1
                     p.name += str(c)
 
-                LinkPointers(params)
+                LinkPointers(retval, params)
                 # emit a comment with function signature (optional)
                 if EMIT_COMMENT_WITH_PROTOTYPE:
                     emit.Line("// " + SignatureStr(m, orig_params))
@@ -772,7 +786,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 raise TypenameError(m, "method '%s': unable to decompose parameter '%s': unknown type" % (m.name, retval.str_typename))
                         else:
                             emit.Line("writer.%s(output);" % retval.RpcType())
-                            if retval.obj:
+                            if retval.is_interface:
                                 emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % retval.name)
 
 
@@ -795,7 +809,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             elif p.is_nonconstref:
                                 if not p.is_length:
                                     emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
-                                if p.obj:
+                                if p.is_interface:
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
 
                     if proxy_count:
@@ -901,7 +915,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                 params = [EmitParam(v, cv = ["const"]) for v in m.vars]
                 orig_params = [EmitParam(v) for v in m.vars]
 
-                LinkPointers(params)
+                LinkPointers(retval, params)
 
                 for c, p in enumerate(params):
                     p.name += str(c)
@@ -966,7 +980,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             if (p.is_nonconstref and p.obj) or (not p.obj and p.is_outputptr) or ( p.is_nonconstref and not p.is_length):
                                 output_params += 1
 
-                    retval_has_proxy = retval.has_output and retval.is_ptr and retval.obj
+                    retval_has_proxy = retval.has_output and retval.is_interface
 
                     emit.Line("// invoke the method handler")
                     if retval.has_output:
@@ -990,8 +1004,11 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                         emit.Line("RPC::Data::Frame::Reader reader(newMessage->Response().Reader());")
 
                     if retval.has_output:
-                        if retval.is_ptr and retval.obj:
-                            emit.Line("%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<void*>(), %s::ID));" % (retval.name, retval.str_nocvref, retval.str_typename))
+                        if retval.is_interface:
+                            if retval.obj:
+                                emit.Line("%s_proxy = reinterpret_cast<%s>(Interface(reader.Number<void*>(), %s::ID));" % (retval.name, retval.str_nocvref, retval.str_typename))
+                            else:
+                                emit.Line("%s_proxy = Interface(reader.Number<void*>(),%s);" % (retval.name, retval.interface_expr))
                         else:
                             if not retval.is_ptr and not retval.CheckRpcType():
                                 if retval.obj:
@@ -1007,7 +1024,7 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                 emit.Line("%s = reader.%s();" % (retval.name, retval.RpcTypeNoCV()))
 
                     for p in params:
-                        if p.is_nonconstref and p.obj:
+                        if p.is_nonconstref and p.is_interface:
                             emit.Line("%s = reinterpret_cast<%s>(Interface(reader.Number<void*>(), %s::ID));" % (p.name, p.str_nocvref, p.str_typename))
                         elif not p.obj and p.is_outputptr:
                             if p.length_var and p.length_ref and p.length_ref.is_output:

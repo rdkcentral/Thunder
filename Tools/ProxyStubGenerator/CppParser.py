@@ -43,6 +43,7 @@ class Type:
         self.output = False
         self.length = None
         self.maxlength = None
+        self.interface = None
         type = ["?"] # indexing safety
         type_found = False
         nest1 = 0
@@ -87,33 +88,33 @@ class Type:
                 type[-1] += " " + token
 
             # handle pointer/reference markers
-            elif token == "@IN":
-                if tags_allowed:
-                    self.input = True
+            elif token[0] == "@":
+                if token[1:] == "IN":
+                    if tags_allowed:
+                        self.input = True
+                    else:
+                        raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "OUT":
+                    if tags_allowed:
+                        self.output = True
+                    else:
+                        raise ParserError("in/out tags not allowed on return value")
+                elif token[1:] == "LENGTH":
+                    self.length = string[i + 1]
+                    skip = 1
+                    continue
+                elif token[1:] == "MAXLENGTH":
+                    if tags_allowed:
+                        self.maxlength = string[i + 1]
+                    else:
+                        raise ParserError("maxlength tag not allowed on return value")
+                    skip = 1
+                    continue
+                elif token[1:] == "INTERFACE":
+                    self.interface = string[i + 1]
+                    skip = 1
                 else:
-                    raise ParserError("in/out tags not allowed on return value")
-            elif token == "@OUT":
-                if tags_allowed:
-                    self.output = True
-                else:
-                    raise ParserError("in/out tags not allowed on return value")
-            elif token == "@INOUT":
-                if tags_allowed:
-                    self.input = True
-                    self.output = True
-                else:
-                    raise ParserError("in/out tags not allowed on return value")
-            elif token == "@LENGTH":
-                self.length = string[i + 1]
-                skip = 1
-                continue
-            elif token == "@MAXLENGTH":
-                if tags_allowed:
-                    self.maxlength = string[i + 1]
-                else:
-                    raise ParserError("maxlength tag not allowed on return value")
-                skip = 1
-                continue
+                    raise ParserError("invalid tag: " + token)
 
             # skip C-style explicit struct
             elif token in ["struct", "class", "union"]:
@@ -551,7 +552,10 @@ def __Tokenize(contents):
                 raise ParserError("multi-line comment not closed")
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
-                if "@stubgen" in token:
+                def _find(word, string):
+                    return re.compile(r"[ \r\n/\*]({0})[: \r\n\*]".format(word), flags=re.IGNORECASE).search(string) != None
+
+                if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
                         tagtokens.append("@SKIP")
                     elif "@stubgen:omit" in token:
@@ -560,21 +564,24 @@ def __Tokenize(contents):
                         tagtokens.append("@STUB")
                     else:
                         raise ParserError("invalid @stubgen tag")
-                if "@in" in token:
+                if _find("@in", token):
                     tagtokens.append("@IN")
-                if "@out" in token:
+                if _find("@out", token):
                     tagtokens.append("@OUT")
-                if "@inout" in token:
-                    tagtokens.append("@INOUT")
-                if "@length" in token:
+                if _find("@inout", token):
+                    tagtokens.append("@IN")
+                    tagtokens.append("@OUT")
+                if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
-                if "@maxlength" in token:
+                if _find("@maxlength", token):
                     tagtokens.append(__ParseLength(token, "@maxlength"))
-                if "@file:" in token:
+                if _find("@interface", token):
+                    tagtokens.append(__ParseLength(token, "@interface"))
+                if _find("@file", token):
                     idx = token.index("@file:")+6
                     tagtokens.append("@FILE:" + token[idx:])
                     current_file = token[idx:]
-                if "@line:" in token:
+                if _find("@line", token):
                     idx = token.index("@line:")+6
                     if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
                         del tagtokens[-1]
@@ -619,6 +626,7 @@ def Parse(contents):
 
     i = 0
     tokens = []
+    line_numbers = []
     line_tokens = []
     current_line = 0
     current_file = "undefined"
