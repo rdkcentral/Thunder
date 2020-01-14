@@ -15,22 +15,24 @@ namespace ProcessContainers {
             uint64_t shared; // in bytes
         };
 
+        struct NetworkInterface {
+            string name;
+            std::vector<string> IPs;
+        };
+
         struct CPUInfo {
             uint64_t total; // total usage of cpu, in nanoseconds;
             std::vector<uint64_t> cores; // cpu usage per core in nanoseconds;
         };
 
-        using NetworkInfo = std::map<string, std::vector<Core::NodeId>>;
-
         IContainer() = default;
         virtual ~IContainer() = default;
 
         virtual const string Id() const = 0;
-        virtual pid_t Pid() const = 0;
+        virtual uint32_t Pid() const = 0;
         virtual MemoryInfo Memory() const = 0;
         virtual CPUInfo Cpu() const = 0;
-        virtual IConstStringIterator NetworkInterfaces() const = 0;
-        virtual std::vector<string> IPs(const string& interface) const = 0;
+        virtual std::vector<NetworkInterface> NetworkInterfaces() const = 0;
         virtual bool IsRunning() const = 0;
 
         virtual bool Start(const string& command, IStringIterator& parameters) = 0; // returns true when started
@@ -57,7 +59,7 @@ namespace ProcessContainers {
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
         virtual ContainerIterator Containers() = 0;
         
-        virtual IContainer* Find(const string& name);
+        virtual IContainer* Find(const string& id);
 
         virtual void AddRef() const = 0;
         virtual uint32_t Release() = 0;

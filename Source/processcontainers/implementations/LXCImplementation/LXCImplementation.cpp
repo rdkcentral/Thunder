@@ -81,8 +81,6 @@ namespace ProcessContainers {
         while( index.Next() == true ) {
             _lxcContainer->set_config_item(_lxcContainer, index.Current().Key.Value().c_str(), index.Current().Value.Value().c_str());
         };
-
-        _networkInterfaces = GetNetworkInterfaces();
     }
 
     const string LXCContainer::Id() const 
@@ -90,7 +88,7 @@ namespace ProcessContainers {
         return _name;
     }
 
-    pid_t LXCContainer::Pid() const
+    uint32_t LXCContainer::Pid() const
     {
         return _pid;
     }
@@ -183,26 +181,48 @@ namespace ProcessContainers {
         return result;
     }
 
-    IConstStringIterator LXCContainer::NetworkInterfaces() const
+    std::vector<LXCContainer::NetworkInterface> LXCContainer::NetworkInterfaces() const
     {
-        return ProcessContainers::IConstStringIterator(_networkInterfaces);
-    }
+        char buf[256];
+        std::vector<LXCContainer::NetworkInterface> result;
 
-    std::vector<string> LXCContainer::IPs(const string& interface) const 
-    {
-        std::vector<string> result;
+        ASSERT(_lxcContainer != nullptr);
 
-        // if no interface name is specified, all addresess will be returned
-        const char* interfaceName = interface.empty() ? nullptr : interface.c_str(); 
+        for(int netnr = 0; ;netnr++) {
+            sprintf(buf, "lxc.net.%d.type", netnr);
 
-        char **addresses = _lxcContainer->get_ips(_lxcContainer, interfaceName, NULL, 0);
-        if (addresses) {
-            for (int i = 0; addresses[i] != nullptr; i++) {
-                result.emplace_back(addresses[i]);
+            char* type = _lxcContainer->get_running_config_item(_lxcContainer, buf);
+            if (!type)
+                break;
+
+            if (strcmp(type, "veth") == 0) {
+                sprintf(buf, "lxc.net.%d.veth.pair", netnr);
+            } else {
+                sprintf(buf, "lxc.net.%d.link", netnr);
             }
+            free(type);
+
+            char* ifname = _lxcContainer->get_running_config_item(_lxcContainer, buf);
+            if (!ifname)
+                break;
+
+            NetworkInterface interface;
+            interface.name = ifname;
+
+            free(ifname);
+
+            char **addresses = _lxcContainer->get_ips(_lxcContainer, interface.name.c_str(), NULL, 0);
+            if (addresses) {
+                for (int i = 0; addresses[i] != nullptr; i++) {
+                    interface.IPs.emplace_back(addresses[i]);
+                }
+            }
+
+            result.push_back(std::move(interface));
         }
 
         return result;
+
     }
 
     bool LXCContainer::IsRunning() const 
@@ -235,7 +255,7 @@ namespace ProcessContainers {
                     lxccommand.argv = const_cast<char**>(params.data());
 
                     lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-                    int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, &_pid);
+                    int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, reinterpret_cast<pid_t*>(&_pid));
                     if( ret != 0 ) {
                         _lxcContainer->shutdown(_lxcContainer, 0);
                     }
@@ -398,37 +418,6 @@ namespace ProcessContainers {
     void LXCContainerAdministrator::RemoveContainer(ProcessContainers::IContainer* container)
     {
         this->_containers.remove(container);
-    }
-
-    std::vector<string> LXCContainer::GetNetworkInterfaces() {
-        char buf[256];
-        std::vector<string> result;
-
-        ASSERT(_lxcContainer != nullptr);
-
-        for(int netnr = 0; ;netnr++) {
-            sprintf(buf, "lxc.net.%d.type", netnr);
-
-            char* type = _lxcContainer->get_running_config_item(_lxcContainer, buf);
-            if (!type)
-                break;
-
-            if (strcmp(type, "veth") == 0) {
-                sprintf(buf, "lxc.net.%d.veth.pair", netnr);
-            } else {
-                sprintf(buf, "lxc.net.%d.link", netnr);
-            }
-            free(type);
-
-            char* ifname = _lxcContainer->get_running_config_item(_lxcContainer, buf);
-            if (!ifname)
-                break;
-
-            result.emplace_back(ifname);
-            free(ifname);
-        }
-
-        return result;
     }
 
     constexpr char const* LXCContainerAdministrator::logFileName;

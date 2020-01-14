@@ -51,11 +51,10 @@ namespace ProcessContainers {
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
 
         const string Id() const override;
-        pid_t Pid() const override;
+        uint32_t Pid() const override;
         MemoryInfo Memory() const override;
         CPUInfo Cpu() const override;
-        ProcessContainers::IConstStringIterator NetworkInterfaces() const override;
-        std::vector<string> IPs(const string& interface) const override;
+        std::vector<NetworkInterface> NetworkInterfaces() const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
@@ -65,17 +64,13 @@ namespace ProcessContainers {
         uint32_t Release() override;
 
         private:
-            inline std::vector<string> GetNetworkInterfaces();
-
-        private:
             const string _name;
-            pid_t _pid;
+            uint32_t _pid;
             string _lxcPath;
             string _containerLogDir;
             mutable Core::CriticalSection _adminLock;
             mutable uint32_t _referenceCount;
             LxcContainerType* _lxcContainer;
-            std::vector<string> _networkInterfaces;
 #ifdef __DEBUG__
             bool _attach;
 #endif

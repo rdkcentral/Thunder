@@ -1,13 +1,14 @@
-#include "containers.h"
+#include "process_containers.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 
-struct Container_t {
-    char name[32];
+struct DummyProcessContainer {
+    struct ProcessContainer cContainer;
+
     char logPath[256];
     uint8_t running;
-    struct ContainerMemory memory;
+    struct ProcessContainerMemory memory;
 
     char networkInterface[16];
     char address[256];
@@ -19,32 +20,34 @@ void strcpy_safe(char* dest, const char* src, size_t bufferLength)
     dest[bufferLength - 1] = '\0';
 }
 
-EXTERNAL ContainerError pcontainer_logging(const char* logPath, const char* loggingOptions)
+ContainerError process_container_logging(const char* logPath, const char* loggingOptions)
 {
     printf("Global logging initialized to directory: %s\n", logPath);
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_initialize() 
+ContainerError process_container_initialize() 
 {
     printf("Container framework is initialized!\n");
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_deinitialize() 
+ContainerError process_container_deinitialize() 
 {
     printf("Container framework is deinitialized!\n");
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_create(struct Container_t** container, const char* name, const char** searchPaths, const char* logPath, const char* configuration)
+ContainerError process_container_create(struct ProcessContainer** container, const char* id, const char** searchPaths, const char* logPath, const char* configuration)
 {
-    struct Container_t* output = (struct Container_t*)malloc(sizeof(struct Container_t));
+    struct DummyProcessContainer* output = (struct DummyProcessContainer*)malloc(sizeof(struct DummyProcessContainer));
 
-    strcpy_safe(output->name, name, sizeof(output->name));
+    output->cContainer.id = malloc(strlen(id));
+
+    strcpy(output->cContainer.id, id);
     strcpy_safe(output->logPath, logPath, sizeof(output->logPath));
 
     output->running = 1;
@@ -55,26 +58,26 @@ EXTERNAL ContainerError pcontainer_create(struct Container_t** container, const 
     strcpy_safe(output->networkInterface, "container0", sizeof(output->networkInterface));
     strcpy_safe(output->address, "127.0.0.23", sizeof(output->address));
 
-    *container = output;
+    *container = (struct ProcessContainer*)output;
 
-    printf("Container %s created!\n", output->name);
+    printf("Container %s created!\n", output->cContainer.id);
 
     return ERROR_NONE;    
 }
 
-EXTERNAL ContainerError pcontainer_release(struct Container_t* container)
+ContainerError process_container_destroy(struct ProcessContainer* container)
 {
-    printf("Container %s released!\n", container->name);
+    printf("Container %s released!\n", container->id);
 
     free(container);
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_start(struct Container_t* container, const char* command, const char** params, uint32_t numParams)
+ContainerError process_container_start(struct ProcessContainer* container, const char* command, const char** params)
 {
     printf("Executed %s command! with arguments:\n", command);
-    for (int i = 0; i < numParams; i++) {
+    for (int i = 0; params[i] != NULL; i++) {
         printf("%s\n", params[i]);
     }
 
@@ -83,29 +86,29 @@ EXTERNAL ContainerError pcontainer_start(struct Container_t* container, const ch
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_stop(struct Container_t* container)
+ContainerError process_container_stop(struct ProcessContainer* container)
 {
-    printf("Container %s stopped!\n", container->name);
-    container->running = 0;
+    struct DummyProcessContainer* dummyContainer = (struct DummyProcessContainer*)container;
+
+    printf("Container %s stopped!\n", dummyContainer->cContainer.id);
+    dummyContainer->running = 0;
 
     return ERROR_NONE;
 }
 
-EXTERNAL uint8_t pcontainer_isRunning(struct Container_t* container)
+uint8_t process_container_running(struct ProcessContainer* container)
 {
-    return container->running;
+    return ((struct DummyProcessContainer*)container)->running;
+}
+
+ContainerError process_container_memory_status(struct ProcessContainer* container, struct ProcessContainerMemory* memory)
+{
+    memcpy(memory, &(((struct DummyProcessContainer*)container)->memory), sizeof(struct ProcessContainerMemory));
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_getMemory(struct Container_t* container, struct ContainerMemory* memory)
-{
-    memcpy(memory, &(container->memory), sizeof(struct ContainerMemory));
-
-    return ERROR_NONE;
-}
-
-EXTERNAL ContainerError pcontainer_getCpuUsage(struct Container_t* container, int32_t threadNum, uint64_t* usage)
+ContainerError process_container_cpu_usage(struct ProcessContainer* container, int32_t threadNum, uint64_t* usage)
 {
     ContainerError result = ERROR_NONE;
 
@@ -118,87 +121,42 @@ EXTERNAL ContainerError pcontainer_getCpuUsage(struct Container_t* container, in
     return result;
 }
 
-EXTERNAL ContainerError pcontainer_getNumNetworkInterfaces(struct Container_t* container, uint32_t* numNetworks)
+ContainerError process_container_pid(struct ProcessContainer* container, uint32_t* pid) 
 {
-    *numNetworks = 1;
+    // Dumm random pid
+    pid = (*((uint32_t*)container)) % 100 + 10;
+}
+
+
+ContainerError process_container_network_status_create(struct ProcessContainer* container, struct ProcessContainerNetworkStatus* networkStatus) 
+{
+    networkStatus->numInterfaces = 2;
+    networkStatus->interfaces = malloc(2 * sizeof(struct ProcessContainerNetworkStatus));
+
+    networkStatus->interfaces[0].interfaceName = "eth0";
+    networkStatus->interfaces[0].numIp = 1;
+    networkStatus->interfaces[0].ips = malloc(2 * sizeof(char*));
+    networkStatus->interfaces[0].ips[0] = "10.11.12.13";
+
+
+    networkStatus->interfaces[0].interfaceName = "eth1";
+    networkStatus->interfaces[0].numIp = 2;
+    networkStatus->interfaces[0].ips = malloc(2 * sizeof(char*));
+    networkStatus->interfaces[0].ips[0] = "1.2.3.4";
+    networkStatus->interfaces[0].ips[0] = "1.2.3.5";
+    
+    return ERROR_NONE;
+}
+
+ContainerError process_container_network_status_destroy(struct ProcessContainerNetworkStatus* networkStatus) 
+{
+    for (int interfaceId = 0; interfaceId < networkStatus->numInterfaces; ++interfaceId) {
+        
+        free(networkStatus->interfaces[interfaceId].ips);
+    }
+
+    free(networkStatus);
 
     return ERROR_NONE;
 }
 
-EXTERNAL ContainerError pcontainer_getNetworkInterfaceName(struct Container_t* container, uint32_t interfaceNum, char* name, uint32_t* nameLength, uint32_t maxNameLength)
-{
-    ContainerError error = ERROR_NONE;
-
-    if (nameLength != NULL) 
-        *nameLength = strlen(container->networkInterface);
-
-    if (interfaceNum > 0) {
-        error = ERROR_OUT_OF_BOUNDS;
-    } else if (name != NULL) {
-
-        if (maxNameLength <= strlen(container->networkInterface)) {
-            error = ERROR_MORE_DATA_AVAILBALE;
-        }
-
-        strcpy_safe(name, container->networkInterface, maxNameLength);
-    }
-
-    return error;
-}
-
-EXTERNAL ContainerError pcontainer_getNumIPs(struct Container_t* container, const char* interfaceName, uint32_t* numIPs)
-{
-    ContainerError error = ERROR_NONE;
-
-    if ((interfaceName[0] != '\0') && (strcmp(interfaceName, container->networkInterface) != 0))
-    {
-        error = ERROR_INVALID_KEY;
-    } else {
-        *numIPs = 1;
-    }
-
-    return error;
-}
-
-EXTERNAL ContainerError pcontainer_getIP(struct Container_t* container, const char* interfaceName, uint32_t addressNum, char* address, uint32_t* addresLength, uint32_t maxAddressLength)
-{
-    ContainerError error = ERROR_NONE;
-
-    if (addresLength != NULL) {
-        *addresLength = strlen(container->address);
-    }
-
-    if ((interfaceName[0] != '\0') && (strcmp(interfaceName, container->networkInterface) != 0)) {
-        error = ERROR_INVALID_KEY;
-    } else {
-        if (addressNum > 0) {
-            error = ERROR_OUT_OF_BOUNDS;
-        } else if (address != NULL) {
-
-            if (maxAddressLength < strlen(container->address)) {
-                error = ERROR_MORE_DATA_AVAILBALE;
-            }
-
-            strcpy_safe(address, container->address, maxAddressLength);
-        }
-    }
-
-    return error;
-}
-
-EXTERNAL ContainerError pcontainer_getName(struct Container_t* container, char* name, uint32_t* nameLength, uint32_t maxNameLength)
-{
-    ContainerError error = ERROR_NONE;
-
-    if (nameLength != NULL) {
-        *nameLength = strlen(container->name);
-    }
-
-    if (maxNameLength < strlen(container->address)) {
-        error = ERROR_MORE_DATA_AVAILBALE;
-    }
-
-    strcpy_safe(name, container->name, maxNameLength);
-
-    return error;
-}
