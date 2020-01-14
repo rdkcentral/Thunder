@@ -328,28 +328,6 @@ namespace Core {
 
             _size = size;
         }
-#ifdef __DEBUG__
-        void Dump(const unsigned int offset) const
-        {
-            static const TCHAR character[] = "0123456789ABCDEF";
-            string info;
-            uint16_t index = offset;
-
-            while (index < _size) {
-                if (info.empty() == false) {
-                    info += ':';
-                }
-                info += string("0x") + character[(_data[index] & 0xF0) >> 4] + character[(_data[index] & 0x0F)];
-                index++;
-            }
-
-            TRACE_L1("MetaData: %s", info.c_str());
-        }
-#endif
-
-        friend class Reader;
-        friend class Writer;
-
         template <typename TYPENAME>
         uint16_t SetBuffer(const uint16_t offset, const TYPENAME& length, const uint8_t buffer[])
         {
@@ -479,6 +457,25 @@ namespace Core {
         {
             return (GetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
         }
+
+#ifdef __DEBUG__
+        void Dump(const unsigned int offset) const
+        {
+            static const TCHAR character[] = "0123456789ABCDEF";
+            string info;
+            uint16_t index = offset;
+
+            while (index < _size) {
+                if (info.empty() == false) {
+                    info += ':';
+                }
+                info += string("0x") + character[(_data[index] & 0xF0) >> 4] + character[(_data[index] & 0x0F)];
+                index++;
+            }
+
+            TRACE_L1("MetaData: %s", info.c_str());
+        }
+#endif
 
     private:
         template <typename TYPENAME>

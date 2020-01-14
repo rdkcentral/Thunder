@@ -30,6 +30,7 @@
 #include "Factory.h"
 #include "FileSystem.h"
 #include "Frame.h"
+#include "IPCMessage.h"
 #include "IPCChannel.h"
 #include "IPCConnector.h"
 #include "ISO639.h"

@@ -66,6 +66,7 @@ set(PUBLIC_HEADERS
         IAction.h
         IIterator.h
         IObserver.h
+        IPCMessage.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h
