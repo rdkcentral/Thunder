@@ -19,7 +19,7 @@
       },
 
       "events": [
-        "volumechange"
+        "volume"
       ]
     },
     "muted": {
@@ -29,12 +29,12 @@
         "example": true
       },
       "events": [
-        "mutedchange"
+        "muted"
       ]
     }
   },
   "events": {
-    "volumechange": {
+    "volume": {
       "summary": "Signals change of the volume",
       "params": {
         "type": "object",
@@ -48,7 +48,7 @@
         }
       }
     },
-    "mutedchange": {
+    "muted": {
       "summary": "Signals change of the muted property",
       "params": {
         "type": "object",

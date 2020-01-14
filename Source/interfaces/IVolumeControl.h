@@ -13,8 +13,8 @@ namespace Exchange {
 
             virtual ~INotification() {}
 
-            virtual void Volume() = 0;
-            virtual void Muted() = 0;
+            virtual void Volume(const uint8_t volume) = 0;
+            virtual void Muted(const bool muted) = 0;
         };
 
         virtual ~IVolumeControl() {}
