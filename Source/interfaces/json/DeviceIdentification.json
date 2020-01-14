@@ -7,7 +7,7 @@
     "description": "DeviceIdentification JSON-RPC interface"
   },
   "properties": {
-    "deviceproperties": {
+    "deviceidentification": {
       "summary": "Device paltform specific information",
       "readonly": true,
       "params": {
