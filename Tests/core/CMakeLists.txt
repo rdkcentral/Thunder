@@ -2,6 +2,7 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
+   test_ipcclient.cpp
    test_rpc.cpp
    test_jsonparser.cpp
    test_hex2strserialization.cpp
