@@ -17,6 +17,10 @@ option(TRACING
         "Include the tracing library." ON)
 option(PROFILER
         "Include the profiler library." OFF)
+option(PROVISIONPROXY
+        "Include the provisionproxy library." OFF)
+option(SECURITYAGENT
+        "Include the securityagent library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
@@ -102,6 +106,10 @@ endif()
 
 if(PROVISIONPROXY)
     add_subdirectory(provisionproxy)
+endif()
+
+if(SECURITYAGENT)
+    add_subdirectory(securityagent)
 endif()
 
 if(CDMI)
