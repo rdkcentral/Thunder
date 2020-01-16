@@ -202,7 +202,7 @@ namespace ProcessContainers {
 
                 if (strcmp(name, "rss") == 0) {
                     result.resident = value;
-                } else if (strcmp(name, "shmem") == 0) {
+                } else if (strcmp(name, "mapped_file") == 0) {
                     result.shared = value;
                 }
 
@@ -321,8 +321,15 @@ namespace ProcessContainers {
             int internaltimeout = timeout/1000;
             if( timeout == Core::infinite ) {
                 internaltimeout = -1;
+            } 
+
+            if (internaltimeout != -1) {
+                result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
             }
-            result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
+
+            if (internaltimeout == -1 || result == false) {
+                _lxcContainer->stop(_lxcContainer);
+            }
         }
         return result;
     }

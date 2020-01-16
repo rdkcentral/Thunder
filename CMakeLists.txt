@@ -82,7 +82,3 @@ if(APPLE)
 endif()
 
 add_subdirectory(Source)
-
-if(BUILD_TESTS)
-    add_subdirectory(Tests)
-endif()
