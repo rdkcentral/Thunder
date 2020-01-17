@@ -9,19 +9,18 @@ using namespace WPEFramework::Core;
 
 namespace Tests {
 
-const char g_cyclicBuffer[] = "cyclicbuffer01";
-uint32_t g_cyclicBufferSize = 10;
-CyclicBuffer cyclicBuffer(g_cyclicBuffer, g_cyclicBufferSize, true);
+const char g_bufferName[] = "cyclicbuffer01";
+uint32_t bufferSize = 10;
+Core::CyclicBuffer cyclicBuffer(g_bufferName, bufferSize, true);
 bool g_cyclicThreadDone = false;
-
-class ThreadClass : public Thread {
+class ThreadClass : public Core::Thread {
 private:
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
 public:
     ThreadClass()
-        : Thread(Thread::DefaultStackSize(), _T("Test"))
+        : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
     {
     }
 
@@ -33,10 +32,10 @@ public:
     {
         while (IsRunning() && (!g_cyclicThreadDone)) {
             sleep(2);
-            cyclicBuffer.Alert();
+             cyclicBuffer.Alert();
             g_cyclicThreadDone = true;
         }
-        return (infinite);
+        return (Core::infinite);
     }
 };
 
@@ -45,9 +44,8 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
         uint32_t result;
         string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer02";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, false);
+        uint8_t loadBuffer[bufferSize + 1];
+        Core::CyclicBuffer buffer(g_bufferName, bufferSize, false);
 
         testAdmin.Sync("setup server");
 
@@ -88,9 +86,8 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
 
         uint32_t result;
         string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer02";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, false);
+        uint8_t loadBuffer[bufferSize + 1];
+        Core::CyclicBuffer buffer(g_bufferName, bufferSize, false);
 
         testAdmin.Sync("setup client");
 
@@ -104,7 +101,7 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
 
         data = "klmnopq";
         result = buffer.Reserve(data.size());
-        EXPECT_EQ(result, ERROR_INVALID_INPUT_LENGTH);
+        EXPECT_EQ(result, Core::ERROR_INVALID_INPUT_LENGTH);
         result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
         EXPECT_EQ(result, 0u);
 
@@ -114,7 +111,7 @@ TEST(Core_CyclicBuffer, WithoutOverwrite)
 
         testAdmin.Sync("server read");
     }
-    Singleton::Dispose();
+    Core::Singleton::Dispose();
 }
 
 TEST(Core_CyclicBuffer, WithOverwrite)
@@ -122,9 +119,8 @@ TEST(Core_CyclicBuffer, WithOverwrite)
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
         uint32_t result;
         string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer03";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, true);
+        uint8_t loadBuffer[bufferSize + 1];
+        Core::CyclicBuffer buffer(g_bufferName, bufferSize, true);
 
         testAdmin.Sync("setup server");
 
@@ -160,12 +156,12 @@ TEST(Core_CyclicBuffer, WithOverwrite)
         EXPECT_FALSE(buffer.Overwritten());
         EXPECT_FALSE(buffer.IsLocked());
 
-        EXPECT_EQ(buffer.ErrorCode(),2u);
+        EXPECT_EQ(buffer.ErrorCode(),0u);
         EXPECT_EQ(buffer.LockPid(),0u);
         EXPECT_EQ(buffer.Free(),10u);
 
-        EXPECT_STREQ(buffer.Name().c_str(),bufferName);
-        EXPECT_STREQ(buffer.Storage().Name().c_str(),bufferName);
+        EXPECT_STREQ(buffer.Name().c_str(),g_bufferName);
+        EXPECT_STREQ(buffer.Storage().Name().c_str(),g_bufferName);
 
         EXPECT_TRUE(buffer.IsOverwrite());
         EXPECT_TRUE(buffer.IsValid());
@@ -181,9 +177,8 @@ TEST(Core_CyclicBuffer, WithOverwrite)
 
         uint32_t result;
         string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer03";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, true);
+        uint8_t loadBuffer[bufferSize + 1];
+        Core::CyclicBuffer buffer(g_bufferName, bufferSize, true);
 
         testAdmin.Sync("setup client");
 
@@ -209,22 +204,19 @@ TEST(Core_CyclicBuffer, WithOverwrite)
 
         testAdmin.Sync("server read");
     }
-    Singleton::Dispose();
+    Core::Singleton::Dispose();
 }
 TEST(Core_CyclicBuffer, lock)
 {
-    const char bufferName[] = "cyclicbuffer04";
-    CyclicBuffer cyclicBuffer1(bufferName, g_cyclicBufferSize, true);
-    cyclicBuffer1.Lock(false,500);
-    cyclicBuffer1.Unlock();
-    cyclicBuffer1.Lock(true,1000);
+    cyclicBuffer.Lock(false,500);
+    cyclicBuffer.Unlock();
+    cyclicBuffer.Lock(true,1000); 
 }
 TEST(Core_CyclicBuffer, lock_unlock)
 {
     ThreadClass object;
     object.Run();
-    cyclicBuffer.Lock(true,infinite);
-    sleep(2);
+    cyclicBuffer.Lock(true,Core::infinite);
     while(!g_cyclicThreadDone);
     object.Stop();
 }
