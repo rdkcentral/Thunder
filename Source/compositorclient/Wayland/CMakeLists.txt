@@ -1,8 +1,10 @@
-option(PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION "Defines which sub-implementation is used." "Westeros")
+if(NOT PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION)
+    set(PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION "Westeros")
+endif()
 
 if ((NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Weston") AND
     (NOT "${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Westeros"))
-message( FATAL_ERROR "Invalid Wayland implementation, set PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION to \"Weston\" or \"Westeros\"" )
+message( FATAL_ERROR "Invalid Wayland implementation, set PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION (currently: [${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}]) to \"Weston\" or \"Westeros\"" )
 endif ()
 
 find_package(WaylandClient REQUIRED)
