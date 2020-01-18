@@ -180,7 +180,7 @@ namespace Trace {
     {
         string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
         #ifdef __WINDOWS__
-        string doorBell("127.0.0.1:61234");
+        string doorBell("127.0.0.1:62001");
         #else
         string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell" );
         #endif

@@ -17,6 +17,6 @@ extern "C" {
  * Post-condition; return value 0 should not occur
  *
  */
-int GetToken(unsigned short maxLength, unsigned short inLength, unsigned char buffer[]);
+int EXTERNAL GetToken(unsigned short maxLength, unsigned short inLength, unsigned char buffer[]);
 
 }

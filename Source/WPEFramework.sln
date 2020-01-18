@@ -225,14 +225,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WebServer", "..\..\ThunderN
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Interfaces", "Interfaces", "{58B7B6E2-3FC1-4BB6-92E0-7E3E651A304C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Applications", "{AFFB8D67-1F60-40FE-8055-BDD120015C09}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NetworkControl", "..\..\ThunderNanoServices\NetworkControl\NetworkControl.vcxproj", "{612AEF75-493F-4AB4-897C-6A31238C5781}"
 	ProjectSection(ProjectDependencies) = postProject
 		{577A83B6-66B6-4A98-A3D6-4EBA066A1772} = {577A83B6-66B6-4A98-A3D6-4EBA066A1772}
 		{3DA3B4B6-916E-4F21-88C6-512DF0C0A38C} = {3DA3B4B6-916E-4F21-88C6-512DF0C0A38C}
 		{0CA4C3EA-2DD4-4BB3-804C-331D09CC3402} = {0CA4C3EA-2DD4-4BB3-804C-331D09CC3402}
 	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Applications", "Applications", "{AFFB8D67-1F60-40FE-8055-BDD120015C09}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,15 +1,14 @@
 {
   "port": 8080,
   "binding_": "0.0.0.0",
-  "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
   "persistentpath": "W:/Persistent",
   "volatilepath": "W:/temp",
-  "datapath": "W:/Debug",
-  "systempath": "W:/Debug",
-  "proxystubpath": "W:/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:7812",
+  "datapath": "W:/Release/Plugins",
+  "systempath": "W:/Release",
+  "proxystubpath": "W:/ProxyStubs/Release",
+  "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
     {
@@ -45,14 +44,15 @@
       ],
       "autostart": true,
       "configuration": {
-        "acl": "data.json"
+        "acl": "data.json",
+        "connector": "127.0.0.1:63000"
       }
     },
     {
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "OpenCDMi",

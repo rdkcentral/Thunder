@@ -228,7 +228,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -238,7 +238,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -248,7 +248,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -258,7 +258,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>

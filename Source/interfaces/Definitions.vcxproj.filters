@@ -61,18 +61,12 @@
     <CustomBuild Include="json\Browser.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
+    <CustomBuild Include="json\DHCPServer.json" />
+    <CustomBuild Include="json\SecurityAgent.json" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Contracts">
       <UniqueIdentifier>{6975244d-cb23-4d09-a334-80cf1e1b4845}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="json\DHCPServer.json">
-      <Filter>Contracts</Filter>
-    </None>
-    <None Include="json\SecurityAgent.json">
-      <Filter>Contracts</Filter>
-    </None>
   </ItemGroup>
 </Project>

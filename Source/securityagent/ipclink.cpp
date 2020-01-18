@@ -7,7 +7,13 @@ static string GetEndPoint()
 {
     TCHAR* value = ::getenv(_T("SECURITYAGENT_PATH"));
 
-    return (value == nullptr ? _T("/tmp/securityagent") : value);
+    return (value == nullptr ?
+        #ifdef __WINDOWS__
+        _T("127.0.0.1:63000")
+        #else
+        _T("/tmp/securityagent")
+        #endif
+        : value);
 }
 
 extern "C" {

@@ -136,7 +136,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -144,7 +144,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -152,7 +152,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -160,7 +160,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
