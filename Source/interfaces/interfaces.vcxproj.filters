@@ -167,12 +167,6 @@
     <ClInclude Include="ITimeSync.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ITVControl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ITVPlatform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="IVoiceHandler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
