@@ -61,12 +61,12 @@
 // W3 -- No matching operator delete found; memory will not be freed if initialization throws an exception
 #pragma warning(disable : 4291)
 
+#ifdef _WIN64
+#define __SIZEOF_POINTER__ 8
+#else
 #ifdef WIN32
 #define __SIZEOF_POINTER__ 4
 #endif
-
-#ifdef _WIN64
-#define __SIZEOF_POINTER__ 8
 #endif
 
 #define _WINSOCKAPI_ /* Prevent inclusion of winsock.h in windows.h */
