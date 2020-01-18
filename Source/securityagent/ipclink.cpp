@@ -1,4 +1,4 @@
-#include "SecurityToken.h"
+#include "securityagent.h"
 #include "IPCSecurityToken.h"
 
 using namespace WPEFramework;
@@ -42,8 +42,6 @@ int GetToken(unsigned short maxLength, unsigned short inLength, unsigned char bu
         Core::ProxyType<Core::IIPC> message(Core::proxy_cast<Core::IIPC>(_tokenId));
         uint32_t error = channel.Invoke(message, IPC::CommunicationTimeOut);
 
-        result = -error;
-
         if (error == Core::ERROR_NONE) {
             result = _tokenId->Response().Length();
 
@@ -53,6 +51,10 @@ int GetToken(unsigned short maxLength, unsigned short inLength, unsigned char bu
                 printf("%s:%d [%s] Received token is too long [%d].\n", __FILE__, __LINE__, __func__, result);
                 result = -result;
             }
+        }
+        else {
+            result = error;
+            result = -result;
         }
     } else {
         printf("%s:%d [%s] Could not open link. error=%d\n", __FILE__, __LINE__, __func__, result);

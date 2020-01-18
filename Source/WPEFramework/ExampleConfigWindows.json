@@ -1,14 +1,14 @@
 {
-  "port": 80,
+  "port": 8080,
   "binding_": "0.0.0.0",
   "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Thunder/artifacts/Persistent",
-  "volatilepath": "D:/Thunder/artifacts/temp",
-  "datapath": "D:/Thunder/artifacts/Debug",
-  "systempath": "D:/Thunder/artifacts/Debug",
-  "proxystubpath": "D:/Thunder/artifacts/ProxyStubs/Debug",
+  "persistentpath": "W:/Persistent",
+  "volatilepath": "W:/temp",
+  "datapath": "W:/Debug",
+  "systempath": "W:/Debug",
+  "proxystubpath": "W:/ProxyStubs/Debug",
   "communicator": "127.0.0.1:7812",
   "redirect": "Service/Controller/UI",
   "tracing": [
@@ -43,7 +43,7 @@
       "precondition": [
         "Platform"
       ],
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "acl": "data.json"
       }
