@@ -6,6 +6,7 @@ add_library(${TARGET} STATIC
         )
 
 set(PUBLIC_HEADERS
+        securityagent.h
         SecurityToken.h
         IPCSecurityToken.h
         )
@@ -15,10 +16,10 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Core::${NAMESPACE}Core
         )
 
-target_link_libraries(${TARGET}
-        PRIVATE
-          CompileSettingsDebug::CompileSettingsDebug
-        )
+# target_link_libraries(${TARGET}
+#        PRIVATE
+#          CompileSettingsDebug::CompileSettingsDebug
+#        )
 
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11

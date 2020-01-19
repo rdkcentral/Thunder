@@ -8,6 +8,8 @@
 #define EXTERNAL __declspec(dllimport)
 #pragma comment(lib, "securityagent.lib")
 #endif
+#else
+#define EXTERNAL
 #endif
 
 #include "SecurityToken.h"
