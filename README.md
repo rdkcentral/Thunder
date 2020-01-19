@@ -32,14 +32,14 @@ if both repositories are next to each other. So checkout Thunder on
 disk and put the ThunderNanoServices next to it.
 
 e.g.
-C:\User\Me\Thunder 
-C:\User\Me\ThunderNanoServices
+C:\Users\Me\Thunder 
+C:\Users\Me\ThunderNanoServices
 
 Than to run, the config file is assuming that all is installed on W: 
 You can set this by mapping the artifacts directory created, to the 
 W drive. A typical use case would be:
 
-net use w: "\\localhost\c$\Users\Pierre Wielders\Thunder\artifacts"
+net use w: "\\localhost\c$\Users\Me\Thunder\artifacts"
 
 Before the first run make sure you creat a volatile and a peritent directory
 here mkdir w:\Temp and mkdir w:\Persistent.
