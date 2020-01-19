@@ -1489,8 +1489,6 @@ namespace RPC {
 
                 void* implementation(_announceMessage->Response().Implementation());
 
-                ASSERT(implementation != nullptr);
-
                 if (implementation != nullptr) {
                     Core::ProxyType<Core::IPCChannel> baseChannel(*this);
 

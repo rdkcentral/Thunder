@@ -159,10 +159,10 @@
       }
     },
     {
-      "callsign": "VoiceControl",
-      "locator": "libvoicecontrol.so",
-      "classname": "VoiceControl",
-      "autostart": false,
+      "callsign": "Dictionary",
+      "locator": "libdictionary.so",
+      "classname": "Dictionary",
+      "autostart": true,
       "configuration": {
       }
     },

@@ -29,6 +29,7 @@
     <ClCompile Include="ProxyStubs_Browser.cpp" />
     <ClCompile Include="ProxyStubs_Composition.cpp" />
     <ClCompile Include="ProxyStubs_ContentDecryption.cpp" />
+    <ClCompile Include="ProxyStubs_Dictionary.cpp" />
     <ClCompile Include="ProxyStubs_DsgccClient.cpp" />
     <ClCompile Include="ProxyStubs_Guide.cpp" />
     <ClCompile Include="ProxyStubs_Netflix.cpp" />
