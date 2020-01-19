@@ -179,6 +179,9 @@ namespace PluginHost {
             ID = RPC::ID_SECURITY
         };
 
+        //! Allow a websocket upgrade to be checked if it is allowed to be opened.
+        virtual bool Allowed(const string& path) const = 0;
+
         //! Allow a request to be checked before it is offered for processing.
         virtual bool Allowed(const Web::Request& request) const = 0;
 

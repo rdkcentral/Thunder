@@ -5,8 +5,8 @@
 #include <syslog.h>
 #endif
 
-#ifdef PROCESSCONTAINERS_ENABLED 
-    #include "../processcontainers/ProcessContainer.h"
+#ifdef PROCESSCONTAINERS_ENABLED
+#include "../processcontainers/ProcessContainer.h"
 #endif
 
 namespace WPEFramework {
@@ -19,16 +19,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-    { PluginHost::InputHandler::DEVICE, _TXT("device") },
+            { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-namespace PluginHost
+        namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -72,9 +72,16 @@ namespace PluginHost
         }
 
     public:
-		inline void Security(const bool enabled) {
+        inline void Security(const bool enabled)
+        {
             _hasSecurity = enabled;
-		}
+        }
+        // Allow a request to be checked before it is offered for processing.
+        virtual bool Allowed(const string& path) const override
+        {
+            return ((_hasSecurity == false) || (path.substr(0, _controllerPath.length()) == _controllerPath));
+        }
+
         // Allow a request to be checked before it is offered for processing.
         virtual bool Allowed(const Web::Request& request) const override
         {
@@ -87,25 +94,20 @@ namespace PluginHost
 
                 if ((result == false) && (request.Verb == Web::Request::HTTP_POST) && (request.HasBody() == true) && (request.Path == _jsonrpcPath)) {
 
-					// Now dig into the message, if the method is for the controller and the method is to get info
+                    // Now dig into the message, if the method is for the controller and the method is to get info
                     // it is good to go... Other wise NO
                     Core::ProxyType<const Core::JSONRPC::Message> body = request.Body<const Core::JSONRPC::Message>();
 
-					if (body.IsValid() == true)
-					{
+                    if (body.IsValid() == true) {
                         result = CheckMessage(*body);
-					}	
-				}
-
-
-				// Temporary allow the API REST Full API to get security to be called directly.
-				// TODO: Remove this check if security is fully operational!!!
-                result = (result == true) || ((request.Verb == Web::Request::HTTP_POST) && (request.Path == "/Service/SecurityOfficer/Token"));
+                    }
+                }
             }
             return (result);
         }
         //! Allow a JSONRPC message to be checked before it is offered for processing.
-		virtual bool Allowed(const Core::JSONRPC::Message& message) const override {
+        virtual bool Allowed(const Core::JSONRPC::Message& message) const override
+        {
             return ((_hasSecurity == false) || CheckMessage(message));
         }
 
@@ -115,18 +117,17 @@ namespace PluginHost
         INTERFACE_ENTRY(ISecurity)
         END_INTERFACE_MAP
 
-	private:
+    private:
         bool CheckMessage(const Core::JSONRPC::Message& message) const
         {
             bool result = false;
 
-            if (message.Callsign() == _controllerName)
-            {
-				result = (message.Method() == _T("exists"));
+            if (message.Callsign() == _controllerName) {
+                result = (message.Method() == _T("exists"));
             }
 
-			return (result);
-		}
+            return (result);
+        }
 
     private:
         bool _hasSecurity;
@@ -134,7 +135,6 @@ namespace PluginHost
         const string _jsonrpcPath;
         const string _controllerName;
     };
-
 
     static Core::NodeId DetermineAccessor(const Server::Config& configuration, Core::NodeId& accessor)
     {
@@ -260,7 +260,7 @@ namespace PluginHost
 
         _processAdministrator.Close(Core::infinite);
 
-	_processAdministrator.Destroy();
+        _processAdministrator.Destroy();
     }
 
     /* virtual */ void* Server::Service::QueryInterface(const uint32_t id)
@@ -403,9 +403,9 @@ namespace PluginHost
                     State(ACTIVATED);
                     _administrator.StateChange(this);
 
-                    #ifdef RESTFULL_API
+#ifdef RESTFULL_API
                     _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
-                    #endif
+#endif
 
                     _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"activated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
 
@@ -480,9 +480,9 @@ namespace PluginHost
 
             _administrator.StateChange(this);
 
-            #ifdef RESTFULL_API
-            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));			
-            #endif
+#ifdef RESTFULL_API
+            _administrator.Notification(_T("{\"callsign\":\"") + callSign + _T("\",\"state\":\"deactivated\",\"reason\":\"") + textReason.Data() + _T("\"}"));
+#endif
 
             _administrator.Notification(PluginHost::Server::ForwardMessage(callSign, string(_T("{\"state\":\"deactivated\",\"reason\":\"")) + textReason.Data() + _T("\"}")));
             if (State() != ACTIVATED) {
@@ -510,10 +510,10 @@ namespace PluginHost
     {
         const ForwardMessage forwarder(PluginHost::Service::Callsign(), message);
 
-		#ifdef RESTFULL_API
+#ifdef RESTFULL_API
         // Notify the base class and the subscribers
         PluginHost::Service::Notification(message);
-		#endif
+#endif
 
         _administrator.Notification(forwarder);
     }
@@ -689,7 +689,7 @@ namespace PluginHost
         // Add the controller as a service to the services.
         _controller = _services.Insert(metaDataConfig);
 
-#ifdef PROCESSCONTAINERS_ENABLED 
+#ifdef PROCESSCONTAINERS_ENABLED
 
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
@@ -697,7 +697,6 @@ namespace PluginHost
         admin.Release();
 
 #endif
-
     }
 
 #ifdef __WINDOWS__
@@ -717,9 +716,9 @@ namespace PluginHost
             _controller->ClassType<Plugin::Controller>()->Notification(data);
 
 #ifdef RESTFULL_API
-           string result;
+            string result;
             data.ToString(result);
-           _controller->Notification(result);
+            _controller->Notification(result);
 #endif
         }
     }
@@ -728,11 +727,10 @@ namespace PluginHost
     {
         // Before we do anything with the subsystems (notifications)
         // Lets see if security is already set..
-        DefaultSecurity* securityProvider = 
-			Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
-                _config.WebPrefix(),
-                _config.JSONRPCPrefix(),
-                _controller->Callsign());
+        DefaultSecurity* securityProvider = Core::Service<DefaultSecurity>::Create<DefaultSecurity>(
+            _config.WebPrefix(),
+            _config.JSONRPCPrefix(),
+            _controller->Callsign());
 
         _config.Security(securityProvider);
 
@@ -742,8 +740,7 @@ namespace PluginHost
             // The controller is on control of the security, so I guess all systems green
             // as the controller does not know anything about security :-)
             securityProvider->Security(false);
-        }
-        else {
+        } else {
             SYSLOG(Logging::Startup, (_T("Security ENABLED, incoming requests need to be authorized!!!")));
         }
 

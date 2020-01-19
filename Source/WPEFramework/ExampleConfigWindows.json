@@ -5,9 +5,9 @@
   "ipv6": false,
   "persistentpath": "W:/Persistent",
   "volatilepath": "W:/temp",
-  "datapath": "W:/Release/Plugins",
-  "systempath": "W:/Release",
-  "proxystubpath": "W:/ProxyStubs/Release",
+  "datapath": "W:/Debug/Plugins",
+  "systempath": "W:/Debug",
+  "proxystubpath": "W:/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
@@ -20,7 +20,7 @@
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems": [ "Decryption" ]
+        "subsystems": [ "Decryption", "Security" ]
       }
     },
     {
