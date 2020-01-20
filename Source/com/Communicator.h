@@ -409,22 +409,22 @@ namespace RPC {
                     options[_T("-g")] = instance.Group();
                 }
                 if (config.PersistentPath().empty() == false) {
-                    options[_T("-p")] = '"' + config.PersistentPath() + '"';
+                    options[_T("-p")] = config.PersistentPath();
                 }
                 if (config.SystemPath().empty() == false) {
-                    options[_T("-s")] = '"' + config.SystemPath() + '"';
+                    options[_T("-s")] = config.SystemPath();
                 }
                 if (config.DataPath().empty() == false) {
-                    options[_T("-d")] = '"' + config.DataPath() + '"';
+                    options[_T("-d")] = config.DataPath();
                 }
                 if (config.ApplicationPath().empty() == false) {
-                    options[_T("-a")] = '"' + config.ApplicationPath() + '"';
+                    options[_T("-a")] = config.ApplicationPath();
                 }
                 if (config.VolatilePath().empty() == false) {
-                    options[_T("-v")] = '"' + config.VolatilePath() + '"';
+                    options[_T("-v")] = config.VolatilePath();
                 }
                 if (config.ProxyStubPath().empty() == false) {
-                    options[_T("-m")] = '"' + config.ProxyStubPath() + '"';
+                    options[_T("-m")] = config.ProxyStubPath();
                 }
                 if (instance.Threads() > 1) {
                     options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
