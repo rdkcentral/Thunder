@@ -1395,9 +1395,7 @@ namespace Core {
                     _value.clear();
                     if (stream[result] != '\"') {
                         _unaccountedCount = 0;
-                        SetQuoted(false);
                     } else {
-                        SetQuoted(true);
                         result++;
                         _scopeCount |= (QuoteFoundBit | 1);
                         _unaccountedCount = 1;

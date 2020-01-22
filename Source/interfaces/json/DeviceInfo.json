@@ -51,11 +51,6 @@
             "example": "WPEuCfrLF45",
             "type": "string"
           },
-          "deviceid": {
-            "description": "Device ID",
-            "example": "WPEuCfrLF45",
-            "type": "string"
-          },
           "time": {
             "description": "Current system date and time",
             "example": "Mon, 11 Mar 2019 14:38:18",
@@ -70,7 +65,6 @@
           "devicename",
           "cpuload",
           "serialnumber",
-          "deviceid",
           "time"
         ]
       }
