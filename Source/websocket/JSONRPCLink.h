@@ -452,6 +452,11 @@ namespace JSONRPC {
             }
             ~Entry()
             {
+                if (_synchronous == true) {
+                    _info.sync.~Synchronous();
+                } else {
+                    _info.async.~ASynchronous();
+                }
             }
 
         public:

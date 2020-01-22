@@ -11,7 +11,7 @@ namespace PluginHost {
     private:
         typedef Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> BaseClass;
 
-        union EXTERNAL Package {
+        class EXTERNAL Package {
         private:
             Package() = delete;
             Package(const Package&) = delete;
@@ -19,30 +19,50 @@ namespace PluginHost {
 
         public:
             explicit Package(const Core::ProxyType<Core::JSON::IElement>& json)
-                : _json(json)
+                : _json(true)
+                , _info(json)
             {
             }
-            explicit Package(const string& text)
-                : _text(text)
+            explicit Package(const string& text) 
+                : _json(false)
+                , _info(text)
             {
             }
             ~Package()
             {
+                if (_json) {
+                    _info.json.~ProxyType<Core::JSON::IElement>();                
+                } else {
+                    _info.text.~string();
+                }
             }
 
         public:
             const string& Text() const
             {
-                return (_text);
+                return (_info.text);
             }
             const Core::ProxyType<Core::JSON::IElement>& JSON() const
             {
-                return (_json);
+                return (_info.json);
             }
 
         private:
-            Core::ProxyType<Core::JSON::IElement> _json;
-            string _text;
+            bool _json;
+            union Info {
+                Info(const Core::ProxyType<Core::JSON::IElement>& value)
+                    : json(value)
+                {
+                }
+                Info(const string& value)
+                    : text(value)
+                {
+                }
+                ~Info() {}
+
+                Core::ProxyType<Core::JSON::IElement> json;
+                string text;
+            } _info;
         };
         class EXTERNAL SerializerImpl {
         public:
