@@ -22,17 +22,17 @@ namespace WPEFramework {
 namespace Core {
 
     template <typename CONTEXT>
-    class ProxyObject : public CONTEXT, public IReferenceCounted {
+    class ProxyService : public CONTEXT {
     private:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
         // Create a new object and modify it. If the assignment operator
         // is used, give a compile error.
         // ----------------------------------------------------------------
-        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
+        ProxyService<CONTEXT>& operator=(const ProxyService<CONTEXT>& rhs) = delete;
 
     protected:
-        ProxyObject(CONTEXT& copy)
+        ProxyService(CONTEXT& copy)
             : CONTEXT(copy)
             , m_RefCount(0)
         {
@@ -72,20 +72,20 @@ namespace Core {
         }
 
     public:
-        inline ProxyObject()
+        inline ProxyService()
             : CONTEXT()
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
         }
 		template <typename... Args>
-        inline ProxyObject(Args... args)
+        inline ProxyService(Args... args)
             : CONTEXT(args...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
         }
-        virtual ~ProxyObject()
+        virtual ~ProxyService()
         {
             __Deinitialize<CONTEXT>();
 
@@ -124,7 +124,7 @@ namespace Core {
         }
 
         inline uint32_t Size() const {
-            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
 
             return (*(reinterpret_cast<const uint32_t*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize]))));
         }
@@ -132,7 +132,7 @@ namespace Core {
         template<typename TYPE>
         TYPE* Store() {
             size_t size = Size();
-            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
             void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
             return(reinterpret_cast<TYPE*>(result));
@@ -141,7 +141,7 @@ namespace Core {
         template<typename TYPE>
         const TYPE* Store() const {
             size_t size = Size();
-            size_t alignedSize = ((sizeof(ProxyObject<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
             const void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
             return(reinterpret_cast<const TYPE*>(result));
@@ -169,14 +169,14 @@ namespace Core {
         typedef hasInitialize<CONTEXT, void (CONTEXT::*)()> TraitInitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyObject<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, void>::type
         __Initialize()
         {
             CONTEXT::Initialize();
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyObject<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, void>::type
         __Initialize()
         {
         }
@@ -189,20 +189,62 @@ namespace Core {
         typedef hasDeinitialize<CONTEXT, void (CONTEXT::*)()> TraitDeinitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyObject<TYPE>::TraitDeinitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitDeinitialize::value, void>::type
         __Deinitialize()
         {
             CONTEXT::Deinitialize();
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyObject<TYPE>::TraitDeinitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitDeinitialize::value, void>::type
         __Deinitialize()
         {
         }
 
     protected:
         mutable uint32_t m_RefCount;
+    };
+
+    template <typename CONTEXT>
+    class ProxyObject : public ProxyService<CONTEXT>, public IReferenceCounted {
+    private:
+        // ----------------------------------------------------------------
+        // Never, ever allow reference counted objects to be assigned.
+        // Create a new object and modify it. If the assignment operator
+        // is used, give a compile error.
+        // ----------------------------------------------------------------
+        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
+
+    protected:
+        ProxyObject(CONTEXT& copy)
+            : ProxyService<CONTEXT>(copy)
+        {
+        }
+
+    public:
+        inline ProxyObject()
+            : ProxyService<CONTEXT>()
+        {
+        }
+		template <typename... Args>
+        inline ProxyObject(Args... args)
+            : ProxyService <CONTEXT>(args...)
+        {
+        }
+        virtual ~ProxyObject()
+        {
+        }
+
+    public:
+        virtual void AddRef() const
+        {
+            ProxyService<CONTEXT>::AddRef();
+        }
+
+        virtual uint32_t Release() const
+        {
+            return (ProxyService<CONTEXT>::Release());
+        }
     };
 
     // ------------------------------------------------------------------------------
@@ -265,24 +307,17 @@ namespace Core {
             }
         }
 
-        inline static ProxyType<CONTEXT> Create()
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>());
-        }
+    public:
         template <typename... Args>
         inline static ProxyType<CONTEXT> Create(Args... args)
         {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(args...));
+            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), 0, std::forward<Args>(args)...));
         }
 
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>());
-        }
         template <typename... Args>
 		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args... args)
         {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(args...));
+            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), size, std::forward<Args>(args)...));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
@@ -385,6 +420,18 @@ namespace Core {
                 m_RefCount->AddRef();
             }
         }
+
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
+        }
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
+        }
+
 
     private:
         mutable IReferenceCounted* m_RefCount;
@@ -924,24 +971,25 @@ namespace Core {
     template <typename PROXYPOOLELEMENT>
     class ProxyPoolType {
     private:
-        template <typename ELEMENT>
-        class ProxyObjectType : public Core::ProxyObject<ELEMENT> {
-        private:
-            typedef ProxyObjectType<ELEMENT> ThisClass;
+        template<typename ELEMENT>
+        using PoolElement = typename std::conditional< std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT> >::type; 
 
+        template <typename ELEMENT>
+        class ProxyObjectType : public PoolElement<ELEMENT> {
+        private:
             ProxyObjectType() = delete;
             ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
             ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
 
             ProxyObjectType(ProxyPoolType<ELEMENT>* queue)
-                : Core::ProxyObject<ELEMENT>()
+                : PoolElement<ELEMENT>()
                 , _queue(*queue)
             {
                 ASSERT(queue != nullptr);
             }
             template <typename Arg1>
             ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Arg1 a_Arg1)
-                : Core::ProxyObject<ELEMENT>(a_Arg1)
+                : PoolElement<ELEMENT>(a_Arg1)
                 , _queue(*queue)
             {
                 ASSERT(queue != nullptr);
@@ -950,19 +998,16 @@ namespace Core {
         public:
             ~ProxyObjectType()
             {
-                this->__Deinitialize<PROXYPOOLELEMENT>();
             }
             inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue)
             {
-                ThisClass* newElement(new (0) ThisClass(&queue));
-                newElement->__Initialize<PROXYPOOLELEMENT>();
+                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue));
                 return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
             }
             template <typename Arg1>
             inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue, Arg1 argument)
             {
-                ThisClass* newElement(new (0) ThisClass(&queue, argument));
-                newElement->__Initialize<PROXYPOOLELEMENT>();
+                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue, argument));
                 return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
             }
 
@@ -971,13 +1016,13 @@ namespace Core {
             {
                 uint32_t result;
 
-                if ((result = Core::InterlockedDecrement(Core::ProxyObject<ELEMENT>::m_RefCount)) == 0) {
+                if ((result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount)) == 0) {
 
-                    ThisClass* baseElement(const_cast<ThisClass*>(this));
+                    ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
 
-                    baseElement->__Clear<PROXYPOOLELEMENT>();
+                    baseElement->__Clear<ELEMENT>();
 
-                    Core::ProxyType<ThisClass> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
+                    Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
 
                     _queue.Return(returnObject);
 
@@ -1005,46 +1050,6 @@ namespace Core {
             template <typename TYPE>
             inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitClear::value, void>::type
             __Clear()
-            {
-            }
-
-            // -----------------------------------------------------
-            // Check for Initialize method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Initialize, hasInitialize);
-
-            typedef hasInitialize<ELEMENT, void (ELEMENT::*)()> TraitInitialize;
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitInitialize::value, void>::type
-            __Initialize()
-            {
-                ELEMENT::Initialize();
-            }
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitInitialize::value, void>::type
-            __Initialize()
-            {
-            }
-
-            // -----------------------------------------------------
-            // Check for Deinitialize method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Deinitialize, hasDeinitialize);
-
-            typedef hasDeinitialize<ELEMENT, void (ELEMENT::*)()> TraitDeinitialize;
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitDeinitialize::value, void>::type
-            __Deinitialize()
-            {
-                ELEMENT::Deinitialize();
-            }
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitDeinitialize::value, void>::type
-            __Deinitialize()
             {
             }
 
@@ -1273,6 +1278,17 @@ namespace Core {
 
             _lock.Unlock();
         }
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
+        }
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
+        }
+
 
     private:
         mutable std::map<PROXYKEY, ProxyType<ProxyMapElement>> _map;

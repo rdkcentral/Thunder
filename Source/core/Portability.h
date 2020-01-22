@@ -554,13 +554,11 @@ namespace Core {
         virtual uint32_t Release() const = 0;
     };
 
-    struct EXTERNAL IUnknown {
+    struct EXTERNAL IUnknown : public IReferenceCounted  {
         enum { ID = 0x00000000 };
 
         virtual ~IUnknown(){};
 
-        virtual void AddRef() const = 0;
-        virtual uint32_t Release() const = 0;
         virtual void* QueryInterface(const uint32_t interfaceNummer) = 0;
 
         template <typename REQUESTEDINTERFACE>
