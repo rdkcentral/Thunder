@@ -162,7 +162,6 @@ namespace Process {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
-            , Callsign(nullptr)
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
@@ -187,7 +186,6 @@ namespace Process {
         }
 
     public:
-        const TCHAR* Callsign;
         const TCHAR* Locator;
         const TCHAR* ClassName;
         const TCHAR* RemoteChannel;
@@ -209,9 +207,6 @@ namespace Process {
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
-            case 'C':
-                Callsign = argument;
-                break;
             case 'l':
                 Locator = argument;
                 break;
@@ -375,7 +370,6 @@ int main(int argc, char** argv)
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");
-        printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");

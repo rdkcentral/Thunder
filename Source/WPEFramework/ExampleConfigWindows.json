@@ -20,7 +20,7 @@
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems": [ "Decryption", "Security" ]
+        "subsystems": [ "Decryption" ]
       }
     },
     {

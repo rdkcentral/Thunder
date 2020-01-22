@@ -220,18 +220,6 @@ namespace RPC {
         return (_id);
     }
 
-    /* virtual */ void* Communicator::RemoteConnection::QueryInterface(const uint32_t id)
-    {
-        if (id == IRemoteConnection::ID) {
-            AddRef();
-            return (static_cast<IRemoteConnection*>(this));
-        } else if (id == Core::IUnknown::ID) {
-            AddRef();
-            return (static_cast<Core::IUnknown*>(this));
-        }
-        return (nullptr);
-    }
-
     /* virtual */ void* Communicator::RemoteConnection::Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
     {
         void* result(nullptr);
@@ -269,21 +257,6 @@ namespace RPC {
         return (_remoteId);
     }
 
-    /* virtual */  string Communicator::MonitorableRemoteProcess::Callsign() const 
-    {
-        return _callsign;
-    }
-
-    /* virtual */  void* Communicator::MonitorableRemoteProcess::QueryInterface(const uint32_t id) 
-    {
-        if (id == IRemoteConnection::IProcess::ID) {
-            AddRef();
-            return (static_cast<IRemoteConnection::IProcess*>(this));
-        } 
-
-        return RemoteProcess::QueryInterface(id);
-    }
-
     /* virtual */ void Communicator::LocalRemoteProcess::Terminate()
     {
         // Do not yet call the close on the connection, the otherside might close down decently and release all opened interfaces..
@@ -312,11 +285,6 @@ namespace RPC {
     }
 
 #endif
-
-    Communicator::RemoteHost::RemoteHost(const Core::NodeId& remoteNode)
-        : RemoteProcess()
-    {
-    }
 
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)

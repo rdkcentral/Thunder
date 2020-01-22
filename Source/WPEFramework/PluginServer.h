@@ -2,6 +2,7 @@
 #define __WEBBRIDGEPLUGINSERVER_H
 
 #include "Environment.h"
+#include "IRemoteInstantiation.h"
 #include "Module.h"
 #include "SystemInfo.h"
 
@@ -1103,6 +1104,7 @@ namespace PluginHost {
         class EXTERNAL ServiceMap : public PluginHost::IShell::ICOMLink {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
+            typedef std::map<const string, IRemoteInstantiation*> RemoteInstantiators;
 
         private:
             ServiceMap() = delete;
@@ -1111,11 +1113,71 @@ namespace PluginHost {
 
             class CommunicatorServer : public RPC::Communicator {
             private:
+                class EXTERNAL RemoteHost : public RPC::Communicator::RemoteConnection {
+                private:
+                    friend class Core::Service<RemoteHost>;
+
+                    RemoteHost(const RemoteHost&) = delete;
+                    RemoteHost& operator=(const RemoteHost&) = delete;
+
+                public:
+                    RemoteHost(const RPC::Object& instance, const string& connector)
+                        : RemoteConnection()
+                        , _object(instance)
+                        , _connector(connector)
+                    {
+                    }
+                    virtual ~RemoteHost()
+                    {
+                        TRACE_L1("Destructor for RemoteHost process for %d", Id());
+                    }
+
+                    uint32_t Launch() override
+                    {
+                        uint32_t result = Core::ERROR_INVALID_DESIGNATOR;
+
+                        Core::NodeId remoteNode(_object.RemoteAddress());
+
+                        if (remoteNode.IsValid() == true) {
+                            Core::ProxyType<Core::IIPCServer> engine(Core::ProxyType<RPC::InvokeServer>::Create(&Core::WorkerPool::Instance()));
+                            Core::ProxyType<RPC::CommunicatorClient> client(
+                                Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, engine));
+
+                            // Oke we have ou selves a COMClient link. Lets see if we can get the proepr interface...
+                            PluginHost::IRemoteInstantiation* instantiation = client->Open<PluginHost::IRemoteInstantiation>(_connector, ~0, 3000);
+
+                            if (instantiation == nullptr) {
+                                result = Core::ERROR_ILLEGAL_STATE;
+                            } else {
+                                result = instantiation->Instantiate(
+                                    RPC::Communicator::RemoteConnection::Id(),
+                                    _object.Locator(),
+                                    _object.ClassName(),
+                                    _object.Callsign(),
+                                    _object.Interface(),
+                                    _object.Version(),
+                                    _object.User(),
+                                    _object.Group(),
+                                    _object.Threads(),
+                                    _object.Priority(),
+                                    _object.Configuration());
+
+                                instantiation->Release();
+                            }
+                        }
+
+                        return (result);
+                    }
+
+                private:
+                    const string _connector;
+                    RPC::Object _object;
+                };
+
+            public:
                 CommunicatorServer() = delete;
                 CommunicatorServer(const CommunicatorServer&) = delete;
                 CommunicatorServer& operator=(const CommunicatorServer&) = delete;
-
-            public:
                 CommunicatorServer(
                     ServiceMap& parent,
                     const Core::NodeId& node,
@@ -1166,15 +1228,57 @@ namespace PluginHost {
                     if (callsign.empty() == false) {
                         dataPath += callsign + '/';
                         persistentPath += callsign + '/';
+                        volatilePath += callsign + '/';
                     }
 
-                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, _volatilePath, _appPath, _proxyStubPath), waitTime));
+                    return (RPC::Communicator::Create(connectionId, instance, RPC::Config(RPC::Communicator::Connector(), _application, persistentPath, _systemPath, dataPath, volatilePath, _appPath, _proxyStubPath), waitTime));
+                }
+                const string& PersistentPath() const
+                {
+                    return (_persistentPath);
+                }
+                const string& SystemPath() const
+                {
+                    return (_systemPath);
+                }
+                const string& DataPath() const
+                {
+                    return (_dataPath);
+                }
+                const string& VolatilePath() const
+                {
+                    return (_volatilePath);
+                }
+                const string& AppPath() const
+                {
+                    return (_appPath);
+                }
+                const string& ProxyStubPath() const
+                {
+                    return (_proxyStubPath);
+                }
+                const string& Application() const
+                {
+                    return (_application);
                 }
 
             private:
-                void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t /* version */) override
+                RPC::Communicator::RemoteConnection* CreateStarter(const RPC::Config& config, const RPC::Object& instance) override
                 {
-                    return (_parent.QueryInterfaceByCallsign(interfaceId, className));
+                    RPC::Communicator::RemoteConnection* result = nullptr;
+
+                    if (instance.Type() == RPC::Object::HostType::DISTRIBUTED) {
+                        result = Core::Service<RemoteHost>::Create<RPC::Communicator::RemoteConnection>(instance, config.Connector());
+                    } else {
+                        result = RPC::Communicator::CreateStarter(config, instance);
+                    }
+
+                    return result;
+                }
+
+                void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t version) override
+                {
+                    return (_parent.Aquire(interfaceId, className, version));
                 }
 
             private:
@@ -1188,189 +1292,1382 @@ namespace PluginHost {
                 const string _application;
                 mutable Core::CriticalSection _adminLock;
             };
-
-            class Override : public Core::JSON::Container {
+            class RemoteInstantiation : public IRemoteInstantiation {
             private:
-                Override(const Override&) = delete;
-                Override& operator=(const Override&) = delete;
+                RemoteInstantiation(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
+                    : _refCount(1)
+                    , _parent(parent)
+                    , _comms(comms)
+                    , _connector(connector)
+                {
+                }
 
             public:
-                class Plugin : public Core::JSON::Container {
+                ~RemoteInstantiation() override
+                {
+                }
+
+            public:
+                static IRemoteInstantiation* Create(ServiceMap& parent, const CommunicatorServer& comms, const string& connector)
+                {
+                    return (new RemoteInstantiation(parent, comms, connector));
+                }
+                void AddRef() const override
+                {
+                    Core::InterlockedIncrement(_refCount);
+                }
+                uint32_t Release() const override
+                {
+                    _parent._adminLock.Lock();
+
+                    if (Core::InterlockedDecrement(_refCount) == 0) {
+                        _parent.Remove(_connector);
+
+                        _parent._adminLock.Unlock();
+
+                        delete this;
+
+                        return (Core::ERROR_DESTRUCTION_SUCCEEDED);
+                    } 
+                    else {
+                        _parent._adminLock.Unlock();
+                    }
+
+                    return (Core::ERROR_NONE);
+                    }
+                    uint32_t Instantiate(
+                        const uint32_t requestId,
+                        const string& libraryName,
+                        const string& className,
+                        const string& callsign,
+                        const uint32_t interfaceId,
+                        const uint32_t version,
+                        const string& user,
+                        const string& group,
+                        const uint8_t threads,
+                        const int8_t priority,
+                        const string configuration) override
+                    {
+                        string persistentPath(_comms.PersistentPath());
+                        string dataPath(_comms.DataPath());
+                        string volatilePath(_comms.VolatilePath());
+
+                        if (callsign.empty() == false) {
+                            dataPath += callsign + '/';
+                            persistentPath += callsign + '/';
+                            volatilePath += callsign + '/';
+                        }
+
+                        uint32_t id;
+                        RPC::Config config(_connector, _comms.Application(), persistentPath, _comms.SystemPath(), dataPath, volatilePath, _comms.AppPath(), _comms.ProxyStubPath());
+                        RPC::Object instance(libraryName, className, callsign, interfaceId, version, user, group, threads, priority, RPC::Object::HostType::LOCAL, _T(""), configuration);
+
+                        RPC::Process process(requestId, config, instance);
+
+                        return (process.Launch(id));
+                    }
+
+                    BEGIN_INTERFACE_MAP(RemoteInstantiation)
+                    INTERFACE_ENTRY(IRemoteInstantiation)
+                    END_INTERFACE_MAP
+
                 private:
-                    Plugin& operator=(Plugin const& other) = delete;
+                    mutable uint32_t _refCount;
+                    ServiceMap& _parent;
+                    const CommunicatorServer& _comms;
+                    const string _connector;
+                };
+                class Override : public Core::JSON::Container {
+                private:
+                    Override(const Override&) = delete;
+                    Override& operator=(const Override&) = delete;
 
                 public:
-                    Plugin()
-                        : Core::JSON::Container()
-                        , AutoStart()
-                        , Configuration(_T("{}"), false)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
-                    Plugin(const string& config, const bool autoStart)
-                        : Core::JSON::Container()
-                        , AutoStart(autoStart)
-                        , Configuration(config, false)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
-                    Plugin(Plugin const& copy)
-                        : Core::JSON::Container()
-                        , AutoStart(copy.AutoStart)
-                        , Configuration(copy.Configuration)
-                    {
-                        Add(_T("autostart"), &AutoStart);
-                        Add(_T("configuration"), &Configuration);
-                    }
+                    class Plugin : public Core::JSON::Container {
+                    private:
+                        Plugin& operator=(Plugin const& other) = delete;
 
-                    virtual ~Plugin()
+                    public:
+                        Plugin()
+                            : Core::JSON::Container()
+                            , AutoStart()
+                            , Configuration(_T("{}"), false)
+                        {
+                            Add(_T("autostart"), &AutoStart);
+                            Add(_T("configuration"), &Configuration);
+                        }
+                        Plugin(const string& config, const bool autoStart)
+                            : Core::JSON::Container()
+                            , AutoStart(autoStart)
+                            , Configuration(config, false)
+                        {
+                            Add(_T("autostart"), &AutoStart);
+                            Add(_T("configuration"), &Configuration);
+                        }
+                        Plugin(Plugin const& copy)
+                            : Core::JSON::Container()
+                            , AutoStart(copy.AutoStart)
+                            , Configuration(copy.Configuration)
+                        {
+                            Add(_T("autostart"), &AutoStart);
+                            Add(_T("configuration"), &Configuration);
+                        }
+
+                        virtual ~Plugin()
+                        {
+                        }
+
+                    public:
+                        Core::JSON::Boolean AutoStart;
+                        Core::JSON::String Configuration;
+                    };
+
+                    typedef std::map<string, Plugin>::iterator Iterator;
+
+                public:
+                    Override(ServiceMap& services, const string& persitentFile)
+                        : _services(services)
+                        , _fileName(persitentFile)
+                        , _callsigns()
+                    {
+
+                        // Add all service names (callsigns) that are not yet in there...
+                        ServiceMap::Iterator service(services.Services());
+
+                        while (service.Next() == true) {
+                            const string& name(service->Callsign());
+
+                            // Create an element for this service with its callsign
+                            std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
+
+                            // Store the override config in the JSON String created in the map
+                            Add(index.first->first.c_str(), &(index.first->second));
+                        }
+                    }
+                    ~Override()
                     {
                     }
 
                 public:
-                    Core::JSON::Boolean AutoStart;
-                    Core::JSON::String Configuration;
+                    uint32_t Load()
+                    {
+
+                        uint32_t result = Core::ERROR_NONE;
+
+                        Core::File storage(_fileName);
+
+                        if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+
+                            result = true;
+
+                            // Clear all currently set values, they might be from the precious run.
+                            Clear();
+
+                            // Red the file and parse it into this object.
+                            IElement::FromFile(storage);
+
+                            // Convey the real JSON struct information into the specific services.
+                            ServiceMap::Iterator index(_services.Services());
+
+                            while (index.Next() == true) {
+
+                                std::map<string, Plugin>::const_iterator current(_callsigns.find(index->Callsign()));
+
+                                // ServiceMap should *NOT* change runtime...
+                                ASSERT(current != _callsigns.end());
+
+                                if (current->second.IsSet() == true) {
+                                    if (current->second.Configuration.IsSet() == true) {
+                                        (*index)->Configuration(current->second.Configuration.Value());
+                                    }
+                                    if (current->second.AutoStart.IsSet() == true) {
+                                        (*index)->AutoStart(current->second.AutoStart.Value());
+                                    }
+                                }
+                            }
+
+                            storage.Close();
+                        } else {
+                            result = storage.ErrorCode();
+                        }
+
+                        return (result);
+                    }
+
+                    bool Save()
+                    {
+
+                        uint32_t result = Core::ERROR_NONE;
+
+                        Core::File storage(_fileName);
+
+                        if (storage.Create() == true) {
+
+                            // Clear all currently set values, they might be from the precious run.
+                            Clear();
+
+                            // Convey the real information from he specific services into the JSON struct.
+                            ServiceMap::Iterator index(_services.Services());
+
+                            while (index.Next() == true) {
+
+                                std::map<string, Plugin>::iterator current(_callsigns.find(index->Callsign()));
+
+                                // ServiceMap should *NOT* change runtime...
+                                ASSERT(current != _callsigns.end());
+
+                                string config((*index)->Configuration());
+
+                                if (config.empty() == true) {
+                                    current->second.Configuration = _T("{}");
+                                } else {
+                                    current->second.Configuration = config;
+                                }
+                                current->second.AutoStart = (index)->AutoStart();
+                            }
+
+                            // Persist the currently set information
+                            IElement::ToFile(storage);
+
+                            storage.Close();
+                        } else {
+                            result = storage.ErrorCode();
+                        }
+
+                        return (result);
+                    }
+
+                private:
+                    ServiceMap& _services;
+                    Core::string _fileName;
+                    std::map<string, Plugin> _callsigns;
+                };
+                class SubSystems : public Core::IDispatch, public SystemInfo {
+                private:
+                    SubSystems() = delete;
+                    SubSystems(const SubSystems&) = delete;
+                    SubSystems& operator=(const SubSystems&) = delete;
+
+                    class Job : public Core::IDispatchType<void> {
+                    private:
+                        Job() = delete;
+                        Job(const Job&) = delete;
+                        Job& operator=(const Job&) = delete;
+
+                    public:
+                        Job(SubSystems* parent)
+                            : _parent(*parent)
+                            , _schedule(false)
+                        {
+                            ASSERT(parent != nullptr);
+                        }
+                        virtual ~Job()
+                        {
+                        }
+
+                    public:
+                        void Schedule()
+                        {
+                            if (_schedule == false) {
+                                _schedule = true;
+                                _parent.WorkerPool().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
+                            }
+                        }
+                        virtual void Dispatch()
+                        {
+                            _schedule = false;
+                            _parent.Evaluate();
+                        }
+
+                    private:
+                        SubSystems& _parent;
+                        bool _schedule;
+                    };
+
+                public:
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
+                    SubSystems(ServiceMap* parent)
+                        : SystemInfo(this)
+                        , _parent(*parent)
+                        , _decoupling(Core::ProxyType<Job>::Create(this))
+                    {
+                    }
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
+                    virtual ~SubSystems()
+                    {
+                        _parent.WorkerPool().Revoke(Core::ProxyType<Core::IDispatch>(_decoupling));
+                    }
+
+                private:
+                    virtual void Dispatch() override
+                    {
+                        _parent.Security(SystemInfo::IsActive(PluginHost::ISubSystem::SECURITY));
+                        _decoupling->Schedule();
+                    }
+                    inline void Evaluate()
+                    {
+                        _parent.Evaluate();
+                    }
+                    inline Core::WorkerPool& WorkerPool()
+                    {
+                        return (_parent.WorkerPool());
+                    }
+
+                private:
+                    ServiceMap& _parent;
+                    Core::ProxyType<Job> _decoupling;
                 };
 
-                typedef std::map<string, Plugin>::iterator Iterator;
+            public:
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
+                ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
+                    : _webbridgeConfig(config)
+                    , _adminLock()
+                    , _notificationLock()
+                    , _services()
+                    , _notifiers()
+                    , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
+                    , _processAdministrator(*this, config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), _engine)
+                    , _server(server)
+                    , _subSystems(this)
+                    , _authenticationHandler(nullptr)
+                {
+                }
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
+                ~ServiceMap()
+                {
+                    // Make sure all services are deactivated before we are killed (call Destroy on this object);
+                    ASSERT(_services.size() == 0);
+                }
 
             public:
-                Override(ServiceMap& services, const string& persitentFile)
-                    : _services(services)
-                    , _fileName(persitentFile)
-                    , _callsigns()
+                inline void Security(const bool enabled)
                 {
+                    _adminLock.Lock();
 
-                    // Add all service names (callsigns) that are not yet in there...
-                    ServiceMap::Iterator service(services.Services());
-
-                    while (service.Next() == true) {
-                        const string& name(service->Callsign());
-
-                        // Create an element for this service with its callsign
-                        std::pair<Iterator, bool> index(_callsigns.insert(std::pair<string, Plugin>(name, Plugin(_T("{}"), false))));
-
-                        // Store the override config in the JSON String created in the map
-                        Add(index.first->first.c_str(), &(index.first->second));
+                    if ((_authenticationHandler == nullptr) ^ (enabled == false)) {
+                        if (_authenticationHandler == nullptr) {
+                            // Let get the AuthentcationHandler.
+                            _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
+                        } else {
+                            // Remove the security from all the channels.
+                            _server.Dispatcher().SecurityRevoke(_webbridgeConfig.Security());
+                        }
                     }
+
+                    _adminLock.Unlock();
                 }
-                ~Override()
+                inline ISecurity* Officer(const string& token)
                 {
+                    ISecurity* result;
+
+                    _adminLock.Lock();
+
+                    if (_authenticationHandler != nullptr) {
+                        result = _authenticationHandler->Officer(token);
+                    } else {
+                        result = _webbridgeConfig.Security();
+                    }
+
+                    _adminLock.Unlock();
+                    return (result);
+                }
+                inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
+                {
+                    return (_server.Dispatcher().Submit(id, response));
+                }
+                inline uint32_t SubSystemInfo() const
+                {
+                    return (_subSystems.Value());
+                }
+                inline ISubSystem* SubSystemsInterface()
+                {
+                    return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
+                }
+                void StateChange(PluginHost::IShell* entry)
+                {
+                    _notificationLock.Lock();
+
+                    std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
+
+                    while (currentlist.size()) {
+                        currentlist.front()->StateChange(entry);
+                        currentlist.pop_front();
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                void Register(PluginHost::IPlugin::INotification* sink)
+                {
+                    _notificationLock.Lock();
+
+                    ASSERT(std::find(_notifiers.begin(), _notifiers.end(), sink) == _notifiers.end());
+
+                    _notifiers.push_back(sink);
+
+                    // Tell this "new" sink all our active/inactive plugins..
+                    std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+
+                    // Notifty all plugins that we have sofar..
+                    while (index != _services.end()) {
+                        ASSERT(index->second.IsValid());
+
+                        Core::ProxyType<Service> service(index->second);
+
+                        ASSERT(service.IsValid());
+
+                        if (service.IsValid() == true) {
+                            sink->StateChange(&(service.operator*()));
+                        }
+
+                        index++;
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                void Unregister(PluginHost::IPlugin::INotification* sink)
+                {
+                    _notificationLock.Lock();
+
+                    std::list<PluginHost::IPlugin::INotification*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
+
+                    if (index != _notifiers.end()) {
+                        _notifiers.erase(index);
+                    }
+
+                    _notificationLock.Unlock();
+                }
+                inline void* QueryInterfaceByCallsign(const uint32_t id, const string& name)
+                {
+                    void* result = nullptr;
+
+                    const string callsign(name.empty() == true ? _server.ControllerName() : name);
+
+                    Core::ProxyType<Service> service;
+
+                    FromIdentifier(callsign, service);
+
+                    if (service.IsValid() == true) {
+
+                        result = service->QueryInterface(id);
+                    }
+                    return (result);
                 }
 
-            public:
+                virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
+                {
+                    return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
+                }
+                virtual void Register(RPC::IRemoteConnection::INotification* sink) override
+                {
+                    _processAdministrator.Register(sink);
+                }
+                virtual void Unregister(RPC::IRemoteConnection::INotification* sink) override
+                {
+                    _processAdministrator.Unregister(sink);
+                }
+                virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
+                {
+                    return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
+                }
+                uint32_t Persist()
+                {
+                    Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
+
+                    return (infoBlob.Save());
+                }
                 uint32_t Load()
                 {
+                    Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
 
-                    uint32_t result = Core::ERROR_NONE;
+                    return (infoBlob.Load());
+                }
+                inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
+                {
+                    // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
+                    Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(&_webbridgeConfig, &configuration, this));
 
-                    Core::File storage(_fileName);
+                    if (newService.IsValid() == true) {
+                        _adminLock.Lock();
 
-                    if ((storage.Exists() == true) && (storage.Open(true) == true)) {
+                        // Fire up the interface. Let it handle the messages.
+                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
 
-                        result = true;
+                        _adminLock.Unlock();
+                    }
 
-                        // Clear all currently set values, they might be from the precious run.
-                        Clear();
+                    return (newService);
+                }
+                inline void Destroy(const string& callSign)
+                {
+                    _adminLock.Lock();
 
-                        // Red the file and parse it into this object.
-                        IElement::FromFile(storage);
+                    // First stop all services running ...
+                    std::map<const string, Core::ProxyType<Service>>::iterator index(_services.find(callSign));
 
-                        // Convey the real JSON struct information into the specific services.
-                        ServiceMap::Iterator index(_services.Services());
+                    if (index != _services.end()) {
+                        index->second->Destroy();
+                        _services.erase(index);
+                    }
 
-                        while (index.Next() == true) {
+                    _adminLock.Unlock();
+                }
+                inline Iterator Services()
+                {
+                    return (Iterator(_services));
+                }
+                //inline void Processes(std::list<uint32_t>& listOfPids) const
+                //{
+                //    return (_processAdministrator.Connections(listOfPids));
+                //}
+                inline void Notification(const ForwardMessage& message)
+                {
+                    _server.Notification(message);
+                }
+#ifdef RESTFULL_API
+                inline void Notification(const string& message)
+                {
+                    _server._controller->Notification(message);
+                }
+#endif
+                void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
+                {
+                    _adminLock.Lock();
 
-                            std::map<string, Plugin>::const_iterator current(_callsigns.find(index->Callsign()));
+                    std::list<Core::ProxyType<Service>> duplicates;
+                    std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
 
-                            // ServiceMap should *NOT* change runtime...
-                            ASSERT(current != _callsigns.end());
+                    while (index != _services.end()) {
+                        duplicates.push_back(index->second);
+                        index++;
+                    }
 
-                            if (current->second.IsSet() == true) {
-                                if (current->second.Configuration.IsSet() == true) {
-                                    (*index)->Configuration(current->second.Configuration.Value());
-                                }
-                                if (current->second.AutoStart.IsSet() == true) {
-                                    (*index)->AutoStart(current->second.AutoStart.Value());
-                                }
+                    _adminLock.Unlock();
+
+                    while (duplicates.size() > 0) {
+                        MetaData::Service newInfo;
+                        duplicates.front()->GetMetaData(newInfo);
+                        metaData.Add(newInfo);
+                        duplicates.pop_front();
+                    }
+                }
+                uint32_t FromIdentifier(const string& callSign, Core::ProxyType<Service>& service)
+                {
+                    uint32_t result = Core::ERROR_UNAVAILABLE;
+
+                    _adminLock.Lock();
+
+                    std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
+
+                    while ((index != _services.end()) && (result == Core::ERROR_UNAVAILABLE)) {
+                        const string& source(index->first);
+                        if (callSign.compare(0, source.length(), source) != 0) {
+                            index++;
+                        } else {
+                            result = Core::ERROR_INVALID_SIGNATURE;
+                            uint32_t length = static_cast<uint32_t>(source.length());
+
+                            if ((callSign.length() == length) || ((callSign[length] == '.') && (index->second->HasVersionSupport(callSign.substr(length + 1))))) {
+                                service = index->second;
+                                result = Core::ERROR_NONE;
                             }
                         }
-
-                        storage.Close();
-                    } else {
-                        result = storage.ErrorCode();
                     }
+
+                    _adminLock.Unlock();
 
                     return (result);
                 }
+                uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
 
-                bool Save()
+                void Destroy();
+
+                inline const Environment& EnvironmentConfig() const
                 {
-
-                    uint32_t result = Core::ERROR_NONE;
-
-                    Core::File storage(_fileName);
-
-                    if (storage.Create() == true) {
-
-                        // Clear all currently set values, they might be from the precious run.
-                        Clear();
-
-                        // Convey the real information from he specific services into the JSON struct.
-                        ServiceMap::Iterator index(_services.Services());
-
-                        while (index.Next() == true) {
-
-                            std::map<string, Plugin>::iterator current(_callsigns.find(index->Callsign()));
-
-                            // ServiceMap should *NOT* change runtime...
-                            ASSERT(current != _callsigns.end());
-
-                            string config((*index)->Configuration());
-
-                            if (config.empty() == true) {
-                                current->second.Configuration = _T("{}");
-                            } else {
-                                current->second.Configuration = config;
-                            }
-                            current->second.AutoStart = (index)->AutoStart();
-                        }
-
-                        // Persist the currently set information
-                        IElement::ToFile(storage);
-
-                        storage.Close();
-                    } else {
-                        result = storage.ErrorCode();
-                    }
-
-                    return (result);
+                    return _server.EnvironmentConfig();
+                }
+                inline const PluginHost::Config& Configuration() const
+                {
+                    return _server.Configuration();
                 }
 
             private:
-                ServiceMap& _services;
-                Core::string _fileName;
-                std::map<string, Plugin> _callsigns;
+                void Remove(const string& connector) const
+                {
+                    // This is already locked by the callee, so safe to operate on the map..
+                    RemoteInstantiators::const_iterator index(_instantiators.find(connector));
+
+                    if (index == _instantiators.cend()) {
+                        _instantiators.erase(index);
+                    }
+                }
+                void* Aquire(const uint32_t interfaceId, const string& className, const uint32_t version)
+                {
+                    void* result = nullptr;
+
+                    if ((interfaceId == IRemoteInstantiation::ID) && (version == static_cast<uint32_t>(~0))) {
+
+                        _adminLock.Lock();
+                        // className == Connector..
+                        RemoteInstantiators::iterator index(_instantiators.find(className));
+
+                        if (index == _instantiators.end()) {
+                            IRemoteInstantiation* newIF = RemoteInstantiation::Create(*this, _processAdministrator, className);
+
+                            ASSERT(newIF != nullptr);
+
+                            _instantiators.emplace(std::piecewise_construct,
+                                std::make_tuple(className),
+                                std::make_tuple(newIF));
+
+                            result = newIF;
+                        } else {
+                            result = index->second->QueryInterface(IRemoteInstantiation::ID);
+                        }
+
+                        _adminLock.Unlock();
+                    } else {
+                        result = QueryInterfaceByCallsign(interfaceId, className);
+                    }
+
+                    return (result);
+                }
+                void RecursiveNotification(std::map<const string, Core::ProxyType<Service>>::iterator& index)
+                {
+                    if (index != _services.end()) {
+                        Core::ProxyType<Service> element(index->second);
+                        index++;
+                        RecursiveNotification(index);
+                        element->Evaluate();
+                    } else {
+                        _adminLock.Unlock();
+                    }
+                }
+                void Evaluate()
+                {
+                    _adminLock.Lock();
+
+                    // First stop all services running ...
+                    std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
+
+                    RecursiveNotification(index);
+                }
+                inline Core::WorkerPool& WorkerPool()
+                {
+                    return (_server.WorkerPool());
+                }
+
+            private:
+                PluginHost::Config& _webbridgeConfig;
+
+                mutable Core::CriticalSection _adminLock;
+                Core::CriticalSection _notificationLock;
+                std::map<const string, Core::ProxyType<Service>> _services;
+                mutable RemoteInstantiators _instantiators;
+                std::list<IPlugin::INotification*> _notifiers;
+                Core::ProxyType<RPC::InvokeServer> _engine;
+                CommunicatorServer _processAdministrator;
+                Server& _server;
+                Core::Sink<SubSystems> _subSystems;
+                IAuthenticate* _authenticationHandler;
             };
 
-            class SubSystems : public Core::IDispatch, public SystemInfo {
+            // Connection handler is the listening socket and keeps track of all open
+            // Links. A Channel is identified by an ID, this way, whenever a link dies
+            // (is closed) during the service process, the ChannelMap will
+            // not find it and just "flush" the presented work.
+            class EXTERNAL Channel : public PluginHost::Channel {
+                Channel() = delete;
+                Channel(const Channel& copy) = delete;
+                Channel& operator=(const Channel&) = delete;
+
             private:
-                SubSystems() = delete;
-                SubSystems(const SubSystems&) = delete;
-                SubSystems& operator=(const SubSystems&) = delete;
+                class EXTERNAL WebRequestJob : public Core::IDispatchType<void> {
+                private:
+                    WebRequestJob() = delete;
+                    WebRequestJob(const WebRequestJob&) = delete;
+                    WebRequestJob& operator=(const WebRequestJob&) = delete;
+
+                public:
+                    WebRequestJob(Server* server)
+                        : _server(server)
+                        , _service()
+                        , _request()
+                        , _jsonrpc(false)
+                    {
+                    }
+                    virtual ~WebRequestJob()
+                    {
+
+                        ASSERT((_request.IsValid() == false) && (_service.IsValid() == false));
+
+                        if (_request.IsValid()) {
+                            _request.Release();
+                        }
+                        if (_service.IsValid()) {
+                            _service.Release();
+                        }
+                    }
+
+                public:
+                    static void Initialize()
+                    {
+                        _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
+                        _missingResponse->Message = _T("There is no response from the requested service.");
+                    }
+                    void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const bool JSONRPC)
+                    {
+                        ASSERT(_request.IsValid() == false);
+                        ASSERT(_service.IsValid() == false);
+
+                        _service = service;
+                        _request = request;
+                        _ID = id;
+                        _jsonrpc = JSONRPC;
+                    }
+                    virtual void Dispatch()
+                    {
+                        ASSERT(_request.IsValid());
+
+                        if (_request.IsValid()) {
+                            Core::ProxyType<Web::Response> response;
+
+                            ASSERT(_service.IsValid() == true);
+
+                            if (_service.IsValid() == true) {
+                                if ((_jsonrpc == true) && (_request->HasBody() == true)) {
+                                    response = Factories::Instance().Response();
+                                    Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
+                                    Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
+                                    if (body.IsValid() == false) {
+                                        response->ErrorCode = Web::STATUS_BAD_REQUEST;
+                                    } else {
+                                        response->Body(body);
+                                        if (body->Error.IsSet() == false) {
+                                            response->ErrorCode = Web::STATUS_OK;
+                                            response->Message = _T("JSONRPC executed succesfully");
+                                        } else {
+                                            response->ErrorCode = Web::STATUS_ACCEPTED;
+                                            response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                        }
+                                    }
+                                } else {
+                                    response = _service->Process(*_request);
+                                }
+                                _service.Release();
+                            }
+
+                            if (response.IsValid() == true) {
+                                // Seems we can handle..
+                                if (response->AccessControlOrigin.IsSet() == false)
+                                    response->AccessControlOrigin = _T("*");
+
+                                if (response->CacheControl.IsSet() == false)
+                                    response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
+
+                                _server->Dispatcher().Submit(_ID, response);
+                            } else {
+                                // Fire and forget, We are done !!!
+                                _server->Dispatcher().Submit(_ID, _missingResponse);
+                            }
+
+                            if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
+                                TRACE(Activity, (_T("HTTP Request with direct close on [%d]"), _ID));
+                                _server->Dispatcher().Suspend(_ID);
+                            }
+
+                            // We are done, clear all info
+                            _request.Release();
+                        }
+                    }
+
+                private:
+                    uint32_t _ID;
+                    Server* _server;
+                    Core::ProxyType<Service> _service;
+                    Core::ProxyType<Web::Request> _request;
+                    bool _jsonrpc;
+
+                    static Core::ProxyType<Web::Response> _missingResponse;
+                };
+
+                class EXTERNAL JSONElementJob : public Core::IDispatchType<void> {
+                private:
+                    JSONElementJob() = delete;
+                    JSONElementJob(const JSONElementJob&) = delete;
+                    JSONElementJob& operator=(const JSONElementJob&) = delete;
+
+                public:
+                    JSONElementJob(Server* server)
+                        : _server(server)
+                        , _service()
+                        , _element()
+                        , _jsonrpc(false)
+                    {
+                    }
+                    virtual ~JSONElementJob()
+                    {
+
+                        ASSERT((_element.IsValid() == false) && (_service.IsValid() == false));
+
+                        if (_element.IsValid()) {
+                            _element.Release();
+                        }
+                        if (_service.IsValid()) {
+                            _service.Release();
+                        }
+                    }
+
+                public:
+                    void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const bool JSONRPC)
+                    {
+                        ASSERT(_element.IsValid() == false);
+                        ASSERT(_service.IsValid() == false);
+
+                        _service = service;
+                        _element = element;
+                        _ID = id;
+                        _jsonrpc = JSONRPC;
+                    }
+                    virtual void Dispatch()
+                    {
+                        ASSERT(_element.IsValid());
+
+                        if (_element.IsValid()) {
+
+                            ASSERT(_service.IsValid() == true);
+
+                            if (_service.IsValid() == true) {
+
+                                if (_jsonrpc == true) {
+                                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
+                                    PluginHost::IDispatcher* dispatcher = _service->Dispatcher();
+
+                                    ASSERT(dispatcher != nullptr);
+                                    ASSERT(message.IsValid() == true);
+
+                                    if ((dispatcher != nullptr) && (message.IsValid() == true)) {
+                                        _element = Core::ProxyType<Core::JSON::IElement>(dispatcher->Invoke(_ID, *message));
+                                    }
+                                } else {
+                                    _element = _service->Inbound(_ID, *_element);
+                                }
+
+                                _service.Release();
+                            }
+
+                            if (_element.IsValid()) {
+                                // Fire and forget, We are done !!!
+                                _server->Dispatcher().Submit(_ID, _element);
+                                _element.Release();
+                            }
+                        }
+                    }
+
+                private:
+                    uint32_t _ID;
+                    Server* _server;
+                    Core::ProxyType<Service> _service;
+                    Core::ProxyType<Core::JSON::IElement> _element;
+                    bool _jsonrpc;
+                };
+
+                class EXTERNAL TextJob : public Core::IDispatchType<void> {
+                private:
+                    TextJob() = delete;
+                    TextJob(const TextJob&) = delete;
+                    TextJob& operator=(const TextJob&) = delete;
+
+                public:
+                    TextJob(Server* server)
+                        : _server(server)
+                        , _service()
+                        , _text()
+                    {
+                    }
+                    virtual ~TextJob()
+                    {
+                        ASSERT(_service.IsValid() == false);
+
+                        if (_service.IsValid()) {
+                            _service.Release();
+                        }
+                    }
+
+                public:
+                    void Set(const uint32_t id, Core::ProxyType<Service>& service, const string& text)
+                    {
+                        ASSERT(_service.IsValid() == false);
+
+                        _service = service;
+                        _text = text;
+                        _ID = id;
+                    }
+                    virtual void Dispatch()
+                    {
+                        ASSERT(_service.IsValid() == true);
+
+                        if (_service.IsValid() == true) {
+
+                            _text = _service->Inbound(_ID, _text);
+                            _service.Release();
+                        }
+
+                        if (_text.empty() == false) {
+                            // Fire and forget, We are done !!!
+                            _server->Dispatcher().Submit(_ID, _text);
+                            _text.clear();
+                        }
+                    }
+
+                private:
+                    uint32_t _ID;
+                    Server* _server;
+                    Core::ProxyType<Service> _service;
+                    string _text;
+                };
+
+            public:
+                Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent);
+                virtual ~Channel();
+
+            public:
+                inline uint32_t Id() const
+                {
+                    return (PluginHost::Channel::Id());
+                }
+                static void Initialize(const string& serverPrefix)
+                {
+                    WebRequestJob::Initialize();
+
+                    _missingCallsign->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    _missingCallsign->Message = _T("After the /") + serverPrefix + _T("/ URL a Callsign is expected.");
+
+                    _incorrectVersion->ErrorCode = Web::STATUS_BAD_REQUEST;
+                    _incorrectVersion->Message = _T("Callsign was oke, but the requested version was not supported.");
+
+                    _unauthorizedRequest->ErrorCode = Web::STATUS_UNAUTHORIZED;
+                    _unauthorizedRequest->Message = _T("Request needs authorization, but it was not authorized");
+                }
+                void Revoke(PluginHost::ISecurity* baseRights)
+                {
+                    PluginHost::Channel::Lock();
+
+                    if (_security != baseRights) {
+                        if (_security != nullptr) {
+                            _security->Release();
+                        }
+                        _security = baseRights;
+                        _security->AddRef();
+                    }
+
+                    PluginHost::Channel::Unlock();
+                }
+
+            private:
+                bool Allowed(const string& pathParameter, const string& queryParameters)
+                {
+                    bool allowed = true;
+                    Core::URL::KeyValue options(queryParameters);
+
+                    Core::TextFragment token = options.Value(_T("token"), false);
+
+                    if (token.IsEmpty() == false) {
+                        ISecurity* security = _parent.Officer(token.Text());
+
+                        if (security != nullptr) {
+                            PluginHost::Channel::Lock();
+
+                            if (_security != nullptr) {
+                                _security->Release();
+                            }
+                            _security = security;
+                            _security->AddRef();
+
+                            PluginHost::Channel::Unlock();
+                        }
+                    }
+
+                    ASSERT(_security != nullptr);
+
+                    return (_security != nullptr ? _security->Allowed(pathParameter) : false);
+                }
+
+                // Handle the HTTP Web requests.
+                // [INBOUND]  Completed received requests are triggering the Received,
+                // [OUTBOUND] Completed send responses are triggering the Send.
+                virtual void
+                LinkBody(Core::ProxyType<Request>& request)
+                {
+                    // This is the time where we determine what body is needed for the incoming request.
+                    TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
+
+                    // Remember the path and options..
+                    Core::ProxyType<Service> service;
+                    bool serviceCall;
+
+                    uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+
+                    request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+
+                    ASSERT(request->State() != Request::INCOMPLETE);
+
+                    if (request->State() == Request::COMPLETE) {
+
+                        ASSERT(service.IsValid() == true);
+
+                        if (serviceCall == true) {
+                            service->Inbound(*request);
+                        } else {
+                            request->Body(Factories::Instance().JSONRPC());
+                        }
+                    }
+                }
+                virtual void Received(Core::ProxyType<Request>& request)
+                {
+                    ISecurity* security = nullptr;
+
+                    TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
+
+                    // See if a token has been hooked up to the request, maybe we need a
+                    // different security provider.
+                    if (request->WebToken.IsSet()) {
+                        security = _parent.Officer(request->WebToken.Value().Token());
+
+                        // Do we now want this token to be permant for this channel or only
+                        // for this request ??? For now we will only use it for this request
+                        // If it must be made permanent, swap the current _security with this
+                        // one...
+                    } else if ((request->Verb == Web::Request::HTTP_GET) && (request->Query.IsSet())) {
+                        Core::URL::KeyValue options(request->Query.Value());
+
+                        string token = options.Value(_T("token"), false).Text();
+                        if (token.empty() == false) {
+                            security = _parent.Officer(token);
+                        }
+                    }
+
+                    if (security == nullptr) {
+                        PluginHost::Channel::Lock();
+                        security = _security;
+                        security->AddRef();
+                        PluginHost::Channel::Unlock();
+                    }
+
+                    // See if we are allowed to process this request..
+                    if ((security == nullptr) || (security->Allowed(*request) == false)) {
+                        request->Unauthorized();
+                    } else {
+                        // If there was no body, we are still incomplete.
+                        if (request->State() == Request::INCOMPLETE) {
+
+                            Core::ProxyType<Service> service;
+                            bool serviceCall;
+                            uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
+
+                            request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
+                        } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
+                            Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
+                            if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
+                                request->Unauthorized();
+                            }
+                        }
+                    }
+
+                    if (security != nullptr) {
+                        // We are done with the security related items, let go of the officer.
+                        security->Release();
+                    }
+
+                    switch (request->State()) {
+                    case Request::OBLIVIOUS: {
+                        Core::ProxyType<Web::Response> result(Factories::Instance().Response());
+
+                        if ((request->Path.empty() == true) || (request->Path == _T("/"))) {
+                            result->ErrorCode = Web::STATUS_MOVED_PERMANENTLY;
+                            result->Location = _parent.Configuration().Redirect() + _T("?ip=") + _parent.Configuration().Accessor().HostAddress() + _T("&port=") + Core::NumberType<uint16_t>(_parent.Configuration().Accessor().PortNumber()).Text();
+                        } else {
+                            result->ErrorCode = Web::STATUS_NOT_FOUND;
+                            result->Message = "Not Found";
+                        }
+
+                        Submit(result);
+
+                        break;
+                    }
+                    case Request::MISSING_CALLSIGN: {
+                        // Report that we, at least, need a call sign.
+                        Submit(_missingCallsign);
+                        break;
+                    }
+                    case Request::INVALID_VERSION: {
+                        // Report that we, at least, need a call sign.
+                        Submit(_incorrectVersion);
+                        break;
+                    }
+                    case Request::UNAUTHORIZED: {
+                        // Report that we, at least, need a call sign.
+                        Submit(_unauthorizedRequest);
+                        break;
+                    }
+                    case Request::COMPLETE: {
+                        Core::ProxyType<Service> service(Core::proxy_cast<Service>(request->Service()));
+
+                        ASSERT(service.IsValid());
+
+                        Core::ProxyType<Web::Response> response(service->Evaluate(*request));
+
+                        if (response.IsValid() == true) {
+                            // Report that the calls sign could not be found !!
+                            Submit(response);
+                        } else {
+                            // Send the Request object out to be handled.
+                            // By definition, we can issue it on a rental thread..
+                            Core::ProxyType<WebRequestJob> job(_webJobs.Element(&_parent));
+
+                            ASSERT(job.IsValid() == true);
+
+                            if (job.IsValid() == true) {
+                                Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
+                                job->Set(Id(), service, baseRequest, !request->ServiceCall());
+                                _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        // I think we handled every possible situation
+                        ASSERT(false);
+                    }
+                    }
+                }
+                virtual void Send(const Core::ProxyType<Web::Response>& response)
+                {
+                    TRACE(WebFlow, (response));
+                }
+
+                // Handle the JSON structs flowing over the WebSocket.
+                // [INBOUND]  Completed deserialized JSON objects that are Received, will trigger the Received.
+                // [OUTBOUND] Completed serialized JSON objects that are send out, will trigger the Send.
+                virtual Core::ProxyType<Core::JSON::IElement> Element(const string& identifier)
+                {
+                    Core::ProxyType<Core::JSON::IElement> result;
+
+                    if (_service.IsValid() == true) {
+                        if (State() == JSONRPC) {
+                            result = Core::ProxyType<Core::JSON::IElement>(Factories::Instance().JSONRPC());
+                        } else {
+                            result = _service->Inbound(identifier);
+                        }
+                    }
+
+                    return (result);
+                }
+                virtual void Send(const Core::ProxyType<Core::JSON::IElement>& element)
+                {
+                    TRACE(SocketFlow, (element));
+                }
+                virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
+                {
+                    bool securityClearance = true;
+
+                    ASSERT(_service.IsValid() == true);
+
+                    TRACE(SocketFlow, (element));
+
+                    if (State() & Channel::JSONRPC) {
+                        Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
+                        if (message.IsValid()) {
+                            PluginHost::Channel::Lock();
+                            securityClearance = _security->Allowed(*message);
+                            PluginHost::Channel::Unlock();
+
+                            if (securityClearance == false) {
+                                // Oopsie daisy we are not allowed to handle this request.
+                                // TODO: How shall we report back on this?
+                            }
+                        }
+                    }
+
+                    if (securityClearance == true) {
+                        // Send the JSON object out to be handled.
+                        // By definition, we can issue it on a rental thread..
+                        Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
+
+                        ASSERT(job.IsValid() == true);
+
+                        if ((_service.IsValid() == true) && (job.IsValid() == true)) {
+                            job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
+                            _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                        }
+                    }
+                }
+                virtual void Received(const string& value)
+                {
+                    ASSERT(_service.IsValid() == true);
+
+                    TRACE(TextFlow, (value));
+
+                    // Send the JSON object out to be handled.
+                    // By definition, we can issue it on a rental thread..
+                    Core::ProxyType<TextJob> job(_textJobs.Element(&_parent));
+
+                    ASSERT(job.IsValid() == true);
+
+                    if ((_service.IsValid() == true) && (job.IsValid() == true)) {
+                        job->Set(Id(), _service, value);
+                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
+                    }
+                }
+
+                // We are in an upgraded mode, we are a websocket. Time to "deserialize and serialize
+                // INBOUND and OUTBOUND information.
+                virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+                {
+                    uint16_t result = 0;
+
+                    if (State() == RAW) {
+                        result = _service->Outbound(Id(), dataFrame, maxSendSize);
+                    } else {
+                        result = PluginHost::Channel::Serialize(dataFrame, maxSendSize);
+                    }
+
+                    return (result);
+                }
+                virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+                {
+                    uint16_t result = receivedSize;
+
+                    if (State() == RAW) {
+                        result = _service->Inbound(Id(), dataFrame, receivedSize);
+                    } else {
+                        result = PluginHost::Channel::Deserialize(dataFrame, receivedSize);
+                    }
+
+                    return (result);
+                }
+
+                // Whenever there is a state change on the link, it is reported here.
+                virtual void StateChange()
+                {
+                    TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
+
+                    // If we are closing (or closed) do the clean up
+                    if (IsOpen() == false) {
+                        if (_service.IsValid() == true) {
+                            _service->Unsubscribe(*this);
+
+                            _service.Release();
+                        }
+
+                        State(CLOSED, false);
+                    } else if (IsWebSocket() == true) {
+                        ASSERT(_service.IsValid() == false);
+                        bool serviceCall;
+                        // see if we need to subscribe...
+                        _parent.Services().FromLocator(Path(), _service, serviceCall);
+
+                        if (_service.IsValid() == false) {
+                            AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
+                        } else if (Allowed(Path(), Query()) == false) {
+                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
+                        }
+                        if (serviceCall == true) {
+                            const string& serviceHeader(_parent._config.WebPrefix());
+
+                            if (Protocol() == _T("notification")) {
+                                State(TEXT, true);
+                            } else if (Protocol() == _T("json")) {
+                                State(JSON, false);
+                            } else if (Protocol() == _T("text")) {
+                                State(TEXT, false);
+                            } else if (Protocol() == _T("jsonrpc")) {
+                                State(JSONRPC, false);
+                            } else {
+                                // Channel is a raw communication channel.
+                                // This channel allows for passing binary data back and forth
+                                State(RAW, false);
+                            }
+                            if (Name().length() > (serviceHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
+                            }
+                            // The state needs to be correct before we c
+                            if (_service->Subscribe(*this) == false) {
+                                State(WEB, false);
+                                AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+                            }
+                        } else if (_service->Dispatcher() == nullptr) {
+                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Plugin does not support JSONRPC."));
+                        } else {
+                            const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
+                            if (Name().length() > (JSONRPCHeader.length() + 1)) {
+                                Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
+                            }
+                            State(JSONRPC, false);
+
+                            // The state needs to be correct before we c
+                            if (_service->Subscribe(*this) == false) {
+                                State(WEB, false);
+                                AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
+                            }
+                        }
+                    }
+                }
+
+                friend class Core::SocketServerType<Channel>;
+
+                inline void Id(const uint32_t id)
+                {
+                    SetId(id);
+                }
+
+            private:
+                Server& _parent;
+                PluginHost::ISecurity* _security;
+                Core::ProxyType<Service> _service;
+
+                // Factories for creating jobs that can be placed on the PluginHost Worker pool.
+                static Core::ProxyPoolType<WebRequestJob> _webJobs;
+                static Core::ProxyPoolType<JSONElementJob> _jsonJobs;
+                static Core::ProxyPoolType<TextJob> _textJobs;
+
+                // If there is no call sign or the associated handler does not exist,
+                // we can return a proper answer, without dispatching.
+                static Core::ProxyType<Web::Response> _missingCallsign;
+
+                // If there is a call sign but the version request is not avilable,
+                // we can return a proper answer, without dispatching.
+                static Core::ProxyType<Web::Response> _incorrectVersion;
+
+                // If a request requires security clearance, but it is not give, for
+                // whatever reason, we will report back that the request is unauthorized.
+                static Core::ProxyType<Web::Response> _unauthorizedRequest;
+            };
+            class EXTERNAL ChannelMap : public Core::SocketServerType<Channel> {
+            private:
+                ChannelMap() = delete;
+                ChannelMap(const ChannelMap&) = delete;
+                ChannelMap& operator=(const ChannelMap&) = delete;
+
+                typedef Core::SocketServerType<Channel> BaseClass;
 
                 class Job : public Core::IDispatchType<void> {
                 private:
                     Job() = delete;
-                    Job(const Job&) = delete;
-                    Job& operator=(const Job&) = delete;
+                    Job(const Job& copy) = delete;
+                    Job& operator=(const Job& RHS) = delete;
 
                 public:
-                    Job(SubSystems* parent)
+                    Job(ChannelMap* parent)
                         : _parent(*parent)
-                        , _schedule(false)
                     {
                         ASSERT(parent != nullptr);
                     }
@@ -1379,1275 +2676,205 @@ namespace PluginHost {
                     }
 
                 public:
-                    void Schedule()
+                    virtual void Dispatch() override
                     {
-                        if (_schedule == false) {
-                            _schedule = true;
-                            _parent.WorkerPool().Submit(Core::ProxyType<Core::IDispatchType<void>>(*this));
-                        }
-                    }
-                    virtual void Dispatch()
-                    {
-                        _schedule = false;
-                        _parent.Evaluate();
+
+                        return (_parent.Timed());
                     }
 
                 private:
-                    SubSystems& _parent;
-                    bool _schedule;
+                    ChannelMap& _parent;
                 };
 
             public:
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-                SubSystems(ServiceMap* parent)
-                    : SystemInfo(this)
-                    , _parent(*parent)
-                    , _decoupling(Core::ProxyType<Job>::Create(this))
+                ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
+                    : Core::SocketServerType<Channel>(listeningNode)
+                    , _parent(parent)
+                    , _connectionCheckTimer(connectionCheckTimer * 1000)
+                    , _job(Core::ProxyType<Job>::Create(this))
                 {
+                    if (connectionCheckTimer != 0) {
+                        Core::Time NextTick = Core::Time::Now();
+
+                        NextTick.Add(_connectionCheckTimer);
+
+                        _parent.Schedule(NextTick.Ticks(), _job);
+                    }
                 }
 #ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
-                virtual ~SubSystems()
+                ~ChannelMap()
                 {
-                    _parent.WorkerPool().Revoke(Core::ProxyType<Core::IDispatch>(_decoupling));
-                }
 
-            private:
-                virtual void Dispatch() override
-                {
-                    _parent.Security(SystemInfo::IsActive(PluginHost::ISubSystem::SECURITY));
-                    _decoupling->Schedule();
-                }
-                inline void Evaluate()
-                {
-                    _parent.Evaluate();
-                }
-                inline Core::WorkerPool& WorkerPool()
-                {
-                    return (_parent.WorkerPool());
-                }
+                    _parent.Revoke(_job);
 
-            private:
-                ServiceMap& _parent;
-                Core::ProxyType<Job> _decoupling;
-            };
+                    // Start by closing the server thread..
+                    Close(100);
 
-        public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-            ServiceMap(Server& server, PluginHost::Config& config, const uint32_t stackSize)
-                : _webbridgeConfig(config)
-                , _adminLock()
-                , _notificationLock()
-                , _services()
-                , _notifiers()
-                , _engine(Core::ProxyType<RPC::InvokeServer>::Create(&(server._dispatcher)))
-                , _processAdministrator(*this, config.Communicator(), config.PersistentPath(), config.SystemPath(), config.DataPath(), config.VolatilePath(), config.AppPath(), config.ProxyStubPath(), _engine)
-                , _server(server)
-                , _subSystems(this)
-                , _authenticationHandler(nullptr)
-            {
-            }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            ~ServiceMap()
-            {
-                // Make sure all services are deactivated before we are killed (call Destroy on this object);
-                ASSERT(_services.size() == 0);
-            }
+                    // Kill all open connections, we are shutting down !!!
+                    BaseClass::Iterator index(BaseClass::Clients());
 
-        public:
-            inline void Security(const bool enabled)
-            {
-                _adminLock.Lock();
-
-                if ((_authenticationHandler == nullptr) ^ (enabled == false)) {
-                    if (_authenticationHandler == nullptr) {
-                        // Let get the AuthentcationHandler.
-                        _authenticationHandler = reinterpret_cast<IAuthenticate*>(QueryInterfaceByCallsign(IAuthenticate::ID, _subSystems.SecurityCallsign()));
-                    } else {
-                        // Remove the security from all the channels.
-                        _server.Dispatcher().SecurityRevoke(_webbridgeConfig.Security());
-                    }
-                }
-
-                _adminLock.Unlock();
-            }
-            inline ISecurity* Officer(const string& token)
-            {
-                ISecurity* result;
-
-                _adminLock.Lock();
-
-                if (_authenticationHandler != nullptr) {
-                    result = _authenticationHandler->Officer(token);
-                } else {
-                    result = _webbridgeConfig.Security();
-                }
-
-                _adminLock.Unlock();
-                return (result);
-            }
-            inline uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response)
-            {
-                return (_server.Dispatcher().Submit(id, response));
-            }
-            inline uint32_t SubSystemInfo() const
-            {
-                return (_subSystems.Value());
-            }
-            inline ISubSystem* SubSystemsInterface()
-            {
-                return (reinterpret_cast<ISubSystem*>(_subSystems.QueryInterface(ISubSystem::ID)));
-            }
-            void StateChange(PluginHost::IShell* entry)
-            {
-                _notificationLock.Lock();
-
-                std::list<PluginHost::IPlugin::INotification*> currentlist(_notifiers);
-
-                while (currentlist.size()) {
-                    currentlist.front()->StateChange(entry);
-                    currentlist.pop_front();
-                }
-
-                _notificationLock.Unlock();
-            }
-            void Register(PluginHost::IPlugin::INotification* sink)
-            {
-                _notificationLock.Lock();
-
-                ASSERT(std::find(_notifiers.begin(), _notifiers.end(), sink) == _notifiers.end());
-
-                _notifiers.push_back(sink);
-
-                // Tell this "new" sink all our active/inactive plugins..
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
-
-                // Notifty all plugins that we have sofar..
-                while (index != _services.end()) {
-                    ASSERT(index->second.IsValid());
-
-                    Core::ProxyType<Service> service(index->second);
-
-                    ASSERT(service.IsValid());
-
-                    if (service.IsValid() == true) {
-                        sink->StateChange(&(service.operator*()));
+                    while (index.Next() == true) {
+                        // Oops nothing hapened for a long time, kill the connection
+                        // give it 100ms to actually close, if not do it forcefully !!
+                        index.Client()->Close(100);
                     }
 
-                    index++;
-                }
-
-                _notificationLock.Unlock();
-            }
-            void Unregister(PluginHost::IPlugin::INotification* sink)
-            {
-                _notificationLock.Lock();
-
-                std::list<PluginHost::IPlugin::INotification*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
-
-                if (index != _notifiers.end()) {
-                    _notifiers.erase(index);
-                }
-
-                _notificationLock.Unlock();
-            }
-            inline void* QueryInterfaceByCallsign(const uint32_t id, const string& name)
-            {
-                void* result = nullptr;
-
-                const string callsign(name.empty() == true ? _server.ControllerName() : name);
-
-                Core::ProxyType<Service> service;
-
-                FromIdentifier(callsign, service);
-
-                if (service.IsValid() == true) {
-
-                    result = service->QueryInterface(id);
-                }
-                return (result);
-            }
-
-            virtual void* Instantiate(const RPC::Object& object, const uint32_t waitTime, uint32_t& sessionId, const string& className, const string& callsign) override
-            {
-                return (_processAdministrator.Create(sessionId, object, className, callsign, waitTime));
-            }
-            virtual void Register(RPC::IRemoteConnection::INotification* sink) override
-            {
-                _processAdministrator.Register(sink);
-            }
-            virtual void Unregister(RPC::IRemoteConnection::INotification* sink) override
-            {
-                _processAdministrator.Unregister(sink);
-            }
-            virtual RPC::IRemoteConnection* RemoteConnection(const uint32_t connectionId) override
-            {
-                return (connectionId != 0 ? _processAdministrator.Connection(connectionId) : nullptr);
-            }
-            uint32_t Persist()
-            {
-                Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
-
-                return (infoBlob.Save());
-            }
-            uint32_t Load()
-            {
-                Override infoBlob(*this, _webbridgeConfig.PersistentPath() + PluginOverrideFile);
-
-                return (infoBlob.Load());
-            }
-            inline Core::ProxyType<Service> Insert(const Plugin::Config& configuration)
-            {
-                // Whatever plugin is needse, we at least have our MetaData plugin available (as the first entry :-).
-                Core::ProxyType<Service> newService(Core::ProxyType<Service>::Create(&_webbridgeConfig, &configuration, this));
-
-                if (newService.IsValid() == true) {
-                    _adminLock.Lock();
-
-                    // Fire up the interface. Let it handle the messages.
-                    _services.insert(std::pair<const string, Core::ProxyType<Service>>(configuration.Callsign.Value(), newService));
-
-                    _adminLock.Unlock();
-                }
-
-                return (newService);
-            }
-            inline void Destroy(const string& callSign)
-            {
-                _adminLock.Lock();
-
-                // First stop all services running ...
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.find(callSign));
-
-                if (index != _services.end()) {
-                    index->second->Destroy();
-                    _services.erase(index);
-                }
-
-                _adminLock.Unlock();
-            }
-            inline Iterator Services()
-            {
-                return (Iterator(_services));
-            }
-            //inline void Processes(std::list<uint32_t>& listOfPids) const
-            //{
-            //    return (_processAdministrator.Connections(listOfPids));
-            //}
-            inline void Notification(const ForwardMessage& message)
-            {
-                _server.Notification(message);
-            }
-#ifdef RESTFULL_API
-            inline void Notification(const string& message)
-            {
-                _server._controller->Notification(message);
-            }
-#endif
-            void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
-            {
-                _adminLock.Lock();
-
-                std::list<Core::ProxyType<Service>> duplicates;
-                std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
-
-                while (index != _services.end()) {
-                    duplicates.push_back(index->second);
-                    index++;
-                }
-
-                _adminLock.Unlock();
-
-                while (duplicates.size() > 0) {
-                    MetaData::Service newInfo;
-                    duplicates.front()->GetMetaData(newInfo);
-                    metaData.Add(newInfo);
-                    duplicates.pop_front();
-                }
-            }
-            uint32_t FromIdentifier(const string& callSign, Core::ProxyType<Service>& service)
-            {
-                uint32_t result = Core::ERROR_UNAVAILABLE;
-
-                _adminLock.Lock();
-
-                std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
-
-                while ((index != _services.end()) && (result == Core::ERROR_UNAVAILABLE)) {
-                    const string& source(index->first);
-                    if (callSign.compare(0, source.length(), source) != 0) {
-                        index++;
-                    } else {
-                        result = Core::ERROR_INVALID_SIGNATURE;
-                        uint32_t length = static_cast<uint32_t>(source.length());
-
-                        if ((callSign.length() == length) || ((callSign[length] == '.') && (index->second->HasVersionSupport(callSign.substr(length + 1))))) {
-                            service = index->second;
-                            result = Core::ERROR_NONE;
-                        }
-                    }
-                }
-
-                _adminLock.Unlock();
-
-                return (result);
-            }
-            uint32_t FromLocator(const string& identifier, Core::ProxyType<Service>& service, bool& serviceCall);
-
-            void Destroy();
-
-            inline const Environment& EnvironmentConfig() const
-            {
-                return _server.EnvironmentConfig();
-            }
-            inline const PluginHost::Config& Configuration() const
-            {
-                return _server.Configuration();
-            }
-
-        private:
-            void RecursiveNotification(std::map<const string, Core::ProxyType<Service>>::iterator& index)
-            {
-                if (index != _services.end()) {
-                    Core::ProxyType<Service> element(index->second);
-                    index++;
-                    RecursiveNotification(index);
-                    element->Evaluate();
-                } else {
-                    _adminLock.Unlock();
-                }
-            }
-            void Evaluate()
-            {
-
-                _adminLock.Lock();
-
-                // First stop all services running ...
-                std::map<const string, Core::ProxyType<Service>>::iterator index(_services.begin());
-
-                RecursiveNotification(index);
-            }
-            inline Core::WorkerPool& WorkerPool()
-            {
-                return (_server.WorkerPool());
-            }
-
-        private:
-            PluginHost::Config& _webbridgeConfig;
-
-            mutable Core::CriticalSection _adminLock;
-            Core::CriticalSection _notificationLock;
-            std::map<const string, Core::ProxyType<Service>> _services;
-            std::list<IPlugin::INotification*> _notifiers;
-            Core::ProxyType<RPC::InvokeServer> _engine;
-            CommunicatorServer _processAdministrator;
-            Server& _server;
-            Core::Sink<SubSystems> _subSystems;
-            IAuthenticate* _authenticationHandler;
-        };
-
-        // Connection handler is the listening socket and keeps track of all open
-        // Links. A Channel is identified by an ID, this way, whenever a link dies
-        // (is closed) during the service process, the ChannelMap will
-        // not find it and just "flush" the presented work.
-        class EXTERNAL Channel : public PluginHost::Channel {
-            Channel() = delete;
-            Channel(const Channel& copy) = delete;
-            Channel& operator=(const Channel&) = delete;
-
-        private:
-            class EXTERNAL WebRequestJob : public Core::IDispatchType<void> {
-            private:
-                WebRequestJob() = delete;
-                WebRequestJob(const WebRequestJob&) = delete;
-                WebRequestJob& operator=(const WebRequestJob&) = delete;
-
-            public:
-                WebRequestJob(Server* server)
-                    : _server(server)
-                    , _service()
-                    , _request()
-                    , _jsonrpc(false)
-                {
-                }
-                virtual ~WebRequestJob()
-                {
-
-                    ASSERT((_request.IsValid() == false) && (_service.IsValid() == false));
-
-                    if (_request.IsValid()) {
-                        _request.Release();
-                    }
-                    if (_service.IsValid()) {
-                        _service.Release();
-                    }
+                    // Cleanup the closed sockets we created..
+                    Cleanup();
                 }
 
             public:
-                static void Initialize()
+                void SecurityRevoke(ISecurity* fallback)
                 {
-                    _missingResponse->ErrorCode = Web::STATUS_INTERNAL_SERVER_ERROR;
-                    _missingResponse->Message = _T("There is no response from the requested service.");
-                }
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Web::Request>& request, const bool JSONRPC)
-                {
-                    ASSERT(_request.IsValid() == false);
-                    ASSERT(_service.IsValid() == false);
+                    BaseClass::Lock();
 
-                    _service = service;
-                    _request = request;
-                    _ID = id;
-                    _jsonrpc = JSONRPC;
-                }
-                virtual void Dispatch()
-                {
-                    ASSERT(_request.IsValid());
+                    BaseClass::Iterator index(BaseClass::Clients());
 
-                    if (_request.IsValid()) {
-                        Core::ProxyType<Web::Response> response;
-
-                        ASSERT(_service.IsValid() == true);
-
-                        if (_service.IsValid() == true) {
-                            if ((_jsonrpc == true) && (_request->HasBody() == true)) {
-                                response = Factories::Instance().Response();
-                                Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
-                                Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
-                                if (body.IsValid() == false) {
-                                    response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                } else {
-                                    response->Body(body);
-                                    if (body->Error.IsSet() == false) {
-                                        response->ErrorCode = Web::STATUS_OK;
-                                        response->Message = _T("JSONRPC executed succesfully");
-                                    } else {
-                                        response->ErrorCode = Web::STATUS_ACCEPTED;
-                                        response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
-                                    }
-                                }
-                            } else {
-                                response = _service->Process(*_request);
-                            }
-                            _service.Release();
-                        }
-
-                        if (response.IsValid() == true) {
-                            // Seems we can handle..
-                            if (response->AccessControlOrigin.IsSet() == false)
-                                response->AccessControlOrigin = _T("*");
-
-                            if (response->CacheControl.IsSet() == false)
-                                response->CacheControl = _T("no-cache, private, no-store, must-revalidate, max-stale=0, post-check=0, pre-check=0");
-
-                            _server->Dispatcher().Submit(_ID, response);
-                        } else {
-                            // Fire and forget, We are done !!!
-                            _server->Dispatcher().Submit(_ID, _missingResponse);
-                        }
-
-                        if (_request->Connection.Value() == Web::Request::CONNECTION_CLOSE) {
-                            TRACE(Activity, (_T("HTTP Request with direct close on [%d]"), _ID));
-                            _server->Dispatcher().Suspend(_ID);
-                        }
-
-                        // We are done, clear all info
-                        _request.Release();
+                    while (index.Next() == true) {
+                        index.Client()->Revoke(fallback);
                     }
+
+                    BaseClass::Unlock();
                 }
+                inline Server& Parent()
+                {
+                    return (_parent);
+                }
+                inline uint32_t ActiveClients() const
+                {
+                    return (Core::SocketServerType<Channel>::Count());
+                }
+                void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
 
             private:
-                uint32_t _ID;
-                Server* _server;
-                Core::ProxyType<Service> _service;
-                Core::ProxyType<Web::Request> _request;
-                bool _jsonrpc;
-
-                static Core::ProxyType<Web::Response> _missingResponse;
-            };
-
-            class EXTERNAL JSONElementJob : public Core::IDispatchType<void> {
-            private:
-                JSONElementJob() = delete;
-                JSONElementJob(const JSONElementJob&) = delete;
-                JSONElementJob& operator=(const JSONElementJob&) = delete;
-
-            public:
-                JSONElementJob(Server* server)
-                    : _server(server)
-                    , _service()
-                    , _element()
-                    , _jsonrpc(false)
+                void Timed()
                 {
-                }
-                virtual ~JSONElementJob()
-                {
+                    TRACE(Activity, (string(_T("Cleanup job running..\n"))));
 
-                    ASSERT((_element.IsValid() == false) && (_service.IsValid() == false));
-
-                    if (_element.IsValid()) {
-                        _element.Release();
-                    }
-                    if (_service.IsValid()) {
-                        _service.Release();
-                    }
-                }
-
-            public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const bool JSONRPC)
-                {
-                    ASSERT(_element.IsValid() == false);
-                    ASSERT(_service.IsValid() == false);
-
-                    _service = service;
-                    _element = element;
-                    _ID = id;
-                    _jsonrpc = JSONRPC;
-                }
-                virtual void Dispatch()
-                {
-                    ASSERT(_element.IsValid());
-
-                    if (_element.IsValid()) {
-
-                        ASSERT(_service.IsValid() == true);
-
-                        if (_service.IsValid() == true) {
-
-                            if (_jsonrpc == true) {
-                                Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(_element));
-                                PluginHost::IDispatcher* dispatcher = _service->Dispatcher();
-
-                                ASSERT(dispatcher != nullptr);
-                                ASSERT(message.IsValid() == true);
-
-                                if ((dispatcher != nullptr) && (message.IsValid() == true)) {
-                                    _element = Core::ProxyType<Core::JSON::IElement>(dispatcher->Invoke(_ID, *message));
-                                }
-                            } else {
-                                _element = _service->Inbound(_ID, *_element);
-                            }
-
-                            _service.Release();
-                        }
-
-                        if (_element.IsValid()) {
-                            // Fire and forget, We are done !!!
-                            _server->Dispatcher().Submit(_ID, _element);
-                            _element.Release();
-                        }
-                    }
-                }
-
-            private:
-                uint32_t _ID;
-                Server* _server;
-                Core::ProxyType<Service> _service;
-                Core::ProxyType<Core::JSON::IElement> _element;
-                bool _jsonrpc;
-            };
-
-            class EXTERNAL TextJob : public Core::IDispatchType<void> {
-            private:
-                TextJob() = delete;
-                TextJob(const TextJob&) = delete;
-                TextJob& operator=(const TextJob&) = delete;
-
-            public:
-                TextJob(Server* server)
-                    : _server(server)
-                    , _service()
-                    , _text()
-                {
-                }
-                virtual ~TextJob()
-                {
-                    ASSERT(_service.IsValid() == false);
-
-                    if (_service.IsValid()) {
-                        _service.Release();
-                    }
-                }
-
-            public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, const string& text)
-                {
-                    ASSERT(_service.IsValid() == false);
-
-                    _service = service;
-                    _text = text;
-                    _ID = id;
-                }
-                virtual void Dispatch()
-                {
-                    ASSERT(_service.IsValid() == true);
-
-                    if (_service.IsValid() == true) {
-
-                        _text = _service->Inbound(_ID, _text);
-                        _service.Release();
-                    }
-
-                    if (_text.empty() == false) {
-                        // Fire and forget, We are done !!!
-                        _server->Dispatcher().Submit(_ID, _text);
-                        _text.clear();
-                    }
-                }
-
-            private:
-                uint32_t _ID;
-                Server* _server;
-                Core::ProxyType<Service> _service;
-                string _text;
-            };
-
-        public:
-            Channel(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<Channel>* parent);
-            virtual ~Channel();
-
-        public:
-            inline uint32_t Id() const
-            {
-                return (PluginHost::Channel::Id());
-            }
-            static void Initialize(const string& serverPrefix)
-            {
-                WebRequestJob::Initialize();
-
-                _missingCallsign->ErrorCode = Web::STATUS_BAD_REQUEST;
-                _missingCallsign->Message = _T("After the /") + serverPrefix + _T("/ URL a Callsign is expected.");
-
-                _incorrectVersion->ErrorCode = Web::STATUS_BAD_REQUEST;
-                _incorrectVersion->Message = _T("Callsign was oke, but the requested version was not supported.");
-
-                _unauthorizedRequest->ErrorCode = Web::STATUS_UNAUTHORIZED;
-                _unauthorizedRequest->Message = _T("Request needs authorization, but it was not authorized");
-            }
-            void Revoke(PluginHost::ISecurity* baseRights)
-            {
-                PluginHost::Channel::Lock();
-
-                if (_security != baseRights) {
-                    if (_security != nullptr) {
-                        _security->Release();
-                    }
-                    _security = baseRights;
-                    _security->AddRef();
-                }
-
-                PluginHost::Channel::Unlock();
-            }
-
-        private:
-            bool Allowed(const string& pathParameter, const string& queryParameters)
-            {
-                bool allowed = true;
-                Core::URL::KeyValue options(queryParameters);
-
-                Core::TextFragment token = options.Value(_T("token"), false);
-
-                if (token.IsEmpty() == false) {
-                    ISecurity* security = _parent.Officer(token.Text());
-
-                    if (security != nullptr) {
-                        PluginHost::Channel::Lock();
-
-                        if (_security != nullptr) {
-                            _security->Release();
-                        }
-                        _security = security;
-                        _security->AddRef();
-
-                        PluginHost::Channel::Unlock();
-                    }
-                }
-
-                ASSERT(_security != nullptr);
-
-                return (_security != nullptr ? _security->Allowed(pathParameter) : false);
-            }
-
-            // Handle the HTTP Web requests.
-            // [INBOUND]  Completed received requests are triggering the Received,
-            // [OUTBOUND] Completed send responses are triggering the Send.
-            virtual void
-            LinkBody(Core::ProxyType<Request>& request)
-            {
-                // This is the time where we determine what body is needed for the incoming request.
-                TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
-
-                // Remember the path and options..
-                Core::ProxyType<Service> service;
-                bool serviceCall;
-
-                uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
-
-                request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
-
-                ASSERT(request->State() != Request::INCOMPLETE);
-
-                if (request->State() == Request::COMPLETE) {
-
-                    ASSERT(service.IsValid() == true);
-
-                    if (serviceCall == true) {
-                        service->Inbound(*request);
-                    } else {
-                        request->Body(Factories::Instance().JSONRPC());
-                    }
-                }
-            }
-            virtual void Received(Core::ProxyType<Request>& request)
-            {
-                ISecurity* security = nullptr;
-
-                TRACE(WebFlow, (Core::proxy_cast<Web::Request>(request)));
-
-                // See if a token has been hooked up to the request, maybe we need a
-                // different security provider.
-                if (request->WebToken.IsSet()) {
-                    security = _parent.Officer(request->WebToken.Value().Token());
-
-                    // Do we now want this token to be permant for this channel or only
-                    // for this request ??? For now we will only use it for this request
-                    // If it must be made permanent, swap the current _security with this
-                    // one...
-                } else if ((request->Verb == Web::Request::HTTP_GET) && (request->Query.IsSet())) {
-                    Core::URL::KeyValue options(request->Query.Value());
-
-                    string token = options.Value(_T("token"), false).Text();
-                    if (token.empty() == false) {
-                        security = _parent.Officer(token);
-                    }
-                }
-
-                if (security == nullptr) {
-                    PluginHost::Channel::Lock();
-                    security = _security;
-                    security->AddRef();
-                    PluginHost::Channel::Unlock();
-                }
-
-                // See if we are allowed to process this request..
-                if ((security == nullptr) || (security->Allowed(*request) == false)) {
-                    request->Unauthorized();
-                } else {
-                    // If there was no body, we are still incomplete.
-                    if (request->State() == Request::INCOMPLETE) {
-
-                        Core::ProxyType<Service> service;
-                        bool serviceCall;
-                        uint32_t status = _parent.Services().FromLocator(request->Path, service, serviceCall);
-
-                        request->Service(status, Core::proxy_cast<PluginHost::Service>(service), serviceCall);
-                    } else if ((request->State() == Request::COMPLETE) && (request->HasBody() == true)) {
-                        Core::ProxyType<Core::JSONRPC::Message> message(request->Body<Core::JSONRPC::Message>());
-                        if ((message.IsValid() == true) && (security->Allowed(*message) == false)) {
-                            request->Unauthorized();
-                        }
-                    }
-                }
-
-                if (security != nullptr) {
-                    // We are done with the security related items, let go of the officer.
-                    security->Release();
-                }
-
-                switch (request->State()) {
-                case Request::OBLIVIOUS: {
-                    Core::ProxyType<Web::Response> result(Factories::Instance().Response());
-
-                    if ((request->Path.empty() == true) || (request->Path == _T("/"))) {
-                        result->ErrorCode = Web::STATUS_MOVED_PERMANENTLY;
-                        result->Location = _parent.Configuration().Redirect() + _T("?ip=") + _parent.Configuration().Accessor().HostAddress() + _T("&port=") + Core::NumberType<uint16_t>(_parent.Configuration().Accessor().PortNumber()).Text();
-                    } else {
-                        result->ErrorCode = Web::STATUS_NOT_FOUND;
-                        result->Message = "Not Found";
-                    }
-
-                    Submit(result);
-
-                    break;
-                }
-                case Request::MISSING_CALLSIGN: {
-                    // Report that we, at least, need a call sign.
-                    Submit(_missingCallsign);
-                    break;
-                }
-                case Request::INVALID_VERSION: {
-                    // Report that we, at least, need a call sign.
-                    Submit(_incorrectVersion);
-                    break;
-                }
-                case Request::UNAUTHORIZED: {
-                    // Report that we, at least, need a call sign.
-                    Submit(_unauthorizedRequest);
-                    break;
-                }
-                case Request::COMPLETE: {
-                    Core::ProxyType<Service> service(Core::proxy_cast<Service>(request->Service()));
-
-                    ASSERT(service.IsValid());
-
-                    Core::ProxyType<Web::Response> response(service->Evaluate(*request));
-
-                    if (response.IsValid() == true) {
-                        // Report that the calls sign could not be found !!
-                        Submit(response);
-                    } else {
-                        // Send the Request object out to be handled.
-                        // By definition, we can issue it on a rental thread..
-                        Core::ProxyType<WebRequestJob> job(_webJobs.Element(&_parent));
-
-                        ASSERT(job.IsValid() == true);
-
-                        if (job.IsValid() == true) {
-                            Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
-                            job->Set(Id(), service, baseRequest, !request->ServiceCall());
-                            _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
-                        }
-                    }
-                    break;
-                }
-                default: {
-                    // I think we handled every possible situation
-                    ASSERT(false);
-                }
-                }
-            }
-            virtual void Send(const Core::ProxyType<Web::Response>& response)
-            {
-                TRACE(WebFlow, (response));
-            }
-
-            // Handle the JSON structs flowing over the WebSocket.
-            // [INBOUND]  Completed deserialized JSON objects that are Received, will trigger the Received.
-            // [OUTBOUND] Completed serialized JSON objects that are send out, will trigger the Send.
-            virtual Core::ProxyType<Core::JSON::IElement> Element(const string& identifier)
-            {
-                Core::ProxyType<Core::JSON::IElement> result;
-
-                if (_service.IsValid() == true) {
-                    if (State() == JSONRPC) {
-                        result = Core::ProxyType<Core::JSON::IElement>(Factories::Instance().JSONRPC());
-                    } else {
-                        result = _service->Inbound(identifier);
-                    }
-                }
-
-                return (result);
-            }
-            virtual void Send(const Core::ProxyType<Core::JSON::IElement>& element)
-            {
-                TRACE(SocketFlow, (element));
-            }
-            virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
-            {
-                bool securityClearance = true;
-
-                ASSERT(_service.IsValid() == true);
-
-                TRACE(SocketFlow, (element));
-
-                if (State() & Channel::JSONRPC) {
-                    Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
-                    if (message.IsValid()) {
-                        PluginHost::Channel::Lock();
-                        securityClearance = _security->Allowed(*message);
-                        PluginHost::Channel::Unlock();
-
-                        if (securityClearance == false) {
-                            // Oopsie daisy we are not allowed to handle this request.
-                            // TODO: How shall we report back on this?
-                        }
-                    }
-                }
-
-                if (securityClearance == true) {
-                    // Send the JSON object out to be handled.
-                    // By definition, we can issue it on a rental thread..
-                    Core::ProxyType<JSONElementJob> job(_jsonJobs.Element(&_parent));
-
-                    ASSERT(job.IsValid() == true);
-
-                    if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                        job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
-                        _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
-                    }
-                }
-            }
-            virtual void Received(const string& value)
-            {
-                ASSERT(_service.IsValid() == true);
-
-                TRACE(TextFlow, (value));
-
-                // Send the JSON object out to be handled.
-                // By definition, we can issue it on a rental thread..
-                Core::ProxyType<TextJob> job(_textJobs.Element(&_parent));
-
-                ASSERT(job.IsValid() == true);
-
-                if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                    job->Set(Id(), _service, value);
-                    _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
-                }
-            }
-
-            // We are in an upgraded mode, we are a websocket. Time to "deserialize and serialize
-            // INBOUND and OUTBOUND information.
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
-            {
-                uint16_t result = 0;
-
-                if (State() == RAW) {
-                    result = _service->Outbound(Id(), dataFrame, maxSendSize);
-                } else {
-                    result = PluginHost::Channel::Serialize(dataFrame, maxSendSize);
-                }
-
-                return (result);
-            }
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
-            {
-                uint16_t result = receivedSize;
-
-                if (State() == RAW) {
-                    result = _service->Inbound(Id(), dataFrame, receivedSize);
-                } else {
-                    result = PluginHost::Channel::Deserialize(dataFrame, receivedSize);
-                }
-
-                return (result);
-            }
-
-            // Whenever there is a state change on the link, it is reported here.
-            virtual void StateChange()
-            {
-                TRACE(Activity, (_T("State change on [%d] to [%s]"), Id(), (IsSuspended() ? _T("SUSPENDED") : (IsUpgrading() ? _T("UPGRADING") : (IsWebSocket() ? _T("WEBSOCKET") : _T("WEBSERVER"))))));
-
-                // If we are closing (or closed) do the clean up
-                if (IsOpen() == false) {
-                    if (_service.IsValid() == true) {
-                        _service->Unsubscribe(*this);
-
-                        _service.Release();
-                    }
-
-                    State(CLOSED, false);
-                } else if (IsWebSocket() == true) {
-                    ASSERT(_service.IsValid() == false);
-                    bool serviceCall;
-                    // see if we need to subscribe...
-                    _parent.Services().FromLocator(Path(), _service, serviceCall);
-
-                    if (_service.IsValid() == false) {
-                        AbortUpgrade(Web::STATUS_SERVICE_UNAVAILABLE, _T("Could not find a correct service for this socket."));
-                    } else if (Allowed(Path(), Query()) == false) {
-                        AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Security prohibites this connection."));
-                    }
-                    if (serviceCall == true) {
-                        const string& serviceHeader(_parent._config.WebPrefix());
-
-                        if (Protocol() == _T("notification")) {
-                            State(TEXT, true);
-                        } else if (Protocol() == _T("json")) {
-                            State(JSON, false);
-                        } else if (Protocol() == _T("text")) {
-                            State(TEXT, false);
-                        } else if (Protocol() == _T("jsonrpc")) {
-                            State(JSONRPC, false);
-                        } else {
-                            // Channel is a raw communication channel.
-                            // This channel allows for passing binary data back and forth
-                            State(RAW, false);
-                        }
-                        if (Name().length() > (serviceHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(serviceHeader.length()) + 1);
-                        }
-                        // The state needs to be correct before we c
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
-                        }
-                    } else if (_service->Dispatcher() == nullptr) {
-                        AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Plugin does not support JSONRPC."));
-                    } else {
-                        const string& JSONRPCHeader(_parent._config.JSONRPCPrefix());
-                        if (Name().length() > (JSONRPCHeader.length() + 1)) {
-                            Properties(static_cast<uint32_t>(JSONRPCHeader.length()) + 1);
-                        }
-                        State(JSONRPC, false);
-
-                        // The state needs to be correct before we c
-                        if (_service->Subscribe(*this) == false) {
-                            State(WEB, false);
-                            AbortUpgrade(Web::STATUS_FORBIDDEN, _T("Subscription rejected by the destination plugin."));
-                        }
-                    }
-                }
-            }
-
-            friend class Core::SocketServerType<Channel>;
-
-            inline void Id(const uint32_t id)
-            {
-                SetId(id);
-            }
-
-        private:
-            Server& _parent;
-            PluginHost::ISecurity* _security;
-            Core::ProxyType<Service> _service;
-
-            // Factories for creating jobs that can be placed on the PluginHost Worker pool.
-            static Core::ProxyPoolType<WebRequestJob> _webJobs;
-            static Core::ProxyPoolType<JSONElementJob> _jsonJobs;
-            static Core::ProxyPoolType<TextJob> _textJobs;
-
-            // If there is no call sign or the associated handler does not exist,
-            // we can return a proper answer, without dispatching.
-            static Core::ProxyType<Web::Response> _missingCallsign;
-
-            // If there is a call sign but the version request is not avilable,
-            // we can return a proper answer, without dispatching.
-            static Core::ProxyType<Web::Response> _incorrectVersion;
-
-            // If a request requires security clearance, but it is not give, for
-            // whatever reason, we will report back that the request is unauthorized.
-            static Core::ProxyType<Web::Response> _unauthorizedRequest;
-        };
-        class EXTERNAL ChannelMap : public Core::SocketServerType<Channel> {
-        private:
-            ChannelMap() = delete;
-            ChannelMap(const ChannelMap&) = delete;
-            ChannelMap& operator=(const ChannelMap&) = delete;
-
-            typedef Core::SocketServerType<Channel> BaseClass;
-
-            class Job : public Core::IDispatchType<void> {
-            private:
-                Job() = delete;
-                Job(const Job& copy) = delete;
-                Job& operator=(const Job& RHS) = delete;
-
-            public:
-                Job(ChannelMap* parent)
-                    : _parent(*parent)
-                {
-                    ASSERT(parent != nullptr);
-                }
-                virtual ~Job()
-                {
-                }
-
-            public:
-                virtual void Dispatch() override
-                {
-
-                    return (_parent.Timed());
-                }
-
-            private:
-                ChannelMap& _parent;
-            };
-
-        public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-            ChannelMap(Server& parent, const Core::NodeId& listeningNode, const uint16_t connectionCheckTimer)
-                : Core::SocketServerType<Channel>(listeningNode)
-                , _parent(parent)
-                , _connectionCheckTimer(connectionCheckTimer * 1000)
-                , _job(Core::ProxyType<Job>::Create(this))
-            {
-                if (connectionCheckTimer != 0) {
-                    Core::Time NextTick = Core::Time::Now();
+                    Core::Time NextTick(Core::Time::Now());
 
                     NextTick.Add(_connectionCheckTimer);
 
+                    // First clear all shit from last time..
+                    Cleanup();
+
+                    // Now suspend those that have no activity.
+                    BaseClass::Iterator index(BaseClass::Clients());
+
+                    while (index.Next() == true) {
+                        if (index.Client()->HasActivity() == false) {
+                            TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
+
+                            // Oops nothing hapened for a long time, kill the connection
+                            // Give it all the time (0) if it i not yet suspended to close. If it is
+                            // suspended, force the close down if not closed in 100ms.
+                            index.Client()->Close(0);
+                        } else {
+                            index.Client()->ResetActivity();
+                        }
+                    }
+
                     _parent.Schedule(NextTick.Ticks(), _job);
                 }
-            }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            ~ChannelMap()
-            {
 
-                _parent.Revoke(_job);
-
-                // Start by closing the server thread..
-                Close(100);
-
-                // Kill all open connections, we are shutting down !!!
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    // Oops nothing hapened for a long time, kill the connection
-                    // give it 100ms to actually close, if not do it forcefully !!
-                    index.Client()->Close(100);
-                }
-
-                // Cleanup the closed sockets we created..
-                Cleanup();
-            }
+            private:
+                Server& _parent;
+                const uint32_t _connectionCheckTimer;
+                Core::ProxyType<Core::IDispatchType<void>> _job;
+            };
 
         public:
-            void SecurityRevoke(ISecurity* fallback)
+            Server(Config& configuration, const bool background);
+            virtual ~Server();
+
+        public:
+            inline ChannelMap& Dispatcher()
             {
-                BaseClass::Lock();
-
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    index.Client()->Revoke(fallback);
-                }
-
-                BaseClass::Unlock();
+                return (_connections);
             }
-            inline Server& Parent()
+            inline ServiceMap& Services()
             {
-                return (_parent);
+                return (_services);
             }
-            inline uint32_t ActiveClients() const
+            inline Server::WorkerPoolImplementation& WorkerPool()
             {
-                return (Core::SocketServerType<Channel>::Count());
+                return (_dispatcher);
             }
-            void GetMetaData(Core::JSON::ArrayType<MetaData::Channel>& metaData) const;
-
-        private:
-            void Timed()
+            inline void Submit(const Core::ProxyType<Core::IDispatchType<void>>& job)
             {
-                TRACE(Activity, (string(_T("Cleanup job running..\n"))));
-
-                Core::Time NextTick(Core::Time::Now());
-
-                NextTick.Add(_connectionCheckTimer);
-
-                // First clear all shit from last time..
-                Cleanup();
-
-                // Now suspend those that have no activity.
-                BaseClass::Iterator index(BaseClass::Clients());
-
-                while (index.Next() == true) {
-                    if (index.Client()->HasActivity() == false) {
-                        TRACE(Activity, (_T("Client close without activity on ID [%d]"), index.Client()->Id()));
-
-                        // Oops nothing hapened for a long time, kill the connection
-                        // Give it all the time (0) if it i not yet suspended to close. If it is
-                        // suspended, force the close down if not closed in 100ms.
-                        index.Client()->Close(0);
-                    } else {
-                        index.Client()->ResetActivity();
-                    }
-                }
-
-                _parent.Schedule(NextTick.Ticks(), _job);
+                _dispatcher.Submit(job);
             }
-
-        private:
-            Server& _parent;
-            const uint32_t _connectionCheckTimer;
-            Core::ProxyType<Core::IDispatchType<void>> _job;
-        };
-
-    public:
-        Server(Config& configuration, const bool background);
-        virtual ~Server();
-
-    public:
-        inline ChannelMap& Dispatcher()
-        {
-            return (_connections);
-        }
-        inline ServiceMap& Services()
-        {
-            return (_services);
-        }
-        inline Server::WorkerPoolImplementation& WorkerPool()
-        {
-            return (_dispatcher);
-        }
-        inline void Submit(const Core::ProxyType<Core::IDispatchType<void>>& job)
-        {
-            _dispatcher.Submit(job);
-        }
-        inline void Schedule(const uint64_t time, const Core::ProxyType<Core::IDispatchType<void>>& job)
-        {
-            _dispatcher.Schedule(time, job);
-        }
-        inline void Revoke(const Core::ProxyType<Core::IDispatchType<void>> job)
-        {
-            _dispatcher.Revoke(job);
-        }
-        inline const PluginHost::Config& Configuration() const
-        {
-            return (_config);
-        }
-        void Notification(const ForwardMessage& message);
-        inline string ControllerName() const
-        {
-            return (_controller->Callsign());
-        }
+            inline void Schedule(const uint64_t time, const Core::ProxyType<Core::IDispatchType<void>>& job)
+            {
+                _dispatcher.Schedule(time, job);
+            }
+            inline void Revoke(const Core::ProxyType<Core::IDispatchType<void>> job)
+            {
+                _dispatcher.Revoke(job);
+            }
+            inline const PluginHost::Config& Configuration() const
+            {
+                return (_config);
+            }
+            void Notification(const ForwardMessage& message);
+            inline string ControllerName() const
+            {
+                return (_controller->Callsign());
+            }
 #ifdef RESTFULL_API
-        void Notify(const string& message)
-        {
-            _controller->Notification(message);
-        }
+            void Notify(const string& message)
+            {
+                _controller->Notification(message);
+            }
 #endif
-        const Environment& EnvironmentConfig() const
-        {
-            return _environment;
-        }
-        void Open();
-        void Close();
+            const Environment& EnvironmentConfig() const
+            {
+                return _environment;
+            }
+            void Open();
+            void Close();
 
-    private:
-        ISecurity* Officer(const string& token)
-        {
-            return (_services.Officer(token));
-        }
-        inline ISecurity* Officer()
-        {
-            return (_config.Security());
-        }
+        private:
+            ISecurity* Officer(const string& token)
+            {
+                return (_services.Officer(token));
+            }
+            inline ISecurity* Officer()
+            {
+                return (_config.Security());
+            }
 
-    private:
-        Core::NodeId _accessor;
+        private:
+            Core::NodeId _accessor;
 
-        // Here we start dispatching to different threads for different requests if required and if we have a service
-        // that can handle the request.
-        WorkerPoolImplementation _dispatcher;
+            // Here we start dispatching to different threads for different requests if required and if we have a service
+            // that can handle the request.
+            WorkerPoolImplementation _dispatcher;
 
-        // Create the server. This is a socket listening for incoming connections. Any connection comming in, will be
-        // linked to this server and will forward the received requests to this server. This server will than handl it using a thread pool.
-        ChannelMap _connections;
+            // Create the server. This is a socket listening for incoming connections. Any connection comming in, will be
+            // linked to this server and will forward the received requests to this server. This server will than handl it using a thread pool.
+            ChannelMap _connections;
 
-        // Remember the interesting and properly formatted part of the configuration.
-        PluginHost::Config _config;
+            // Remember the interesting and properly formatted part of the configuration.
+            PluginHost::Config _config;
 
-        // Maintain a list of all the loaded plugin servers. Here we can dispatch work to.
-        ServiceMap _services;
+            // Maintain a list of all the loaded plugin servers. Here we can dispatch work to.
+            ServiceMap _services;
 
-        PluginHost::InputHandler _inputHandler;
+            PluginHost::InputHandler _inputHandler;
 
-        // Hold on to the controller that controls the PluginHost. Using this plugin, the
-        // system can externally control the webbridge.
-        Core::ProxyType<Service> _controller;
+            // Hold on to the controller that controls the PluginHost. Using this plugin, the
+            // system can externally control the webbridge.
+            Core::ProxyType<Service> _controller;
 
-        Environment _environment;
-    };
-}
+            Environment _environment;
+        };
+    }
 }
 
 #endif // __WEBPLUGINSERVER_H

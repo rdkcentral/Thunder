@@ -34,6 +34,7 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="Configuration.h" />
     <ClInclude Include="IPlugin.h" />
+    <ClInclude Include="IRemoteInstantiation.h" />
     <ClInclude Include="IShell.h" />
     <ClInclude Include="IStateControl.h" />
     <ClInclude Include="ISubSystem.h" />

@@ -93,7 +93,7 @@ namespace ProxyStub {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            const RPC::IRemoteConnection::IProcess* implementation = input.Implementation<RPC::IRemoteConnection::IProcess>();
+            const RPC::IMonitorableProcess* implementation = input.Implementation<RPC::IMonitorableProcess>();
             ASSERT((implementation != nullptr) && "Null RPC::IRemoteConnection::IProcess implementation pointer");
             const string output = implementation->Callsign();
 
@@ -149,7 +149,7 @@ namespace ProxyStub {
 
     typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection, RemoteConnectionStubMethods> RemoteConnectionStub;
     typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection::INotification, RemoteConnectionNotificationStubMethods> RemoteConnectionNotificationStub;
-    typedef ProxyStub::UnknownStubType<RPC::IRemoteConnection::IProcess, ProcessStubMethods> ProcessStub;
+    typedef ProxyStub::UnknownStubType<RPC::IMonitorableProcess, ProcessStubMethods> ProcessStub;
     typedef ProxyStub::UnknownStubType<Trace::ITraceController, TraceControllerStubMethods> TraceControllerStub;
     typedef ProxyStub::UnknownStubType<Trace::ITraceIterator, TraceIteratorStubMethods> TraceIteratorStub;
 
@@ -213,6 +213,12 @@ namespace ProxyStub {
 
             Invoke(newMessage);
         }
+        virtual uint32_t Launch()
+        {
+            ASSERT(true);
+            return (Core::ERROR_ASYNC_ABORTED);
+        }
+
     };
 
     class RemoteConnectionNotificationProxy : public UnknownProxyType<RPC::IRemoteConnection::INotification> {
@@ -250,7 +256,7 @@ namespace ProxyStub {
         }
     };
 
-    class ProcessProxy final : public ProxyStub::UnknownProxyType<RPC::IRemoteConnection::IProcess> {
+    class ProcessProxy final : public ProxyStub::UnknownProxyType<RPC::IMonitorableProcess> {
     public:
         ProcessProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
@@ -342,7 +348,7 @@ namespace ProxyStub {
             {
                 RPC::Administrator::Instance().Announce<RPC::IRemoteConnection, RemoteConnectionProxy, RemoteConnectionStub>();
                 RPC::Administrator::Instance().Announce<RPC::IRemoteConnection::INotification, RemoteConnectionNotificationProxy, RemoteConnectionNotificationStub>();
-                RPC::Administrator::Instance().Announce<RPC::IRemoteConnection::IProcess, ProcessProxy, ProcessStub>();
+                RPC::Administrator::Instance().Announce<RPC::IMonitorableProcess, ProcessProxy, ProcessStub>();
                 RPC::Administrator::Instance().Announce<Trace::ITraceController, TraceControllerProxy, TraceControllerStub>();
                 RPC::Administrator::Instance().Announce<Trace::ITraceIterator, TraceIteratorProxy, TraceIteratorStub>();
             }
