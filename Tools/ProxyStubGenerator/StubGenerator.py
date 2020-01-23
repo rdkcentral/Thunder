@@ -7,7 +7,7 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.5.2"
+VERSION = "1.5.3"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -555,22 +555,20 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                                             pass
                                 return joined, param_type, not has_param_ref, param_ref
 
-                            pname =  "param%i" % (c - 1) if c > 0 else "retval"
-
                             if p.is_output and p.ptr_interface:
-                                p.interface_var = pname + "_interfaceid"
+                                p.interface_var = p.name + "_interfaceid"
                                 p.interface_expr, p.interface_type, constant, p.interface_ref = __ParseLength(p.ptr_interface, True, c-1, p.interface_var)
                                 if constant:
                                     raise TypenameError(p.oclass, "unable to serialise '%s': constant not allowed for interface id" % (p.origname))
                             else:
                                 if p.is_output and p.ptr_maxlength and p.ptr_maxlength != p.ptr_length:
                                     if p.ptr_length:
-                                        p.maxlength_var = pname + "_maxlength"
+                                        p.maxlength_var = p.name + "_maxlength"
                                         p.maxlength_expr, p.length_type, p.maxlength_constant, p.length_ref = __ParseLength(p.ptr_maxlength, True, c-1, p.maxlength_var)
                                     else:
                                         p.ptr_length = p.ptr_maxlength
                                 if p.ptr_length:
-                                    p.length_var = pname + "_length"
+                                    p.length_var = p.name + "_length"
                                     p.length_expr, p.length_type, p.length_constant, p.length_ref = __ParseLength(p.ptr_length, False, c-1, p.length_var)
                             if not p.ptr_length and not p.ptr_interface:
                                     raise TypenameError(p.oclass, "unable to serialise '%s': length variable not defined" % (p.origname))
@@ -785,10 +783,12 @@ def GenerateStubs(output_file, source_file, defaults = "", scan_only = False):
                             elif not retval.RpcType():
                                 raise TypenameError(m, "method '%s': unable to decompose parameter '%s': unknown type" % (m.name, retval.str_typename))
                         else:
-                            emit.Line("writer.%s(output);" % retval.RpcType())
+                            emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
                             if retval.is_interface:
-                                emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % retval.name)
-
+                                if retval.typename == "void":
+                                    emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" % (retval.name, retval.interface_ref.length_name))
+                                else:
+                                    emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % retval.name)
 
                     if output_params:
                         for p in params:
