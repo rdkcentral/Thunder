@@ -587,7 +587,7 @@ def __Tokenize(contents):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
-            elif len(token) > 0 and token[0] != '#':
+            elif len(token) > 0 and token[0] != '#' and token != "EXTERNAL":
                 tagtokens.append(token)
 
     tagtokens.append(";") # prevent potential out-of-range errors
