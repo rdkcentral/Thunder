@@ -557,7 +557,7 @@ def __Tokenize(contents):
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
-                        tagtokens.append("@SKIP")
+                        break
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -657,9 +657,7 @@ def Parse(contents):
             i = i + 1
             continue
 
-        if tokens[i] == "@SKIP":
-            return "Skipped"
-        elif tokens[i] == "@OMIT":
+        if tokens[i] == "@OMIT":
             omit_next = True
             tokens[i] = ";"
             i += 1

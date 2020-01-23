@@ -7,7 +7,7 @@
 import re, uuid, sys, os, argparse
 import CppParser
 
-VERSION = "1.5.3"
+VERSION = "1.5.4"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -1214,7 +1214,7 @@ if __name__ == "__main__":
                     log.Print("skipped file '%s'" % err)
                     skipped.append(source_file)
                 except NoInterfaceError as err:
-                    log.Warn("no interface classes found in %s" %( INTERFACE_NAMESPACE), source_file)
+                    log.Info("no interface classes found in %s" %( INTERFACE_NAMESPACE), source_file)
                 except TypenameError as err:
                     log.Error(err)
                     if not keep_incomplete and os.path.isfile(output_file):
