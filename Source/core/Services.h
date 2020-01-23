@@ -76,7 +76,7 @@ namespace Core {
     };
 
     template <typename ACTUALSERVICE>
-    class Service : public ACTUALSERVICE {
+    class Service : public ProxyService<ACTUALSERVICE> {
     private:
         Service(const Service<ACTUALSERVICE>&) = delete;
         Service<ACTUALSERVICE> operator=(const Service<ACTUALSERVICE>&) = delete;
@@ -84,23 +84,16 @@ namespace Core {
     protected:
         template<typename... Args>
         Service(Args... args)
-            : ACTUALSERVICE(std::forward<Args>(args)...)
+            : ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...)
         {
             ServiceAdministrator::Instance().AddRef();
         }
 
     public:
-        //template <typename INTERFACE>
-        //static INTERFACE* Create()
-        //{
-        //    ACTUALSERVICE* object = new (0) ProxyService<CONTEXT>();
-
-        //    return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        //}
         template <typename INTERFACE, typename... Args>
         static INTERFACE* Create(Args... args)
         {
-            ACTUALSERVICE* object = new (0) ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...);
+            ACTUALSERVICE* object = new (0) Service<ACTUALSERVICE>(std::forward<Args>(args)...);
 
             return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
         }

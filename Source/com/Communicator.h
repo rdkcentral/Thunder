@@ -619,18 +619,16 @@ namespace RPC {
         {
             RemoteConnection* result = nullptr;
 
-            switch (instance.Type()) {
-            case Object::HostType::LOCAL:
+            if (instance.Type() == Object::HostType::LOCAL) {
                 result = Core::Service<LocalRemoteProcess>::Create<RemoteConnection>(config, instance);
-                break;
-            case Object::HostType::CONTAINER:
+            }
+            else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
                 result = Core::Service<ContainerRemoteProcess>::Create<RemoteConnection>(config, instance);
 #else
                 SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
-                break;
-            };
+            }
 
             return result;
         }

@@ -192,18 +192,30 @@ namespace Process {
         uint32_t InterfaceId;
         uint32_t Version;
         uint32_t Exchange;
-        const TCHAR* PersistentPath;
-        const TCHAR* SystemPath;
-        const TCHAR* DataPath;
-        const TCHAR* VolatilePath;
-        const TCHAR* AppPath;
-        const TCHAR* ProxyStubPath;
+        string PersistentPath;
+        string SystemPath;
+        string DataPath;
+        string VolatilePath;
+        string AppPath;
+        string ProxyStubPath;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
         uint32_t EnabledLoggings;
 
     private:
+        string Strip(const TCHAR text[]) const {
+            int length = strlen(text);
+            if (length > 0) {
+                if (*text != '"') {
+                    return (string(text, length));
+                }
+                else {
+                    return (string(&text[1], (length > 2 ? length - 2 : length - 1)));
+                }
+            }
+            return (string());
+        }
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
@@ -217,22 +229,22 @@ namespace Process {
                 RemoteChannel = argument;
                 break;
             case 'p':
-                PersistentPath = argument;
+                PersistentPath = Strip(argument);
                 break;
             case 's':
-                SystemPath = argument;
+                SystemPath = Strip(argument);
                 break;
             case 'd':
-                DataPath = argument;
+                DataPath = Strip(argument);
                 break;
             case 'v':
-                VolatilePath = argument;
+                VolatilePath = Strip(argument);
                 break;
             case 'a':
-                AppPath = argument;
+                AppPath = Strip(argument);
                 break;
             case 'm':
-                ProxyStubPath = argument;
+                ProxyStubPath = Strip(argument);
                 break;
             case 'u':
                 User = argument;
@@ -263,17 +275,17 @@ namespace Process {
         }
     };
 
-    static void* CheckInstance(const TCHAR* path, const TCHAR locator[], const TCHAR className[], const uint32_t ID, const uint32_t version)
+    static void* CheckInstance(const string& path, const TCHAR locator[], const TCHAR className[], const uint32_t ID, const uint32_t version)
     {
         void* result = nullptr;
 
-        if (path != nullptr) {
+        if (path.empty() == false) {
             Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
 
             string libraryPath = locator;
             if (libraryPath.empty() || (libraryPath[0] != '/')) {
                 // Relative path, prefix with path name.
-                string pathName(Core::Directory::Normalize(string(path)));
+                string pathName(Core::Directory::Normalize(path));
                 libraryPath = pathName + locator;
             }
 
@@ -302,9 +314,9 @@ namespace Process {
                     result = CheckInstance(options.DataPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                     if (result == nullptr) {
-                        string searchPath(options.AppPath != nullptr ? Core::Directory::Normalize(string(options.AppPath)) : string());
+                        string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
 
-                        result = CheckInstance((searchPath + _T("Plugins/")).c_str(), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        result = CheckInstance((searchPath + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
                     }
                 }
             }
@@ -438,8 +450,8 @@ int main(int argc, char** argv)
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
                 TRACE_L1("Loading ProxyStubs from %s", (options.ProxyStubPath != nullptr ? options.ProxyStubPath : _T("<< No Proxy Stubs Loaded >>")));
 
-                if ((options.ProxyStubPath != nullptr) && (*(options.ProxyStubPath) != '\0')) {
-                    Core::Directory index(options.ProxyStubPath, _T("*.so"));
+                if (options.ProxyStubPath.empty() == false) {
+                    Core::Directory index(options.ProxyStubPath.c_str(), _T("*.so"));
 
                     while (index.Next() == true) {
                         Core::Library library(index.Current().c_str());

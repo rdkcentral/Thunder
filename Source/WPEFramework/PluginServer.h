@@ -1123,8 +1123,8 @@ namespace PluginHost {
                 public:
                     RemoteHost(const RPC::Object& instance, const string& connector)
                         : RemoteConnection()
-                        , _object(instance)
                         , _connector(connector)
+                        , _object(instance)
                     {
                     }
                     virtual ~RemoteHost()
@@ -2275,7 +2275,6 @@ namespace PluginHost {
             private:
                 bool Allowed(const string& pathParameter, const string& queryParameters)
                 {
-                    bool allowed = true;
                     Core::URL::KeyValue options(queryParameters);
 
                     Core::TextFragment token = options.Value(_T("token"), false);

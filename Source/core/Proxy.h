@@ -1278,17 +1278,6 @@ namespace Core {
 
             _lock.Unlock();
         }
-        template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args... args)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
-        }
-        template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args... args)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
-        }
-
 
     private:
         mutable std::map<PROXYKEY, ProxyType<ProxyMapElement>> _map;
