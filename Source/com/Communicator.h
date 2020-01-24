@@ -266,7 +266,7 @@ namespace RPC {
 
         virtual uint32_t Id() const = 0;
         virtual uint32_t RemoteId() const = 0;
-        virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
+        virtual void* /* @interface:interfaceId */ Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
 
         template <typename REQUESTEDINTERFACE>
@@ -290,6 +290,8 @@ namespace RPC {
             virtual string Callsign() const = 0;
         };
     };
+
+    /* @stubgen:skip */
 
     class EXTERNAL Communicator {
     private:

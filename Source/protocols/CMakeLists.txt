@@ -15,6 +15,7 @@ set(SOURCES_COM
         com/Messages.h
         com/Administrator.cpp
         com/Communicator.cpp
+        com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
         com/IStringIterator.cpp
         com/IValueIterator.cpp
@@ -92,6 +93,7 @@ add_library(${TARGET} SHARED
         JSONRPCLink.cpp
         Administrator.cpp
         Communicator.cpp
+        ProxyStubs_Communicator.cpp
         IStringIterator.cpp
         IValueIterator.cpp
         )
