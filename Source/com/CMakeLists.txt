@@ -3,7 +3,7 @@ set(TARGET ${NAMESPACE}COM)
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
-        ProxyStubs_Communicator.cppp
+        ProxyStubs_Communicator.cpp
         ITracing.cpp
         IStringIterator.cpp
         IValueIterator.cpp
