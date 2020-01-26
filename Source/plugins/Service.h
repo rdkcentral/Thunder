@@ -116,7 +116,7 @@ namespace PluginHost {
 
             // VolatilePath is a path to a location where the plugin instance can store data needed
             // by the plugin instance, hence why the callSign is included. .
-            // This path is build up from: PersistentPath / callSign /
+            // This path is build up from: VolatilePath / callSign /
             inline const string& VolatilePath() const
             {
                 return (_volatilePath);

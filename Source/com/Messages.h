@@ -327,9 +327,9 @@ namespace RPC {
                 uint16_t length = _data.SetText(sizeof(void*) + sizeof(uint32_t), proxyStubPath);
                 _data.SetText(sizeof(void*)+ sizeof(uint32_t) + length, traceCategories);
             }
-			inline bool IsSet() const {
+            inline bool IsSet() const {
                 return (_data.Size() > 0);
-			}
+            }
             uint32_t SequenceNumber() const
             {
                 uint32_t result;

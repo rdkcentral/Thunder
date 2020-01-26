@@ -551,13 +551,11 @@ namespace RPC {
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
-                string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
-
                 Config config;
                 config.FromString(instance.Configuration());
 
                 std::vector<string> searchpaths(3);
-                searchpaths[0] = volatilecallsignpath;
+                searchpaths[0] = baseConfig.VolatilePath();
                 searchpaths[1] = baseConfig.PersistentPath();
                 searchpaths[2] = baseConfig.DataPath();
 

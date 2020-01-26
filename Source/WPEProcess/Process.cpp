@@ -161,19 +161,19 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
             , Exchange(0)
-            , PersistentPath(nullptr)
-            , SystemPath(nullptr)
-            , DataPath(nullptr)
-            , VolatilePath(nullptr)
-            , AppPath(nullptr)
-            , ProxyStubPath(nullptr)
+            , PersistentPath()
+            , SystemPath()
+            , DataPath()
+            , VolatilePath()
+            , AppPath()
+            , ProxyStubPath()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
@@ -417,7 +417,7 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
-        TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
+        TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
 
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
         Trace::TraceUnit::Instance().Open(options.Exchange);
