@@ -135,6 +135,8 @@ namespace Exchange {
         ID_PLAYER_PROPERTIES_AUDIO,
         ID_PLAYER_PROPERTIES_VIDEO,
 
+        ID_REMOTEINVOCATION,
+
         ID_WEB_BROWSER
     };
 }

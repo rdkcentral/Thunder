@@ -136,12 +136,11 @@ namespace Plugin {
 namespace PluginHost {
 
     class EXTERNAL Config {
-    private:
-        Config();
-        Config(const Config&);
-        Config operator=(const Config&);
-
     public:
+        Config() = delete;
+        Config(const Config&) = delete;
+        Config& operator=(const Config&) = delete;
+
         Config(
             const string& version,
             const string& model,

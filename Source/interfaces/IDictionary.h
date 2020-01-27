@@ -11,7 +11,7 @@ namespace Exchange {
     struct IDictionary : virtual public Core::IUnknown {
         enum { ID = ID_DICTIONARY };
 
-        struct INotification : public Core::IUnknown {
+        struct INotification : virtual public Core::IUnknown {
 
             enum { ID = ID_DICTIONARY_NOTIFICATION };
 
@@ -21,7 +21,7 @@ namespace Exchange {
             virtual void Modified(const string& nameSpace, const string& key, const string& value) = 0;
         };
 
-        struct IIterator : public Core::IUnknown {
+        struct IIterator : virtual public Core::IUnknown {
 
             enum { ID = ID_DICTIONARY_ITERATOR };
 

@@ -24,9 +24,9 @@ namespace RPC {
         };
 
         Object()
-            : _callsign()
-            , _locator()
+            : _locator()
             , _className()
+            , _callsign()
             , _interface(~0)
             , _version(~0)
             , _user()
@@ -34,13 +34,14 @@ namespace RPC {
             , _threads()
             , _priority()
             , _type(HostType::LOCAL)
+            , _remoteAddress()
             , _configuration()
         {
         }
         Object(const Object& copy)
-            : _callsign(copy._callsign)
-            , _locator(copy._locator)
+            : _locator(copy._locator)
             , _className(copy._className)
+            , _callsign(copy._callsign)
             , _interface(copy._interface)
             , _version(copy._version)
             , _user(copy._user)
@@ -48,12 +49,13 @@ namespace RPC {
             , _threads(copy._threads)
             , _priority(copy._priority)
             , _type(copy._type)
+            , _remoteAddress(copy._remoteAddress)
             , _configuration(copy._configuration)
         {
         }
-        Object(const string& callsign,
-            const string& locator,
+        Object(const string& locator,
             const string& className,
+            const string& callsign,
             const uint32_t interface,
             const uint32_t version,
             const string& user,
@@ -61,10 +63,11 @@ namespace RPC {
             const uint8_t threads,
             const int8_t priority,
             const HostType type,
+            const string& remoteAddress,
             const string& configuration)
-            : _callsign(callsign)
-            , _locator(locator)
+            : _locator(locator)
             , _className(className)
+            , _callsign(callsign)
             , _interface(interface)
             , _version(version)
             , _user(user)
@@ -72,6 +75,7 @@ namespace RPC {
             , _threads(threads)
             , _priority(priority)
             , _type(type)
+            , _remoteAddress(remoteAddress)
             , _configuration(configuration)
         {
         }
@@ -81,9 +85,9 @@ namespace RPC {
 
         Object& operator=(const Object& RHS)
         {
-            _callsign = RHS._callsign;
             _locator = RHS._locator;
             _className = RHS._className;
+            _callsign = RHS._callsign;
             _interface = RHS._interface;
             _version = RHS._version;
             _user = RHS._user;
@@ -91,16 +95,13 @@ namespace RPC {
             _threads = RHS._threads;
             _priority = RHS._priority;
             _type = RHS._type;
+            _remoteAddress = RHS._remoteAddress;
             _configuration = RHS._configuration;
 
             return (*this);
         }
 
     public:
-        inline const string& Callsign() const
-        {
-            return (_callsign);
-        }
         inline const string& Locator() const
         {
             return (_locator);
@@ -108,6 +109,10 @@ namespace RPC {
         inline const string& ClassName() const
         {
             return (_className);
+        }
+        inline const string& Callsign() const
+        {
+            return (_callsign);
         }
         inline uint32_t Interface() const
         {
@@ -137,15 +142,19 @@ namespace RPC {
         {
             return (_type);
         }
+        inline const Core::NodeId RemoteAddress() const
+        {
+            return (Core::NodeId(_remoteAddress.c_str()));
+        }
         inline const string& Configuration() const
         {
             return (_configuration);
         }
 
     private:
-        string _callsign;
         string _locator;
         string _className;
+        string _callsign;
         uint32_t _interface;
         uint32_t _version;
         string _user;
@@ -153,6 +162,7 @@ namespace RPC {
         uint8_t _threads;
         int8_t _priority;
         HostType _type;
+        string _remoteAddress;
         string _configuration;
     };
 
@@ -251,6 +261,89 @@ namespace RPC {
         string _proxyStub;
     };
 
+    class EXTERNAL Process {
+    public:
+        Process() = delete;
+        Process(const Process&) = delete;
+        Process& operator=(const Process&) = delete;
+
+        Process(const uint32_t sequenceNumber, const Config& config, const Object& instance)
+            : _options(config.HostApplication())
+        {
+            ASSERT(instance.Locator().empty() == false);
+            ASSERT(instance.ClassName().empty() == false);
+            ASSERT(config.Connector().empty() == false);
+
+            _options[_T("-l")] = instance.Locator();
+            _options[_T("-c")] = instance.ClassName();
+            _options[_T("-r")] = config.Connector();
+            _options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
+            _options[_T("-x")] = Core::NumberType<uint32_t>(sequenceNumber).Text();
+
+            if (instance.Version() != static_cast<uint32_t>(~0)) {
+                _options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+            }
+            if (instance.User().empty() == false) {
+                _options[_T("-u")] = instance.User();
+            }
+            if (instance.Group().empty() == false) {
+                _options[_T("-g")] = instance.Group();
+            }
+            if (config.PersistentPath().empty() == false) {
+                _options[_T("-p")] = '"' + config.PersistentPath() + '"';
+            }
+            if (config.SystemPath().empty() == false) {
+                _options[_T("-s")] = '"' + config.SystemPath() + '"';
+            }
+            if (config.DataPath().empty() == false) {
+                _options[_T("-d")] = '"' + config.DataPath() + '"';
+            }
+            if (config.ApplicationPath().empty() == false) {
+                _options[_T("-a")] = '"' + config.ApplicationPath() + '"';
+            }
+            if (config.VolatilePath().empty() == false) {
+                _options[_T("-v")] = '"' + config.VolatilePath() + '"';
+            }
+            if (config.ProxyStubPath().empty() == false) {
+                _options[_T("-m")] = '"' + config.ProxyStubPath() + '"';
+            }
+            if (instance.Threads() > 1) {
+                _options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+            }
+
+            _priority = instance.Priority();
+        }
+        const string& Command() const
+        {
+            return (_options.Command());
+        }
+        Core::Process::Options::Iterator Options() const
+        {
+            return (_options.Get());
+        }
+        uint32_t Launch(uint32_t& id)
+        {
+            uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) | (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) | (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
+            _options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
+
+            // Start the external process launch..
+            Core::Process fork(false);
+
+            uint32_t result = fork.Launch(_options, &id);
+
+            if ((result == Core::ERROR_NONE) && (_priority != 0)) {
+                Core::ProcessInfo newProcess(id);
+                newProcess.Priority(newProcess.Priority() + _priority);
+            }
+
+            return (result);
+        }
+
+    private:
+        Core::Process::Options _options;
+        int8_t _priority;
+    };
+
     struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {
         enum { ID = ID_COMCONNECTION };
 
@@ -268,6 +361,7 @@ namespace RPC {
         virtual uint32_t RemoteId() const = 0;
         virtual void* /* @interface:interfaceId */ Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
+        virtual uint32_t Launch() = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
@@ -281,20 +375,20 @@ namespace RPC {
 
             return (nullptr);
         }
+    };
 
-        struct EXTERNAL IProcess : virtual public Core::IUnknown {
-            enum { ID = ID_COMCONNECTION_PROCESS };
+    struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
+        enum { ID = ID_MONITORABLE_PROCESS };
 
-            virtual ~IProcess() {}
-            
-            virtual string Callsign() const = 0;
-        };
+        virtual ~IMonitorableProcess() {}
+
+        virtual string Callsign() const = 0;
     };
 
     /* @stubgen:skip */
 
     class EXTERNAL Communicator {
-    private:
+    protected:
         class ChannelLink;
 
         class EXTERNAL RemoteConnection : public IRemoteConnection {
@@ -324,11 +418,14 @@ namespace RPC {
             }
 
         public:
-            virtual void* QueryInterface(const uint32_t id) override;
             virtual uint32_t Id() const override;
             virtual uint32_t RemoteId() const override;
             virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
             virtual void Terminate() override;
+            virtual uint32_t Launch() override
+            {
+                return (Core::ERROR_NONE);
+            }
 
             inline bool IsOperational() const
             {
@@ -357,144 +454,67 @@ namespace RPC {
                 }
             }
 
+            BEGIN_INTERFACE_MAP(RemoteConnection)
+                INTERFACE_ENTRY(IRemoteConnection)
+            END_INTERFACE_MAP
+
         private:
             Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _channel;
             uint32_t _id;
             uint32_t _remoteId;
             static std::atomic<uint32_t> _sequenceId;
         };
-        class EXTERNAL RemoteProcess : public RemoteConnection {
-        private:
-            RemoteProcess(const RemoteProcess&) = delete;
-            RemoteProcess& operator=(const RemoteProcess&) = delete;
 
-        protected:
-            RemoteProcess()
-                : RemoteConnection()
-            {
-            }
-
-        public:
-            virtual ~RemoteProcess()
-            {
-                TRACE_L1("Destructor for RemoteProcess process for %d", Id());
-            }
-
-        private:
-            virtual void LaunchProcess(const Object& instance, const Core::Process::Options& options) = 0;
-
-        public:
-            inline void Launch(const Object& instance, const Config& config)
-            {
-                Core::Process::Options options(config.HostApplication());
-                uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) | (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) | (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
-
-                ASSERT(instance.Locator().empty() == false);
-                ASSERT(instance.ClassName().empty() == false);
-                ASSERT(config.Connector().empty() == false);
-
-                options[_T("-C")] = instance.Callsign();
-                options[_T("-l")] = instance.Locator();
-                options[_T("-c")] = instance.ClassName();
-                options[_T("-r")] = config.Connector();
-                options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-                options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
-                options[_T("-x")] = Core::NumberType<uint32_t>(Id()).Text();
-
-                if (instance.Version() != static_cast<uint32_t>(~0)) {
-                    options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
-                }
-                if (instance.User().empty() == false) {
-                    options[_T("-u")] = instance.User();
-                }
-                if (instance.Group().empty() == false) {
-                    options[_T("-g")] = instance.Group();
-                }
-                if (config.PersistentPath().empty() == false) {
-                    options[_T("-p")] = config.PersistentPath();
-                }
-                if (config.SystemPath().empty() == false) {
-                    options[_T("-s")] = config.SystemPath();
-                }
-                if (config.DataPath().empty() == false) {
-                    options[_T("-d")] = config.DataPath();
-                }
-                if (config.ApplicationPath().empty() == false) {
-                    options[_T("-a")] = config.ApplicationPath();
-                }
-                if (config.VolatilePath().empty() == false) {
-                    options[_T("-v")] = config.VolatilePath();
-                }
-                if (config.ProxyStubPath().empty() == false) {
-                    options[_T("-m")] = config.ProxyStubPath();
-                }
-                if (instance.Threads() > 1) {
-                    options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
-                }
-
-                LaunchProcess(instance, options);
-            }
-        };
-        class EXTERNAL MonitorableRemoteProcess : public RemoteProcess, public IRemoteConnection::IProcess {
-        public:
-            MonitorableRemoteProcess(const string& callsign) 
-                : RemoteProcess()
-                , IRemoteConnection::IProcess()
-                , _callsign(callsign) 
-                {
-                }
-            ~MonitorableRemoteProcess() override = default;
-
-            MonitorableRemoteProcess(const MonitorableRemoteProcess&) = delete;
-            MonitorableRemoteProcess& operator=(const MonitorableRemoteProcess&) = delete;
-            
-            string Callsign() const override;
-
-            void* QueryInterface(const uint32_t id) override;
-
-        private:
-            string _callsign;
-        };
-
-        class EXTERNAL LocalRemoteProcess : public MonitorableRemoteProcess {
+    private:
+        class EXTERNAL LocalRemoteProcess : public RemoteConnection, public IMonitorableProcess {
         public:
             friend class Core::Service<LocalRemoteProcess>;
 
             LocalRemoteProcess(const LocalRemoteProcess&) = delete;
             LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
-
-        private:
-            LocalRemoteProcess(const string& callsign)
-                : MonitorableRemoteProcess(callsign)
+            LocalRemoteProcess(const Config& config, const Object& instance)
+                : _callsign(instance.Callsign())
                 , _id(0)
+                , _process(RemoteConnection::Id(), config, instance)
             {
             }
-
             ~LocalRemoteProcess() = default;
 
-        private:
-            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
+        public:
+            string Callsign() const override
             {
-                // Start the external process launch..
-                Core::Process fork(false);
-
-                fork.Launch(options, &_id);
-
-                if (instance.Priority() != 0) {
-                    Core::ProcessInfo newProcess(_id);
-                    newProcess.Priority(newProcess.Priority() + instance.Priority());
-                }
+                return (_callsign);
             }
+            uint32_t Launch() override
+            {
+                return (_process.Launch(_id));
+            }
+            const string& Command() const
+            {
+                return (_process.Command());
+            }
+            Core::Process::Options::Iterator Options() const
+            {
+                return (_process.Options());
+            }
+
+        private:
+            BEGIN_INTERFACE_MAP(LocalRemoteProcess)
+                INTERFACE_ENTRY(IRemoteConnection)
+                INTERFACE_ENTRY(IMonitorableProcess)
+            END_INTERFACE_MAP
 
             void Terminate() override;
             uint32_t RemoteId() const override;
 
         private:
+            string _callsign;
             uint32_t _id;
+            Process _process;
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess : public MonitorableRemoteProcess {
+        class EXTERNAL ContainerRemoteProcess : public LocalRemoteProcess {
         private:
             class Config : public Core::JSON::Container {
             public:
@@ -525,27 +545,21 @@ namespace RPC {
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
 
         private:
-            ContainerRemoteProcess(const string& callsign,
-                const string& persistentpath,
-                const string& datapath,
-                const string& volatilepath,
-                const string& configuration) 
-                : MonitorableRemoteProcess(callsign)
+            ContainerRemoteProcess(const Config& baseConfig, const Object& instance)
+                : LocalRemoteProcess(config, instance)
             {
 
                 static constexpr TCHAR ContainerName[] = _T("Container");
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
-                string volatilecallsignpath(volatilepath + callsign + _T('/'));
-
                 Config config;
-                config.FromString(configuration);
+                config.FromString(instance.Configuration());
 
                 std::vector<string> searchpaths(3);
-                searchpaths[0] = volatilecallsignpath;
-                searchpaths[1] = persistentpath;
-                searchpaths[2] = datapath;
+                searchpaths[0] = baseConfig.VolatilePath();
+                searchpaths[1] = baseConfig.PersistentPath();
+                searchpaths[2] = baseConfig.DataPath();
 
 #ifdef __DEBUG__
 
@@ -569,14 +583,12 @@ namespace RPC {
                 }
             }
 
-        private:
-            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
+            void Launch()
             {
                 if (_container != nullptr) {
 
                     // Note: replace below code with something more efficient when Iterators redesigned
-
-                    Core::Process::Options::Iterator it(options.Get());
+                    Core::Process::Options::Iterator it(LocalRemoteProcess::Options());
 
                     std::vector<string> params;
                     while (it.Next() == true) {
@@ -584,7 +596,7 @@ namespace RPC {
                     }
 
                     Core::IteratorType<std::vector<string>, const string> temp(params);
-                    _container->Start(options.Command(), temp);
+                    _container->Start(LocalRemoteProcess::Command(), temp);
                 }
             }
 
@@ -601,58 +613,27 @@ namespace RPC {
         };
 
 #endif
-        class EXTERNAL RemoteHost : public RemoteProcess {
-        private:
-            friend class Core::Service<RemoteHost>;
 
-            RemoteHost(const RemoteHost&) = delete;
-            RemoteHost& operator=(const RemoteHost&) = delete;
-
-        private:
-            RemoteHost(const Core::NodeId& remoteNode);
-
-        public:
-            virtual ~RemoteHost()
-            {
-                TRACE_L1("Destructor for RemoteHost process for %d", Id());
-            }
-
-        private:
-            void LaunchProcess(const Object& instance, const Core::Process::Options& options) override
-            {
-            }
-
-        private:
-            Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>> _hostChannel;
-        };
-
-        static RemoteProcess* CreateProcess(const Object& instance, const Config& config)
+    protected:
+        virtual RemoteConnection* CreateStarter(const Config& config, const Object& instance)
         {
-            RemoteProcess* result = nullptr;
+            RemoteConnection* result = nullptr;
 
-            switch (instance.Type()) {
-            case Object::HostType::LOCAL:
-                result = Core::Service<LocalRemoteProcess>::Create<RemoteProcess>(instance.Callsign());
-                break;
-            case Object::HostType::DISTRIBUTED:
-                result = Core::Service<RemoteHost>::Create<RemoteProcess>(Core::NodeId(_T("127.0.0.1:9120")));
-                break;
-            case Object::HostType::CONTAINER:
+            if (instance.Type() == Object::HostType::LOCAL) {
+                result = Core::Service<LocalRemoteProcess>::Create<RemoteConnection>(config, instance);
+            }
+            else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerRemoteProcess>::Create<RemoteProcess>(instance.Callsign(),
-                    config.PersistentPath(),
-                    config.DataPath(),
-                    config.VolatilePath(),
-                    instance.Configuration());
+                result = Core::Service<ContainerRemoteProcess>::Create<RemoteConnection>(config, instance);
 #else
                 SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
-                break;
-            };
+            }
 
             return result;
         }
 
+    private:
         class EXTERNAL RemoteConnectionMap {
         private:
             RemoteConnectionMap(const RemoteConnectionMap&) = delete;
@@ -737,7 +718,7 @@ namespace RPC {
 
                 _adminLock.Lock();
 
-                Communicator::RemoteProcess* result = CreateProcess(instance, config);
+                RemoteConnection* result = _parent.CreateStarter(config, instance);
 
                 ASSERT(result != nullptr);
 
@@ -757,7 +738,7 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     // Start the process, and....
-                    result->Launch(instance, config);
+                    result->Launch();
 
                     // wait for the announce message to be exchanged
                     if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
@@ -979,10 +960,12 @@ namespace RPC {
         private:
             mutable Core::CriticalSection _adminLock;
             std::map<uint32_t, std::pair<Core::Event&, void*>> _announcements;
-            std::map<uint32_t, Communicator::RemoteConnection*> _connections;
+            std::map<uint32_t, RemoteConnection*> _connections;
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
         };
+
+    protected:
         class EXTERNAL ChannelLink {
         private:
             ChannelLink() = delete;
@@ -1030,6 +1013,8 @@ namespace RPC {
             RemoteConnectionMap* _connectionMap;
             uint32_t _id;
         };
+
+    private:
         class EXTERNAL ChannelServer : public Core::IPCChannelServerType<ChannelLink, true> {
         private:
             ChannelServer(const ChannelServer&) = delete;
@@ -1070,7 +1055,7 @@ namespace RPC {
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(result, proxyChannel->Extension().Id() ,_parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(result, proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1242,9 +1227,9 @@ namespace RPC {
             while (loop2 != pendingInterfaces.end()) {
                 const Core::IUnknown* source = loop2->first;
 
-                // This is a situation that should not occure. Needs further 
+                // This is a situation that should not occure. Needs further
                 // investigation if this ASSERT fires !!!
-                ASSERT (source != nullptr);
+                ASSERT(source != nullptr);
 
                 if (source != nullptr) {
                     uint32_t count = loop2->second;
@@ -1355,7 +1340,8 @@ namespace RPC {
             return (&_handler);
         }
 
-        inline uint32_t ConnectionId() const {
+        inline uint32_t ConnectionId() const
+        {
             return _connectionId;
         }
 

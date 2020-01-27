@@ -161,20 +161,19 @@ namespace Process {
     class ConsoleOptions : public Core::Options {
     public:
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
-            : Core::Options(argumentCount, arguments, _T("C:h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
-            , Callsign(nullptr)
+            : Core::Options(argumentCount, arguments, _T("h:l:c:r:p:s:d:a:m:i:u:g:t:e:x:V:v:"))
             , Locator(nullptr)
             , ClassName(nullptr)
             , RemoteChannel(nullptr)
             , InterfaceId(Core::IUnknown::ID)
             , Version(~0)
             , Exchange(0)
-            , PersistentPath(nullptr)
-            , SystemPath(nullptr)
-            , DataPath(nullptr)
-            , VolatilePath(nullptr)
-            , AppPath(nullptr)
-            , ProxyStubPath(nullptr)
+            , PersistentPath()
+            , SystemPath()
+            , DataPath()
+            , VolatilePath()
+            , AppPath()
+            , ProxyStubPath()
             , User(nullptr)
             , Group(nullptr)
             , Threads(1)
@@ -187,31 +186,39 @@ namespace Process {
         }
 
     public:
-        const TCHAR* Callsign;
         const TCHAR* Locator;
         const TCHAR* ClassName;
         const TCHAR* RemoteChannel;
         uint32_t InterfaceId;
         uint32_t Version;
         uint32_t Exchange;
-        const TCHAR* PersistentPath;
-        const TCHAR* SystemPath;
-        const TCHAR* DataPath;
-        const TCHAR* VolatilePath;
-        const TCHAR* AppPath;
-        const TCHAR* ProxyStubPath;
+        string PersistentPath;
+        string SystemPath;
+        string DataPath;
+        string VolatilePath;
+        string AppPath;
+        string ProxyStubPath;
         const TCHAR* User;
         const TCHAR* Group;
         uint8_t Threads;
         uint32_t EnabledLoggings;
 
     private:
+        string Strip(const TCHAR text[]) const {
+            int length = strlen(text);
+            if (length > 0) {
+                if (*text != '"') {
+                    return (string(text, length));
+                }
+                else {
+                    return (string(&text[1], (length > 2 ? length - 2 : length - 1)));
+                }
+            }
+            return (string());
+        }
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
             switch (option) {
-            case 'C':
-                Callsign = argument;
-                break;
             case 'l':
                 Locator = argument;
                 break;
@@ -222,22 +229,22 @@ namespace Process {
                 RemoteChannel = argument;
                 break;
             case 'p':
-                PersistentPath = argument;
+                PersistentPath = Strip(argument);
                 break;
             case 's':
-                SystemPath = argument;
+                SystemPath = Strip(argument);
                 break;
             case 'd':
-                DataPath = argument;
+                DataPath = Strip(argument);
                 break;
             case 'v':
-                VolatilePath = argument;
+                VolatilePath = Strip(argument);
                 break;
             case 'a':
-                AppPath = argument;
+                AppPath = Strip(argument);
                 break;
             case 'm':
-                ProxyStubPath = argument;
+                ProxyStubPath = Strip(argument);
                 break;
             case 'u':
                 User = argument;
@@ -268,17 +275,17 @@ namespace Process {
         }
     };
 
-    static void* CheckInstance(const TCHAR* path, const TCHAR locator[], const TCHAR className[], const uint32_t ID, const uint32_t version)
+    static void* CheckInstance(const string& path, const TCHAR locator[], const TCHAR className[], const uint32_t ID, const uint32_t version)
     {
         void* result = nullptr;
 
-        if (path != nullptr) {
+        if (path.empty() == false) {
             Core::ServiceAdministrator& admin(Core::ServiceAdministrator::Instance());
 
             string libraryPath = locator;
             if (libraryPath.empty() || (libraryPath[0] != '/')) {
                 // Relative path, prefix with path name.
-                string pathName(Core::Directory::Normalize(string(path)));
+                string pathName(Core::Directory::Normalize(path));
                 libraryPath = pathName + locator;
             }
 
@@ -307,9 +314,9 @@ namespace Process {
                     result = CheckInstance(options.DataPath, options.Locator, options.ClassName, options.InterfaceId, options.Version);
 
                     if (result == nullptr) {
-                        string searchPath(options.AppPath != nullptr ? Core::Directory::Normalize(string(options.AppPath)) : string());
+                        string searchPath(options.AppPath.empty() == false ? Core::Directory::Normalize(options.AppPath) : string());
 
-                        result = CheckInstance((searchPath + _T("Plugins/")).c_str(), options.Locator, options.ClassName, options.InterfaceId, options.Version);
+                        result = CheckInstance((searchPath + _T("Plugins/")), options.Locator, options.ClassName, options.InterfaceId, options.Version);
                     }
                 }
             }
@@ -375,7 +382,6 @@ int main(int argc, char** argv)
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
         printf("Process [-h] \n");
-        printf("         -C <callsign>\n");
         printf("         -l <locator>\n");
         printf("         -c <classname>\n");
         printf("         -r <communication channel>\n");
@@ -411,7 +417,7 @@ int main(int argc, char** argv)
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
         Core::SystemInfo::SetEnvironment(_T("COM_PARENT_EXCHANGE_ID"), Core::NumberType<uint32_t>(options.Exchange).Text());
 
-        TRACE_L1("Opening a trace file on %s : [%d].", options.VolatilePath, options.Exchange);
+        TRACE_L1("Opening a trace file with ID: [%d].", options.Exchange);
 
         // Due to the LXC container support all ID's get mapped. For the TraceBuffer, use the host given ID.
         Trace::TraceUnit::Instance().Open(options.Exchange);
@@ -444,8 +450,8 @@ int main(int argc, char** argv)
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
                 TRACE_L1("Loading ProxyStubs from %s", (options.ProxyStubPath != nullptr ? options.ProxyStubPath : _T("<< No Proxy Stubs Loaded >>")));
 
-                if ((options.ProxyStubPath != nullptr) && (*(options.ProxyStubPath) != '\0')) {
-                    Core::Directory index(options.ProxyStubPath, _T("*.so"));
+                if (options.ProxyStubPath.empty() == false) {
+                    Core::Directory index(options.ProxyStubPath.c_str(), _T("*.so"));
 
                     while (index.Next() == true) {
                         Core::Library library(index.Current().c_str());
