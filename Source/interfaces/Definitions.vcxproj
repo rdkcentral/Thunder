@@ -229,7 +229,7 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
     <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
-    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -281,8 +281,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --code "$(ProjectDir)I*.h"</Command>
       <Message>
       </Message>
     </PreBuildEvent>
