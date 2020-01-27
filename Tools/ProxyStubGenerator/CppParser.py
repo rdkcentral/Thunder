@@ -557,7 +557,7 @@ def __Tokenize(contents):
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
-                        tagtokens.append("@SKIP")
+                        break
                     elif "@stubgen:omit" in token:
                         tagtokens.append("@OMIT")
                     elif "@stubgen:stub" in token:
@@ -587,7 +587,7 @@ def __Tokenize(contents):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
-            elif len(token) > 0 and token[0] != '#':
+            elif len(token) > 0 and token[0] != '#' and token != "EXTERNAL":
                 tagtokens.append(token)
 
     tagtokens.append(";") # prevent potential out-of-range errors
@@ -657,9 +657,7 @@ def Parse(contents):
             i = i + 1
             continue
 
-        if tokens[i] == "@SKIP":
-            return "Skipped"
-        elif tokens[i] == "@OMIT":
+        if tokens[i] == "@OMIT":
             omit_next = True
             tokens[i] = ";"
             i += 1

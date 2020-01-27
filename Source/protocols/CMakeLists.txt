@@ -2,6 +2,8 @@ set(TARGET ${NAMESPACE}Protocols)
 
 find_package(ZLIB REQUIRED)
 
+ProxyStubGenerator(NAMESPACE "RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h)
+
 # Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
 # new source file again. This is in case CMAKE forgets :-)
 
@@ -15,6 +17,7 @@ set(SOURCES_COM
         com/Messages.h
         com/Administrator.cpp
         com/Communicator.cpp
+        com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
         com/IStringIterator.cpp
         com/IValueIterator.cpp
@@ -92,6 +95,7 @@ add_library(${TARGET} SHARED
         JSONRPCLink.cpp
         Administrator.cpp
         Communicator.cpp
+        ProxyStubs_Communicator.cpp
         IStringIterator.cpp
         IValueIterator.cpp
         )
