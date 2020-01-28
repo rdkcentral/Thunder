@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)) + os.sep + "..")
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION="1.4"
+VERSION="1.4.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 INTERFACE_NAMESPACE = "::WPEFramework::Exchange"
 
@@ -45,6 +45,7 @@ DEFAULT_EMPTY_STRING = ""
 DEFAULT_INT_SIZE = 32
 CPP_IF_PATH = "interfaces" + os.sep
 IF_PATH = CPP_IF_PATH + "json"
+DUMP_JSON = False
 
 GLOBAL_DEFINITIONS = "global.json"
 FRAMEWORK_NAMESPACE = "WPEFramework"
@@ -547,6 +548,10 @@ def LoadInterface(file):
         properties = OrderedDict()
         events = OrderedDict()
 
+        schema["$schema"] = "interface.json.schema"
+        schema["jsonrpc"] = "2.0"
+        schema["dorpc"] = True
+
         event_interfaces = set()
 
         for method in face.obj.methods:
@@ -600,7 +605,7 @@ def LoadInterface(file):
                     events = ResolveTypedef(resolved, events, var.type)
                 return events
 
-            def BuildParameters(vars):
+            def BuildParameters(vars, prop = False):
                 params = { "type": "object" }
                 properties = OrderedDict()
                 required = []
@@ -613,7 +618,18 @@ def LoadInterface(file):
                         required.append(var_name)
                 params["properties"] = properties
                 params["required"] = required
-                return params
+                if prop:
+                    if len(properties) == 1:
+                        return properties.values()[0]
+                    elif len(properties) > 1:
+                        params["required"] = required
+                        return params
+                    else:
+                        void = ConvertParameter(["void"])
+                        void["description"] = "Always null"
+                        return void
+                else:
+                    return params
 
             def BuildResult(vars):
                 params = { "type": "object" }
@@ -654,7 +670,6 @@ def LoadInterface(file):
                 except:
                     obj = OrderedDict()
                     properties[method_name] = obj
-
                 if len(method.vars) == 1:
                     if "const" in method.qualifiers:
                         if "const" in method.vars[0].type:
@@ -675,7 +690,7 @@ def LoadInterface(file):
                             else:
                                 obj["writeonly"] = True
                             if "params" not in obj:
-                                obj["params"] = BuildParameters([method.vars[0]])
+                                obj["params"] = BuildParameters([method.vars[0]], True)
                 else:
                     raise CppParseError(method, "property method must have one parameter")
 
@@ -706,9 +721,6 @@ def LoadInterface(file):
         if events:
             schema["events"] = events
 
-        schema["$schema"] = "interface.json.schema"
-        schema["jsonrpc"] = "2.0"
-        schema["dorpc"] = True
         info = dict()
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
         info["title"] = info["class"] + " API"
@@ -717,6 +729,10 @@ def LoadInterface(file):
         commons  = dict()
         commons["$ref"] = "common.json"
         schema["common"] = commons
+        if DUMP_JSON:
+            print "\n// JSON interface for %s -----------" % face.obj.name
+            print json.dumps(schema, indent=2)
+            print "// ----------------\n"
         return schema
 
     schemas = []
@@ -2070,6 +2086,7 @@ if __name__ == "__main__":
     argparser.add_argument("-i", dest="if_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
     argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory, absolute path or directory relative to output file(default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
+    argparser.add_argument("--dump-json", dest="dump_json", action="store_true", default=False, help="dump intermediate JSON file when parsing C++ header")
     argparser.add_argument("--copy-ctor", dest="copy_ctor", action="store_true", default=False, help="always emit a copy constructor and assignment operator for a class (default: emit only when it appears to be needed)")
     argparser.add_argument("--keep-empty", dest="keep_empty", action="store_true", default=False, help="keep generated files that have no content (default: remove empty cpp/h files)")
     argparser.add_argument("--no-ref-names", dest="no_ref_names", action="store_true", default=False, help="do not derive class names from $refs (default: derive class names from $ref)")
@@ -2084,6 +2101,7 @@ if __name__ == "__main__":
     CLASSNAME_FROM_REF = not args.no_ref_names
     DEFAULT_EMPTY_STRING = args.def_string
     DEFAULT_INT_SIZE = args.def_int_size
+    DUMP_JSON = args.dump_json
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep
