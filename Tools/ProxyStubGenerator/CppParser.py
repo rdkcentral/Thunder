@@ -10,7 +10,6 @@ class ParserError(RuntimeError):
     def __init__(self, msg):
         msg = "%s(%s): parse error: %s" % (CurrentFile(), CurrentLine(), msg)
         super(ParserError, self).__init__(msg)
-        pass
 
 # Checks if identifier is valid.
 def is_valid(token):
@@ -38,9 +37,11 @@ class Type:
     def __init__(self, parent_block, string, valid_specifiers, tags_allowed = True):
         self.parent = parent_block
         self.name = ""
+        self.brief = ""
         self.specifiers = []
         self.input = False
         self.output = False
+        self.is_property = False
         self.length = None
         self.maxlength = None
         self.interface = None
@@ -112,6 +113,11 @@ class Type:
                     continue
                 elif token[1:] == "INTERFACE":
                     self.interface = string[i + 1]
+                    skip = 1
+                elif token[1:] == "PROPERTY":
+                    self.is_property = True
+                elif token[1:] == "BRIEF":
+                    self.brief = string[i + 1]
                     skip = 1
                 else:
                     raise ParserError("invalid tag: " + token)
@@ -301,8 +307,11 @@ class Typedef(Type, Identifier):
         Identifier.__init__(self, parent_block, self.name)
         self.parent = parent_block
         self.parent.typedefs.append(self)
+        self.is_event = False
     def __str__(self):
         return "typedef " + self.full_name + " -> " + str(self.type)
+    def __repr__(self):
+        return str(self)
 
 # Holds compound statements and composite types
 class Block(Identifier):
@@ -346,6 +355,8 @@ class Class(Block):
         self._current_access = "public"
         self.omit = False
         self.stub = False
+        self.is_json = False
+        self.is_event = False
         self.parent.classes.append(self)
     def __str__(self):
         astr = ""
@@ -553,7 +564,7 @@ def __Tokenize(contents):
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
                 def _find(word, string):
-                    return re.compile(r"[ \r\n/\*]({0})[: \r\n\*]".format(word), flags=re.IGNORECASE).search(string) != None
+                    return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word), flags=re.IGNORECASE).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
@@ -571,6 +582,15 @@ def __Tokenize(contents):
                 if _find("@inout", token):
                     tagtokens.append("@IN")
                     tagtokens.append("@OUT")
+                if _find("@property", token):
+                    tagtokens.append("@PROPERTY")
+                if _find("@json", token):
+                    tagtokens.append("@JSON")
+                if _find("@event", token):
+                    tagtokens.append("@EVENT")
+                if _find("@brief", token):
+                    tagtokens.append("@BRIEF")
+                    tagtokens.append(token[token.index("@brief") + 7:token.index("*/") if "*/" in token else None].strip())
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
@@ -648,6 +668,8 @@ def Parse(contents):
     min_index = 0
     omit_next = False
     stub_next = False
+    json_next = False
+    event_next = False
     in_typedef = False
 
     # Main loop.
@@ -663,6 +685,14 @@ def Parse(contents):
             i += 1
         elif tokens[i] == "@STUB":
             stub_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@JSON":
+            json_next = True
+            tokens[i] = ";"
+            i += 1
+        elif tokens[i] == "@EVENT":
+            event_next = True
             tokens[i] = ";"
             i += 1
         elif tokens[i].startswith("@FILE:"):
@@ -700,6 +730,9 @@ def Parse(contents):
             j = i + 1
             while tokens[j] != ";":  j += 1
             typedef = Typedef(current_block[-1], tokens[i+1:j])
+            if event_next:
+                typedef.is_event = True
+                event_next = False
             if typedef.type[0] == "enum":
                 in_typedef = True
                 i += 1
@@ -715,6 +748,9 @@ def Parse(contents):
             # reuse typedef class but correct name accordingly
             if not current_block[-1].omit:
                 typedef = Typedef(current_block[-1], tokens[i+1:j])
+                if event_next:
+                    typedef.is_event = True
+                    event_next = False
                 typedef_id = Identifier(current_block[-1], tokens[i-1])
                 typedef.name = typedef_id.name
                 typedef.full_name = typedef_id.full_name
@@ -739,6 +775,12 @@ def Parse(contents):
             elif stub_next:
                 new_class.stub = True
                 stub_next = False
+            if json_next:
+                new_class.is_json = True
+                json_next = False
+            if event_next:
+                new_class.is_event = True
+                event_next = False
 
             if last_template_def:
                 new_class.specifiers.append(" ".join(last_template_def))
