@@ -448,7 +448,7 @@ int main(int argc, char** argv)
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
-                TRACE_L1("Loading ProxyStubs from %s", (options.ProxyStubPath != nullptr ? options.ProxyStubPath : _T("<< No Proxy Stubs Loaded >>")));
+                TRACE_L1("Loading ProxyStubs from %s", (options.ProxyStubPath.empty() == false ? options.ProxyStubPath.c_str() : _T("<< No Proxy Stubs Loaded >>")));
 
                 if (options.ProxyStubPath.empty() == false) {
                     Core::Directory index(options.ProxyStubPath.c_str(), _T("*.so"));
