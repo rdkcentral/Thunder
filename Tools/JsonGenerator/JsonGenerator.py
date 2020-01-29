@@ -500,8 +500,8 @@ def JsonItem(name, parent, schema, origName=None, included=None):
     else:
         raise JsonParseError("undefined type for item: %s" % name)
 
-def LoadSchema(file, include_path):
-    def PreprocessJson(file, string, include_path = None):
+def LoadSchema(file, include_path, cpp_include_path):
+    def PreprocessJson(file, string, include_path = None, cpp_include_path = None):
         def __Tokenize(contents):
             # Tokenize the JSON first to be able to preprocess it easier
             formula = ( \
@@ -533,10 +533,30 @@ def LoadSchema(file, include_path):
                     raise RuntimeError("$ref file '%s' not found" % ref_tok[0])
                 ref_file = '"file:%s#%s"' % (urllib.pathname2url(ref_tok[0]), ref_tok[1])
                 tokens[c + 2] = ref_file
+            elif t == '"$cppref"' and tokens[c + 1] == ":" and tokens[c + 2][:2] != '"#':
+                ref_file = tokens[c + 2].strip('"')
+                ref_tok = ref_file.split("#", 1) if "#" in ref_file else [ref_file, ""]
+                if "{cppinterfacedir}/" in ref_file:
+                    ref_tok[0] = ref_tok[0].replace("{cppinterfacedir}/", (cpp_include_path + os.sep) if cpp_include_path else "")
+                    if not cpp_include_path:
+                        ref_tok[0] = os.path.join(path, ref_tok[0])
+                else:
+                    if os.path.isfile(os.path.join(path, ref_tok[0])):
+                        ref_tok[0] = os.path.join(path, ref_tok[0])
+                if not os.path.isfile(ref_tok[0]):
+                    raise RuntimeError("$cppref file '%s' not found" % ref_tok[0])
+                cppif =  LoadInterface(ref_tok[0])
+                if cppif:
+                    tokens[c] = json.dumps(cppif[0])[1:-1]
+                    tokens[c+1] = ""
+                    tokens[c+2] = ""
+                else:
+                    raise RuntimeError("failed to parse C++ header '%s'" % ref_tok[0])
         # Return back the preprocessed JSON as a string
         return " ".join(tokens)
     with open(file, "r") as json_file:
-        return jsonref.loads(PreprocessJson(file, json_file.read(), include_path), object_pairs_hook=OrderedDict)
+        jsonPre = PreprocessJson(file, json_file.read(), include_path, cpp_include_path)
+        return jsonref.loads(jsonPre, object_pairs_hook=OrderedDict)
 
 def LoadInterface(file):
     tree = ProxyStubGenerator.CppParser.ParseFiles([os.path.join(os.path.dirname(os.path.realpath(__file__)), posixpath.normpath(DEFAULT_DEFINITIONS_FILE)), file])
@@ -551,6 +571,16 @@ def LoadInterface(file):
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
         schema["dorpc"] = True
+
+        info = dict()
+        info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
+        info["title"] = info["class"] + " API"
+        info["description"] = info["class"] + " JSON-RPC interface"
+        schema["info"] = info
+
+        commons  = dict()
+        commons["$ref"] = "common.json"
+        schema["common"] = commons
 
         event_interfaces = set()
 
@@ -585,6 +615,11 @@ def LoadInterface(file):
                 properties = { "type": jsonType }
                 if size: properties["size"] = size
                 if signed: properties["signed"] = signed
+                if var.brief:
+                    egidx = var.brief.index("(e.g.") if "(e.g" in var.brief else None
+                    properties["description"] = var.brief[0:egidx].strip()
+                    if egidx and ")" in var.brief[egidx+1:]:
+                        properties["example"] = var.brief[egidx+5:var.brief.index(")")].strip()
                 return properties
 
             def EventParameters(vars):
@@ -664,6 +699,8 @@ def LoadInterface(file):
                         return type
                 event_interfaces.add(ProxyStubGenerator.Interface.Interface(ResolveTypedef(e), 0, file))
 
+            obj = None
+
             if method.is_property or method_name in properties:
                 try:
                     obj = properties[method_name]
@@ -702,8 +739,20 @@ def LoadInterface(file):
                 obj["result"] = BuildResult(method.vars)
                 methods[method_name] = obj
 
-            if method.brief:
-                obj["summary"] = method.brief
+            if obj:
+                if method.brief:
+                    obj["summary"] = method.brief
+                if method.details:
+                    obj["description"] = method.details
+                if method.retval:
+                    errors = []
+                    for err in method.retval:
+                        errEntry = OrderedDict()
+                        errEntry["description"] = method.retval[err]
+                        errEntry["message"] = err
+                        errors.append(errEntry)
+                    if errors:
+                        obj["errors"] = errors
 
         for f in event_interfaces:
             for method in f.obj.methods:
@@ -721,14 +770,6 @@ def LoadInterface(file):
         if events:
             schema["events"] = events
 
-        info = dict()
-        info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
-        info["title"] = info["class"] + " API"
-        info["description"] = info["class"] + " JSON-RPC interface"
-        schema["info"] = info
-        commons  = dict()
-        commons["$ref"] = "common.json"
-        schema["common"] = commons
         if DUMP_JSON:
             print "\n// JSON interface for %s -----------" % face.obj.name
             print json.dumps(schema, indent=2)
@@ -1625,7 +1666,7 @@ def CreateCode(schema, path, generateClasses, generateStubs, generateRpc):
 #
 
 def CreateDocument(schema, path):
-    output_path = os.path.dirname(path) + "/" + schema["info"]["class"] + ".md"
+    output_path = os.path.dirname(path) + "/" + os.path.basename(path).replace(".json","") + ".md"
     with open(output_path, "w") as output_file:
         emit = Emitter(output_file, INDENT_SIZE)
 
@@ -1711,7 +1752,7 @@ def CreateDocument(schema, path):
                 description = err["description"] if "description" in err else ""
                 if isinstance(err, jsonref.JsonRef) and "description" in err.__reference__:
                     description = err.__reference__["description"]
-                MdRow([err["code"], "```"+err["message"]+"```", description])
+                MdRow([err["code"] if "code" in err else "", "```"+err["message"]+"```", description])
             MdBr()
 
         def PlainTable(obj, columns, ref="ref"):
@@ -2083,7 +2124,8 @@ if __name__ == "__main__":
     argparser.add_argument("-c", "--code", dest="code", action="store_true", default=False, help="generate JSON classes and JSON-RPC code if applicable")
     argparser.add_argument("-s", "--stubs", dest="stubs", action="store_true", default=False, help="generate JSON-RPC stub code")
     argparser.add_argument("-p", dest="if_path",  metavar="PATH", action="store", type=str, default=IF_PATH, help="relative path for #include'ing JsonData header file (default: 'interfaces/json', '.' for no path)")
-    argparser.add_argument("-i", dest="if_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
+    argparser.add_argument("-i", dest="if_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with JSON API interfaces that will substitute the {interfacedir} tag (default: same directory as source file)")
+    argparser.add_argument("-j", dest="cppif_dir", metavar="DIR", action="store", type=str, default=None, help="a directory with C++ API interfaces that will substitute the {cppinterfacedir} tag (default: same directory as source file)")
     argparser.add_argument("-o", "--output", dest="output_dir",  metavar="DIR", action="store", default=None, help="output directory, absolute path or directory relative to output file(default: output in the same directory as the source json)")
     argparser.add_argument("--indent", dest="indent_size", metavar="SIZE", type=int, action="store", default=INDENT_SIZE, help="code indentation in spaces (default: %i)" % INDENT_SIZE)
     argparser.add_argument("--dump-json", dest="dump_json", action="store_true", default=False, help="dump intermediate JSON file when parsing C++ header")
@@ -2107,7 +2149,10 @@ if __name__ == "__main__":
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep
 
     if args.if_dir:
-        args.if_dir = os.path.normpath(args.if_dir)
+        args.if_dir = os.path.abspath(os.path.normpath(args.if_dir))
+    if args.cppif_dir:
+        args.cppif_dir = os.path.abspath(os.path.normpath(args.cppif_dir))
+
     generateCode = args.code
     generateRpc = args.code
     generateDocs = args.docs
@@ -2128,7 +2173,7 @@ if __name__ == "__main__":
                 if path.endswith(".h"):
                     schemas = LoadInterface(path)
                 else:
-                    schemas = [ LoadSchema(path, os.path.abspath(args.if_dir) if args.if_dir else "") ]
+                    schemas = [ LoadSchema(path, args.if_dir, args.cppif_dir) ]
                 for schema in schemas:
                     if schema:
                         output_path = path

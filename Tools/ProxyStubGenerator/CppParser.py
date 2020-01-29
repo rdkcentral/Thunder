@@ -5,6 +5,7 @@
 #
 
 import re, uuid, sys
+from collections import OrderedDict
 
 class ParserError(RuntimeError):
     def __init__(self, msg):
@@ -38,6 +39,7 @@ class Type:
         self.parent = parent_block
         self.name = ""
         self.brief = ""
+        self.details = ""
         self.specifiers = []
         self.input = False
         self.output = False
@@ -45,6 +47,8 @@ class Type:
         self.length = None
         self.maxlength = None
         self.interface = None
+        self.param = OrderedDict()
+        self.retval = OrderedDict()
         type = ["?"] # indexing safety
         type_found = False
         nest1 = 0
@@ -119,6 +123,15 @@ class Type:
                 elif token[1:] == "BRIEF":
                     self.brief = string[i + 1]
                     skip = 1
+                elif token[1:] == "DETAILS":
+                    self.details = string[i + 1]
+                    skip = 1
+                elif token[1:] == "PARAM":
+                    self.param[string[i+1]] = string[i+2]
+                    skip = 2
+                elif token[1:] == "RETVAL":
+                    self.retval[string[i+1]] = string[i+2]
+                    skip = 2
                 else:
                     raise ParserError("invalid tag: " + token)
 
@@ -428,6 +441,8 @@ class Variable(Type, Identifier):
 class Parameter(Type, Variable):
     def __init__(self, parent_block, string, value = [], valid_specifiers = []):
         Variable.__init__(self, parent_block, string, value, valid_specifiers)
+        if self.name in parent_block.param:
+            self.brief = parent_block.param[self.name]
     def __str__(self):
         return "param %s '%s' [= %s]" % ( str(self.type), str(self.name), str(self.value))
     def __repr__(self):
@@ -564,7 +579,7 @@ def __Tokenize(contents):
 
             if ((token[:2] == "/*") or (token[:2] == "//")):
                 def _find(word, string):
-                    return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word), flags=re.IGNORECASE).search(string) != None
+                    return re.compile(r"[ \r\n/\*]({0})([: \r\n\*]|$)".format(word)).search(string) != None
 
                 if _find("@stubgen", token):
                     if "@stubgen:skip" in token:
@@ -590,7 +605,30 @@ def __Tokenize(contents):
                     tagtokens.append("@EVENT")
                 if _find("@brief", token):
                     tagtokens.append("@BRIEF")
-                    tagtokens.append(token[token.index("@brief") + 7:token.index("*/") if "*/" in token else None].strip())
+                    desc = token[token.index("@brief") + 7:token.index("*/") if "*/" in token else None].strip()
+                    if desc:
+                        tagtokens.append(desc)
+                if _find("@details", token):
+                    tagtokens.append("@DETAILS")
+                    desc = token[token.index("@details") + 9:token.index("*/") if "*/" in token else None].strip()
+                    if desc:
+                        tagtokens.append(desc)
+                if _find("@param", token):
+                    tagtokens.append("@PARAM")
+                    idx = token.index("@param")
+                    paramName = token[idx + 7:].split()[0]
+                    paramDesc = token[token.index(paramName) + len(paramName):token.index("*/") if "*/" in token else None].strip()
+                    if paramName and paramDesc:
+                        tagtokens.append(paramName)
+                        tagtokens.append(paramDesc)
+                if _find("@retval", token):
+                    tagtokens.append("@RETVAL")
+                    idx = token.index("@retval")
+                    errorName = token[idx + 8:].split()[0]
+                    errorDesc = token[token.index(errorName) + len(errorName):token.index("*/") if "*/" in token else None].strip()
+                    if errorName and errorDesc:
+                        tagtokens.append(errorName)
+                        tagtokens.append(errorDesc)
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
