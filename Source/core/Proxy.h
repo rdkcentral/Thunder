@@ -89,7 +89,11 @@ namespace Core {
         {
             __Deinitialize<CONTEXT>();
 
-            ASSERT(m_RefCount == 0);
+            /* Hotfix for gcc linker issue preventing debug builds.
+             *
+             * Please see WPE-546 for details.
+             */
+            // ASSERT(m_RefCount == 0);
 
             TRACE_L5("Destructor ProxyObject <%p>", (this));
         }
