@@ -702,7 +702,7 @@ namespace PluginHost {
                 , _element()
             {
             }
-            Iterator(VirtualInputChannelServer& server)
+            explicit Iterator(VirtualInputChannelServer& server)
                 : _server(&server)
                 , _index(~0)
                 , _element()
@@ -710,8 +710,8 @@ namespace PluginHost {
             }
             Iterator(const Iterator& copy)
                 : _server(copy._server)
-                , _index(~0)
-                , _element()
+                , _index(copy._index)
+                , _element(copy._element)
             {
             }
             ~Iterator()
@@ -721,11 +721,9 @@ namespace PluginHost {
             Iterator& operator=(const Iterator& rhs)
             {
                 _server = rhs._server;
-                _index = ~0;
+                _index = rhs._index;
+                _element = rhs._element;
 
-                if (_element.IsValid() == true) {
-                    _element.Release();
-                }
                 return (*this);
             }
 
