@@ -210,12 +210,18 @@ namespace ProxyStub {
                 result = Core::ERROR_DESTRUCTION_SUCCEEDED;
             } else if (newValue == 1) {
                 uint8_t value(REGISTERED);
-                if (_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == true) {
+                while ((_remoteAddRef.compare_exchange_weak(value, UNREGISTERED, std::memory_order_release, std::memory_order_relaxed) == false) &&
+                       (value == REGISTERED)) {
+                    /* Just loop while getting spurious failures. */
+                    ;
+                }
+                if (value == REGISTERED) {
+                    /* Was indeed registered, so unregister and release. */
                     RPC::Administrator::Instance().UnregisterProxy(const_cast<UnknownProxy&>(*this));
                     RemoteRelease();
                     result = Core::ERROR_DESTRUCTION_SUCCEEDED;
                     _refCount = 0;
-                } else{
+                } else {
                     result = Core::ERROR_NONE;
                 }
             } else if (newValue == 2) {
