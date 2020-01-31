@@ -480,7 +480,6 @@ Display::SurfaceImplementation::SurfaceImplementation(
 
 Display::SurfaceImplementation::~SurfaceImplementation()
 {
-
     TRACE(CompositorClient, (_T("Destructing client named: %s"), _name.c_str()));
 
     _display.Unregister(this);
@@ -651,9 +650,11 @@ inline void Display::Unregister(Display::SurfaceImplementation* surface)
 
     _adminLock.Lock();
 
-    std::list<SurfaceImplementation*>::iterator index(
-        std::find(_surfaces.begin(), _surfaces.end(), surface));
+    auto index(std::find(_surfaces.begin(), _surfaces.end(), surface));
     ASSERT(index != _surfaces.end());
+    if (index != _surfaces.end()) {
+        _surfaces.erase(index);
+    }
     _adminLock.Unlock();
 
     RevokeClientInterface(surface);
