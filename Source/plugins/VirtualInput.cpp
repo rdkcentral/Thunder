@@ -728,13 +728,13 @@ namespace PluginHost
     /* virtual */ void IPCUserInput::LookupChanges(const string& linkName)
     {
         uint16_t index = 0;
-        Core::ProxyType<InputDataLink> current(_service[index++]);
+        Core::ProxyType<Core::IPCChannelClientType<InputDataLink, false, false>> current(_service[index++]);
 
         while (current.IsValid() == true) {
-            if (current->Name() == linkName) {
-                current->Reload();
+            if (current->Extension().Name() == linkName) {
+                current->Extension().Reload();
             }
-            current = Core::ProxyType<InputDataLink>(_service[index++]);
+            current = Core::ProxyType<Core::IPCChannelClientType<InputDataLink, false, false>>(_service[index++]);
         }
     }
 
