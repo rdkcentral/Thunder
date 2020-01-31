@@ -650,12 +650,10 @@ inline void Display::Unregister(Display::SurfaceImplementation* surface)
 
     _adminLock.Lock();
 
-    for (auto index = _surfaces.begin(); index != _surfaces.end();) {
-        if (*index == surface) {
-            index = _surfaces.erase(index);
-        } else {
-            index++;
-        }
+    auto index(std::find(_surfaces.begin(), _surfaces.end(), surface));
+    ASSERT(index != _surfaces.end());
+    if (index != _surfaces.end()) {
+        _surfaces.erase(index);
     }
     _adminLock.Unlock();
 
