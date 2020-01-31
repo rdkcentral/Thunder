@@ -182,12 +182,9 @@ namespace Core {
         // Report that the worker is done by releasing the Signal sync mechanism.
         cClassPointer->m_sigExit.SetEvent();
 
-#ifdef __POSIX__
-        ::pthread_exit(nullptr);
+#ifndef __WINDOWS__
         return (nullptr);
-#endif
-
-#ifdef __WINDOWS__
+#else 
         ::ExitThread(0);
 #endif
     }
