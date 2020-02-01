@@ -37,7 +37,7 @@ private:
 private:
     OpenCDMAccessor(const TCHAR domainName[])
         : _refCount(1)
-		, _engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()))
+        , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
         , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), Core::ProxyType<Core::IIPCServer>(_engine)))
         , _remote(nullptr)
         , _adminLock()
@@ -298,7 +298,7 @@ public:
 
 private:
     mutable uint32_t _refCount;
-	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
+    Core::ProxyType<RPC::InvokeServerType<1, 0, 4> > _engine;
     mutable Core::ProxyType<RPC::CommunicatorClient> _client;
     mutable OCDM::IAccessorOCDM* _remote;
     mutable Core::CriticalSection _adminLock;
