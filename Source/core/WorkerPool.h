@@ -9,82 +9,48 @@ namespace WPEFramework {
 
 namespace Core {
 
-    class EXTERNAL WorkerPool {
-    private:
-        WorkerPool() = delete;
-        WorkerPool(const WorkerPool&) = delete;
-        WorkerPool& operator=(const WorkerPool&) = delete;
-
-        class Job {
-        public:
-            Job()
-                : _job()
-            {
-            }
-            Job(const Job& copy)
-                : _job(copy._job)
-            {
-            }
-            Job(const Core::ProxyType<Core::IDispatch>& job)
-                : _job(job)
-            {
-            }
-            ~Job()
-            {
-            }
-            Job& operator=(const Job& RHS)
-            {
-                _job = RHS._job;
-
-                return (*this);
-            }
-
-        public:
-            bool operator==(const Job& RHS) const
-            {
-                return (_job == RHS._job);
-            }
-            bool operator!=(const Job& RHS) const
-            {
-                return (!operator==(RHS));
-            }
-            uint64_t Timed(const uint64_t /* scheduledTime */)
-            {
-               WorkerPool::Instance().Submit(_job);
-                _job.Release();
-
-                // No need to reschedule, just drop it..
-                return (0);
-            }
-            inline void Dispatch()
-            {
-                ASSERT(_job.IsValid() == true);
-                _job->Dispatch();
-                _job.Release();
-            }
-
-        private:
-            Core::ProxyType<Core::IDispatch> _job;
-        };
+    struct EXTERNAL IWorkerPool {
+        virtual ~IWorkerPool() {};
 
         template <typename IMPLEMENTATION>
-        class EXTERNAL DispatcherType : public Core::IDispatch {
-        public:
-            DispatcherType() = delete;
-            DispatcherType(const DispatcherType<IMPLEMENTATION>&) = delete;
-            DispatcherType<IMPLEMENTATION>& operator=(const DispatcherType<IMPLEMENTATION>&) = delete;
+        class JobType {
+        private:
+            class Worker : public Core::IDispatch {
+            public:
+                Worker() = delete;
+                Worker(const Worker&) = delete;
+                Worker& operator=(const Worker&) = delete;
+
+                Worker(JobType<IMPLEMENTATION>* parent) : _parent(*parent) {
+                }
+                ~Worker() override {
+                }
+
+            private:
+                void Dispatch() override {
+                    _parent.Dispatch();
+                }
+
+            private:
+                 JobType<IMPLEMENTATION>& _parent;
+            };
 
         public:
-            DispatcherType(IMPLEMENTATION* parent)
-                : _implementation(*parent)
+            JobType(const JobType<IMPLEMENTATION>&) = delete;
+            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
+            template <typename... Args>
+            JobType(Args... args)
+                : _implementation(args...)
                 , _submitted(false)
+                , _job(this)
             {
+                _job.AddRef();                
             }
-
-            virtual ~DispatcherType()
+            ~JobType()
             {
                 _submitted.store(false, std::memory_order_relaxed);
-                Core::WorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(*this));
+                Core::IWorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                _job.CompositRelease();
             }
 
          public:
@@ -92,7 +58,7 @@ namespace Core {
             {
                 bool expected = false;
                 if (_submitted.compare_exchange_strong(expected, true) == true) {
-                    Core::WorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(*this));
+                    Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(&_job, &_job));
                 }
             }
 
@@ -106,58 +72,11 @@ namespace Core {
             }
 
         private:
-            IMPLEMENTATION& _implementation;
+            IMPLEMENTATION _implementation;
             std::atomic<bool> _submitted;
+            ProxyObject<Worker> _job;
         };
 
-    protected:
-        class Minion : public Core::Thread {
-        private:
-            Minion(const Minion&) = delete;
-            Minion& operator=(const Minion&) = delete;
-
-        public:
-            Minion()
-                : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
-                , _parent(nullptr)
-                , _index(0)
-            {
-            }
-            Minion(const uint32_t stackSize)
-                : Core::Thread(stackSize, nullptr)
-                , _parent(nullptr)
-                , _index(0)
-            {
-            }
-            virtual ~Minion()
-            {
-                Stop();
-                Wait(Core::Thread::STOPPED, Core::infinite);
-            }
-
-        public:
-            void Set(WorkerPool& parent, const uint8_t index)
-            {
-                _parent = &parent;
-                _index = index;
-            }
-
-        private:
-            virtual uint32_t Worker() override
-            {
-                _parent->Process(_index);
-                Block();
-                return (Core::infinite);
-            }
-
-        private:
-            WorkerPool* _parent;
-            uint8_t _index;
-        };
-
-        typedef Core::QueueType<Job> MessageQueue;
-
-    public:
         struct Metadata {
             uint32_t Pending;
             uint32_t Occupation;
@@ -165,140 +84,149 @@ namespace Core {
             uint32_t* Slot;
         };
 
-    public:
-	static WorkerPool& Instance() {
-            ASSERT(_instance != nullptr);
-            return (*_instance);
-	}
-	static bool IsAvailable() {
-            return (_instance != nullptr);
-	}
-        ~WorkerPool();
+	static void Assign(IWorkerPool* instance);
+	static IWorkerPool& Instance();
+	static bool IsAvailable();
+
+        virtual ThreadId Id(const uint8_t index) const = 0;
+        virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
+        virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;
+        virtual void Join() = 0;
+        virtual const Metadata& Snapshot() const = 0;
+    };
+
+    class WorkerPool : public IWorkerPool {
+    private:
+        class Timer {
+        public:
+            Timer& operator=(const Timer& RHS) = delete;
+            Timer()
+                : _job()
+                , _pool(nullptr)
+            {
+            }
+            Timer(const Timer& copy)
+                : _job(copy._job)
+                , _pool(copy._pool)
+            {
+            }
+            Timer(IWorkerPool* pool, const Core::ProxyType<Core::IDispatch>& job)
+                : _job(job)
+                , _pool(pool)
+            {
+            }
+            ~Timer()
+            {
+            }
+
+        public:
+            bool operator==(const Timer& RHS) const
+            {
+                return (_job == RHS._job);
+            }
+            bool operator!=(const Timer& RHS) const
+            {
+                return (!operator==(RHS));
+            }
+            uint64_t Timed(const uint64_t /* scheduledTime */)
+            {
+                ASSERT (_pool != nullptr);
+                _pool->Submit(_job);
+                _job.Release();
+
+                // No need to reschedule, just drop it..
+                return (0);
+            }
+
+        private:
+            Core::ProxyType<Core::IDispatch> _job;
+            IWorkerPool* _pool;
+        };
 
     public:
-        inline void Submit(const Core::ProxyType<Core::IDispatch>& job)
+        WorkerPool(const WorkerPool&) = delete;
+        WorkerPool& operator=(const WorkerPool&) = delete;
+
+        WorkerPool(const uint8_t threadCount, const uint32_t stackSize, const uint32_t queueSize) 
+            : _threadPool(threadCount, stackSize, queueSize)
+            , _external(_threadPool.Queue())
+            , _timer(1024 * 1024, _T("WorkerPoolType::Timer"))
+            , _metadata() 
+            , _joined(0)
         {
-            _handleQueue.Insert(Job(job), Core::infinite);
+            _metadata.Slots = threadCount + 1;
+            _metadata.Slot = new uint32_t [threadCount + 1];
+
+            _threadPool.Run();
         }
-        inline void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job)
-        {
-            _timer.Schedule(time, Job(job));
-        }
-        inline uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite)
-        {
-            Job compare(job);
-            return (_timer.Revoke(compare) == true || _handleQueue.Remove(compare) ? Core::ERROR_NONE : Core::ERROR_UNAVAILABLE);
-        }
-        inline const WorkerPool::Metadata& Snapshot()
-        {
-            _metadata.Occupation = _occupation.load();
-            _metadata.Pending = _handleQueue.Length();
-            return (_metadata);
-        }
-	void Join() {
-            Process(0);
-	}
-        void Run()
-        {
-            _handleQueue.Enable();
-            for (uint8_t index = 1; index < _metadata.Slots; index++) {
-                Minion& minion = Index(index);
-                minion.Set(*this, index);
-                minion.Run();
-            }
-        }
-        void Stop()
-        {
-            _handleQueue.Disable();
-            for (uint8_t index = 1; index < _metadata.Slots; index++) {
-                Minion& minion = Index(index);
-                minion.Block();
-                minion.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED, Core::infinite);
-            }
+        ~WorkerPool() {
+            _threadPool.Stop();
+            delete [] _metadata.Slot;
         }
 
-        inline ThreadId Id(const uint8_t index) const {
-            ThreadId result = 0;
+    public:
+        void Submit(const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            _threadPool.Submit(job, Core::infinite);
+        }
+        void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) override
+        {
+            _timer.Schedule(time, Timer(this, job));
+        }
+        uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) override
+        {
+            _timer.Revoke(Timer(this, job));
+
+            uint32_t result = _threadPool.Revoke (job, waitTime);
+
+            uint32_t outcome = _external.Completed(job, waitTime);
+
+            return (outcome != Core::ERROR_NONE ? outcome : result);
+        }
+	void Join() override {
+            _joined = Thread::ThreadId();
+            _external.Process();
+            _joined = 0;
+	}
+        ::ThreadId Id(const uint8_t index) const override {
+            ThreadId result = ~0;
 
             if (index == 0) {
                 result = _timer.ThreadId();
             }
             else if (index == 1) {
-                result = 0;
+                result = _joined;
             }
-            else if (index < _metadata.Slots) {
-                result = const_cast<WorkerPool&>(*this).Index(index - 1).ThreadId();
+            else if ((index-2) < _threadPool.Count()) {
+                result = _threadPool.Id(index-2);
             }
 
             return (result);
         }
+        virtual const Metadata& Snapshot() const {
+            
+            _metadata.Pending = _threadPool.Pending();
+            _metadata.Occupation = _threadPool.Active();
+            _metadata.Slot[0] = _external.Runs();
 
-    protected:
-        WorkerPool(const uint8_t threadCount, uint32_t* counters);
+            _threadPool.Runs(_threadPool.Count(), &(_metadata.Slot[1]));
 
-        virtual Minion& Index(const uint8_t index) = 0;
-        virtual bool Running() = 0;
-
-        void Process(const uint8_t index)
-        {
-            Job newRequest;
-
-            while ((Running() == true) && (_handleQueue.Extract(newRequest, Core::infinite) == true)) {
-
-                _metadata.Slot[index]++;
-
-                _occupation++;
-
-                newRequest.Dispatch();
-
-                _occupation--;
-            }
+            return (_metadata);
+        }
+        void Run() {
+            _threadPool.Run();
+        }
+        void Stop () {
+            _threadPool.Stop();
         }
 
     private:
-        MessageQueue _handleQueue;
-        std::atomic<uint8_t> _occupation;
-        Core::TimerType<Job> _timer;
-        Metadata _metadata;
-        static WorkerPool* _instance;
-    };
-
-    template <const uint8_t THREAD_COUNT>
-    class WorkerPoolType : public WorkerPool {
-    private:
-        WorkerPoolType() = delete;
-        WorkerPoolType(const WorkerPoolType<THREAD_COUNT>&) = delete;
-        WorkerPoolType<THREAD_COUNT>& operator=(const WorkerPoolType<THREAD_COUNT>&) = delete;
-
-    public:
-        WorkerPoolType(const uint32_t stackSize)
-            : WorkerPool(THREAD_COUNT, &(_counters[0]))
-            , _minions()
-        {
-        }
-        virtual ~WorkerPoolType()
-        {
-            Stop();
-        }
-
-        inline uint32_t ThreadId(const uint8_t index) const 
-        {
-            return (((index > 0) && (index < THREAD_COUNT)) ? _minions[index-1].ThreadId() : static_cast<uint32_t>(~0));
-        }
-
-    private:
-        virtual Minion& Index(const uint8_t index) override 
-        {
-            return (_minions[index-1]);
-        }
-        virtual bool Running() override
-        {
-            return (true);
-        }
-
-    private:
-        Minion _minions[THREAD_COUNT - 1];
-        uint32_t _counters[THREAD_COUNT];
+        ThreadPool _threadPool;
+        ThreadPool::Minion _external;
+        Core::TimerType<Timer> _timer;
+        mutable Metadata _metadata;
+        ::ThreadId _joined;
     };
 }
 }

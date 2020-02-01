@@ -72,13 +72,7 @@ namespace Core {
         }
 
     public:
-        inline ProxyService()
-            : CONTEXT()
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-		template <typename... Args>
+	template <typename... Args>
         inline ProxyService(Args... args)
             : CONTEXT(args...)
             , m_RefCount(0)
@@ -226,11 +220,7 @@ namespace Core {
         }
 
     public:
-        inline ProxyObject()
-            : ProxyService<CONTEXT>()
-        {
-        }
-		template <typename... Args>
+	template <typename... Args>
         inline ProxyObject(Args... args)
             : ProxyService <CONTEXT>(args...)
         {

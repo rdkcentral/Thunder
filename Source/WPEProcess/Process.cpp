@@ -88,26 +88,19 @@ namespace Process {
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
-            : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
-            , _minions()
+        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
+            : WorkerPool(threads - 1, stackSize, queueSize)
             , _announceHandler(nullptr)
             , _administration(Core::ServiceAdministrator::Instance())
         {
-            for (uint8_t index = 1; index < threads; index++) {
-                _minions.emplace_back();
-            }
-
             if (threads > 1) {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
         }
         ~WorkerPoolImplementation()
         {
-            // Diable the queue so the minions can stop, even if they are processing and waiting for work..
-            Stop();
-            _minions.clear();
-            delete Snapshot().Slot;
+            // Disable the queue so the minions can stop, even if they are processing and waiting for work..
+            Core::WorkerPool::Stop();
         }
         void Announcements(Core::IIPCServer* announces)
         {
@@ -119,25 +112,9 @@ namespace Process {
             Core::WorkerPool::Run();
             Core::WorkerPool::Join();
         }
-        void Stop() {
-            Core::WorkerPool::Stop();
-	}
 
     protected:
-        virtual Core::WorkerPool::Minion& Index(const uint8_t index) override {
-            uint8_t count = index;
-            std::list<Core::WorkerPool::Minion>::iterator element (_minions.begin());
-
-            while ((element != _minions.end()) && (count > 1)) {
-                count--;
-                element++;
-            }
-
-            ASSERT (element != _minions.end());
-
-            return (*element);
-        }
-        virtual bool Running() override {
+        bool Running() {
             // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
             _administration.FlushLibraries();
 
@@ -153,7 +130,6 @@ namespace Process {
         }
  
     private:
-        std::list<Core::WorkerPool::Minion> _minions;
         Core::IIPCServer* _announceHandler;
         Core::ServiceAdministrator& _administration;
     };
@@ -442,7 +418,11 @@ int main(int argc, char** argv)
             }
 
             // Seems like we have enough information, open up the Process communcication Channel.
-            Core::ProxyType<Process::WorkerPoolImplementation> invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize());
+            Core::ProxyType<Process::WorkerPoolImplementation> invokeServer = Core::ProxyType<Process::WorkerPoolImplementation>::Create(options.Threads, Core::Thread::DefaultStackSize(), 16);
+
+            // Whenever someone is looking for a WorkerPool, here it is, register it..
+            Core::IWorkerPool::Assign(&(*invokeServer));
+
             _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(invokeServer)));
             invokeServer->Announcements(_server->Announcement());
 
@@ -474,6 +454,9 @@ int main(int argc, char** argv)
                     TRACE_L1("Could not open the connection, error (%d)", result);
                 }
             }
+
+            // We are going to tear down the stugg. Unregistere the Worker Pool
+            Core::IWorkerPool::Assign(nullptr);
         }
     }
 
