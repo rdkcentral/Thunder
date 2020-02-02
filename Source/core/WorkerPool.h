@@ -38,8 +38,9 @@ namespace Core {
         public:
             JobType(const JobType<IMPLEMENTATION>&) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
+
             template <typename... Args>
-            JobType(Args... args)
+            JobType(Args&&... args)
                 : _implementation(args...)
                 , _submitted(false)
                 , _job(this)
@@ -60,6 +61,12 @@ namespace Core {
                 if (_submitted.compare_exchange_strong(expected, true) == true) {
                     Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(&_job, &_job));
                 }
+            }
+            IMPLEMENTATION& Job() {
+                return(_implementation);
+            }
+            const IMPLEMENTATION& Job() const {
+                return(_implementation);
             }
 
         private:
@@ -88,7 +95,7 @@ namespace Core {
 	static IWorkerPool& Instance();
 	static bool IsAvailable();
 
-        virtual ThreadId Id(const uint8_t index) const = 0;
+        virtual ::ThreadId Id(const uint8_t index) const = 0;
         virtual void Submit(const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
         virtual uint32_t Revoke(const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime = Core::infinite) = 0;

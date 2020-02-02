@@ -253,6 +253,37 @@ namespace Core {
     public:
         typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
 
+        template<typename PARENT>
+        class JobType : public Core::IDispatch {
+        protected:
+            JobType(PARENT& parent)
+                : _parent(parent)
+            {
+            }
+
+        public:
+            JobType() = delete;
+            JobType(const JobType<PARENT>& copy) = delete;
+            JobType<PARENT>& operator=(const JobType<PARENT>& RHS) = delete;
+
+            static Core::ProxyType<Core::IDispatch> Create(PARENT& parent) {
+                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType< JobType< PARENT> >::Create(parent)));
+            }
+
+            ~JobType() override
+            {
+            }
+
+        public:
+            void Dispatch() override
+            {
+                _parent.Dispatch();
+            }
+
+        private:
+            PARENT& _parent;
+        };
+
         class EXTERNAL Minion {
         public:
             Minion(const Minion&) = delete;
