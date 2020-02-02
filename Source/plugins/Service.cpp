@@ -43,9 +43,9 @@ namespace PluginHost {
         }
     }
 
-    /* static */ Core::ProxyType<Core::IDispatchType<void>> IShell::Job::Create(IShell* shell, IShell::state toState, IShell::reason why)
+    /* static */ Core::ProxyType<Core::IDispatch> IShell::Job::Create(IShell* shell, IShell::state toState, IShell::reason why)
     {
-        return (Core::proxy_cast<Core::IDispatchType<void>>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
+        return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
     Factories::Factories()

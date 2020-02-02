@@ -73,7 +73,7 @@ namespace Core {
 
     public:
 	template <typename... Args>
-        inline ProxyService(Args... args)
+        inline ProxyService(Args&&... args)
             : CONTEXT(args...)
             , m_RefCount(0)
         {
@@ -221,8 +221,8 @@ namespace Core {
 
     public:
 	template <typename... Args>
-        inline ProxyObject(Args... args)
-            : ProxyService <CONTEXT>(args...)
+        inline ProxyObject(Args&&... args)
+            : ProxyService <CONTEXT>(std::forward<Args>(args)...)
         {
         }
         virtual ~ProxyObject()
@@ -303,13 +303,13 @@ namespace Core {
 
     public:
         template <typename... Args>
-        inline static ProxyType<CONTEXT> Create(Args... args)
+        inline static ProxyType<CONTEXT> Create(Args&&... args)
         {
             return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), 0, std::forward<Args>(args)...));
         }
 
         template <typename... Args>
-		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args... args)
+		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
         {
             return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), size, std::forward<Args>(args)...));
         }
@@ -416,12 +416,12 @@ namespace Core {
         }
 
         template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args... args)
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args&&... args)
         {
             return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
         }
         template <typename... Args>
-        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args... args)
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args&&... args)
         {
             return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
         }
