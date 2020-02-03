@@ -44,5 +44,12 @@ net use w: "\\localhost\c$\Users\Me\Thunder\artifacts"
 Before the first run make sure you creat a volatile and a peritent directory
 here mkdir w:\Temp and mkdir w:\Persistent.
 
-If yuo want to use the Thunder UI page, copy the ThunderUI\build\* to 
+If you want to use the Thunder UI page, copy the ThunderUI\build\* to 
 W:\<build type>\Controller\UI
+
+Depending on the filesystem used by the windows OS, symbolic links are supported 
+or not. There is 1 Symbolic link in the Thuder repository (Thunder/Source/tools
+-> "../Tools"). If this symbolic link does not exist, you will experience build 
+errors (error 2, GenrateProxyStub.py not found). 
+or create a copy of the Tools directory in Source/tools (xcopy /d ..\Tools tools)
+or create the symlink manually (mklink /D tools "..\Tools")
