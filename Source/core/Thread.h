@@ -1,23 +1,3 @@
-// ===========================================================================
-//
-// Filename:    thread.h
-//
-// Description: Header file for the Posix thread functions. This class
-//              encapsulates all posix thread functionality defined by the
-//              system.
-//              Note: once the thread is started, it can be stopped only
-//                    once. Since there is not a good Posix interface to
-//                    suspend a thread and to resume it again, the class
-//                    shows this limited, one time start, one time stop
-//                    ability. The stop is actually a pthread_cancel call.
-//
-// History
-//
-// Author        Reason                                             Date
-// ---------------------------------------------------------------------------
-// P. Wielders   Initial creation                                   2002/05/24
-//
-// ===========================================================================
 #ifndef __THREAD_H
 #define __THREAD_H
 
@@ -253,35 +233,91 @@ namespace Core {
     public:
         typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
 
-        template<typename PARENT>
-        class JobType : public Core::IDispatch {
-        protected:
-            JobType(PARENT& parent)
-                : _parent(parent)
+        template<typename IMPLEMENTATION>
+        class JobType {
+        private:
+            enum state : uint8_t {
+                IDLE,
+                SUBMITTED
+            };
+
+            class Worker : public Core::IDispatch {
+            public:
+                Worker() = delete;
+                Worker(const Worker&) = delete;
+                Worker& operator=(const Worker&) = delete;
+
+                Worker(JobType<IMPLEMENTATION>& parent) : _parent(parent) {
+                }
+                ~Worker() override {
+                }
+
+            private:
+                void Dispatch() override {
+                    _parent.Dispatch();
+                }
+
+            private:
+                 JobType<IMPLEMENTATION>& _parent;
+            };
+
+        public:
+            JobType(const JobType<IMPLEMENTATION>& copy) = delete;
+            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
+
+            template <typename... Args>
+            JobType(Args&&... args)
+                : _implementation(args...)
+                , _state(IDLE)
+                , _job(*this)
             {
+                _job.AddRef();
+            }
+            ~JobType()
+            {
+                ASSERT (_state == IDLE);
+                _job.CompositRelease();
             }
 
         public:
-            JobType() = delete;
-            JobType(const JobType<PARENT>& copy) = delete;
-            JobType<PARENT>& operator=(const JobType<PARENT>& RHS) = delete;
+            Core::ProxyType<Core::IDispatch> Aquire() {
 
-            static Core::ProxyType<Core::IDispatch> Create(PARENT& parent) {
-                return (Core::ProxyType<Core::IDispatch>(Core::ProxyType< JobType< PARENT> >::Create(parent)));
+                state expected = IDLE;
+                Core::ProxyType<Core::IDispatch> result;
+
+                if (_state.compare_exchange_strong(expected, SUBMITTED) == true) {
+                    result = Core::ProxyType<Core::IDispatch>(&_job, &_job);
+                }
+
+                return (result);
             }
+            Core::ProxyType<Core::IDispatch> Reset() {
 
-            ~JobType() override
-            {
+                state expected = SUBMITTED;
+                _state.compare_exchange_strong(expected, IDLE);
+
+                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
             }
-
-        public:
-            void Dispatch() override
-            {
-                _parent.Dispatch();
+            operator IMPLEMENTATION& () {
+                return (_implementation);
+            }
+            operator const IMPLEMENTATION& () const {
+                return (_implementation);
             }
 
         private:
-            PARENT& _parent;
+            void Dispatch()
+            {
+                state expected = SUBMITTED;
+                if (_state.compare_exchange_strong(expected, IDLE) == true) {
+                    _implementation.Dispatch();
+                }
+            }
+
+        private:
+            IMPLEMENTATION _implementation;
+            std::atomic<state> _state;
+            ProxyObject<Worker> _job;
         };
 
         class EXTERNAL Minion {

@@ -13,75 +13,45 @@ namespace Core {
         virtual ~IWorkerPool() {};
 
         template <typename IMPLEMENTATION>
-        class JobType {
-        private:
-            class Worker : public Core::IDispatch {
-            public:
-                Worker() = delete;
-                Worker(const Worker&) = delete;
-                Worker& operator=(const Worker&) = delete;
-
-                Worker(JobType<IMPLEMENTATION>* parent) : _parent(*parent) {
-                }
-                ~Worker() override {
-                }
-
-            private:
-                void Dispatch() override {
-                    _parent.Dispatch();
-                }
-
-            private:
-                 JobType<IMPLEMENTATION>& _parent;
-            };
-
+        class JobType : public ThreadPool::JobType<IMPLEMENTATION> {
         public:
             JobType(const JobType<IMPLEMENTATION>&) = delete;
             JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>&) = delete;
 
             template <typename... Args>
             JobType(Args&&... args)
-                : _implementation(args...)
-                , _submitted(false)
-                , _job(this)
+                : ThreadPool::JobType<IMPLEMENTATION>(std::forward<Args>(args)...)
             {
-                _job.AddRef();                
             }
             ~JobType()
             {
-                _submitted.store(false, std::memory_order_relaxed);
-                Core::IWorkerPool::Instance().Revoke(Core::ProxyType<Core::IDispatch>(&_job, &_job));
-                _job.CompositRelease();
+                Core::IWorkerPool::Instance().Revoke(ThreadPool::JobType<IMPLEMENTATION>::Reset());
             }
 
          public:
             void Submit()
             {
-                bool expected = false;
-                if (_submitted.compare_exchange_strong(expected, true) == true) {
-                    Core::IWorkerPool::Instance().Submit(Core::ProxyType<Core::IDispatch>(&_job, &_job));
+                Core::ProxyType<Core::IDispatch> job (ThreadPool::JobType<IMPLEMENTATION>::Aquire());
+
+                if (job.IsValid()) {
+                    Core::IWorkerPool::Instance().Submit(job);
                 }
             }
-            IMPLEMENTATION& Job() {
-                return(_implementation);
-            }
-            const IMPLEMENTATION& Job() const {
-                return(_implementation);
-            }
-
-        private:
-            virtual void Dispatch()
+            bool Schedule(const Core::Time& time)
             {
-                bool expected = true;
-                if (_submitted.compare_exchange_strong(expected, false) == true) {
-                    _implementation.Dispatch();
-                }
-            }
+                bool result = false;
+                Core::ProxyType<Core::IDispatch> job (ThreadPool::JobType<IMPLEMENTATION>::Aquire());
 
-        private:
-            IMPLEMENTATION _implementation;
-            std::atomic<bool> _submitted;
-            ProxyObject<Worker> _job;
+                if (job.IsValid()) {
+                    Core::IWorkerPool::Instance().Schedule(time, job);
+                    result = true;
+                }
+                return (result);
+            }
+            void Revoke () 
+            {
+                Core::IWorkerPool::Instance().Revoke(ThreadPool::JobType<IMPLEMENTATION>::Reset());
+            }
         };
 
         struct Metadata {
