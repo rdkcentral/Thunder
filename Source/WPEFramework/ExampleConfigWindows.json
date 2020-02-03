@@ -27,12 +27,12 @@
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
-        "sleep": "1",
-        "crash": true
+        "sleep": "10000",
+        "crash": false
       }
     },
     {

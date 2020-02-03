@@ -7,98 +7,154 @@ MODULE_NAME_DECLARATION(BUILD_REFERENCE)
 
 namespace WPEFramework {
 
-    static std::list<Core::Library> _proxyStubs;
-	static Core::ProxyType<RPC::CommunicatorClient> _server;
+static std::list<Core::Library> _proxyStubs;
+static Core::ProxyType<RPC::CommunicatorClient> _server;
 
-    class ExitHandler : public Core::Thread {
-    private:
-        ExitHandler(const ExitHandler&) = delete;
-        ExitHandler& operator=(const ExitHandler&) = delete;
+class ExitHandler : public Core::Thread {
+private:
+    ExitHandler(const ExitHandler&) = delete;
+    ExitHandler& operator=(const ExitHandler&) = delete;
 
-    public:
-        ExitHandler()
-            : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
-        {
-        }
-        virtual ~ExitHandler()
-        {
-            Stop();
-            Wait(Core::Thread::STOPPED, Core::infinite);
-        }
+public:
+    ExitHandler()
+        : Core::Thread(Core::Thread::DefaultStackSize(), nullptr)
+    {
+    }
+    virtual ~ExitHandler()
+    {
+        Stop();
+        Wait(Core::Thread::STOPPED, Core::infinite);
+    }
 
-        static void Construct()
-        {
-            _adminLock.Lock();
-            if (_instance == nullptr) {
-                _instance = new ExitHandler();
-                _instance->Run();
-            }
-            _adminLock.Unlock();
+    static void Construct()
+    {
+        _adminLock.Lock();
+        if (_instance == nullptr) {
+            _instance = new ExitHandler();
+            _instance->Run();
         }
-        static void Destruct()
-        {
-            _adminLock.Lock();
-            if (_instance != nullptr) {
-                delete _instance; //It will wait till the worker execution completed
-                _instance = nullptr;
-            } else {
-                CloseDown();
-            }
-            _adminLock.Unlock();
-        }
-
-    private:
-        virtual uint32_t Worker() override
-        {
+        _adminLock.Unlock();
+    }
+    static void Destruct()
+    {
+        _adminLock.Lock();
+        if (_instance != nullptr) {
+            delete _instance; //It will wait till the worker execution completed
+            _instance = nullptr;
+        } else {
             CloseDown();
-            Block();
-            return (Core::infinite);
         }
-        static void CloseDown()
-        {
-            TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+        _adminLock.Unlock();
+    }
 
-            if (_server.IsValid() == true) {
+private:
+    virtual uint32_t Worker() override
+    {
+        CloseDown();
+        Block();
+        return (Core::infinite);
+    }
+    static void CloseDown()
+    {
+        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
 
-                // We are done, close the channel and unregister all shit we added...
-                _server->Close(2 * RPC::CommunicationTimeOut);
+        if (_server.IsValid() == true) {
 
-                _proxyStubs.clear();
+            // We are done, close the channel and unregister all shit we added...
+            _server->Close(2 * RPC::CommunicationTimeOut);
 
-                _server.Release();
-            }
+            _proxyStubs.clear();
 
-            Core::Singleton::Dispose();
-            TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+            _server.Release();
         }
 
-    private:
-        static ExitHandler* _instance;
-        static Core::CriticalSection _adminLock;
-    };
+        Core::Singleton::Dispose();
+        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
+    }
 
-    ExitHandler* ExitHandler::_instance = nullptr;
-    Core::CriticalSection ExitHandler::_adminLock;
+private:
+    static ExitHandler* _instance;
+    static Core::CriticalSection _adminLock;
+};
+
+ExitHandler* ExitHandler::_instance = nullptr;
+Core::CriticalSection ExitHandler::_adminLock;
 
 namespace Process {
 
     class WorkerPoolImplementation : public Core::IIPCServer, public Core::WorkerPool {
+    private:
+        class Sink : public Core::ServiceAdministrator::ICallback {
+        public:
+            Sink() = delete;
+            Sink(const Sink&) = delete;
+            Sink& operator= (const Sink&) = delete;
+
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
+            Sink(WorkerPoolImplementation& parent) 
+                : _parent(parent)
+                , _job(*this) 
+            {
+            }
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
+            ~Sink() override
+            {
+            }
+
+        public:
+            void Dispatch() {
+                Core::ServiceAdministrator::Instance().FlushLibraries();
+
+                if (Core::ServiceAdministrator::Instance().Instances() == 0) {
+                    // Seems there is no more live here, time to signal the
+                    // WorkerPool to quit running and close down...
+                    _parent.Shutdown();
+                }
+            }
+            void Destructed() override {
+                Core::ProxyType<Core::IDispatch> job(_job.Aquire());
+
+                if (job.IsValid() == true) {
+                    _parent.Submit(job);
+                }
+            }
+
+        private:
+            WorkerPoolImplementation& _parent;
+            Core::ThreadPool::JobType<Sink&> _job;
+        };
+
     public:
         WorkerPoolImplementation() = delete;
         WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
         WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
+#ifdef __WINDOWS__
+#pragma warning(disable : 4355)
+#endif
         WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize, const uint32_t queueSize)
             : WorkerPool(threads - 1, stackSize, queueSize)
             , _announceHandler(nullptr)
-            , _administration(Core::ServiceAdministrator::Instance())
+            , _sink(*this)
         {
+            Core::ServiceAdministrator::Instance().Callback(&_sink);
+
             if (threads > 1) {
                 SYSLOG(Logging::Notification, ("Spawned: %d additional minions.", threads - 1));
             }
         }
+#ifdef __WINDOWS__
+#pragma warning(default : 4355)
+#endif
+
         ~WorkerPoolImplementation()
         {
+            Core::ServiceAdministrator::Instance().Callback(nullptr);
+
             // Disable the queue so the minions can stop, even if they are processing and waiting for work..
             Core::WorkerPool::Stop();
         }
@@ -107,20 +163,15 @@ namespace Process {
             ASSERT((announces != nullptr) ^ (_announceHandler != nullptr));
             _announceHandler = announces;
         }
-        void Run() {
- 
+        void Run()
+        {
+
             Core::WorkerPool::Run();
             Core::WorkerPool::Join();
         }
 
     protected:
-        bool Running() {
-            // This call might have killed the last living object in our process, if so, commit HaraKiri :-)
-            _administration.FlushLibraries();
-
-            return (_administration.Instances() > 0);
-	}
-        virtual void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
+        void Procedure(Core::IPCChannel& channel, Core::ProxyType<Core::IIPC>& data) override
         {
             Core::ProxyType<RPC::Job> job(RPC::Job::Instance());
 
@@ -128,10 +179,14 @@ namespace Process {
 
             WorkerPool::Submit(Core::ProxyType<Core::IDispatch>(job));
         }
- 
+        void Shutdown()
+        {
+            Core::WorkerPool::Shutdown();
+        }
+
     private:
         Core::IIPCServer* _announceHandler;
-        Core::ServiceAdministrator& _administration;
+        Sink _sink;
     };
 
     class ConsoleOptions : public Core::Options {
@@ -180,13 +235,13 @@ namespace Process {
         uint32_t EnabledLoggings;
 
     private:
-        string Strip(const TCHAR text[]) const {
+        string Strip(const TCHAR text[]) const
+        {
             int length = static_cast<int>(strlen(text));
             if (length > 0) {
                 if (*text != '"') {
                     return (string(text, length));
-                }
-                else {
+                } else {
                     return (string(&text[1], (length > 2 ? length - 2 : length - 1)));
                 }
             }
@@ -339,18 +394,18 @@ int main(int argc, char** argv)
     } else {
         TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
 #ifndef __WINDOWS__
-            struct sigaction sa;
-            memset(&sa, 0, sizeof(struct sigaction));
-            sigemptyset(&sa.sa_mask);
-            sa.sa_handler = ExitDaemonHandler;
-            sa.sa_flags = 0; // not SA_RESTART!;
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(struct sigaction));
+        sigemptyset(&sa.sa_mask);
+        sa.sa_handler = ExitDaemonHandler;
+        sa.sa_flags = 0; // not SA_RESTART!;
 
-            sigaction(SIGINT, &sa, nullptr);
-            sigaction(SIGTERM, &sa, nullptr);
+        sigaction(SIGINT, &sa, nullptr);
+        sigaction(SIGTERM, &sa, nullptr);
 #ifdef __DEBUG__
-            sigaction(SIGSEGV, &sa, nullptr);
+        sigaction(SIGSEGV, &sa, nullptr);
 #endif
-            sigaction(SIGQUIT, &sa, nullptr);
+        sigaction(SIGQUIT, &sa, nullptr);
 #endif
     }
 

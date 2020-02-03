@@ -367,9 +367,12 @@ namespace Core {
             {
                 while (_queue.Extract(_currentRequest, Core::infinite) == true) {
 
+                    ASSERT(_currentRequest.IsValid() == true);
+
                     _runs++;
 
                     _currentRequest->Dispatch();
+                    _currentRequest.Release();
 
                     // if someone is observing this run, (WaitForCompletion) make sure that
                     // thread, sees that his object was running and is now completed.
@@ -410,6 +413,7 @@ namespace Core {
             }
             ~Executor() override
             {
+                Thread::Stop();
                 Wait(Core::Thread::STOPPED, Core::infinite);
             }
 
@@ -455,6 +459,7 @@ namespace Core {
             }
         }
         ~ThreadPool() {
+            Stop();
             _units.clear();
         }
 

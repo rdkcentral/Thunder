@@ -49,6 +49,8 @@ namespace Core {
 
     private:
         void AddRef();
+
+        friend class ServiceAdministrator;
         uint32_t Release();
 
     private:
