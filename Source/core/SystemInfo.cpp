@@ -323,7 +323,17 @@ namespace Core {
 
         time_t value = mktimegm(&setTime);
 
+#if defined(__GNU_LIBRARY__)
+  #if (__GLIBC__ >= 2) && (__GLIBC_MINOR__ > 30)
+        timespec ts = {};
+        ts.tv_sec = value;
+        if (clock_settime(CLOCK_REALTIME, &ts) != 0){
+  #else
         if (stime(&value) != 0) {
+  #endif
+#else
+        if (stime(&value) != 0) {
+#endif
             TRACE_L1("Failed to set system time [%d]", errno);
         } else {
             TRACE_L1("System time updated [%d]", errno);
