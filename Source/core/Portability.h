@@ -85,6 +85,7 @@
 #include <string>
 #include <windows.h>
 #include <unordered_map>
+#include <atomic>
 
 #define AF_NETLINK 16
 
@@ -183,6 +184,7 @@ typedef std::string string;
 #ifdef __LINUX__
 
 #include <algorithm>
+#include <atomic>
 #include <alloca.h>
 #include <arpa/inet.h>
 #include <assert.h>

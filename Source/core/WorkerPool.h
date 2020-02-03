@@ -167,7 +167,7 @@ namespace Core {
             _joined = 0;
 	}
         ::ThreadId Id(const uint8_t index) const override {
-            ThreadId result = ~0;
+            ::ThreadId result = reinterpret_cast<::ThreadId>(~0);
 
             if (index == 0) {
                 result = _timer.ThreadId();

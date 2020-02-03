@@ -5,6 +5,7 @@
 
 #include "IAction.h"
 #include "Module.h"
+#include "Portability.h"
 #include "Proxy.h"
 #include "Queue.h"
 #include "StateTrigger.h"
@@ -460,7 +461,7 @@ namespace Core {
     public:
         uint8_t Count() const
         {
-            return (_units.size());
+            return (static_cast<uint8_t>(_units.size()));
         }
         uint32_t Pending() const
         {
