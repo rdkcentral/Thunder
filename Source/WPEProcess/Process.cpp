@@ -181,7 +181,7 @@ namespace Process {
 
     private:
         string Strip(const TCHAR text[]) const {
-            int length = strlen(text);
+            int length = static_cast<int>(strlen(text));
             if (length > 0) {
                 if (*text != '"') {
                     return (string(text, length));
