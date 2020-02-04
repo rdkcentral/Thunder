@@ -72,7 +72,7 @@ namespace Core {
         }
 
     public:
-	template <typename... Args>
+        template <typename... Args>
         inline ProxyService(Args&&... args)
             : CONTEXT(args...)
             , m_RefCount(0)
@@ -121,28 +121,31 @@ namespace Core {
             return (*this);
         }
 
-        inline uint32_t Size() const {
+        inline uint32_t Size() const
+        {
             size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
 
             return (*(reinterpret_cast<const uint32_t*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize]))));
         }
 
-        template<typename TYPE>
-        TYPE* Store() {
+        template <typename TYPE>
+        TYPE* Store()
+        {
             size_t size = Size();
             size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
             void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
-            return(reinterpret_cast<TYPE*>(result));
+            return (reinterpret_cast<TYPE*>(result));
         }
 
-        template<typename TYPE>
-        const TYPE* Store() const {
+        template <typename TYPE>
+        const TYPE* Store() const
+        {
             size_t size = Size();
             size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
             const void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
-            return(reinterpret_cast<const TYPE*>(result));
+            return (reinterpret_cast<const TYPE*>(result));
         }
 
         inline bool LastRef() const
@@ -220,9 +223,9 @@ namespace Core {
         }
 
     public:
-	template <typename... Args>
+        template <typename... Args>
         inline ProxyObject(Args&&... args)
-            : ProxyService <CONTEXT>(std::forward<Args>(args)...)
+            : ProxyService<CONTEXT>(std::forward<Args>(args)...)
         {
         }
         virtual ~ProxyObject()
@@ -309,7 +312,7 @@ namespace Core {
         }
 
         template <typename... Args>
-		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
+        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
         {
             return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), size, std::forward<Args>(args)...));
         }
@@ -395,6 +398,11 @@ namespace Core {
             return (m_RefCount);
         }
 
+        void Destroy() {
+            delete m_RefCount;
+            m_RefCount = nullptr;
+        }
+
     private:
         template <typename DERIVED>
         inline void Construct(const ProxyType<DERIVED>& source, const TemplateIntToType<true>&)
@@ -425,7 +433,6 @@ namespace Core {
         {
             return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
         }
-
 
     private:
         mutable IReferenceCounted* m_RefCount;
@@ -965,8 +972,8 @@ namespace Core {
     template <typename PROXYPOOLELEMENT>
     class ProxyPoolType {
     private:
-        template<typename ELEMENT>
-        using PoolElement = typename std::conditional< std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT> >::type; 
+        template <typename ELEMENT>
+        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
 
         template <typename ELEMENT>
         class ProxyObjectType : public PoolElement<ELEMENT> {
@@ -1066,6 +1073,24 @@ namespace Core {
         }
         ~ProxyPoolType()
         {
+            // Clear the created objects..
+            while (_createdElements != 0) {
+                if (_queue.Count() == 0) {
+                    // Give up the slice, we are waiting for ProxyPool 
+                    // objects to return.
+                    TRACE_L1("Pending ProxyPool objects. Waiting for %d objects.", _createdElements);
+                    ::SleepMs(1);
+                } 
+                else {
+                    Core::ProxyType<ProxyPoolElement> listLoad;
+
+                    _createdElements--;
+
+                    _queue.Remove(0, listLoad);
+
+                    listLoad.Destroy();
+                }
+            }
         }
 
     public:

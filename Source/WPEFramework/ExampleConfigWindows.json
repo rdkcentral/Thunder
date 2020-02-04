@@ -13,21 +13,21 @@
   "tracing": [
     {
       "module": "Plugin_OCDM",
-      "enabled": true
+      "enabled": false
     }
   ],
   "plugins": [
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems": [ "Decryption" ]
+        "subsystems": [  ]
       }
     },
     {
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
@@ -42,7 +42,7 @@
       "precondition": [
         "Platform"
       ],
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "acl": "data.json",
         "connector": "127.0.0.1:63000"
@@ -58,7 +58,7 @@
       "callsign": "OpenCDMi",
       "locator": "libOpenCDMi.so",
       "classname": "OCDM",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "connector": "127.0.0.1:7912",
         "root": {
@@ -70,7 +70,7 @@
       "callsign": "Monitor",
       "locator": "libMonitor.so",
       "classname": "Monitor",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "observables": [
           {
@@ -140,7 +140,7 @@
       "configuration": {
         "interval": 30,
         "retries": 20,
-        "source": "jsonip.metrological.com:80"
+        "source": "http://jsonip.metrological.com/?maf=true"
       }
     },
     {
@@ -162,7 +162,7 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
       }
     },
