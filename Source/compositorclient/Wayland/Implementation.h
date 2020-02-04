@@ -47,9 +47,6 @@ namespace Wayland {
             virtual void Attached(const uint32_t id) = 0;
             virtual void Detached(const uint32_t id) = 0;
         };
-        struct IPointer {
-            virtual ~IPointer() {}
-        };
 
     private:
         Display();
@@ -744,6 +741,30 @@ namespace Wayland {
             }
 
             _adminLock.Unlock();
+        }
+
+        void SendPointerPosition(const uint16_t x, const uint16_t y)
+        {
+            _adminLock.Lock();
+
+            if ((_pointerReceiver != nullptr) && (_pointerReceiver->_pointer != nullptr)) {
+              _pointerReceiver->_pointer->Direct(x, y);
+            }
+
+            _adminLock.Unlock();
+
+        }
+
+        void SendPointerButton(const uint8_t button, const IPointer::state action)
+        {
+            _adminLock.Lock();
+
+            if ((_pointerReceiver != nullptr) && (_pointerReceiver->_pointer != nullptr)) {
+              _pointerReceiver->_pointer->Direct(button, action);
+            }
+
+            _adminLock.Unlock();
+
         }
 
         // Wayland related info
