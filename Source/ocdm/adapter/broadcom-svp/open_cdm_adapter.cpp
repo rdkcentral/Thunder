@@ -142,12 +142,15 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         block = NEXUS_MemoryBlock_Clone (reinterpret_cast<NEXUS_MemoryBlockTokenHandle>(*tokenHandle));
         if (!block) {
             TRACE_L1("Memory token alloc error");
+            ::free(encryptedData);
+            goto exit;
         }
         ::free(encryptedData);
         void *opaqueData;
         NEXUS_MemoryBlock_Lock(block, &opaqueData);
         if (!opaqueData) {
             TRACE_L1("Memory token alloc error");
+            goto exit;
         }
 
         svpMeta->u.u3.secbuf_ptr = reinterpret_cast<uintptr_t>(opaqueData);
