@@ -540,6 +540,7 @@ namespace Core {
                         stream[loaded++] = IElement::NullTag[offset++];
                         if (offset == 4) {
                             offset = 0;
+                            break;
                         }
                     } else if (BASETYPE == BASE_DECIMAL) {
                         if ((SIGNED == true) && (_value < 0)) {
@@ -578,9 +579,10 @@ namespace Core {
                     }
                 }
 
-                if (loaded < maxLength) {
+                if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
                     loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
+                   
                 if ((offset != 0) && (loaded < maxLength)) {
                     stream[loaded++] = '\"';
                     offset = 0;
