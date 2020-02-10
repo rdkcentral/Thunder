@@ -1,3 +1,8 @@
+ /*
+ * Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
+ * Licensed under the BSD-3 License"
+ */
+
 #include "Time.h"
 #include <time.h>
 
@@ -745,6 +750,9 @@ namespace Core {
         return (y2 / 4 - y1 / 4) - (y2 / 100 - y1 / 100) + (y2 / 400 - y1 / 400);
     }
 
+    /*
+     * Code adapted from Python 2.4.1 sources (Lib/calendar.py).
+     */
     static time_t mktimegm(const struct tm* tm)
     {
         int year;
