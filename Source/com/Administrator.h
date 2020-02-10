@@ -335,9 +335,11 @@ namespace RPC {
             : _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS)
             , _handler(nullptr)
         {
+            _threadPoolEngine.Run();
         }
         ~InvokeServerType()
         {
+            _threadPoolEngine.Stop();
         }
 
         void Announcements(Core::IIPCServer* announces)

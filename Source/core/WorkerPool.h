@@ -170,7 +170,7 @@ namespace Core {
         }
         ::ThreadId Id(const uint8_t index) const override
         {
-            ::ThreadId result = reinterpret_cast<::ThreadId>(~0);
+            ::ThreadId result = (::ThreadId)(~0);
 
             if (index == 0) {
                 result = _timer.ThreadId();
