@@ -121,7 +121,7 @@ namespace ProcessContainers
 
     CContainer::CPUInfo CContainer::Cpu() const
     {
-        unsigned int cores = std::thread::hardware_concurrency();
+        const unsigned int cores = std::thread::hardware_concurrency();
         CPUInfo cpuInfo;;
 
         // Get total usage
@@ -137,9 +137,7 @@ namespace ProcessContainers
             if (error == ContainerError::ERROR_NONE) {
                 cpuInfo.cores.push_back(usage);
             } else if (error == ContainerError::ERROR_OUT_OF_BOUNDS) {
-                // INTENTIONALLY LEFT WITHOUT WARNING.
-                // In some rare situations it could be hit in non-error way (eg. when container might limit cpus available to process)
-
+                // Out of bounds, lets finish
                 break;
             } else {
                 TRACE_L1("Error occurred while getting cpu usage of thread %d. Error code: %d", i, error);

@@ -54,7 +54,7 @@ struct ProcessContainerMemory {
  * 
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError process_container_logging(const char* logPath, const char* loggingOptions);
+EXTERNAL ContainerError process_container_logging(char* logPath, char* loggingOptions);
 
 
 /**
@@ -84,7 +84,7 @@ EXTERNAL ContainerError process_container_deinitialize();
  *                      container matching provided id will be selected & initialized
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError process_container_create(struct ProcessContainer** container, const char* id, const char** searchPaths, const char* logPath, const char* configuration);
+EXTERNAL ContainerError process_container_create(struct ProcessContainer** container, char* id, char** searchPaths, char* logPath, char* configuration);
 
 /**
  * \brief Destroys a container.
@@ -105,7 +105,7 @@ EXTERNAL ContainerError process_container_destroy(struct ProcessContainer* conta
  * \param params - Null-terminated list of parameters provided to command
  * \return Zero on success, non-zero on error.
  */
-EXTERNAL ContainerError process_container_start(struct ProcessContainer* container, const char* command, const char** params);
+EXTERNAL ContainerError process_container_start(struct ProcessContainer* container, char* command, char** params);
 
 /**
  * \brief Stops a process container.
@@ -149,9 +149,9 @@ EXTERNAL ContainerError process_container_memory_status(struct ProcessContainer*
  * \param threadNum - id core of (0,1,2...) which usage will be returned. 
  *                    If -1 is provided, total CPU usage will be reported. 
  * \param usage - (output) Usage of cpu in nanoseconds
- * \return Zero on success, error-code otherwise
+ * \return Zero on success, error-code otherwise (specificly ERROR_OUT_OF_BOUNDS when threadNum is out of bounds)
  */
-EXTERNAL ContainerError process_container_cpu_usage(struct ProcessContainer* container, const int32_t threadNum, uint64_t* usage);
+EXTERNAL ContainerError process_container_cpu_usage(struct ProcessContainer* container, int32_t threadNum, uint64_t* usage);
 
 /**
  * \brief Returns PID.
@@ -164,9 +164,9 @@ EXTERNAL ContainerError process_container_cpu_usage(struct ProcessContainer* con
 EXTERNAL ContainerError process_container_pid(struct ProcessContainer* container, uint32_t* pid);
 
 /**
- * \brief Number of network interfaces assigned to container.
- * Function gives information about how many network interface
- * the container have
+ * \brief Information about network configuration.
+ * Functions return informations about network of the provided
+ * container
  * 
  * \param container - Container that is checked
  * \param networkStatus - (output) Structure in which current networking informations will be stored.
@@ -176,9 +176,9 @@ EXTERNAL ContainerError process_container_pid(struct ProcessContainer* container
 EXTERNAL ContainerError process_container_network_status_create(struct ProcessContainer* container, struct ProcessContainerNetworkStatus* networkStatus);
 
 /**
- * \brief Releases memory held by ProcessContainerNetworkInterface
+ * \brief Releases resources held by ProcessContainerNetworkInterface
  * 
- * \param networkStatus - (output) network to be destroyed
+ * \param networkStatus - (output) networkstatus to be destroyed
  *  
  * \return Zero on success, error-code otherwise
  */

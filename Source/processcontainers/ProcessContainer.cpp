@@ -11,6 +11,7 @@ namespace ProcessContainers {
         while(iterator.Next() == true) {
             if (iterator.Current()->Id() == id) {
                 result = &(*iterator.Current());
+                break;
             }
         }
 
