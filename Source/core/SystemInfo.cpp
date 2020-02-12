@@ -1,7 +1,3 @@
-/*
- * Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
- * Licensed under the BSD-3 License
- */
 #include "SystemInfo.h"
 #include "FileSystem.h"
 #include "NetworkInfo.h"
@@ -232,6 +228,11 @@ namespace Core {
     }
 
 #if defined(__LINUX__) && !defined(__APPLE__)
+
+/*
+ * Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
+ * Licensed under the BSD-3 License
+ */
 
     // GMT specific version of mktime(), taken from BSD source code
     /* Number of days per month (except for February in leap years). */

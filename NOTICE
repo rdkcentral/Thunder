@@ -2,6 +2,9 @@ Copyright 2020 RDK Management
 Licensed under the Apache License, Version 2.0
 
 Copyright (c) 2008-2013 Kristian Hogsberg
+Copyright © 2013 Rafael Antognolli
+Copyright © 2013 Jasper St. Pierre
+Copyright © 2010-2013 Intel Corporation
 Licensed under the MIT license
 
 Copyright (C) 2006-2015, ARM Limited
@@ -14,11 +17,25 @@ Copyright 2016-2017 TATA ELXSI
 Copyright 2016-2017 Metrological
 Licensed under the Apache License, Version 2.0
 
+Copyright (C) 1995-2013 Jean-loup Gailly
 Copyright (C) 1995-2013 Jean-loup Gailly and Mark Adler
 Licensed under the Zlib license
 
 Copyright 2007, Google Inc.
 Licensed under the BSD-3 license
 
-Copyright (C) 1998 Darin Fisher
+Copyright (C) 1998 Netscape Communications Corporation
 Licensed under the Mozila Public License, Version 1.1
+
+Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
+Licensed under the BSD-3 License
+
+CMake - Cross Platform Makefile Generator is
+Copyright 2000-2020 Kitware, Inc. and Contributors
+Licensed under the BSD-3 license
+
+Copyright (c) Freescale Semiconductor, Inc. All rights reserved.
+Licensed under the BSD-3 license
+
+Copyright (c) 2015 Tobias Becker
+Licensed under the MIT license

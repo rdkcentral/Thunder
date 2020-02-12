@@ -60,35 +60,29 @@ namespace Core {
         public:
             WinSocketInitializer()
             {
-                WORD wVersionRequested;
-                WSADATA wsaData;
-                int err;
+                WORD requestedVersion;
+                WSADATA winsockInfo;
+                int retCode;
 
-                /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
-                wVersionRequested = MAKEWORD(2, 2);
+                // MAKEWORD(lowbyte, highbyte) - this macro is in Windef.h
+                requestedVersion = MAKEWORD(2, 2);
 
-                err = WSAStartup(wVersionRequested, &wsaData);
-                if (err != 0) {
-                    /* Tell the user that we could not find a usable */
-                    /* Winsock DLL.                                  */
-                    printf("WSAStartup failed with error: %d\n", err);
+                retCode = WSAStartup(requestedVersion, &winsockInfo);
+                if (retCode != 0) {
+                    /* Couldn't find a useable Winsock DLL */
+                    printf("WSAStartup failure, error: %d\n", retCode);
                     exit(1);
                 }
 
-                /* Confirm that the WinSock DLL supports 2.2.*/
-                /* Note that if the DLL supports versions greater    */
-                /* than 2.2 in addition to 2.2, it will still return */
-                /* 2.2 in wVersion since that is the version we      */
-                /* requested.                                        */
-
-                if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2) {
-                    /* Tell the user that we could not find a usable */
-                    /* WinSock DLL.                                  */
-                    printf("Could not find a usable version of Winsock.dll\n");
+                // WinSock DLL must support 2.2.
+                // Even if the DLL supports versions higher than 2.2 as well,
+                // 2.2 is still returned to match requested version.
+                if (LOBYTE(winsockInfo.wVersion) != 2 || HIBYTE(winsockInfo.wVersion) != 2) {
+                    printf("No version of Winsock.dll found\n");
                     WSACleanup();
                     exit(1);
                 } else {
-                    printf("The Winsock 2.2 dll was found okay\n");
+                    printf("Winsock 2.2 DLL success\n");
                 }
             }
 
