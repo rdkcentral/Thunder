@@ -1,22 +1,25 @@
-
-import CppParser
-
 #!/usr/bin/env python
+
+from . import CppParser
 
 CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 
+
 class Interface():
+
     def __init__(self, obj, iid, file):
         self.obj = obj
         self.id = iid
         self.file = file
+
 
 # Looks for interface clasess (ie. classes inheriting from Core::Unknown and specifying ID enum).
 def FindInterfaceClasses(tree, interface_namespace, source_file):
     interfaces = []
 
     def __Traverse(tree, faces):
-        if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
+        if isinstance(tree, CppParser.Namespace) or isinstance(
+                tree, CppParser.Class):
             for c in tree.classes:
                 if c.methods:
                     if (interface_namespace + "::") in c.full_name:
@@ -31,7 +34,9 @@ def FindInterfaceClasses(tree, interface_namespace, source_file):
                                 if not e.scoped:
                                     for item in e.items:
                                         if item.name == "ID":
-                                            faces.append(Interface(c, item.value, source_file))
+                                            faces.append(
+                                                Interface(
+                                                    c, item.value, source_file))
                                             break
                 __Traverse(c, faces)
 
