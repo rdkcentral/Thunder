@@ -39,3 +39,18 @@ Licensed under the BSD-3 license
 
 Copyright (c) 2015 Tobias Becker
 Licensed under the MIT license
+
+XGetopt.cpp is by Hans Dietrich hdietrich2@hotmail.com
+This software is released into the public domain.
+
+Copyright (C) 2005, 2007 Olivier Gay <olivier.gay@a3.epfl.ch> All rights reserved.
+Licensed under the BSD-3 license
+
+Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
+This software was written by Alexander Peslyak in 2001.  No copyright is
+claimed, and the software is hereby placed in the public domain.
+
+Hash.cpp includes material licensed as follows:
+sha1.cpp is Copyright (C) 1998 Paul E. Jones <paulej@flq.us> All Rights Reserved
+This software is licensed as "freeware."
+

@@ -187,7 +187,7 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright [yyyy] [name of copyright owner]
+   Copyright 2020 RDK Management
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -736,3 +736,39 @@ the MPL or the [___] License."
 notices in the Source Code files of the Original Code. You should use the text
 of this Exhibit A rather than the text found in the Original Code Source Code
 for Your Modifications.]
+
+XGetopt.cpp by Hans Dietrich hdietrich2@hotmail.com
+This software is released into the public domain.
+You are free to use it in any way you like.
+This software is provided "as is" with no expressed
+or implied warranty.  I accept no liability for any
+damage or loss of business that this software may cause.
+
+
+OpenSSL-compatible implementation of the RSA Data Security, Inc.
+MD5 Message-Digest Algorithm (RFC 1321).
+Alexander Peslyak, better known as Solar Designer <solar at openwall.com>
+This software was written by Alexander Peslyak in 2001.  No copyright is
+claimed, and the software is hereby placed in the public domain.
+In case this attempt to disclaim copyright and place the software in the
+public domain is deemed null and void, then the software is
+Copyright (c) 2001 Alexander Peslyak and it is hereby released to the
+general public under the following terms:
+Redistribution and use in source and binary forms, with or without
+modification, are permitted.
+There's ABSOLUTELY NO WARRANTY, express or implied.
+
+
+
+Copyright (C) 1998
+Paul E. Jones <paulej@flq.us>
+All Rights Reserved.
+
+This software is licensed as "freeware." Permission to distribute
+this software in source and binary forms is hereby granted without
+a fee. THIS SOFTWARE IS PROVIDED 'AS IS' AND WITHOUT ANY EXPRESSED
+OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+THE AUTHOR SHALL NOT BE HELD LIABLE FOR ANY DAMAGES RESULTING
+FROM THE USE OF THIS SOFTWARE, EITHER DIRECTLY OR INDIRECTLY, INCLUDING,
+BUT NOT LIMITED TO, LOSS OF DATA OR DATA BEING RENDERED INACCURATE.
