@@ -218,6 +218,8 @@ private:
     static const KeyId InvalidKey;
 
 public:
+    static constexpr uint8_t KEY_LENGTH = 16;
+
     inline KeyId()
         : _status(::OCDM::ISession::StatusPending)
     {
@@ -321,7 +323,7 @@ public:
     }
     inline static uint8_t Length()
     {
-        return (sizeof(_kid));
+        return (KEY_LENGTH);
     }
     inline string ToString() const
     {
@@ -344,7 +346,7 @@ public:
     }
 
 private:
-    uint8_t _kid[16];
+    uint8_t _kid[KEY_LENGTH];
     ::OCDM::ISession::KeyStatus _status;
 };
 

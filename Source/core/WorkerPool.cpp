@@ -2,26 +2,20 @@
 
 namespace WPEFramework {
 
-	namespace Core {
+    namespace Core {
 
-	    /* static */ WorkerPool* WorkerPool::_instance = nullptr;
+	IWorkerPool* _workerPoolInstance = nullptr;
 
-		WorkerPool::WorkerPool(const uint8_t threadCount, uint32_t* counters)
-			: _handleQueue(16)
-			, _occupation(0)
-			, _timer(1024 * 1024, _T("WorkerPool::Timer"))
-		{
-			ASSERT(_instance == nullptr);
-
-			_metadata.Slots = threadCount;
-			_metadata.Slot = counters;
-			_instance = this;
-		}
-
-		WorkerPool ::~WorkerPool()
-		{
-			_handleQueue.Disable();
-			_instance = nullptr;
-		}
-	}
+        /* static */ void IWorkerPool::Assign(IWorkerPool* instance) {
+            ASSERT ( (_workerPoolInstance == nullptr) ^ (instance == nullptr) );
+            _workerPoolInstance = instance;
+        }
+        /* static */ IWorkerPool& IWorkerPool::Instance() {
+            ASSERT(_workerPoolInstance != nullptr);
+            return (*_workerPoolInstance);
+        }
+        /* static */ bool IWorkerPool::IsAvailable() {
+            return (_workerPoolInstance != nullptr);
+        }
+    }
 }

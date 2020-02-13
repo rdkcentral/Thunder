@@ -1,23 +1,3 @@
-// ===========================================================================
-//
-// Filename:    thread.h
-//
-// Description: Header file for the Posix thread functions. This class
-//              encapsulates all posix thread functionality defined by the
-//              system.
-//              Note: once the thread is started, it can be stopped only
-//                    once. Since there is not a good Posix interface to
-//                    suspend a thread and to resume it again, the class
-//                    shows this limited, one time start, one time stop
-//                    ability. The stop is actually a pthread_cancel call.
-//
-// History
-//
-// Author        Reason                                             Date
-// ---------------------------------------------------------------------------
-// P. Wielders   Initial creation                                   2002/05/24
-//
-// ===========================================================================
 #ifndef __THREAD_H
 #define __THREAD_H
 
@@ -25,6 +5,7 @@
 
 #include "IAction.h"
 #include "Module.h"
+#include "Portability.h"
 #include "Proxy.h"
 #include "Queue.h"
 #include "StateTrigger.h"
@@ -249,350 +230,331 @@ namespace Core {
         static uint32_t _defaultStackSize;
     };
 
-    //
-    // Description: Helper class to use pointers or proxies (if lifetime management needs to be automated)
-    //              as a carrier to be executed by the threadpooltype.
-    //
-    template <typename CONTEXT>
-    class ThreadContextType {
+    class EXTERNAL ThreadPool {
     public:
-        inline ThreadContextType()
-            : m_Content()
-        {
-        }
-        inline ThreadContextType(const CONTEXT& content)
-            : m_Content(content)
-        {
-        }
-        inline ThreadContextType(const ThreadContextType<CONTEXT>& copy)
-            : m_Content(copy.m_Content)
-        {
-        }
-        inline ~ThreadContextType()
-        {
-        }
-        inline ThreadContextType<CONTEXT>& operator=(const ThreadContextType<CONTEXT>& RHS)
-        {
-            m_Content = RHS.m_Content;
+        typedef Core::QueueType< Core::ProxyType<IDispatch> > MessageQueue;
 
-            return (*this);
-        }
-        inline void Process()
-        {
-            m_Content->Process();
-        }
-        CONTEXT& Context()
-        {
-            return (m_Content);
-        }
-        inline bool operator==(const ThreadContextType<CONTEXT>& RHS) const
-        {
-            return (m_Content == RHS.m_Content);
-        }
-        inline bool operator!=(const ThreadContextType<CONTEXT>& RHS) const
-        {
-            return !(operator==(RHS));
-        }
-
-    private:
-        CONTEXT m_Content;
-    };
-
-    class Job {
-    public:
-        Job()
-            : _job()
-        {
-        }
-        Job(const ProxyType<IDispatch>& job)
-            : _job(job)
-        {
-
-            ASSERT(_job.IsValid() == true);
-        }
-        Job(const Job& copy)
-            : _job(copy._job)
-        {
-        }
-        ~Job()
-        {
-            if (_job.IsValid() == true) {
-                _job.Release();
-            }
-        }
-
-        Job& operator=(const Job& rhs)
-        {
-            _job = rhs._job;
-
-            return (*this);
-        }
-
-    public:
-        inline bool operator==(const Job& rhs) const
-        {
-            return (_job == rhs._job);
-        }
-        inline bool operator!=(const Job& rhs) const
-        {
-            return (!operator==(rhs));
-        }
-        void Dispatch()
-        {
-
-            ASSERT(_job.IsValid() == true);
-
-            _job->Dispatch();
-
-            _job.Release();
-        }
-
-    private:
-        ProxyType<IDispatch> _job;
-    };
-
-    template <typename CONTEXT, const uint16_t THREADCOUNT, const uint32_t QUEUESIZE = 0x7FFFFFFF>
-    class ThreadPoolType {
-    private:
-        template <typename RUNCONTEXT>
-        class ThreadUnitType : public Thread {
-            // -----------------------------------------------------------------------
-            // This object should not be copied or assigned. Prevent the copy
-            // constructor and assignment constructor from being used. Compiler
-            // generated assignment and copy methods will be blocked by the
-            // following statments.
-            // Define them but do not implement them, compile error and/or link error.
-            // -----------------------------------------------------------------------
+        template<typename IMPLEMENTATION>
+        class JobType {
         private:
-            ThreadUnitType(const ThreadUnitType<RUNCONTEXT>& a_Copy) = delete;
-            ThreadUnitType<RUNCONTEXT>& operator=(const ThreadUnitType<RUNCONTEXT>& a_RHS) = delete;
+            enum state : uint8_t {
+                IDLE,
+                SUBMITTED
+            };
+
+            class Worker : public Core::IDispatch {
+            public:
+                Worker() = delete;
+                Worker(const Worker&) = delete;
+                Worker& operator=(const Worker&) = delete;
+
+                Worker(JobType<IMPLEMENTATION>& parent) : _parent(parent) {
+                }
+                ~Worker() override {
+                }
+
+            private:
+                void Dispatch() override {
+                    _parent.Dispatch();
+                }
+
+            private:
+                 JobType<IMPLEMENTATION>& _parent;
+            };
 
         public:
-            ThreadUnitType(ThreadUnitType&& move)
-                : _executing()
-                , _queue(move._queue)
-                , _run(0)
-                , _active(false)
-                , _signal(false, false)
-            {
-            }
-            ThreadUnitType(QueueType<RUNCONTEXT>& queue, const TCHAR* threadName)
-                : Thread(Thread::DefaultStackSize(), threadName)
-                , _executing()
-                , _queue(queue)
-                , _run(0)
-                , _active(false)
-                , _signal(false, false)
-            {
-                Run();
-            }
-            ThreadUnitType(QueueType<RUNCONTEXT>& queue, const uint32_t stackSize, const TCHAR* threadName)
-                : Thread(stackSize, threadName)
-                , _executing()
-                , _queue(queue)
-                , _run(0)
-                , _active(false)
-                , _signal(false, false)
-            {
-                Run();
-            }
+            JobType(const JobType<IMPLEMENTATION>& copy) = delete;
+            JobType<IMPLEMENTATION>& operator=(const JobType<IMPLEMENTATION>& RHS) = delete;
 
-            ~ThreadUnitType()
+            template <typename... Args>
+            JobType(Args&&... args)
+                : _implementation(args...)
+                , _state(IDLE)
+                , _job(*this)
             {
+                _job.AddRef();
+            }
+            ~JobType()
+            {
+                ASSERT (_state == IDLE);
+                _job.CompositRelease();
             }
 
         public:
-            // For debugging purpose only !!!!!
-            inline bool IsActive() const
-            {
-                return (_active);
-            }
+            Core::ProxyType<Core::IDispatch> Aquire() {
 
-            // For debugging purpose only !!!!!
-            inline uint32_t Runs() const
-            {
-                return (_run);
-            }
+                state expected = IDLE;
+                Core::ProxyType<Core::IDispatch> result;
 
-            uint32_t Executing(const RUNCONTEXT& thisElement, const uint32_t waitTime) const
-            {
-                uint32_t result = Core::ERROR_UNAVAILABLE;
-
-                if (thisElement == _executing) {
-
-                    TRACE_L1("Revoking object is currently running [%d].", _run);
-
-                    // You can not wait on yourself to actually remove yourself. This will deadlock !!!
-                    ASSERT(Thread::Id() != Thread::ThreadId());
-
-                    result = _signal.Lock(waitTime);
+                if (_state.compare_exchange_strong(expected, SUBMITTED) == true) {
+                    result = Core::ProxyType<Core::IDispatch>(&_job, &_job);
                 }
 
                 return (result);
             }
+            Core::ProxyType<Core::IDispatch> Reset() {
+
+                state expected = SUBMITTED;
+                _state.compare_exchange_strong(expected, IDLE);
+
+                return (Core::ProxyType<Core::IDispatch>(&_job, &_job));
+            }
+            operator IMPLEMENTATION& () {
+                return (_implementation);
+            }
+            operator const IMPLEMENTATION& () const {
+                return (_implementation);
+            }
 
         private:
-            virtual uint32_t Worker()
+            void Dispatch()
             {
-                _signal.PulseEvent();
+                state expected = SUBMITTED;
+                if (_state.compare_exchange_strong(expected, IDLE) == true) {
+                    _implementation.Dispatch();
+                }
+            }
 
-                if (_queue.Extract(_executing, Core::infinite) == true) {
+        private:
+            IMPLEMENTATION _implementation;
+            std::atomic<state> _state;
+            ProxyObject<Worker> _job;
+        };
 
-                    _active = true;
+        class EXTERNAL Minion {
+        public:
+            Minion(const Minion&) = delete;
+            Minion& operator=(const Minion&) = delete;
 
-                    // Seems like we have work...
-                    _executing.Dispatch();
+            Minion(MessageQueue& queue)
+                : _queue(queue)
+                , _adminLock()
+                , _signal(false, false)
+                , _interestCount(0)
+                , _currentRequest()
+                , _runs(0)
+            {
+            }
+            ~Minion()
+            {
+            }
 
-                    // Clear it out, we processed it.
-                    _executing = RUNCONTEXT();
+        public:
+            uint32_t Runs() const {
+                return (_runs);
+            }
+            bool IsActive() const {
+                return (_currentRequest.IsValid());
+            }
+            uint32_t Completed (const Core::ProxyType<Core::IDispatch>& job, const uint32_t waitTime) {
+                uint32_t result = Core::ERROR_NONE;
 
-                    _active = false;
-                    _run++;
-
-                    // Yield the processor, just to make sure that the gap, between the comparison
-                    // of the Executing(.....) ended up in the lock, before we pulse it :-)
-                    ::SleepMs(0);
+                _adminLock.Lock();
+                Core::InterlockedIncrement(_interestCount);
+                if (_currentRequest != job) {
+                    _adminLock.Unlock();
+                }
+                else {
+                    _adminLock.Unlock();
+                    result = _signal.Lock(waitTime);
                 }
 
-                // Oops queue disabled, wait for queue to start us again..
+                Core::InterlockedDecrement(_interestCount);
+
+                return(result);
+            }
+            void Process()
+            {
+                while (_queue.Extract(_currentRequest, Core::infinite) == true) {
+
+                    ASSERT(_currentRequest.IsValid() == true);
+
+                    _runs++;
+
+                    _currentRequest->Dispatch();
+                    _currentRequest.Release();
+
+                    // if someone is observing this run, (WaitForCompletion) make sure that
+                    // thread, sees that his object was running and is now completed.
+                    _adminLock.Lock();
+                    if (_interestCount > 0) {
+
+                        _signal.SetEvent();
+
+                        while (_interestCount > 0) {
+                            ::SleepMs(0);
+                        }
+
+                        _signal.ResetEvent();
+                    }
+                    _adminLock.Unlock();
+                }
+            }
+
+        private:
+            MessageQueue& _queue;
+            Core::CriticalSection _adminLock;
+            Core::Event _signal;
+            uint32_t _interestCount;
+            Core::ProxyType<Core::IDispatch> _currentRequest;
+            uint32_t _runs;
+        };
+
+    private:
+        class EXTERNAL Executor : public Core::Thread {
+        public:
+            Executor(const Executor&) = delete;
+            Executor& operator=(const Executor&) = delete;
+
+            Executor(MessageQueue* queue, const uint32_t stackSize, const TCHAR* name)
+                : Core::Thread(stackSize == 0 ? Core::Thread::DefaultStackSize() : stackSize, name)
+                , _minion(*queue)
+            {
+            }
+            ~Executor() override
+            {
+                Thread::Stop();
+                Wait(Core::Thread::STOPPED, Core::infinite);
+            }
+
+        public:
+            uint32_t Runs() const {
+                return (_minion.Runs());
+            }
+            bool IsActive() const {
+                return (_minion.IsActive());
+            }
+            void Run () {
+                Core::Thread::Run();
+            }
+            void Stop () {
+                Core::Thread::Wait(Core::Thread::STOPPED|Core::Thread::BLOCKED, Core::infinite);
+            }
+            Minion& Me() {
+                return (_minion);
+            }
+
+        private:
+            uint32_t Worker() override
+            {
+                _minion.Process();
+                Core::Thread::Block();
                 return (Core::infinite);
             }
 
         private:
-            RUNCONTEXT _executing;
-            QueueType<RUNCONTEXT>& _queue;
-            uint32_t _run;
-            bool _active;
-            mutable Core::Event _signal;
+            Minion _minion;
         };
 
     public:
-        // -----------------------------------------------------------------------
-        // This object should not be copied or assigned. Prevent the copy
-        // constructor and assignment constructor from being used. Compiler
-        // generated assignment and copy methods will be blocked by the
-        // following statments.
-        // Define them but do not implement them, compile error and/or link error.
-        // -----------------------------------------------------------------------
-    private:
-        ThreadPoolType(const ThreadPoolType& a_Copy) = delete;
-        ThreadPoolType& operator=(const ThreadPoolType& a_RHS) = delete;
+        ThreadPool(const ThreadPool& a_Copy) = delete;
+        ThreadPool& operator=(const ThreadPool& a_RHS) = delete;
 
-    public:
-        ThreadPoolType(const uint32_t stackSize = 0, const TCHAR* poolName = nullptr)
-            : _queue(QUEUESIZE)
+        ThreadPool(const uint8_t count, const uint32_t stackSize, const uint32_t queueSize) 
+            : _queue(queueSize)
         {
-            _units.reserve(THREADCOUNT);
-
-            for (uint32_t teller = 0; teller < THREADCOUNT; teller++) {
-
-                _units.emplace_back(_queue, stackSize, poolName);
+            const TCHAR* name = _T("WorkerPool::Thread");
+            for (uint8_t index = 0; index < count; index++) {
+                _units.emplace_back(&_queue, stackSize, name);
             }
         }
-
-        ~ThreadPoolType()
-        {
-            // Stop all threads...
-            Block();
-
-            _queue.Flush();
-
-            // Wait till all threads have reached completion
-            Wait(Thread::BLOCKED | Thread::STOPPED, Core::infinite);
+        ~ThreadPool() {
+            Stop();
+            _units.clear();
         }
 
     public:
-        inline uint8_t Count() const
+        uint8_t Count() const
         {
-            return (THREADCOUNT);
+            return (static_cast<uint8_t>(_units.size()));
         }
-        inline uint32_t Pending() const
+        uint32_t Pending() const
         {
             return (_queue.Length());
         }
-        inline uint32_t Active() const
+        void Runs(const uint8_t length, uint32_t* counters) const 
         {
-            uint32_t result = 0;
-
-            // Make all threads active again !!
-            for (uint16_t teller = THREADCOUNT; teller > 0; --teller) {
-                if (_units[teller - 1].IsActive() == true) {
-                    result++;
+            uint8_t count = 0;
+            std::list<Executor>::const_iterator ptr = _units.cbegin();
+            while ((count < length) && (ptr != _units.cend())) { 
+                counters[count] = ptr->Runs();
+                ptr++; 
+                count++; 
+            }
+        }
+        uint8_t Active() const
+        {
+            uint8_t count = 0;
+            std::list<Executor>::const_iterator ptr = _units.cbegin();
+            while (ptr != _units.cend()) 
+            { 
+                if (ptr->IsActive() == true) {
+                    count++;
                 }
+                ptr++; 
             }
-            return (result);
+
+            return (count);
         }
-        inline void Submit(const CONTEXT& data, const uint32_t waitTime)
+        ::ThreadId Id(const uint8_t index) const
         {
-            if (QUEUESIZE == ~0) {
-                _queue.Post(data);
-            } else {
-                _queue.Insert(data, waitTime);
-            }
+            uint8_t count = 0;
+            std::list<Executor>::const_iterator ptr = _units.cbegin();
+            while ((index != count) && (ptr != _units.cend())) { ptr++; count++; }
+
+            ASSERT (ptr != _units.cend());
+
+            return (ptr != _units.cend() ? ptr->Id() : 0);
         }
-        uint32_t Revoke(const CONTEXT& data, const uint32_t waitTime = Core::infinite)
+        void Submit(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime)
+        {
+            _queue.Insert(job, waitTime);
+        }
+        uint32_t Revoke(const Core::ProxyType<IDispatch>& job, const uint32_t waitTime)
         {
             uint32_t result = Core::ERROR_NONE;
 
-            if (_queue.Remove(data) == false) {
-                uint16_t count = THREADCOUNT;
+            _queue.Remove(job);
 
-                // Check if it is currently being executed and wait till it is done.
-                while ((count > 0) && ((result = _units[count - 1].Executing(data, waitTime)) == Core::ERROR_UNAVAILABLE)) {
-                    --count;
+            // Check if it is currently being executed and wait till it is done.
+            std::list<Executor>::iterator index = _units.begin();
+
+            while (index != _units.end()) {
+                uint32_t outcome = index->Me().Completed(job, waitTime);
+                if (outcome != Core::ERROR_NONE) {
+                    result = outcome;
                 }
-            } else {
-                TRACE_L1("Found the revoking object in the queue: %d", waitTime);
+                index++;
             }
 
             return (result);
         }
-
-        bool Wait(const unsigned int enumState, unsigned int nTime = Core::infinite) const
-        {
-            uint16_t teller = THREADCOUNT;
-
-            // Block all threads!!
-            while ((teller > 0) && (_units[teller - 1].Wait(enumState, nTime) == true)) {
-                teller--;
-            }
-
-            return (teller == 0);
+        MessageQueue& Queue() {
+            return (_queue);
         }
-
-        void Block()
-        {
-            // Block all threads!!
-            for (uint16_t teller = THREADCOUNT; teller > 0; --teller) {
-                _units[teller - 1].Block();
-            }
-
-            _queue.Disable();
-        }
-
         void Run()
         {
-            // Make all threads active again !!
-            for (uint16_t teller = THREADCOUNT; teller > 0; --teller) {
-                _units[teller - 1].Run();
+            _queue.Enable();
+            std::list<Executor>::iterator index = _units.begin();
+            while (index != _units.end()) {
+                index->Run();
+                index++;
             }
         }
-        const ThreadUnitType<CONTEXT>& operator[](const uint32_t index) const
+        void Stop()
         {
-            return (_units[index]);
-        }
-        ::ThreadId ThreadId(const uint8_t index) const
-        {
-            return (index < THREADCOUNT ? _units[index].Id() : 0);
+            _queue.Disable();
+            std::list<Executor>::iterator index = _units.begin();
+            while (index != _units.end()) {
+                index->Stop();
+                index++;
+            }
         }
 
-    private:
-        QueueType<CONTEXT> _queue;
-        std::vector<ThreadUnitType<CONTEXT>> _units;
+   private:
+        MessageQueue _queue;
+        std::list<Executor> _units;
     };
-
-    // template <typename CONTEXT, const uint16_t THREADCOUNT, const uint32_t QUEUESIZE>
-    // CONTEXT typename ThreadPoolType<CONTEXT,THREADCOUNT,QUEUESIZE>::s_EmptyContext;
 }
 } // namespace Core
 
