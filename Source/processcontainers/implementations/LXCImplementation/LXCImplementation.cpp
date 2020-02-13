@@ -2,6 +2,70 @@
 
 namespace WPEFramework {
 namespace ProcessContainers {
+    LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
+        : NetworkInterfaceIterator()
+    {
+        char buf[256];
+
+        for(int netnr = 0; ;netnr++) {
+            LXCNetInterface interface;
+
+            sprintf(buf, "lxc.net.%d.type", netnr);
+
+            char* type = lxcContainer->get_running_config_item(lxcContainer, buf);
+            if (!type)
+                break;
+
+            if (strcmp(type, "veth") == 0) {
+                sprintf(buf, "lxc.net.%d.veth.pair", netnr);
+            } else {
+                sprintf(buf, "lxc.net.%d.link", netnr);
+            }
+            free(type);
+
+            interface.name = lxcContainer->get_running_config_item(lxcContainer, buf);
+            if (interface.name == nullptr)
+                break;
+
+            interface.addresses = lxcContainer->get_ips(lxcContainer, interface.name, NULL, 0);
+            if (!interface.addresses) {
+                TRACE_L1("Failed to get IP addreses inside container. Interface: %s", interface.name);
+            }
+
+            interface.numAddresses = 0;
+            for (int i = 0; interface.addresses[i] != nullptr; i++) {
+                interface.numAddresses++;
+            }
+
+            _interfaces.push_back(interface);
+        }
+
+        _count = _interfaces.size();
+    }
+
+    LXCNetworkInterfaceIterator::~LXCNetworkInterfaceIterator()
+    {
+        for (auto interface : _interfaces) {
+            free(interface.addresses);
+            free(interface.name);
+        }
+    }
+
+    std::string LXCNetworkInterfaceIterator::Name() const 
+    {
+        return _interfaces.at(_current).name;
+    }
+    uint32_t LXCNetworkInterfaceIterator::NumIPs() const 
+    {
+        return _interfaces.at(_current).numAddresses;
+    }
+
+    std::string LXCNetworkInterfaceIterator::IP(uint32_t id) const 
+    {
+        ASSERT(id < _interfaces.at(_current).numAddresses);
+
+        return _interfaces.at(_current).addresses[id];
+    }
 
     LXCContainer::Config::ConfigItem::ConfigItem(const ConfigItem& rhs) 
         : Core::JSON::Container()
@@ -181,48 +245,9 @@ namespace ProcessContainers {
         return result;
     }
 
-    std::vector<LXCContainer::NetworkInterface> LXCContainer::NetworkInterfaces() const
+    NetworkInterfaceIterator* LXCContainer::NetworkInterfaces() const
     {
-        char buf[256];
-        std::vector<LXCContainer::NetworkInterface> result;
-
-        ASSERT(_lxcContainer != nullptr);
-
-        for(int netnr = 0; ;netnr++) {
-            sprintf(buf, "lxc.net.%d.type", netnr);
-
-            char* type = _lxcContainer->get_running_config_item(_lxcContainer, buf);
-            if (!type)
-                break;
-
-            if (strcmp(type, "veth") == 0) {
-                sprintf(buf, "lxc.net.%d.veth.pair", netnr);
-            } else {
-                sprintf(buf, "lxc.net.%d.link", netnr);
-            }
-            free(type);
-
-            char* ifname = _lxcContainer->get_running_config_item(_lxcContainer, buf);
-            if (!ifname)
-                break;
-
-            NetworkInterface interface;
-            interface.name = ifname;
-
-            free(ifname);
-
-            char **addresses = _lxcContainer->get_ips(_lxcContainer, interface.name.c_str(), NULL, 0);
-            if (addresses) {
-                for (int i = 0; addresses[i] != nullptr; i++) {
-                    interface.IPs.emplace_back(addresses[i]);
-                }
-            }
-
-            result.push_back(std::move(interface));
-        }
-
-        return result;
-
+        return new LXCNetworkInterfaceIterator(_lxcContainer);
     }
 
     bool LXCContainer::IsRunning() const 

@@ -8,16 +8,38 @@ namespace ProcessContainers {
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
     using IConstStringIterator = Core::IteratorType<const std::vector<string>, const string, std::vector<string>::const_iterator>;
 
+    struct NetworkInterfaceIterator {
+        NetworkInterfaceIterator();
+        virtual ~NetworkInterfaceIterator() {};
+        
+        // Common iterator functions
+        virtual bool Next();
+        virtual void Reset();
+        virtual bool IsValid() const;
+        virtual uint32_t Count() const;
+
+        // Lifetime management
+        void AddRef();
+        void Release();
+
+        // Implementation-dependent
+        virtual std::string Name() const = 0;
+        virtual uint32_t NumIPs() const = 0;
+
+        virtual std::string IP(uint32_t id) const = 0;
+    protected:
+        uint32_t _current;
+        uint32_t _count;
+
+    private:
+        uint32_t _refCount;
+    };
+
     struct IContainer {
         struct MemoryInfo {
             uint64_t allocated; // in bytes
             uint64_t resident; // in bytes
             uint64_t shared; // in bytes
-        };
-
-        struct NetworkInterface {
-            string name;
-            std::vector<string> IPs;
         };
 
         struct CPUInfo {
@@ -32,7 +54,7 @@ namespace ProcessContainers {
         virtual uint32_t Pid() const = 0;
         virtual MemoryInfo Memory() const = 0;
         virtual CPUInfo Cpu() const = 0;
-        virtual std::vector<NetworkInterface> NetworkInterfaces() const = 0;
+        virtual NetworkInterfaceIterator* NetworkInterfaces() const = 0;
         virtual bool IsRunning() const = 0;
 
         virtual bool Start(const string& command, IStringIterator& parameters) = 0; // returns true when started

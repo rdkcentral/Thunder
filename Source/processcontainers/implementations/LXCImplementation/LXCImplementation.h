@@ -13,6 +13,26 @@ namespace WPEFramework {
 namespace ProcessContainers {
     using LxcContainerType = struct lxc_container;
 
+    class LXCNetworkInterfaceIterator : public NetworkInterfaceIterator 
+    {
+    public:
+        LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer);
+        ~LXCNetworkInterfaceIterator();
+
+        std::string Name() const override;
+        uint32_t NumIPs() const override;
+
+        std::string IP(uint32_t id) const override;
+    private:
+        struct LXCNetInterface {
+            char* name;
+            char** addresses;
+            uint32_t numAddresses;
+        };
+
+        std::vector<LXCNetInterface> _interfaces;
+    };
+
     class LXCContainer : public IContainer {
     private:
         class Config : public Core::JSON::Container {
@@ -54,7 +74,7 @@ namespace ProcessContainers {
         uint32_t Pid() const override;
         MemoryInfo Memory() const override;
         CPUInfo Cpu() const override;
-        std::vector<NetworkInterface> NetworkInterfaces() const override;
+        NetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;

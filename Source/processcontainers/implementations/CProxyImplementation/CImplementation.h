@@ -3,6 +3,21 @@
 
 namespace WPEFramework {
 namespace ProcessContainers {
+
+    class CNetworkInterfaceIterator : public NetworkInterfaceIterator 
+    {
+    public:
+        CNetworkInterfaceIterator(const ProcessContainer* container);
+        ~CNetworkInterfaceIterator();
+
+        std::string Name() const override;
+        uint32_t NumIPs() const override;
+
+        std::string IP(uint32_t id) const override;
+    private:
+        ProcessContainerNetworkStatus _networkStatus;
+    };
+    
     class CContainer : public IContainer 
     {
     public:
@@ -14,7 +29,7 @@ namespace ProcessContainers {
         uint32_t Pid() const override;
         MemoryInfo Memory() const override;
         CPUInfo Cpu() const override;
-        std::vector<NetworkInterface> NetworkInterfaces() const override;
+        NetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
@@ -38,16 +53,7 @@ namespace ProcessContainers {
                                 const string& logpath,
                                 const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
-        CContainerAdministrator() {
-            // make sure framework is initialized
-            ContainerError error = process_container_initialize();
-
-            if (error != ContainerError::ERROR_NONE) {
-                TRACE_L1("Failed to initialize container api. Error code %d", error);
-            } else {
-                _refCount = 1;
-            }
-        }
+        CContainerAdministrator();
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;

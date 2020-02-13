@@ -31,11 +31,11 @@ struct ProcessContainerNetworkStatus {
  * Container error code. Zero always means success.
  */
 typedef enum {
-    ERROR_NONE = 0,
-    ERROR_UNKNOWN = 1,
-    ERROR_MORE_DATA_AVAILBALE=2,
-    ERROR_OUT_OF_BOUNDS = 3,
-    ERROR_INVALID_KEY = 4
+    PC_ERROR_NONE = 0,
+    PC_ERROR_UNKNOWN = 1,
+    PC_ERROR_MORE_DATA_AVAILBALE=2,
+    PC_ERROR_OUT_OF_BOUNDS = 3,
+    PC_ERROR_INVALID_KEY = 4
 } ContainerError;
 
 struct ProcessContainerMemory {
@@ -149,7 +149,7 @@ EXTERNAL ContainerError process_container_memory_status(struct ProcessContainer*
  * \param threadNum - id core of (0,1,2...) which usage will be returned. 
  *                    If -1 is provided, total CPU usage will be reported. 
  * \param usage - (output) Usage of cpu in nanoseconds
- * \return Zero on success, error-code otherwise (specificly ERROR_OUT_OF_BOUNDS when threadNum is out of bounds)
+ * \return Zero on success, error-code otherwise (specificly PC_ERROR_OUT_OF_BOUNDS when threadNum is out of bounds)
  */
 EXTERNAL ContainerError process_container_cpu_usage(struct ProcessContainer* container, int32_t threadNum, uint64_t* usage);
 

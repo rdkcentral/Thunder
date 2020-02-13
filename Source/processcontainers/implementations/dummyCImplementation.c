@@ -14,34 +14,34 @@ struct DummyProcessContainer {
     char address[256];
 };
 
-void strcpy_safe(char* dest, const char* src, size_t bufferLength) 
+void strcpy_safe(char* dest, char* src, size_t bufferLength) 
 {
     strncpy(dest, src, bufferLength - 1);
     dest[bufferLength - 1] = '\0';
 }
 
-ContainerError process_container_logging(const char* logPath, const char* loggingOptions)
+ContainerError process_container_logging(char* logPath, char* loggingOptions)
 {
     printf("Global logging initialized to directory: %s\n", logPath);
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 ContainerError process_container_initialize() 
 {
     printf("Container framework is initialized!\n");
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 ContainerError process_container_deinitialize() 
 {
     printf("Container framework is deinitialized!\n");
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
-ContainerError process_container_create(struct ProcessContainer** container, const char* id, const char** searchPaths, const char* logPath, const char* configuration)
+ContainerError process_container_create(struct ProcessContainer** container, char* id, char** searchPaths, char* logPath, char* configuration)
 {
     struct DummyProcessContainer* output = (struct DummyProcessContainer*)malloc(sizeof(struct DummyProcessContainer));
 
@@ -62,7 +62,7 @@ ContainerError process_container_create(struct ProcessContainer** container, con
 
     printf("Container %s created!\n", output->cContainer.id);
 
-    return ERROR_NONE;    
+    return PC_ERROR_NONE;    
 }
 
 ContainerError process_container_destroy(struct ProcessContainer* container)
@@ -71,10 +71,10 @@ ContainerError process_container_destroy(struct ProcessContainer* container)
 
     free(container);
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
-ContainerError process_container_start(struct ProcessContainer* container, const char* command, const char** params)
+ContainerError process_container_start(struct ProcessContainer* container, char* command, char** params)
 {
     printf("Executed %s command! with arguments:\n", command);
     for (int i = 0; params[i] != NULL; i++) {
@@ -83,7 +83,7 @@ ContainerError process_container_start(struct ProcessContainer* container, const
 
     printf("\n\n");
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 ContainerError process_container_stop(struct ProcessContainer* container)
@@ -93,7 +93,7 @@ ContainerError process_container_stop(struct ProcessContainer* container)
     printf("Container %s stopped!\n", dummyContainer->cContainer.id);
     dummyContainer->running = 0;
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 uint8_t process_container_running(struct ProcessContainer* container)
@@ -105,15 +105,15 @@ ContainerError process_container_memory_status(struct ProcessContainer* containe
 {
     memcpy(memory, &(((struct DummyProcessContainer*)container)->memory), sizeof(struct ProcessContainerMemory));
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 ContainerError process_container_cpu_usage(struct ProcessContainer* container, int32_t threadNum, uint64_t* usage)
 {
-    ContainerError result = ERROR_NONE;
+    ContainerError result = PC_ERROR_NONE;
 
     if (threadNum > sysconf(_SC_NPROCESSORS_ONLN)) {
-        result = ERROR_OUT_OF_BOUNDS;
+        result = PC_ERROR_OUT_OF_BOUNDS;
     } else {
         *usage = rand() % (1024 * 1024 * 256);
     }
@@ -124,7 +124,9 @@ ContainerError process_container_cpu_usage(struct ProcessContainer* container, i
 ContainerError process_container_pid(struct ProcessContainer* container, uint32_t* pid) 
 {
     // Dumm random pid
-    pid = (*((uint32_t*)container)) % 100 + 10;
+    pid = 44;
+
+    return PC_ERROR_NONE;
 }
 
 
@@ -145,7 +147,7 @@ ContainerError process_container_network_status_create(struct ProcessContainer* 
     networkStatus->interfaces[0].ips[0] = "1.2.3.4";
     networkStatus->interfaces[0].ips[0] = "1.2.3.5";
     
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
 ContainerError process_container_network_status_destroy(struct ProcessContainerNetworkStatus* networkStatus) 
@@ -157,6 +159,6 @@ ContainerError process_container_network_status_destroy(struct ProcessContainerN
 
     free(networkStatus);
 
-    return ERROR_NONE;
+    return PC_ERROR_NONE;
 }
 
