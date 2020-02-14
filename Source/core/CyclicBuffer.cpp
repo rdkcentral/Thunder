@@ -300,7 +300,7 @@ namespace Core {
 
         // Perform actual copy.
         uint32_t writeEnd = (writeStart + length) % _maxSize;
-        if (writeEnd > writeStart) {
+        if (writeEnd >= writeStart) {
             // Easy case: one pass.
             memcpy(_realBuffer + writeStart, buffer, length);
         } else {
