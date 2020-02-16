@@ -166,21 +166,20 @@ private:
 
         using Exchange::IComposition::IClient::AddRef;
 
-
+        string Name() const override
+        {
+            return _name;
+        }
+        void Kill() override
+        {
+            //todo: implement
+            TRACE(CompositorClient, (_T("Kill called for Client %s. Not supported."), Name().c_str()));
+        }
         void Opacity(const uint32_t value) override;
         uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
         Exchange::IComposition::Rectangle Geometry() const override;
         uint32_t ZOrder(const uint16_t zorder) override;
 
-        virtual string Name() const override
-        {
-            return _name;
-        }
-        virtual void Kill() override
-        {
-            //todo: implement
-            TRACE(CompositorClient, (_T("Kill called for Client %s. Not supported."), Name().c_str()));
-        }
         inline EGLNativeWindowType Native() const
         {
             return (static_cast<EGLNativeWindowType>(_nativeSurface));
