@@ -71,7 +71,7 @@ if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
 
     target_link_libraries(${TARGET}
             PRIVATE
-            -lb_secbuf
+            -lnexus
             -lbrcmsvpmeta
             )
 
