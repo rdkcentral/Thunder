@@ -42,10 +42,6 @@ option(PROCESSCONTAINERS
         "Include containerization in the build." OFF)
 option(TEST_APPS
         "Include test applications." OFF)
-option(UNIT_TESTS
-        "Include unit tests (new gtest based)." OFF)
-option(TEST_MEASUREMENTS
-        "Include code coverage measurments." OFF)
 option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
@@ -55,12 +51,6 @@ set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
         "List of events assumed to be provided by other plugins.")
 string(REPLACE " " ";" EXTERN_EVENT_LIST "${EXTERN_EVENTS}")
 message("-- Assuming external events: ${EXTERN_EVENT_LIST}")
-
-#FIXME: We shouldn't touch cflags...
-if(TEST_MEASUREMENTS)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage -fkeep-inline-functions -fkeep-static-functions")
-    set(CMAKE_EXE_LINKER_FLAGS -lgcov)
-endif ()
 
 if(CORE)
     add_subdirectory(core)
