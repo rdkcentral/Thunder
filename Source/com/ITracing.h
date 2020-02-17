@@ -5,6 +5,7 @@
 
 // ---- Include local include files ----
 #include "Module.h"
+#include "IUnknown.h"
 
 namespace WPEFramework {
 namespace Trace {
@@ -14,7 +15,7 @@ namespace Trace {
         virtual ~ITraceIterator(){};
 
         virtual void Reset() = 0;
-        virtual bool Info(bool& enabled, string& module, string& category) const = 0;
+        virtual bool Info(bool& enabled /* @out */, string& module /* @out */, string& category /* @out */) const = 0;
     };
 
     struct ITraceController : virtual public Core::IUnknown {

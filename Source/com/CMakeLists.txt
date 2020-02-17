@@ -5,6 +5,7 @@ add_library(${TARGET} SHARED
         Communicator.cpp
         ProxyStubs_Communicator.cpp
         ITracing.cpp
+        ProxyStubs_Tracing.cpp
         IStringIterator.cpp
         IValueIterator.cpp
         IUnknown.cpp
