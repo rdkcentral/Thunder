@@ -330,14 +330,14 @@ namespace PluginHost {
 #endif
         };
 
-        class WorkerPoolImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
+        class WorkerPoolImplementation : public Core::WorkerPool {
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
             WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
             WorkerPoolImplementation(const uint32_t stackSize)
-                : Core::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
+                : Core::WorkerPool(THREADPOOL_COUNT,stackSize,16)
             {
             }
             virtual ~WorkerPoolImplementation()

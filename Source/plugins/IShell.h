@@ -67,15 +67,9 @@ namespace PluginHost {
             CONDITIONS
         };
 
-        class EXTERNAL Job
-            : public Core::IDispatchType<void> {
-        private:
-            Job() = delete;
-            Job(const Job&) = delete;
-            Job& operator=(const Job&) = delete;
-
-        public:
-            Job(IShell* shell, IShell::state toState, IShell::reason why)
+        class EXTERNAL Job : public Core::IDispatch {
+        protected:
+             Job(IShell* shell, IShell::state toState, IShell::reason why)
                 : _shell(shell)
                 , _state(toState)
                 , _reason(why)
@@ -85,7 +79,12 @@ namespace PluginHost {
                 }
             }
 
-            virtual ~Job()
+       public:
+            Job() = delete;
+            Job(const Job&) = delete;
+            Job& operator=(const Job&) = delete;
+
+            ~Job() override
             {
                 if (_shell != nullptr) {
                     _shell->Release();
@@ -93,7 +92,7 @@ namespace PluginHost {
             }
 
         public:
-            static Core::ProxyType<Core::IDispatchType<void>>
+            static Core::ProxyType<Core::IDispatch>
             Create(IShell* shell, IShell::state toState, IShell::reason why);
 
             virtual void Dispatch()
@@ -117,9 +116,9 @@ namespace PluginHost {
             }
 
         private:
-            IShell* _shell;
-            state _state;
-            reason _reason;
+            IShell* const _shell;
+            const state _state;
+            const reason _reason;
         };
         //! @{
         //! =========================== ACCESSOR TO THE SHELL AROUND THE PLUGIN ===============================

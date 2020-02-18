@@ -59,6 +59,7 @@ namespace Exchange {
         };
 
         struct IClient : virtual public Core::IUnknown {
+
             enum { ID = ID_COMPOSITION_CLIENT };
 
             virtual ~IClient() {}
@@ -66,10 +67,9 @@ namespace Exchange {
             virtual string Name() const = 0;
             virtual void Kill() = 0;
             virtual void Opacity(const uint32_t value) = 0;
-
-            // note: following methods are for callback, do not call on the interface to influence the Client, see Compostion interface to do this
-            virtual void ChangedGeometry(const Rectangle& rectangle) = 0;
-            virtual void ChangedZOrder(const uint8_t zorder) = 0;
+            virtual uint32_t Geometry(const Rectangle& rectangle) = 0;
+            virtual Rectangle Geometry() const = 0; 
+            virtual uint32_t ZOrder(const uint16_t index) = 0;
         };
 
         struct INotification : virtual public Core::IUnknown {
@@ -86,20 +86,6 @@ namespace Exchange {
         virtual void Register(IComposition::INotification* notification) = 0;
         virtual void Unregister(IComposition::INotification* notification) = 0;
 
-        // Index is a virtual number indicating the spot in a list of clients.
-        // 0 is always the first client, the last client is found if the index
-        // incremented by 1 and the Client returns a nullptr for the IClient
-        // interface.
-        virtual IClient* Client(const uint8_t index) = 0;
-
-        // As the previous method is just to iterate over all clients, it is
-        // expected that the next method is used to actually aquire a IClient.
-        virtual IClient* Client(const string& callsign) = 0;
-        virtual uint32_t Geometry(const string& callsign, const Rectangle& rectangle) = 0;
-        virtual Rectangle Geometry(const string& callsign) const = 0; //0,0,0,0 is rectangle could not be retrieved, callsign not known?
-        virtual uint32_t ToTop(const string& callsign) = 0;
-        virtual uint32_t PutBelow(const string& callsignRelativeTo, const string& callsignToReorder) = 0;
-        virtual RPC::IStringIterator* ClientsInZorder() const = 0; // order Top to Bottom
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         // Set and get output resolution

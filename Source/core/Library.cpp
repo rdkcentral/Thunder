@@ -143,6 +143,7 @@ namespace Core {
             } else {
                 Core::InterlockedDecrement(_refCountedHandle->_referenceCount);
             }
+            _refCountedHandle = nullptr;
         }
         return (Core::ERROR_NONE);
     }

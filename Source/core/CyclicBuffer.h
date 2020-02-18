@@ -21,7 +21,6 @@
 #define __CYCLICBUFFER_H
 
 // ---- Include system wide include files ----
-#include <atomic>
 
 // ---- Include local include files ----
 #include "DataElementFile.h"

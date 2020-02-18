@@ -111,7 +111,7 @@ namespace Core {
 
         // Now wait till our state is reached.
         while (((a_State & m_State) == 0) && (blTimeOut == false)) {
-            m_InterestCount++;
+            InterlockedIncrement(m_InterestCount);
 
             m_AdminLock.Unlock();
 
@@ -139,7 +139,7 @@ namespace Core {
 
         // Now wait till our state is reached.
         while (((a_State & m_State) != 0) && (blTimeOut == false)) {
-            m_InterestCount++;
+            InterlockedIncrement(m_InterestCount);
 
             m_AdminLock.Unlock();
 

@@ -185,19 +185,20 @@ private:
 
         using Exchange::IComposition::IClient::AddRef;
 
-        void Opacity(const uint32_t value) override;
-        void ChangedGeometry(const Exchange::IComposition::Rectangle& rectangle) override;
-        void ChangedZOrder(const uint8_t zorder) override;
-
-        virtual string Name() const override
+        string Name() const override
         {
             return _name;
         }
-        virtual void Kill() override
+        void Kill() override
         {
             //todo: implement
             TRACE(CompositorClient, (_T("Kill called for Client %s. Not supported."), Name().c_str()));
         }
+        void Opacity(const uint32_t value) override;
+        uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
+        Exchange::IComposition::Rectangle Geometry() const override;
+        uint32_t ZOrder(const uint16_t zorder) override;
+
         inline EGLNativeWindowType Native() const
         {
             return (static_cast<EGLNativeWindowType>(_nativeSurface));
@@ -289,6 +290,8 @@ private:
         IWheel* _wheel;
         IPointer* _pointer;
         ITouchPanel* _touchpanel;
+
+        Exchange::IComposition::Rectangle _destination;
     };
 
 public:
@@ -369,7 +372,7 @@ private:
         } else {
             // Seems we are not in a process space initiated from the Main framework process or its hosting process.
             // Nothing more to do than to create a workerpool for RPC our selves !
-            Core::ProxyType<RPC::InvokeServerType<2, 1>> engine = Core::ProxyType<RPC::InvokeServerType<2, 1>>::Create(Core::Thread::DefaultStackSize());
+            Core::ProxyType<RPC::InvokeServerType<2,0,8>> engine = Core::ProxyType<RPC::InvokeServerType<2,0,8>>::Create();
             ASSERT(engine != nullptr);
 
             _compositerServerRPCConnection = Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(), Core::ProxyType<Core::IIPCServer>(engine));
@@ -461,6 +464,7 @@ Display::SurfaceImplementation::SurfaceImplementation(
     , _wheel(nullptr)
     , _pointer(nullptr)
     , _touchpanel(nullptr)
+    , _destination({ 0, 0, width, height})
 {
 
     TRACE(CompositorClient, (_T("Created client named: %s"), _name.c_str()));
@@ -527,8 +531,9 @@ void Display::SurfaceImplementation::Opacity(
     vc_dispmanx_update_submit_sync(_dispmanUpdate);
 }
 
-void Display::SurfaceImplementation::ChangedGeometry(const Exchange::IComposition::Rectangle& rectangle)
+uint32_t Display::SurfaceImplementation::Geometry(const Exchange::IComposition::Rectangle& rectangle)
 {
+    _destination = rectangle;
     vc_dispmanx_rect_set(&_dstRect, rectangle.x, rectangle.y, rectangle.width, rectangle.height);
     vc_dispmanx_rect_set(&_srcRect,
         0, 0, (_display.DisplaySizeWidth() << 16), (_display.DisplaySizeHeight() << 16));
@@ -544,8 +549,15 @@ void Display::SurfaceImplementation::ChangedGeometry(const Exchange::ICompositio
         0,
         DISPMANX_NO_ROTATE);
     vc_dispmanx_update_submit_sync(_dispmanUpdate);
+    return (Core::ERROR_NONE);
 }
-void Display::SurfaceImplementation::ChangedZOrder(const uint8_t zorder)
+
+Exchange::IComposition::Rectangle Display::SurfaceImplementation::Geometry() const 
+{
+    return (_destination);
+}
+
+uint32_t Display::SurfaceImplementation::ZOrder(const uint16_t zorder)
 {
     _dispmanUpdate = vc_dispmanx_update_start(0);
     int8_t layer = 0;
@@ -553,11 +565,12 @@ void Display::SurfaceImplementation::ChangedZOrder(const uint8_t zorder)
     if (zorder == static_cast<uint8_t>(~0)) {
         layer = -1;
     } else {
-        layer = zorder;
+        layer = static_cast<uint8_t>(zorder);
         _layer = layer;
     }
     vc_dispmanx_element_change_layer(_dispmanUpdate, _dispmanElement, layer);
     vc_dispmanx_update_submit_sync(_dispmanUpdate);
+    return (Core::ERROR_NONE);
 }
 
 Display::Display(const string& name)

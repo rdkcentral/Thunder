@@ -655,6 +655,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             _environment.Set(_config, configuration.Environments);
         }
 
+        // Lets assign a workerpool, we created it...
+        WorkerPool::Assign(&_dispatcher);
+
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
 
         // First register all services, than if we got them, start "activating what is required.
@@ -724,6 +727,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
     Server::~Server()
     {
+        // The workerpool is about to dissapear!!!!
+        WorkerPool::Assign(nullptr);
     }
 
     void Server::Notification(const ForwardMessage& data)

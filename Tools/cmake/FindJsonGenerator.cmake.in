@@ -16,7 +16,7 @@
 # limitations under the License.
 
 if(NOT PYTHON_EXECUTABLE)
-    find_package(PythonInterp 2.7 REQUIRED QUIET) 
+    find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
 set(JSON_GENERATOR "@GENERATOR_INSTALL_PATH@/JsonGenerator/JsonGenerator.py")

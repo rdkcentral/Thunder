@@ -1,2 +1,2 @@
-import CppParser
-import Interface
+from . import CppParser
+from . import Interface

@@ -17,6 +17,8 @@
 
 set(TARGET ${NAMESPACE}COM)
 
+ProxyStubGenerator(NAMESPACE "RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Communicator.h)
+
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
