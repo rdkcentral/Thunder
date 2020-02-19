@@ -1075,12 +1075,14 @@ namespace Core {
         {
             // Clear the created objects..
             uint16_t attempt = 500;
-            while ((attempt-- != 0) && (_createdElements != 0)) {
+            while ((attempt != 0) && (_createdElements != 0)) {
                 if (_queue.Count() == 0) {
                     // Give up the slice, we are waiting for ProxyPool 
                     // objects to return.
                     TRACE_L1("Pending ProxyPool objects. Waiting for %d objects.", _createdElements);
                     ::SleepMs(1);
+
+                    attempt--;
                 } 
                 else {
                     Core::ProxyType<ProxyPoolElement> listLoad;
