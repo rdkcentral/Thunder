@@ -378,7 +378,9 @@ public:
         }
 
         // We are going to tear down the stugg. Unregistere the Worker Pool
-        Core::IWorkerPool::Assign(nullptr);
+        if (Core::IWorkerPool::IsAvailable() == true) {
+            Core::IWorkerPool::Assign(nullptr);
+        }
 
         Core::Singleton::Dispose();
         TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());

@@ -1074,7 +1074,8 @@ namespace Core {
         ~ProxyPoolType()
         {
             // Clear the created objects..
-            while (_createdElements != 0) {
+            uint16_t attempt = 500;
+            while ((attempt-- != 0) && (_createdElements != 0)) {
                 if (_queue.Count() == 0) {
                     // Give up the slice, we are waiting for ProxyPool 
                     // objects to return.
@@ -1090,6 +1091,9 @@ namespace Core {
 
                     listLoad.Destroy();
                 }
+            }
+            if (_createdElements != 0) {
+                TRACE_L1("Missing Pool Elements. PLease find leaking objects in: %s", typeid(PROXYPOOLELEMENT).name());
             }
         }
 
