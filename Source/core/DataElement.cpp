@@ -23,11 +23,6 @@ namespace WPEFramework {
 namespace Core {
 
     // CRC32 lookup table for polynomial 0x04c11db7 
-    // This table is taken from: 
-    // https://www.mirrorservice.org/pub/NetBSD/NetBSD-current/src/external/bsd/elftosb/dist/common/crc.cpp
-    // It is BSD-3 licensed code:
-    // https://www.mirrorservice.org/pub/NetBSD/NetBSD-current/src/external/bsd/elftosb/dist/COPYING 
-
     // Copyright (c) Freescale Semiconductor, Inc. All rights reserved.
     // Licensed under the BSD-3 license
     static uint32_t g_CRCtable[] = {
