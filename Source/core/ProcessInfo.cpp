@@ -317,41 +317,6 @@ namespace Core {
         Reset();
     }
 
-    ProcessInfo::LibraryIterator::LibraryInfo::LibraryInfo(const string& firstline) 
-    : _name()
-    , _shortname() {
-        size_t pos = firstline.rfind(' ');
-        _name = firstline.substr( pos == string::npos ? 0 : ( pos+1 >= firstline.length() ? pos : pos+1 ) );
-        pos = _name.rfind('/');
-        _shortname = _name.substr( pos == string::npos ? 0 : ( pos+1 >= _name.length() ? pos : pos+1 ) );
-    }
-
-    bool ProcessInfo::LibraryIterator::LibraryInfo::ProcessLine(const string& firstline) {
-        return std::isdigit(firstline[0]) == false; //skip first line of section as it starts with a number
-    }
-
-    ProcessInfo::LibraryIterator::LibraryIterator(const uint32_t processPID) 
-        : _libraries()
-        , _current()
-        , _index(0) {
-       std::string path("/proc/");
-        path += std::to_string(processPID);
-        path += "/smaps";
-        std::ifstream file(path, std::ifstream::in);
-        std::string line;
-        while( std::getline(file, line).eof() == false && file.good() == true ) {
-            if( _libraries.size() == 0 ) {
-                _libraries.push_back(LibraryInfo(line));
-            }
-            else if( _libraries.back().ProcessLine(line) == false ) {
-                _libraries.push_back(LibraryInfo(line));
-            }
-        }
-        file.close();  
-        Reset();         
-    }
-
-
     // Current Process Information
     ProcessInfo::ProcessInfo()
 #ifdef __WIN32__
