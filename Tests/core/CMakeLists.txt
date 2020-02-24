@@ -2,11 +2,11 @@ set(TEST_RUNNER_NAME "WPEFramework_test_core")
 
 add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
-   test_cyclicbuffer.cpp
+   #test_cyclicbuffer.cpp
    test_databuffer.cpp
    test_dataelementfile.cpp
    test_dataelement.cpp
-   test_doorbell.cpp
+   #test_doorbell.cpp
    test_event.cpp
    test_hex2strserialization.cpp
    test_enumerate.cpp
@@ -18,17 +18,17 @@ add_executable(${TEST_RUNNER_NAME}
    test_json.cpp
    test_jsonparser.cpp
    test_keyvalue.cpp
-   test_library.cpp
+   #test_library.cpp
    test_lockablecontainer.cpp
    test_logging.cpp
    test_measurementtype.cpp
    test_messageException.cpp
-   test_networkinfo.cpp
+   #test_networkinfo.cpp
    test_nodeid.cpp
    test_numbertype.cpp
    test_optional.cpp
    test_parser.cpp
-   test_portability.cpp
+   #test_portability.cpp
    test_processinfo.cpp
    test_queue.cpp
    test_rangetype.cpp
@@ -38,8 +38,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
-   test_socketstreamjson.cpp
-   test_socketstreamtext.cpp
+   #test_socketstreamjson.cpp
+   #test_socketstreamtext.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
    test_synchronize.cpp
@@ -55,8 +55,8 @@ add_executable(${TEST_RUNNER_NAME}
    test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
-   test_websocketjson.cpp
-   test_websockettext.cpp
+   #test_websocketjson.cpp
+   #test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
 )
