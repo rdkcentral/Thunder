@@ -1,72 +1,24 @@
-/*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2020 RDK Management
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/*
- * Some material is:
- * Copyright 2007 Google Inc. All rights reserved.
- * Copyright 2012 Apple Inc. All rights reserved.
- * Licensed under the BSD-3 license
- */
-
-#ifndef __URL_H
-#define __URL_H
+#pragma once
 
 #include "Module.h"
-
-//
-//  foo://username:password@example.com:8042/over/there/index.dtb;type=animal?name=ferret#nose
-//  \ /   \________________/\_________/ \__/            \___/ \_/ \_________/ \_________/ \__/
-//   |           |               |       |                |    |       |           |       |
-//   |       userinfo         hostname  port              |    |       parameter query  fragment
-//   |    \_______________________________/ \_____________|____|____________/
-//scheme                  |                               | |  |
-//   |                authority                           |path|
-//   |                                                    |    |
-//   |            path                       interpretable as filename
-//   |   ___________|____________                              |
-//  / \ /                        \                             |
-//  urn:example:animal:ferret:nose               interpretable as extension
-//
-#define MAX_URL_SIZE 1024
 
 namespace WPEFramework {
 
 namespace Core {
+
     class EXTERNAL URL {
+    private:
+        static constexpr uint32_t MaximumURLLength = 2048;
+
     public:
         typedef enum {
             SCHEME_FILE = 0,
-            SCHEME_MAIL,
             SCHEME_HTTP,
             SCHEME_HTTPS,
             SCHEME_FTP,
-            SCHEME_TELNET,
-            SCHEME_GOPHER,
-            SCHEME_LDAP,
-            SCHEME_RTSP,
-            SCHEME_RTP,
-            SCHEME_RTP_UDP,
-            SCHEME_RTP_TCP,
-            SCHEME_RTCP,
+            SCHEME_NTP,
             SCHEME_WS,
             SCHEME_WSS,
-            SCHEME_NTP,
             SCHEME_UNKNOWN
 
         } SchemeType;
@@ -178,91 +130,73 @@ namespace Core {
         };
 
     public:
-        /* constructors */
-        /* The constructors throw InternalException if there is an error
-         * in the format of the URL, such as invalid protocol or port number.
-         * The exception will contain an message for the error.
-         */
         URL()
-            : m_SchemeInfo(nullptr)
-            , m_Scheme()
-            , m_Username()
-            , m_Password()
-            , m_Host()
-            , m_Port()
-            , m_Path()
-            , m_Query()
-            , m_Ref()
-            , m_Maintainer()
+            : _scheme(SCHEME_UNKNOWN)
+            , _username()
+            , _password()
+            , _host()
+            , _port()
+            , _path()
+            , _query()
+            , _ref()
         {
         }
-        URL(const SchemeType type)
-            : m_SchemeInfo(nullptr)
-            , m_Scheme()
-            , m_Username()
-            , m_Password()
-            , m_Host()
-            , m_Port()
-            , m_Path()
-            , m_Query()
-            , m_Ref()
-            , m_Maintainer()
+        explicit URL(const SchemeType type)
+            : _scheme(type)
+            , _username()
+            , _password()
+            , _host()
+            , _port()
+            , _path()
+            , _query()
+            , _ref()
         {
-            SetScheme(type);
         }
-        URL(const TCHAR urlStr[])
-            : m_SchemeInfo(nullptr)
-            , m_Scheme()
-            , m_Username()
-            , m_Password()
-            , m_Host()
-            , m_Port()
-            , m_Path()
-            , m_Query()
-            , m_Ref()
-            , m_Maintainer(urlStr)
+        explicit URL(const TCHAR urlStr[])
+            : _scheme(SCHEME_UNKNOWN)
+            , _username()
+            , _password()
+            , _host()
+            , _port()
+            , _path()
+            , _query()
+            , _ref()
         {
-            Parse(m_Maintainer);
+            Parse(Core::TextFragment(urlStr));
         }
-        URL(const string& urlStr)
-            : m_SchemeInfo(nullptr)
-            , m_Scheme()
-            , m_Username()
-            , m_Password()
-            , m_Host()
-            , m_Port()
-            , m_Path()
-            , m_Query()
-            , m_Ref()
-            , m_Maintainer(urlStr)
+        explicit URL(const string& urlStr)
+            : _scheme(SCHEME_UNKNOWN)
+            , _username()
+            , _password()
+            , _host()
+            , _port()
+            , _path()
+            , _query()
+            , _ref()
         {
-            Parse(m_Maintainer);
+            Parse(Core::TextFragment(urlStr));
         }
-        URL(const Core::TextFragment& text)
-            : m_SchemeInfo(nullptr)
-            , m_Scheme()
-            , m_Username()
-            , m_Password()
-            , m_Host()
-            , m_Port()
-            , m_Path()
-            , m_Query()
-            , m_Ref()
-            , m_Maintainer(text.Text())
+        explicit URL(const Core::TextFragment& text)
+            : _scheme(SCHEME_UNKNOWN)
+            , _username()
+            , _password()
+            , _host()
+            , _port()
+            , _path()
+            , _query()
+            , _ref()
         {
-            Parse(m_Maintainer);
+            Parse(text);
         }
         URL(const URL& copy)
-            : m_SchemeInfo(copy.m_SchemeInfo)
-            , m_Scheme(copy.m_Scheme)
-            , m_Username(copy.m_Username)
-            , m_Password(copy.m_Password)
-            , m_Host(copy.m_Host)
-            , m_Port(copy.m_Port)
-            , m_Path(copy.m_Path)
-            , m_Query(copy.m_Query)
-            , m_Ref(copy.m_Ref)
-            , m_Maintainer(copy.m_Maintainer)
+            : _scheme(copy._scheme)
+            , _username(copy._username)
+            , _password(copy._password)
+            , _host(copy._host)
+            , _port(copy._port)
+            , _path(copy._path)
+            , _query(copy._query)
+            , _ref(copy._ref)
         {
         }
         ~URL()
@@ -272,130 +206,110 @@ namespace Core {
     public:
         inline URL& operator=(const URL& copy)
         {
-            m_SchemeInfo = copy.m_SchemeInfo;
-            m_Scheme = copy.m_Scheme;
-            m_Username = copy.m_Username;
-            m_Password = copy.m_Password;
-            m_Host = copy.m_Host;
-            m_Port = copy.m_Port;
-            m_Path = copy.m_Path;
-            m_Query = copy.m_Query;
-            m_Ref = copy.m_Ref;
-            m_Maintainer = copy.m_Maintainer;
+            _scheme = copy._scheme;
+            _username = copy._username;
+            _password = copy._password;
+            _host = copy._host;
+            _port = copy._port;
+            _path = copy._path;
+            _query = copy._query;
+            _ref = copy._ref;
 
             return (*this);
         }
 
-        SchemeType Type() const;
-
         inline bool IsValid() const
         {
-            return (m_SchemeInfo != nullptr);
+            return (_scheme != SCHEME_UNKNOWN);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Scheme() const
+        SchemeType Type() const 
         {
-            return (m_Scheme);
+            return (_scheme);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& UserName() const
+        inline const Core::OptionalType<string>& UserName() const
         {
-            return (m_Username);
+            return (_username);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Password() const
+        inline const Core::OptionalType<string>& Password() const
         {
-            return (m_Password);
+            return (_password);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Host() const
+        inline const Core::OptionalType<string>& Host() const
         {
-            return (m_Host);
+            return (_host);
         }
 
         inline const Core::OptionalType<unsigned short>& Port() const
         {
-            return (m_Port);
+            return (_port);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Path() const
+        inline const Core::OptionalType<string>& Path() const
         {
-            return (m_Path);
+            return (_path);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Query() const
+        inline const Core::OptionalType<string>& Query() const
         {
-            return (m_Query);
+            return (_query);
         }
 
-        inline const Core::OptionalType<Core::TextFragment>& Ref() const
+        inline const Core::OptionalType<string>& Ref() const
         {
-            return (m_Ref);
+            return (_ref);
         }
 
-        inline void UserName(const Core::OptionalType<Core::TextFragment>& value)
+        inline void UserName(const Core::OptionalType<string>& value)
         {
-            m_Username = value;
+            _username = value;
         }
 
-        inline void Password(const Core::OptionalType<Core::TextFragment>& value)
+        inline void Password(const Core::OptionalType<string>& value)
         {
-            m_Password = value;
+            _password = value;
         }
 
-        inline void Host(const Core::OptionalType<Core::TextFragment>& value)
+        inline void Host(const Core::OptionalType<string>& value)
         {
-            m_Host = value;
+            _host = value;
         }
 
         inline void Port(const Core::OptionalType<unsigned short> port)
         {
-            m_Port = port;
+            _port = port;
         }
 
-        inline void Path(const Core::OptionalType<Core::TextFragment>& value)
+        inline void Path(const Core::OptionalType<string>& value)
         {
-            m_Path = value;
+            _path = value;
         }
 
-        inline void Query(const Core::OptionalType<Core::TextFragment>& value)
+        inline void Query(const Core::OptionalType<string>& value)
         {
-            m_Query = value;
+            _query = value;
         }
 
-        inline void Ref(const Core::OptionalType<Core::TextFragment>& value)
+        inline void Ref(const Core::OptionalType<string>& value)
         {
-            m_Ref = value;
+            _ref = value;
         }
 
-        Core::TextFragment Text() const;
+        string Text() const;
 
-        static void CreateStandardURL(TCHAR url[], int url_len, const URL& info)
-        {
-            info.CreateStandardURL(url, url_len);
-        }
-        static void CreatePathURL(TCHAR url[], int url_len, const URL& info)
-        {
-            info.CreatePathURL(url, url_len);
-        }
-        static void CreateFileURL(TCHAR url[], int url_len, const URL& info)
-        {
-            info.CreateFileURL(url, url_len);
-        }
-        static void CreateMailtoURL(TCHAR url[], int url_len, const URL& info)
-        {
-            info.CreateMailtoURL(url, url_len);
-        }
         bool IsDomain(const TCHAR domain[], const unsigned int length) const
         {
             bool result = false;
 
-            if ((m_Host.IsSet() == true) && (m_Host.Value().Length() >= length)) {
-                uint32_t offset = m_Host.Value().Length() - length;
+            if ((_host.IsSet() == true) && (_host.Value().length() >= length)) {
+                uint32_t offset = static_cast<uint32_t>(_host.Value().length()) - length;
 
-                if ((offset == 0) || (m_Host.Value()[(offset - 1)] == '.')) {
+                if ((offset == 0) || (_host.Value()[(offset - 1)] == '.')) {
                     uint32_t index = 0;
-                    while ((index < length) && (tolower(domain[index]) == m_Host.Value()[index + offset])) {
+                    while ((index < length) && (tolower(domain[index]) == _host.Value()[index + offset])) {
                         index++;
                     }
                     result = (index == length);
@@ -409,43 +323,19 @@ namespace Core {
         static uint16_t Base64Decode(const TCHAR* source, const uint16_t sourceLength, uint8_t* destination, const uint16_t destinationLength, const TCHAR* ignoreList = nullptr);
 
     private:
-        void Parse(const string& urlStr);
-        void SetComponent(const string& urlStr, const unsigned int begin, const unsigned int end, Core::OptionalType<Core::TextFragment>& SetInfo);
-        void SetScheme(const SchemeType type);
-
-        // StandardURL is for when the scheme is known to be one that has an
-        // authority (host) like "http". This function will not handle weird ones
-        // like "about:" and "javascript:", or do the right thing for "file:" URLs.
-        void CreateStandardURL(TCHAR url[], int url_len) const;
-
-        // PathURL is for when the scheme is known not to have an authority (host)
-        // section but that aren't file URLs either. The scheme is parsed, and
-        // everything after the scheme is considered as the path. This is used for
-        // things like "about:" and "javascript:"
-        void CreatePathURL(TCHAR url[], int url_len) const;
-
-        // FileURL is for file URLs. There are some special rules for interpreting
-        // these.
-        void CreateFileURL(TCHAR url[], int url_len) const;
-
-        // MailtoURL is for mailto: urls. They are made up scheme,path,query
-        void CreateMailtoURL(TCHAR url[], int url_len) const;
+        void Parse(const Core::TextFragment& url);
+        void ParseDomain(const Core::TextFragment& url);
 
     private:
-        const void* m_SchemeInfo;
-        Core::OptionalType<Core::TextFragment> m_Scheme;
-        Core::OptionalType<Core::TextFragment> m_Username;
-        Core::OptionalType<Core::TextFragment> m_Password;
-        Core::OptionalType<Core::TextFragment> m_Host;
-        Core::OptionalType<unsigned short> m_Port;
-        Core::OptionalType<Core::TextFragment> m_Path;
-        Core::OptionalType<Core::TextFragment> m_Query;
-        Core::OptionalType<Core::TextFragment> m_Ref;
-
-        // This is a placeholder to reference the string in case a string is ingested..
-        string m_Maintainer;
+        SchemeType _scheme;
+        Core::OptionalType<string> _username;
+        Core::OptionalType<string> _password;
+        Core::OptionalType<string> _host;
+        Core::OptionalType<unsigned short> _port;
+        Core::OptionalType<string> _path;
+        Core::OptionalType<string> _query;
+        Core::OptionalType<string> _ref;
     };
+
 }
 } // namespace Core
-
-#endif // _URL

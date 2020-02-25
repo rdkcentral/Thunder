@@ -58,7 +58,7 @@ namespace Plugin {
         }
         Discovery(const Core::URL& remote, const uint32_t latencyinUs)
         {
-            _text = "Discovered: [" + remote.Text().Text() + "] with latency: " + Core::NumberType<uint32_t>(latencyinUs).Text() + " uS";
+            _text = "Discovered: [" + remote.Text() + "] with latency: " + Core::NumberType<uint32_t>(latencyinUs).Text() + " uS";
         }
         Discovery(const uint32_t latencyinUs)
         {
@@ -255,7 +255,7 @@ namespace Plugin {
         response->Body(body);
         response->ErrorCode = Web::STATUS_OK;
         response->Message = _T("OK");
-        response->ApplicationURL = _applicationURL;
+        response->ApplicationURL = Core::URL(_applicationURL);
 
         TRACE(Discovery, (response, Link().RemoteNode()));
 

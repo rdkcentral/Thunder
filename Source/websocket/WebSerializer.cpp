@@ -1185,7 +1185,7 @@ namespace Web
                         } else if ((_keyIndex <= 22) && (_current->ApplicationURL.IsSet() == true)) {
                             _keyIndex = 23;
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __APPLICATION_URL : _T("Application-URL:"));
-                            _value = _current->ApplicationURL.Value().Text().Text();
+                            _value = _current->ApplicationURL.Value().Text();
                             _offset = 0;
                         } else if ((_keyIndex <= 23) && (((_bodyLength = (_current->_body.IsValid() ? _current->_body->Serialize() : 0)) > 0) || (_current->ContentLength.IsSet() == true) || (!_current->Connection.IsSet()) || (_current->Connection.Value() != Response::CONNECTION_CLOSE))) {
                             _keyIndex = (_bodyLength > 0 ? 24 : 25);
@@ -1833,7 +1833,7 @@ namespace Web
                 _current->ST = buffer;
                 break;
             case Response::APPLICATION_URL:
-                _current->ApplicationURL = buffer;
+                _current->ApplicationURL = Core::URL(buffer);
                 break;
             case Response::CACHE_CONTROL:
                 _current->CacheControl = buffer;
