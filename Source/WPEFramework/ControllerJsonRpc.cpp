@@ -304,7 +304,7 @@ namespace Plugin {
         Probe::Iterator index(_probe->Instances());
 
         while (index.Next() == true) {
-            PluginHost::MetaData::Bridge element((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+            PluginHost::MetaData::Bridge element((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
             response.Add(element);
         }
 
