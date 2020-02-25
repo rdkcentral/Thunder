@@ -20,6 +20,7 @@ set(TARGET ${NAMESPACE}Protocols)
 find_package(ZLIB REQUIRED)
 
 ProxyStubGenerator(NAMESPACE "RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h)
+ProxyStubGenerator(NAMESPACE "Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/ITracing.h)
 
 # Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
 # new source file again. This is in case CMAKE forgets :-)
@@ -36,6 +37,7 @@ set(SOURCES_COM
         com/Communicator.cpp
         com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
+        com/ProxyStubs_Tracing.cpp
         com/IStringIterator.cpp
         com/IValueIterator.cpp
         com/IValueIterator.h
@@ -106,6 +108,7 @@ add_library(${TARGET} SHARED
         URL.cpp
         JSONWebToken.cpp
         ITracing.cpp
+        ProxyStubs_Tracing.cpp
         IUnknown.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
