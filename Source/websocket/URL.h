@@ -305,7 +305,7 @@ namespace Core {
             bool result = false;
 
             if ((_host.IsSet() == true) && (_host.Value().length() >= length)) {
-                uint32_t offset = _host.Value().length() - length;
+                uint32_t offset = static_cast<uint32_t>(_host.Value().length()) - length;
 
                 if ((offset == 0) || (_host.Value()[(offset - 1)] == '.')) {
                     uint32_t index = 0;

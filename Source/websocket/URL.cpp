@@ -182,7 +182,7 @@ namespace Core
 
     inline static uint32_t CopyFragment(TCHAR* destination, const uint32_t maxLength, uint32_t index, const string& data)
     {
-        const uint32_t count = (data.length() > static_cast<unsigned int>(maxLength) ? maxLength : data.length());
+        const uint32_t count = (data.length() > static_cast<unsigned int>(maxLength) ? maxLength : static_cast<uint32_t>(data.length()));
 
         ::memcpy(&(destination[index]), data.c_str(), (count * sizeof(TCHAR)));
 
@@ -218,7 +218,7 @@ namespace Core
         }
         else {
             // determine the Schema
-            Core::EnumerateType<SchemeType> value (Core::TextFragment(urlStr, 0, offset -1));
+            Core::EnumerateType<SchemeType> value (Core::TextFragment(urlStr, 0, offset));
 
             if (value.IsSet() == false) {
                 _scheme = SCHEME_UNKNOWN;
@@ -233,7 +233,7 @@ namespace Core
             uint32_t atsign = urlStr.ForwardFind('@', offset);
             uint32_t path = urlStr.ForwardFind('/', offset);
             uint32_t query = urlStr.ForwardFind('?', offset); 
-            uint32_t ref = urlStr.ForwardFind('#', query + 1); 
+            uint32_t ref = urlStr.ForwardFind('#', offset); 
 
             // It could be that there is  no path,or query and onl a ref. Determine the marker by finding the
             // minum index value we have..
@@ -247,14 +247,14 @@ namespace Core
 
                 // find he first part, the scheme
                 if (user < hostname) {
-                    _username = Core::TextFragment(urlStr, offset, user - offset - 1).Text();
+                    _username = Core::TextFragment(urlStr, offset, user - offset).Text();
                     _password = Core::TextFragment(urlStr, user + 1, hostname - user - 1).Text();
                 }
  
                 ParseDomain(Core::TextFragment(urlStr, atsign + 1, marker - atsign - 1));
             }
             else {
-                ParseDomain(Core::TextFragment(urlStr, offset, marker - 1));
+                ParseDomain(Core::TextFragment(urlStr, offset, marker - offset));
             }
 
             if (marker < length) {
@@ -262,16 +262,16 @@ namespace Core
                 // Check for a path
                 if (path < length) {
                     marker = std::min(std::min(query, ref), length);
-                    _path = string(Core::TextFragment(urlStr, path + 1, marker).Text());
+                    _path = Core::TextFragment(urlStr, path, marker - path).Text();
                 }
 
                 if (query < length) {
                     marker = std::min(ref, length);
-                    _query = string(Core::TextFragment(urlStr, query + 1, marker).Text());
+                    _query = Core::TextFragment(urlStr, query + 1, marker - query - 1).Text();
                 }
 
                 if (ref < length) {
-                    _ref = string(Core::TextFragment(urlStr, ref + 1, length).Text());
+                    _ref = Core::TextFragment(urlStr, ref + 1, length - ref - 1).Text();
                 }
             }
         }
