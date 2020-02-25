@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Time.h"
 #include <time.h>
 
@@ -727,6 +746,11 @@ namespace Core {
         _ticks = (static_cast<uint64_t>(time.tv_sec) * MicroSecondsPerSecond) + (time.tv_nsec / NanoSecondsPerMicroSecond) + OffsetTicksForEpoch;
     }
 
+
+    // Copyright (c) 2001-2006, NLnet Labs. All rights reserved.
+    // Licensed under the BSD-3 License"
+ 
+
     // GMT specific version of mktime(), taken from BSD source code
     /* Number of days per month (except for February in leap years). */
     static const int monoff[] = {
@@ -745,6 +769,9 @@ namespace Core {
         return (y2 / 4 - y1 / 4) - (y2 / 100 - y1 / 100) + (y2 / 400 - y1 / 400);
     }
 
+    /*
+     * Code adapted from Python 2.4.1 sources (Lib/calendar.py).
+     */
     static time_t mktimegm(const struct tm* tm)
     {
         int year;
