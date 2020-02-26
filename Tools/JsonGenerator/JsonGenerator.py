@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # If not stated otherwise in this file or this component's license file the
 # following copyright and licenses apply:
@@ -66,7 +66,7 @@ try:
     import jsonref
 except:
     trace.Error("Install jsonref first")
-    print("e.g. try 'pip install jsonref'")
+    print("e.g. try 'pip3 install jsonref'")
     sys.exit(1)
 
 INDENT_SIZE = 4
@@ -2263,8 +2263,8 @@ def CreateDocument(schema, path):
                 MdHeader("Description", 3)
                 MdParagraph(props["description"])
             if "events" in props:
-                MdParagraph("Also see: " + (", ".join(
-                    map(lambda x: link("event." + x), props["events"]))))
+                events = [props["events"]] if isinstance(props["events"], str) else props["events"]
+                MdParagraph("Also see: " + (", ".join(map(lambda x: link("event." + x), events))))
             if is_property:
                 MdHeader("Value", 3)
                 if not "description" in props["params"]:
@@ -2559,12 +2559,8 @@ def CreateDocument(schema, path):
 
             required = []
             if "configuration" in schema:
-                commonConfig2 = OrderedDict(
-                    commonConfig.items() +
-                    schema["configuration"]["properties"].items())
-                required = schema["configuration"][
-                    "required"] if "required" in schema[
-                        "configuration"] else []
+                commonConfig2 = OrderedDict(list(commonConfig.items()) + list(schema["configuration"]["properties"].items()))
+                required = schema["configuration"]["required"] if "required" in schema["configuration"] else []
             else:
                 commonConfig2 = commonConfig
 
