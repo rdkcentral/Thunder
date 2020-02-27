@@ -132,8 +132,8 @@ TEST(test_workerpool, simple_workerpool)
     object.Run();
     workerpool->Run();
     workerpool->Id(0);
-    EXPECT_EQ(workerpool->Id(1),(unsigned)0);
-    EXPECT_EQ(workerpool->Id(-1),(unsigned)0);
+    EXPECT_EQ(workerpool->Id(1),0u);
+    EXPECT_EQ(workerpool->Id(-1),0u);
     workerpool->Snapshot();
     Core::ProxyType<Core::IDispatch> job(Core::ProxyType<WorkerJob>::Create());
     workerpool->Submit(job);

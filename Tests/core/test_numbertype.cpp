@@ -40,15 +40,15 @@ namespace Tests {
         Core::NumberType<uint32_t> val6 = (unsigned)Tester<Core::NumberType<int32_t>>(valdata);
         EXPECT_EQ(Core::NumberType<int32_t>::ToNetwork(val5),1509949440);
         EXPECT_EQ(Core::NumberType<int32_t>::FromNetwork(val5),1509949440);
-        EXPECT_EQ(Core::NumberType<uint32_t>::ToNetwork(val6),(unsigned)1509949440);
-        EXPECT_EQ(Core::NumberType<uint32_t>::FromNetwork(val6),(unsigned)1509949440);
+        EXPECT_EQ(Core::NumberType<uint32_t>::ToNetwork(val6),1509949440u);
+        EXPECT_EQ(Core::NumberType<uint32_t>::FromNetwork(val6),1509949440u);
 
         Core::NumberType<int64_t> val7 = Tester<Core::NumberType<int64_t>>(valdata);
         Core::NumberType<uint64_t> val8 = (unsigned)Tester<Core::NumberType<int64_t>>(valdata);
         EXPECT_EQ(Core::NumberType<int64_t>::ToNetwork(val7),90);
         EXPECT_EQ(Core::NumberType<int64_t>::FromNetwork(val7),90);
-        EXPECT_EQ(Core::NumberType<uint64_t>::ToNetwork(val8),(unsigned)90);
-        EXPECT_EQ(Core::NumberType<uint64_t>::FromNetwork(val8),(unsigned)90);
+        EXPECT_EQ(Core::NumberType<uint64_t>::ToNetwork(val8),90u);
+        EXPECT_EQ(Core::NumberType<uint64_t>::FromNetwork(val8),90u);
 
         val8.MaxSize();
         EXPECT_EQ(val8.Serialize(valdata),2);
@@ -216,7 +216,7 @@ namespace Tests {
         Core::Fractional fractional3;
         fractional3 = fractional1;
         EXPECT_EQ(fractional1.Integer(),3);
-        EXPECT_EQ(fractional1.Remainder(),(unsigned)2);
+        EXPECT_EQ(fractional1.Remainder(),2u);
 
         Core::NumberType<Core::Fractional, true> num1;
         fractional3 = num1.Max();
