@@ -64,12 +64,12 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             StepForward();
             StepBack();
             ClearData();
-            Reader obj1(file, unsigned(1));
+            Reader obj1(file, 1u);
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
 
-            EXPECT_EQ(StartId(),(unsigned)1);;
-            EXPECT_EQ(EndId(),unsigned(1));
+            EXPECT_EQ(StartId(),1u);;
+            EXPECT_EQ(EndId(),2u);
             Source();
         }
     private:
