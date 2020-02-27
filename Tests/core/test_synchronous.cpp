@@ -130,7 +130,7 @@ TEST(test_synchronous, simple_synchronous)
         testAdmin.Sync("connect client");
         uint8_t buffer[] = "Hello";
         Message message(5,buffer);
-        EXPECT_EQ(synchronousClientSocket.Exchange(500, message),(unsigned)0);
+        EXPECT_EQ(synchronousClientSocket.Exchange(500, message),0u);
         testAdmin.Sync("client msg");
        
         InMessage response; 

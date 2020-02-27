@@ -19,7 +19,7 @@ TEST(test_textfragment, simple_textfragement)
     EXPECT_STREQ(index.Remainder().Text().c_str(), _T("test")) << "The remainder string is not test";
     EXPECT_STREQ(index.Remainder().Data(), _T("test")) << "The remainder string is not test";
     EXPECT_STREQ(index.Current().Text().c_str(), _T("test")) << "The current string is not test";
-    EXPECT_EQ(index.Remainder().Length(), (unsigned)4) << "The length of the string is not 4.";
+    EXPECT_EQ(index.Remainder().Length(), 4u) << "The length of the string is not 4.";
     EXPECT_FALSE(index.Remainder().IsEmpty());
     
     TextFragment textFragment();
@@ -29,7 +29,7 @@ TEST(test_textfragment, simple_textfragement)
     TextFragment textFragment3(buffer_new,16,5);
 
     char delimiter[] = {'/'};
-    EXPECT_EQ(textFragment1.ForwardFind(delimiter),(unsigned)0);
+    EXPECT_EQ(textFragment1.ForwardFind(delimiter),0u);
     textFragment1.Clear();
     EXPECT_EQ(textFragment2[1],'S');
 
@@ -46,8 +46,8 @@ TEST(test_textfragment, simple_textfragement)
     const TCHAR middle[] = "testing";
     textFragment2.TrimBegin(begin);
     textFragment2.TrimEnd(end);
-    EXPECT_EQ(textFragment2.ReverseFind(middle),(unsigned)15);
-    EXPECT_EQ(textFragment2.ReverseSkip(middle),(unsigned)16);
+    EXPECT_EQ(textFragment2.ReverseFind(middle),15u);
+    EXPECT_EQ(textFragment2.ReverseSkip(middle),16u);
 
     const TCHAR splitters[] ={'/',','};
     TextSegmentIterator iterator1(TextFragment(string(buffer), 16, 5), false,splitters);
