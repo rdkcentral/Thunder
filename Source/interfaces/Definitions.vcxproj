@@ -74,7 +74,7 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </CustomBuild>
-    <CustomBuild Include="json\OpenCDMi.json">
+    <CustomBuild Include="json\OCDM.json">
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
       <FileType>Document</FileType>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
@@ -172,6 +172,15 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
     </CustomBuild>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="json\InputSwitch.json">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</DeploymentContent>
+      <FileType>Document</FileType>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+    </CustomBuild>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{577A83B6-66B6-4A98-A3D6-4EBA066A1772}</ProjectGuid>
@@ -228,8 +237,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
-    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
+    <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
     <CustomBuildAfterTargets>
@@ -238,7 +247,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -248,7 +257,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -258,7 +267,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
     <CustomBuildBeforeTargets>
     </CustomBuildBeforeTargets>
@@ -281,13 +290,12 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>
-      </Command>
+      <Command>python "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --code "$(ProjectDir)I*.h"</Command>
       <Message>
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -297,7 +305,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -330,7 +338,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -340,7 +348,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -377,7 +385,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -387,7 +395,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>
@@ -424,7 +432,7 @@
       </Message>
     </PreBuildEvent>
     <CustomBuildStep>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py -c %(Filename)%(Extension)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" -c %(Filename)%(Extension)</Command>
     </CustomBuildStep>
     <CustomBuildStep>
       <Outputs>JsonData_%(Filename).h; JsonEnum_%(Filename).cpp</Outputs>
@@ -434,7 +442,7 @@
       <Message>JSONGenerator</Message>
     </CustomBuildStep>
     <CustomBuild>
-      <Command>python  $(SolutionDir)tools\JsonGenerator\JsonGenerator.py --keep-empty -c %(FullPath)</Command>
+      <Command>python  "$(SolutionDir)tools\JsonGenerator\JsonGenerator.py" --keep-empty -c "%(FullPath)"</Command>
     </CustomBuild>
     <CustomBuild>
       <Message>JSONGenerator</Message>

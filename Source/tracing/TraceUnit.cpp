@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "TraceUnit.h"
 #include "TraceCategories.h"
 #include "Logging.h"
@@ -176,11 +195,11 @@ namespace Trace {
         return (result);
     }
 
-    uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
+    uint32_t TraceUnit::Open(const string& pathName)
     {
-        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName + '.' + Core::NumberType<uint32_t>(identifier).Text());
-        #ifdef __WIN32__
-        string doorBell("127.0.0.1:61234");
+        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
+        #ifdef __WINDOWS__
+        string doorBell("127.0.0.1:62001");
         #else
         string doorBell(Core::Directory::Normalize(pathName) + CyclicBufferName + ".doorbell" );
         #endif

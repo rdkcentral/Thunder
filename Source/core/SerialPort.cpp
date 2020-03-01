@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #include "SerialPort.h"
 
 #include "Serialization.h"
@@ -24,7 +43,7 @@
 #define ERROR_AGAIN EAGAIN
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #define ERRORRESULT ::GetLastError()
 #define ERROR_WOULDBLOCK ERROR_IO_PENDING
 #define ERROR_AGAIN ERROR_IO_PENDING
@@ -38,7 +57,7 @@ namespace Core {
 //////////////////////////////////////////////////////////////////////
 // SerialPort::SerialMonitor
 //////////////////////////////////////////////////////////////////////
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     class SerialMonitor {
     private:
         class MonitorWorker : public Core::Thread {
@@ -261,7 +280,7 @@ namespace Core {
         , m_SendBytes(0)
         ,
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_Descriptor(INVALID_HANDLE_VALUE)
 #endif
 
@@ -269,7 +288,7 @@ namespace Core {
             m_Descriptor(-1)
 #endif
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
         ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
         m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
@@ -289,7 +308,7 @@ namespace Core {
         , m_SendBytes(0)
         ,
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_Descriptor(INVALID_HANDLE_VALUE)
 #endif
 
@@ -297,7 +316,7 @@ namespace Core {
             m_Descriptor(-1)
 #endif
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
         ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
         m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
@@ -325,7 +344,7 @@ namespace Core {
         , m_SendBytes(0)
         ,
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_Descriptor(INVALID_HANDLE_VALUE)
 #endif
 
@@ -333,7 +352,7 @@ namespace Core {
             m_Descriptor(-1)
 #endif
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::memset(&m_ReadInfo, 0, sizeof(OVERLAPPED));
         ::memset(&m_WriteInfo, 0, sizeof(OVERLAPPED));
         m_ReadInfo.hEvent = ::CreateEvent(nullptr, TRUE, FALSE, nullptr);
@@ -349,14 +368,14 @@ namespace Core {
 #ifdef __LINUX__
         ASSERT(m_Descriptor == -1);
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ASSERT(m_Descriptor == INVALID_HANDLE_VALUE);
 #endif
         if (m_SendBuffer != nullptr) {
             ::free(m_SendBuffer);
         }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::CloseHandle(m_ReadInfo.hEvent);
         ::CloseHandle(m_WriteInfo.hEvent);
 #endif
@@ -373,7 +392,7 @@ namespace Core {
             ::tcgetattr(m_Descriptor, &m_PortSettings);
         }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (m_Descriptor != INVALID_HANDLE_VALUE) {
             ::GetCommState(m_Descriptor, &m_PortSettings);
         }
@@ -402,7 +421,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_PortSettings.DCBlength = sizeof(DCB);
         m_PortSettings.BaudRate = baudRate;
         m_PortSettings.ByteSize = BITS_8;
@@ -472,7 +491,7 @@ namespace Core {
 #ifdef __LINUX__
         if (m_Descriptor == -1)
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (m_Descriptor == INVALID_HANDLE_VALUE)
 #endif
             {
@@ -500,7 +519,7 @@ namespace Core {
                 }
 
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 m_PortSettings.DCBlength = sizeof(DCB);
                 m_PortSettings.BaudRate = baudRate;
                 m_PortSettings.ByteSize = dataBits;
@@ -591,7 +610,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (m_Descriptor == INVALID_HANDLE_VALUE) {
             m_Descriptor = ::CreateFile(m_PortName.c_str(),
                 GENERIC_READ | GENERIC_WRITE, //access ( read and write)
@@ -649,7 +668,7 @@ namespace Core {
         } 
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if (m_Descriptor != INVALID_HANDLE_VALUE) {
 
                 m_State |= SerialPort::EXCEPTION;
@@ -704,7 +723,7 @@ namespace Core {
         {
             m_syncAdmin.Lock();
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             if ((m_State & (SerialPort::OPEN | SerialPort::EXCEPTION)) == SerialPort::OPEN) {
                 ::SetEvent(m_WriteInfo.hEvent);
             }
@@ -718,7 +737,7 @@ namespace Core {
             m_syncAdmin.Unlock();
         }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         /* virtual */ uint16_t SerialPort::Events()
         {
             uint16_t result = POLLIN;

@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __COM_ADMINISTRATOR_H
 #define __COM_ADMINISTRATOR_H
 
@@ -295,7 +314,7 @@ namespace RPC {
         InvokeServer(const InvokeServer&) = delete;
         InvokeServer& operator=(const InvokeServer&) = delete;
 
-        InvokeServer(Core::WorkerPool* workers)
+        InvokeServer(Core::IWorkerPool* workers)
             : _threadPoolEngine(*workers)
             , _handler(nullptr)
         {
@@ -321,24 +340,25 @@ namespace RPC {
         }
 
     private:
-        Core::WorkerPool& _threadPoolEngine;
+        Core::IWorkerPool& _threadPoolEngine;
         Core::IIPCServer* _handler;
     };
 
-    template <const uint32_t MESSAGESLOTS, const uint16_t THREADPOOLCOUNT>
+    template <const uint8_t THREADPOOLCOUNT, const uint32_t STACKSIZE, const uint32_t MESSAGESLOTS>
     class InvokeServerType : public Core::IIPCServer {
     public:
-        InvokeServerType() = delete;
-        InvokeServerType(const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
-        InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>& operator = (const InvokeServerType<MESSAGESLOTS, THREADPOOLCOUNT>&) = delete;
+        InvokeServerType(const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
+        InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>& operator = (const InvokeServerType<THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS>&) = delete;
 
-        InvokeServerType(const uint32_t stackSize = Core::Thread::DefaultStackSize())
-            : _threadPoolEngine(stackSize, _T("IPCInterfaceMessageHandler"))
+        InvokeServerType()
+            : _threadPoolEngine(THREADPOOLCOUNT,STACKSIZE,MESSAGESLOTS)
             , _handler(nullptr)
         {
+            _threadPoolEngine.Run();
         }
         ~InvokeServerType()
         {
+            _threadPoolEngine.Stop();
         }
 
         void Announcements(Core::IIPCServer* announces)
@@ -356,13 +376,17 @@ namespace RPC {
 
             if (message->Label() == AnnounceMessage::Id()) {
 	            _handler->Procedure(source, message);
-	        } else {
-                _threadPoolEngine.Submit(Job(source, message, _handler), Core::infinite);
+	    } else {
+
+                Core::ProxyType<Job> job(Job::Instance());
+
+                job->Set(source, message, _handler);
+                _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
             }        
         }
 
     private:
-        Core::ThreadPoolType<Job, THREADPOOLCOUNT, MESSAGESLOTS> _threadPoolEngine;
+        Core::ThreadPool _threadPoolEngine;
         Core::IIPCServer* _handler;
     };
 }

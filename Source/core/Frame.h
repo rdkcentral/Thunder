@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __GENERICS_FRAME_H
 #define __GENERICS_FRAME_H
 
@@ -328,28 +347,6 @@ namespace Core {
 
             _size = size;
         }
-#ifdef __DEBUG__
-        void Dump(const unsigned int offset) const
-        {
-            static const TCHAR character[] = "0123456789ABCDEF";
-            string info;
-            uint16_t index = offset;
-
-            while (index < _size) {
-                if (info.empty() == false) {
-                    info += ':';
-                }
-                info += string("0x") + character[(_data[index] & 0xF0) >> 4] + character[(_data[index] & 0x0F)];
-                index++;
-            }
-
-            TRACE_L1("MetaData: %s", info.c_str());
-        }
-#endif
-
-        friend class Reader;
-        friend class Writer;
-
         template <typename TYPENAME>
         uint16_t SetBuffer(const uint16_t offset, const TYPENAME& length, const uint8_t buffer[])
         {
@@ -479,6 +476,25 @@ namespace Core {
         {
             return (GetNumber(offset, number, TemplateIntToType<sizeof(TYPENAME) == 1>()));
         }
+
+#ifdef __DEBUG__
+        void Dump(const unsigned int offset) const
+        {
+            static const TCHAR character[] = "0123456789ABCDEF";
+            string info;
+            uint16_t index = offset;
+
+            while (index < _size) {
+                if (info.empty() == false) {
+                    info += ':';
+                }
+                info += string("0x") + character[(_data[index] & 0xF0) >> 4] + character[(_data[index] & 0x0F)];
+                index++;
+            }
+
+            TRACE_L1("MetaData: %s", info.c_str());
+        }
+#endif
 
     private:
         template <typename TYPENAME>

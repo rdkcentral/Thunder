@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 // ===========================================================================
 //
 // Filename:    sync.cpp
@@ -38,7 +57,7 @@
 namespace WPEFramework {
 namespace Core {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     uint32_t
     InterlockedIncrement(
         volatile uint32_t& a_Number)
@@ -108,7 +127,7 @@ namespace Core {
 //----------------------------------------------------------------------------
 // CONSTRUCTOR & DESTRUCTOR
 //----------------------------------------------------------------------------
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     CriticalSection::CriticalSection()
     {
         TRACE_L5("Constructor CriticalSection <%p>", (this));
@@ -220,7 +239,7 @@ namespace Core {
             TRACE_L1("Probably trying to delete a used CriticalSection <%d>.", 0);
         }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::DeleteCriticalSection(&m_syncMutex);
 #endif
     }
@@ -272,7 +291,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_syncMutex = ::CreateMutex(nullptr, (nInitialCount == 0), nullptr);
 
         ASSERT(m_syncMutex != nullptr);
@@ -309,7 +328,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_syncMutex = ::CreateMutex(nullptr, blLocked, nullptr);
 
         ASSERT(m_syncMutex != nullptr);
@@ -326,7 +345,7 @@ namespace Core {
         pthread_cond_destroy(&m_syncCondition);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::CloseHandle(m_syncMutex);
 #endif
     }
@@ -339,7 +358,7 @@ namespace Core {
     BinairySemaphore::Lock()
     {
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncMutex, Core::infinite, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
 #else
         int nResult = Core::ERROR_NONE;
@@ -381,7 +400,7 @@ namespace Core {
     uint32_t
     BinairySemaphore::Lock(unsigned int nTime)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncMutex, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #else
         uint32_t nResult = Core::ERROR_NONE;
@@ -457,7 +476,7 @@ namespace Core {
         pthread_mutex_unlock(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::ReleaseMutex(m_syncMutex);
 #endif
     }
@@ -504,7 +523,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_syncSemaphore = ::CreateSemaphore(nullptr, nInitialCount, nMaxCount, nullptr);
 
         ASSERT(m_syncSemaphore != nullptr);
@@ -520,7 +539,7 @@ namespace Core {
         pthread_mutex_destroy(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::CloseHandle(m_syncSemaphore);
 #endif
     }
@@ -532,7 +551,7 @@ namespace Core {
     uint32_t
     CountingSemaphore::Lock()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncSemaphore, Core::infinite, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
 #else
         // First see if we could still decrease the count..
@@ -575,7 +594,7 @@ namespace Core {
     uint32_t
     CountingSemaphore::Lock(unsigned int nMilliSeconds)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncSemaphore, nMilliSeconds, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #else
         // First see if we could still decrease the count..
@@ -670,7 +689,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint32_t nResult = Core::ERROR_NONE;
 
         if (::ReleaseSemaphore(m_syncSemaphore, nCount, nullptr) == FALSE) {
@@ -723,7 +742,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint32_t nResult = Core::ERROR_NONE;
 
         if (::ReleaseSemaphore(m_syncSemaphore, 1, nullptr) == FALSE) {
@@ -778,7 +797,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         m_syncEvent = ::CreateEvent(nullptr, blManualReset, blSet, nullptr);
 
         ASSERT(m_syncEvent != nullptr);
@@ -796,7 +815,7 @@ namespace Core {
         pthread_cond_destroy(&m_syncCondition);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::CloseHandle(m_syncEvent);
 #endif
     }
@@ -808,7 +827,7 @@ namespace Core {
     uint32_t
     Event::Lock()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncEvent, Core::infinite, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
 #else
         int nResult = Core::ERROR_NONE;
@@ -848,7 +867,7 @@ namespace Core {
         return (m_blCondition);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncEvent, 0, FALSE) == WAIT_OBJECT_0);
 #endif
     }
@@ -856,7 +875,7 @@ namespace Core {
     uint32_t
     Event::Lock(unsigned int nTime)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncEvent, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #else
         if (nTime == Core::infinite) {
@@ -921,7 +940,7 @@ namespace Core {
         pthread_mutex_unlock(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (m_blManualReset) {
             ::SetEvent(m_syncEvent);
         } else {
@@ -947,7 +966,7 @@ namespace Core {
         pthread_mutex_unlock(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::ResetEvent(m_syncEvent);
 #endif
     }
@@ -985,7 +1004,7 @@ namespace Core {
         pthread_mutex_unlock(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::SetEvent(m_syncEvent);
 #endif
     }
@@ -1019,11 +1038,11 @@ namespace Core {
         pthread_mutex_unlock(&m_syncAdminLock);
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ::PulseEvent(m_syncEvent);
 #endif
     }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #if defined(CRITICAL_SECTION_LOCK_LOG)
     CriticalSection CriticalSection::_StdErrDumpMutex;
 #endif

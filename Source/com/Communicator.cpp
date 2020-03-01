@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Communicator.h"
 
 #include <limits>
@@ -215,26 +234,9 @@ namespace RPC {
         }
     }
 
-    /* virtual */ uint32_t Communicator::RemoteConnection::Parent() const
-    {
-        return (_parent);
-    }
-
     /* virtual */ uint32_t Communicator::RemoteConnection::Id() const
     {
         return (_id);
-    }
-
-    /* virtual */ void* Communicator::RemoteConnection::QueryInterface(const uint32_t id)
-    {
-        if (id == IRemoteConnection::ID) {
-            AddRef();
-            return (static_cast<IRemoteConnection*>(this));
-        } else if (id == Core::IUnknown::ID) {
-            AddRef();
-            return (static_cast<Core::IUnknown*>(this));
-        }
-        return (nullptr);
     }
 
     /* virtual */ void* Communicator::RemoteConnection::Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version)
@@ -303,12 +305,7 @@ namespace RPC {
 
 #endif
 
-    Communicator::RemoteHost::RemoteHost(const Core::NodeId& remoteNode)
-        : RemoteProcess()
-    {
-    }
-
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
 
@@ -357,6 +354,7 @@ namespace RPC {
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
         , _handler(this)
+        , _connectionId(~0)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
@@ -372,6 +370,7 @@ namespace RPC {
         , _announceMessage(Core::ProxyType<RPC::AnnounceMessage>::Create())
         , _announceEvent(false, true)
         , _handler(this)
+        , _connectionId(~0)
     {
         CreateFactory<RPC::AnnounceMessage>(1);
         CreateFactory<RPC::InvokeMessage>(2);
@@ -379,7 +378,7 @@ namespace RPC {
         BaseClass::Register(RPC::InvokeMessage::Id(), handler);
         BaseClass::Register(RPC::AnnounceMessage::Id(), handler);
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -489,6 +488,8 @@ namespace RPC {
             if (jsonDefaultCategories.empty() == false) {
                 Trace::TraceUnit::Instance().Defaults(jsonDefaultCategories);
             }
+
+            _connectionId = announceMessage->Response().SequenceNumber();
 
             string proxyStubPath(announceMessage->Response().ProxyStubPath());
             if (proxyStubPath.empty() == false) {

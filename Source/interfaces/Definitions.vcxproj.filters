@@ -25,7 +25,7 @@
     <CustomBuild Include="json\NetworkControl.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
-    <CustomBuild Include="json\OpenCDMi.json">
+    <CustomBuild Include="json\OCDM.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
     <CustomBuild Include="json\RemoteControl.json">
@@ -61,6 +61,12 @@
     <CustomBuild Include="json\Browser.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
+    <CustomBuild Include="json\DHCPServer.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\SecurityAgent.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Contracts">
@@ -68,10 +74,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="json\DHCPServer.json">
-      <Filter>Contracts</Filter>
-    </None>
-    <None Include="json\SecurityAgent.json">
+    <None Include="json\InputSwitch.json">
       <Filter>Contracts</Filter>
     </None>
   </ItemGroup>

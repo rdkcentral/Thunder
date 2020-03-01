@@ -13,15 +13,23 @@
     <ClInclude Include="open_cdm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="adapter\open_cdm_adapter.h" />
-    <ClInclude Include="open_cdm_impl.h" />
+    <ClInclude Include="open_cdm_impl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="adapter\open_cdm_adapter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="open_cdm.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="open_cdm_ext.cpp" />
-    <ClCompile Include="ProxyStubs_OCDM.cpp" />
+    <ClCompile Include="open_cdm_ext.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_OCDM.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

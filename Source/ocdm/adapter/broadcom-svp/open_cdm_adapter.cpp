@@ -1,4 +1,22 @@
-
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #include "open_cdm_adapter.h"
 
 #include <gst/gst.h>
@@ -142,12 +160,15 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
         block = NEXUS_MemoryBlock_Clone (reinterpret_cast<NEXUS_MemoryBlockTokenHandle>(*tokenHandle));
         if (!block) {
             TRACE_L1("Memory token alloc error");
+            ::free(encryptedData);
+            goto exit;
         }
         ::free(encryptedData);
         void *opaqueData;
         NEXUS_MemoryBlock_Lock(block, &opaqueData);
         if (!opaqueData) {
             TRACE_L1("Memory token alloc error");
+            goto exit;
         }
 
         svpMeta->u.u3.secbuf_ptr = reinterpret_cast<uintptr_t>(opaqueData);

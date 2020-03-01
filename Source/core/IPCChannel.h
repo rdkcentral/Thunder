@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __PROCESS_CHANNEL_H__
 #define __PROCESS_CHANNEL_H__
 
@@ -229,8 +248,9 @@ namespace Core {
 
             Close(infinite);
 
+            ASSERT(_clients.size() == 0);
+
             if (_clients.size() > 0) {
-                InternalCleanup();
 
                 TRACE_L1("Closing clients that should have been closed before destruction [%d].", static_cast<uint32_t>(_clients.size()));
                 CloseClients();
@@ -322,7 +342,7 @@ namespace Core {
             ASSERT(_factory.IsValid());
             ASSERT(SocketListner::IsListening() == false);
             ASSERT(_clients.size() == 0);
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ASSERT(INTERNALFACTORY == true && "This method can only be called if you specify an INTERNAL factory");
 #else
             static_assert(INTERNALFACTORY == true, "This method can only be called if you specify an INTERNAL factory");
@@ -357,7 +377,7 @@ namespace Core {
         {
             _adminLock.Lock();
 
-            InternalCleanup();
+            CloseClients();
 
             _adminLock.Unlock();
         }
@@ -394,22 +414,25 @@ namespace Core {
             return (command);
         }
 
+        inline void UnregisterHandlers(const typename ClientMap::iterator& client)
+        {
+            // Make sure all handlers of the server are deattached from the client...
+            std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
+
+            while (index != _handlers.end()) {
+                client->second->Unregister(index->first);
+                index++;
+            }
+
+            Removed(client->second);
+        }
         void InternalCleanup()
         {
             typename ClientMap::iterator cleaner(_clients.begin());
 
             while (cleaner != _clients.end()) {
                 if (cleaner->second->IsClosed() == true) {
-
-                    // Make sure all handlers form the server are attached to the client...
-                    std::map<uint32_t, ProxyType<IIPCServer>>::iterator index(_handlers.begin());
-
-                    while (index != _handlers.end()) {
-                        cleaner->second->Unregister(index->first);
-                        index++;
-                    }
-
-                    Removed(cleaner->second);
+                    UnregisterHandlers(cleaner);
                     cleaner = _clients.erase(cleaner);
                 } else {
                     cleaner++;
@@ -421,7 +444,6 @@ namespace Core {
             uint32_t result = Core::ERROR_NONE;
 
             _adminLock.Lock();
-
             typename ClientMap::iterator index(_clients.begin());
 
             while (index != _clients.end()) {
@@ -449,6 +471,8 @@ namespace Core {
 
                     _adminLock.Lock();
                 } else {
+                    // Ensure there is no pending handlers to cleanup after client force close.
+                    UnregisterHandlers(_clients.begin());
                     _clients.erase(_clients.begin());
                 }
             }

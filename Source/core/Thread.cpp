@@ -1,10 +1,29 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #include "Thread.h"
 #include "Proxy.h"
 #include "Serialization.h"
 #include "Trace.h"
 #include <limits.h>
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <process.h>
 #endif
 
@@ -22,7 +41,7 @@ namespace Core {
         , m_syncAdmin()
         , m_sigExit(false, true)
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         , m_enumSuspendedState(BLOCKED)
         , m_hThreadInstance(nullptr)
         , m_ThreadId(0)
@@ -34,7 +53,7 @@ namespace Core {
         TRACE_L5("Constructor Thread <%p>", (this));
 
 // Create a worker that can do actions in parallel
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
         m_hThreadInstance = ::CreateThread(nullptr,
             0,
@@ -92,16 +111,24 @@ namespace Core {
         Terminate();
     }
 
+
+    void Thread::Signal(const int signal) const
+    {
+#ifdef __LINUX__
+       ::pthread_kill(m_hThreadInstance, signal);
+#endif
+    }
+
     ::ThreadId Thread::ThreadId()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
 #else
         return static_cast<::ThreadId>(pthread_self());
 #endif
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     void Thread::StartThread(Thread* cClassPointer)
 #endif
 
@@ -174,12 +201,9 @@ namespace Core {
         // Report that the worker is done by releasing the Signal sync mechanism.
         cClassPointer->m_sigExit.SetEvent();
 
-#ifdef __POSIX__
-        ::pthread_exit(nullptr);
+#ifndef __WINDOWS__
         return (nullptr);
-#endif
-
-#ifdef __WIN32__
+#else 
         ::ExitThread(0);
 #endif
     }
@@ -361,7 +385,7 @@ namespace Core {
 
     void Thread::ThreadName(const char* threadName VARIABLE_IS_NOT_USED)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #ifdef __DEBUG__
 
 #pragma pack(push, 8)
@@ -385,7 +409,7 @@ namespace Core {
         } __except (EXCEPTION_EXECUTE_HANDLER) {
         }
 #endif // __DEBUG__
-#endif // __WIN32__
+#endif // __WINDOWS__
     }
 
 #ifdef __DEBUG__

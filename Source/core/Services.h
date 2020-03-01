@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __SERVICES_H
 #define __SERVICES_H
 
@@ -9,6 +28,7 @@
 #include "Sync.h"
 #include "TextFragment.h"
 #include "Trace.h"
+#include "Proxy.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -29,11 +49,25 @@ namespace Core {
         ServiceAdministrator& operator=(const ServiceAdministrator&) = delete;
 
     public:
+        struct EXTERNAL ICallback {
+            virtual ~ICallback(){};
+
+            virtual void Destructed() = 0;
+        };
+
+    public:
         virtual ~ServiceAdministrator();
 
         static ServiceAdministrator& Instance();
 
     public:
+        // There is *NO* locking around the _callback pointer. SO this callback 
+        // must be set, before any Service Object is created ore released!!!
+        void Callback(ICallback* callback)
+        {
+            ASSERT((callback == nullptr) ^ (_callback == nullptr));
+            _callback = callback;
+        }
         void AddRef() const
         {
             Core::InterlockedIncrement(_instanceCount);
@@ -44,6 +78,10 @@ namespace Core {
 
             Core::InterlockedDecrement(_instanceCount);
 
+            if (_callback != nullptr) {
+                _callback->Destructed();
+            }
+
             return (Core::ERROR_NONE);
         }
         inline uint32_t Instances() const
@@ -51,7 +89,7 @@ namespace Core {
             return (_instanceCount);
         }
         void FlushLibraries();
-        void ReleaseLibrary(const Library& reference);
+        void ReleaseLibrary(Library& reference);
         void Register(IServiceMetadata* service);
         void Unregister(IServiceMetadata* service);
         void* Instantiate(const Library& library, const char name[], const uint32_t version, const uint32_t interfaceNumber);
@@ -69,163 +107,39 @@ namespace Core {
         }
 
     private:
+        Core::CriticalSection _adminLock;
         std::list<IServiceMetadata*> _services;
         mutable uint32_t _instanceCount;
+        ICallback* _callback;
+        std::list<Library> _unreferencedLibraries;
         static ServiceAdministrator _systemServiceAdministrator;
     };
 
     template <typename ACTUALSERVICE>
-    class Service : public ACTUALSERVICE {
+    class Service : public ProxyService<ACTUALSERVICE> {
     private:
         Service(const Service<ACTUALSERVICE>&) = delete;
         Service<ACTUALSERVICE> operator=(const Service<ACTUALSERVICE>&) = delete;
 
     protected:
-        Service()
-            : ACTUALSERVICE()
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1>
-        Service(ARG1 arg1)
-            : ACTUALSERVICE(arg1)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2>
-        Service(ARG1 arg1, ARG2 arg2)
-            : ACTUALSERVICE(arg1, arg2)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3)
-            : ACTUALSERVICE(arg1, arg2, arg3)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-            : ACTUALSERVICE(arg1, arg2, arg3, arg4)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
-            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
-            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-            , _referenceCount(0)
-        {
-            ServiceAdministrator::Instance().AddRef();
-        }
-        template <typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
-        Service(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
-            : ACTUALSERVICE(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-            , _referenceCount(0)
+        template<typename... Args>
+        Service(Args... args)
+            : ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...)
         {
             ServiceAdministrator::Instance().AddRef();
         }
 
     public:
-        template <typename INTERFACE>
-        static INTERFACE* Create()
+        template <typename INTERFACE, typename... Args>
+        static INTERFACE* Create(Args... args)
         {
-            ACTUALSERVICE* object = new Service();
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1>
-        static INTERFACE* Create(ARG1 arg1)
-        {
-            ACTUALSERVICE* object = new Service(arg1);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-
-            return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
-        }
-        template <typename INTERFACE, typename ARG1, typename ARG2, typename ARG3, typename ARG4, typename ARG5, typename ARG6, typename ARG7, typename ARG8>
-        static INTERFACE* Create(ARG1 arg1, ARG2 arg2, ARG3 arg3, ARG4 arg4, ARG5 arg5, ARG6 arg6, ARG7 arg7, ARG8 arg8)
-        {
-            ACTUALSERVICE* object = new Service(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+            ACTUALSERVICE* object = new (0) Service<ACTUALSERVICE>(std::forward<Args>(args)...);
 
             return (Extract<INTERFACE>(object, TemplateIntToType<std::is_same<ACTUALSERVICE, INTERFACE>::value>()));
         }
         virtual ~Service()
         {
             ServiceAdministrator::Instance().Release();
-        }
-
-    public:
-        virtual void AddRef() const
-        {
-            Core::InterlockedIncrement(_referenceCount);
-        }
-        virtual uint32_t Release() const
-        {
-            if (Core::InterlockedDecrement(_referenceCount) == 0) {
-                delete this;
-
-                return (Core::ERROR_DESTRUCTION_SUCCEEDED);
-            }
-            return (Core::ERROR_NONE);
         }
 
     private:
@@ -246,9 +160,6 @@ namespace Core {
             object->AddRef();
             return (object);
         }
-
-    private:
-        mutable uint32_t _referenceCount;
     };
 
     template <typename ACTUALSINK>
@@ -258,20 +169,9 @@ namespace Core {
         Sink<ACTUALSINK> operator=(const Sink<ACTUALSINK>&) = delete;
 
     public:
-        Sink()
-            : ACTUALSINK()
-            , _referenceCount(0)
-        {
-        }
-        template <typename ARG1>
-        Sink(ARG1 arg1)
-            : ACTUALSINK(arg1)
-            , _referenceCount(0)
-        {
-        }
-        template <typename ARG1, typename ARG2>
-        Sink(ARG1 arg1, ARG2 arg2)
-            : ACTUALSINK(arg1, arg2)
+        template <typename... Args>
+        Sink(Args... args)
+            : ACTUALSINK(std::forward<Args>(args)...)
             , _referenceCount(0)
         {
         }
@@ -355,7 +255,7 @@ namespace Core {
         virtual void* Create(const Library& library, const uint32_t interfaceNumber)
         {
             void* result = nullptr;
-            IUnknown* object = new ServiceImplementation<ACTUALSERVICE>(library);
+            IUnknown* object = new (0) ProxyService< ServiceImplementation<ACTUALSERVICE> >(library);
 
             if (object != nullptr) {
                 // This quety interface will increment the refcount of the Service at least to 1.

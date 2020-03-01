@@ -29,6 +29,7 @@
     <ClCompile Include="ProxyStubs_Browser.cpp" />
     <ClCompile Include="ProxyStubs_Composition.cpp" />
     <ClCompile Include="ProxyStubs_ContentDecryption.cpp" />
+    <ClCompile Include="ProxyStubs_Dictionary.cpp" />
     <ClCompile Include="ProxyStubs_DsgccClient.cpp" />
     <ClCompile Include="ProxyStubs_Guide.cpp" />
     <ClCompile Include="ProxyStubs_Netflix.cpp" />
@@ -136,7 +137,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -144,7 +145,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -152,7 +153,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -160,7 +161,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\ProxyStubs\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)..\artifacts\$(Configuration)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Interfaces\$(TargetName)\</IntDir>
     <TargetExt>.so</TargetExt>
     <PreBuildEventUseInBuild>true</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
@@ -184,7 +185,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -213,7 +214,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -242,7 +243,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>
@@ -275,7 +276,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py $(SolutionDir)src\base\interfaces</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" "$(ProjectDir)."</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>Create ProxyStub code</Message>

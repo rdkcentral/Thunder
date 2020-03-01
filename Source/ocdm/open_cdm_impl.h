@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #pragma once
 
 #include "DataExchange.h"
@@ -37,7 +56,7 @@ private:
 private:
     OpenCDMAccessor(const TCHAR domainName[])
         : _refCount(1)
-		, _engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()))
+        , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
         , _client(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(domainName), Core::ProxyType<Core::IIPCServer>(_engine)))
         , _remote(nullptr)
         , _adminLock()
@@ -87,8 +106,6 @@ public:
         } else {
             // Reconnect if server is down
             _singleton->Reconnect();
-
-            _singleton->AddRef();
         }
 
         _systemLock.Unlock();
@@ -300,7 +317,7 @@ public:
 
 private:
     mutable uint32_t _refCount;
-	Core::ProxyType<RPC::InvokeServerType<4, 1> > _engine;
+    Core::ProxyType<RPC::InvokeServerType<1, 0, 4> > _engine;
     mutable Core::ProxyType<RPC::CommunicatorClient> _client;
     mutable OCDM::IAccessorOCDM* _remote;
     mutable Core::CriticalSection _adminLock;
@@ -448,6 +465,10 @@ public:
     OpenCDMSession& operator= (const OpenCDMSession&) = delete;
     OpenCDMSession() = delete;
 
+    #ifdef __WINDOWS__
+    #pragma warning(disable : 4355)
+    #endif
+
     OpenCDMSession(OpenCDMSystem* system,
         const string& initDataType,
         const uint8_t* pbInitData, const uint16_t cbInitData,
@@ -488,6 +509,10 @@ public:
         }
     }
 
+    #ifdef __WINDOWS__
+    #pragma warning(default : 4355)
+    #endif
+
     virtual ~OpenCDMSession()
     {
         OpenCDMAccessor* system = OpenCDMAccessor::Instance();
@@ -502,6 +527,7 @@ public:
             Session(nullptr);
         }
 
+        system->Release();
         TRACE_L1("Destructed the Session Client side: %p", this);
     }
 

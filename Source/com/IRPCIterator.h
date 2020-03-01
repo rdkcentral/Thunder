@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 // ---- Include system wide include files ----
@@ -10,13 +29,13 @@ namespace WPEFramework {
 namespace RPC {
 
     template<typename ELEMENT, const uint32_t INTERFACE_ID>
-    struct IRPCIteratorType : virtual public Core::IUnknown {
+    struct IIteratorType : virtual public Core::IUnknown {
 
         typedef ELEMENT Element;
 
         enum { ID = INTERFACE_ID };
 
-        virtual ~IRPCIteratorType(){};
+        virtual ~IIteratorType(){};
 
         virtual bool Next(ELEMENT& info) = 0;
         virtual bool Previous(ELEMENT& info) = 0;
@@ -27,15 +46,15 @@ namespace RPC {
     };
 
     template<typename INTERFACE>
-    class RPCIteratorType : public INTERFACE {
+    class IteratorType : public INTERFACE {
     private:
-        RPCIteratorType() = delete;
-        RPCIteratorType(const RPCIteratorType&) = delete;
-        RPCIteratorType& operator=(const RPCIteratorType&) = delete;
+        IteratorType() = delete;
+        IteratorType(const IteratorType&) = delete;
+        IteratorType& operator=(const IteratorType&) = delete;
 
     public:
         template <typename CONTAINER, typename PREDICATE>
-        RPCIteratorType(const CONTAINER& container, PREDICATE predicate)
+        IteratorType(const CONTAINER& container, PREDICATE predicate)
             : _container()
             , _index(0)
         {
@@ -43,7 +62,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
         template <typename CONTAINER>
-        RPCIteratorType(const CONTAINER& container)
+        IteratorType(const CONTAINER& container)
             : _container()
             , _index(0)
         {
@@ -51,7 +70,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
         template <typename KEY, typename VALUE>
-        RPCIteratorType(const std::map<KEY, VALUE>& container)
+        IteratorType(const std::map<KEY, VALUE>& container)
             : _container()
             , _index(0)
         {
@@ -62,7 +81,7 @@ namespace RPC {
             }
             _iterator = _container.begin();
         }
-        RPCIteratorType(INTERFACE* index)
+        IteratorType(INTERFACE* index)
             : _container()
             , _index(0)
         {
@@ -75,7 +94,7 @@ namespace RPC {
             _iterator = _container.begin();
         }
 
-        ~RPCIteratorType()
+        ~IteratorType()
         {
         }
 
@@ -160,7 +179,7 @@ namespace RPC {
             return (*_iterator);
         }
 
-        BEGIN_INTERFACE_MAP(RPCIteratorType<INTERFACE>)
+        BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
             INTERFACE_ENTRY(INTERFACE)
         END_INTERFACE_MAP
 

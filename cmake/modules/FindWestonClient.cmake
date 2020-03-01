@@ -31,17 +31,15 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_WESTON weston-compositor)
+pkg_check_modules(PC_WESTON weston)
 
-find_library(WESTON_CLIENT_LIB NAMES weston-desktop-5
+find_library(WESTON_CLIENT_LIB NAMES weston-desktop-5 weston-desktop-6
         HINTS ${PC_WESTON_LIBDIR} ${PC_WESTON_LIBRARY_DIRS}
 )
 
 set (WESTON_CLIENT_LIBRARIES ${PC_WESTON_LIBRARIES})
 
-set (WESTON_CLIENT_FOUND TRUE)
-
-if(WESTON_CLIENT_FOUND AND NOT TARGET WestonClient::WestonClient)
+if(PC_WESTON_FOUND AND NOT TARGET WestonClient::WestonClient)
     set(WESTON_CLIENT_LIB_CLIENT_LINK_LIBRARIES "${WESTON_CLIENT_LIB}")
     add_library(WestonClient::WestonClient UNKNOWN IMPORTED)
     set_target_properties(WestonClient::WestonClient PROPERTIES
@@ -54,6 +52,6 @@ if(WESTON_CLIENT_FOUND AND NOT TARGET WestonClient::WestonClient)
 endif()
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(PC_WESTON DEFAULT_MSG WESTON_CLIENT_FOUND)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(PC_WESTON DEFAULT_MSG PC_WESTON_FOUND)
 
 mark_as_advanced(WESTON_CLIENT_LIBRARIES)

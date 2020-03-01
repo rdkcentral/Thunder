@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "CyclicBuffer.h"
 #include "ProcessInfo.h"
 
@@ -16,7 +35,7 @@ namespace Core {
         if (_buffer.IsValid() != true) {
             TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
 		} else {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             string strippedName(Core::File::PathName(fileName) + Core::File::FileName(fileName));
             _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
             _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
@@ -26,7 +45,7 @@ namespace Core {
 #endif
             if (bufferSize != 0) {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 (_administration)->_signal = PTHREAD_COND_INITIALIZER;
                 (_administration)->_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -243,7 +262,7 @@ namespace Core {
         bool shouldMoveHead = true;
 
         if (_administration->_reservedPID != 0) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             // We are writing because of reservation.
             ASSERT(_administration->_reservedPID == ::GetCurrentProcessId());
 #else
@@ -339,7 +358,7 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         DWORD processId = GetCurrentProcessId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
 #else

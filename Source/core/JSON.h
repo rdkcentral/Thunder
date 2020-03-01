@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __JSON_H
 #define __JSON_H
 
@@ -121,7 +140,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -212,7 +231,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -248,7 +267,7 @@ namespace Core {
                 if (error.IsSet() == true) {
                     Clear();
                     error.Value().Context(Stream, MaxLength, loaded);
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
@@ -540,6 +559,7 @@ namespace Core {
                         stream[loaded++] = IElement::NullTag[offset++];
                         if (offset == 4) {
                             offset = 0;
+                            break;
                         }
                     } else if (BASETYPE == BASE_DECIMAL) {
                         if ((SIGNED == true) && (_value < 0)) {
@@ -578,9 +598,10 @@ namespace Core {
                     }
                 }
 
-                if (loaded < maxLength) {
+                if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
                     loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
+                   
                 if ((offset != 0) && (loaded < maxLength)) {
                     stream[loaded++] = '\"';
                     offset = 0;
@@ -1395,9 +1416,7 @@ namespace Core {
                     _value.clear();
                     if (stream[result] != '\"') {
                         _unaccountedCount = 0;
-                        SetQuoted(false);
                     } else {
-                        SetQuoted(true);
                         result++;
                         _scopeCount |= (QuoteFoundBit | 1);
                         _unaccountedCount = 1;

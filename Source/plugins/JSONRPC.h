@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include "IShell.h"
@@ -169,6 +188,14 @@ namespace PluginHost {
         {
             _handlers.front().Register<INBOUND, METHOD>(methodName, method);
         }
+        void Register(const string& methodName, const Core::JSONRPC::InvokeFunction& lambda) 
+        { 
+            _handlers.front().Register(methodName, lambda);
+        } 
+        void Register(const string& methodName, const Core::JSONRPC::CallbackFunction& lambda) 
+        { 
+            _handlers.front().Register(methodName, lambda);
+        } 
         void Unregister(const string& methodName)
         {
             _handlers.front().Unregister(methodName);
@@ -258,11 +285,11 @@ namespace PluginHost {
                 break;
             case STATE_INCORRECT_VERSION:
                 response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                response->Error.Text = _T("Destined invoke failed.");
+                response->Error.Text = _T("Requested version is not supported.");
                 break;
             case STATE_UNKNOWN_METHOD:
                 response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                response->Error.Text = _T("Destined invoke failed.");
+                response->Error.Text = _T("Unknown method.");
                 break;
             case STATE_REGISTRATION:
                 info.FromString(inbound.Parameters.Value());

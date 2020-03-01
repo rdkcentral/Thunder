@@ -34,7 +34,7 @@
     },
     "request": {
       "events": [
-        "connectionstatus"
+        "connectionchange"
       ],
       "summary": "Reloads a non-static network interface adapter",
       "params": {
@@ -184,8 +184,8 @@
     }
   },
   "events": {
-    "connectionstatus": {
-      "summary": "Notifies about connection status (connected or connectionfailed)",
+    "connectionchange": {
+      "summary": "Notifies about connection status (created, updated, removed, connected and connectionfailed)",
       "params": {
         "type": "object",
         "properties": {
@@ -196,16 +196,19 @@
           },
           "address": {
             "type": "string",
-            "description": "IP Address of network interface",
+            "description": "IP Address of network interface, if it is connected",
             "example": "192.168.1.10"
           },
           "status": {
             "type": "string",
             "enum": [
+                "created",
+                "updated",
+                "removed",
                 "connected",
                 "connectionfailed"
               ],
-            "description": "Status of the interface, connected or not",
+            "description": "Status of the interface, update, connected or not",
             "example": "connected"
           }
         },

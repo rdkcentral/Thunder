@@ -29,7 +29,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 // if you are not using precompiled headers then include these lines:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <stdio.h>
 #include <tchar.h>
 #include <windows.h>
@@ -150,7 +150,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 
 extern "C" {
 
