@@ -22,7 +22,6 @@ add_library(${TARGET} SHARED
         ProcessContainer.cpp
         implementations/LXCImplementation/LXCImplementation.cpp
         # implementations/CProxyImplementation/CImplementation.cpp
-        # implementations/dummyCImplementation.c
         Module.cpp
         )
 
