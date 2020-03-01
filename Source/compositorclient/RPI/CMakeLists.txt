@@ -21,6 +21,19 @@ message("Setup ${TARGET} v${VERSION}...")
 
 find_package(EGL REQUIRED)
 
+if(VC6)
+    find_package(GBM REQUIRED)
+    find_package(LibDRM REQUIRED)
+
+    if(NOT GBM_FOUND)
+        message(FATAL_ERROR "The GBM library and its headers cannot be found.")
+    endif()
+
+    if(NOT LIBDRM_FOUND)
+        message(FATAL_ERROR "The libDRM library and its headers cannot be found.")
+    endif()
+endif()
+
 add_library(${TARGET} SHARED Implementation.cpp)
 
 target_link_libraries(${TARGET}

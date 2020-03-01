@@ -1,22 +1,3 @@
- /*
- * If not stated otherwise in this file or this component's LICENSE file the
- * following copyright and licenses apply:
- *
- * Copyright 2020 RDK Management
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 // process.cpp : Defines the entry point for the console application.
 //
 
@@ -302,44 +283,75 @@ namespace Process {
         return (result);
     }
 
-class ExitHandler {
+class ProcessFlow {
 public:
-    ExitHandler(const ExitHandler&) = delete;
-    ExitHandler& operator=(const ExitHandler&) = delete;
+    ProcessFlow(const ProcessFlow&) = delete;
+    ProcessFlow& operator=(const ProcessFlow&) = delete;
 
-    ExitHandler()
+    ProcessFlow()
         : _server()
         , _engine()
         , _proxyStubs()
     {
         _instance = this;
 
-        if (atexit(ForcedShutdown) != 0) {
-            TRACE_L1("Could not register @exit handler.");
-            exit(EXIT_FAILURE);
-        } else {
-            TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
-            #ifndef __WINDOWS__
-            struct sigaction sa;
-            memset(&sa, 0, sizeof(struct sigaction));
-            sigemptyset(&sa.sa_mask);
-            sa.sa_handler = ExitDaemonHandler;
-            sa.sa_flags = 0; // not SA_RESTART!;
+        TRACE_L1("Spawning a new process: %d.", Core::ProcessInfo().Id());
+        #ifndef __WINDOWS__
+        struct sigaction sa;
+        memset(&sa, 0, sizeof(struct sigaction));
+        sigemptyset(&sa.sa_mask);
+        sa.sa_handler = ExitDaemonHandler;
+        sa.sa_flags = 0; // not SA_RESTART!;
 
-            sigaction(SIGINT, &sa, nullptr);
-            sigaction(SIGTERM, &sa, nullptr);
-            #ifdef __DEBUG__
-            sigaction(SIGSEGV, &sa, nullptr);
-            #endif
-            sigaction(SIGQUIT, &sa, nullptr);
-            #endif
-        }
+        sigaction(SIGINT, &sa, nullptr);
+        sigaction(SIGTERM, &sa, nullptr);
+        #ifdef __DEBUG__
+        sigaction(SIGSEGV, &sa, nullptr);
+        #endif
+        sigaction(SIGQUIT, &sa, nullptr);
+        #endif
     }
-    virtual ~ExitHandler()
+    virtual ~ProcessFlow()
     {
+        // Destruct it all !!.
+        _lock.Lock();
+        _instance = nullptr;
+        _lock.Unlock();
+
+        TRACE_L1("Entering Shutdown. Cleaning up process: %d.", Core::ProcessInfo().Id());
+
+        if (_server.IsValid() == true) {
+
+            // We are done, close the channel and unregister all shit we added...
+            _server->Close(2 * RPC::CommunicationTimeOut);
+
+            _proxyStubs.clear();
+
+            _server.Release();
+        }
+
+        if (_engine.IsValid() == true) {
+            _engine.Release();
+        }
+
+        // We are going to tear down the stugg. Unregistere the Worker Pool
+        Core::IWorkerPool::Assign(nullptr);
+
+        Core::Singleton::Dispose();
+        TRACE_L1("Leaving Shutdown. Cleaned up process: %d.", Core::ProcessInfo().Id());
     }
 
 public:
+    static void Abort()
+    {
+        _lock.Lock();
+
+        if ((_instance != nullptr) && (_instance->_engine.IsValid() == true)) {
+            _instance->_engine->Stop();
+        }
+
+        _lock.Unlock();
+    }
     void Startup(const uint8_t threadCount, const Core::NodeId& remoteNode)
     {
         // Seems like we have enough information, open up the Process communcication Channel.
@@ -377,33 +389,6 @@ public:
             TRACE_L1("Could not open the connection, error (%d)", result);
         }
     }
-    void Shutdown()
-    {
-        TRACE_L1("Entering @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-
-        if(_engine.IsValid() == true) {
-            _engine->Stop();
-            _engine.Release();
-        }
-
-        if (_server.IsValid() == true) {
-
-            // We are done, close the channel and unregister all shit we added...
-            _server->Close(2 * RPC::CommunicationTimeOut);
-
-            _proxyStubs.clear();
-
-            _server.Release();
-        }
-
-        // We are going to tear down the stugg. Unregistere the Worker Pool
-        if (Core::IWorkerPool::IsAvailable() == true) {
-            Core::IWorkerPool::Assign(nullptr);
-        }
-
-        Core::Singleton::Dispose();
-        TRACE_L1("Leaving @Exit. Cleaning up process: %d.", Core::ProcessInfo().Id());
-    }
 
 private:
     #ifndef __WINDOWS__
@@ -413,10 +398,9 @@ private:
         syslog(LOG_NOTICE, "Signal received %d.", signo);
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
-            if ( (_instance != nullptr) && (_instance->_engine.IsValid() == true) )
-            {
-                _instance->_engine->Stop();
-            }
+
+            ProcessFlow::Abort();
+
         } else if (signo == SIGSEGV) {
             DumpCallStack();
             // now invoke the default segfault handler
@@ -425,23 +409,18 @@ private:
         }
     }
     #endif
-    static void ForcedShutdown ()
-    {
-        if (_instance != nullptr) {
-            _instance->Shutdown();
-        }
-    }
 
 private:
     Core::ProxyType<RPC::CommunicatorClient> _server;
     Core::ProxyType<WorkerPoolImplementation> _engine;
     std::list<Core::Library> _proxyStubs;
 
-    static ExitHandler* _instance;
+    static Core::CriticalSection _lock;
+    static ProcessFlow* _instance;
 };
 
-
-ExitHandler*  ExitHandler::_instance = nullptr;
+/* static */ Core::CriticalSection  ProcessFlow::_lock;
+/* static */ ProcessFlow*           ProcessFlow::_instance = nullptr;
 
 }
 } // Process
@@ -456,9 +435,6 @@ int main(int argc, char** argv)
 {
     // Give the debugger time to attach to this process..
     // Sleep(20000);
-
-    Process::ExitHandler exitHandler;
-
     Process::ConsoleOptions options(argc, argv);
 
     if ((options.RequestUsage() == true) || (options.Locator == nullptr) || (options.ClassName == nullptr) || (options.RemoteChannel == nullptr) || (options.Exchange == 0)) {
@@ -493,6 +469,8 @@ int main(int argc, char** argv)
             printf("Argument [%02d]: %s\n", teller, argv[teller]);
         }
     } else {
+        Process::ProcessFlow process;
+
         Core::NodeId remoteNode(options.RemoteChannel);
 
         // Any remote connection that will be spawned from here, will have this ExchangeId as its parent ID.
@@ -522,17 +500,16 @@ int main(int argc, char** argv)
                 Core::ProcessInfo().Group(string(options.Group));
             }
 
-            exitHandler.Startup(options.Threads, remoteNode);
+            process.Startup(options.Threads, remoteNode);
 
             // Register an interface to handle incoming requests for interfaces.
             if ((base = Process::AquireInterfaces(options)) != nullptr) {
 
                 TRACE_L1("Allright time to start running");
-                exitHandler.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
+                process.Run(options.ProxyStubPath, options.InterfaceId, base, options.Exchange);
             }
         }
     }
 
-    exitHandler.Shutdown(); 
     return 0;
 }
