@@ -19,7 +19,9 @@ set(TARGET  ${NAMESPACE}ProcessContainers)
 
 # Construct a library object
 add_library(${TARGET} SHARED
-        LXCImplementation.cpp
+        ProcessContainer.cpp
+        implementations/LXCImplementation/LXCImplementation.cpp
+        # implementations/CProxyImplementation/CImplementation.cpp
         Module.cpp
         )
 
