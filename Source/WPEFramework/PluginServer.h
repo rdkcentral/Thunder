@@ -1884,20 +1884,28 @@ namespace PluginHost {
 
                     _adminLock.Lock();
 
-                    std::map<const string, Core::ProxyType<Service>>::const_iterator index(_services.begin());
+                    for (auto index : _services) {
+                        const string& source(index.first);
+                        uint32_t length = static_cast<uint32_t>(source.length());
 
-                    while ((index != _services.end()) && (result == Core::ERROR_UNAVAILABLE)) {
-                        const string& source(index->first);
-                        if (callSign.compare(0, source.length(), source) != 0) {
-                            index++;
-                        } else {
-                            result = Core::ERROR_INVALID_SIGNATURE;
-                            uint32_t length = static_cast<uint32_t>(source.length());
-
-                            if ((callSign.length() == length) || ((callSign[length] == '.') && (index->second->HasVersionSupport(callSign.substr(length + 1))))) {
-                                service = index->second;
+                        if (callSign.compare(0, source.length(), source) == 0) {
+                            if (callSign.length() == length) {
+                                // Service found, did not requested specific version
+                                service = index.second;
                                 result = Core::ERROR_NONE;
-                            }
+                                break;
+                            } else if (callSign[length] == '.') {
+                                // Requested specific version of a plugin
+                                if (index.second->HasVersionSupport(callSign.substr(length + 1)) == true) {
+                                    // Requested version of service is supported!
+                                    service = index.second;
+                                    result = Core::ERROR_NONE;
+                                } else {
+                                    // Requested version is not supported
+                                    result = Core::ERROR_INVALID_SIGNATURE;
+                                }
+                                break;
+                            } 
                         }
                     }
 
@@ -2060,24 +2068,31 @@ namespace PluginHost {
                             Core::ProxyType<Web::Response> response;
 
                             ASSERT(_service.IsValid() == true);
-
+                            
                             if (_service.IsValid() == true) {
                                 if ((_jsonrpc == true) && (_request->HasBody() == true)) {
                                     response = Factories::Instance().Response();
                                     Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
-                                    Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
-                                    if (body.IsValid() == false) {
-                                        response->ErrorCode = Web::STATUS_BAD_REQUEST;
-                                    } else {
-                                        response->Body(body);
-                                        if (body->Error.IsSet() == false) {
-                                            response->ErrorCode = Web::STATUS_OK;
-                                            response->Message = _T("JSONRPC executed succesfully");
+                                    
+                                    if (message->IsSet()) {
+                                        Core::ProxyType<Core::JSONRPC::Message> body = _service->Dispatcher()->Invoke(_ID, *message);
+
+                                        if (body.IsValid() == false) {
+                                            response->ErrorCode = Web::STATUS_BAD_REQUEST;
                                         } else {
-                                            response->ErrorCode = Web::STATUS_ACCEPTED;
-                                            response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                            response->Body(body);
+                                            if (body->Error.IsSet() == false) {
+                                                response->ErrorCode = Web::STATUS_OK;
+                                                response->Message = _T("JSONRPC executed succesfully");
+                                            } else {
+                                                response->ErrorCode = Web::STATUS_ACCEPTED;
+                                                response->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(body->Error.Code).Text();
+                                            }
                                         }
-                                    }
+                                    } else {
+                                        response->ErrorCode = Web::STATUS_ACCEPTED;
+                                        response->Message = _T("Failed to parse JSONRPC message");
+                                    }                          
                                 } else {
                                     response = _service->Process(*_request);
                                 }

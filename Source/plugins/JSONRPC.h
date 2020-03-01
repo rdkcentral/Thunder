@@ -285,11 +285,11 @@ namespace PluginHost {
                 break;
             case STATE_INCORRECT_VERSION:
                 response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                response->Error.Text = _T("Destined invoke failed.");
+                response->Error.Text = _T("Requested version is not supported.");
                 break;
             case STATE_UNKNOWN_METHOD:
                 response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                response->Error.Text = _T("Destined invoke failed.");
+                response->Error.Text = _T("Unknown method.");
                 break;
             case STATE_REGISTRATION:
                 info.FromString(inbound.Parameters.Value());

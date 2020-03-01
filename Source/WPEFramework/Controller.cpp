@@ -525,8 +525,7 @@ namespace Plugin {
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             response = PluginHost::JSONRPC::Invoke(channelId, inbound);
-		}
-		else {
+		} else {
 			Core::ProxyType<PluginHost::Server::Service> service;
 
             uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
@@ -555,9 +554,22 @@ namespace Plugin {
         if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
             response = Message();
             response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-            response->Error.SetError(result);
-            response->Error.Text = "Invalid JSONRPC Request";
             response->Id = inbound.Id.Value();
+            response->Error.SetError(result);
+
+            switch (result) {
+                case Core::ERROR_UNAVAILABLE:
+                    response->Error.Text = "Requested service is not available";
+                    break;
+                case Core::ERROR_INVALID_SIGNATURE:
+                    response->Error.Text = "Invalid service name or version";
+                    break;
+                case Core::ERROR_BAD_REQUEST:
+                    response->Error.Text = "Could not access requested service";
+                    break;
+                default:
+                    response->Error.Text = "Invalid JSONRPC Request";
+            }
         }
 
         return (response);

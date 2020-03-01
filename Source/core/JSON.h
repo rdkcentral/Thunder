@@ -140,7 +140,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -231,7 +231,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -267,7 +267,7 @@ namespace Core {
                 if (error.IsSet() == true) {
                     Clear();
                     error.Value().Context(Stream, MaxLength, loaded);
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
