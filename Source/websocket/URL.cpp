@@ -281,7 +281,7 @@ namespace Core
                 // Check for a path
                 if (path < length) {
                     marker = std::min(std::min(query, ref), length);
-                    _path = Core::TextFragment(urlStr, path, marker - path).Text();
+                    _path = Core::TextFragment(urlStr, path + 1, marker - path - 1).Text();
                 }
 
                 if (query < length) {

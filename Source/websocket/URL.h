@@ -31,7 +31,7 @@ namespace Core {
 
     public:
         typedef enum {
-            SCHEME_FILE = 0,
+            SCHEME_FILE,
             SCHEME_HTTP,
             SCHEME_HTTPS,
             SCHEME_FTP,
@@ -223,6 +223,22 @@ namespace Core {
         }
 
     public:
+        static uint16_t Port(const SchemeType type) {
+
+            switch (type) {
+            case SCHEME_HTTP:    return(80);    break;
+            case SCHEME_HTTPS:   return(443);   break;
+            case SCHEME_FTP:     return(21);    break;
+            case SCHEME_NTP:     return(123);   break;
+            case SCHEME_WS:      return(80);    break;
+            case SCHEME_WSS:     return(443);   break;
+            case SCHEME_UNKNOWN: return(0);     break;
+            case SCHEME_FILE:    return(0);     break;
+            default:             ASSERT(false); break;
+            }
+
+            return(0);
+        }
         inline URL& operator=(const URL& copy)
         {
             _scheme = copy._scheme;
