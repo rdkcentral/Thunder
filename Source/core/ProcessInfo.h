@@ -239,6 +239,7 @@ namespace Core {
 
          void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
          bool ContainsProcess(uint32_t pid) const;
+         const std::list<uint32_t>& GetProcessIds() const { return _pids; }
          uint32_t RootId() const;
 
       private:

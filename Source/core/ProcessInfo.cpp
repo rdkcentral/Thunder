@@ -604,7 +604,7 @@ namespace Core {
 
                 uint32_t bufferIndex = pageFrameNumber / 32;
                 if (bufferIndex > entryCount) {
-                   TRACE_L1("Tried to mark page outside of buffer: %u", bufferIndex);
+                   TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
                    continue;
                 }
 
