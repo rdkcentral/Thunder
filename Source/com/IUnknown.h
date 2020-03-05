@@ -159,7 +159,7 @@ namespace ProxyStub {
         void AddRef() const {
             _adminLock.Lock();
             _refCount++;
-            _adminLock.Lock();
+            _adminLock.Unlock();
         }
         uint32_t Release() const {
             uint32_t result = Core::ERROR_NONE;
@@ -178,7 +178,7 @@ namespace ProxyStub {
                     message->Parameters().Writer().Number<uint32_t>(1);
 
                     // Just try the destruction for few Seconds...
-                    uint32_t result = Invoke(message, RPC::CommunicationTimeOut);
+                    result = Invoke(message, RPC::CommunicationTimeOut);
 
                     if (result != Core::ERROR_NONE) {
                         TRACE_L1("Could not remote release the Proxy.");
@@ -296,22 +296,19 @@ namespace ProxyStub {
         {
             _adminLock.Lock();
 
-	    if ((_refCount == 2) && ((_mode & PENDING) != 0)) {
-                response.AddImplementation(_implementation, _interfaceId); 
+	        if ((_mode & PENDING) != 0) {
+
+                // We completed the first cycle. Clear Pending, if it was active..
+                _mode ^= PENDING;
+
+                if (_refCount == 2) {
+                    response.AddImplementation(_implementation, _interfaceId);
+                }
             }
             else if (_refCount == 1) {
-                if ((_mode & PENDING) == 0) {
-                    response.AddImplementation(_implementation, _interfaceId | 0x80000000); 
-                }
-                else {
-                    // Remove our selves from the Administration, we are done..
-                    RPC::Administrator::Instance().UnregisterProxy(*this);
-		}
+                response.AddImplementation(_implementation, _interfaceId | 0x80000000); 
             }
 
-            // We completed the first cycle. Clear Pending, if it was active..
-            _mode &= (~PENDING);
- 
             _adminLock.Unlock();
 
             _parent.Release();
