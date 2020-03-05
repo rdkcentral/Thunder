@@ -447,7 +447,7 @@ namespace Core {
             typename ClientMap::iterator index(_clients.begin());
 
             while (index != _clients.end()) {
-                Core::ProxyType<Client> item(_clients.begin()->second);
+                Core::ProxyType<Client> item(index->second);
 
                 if (item->Source().IsClosed() == false) {
                     if (item->Source().Close(0) != Core::ERROR_NONE) {
