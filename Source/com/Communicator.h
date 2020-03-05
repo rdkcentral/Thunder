@@ -1249,16 +1249,8 @@ namespace RPC {
                 // investigation if this ASSERT fires !!!
                 ASSERT(source != nullptr);
 
-                if (source != nullptr) {
-                    uint32_t count = loop2->second;
-                    Cleanup(source, count);
-                    while (count != 0) {
-			fprintf(stderr, "Before....\n"); fflush(stderr);
-                        source->Release();
-			fprintf(stderr, "After....\n"); fflush(stderr);
-                        count--;
-                    }
-                }
+                Cleanup(source, loop2->second);
+                source->Release();
                 loop2++;
             }
         }
@@ -1273,7 +1265,7 @@ namespace RPC {
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
         {
         }
-        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* refCount */)
+        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* interfaceid */)
         {
         }
 
