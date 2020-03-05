@@ -437,6 +437,7 @@ namespace PluginHost {
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
+            serviceConfig.DefaultTraceCategories.SetQuoted(true);
             traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + serviceConfig.DefaultTraceCategories.Value();
 
             Core::File input (traceSettings, true);
