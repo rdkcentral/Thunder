@@ -331,7 +331,14 @@ namespace PluginHost {
 #ifdef RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
 #endif
+            // When we do this, we need to make sure that the Service does not change state, otherwise it might
+            // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
+            // Now we can first check if
+            Lock();
+
             metaData.JSONState = this;
+
+            Unlock();
 
 #ifdef RUNTIME_STATISTICS
             metaData.ProcessedRequests = _processedRequests;
