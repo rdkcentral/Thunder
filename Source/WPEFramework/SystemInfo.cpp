@@ -33,6 +33,7 @@ namespace PluginHost {
         , _internet(nullptr)
         , _security(nullptr)
         , _time(nullptr)
+        , _provisioning(nullptr)
         , _flags(0)
     {
         ASSERT(callback != nullptr);
