@@ -1234,7 +1234,6 @@ namespace RPC {
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Revoke((*loop)->Parent(), (*loop)->InterfaceId());
-                (*loop)->Destroy();
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
                 (*loop)->Release();
@@ -1254,7 +1253,9 @@ namespace RPC {
                     uint32_t count = loop2->second;
                     Cleanup(source, count);
                     while (count != 0) {
+			fprintf(stderr, "Before....\n"); fflush(stderr);
                         source->Release();
+			fprintf(stderr, "After....\n"); fflush(stderr);
                         count--;
                     }
                 }
