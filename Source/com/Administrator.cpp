@@ -242,9 +242,21 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
-    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
     {
         _adminLock.Lock();
+
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+
+        if (remotes != _channelReferenceMap.end()) {
+            std::list<std::pair<uint32_t, Core::IUnknown*>>::iterator loop(remotes->second.begin());
+            while (loop != remotes->second.end()) {
+                // We will release on behalf of the other side :-)
+                loop->second->Release();
+                loop++;
+            }
+            _channelReferenceMap.erase(remotes);
+        }
 
         ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
@@ -260,17 +272,6 @@ namespace RPC {
 
                 loop++;
             }
-            _channelProxyMap.erase(index);
-        }
-        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
-
-        if (remotes != _channelReferenceMap.end()) {
-            std::list<std::pair<uint32_t, Core::IUnknown*>>::iterator loop(remotes->second.begin());
-            while (loop != remotes->second.end()) {
-                usedInterfaces.emplace_back(loop->second, loop->first);
-                loop++;
-            }
-            _channelReferenceMap.erase(remotes);
         }
 
         _adminLock.Unlock();

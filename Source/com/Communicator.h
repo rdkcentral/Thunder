@@ -1227,9 +1227,8 @@ namespace RPC {
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
             std::list<ProxyStub::UnknownProxy*> deadProxies;
-            std::list<RPC::ExposedInterface> pendingInterfaces;
 
-            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies, pendingInterfaces);
+            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
@@ -1238,20 +1237,6 @@ namespace RPC {
                 // on the interfaces, we presented here. Do not forget to release this reference.
                 (*loop)->Release();
                 loop++;
-            }
-
-            std::list<RPC::ExposedInterface>::const_iterator loop2(pendingInterfaces.begin());
-
-            while (loop2 != pendingInterfaces.end()) {
-                const Core::IUnknown* source = loop2->first;
-
-                // This is a situation that should not occure. Needs further
-                // investigation if this ASSERT fires !!!
-                ASSERT(source != nullptr);
-
-                Cleanup(source, loop2->second);
-                source->Release();
-                loop2++;
             }
         }
         virtual void* Aquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)

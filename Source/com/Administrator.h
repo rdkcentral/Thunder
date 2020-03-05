@@ -40,8 +40,6 @@ namespace RPC {
 #endif
     enum { CommunicationBufferSize = 8120 }; // 8K :-)
 
-    typedef std::pair<const Core::IUnknown*, const uint32_t> ExposedInterface;
-
     class EXTERNAL Administrator {
     private:
         Administrator();
@@ -101,7 +99,7 @@ namespace RPC {
             return (_factory.Element());
         }
 
-        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces);
+        void DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies);
 
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl)
