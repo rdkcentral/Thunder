@@ -185,12 +185,13 @@ namespace ProxyStub {
                     } else {
                         // Pass the remote release return value through
                         result = message->Response().Reader().Number<uint32_t>();
-                        result = (result == Core::ERROR_NONE ? Core::ERROR_DESTRUCTION_SUCCEEDED : result);
                     }
                 }
 
                 // Remove our selves from the Administration, we are done..
                 RPC::Administrator::Instance().UnregisterProxy(*this);
+
+                result = (result == Core::ERROR_NONE ? Core::ERROR_DESTRUCTION_SUCCEEDED : result);
             }
             return (result);
         }
