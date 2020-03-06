@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
@@ -23,7 +23,6 @@ CLASS_IUNKNOWN = "::WPEFramework::Core::IUnknown"
 
 
 class Interface():
-
     def __init__(self, obj, iid, file):
         self.obj = obj
         self.id = iid
@@ -35,10 +34,9 @@ def FindInterfaceClasses(tree, interface_namespace, source_file):
     interfaces = []
 
     def __Traverse(tree, faces):
-        if isinstance(tree, CppParser.Namespace) or isinstance(
-                tree, CppParser.Class):
+        if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
             for c in tree.classes:
-                if c.methods:
+                if not isinstance(c, CppParser.TemplateClass) and c.methods:
                     if (interface_namespace + "::") in c.full_name:
                         inherits_iunknown = False
                         for a in c.ancestors:
@@ -51,9 +49,7 @@ def FindInterfaceClasses(tree, interface_namespace, source_file):
                                 if not e.scoped:
                                     for item in e.items:
                                         if item.name == "ID":
-                                            faces.append(
-                                                Interface(
-                                                    c, item.value, source_file))
+                                            faces.append(Interface(c, item.value, source_file))
                                             break
                 __Traverse(c, faces)
 
