@@ -90,6 +90,26 @@ class BaseType:
         pass
 
 
+class Undefined(BaseType):
+    def __init__(self, type, comment=""):
+        BaseType.__init__(self)
+        self.type = type
+        self.comment = comment
+
+    def Proto(self):
+        if isinstance(self.type, list):
+            return self.comment + " ".join(self.type).replace(" < ", "<").replace(" :: ", "::").replace(
+                " >", ">").replace(" *", "*").replace(" &", "&").replace(" &&", "&&")
+        else:
+            return self.comment + str(self.type)
+
+    def __str__(self):
+        return self.Proto()
+
+    def __repr__(self):
+        return "undefined %s" % self.Proto()
+
+
 class Fundamental(BaseType):
     def __init__(self, type):
         BaseType.__init__(self)
@@ -678,11 +698,11 @@ class Type:
 
 
 def TypeStr(s):
-    return "%s%s" % ("__ERROR_TYPE" if not isinstance(s, Type) else "", str(s))
+    return str(Undefined(s, "/* undefined */ ")) if not isinstance(s, Type) else str(s)
 
 
 def ValueStr(s):
-    return "%s%s" % ("__ERROR_EXPR" if not isinstance(s, int) and not isinstance(s, str) else "", str(s))
+    return str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else str(s)
 
 
 # Holds typedef definition
@@ -788,7 +808,7 @@ class Function(Block, Name):
         self.specifiers = []
         Block.__init__(self, parent_block, name if name else self.name)
         Name.__init__(self, parent_block, self.name)
-        self.retval = Identifier(parent_block, self, ret_type, valid_specifiers, False)
+        self.retval = Identifier(self, self, ret_type, valid_specifiers, False)
         self.omit = False
         self.stub = False
         self.parent.methods.append(self)

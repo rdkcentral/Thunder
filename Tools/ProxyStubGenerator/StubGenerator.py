@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6"
+VERSION = "1.6.1"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -301,18 +301,26 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
             # Stringifies a type, omitting outer namespace if necessary
             def TypeStr(type):
-                return Strip(str(type))
+                if isinstance(type, list):
+                    return TypeStr(CppParser.Type(CppParser.Undefined(type)))
+                else:
+                    return Strip(str(type))
 
             class EmitType:
                 def __init__(self, type_, cv=[]):
                     if not isinstance(type_.type, CppParser.Type):
-                        raise TypenameError(type_, "'%s': undefined type" % (" ".join(type_.type)))
+                        undefined = CppParser.Type(CppParser.Undefined(type_.type))
+                        if not type_.parent.stub and not type_.parent.omit:
+                            raise TypenameError(type_, "'%s': undefined type" % TypeStr(undefined))
+                        else:
+                            type = undefined
+                    else:
+                        type = copy.copy(type_.type)
 
-                    self.proto_long = type_.type.Proto()
+                    self.proto_long = type.Proto()
                     self.proto = Strip(self.proto_long)
 
                     meta = type_.meta
-                    type = copy.copy(type_.type)
                     if type.IsValue():
                         if "const" in cv:
                             type.ref |= CppParser.Ref.CONST
@@ -411,12 +419,6 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                         self.str_rpctype_nocv = self._RpcType(self.str_nocvref)
                     return self.str_rpctype_nocv
 
-                def _IsNumeric(self, type):
-                    if type in ["size_t", "time_t", "float", "uint64_t", "int64_t", "uint32_t", "int32_t", "uint16_t", "int16_t", "uint8_t", "int8_t"] \
-                            or str(type).split(" ")[-1] in ["char", "short", "long", "int", "signed", "unsigned", "double", "wchar_t"]:
-                        return True
-                    return False
-
                 # Converts a C++ type to RPC types
                 def _RpcType(self, noref):
                     if self.is_ptr:
@@ -467,7 +469,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
             # Stringify a method object to a prototype
             def PrototypeStr(method, parameters=None):
                 params = parameters if parameters else method.vars
-                proto = "%s %s(" % (TypeStr(method.retval), method.name)
+                proto = "%s %s(" % (TypeStr(method.retval.type), method.name)
                 for c, p in enumerate(params):
                     acc = ""
                     if parameters:
@@ -656,9 +658,8 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                     emit.Line('fprintf(stderr, "*** [%s stub] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
                     emit.Line()
 
-                emit.Line("RPC::Data::Input& input(message->Parameters());")
-
                 if not m.stub:
+                    emit.Line("RPC::Data::Input& input(message->Parameters());")
                     emit.Line()
 
                     # emit parameter readout
@@ -922,10 +923,13 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
                 else:
                     log.Print("stubbed method %s" % m.full_name, source_file)
+                    emit.Line("// RPC::Data::Input& input(message->Parameters());")
+                    emit.Line()
+
                     if params:
-                        emit.Line("RPC::Data::Frame::Reader reader(input.Reader());")
+                        emit.Line("// RPC::Data::Frame::Reader reader(input.Reader());")
                     if retval.has_output:
-                        emit.Line("RPC::Data::Frame::Writer writer(message->Response().Writer());")
+                        emit.Line("// RPC::Data::Frame::Writer writer(message->Response().Writer());")
                     emit.Line("// TODO")
 
                 if EMIT_TRACES:
@@ -1027,13 +1031,13 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                     emit.Line('fprintf(stderr, "*** [%s proxy] ENTER: %s()\\n");' % (iface.obj.full_name, m.name))
                     emit.Line()
 
-                emit.Line("IPCMessage newMessage(BaseClass::Message(%i));" % count)
-                emit.Line()
-                count += 1
                 proxy_params = 0
                 output_params = 0
 
                 if not m.stub:
+                    emit.Line("IPCMessage newMessage(BaseClass::Message(%i));" % count)
+                    emit.Line()
+
                     if input_params:
                         emit.Line("// write parameters")
                         emit.Line("RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());")
@@ -1165,21 +1169,31 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                         emit.Line("return %s%s;" % (retval.name, "_proxy" if retval_has_proxy else ""))
 
                 else:
+                    emit.Line("// IPCMessage newMessage(BaseClass::Message(%i));" % count)
+                    emit.Line()
+
                     if m.vars:
-                        emit.Line("RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());")
+                        emit.Line("// RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());")
                         emit.Line("// TODO")
                         emit.Line()
 
                     if retval.has_output:
-                        emit.Line("RPC::Data::Frame::Reader reader(newMessage->Response().Reader());")
+                        emit.Line("// RPC::Data::Frame::Reader reader(newMessage->Response().Reader());")
                         emit.Line("// TODO")
                         emit.Line()
 
-                        emit.Line("//Complete(newMessage->Response());")
+                        emit.Line("// Complete(newMessage->Response());")
+                        emit.Line("// TODO")
                         emit.Line()
 
                     if retval.has_output:
-                        emit.Line("// return ...")
+                        if isinstance(retval.typename, CppParser.Integer) and retval.typename.type == "uint32_t":
+                            emit.Line("%s output{Core::ERROR_UNAVAILABLE};" % retval.str_nocvref)
+                        else:
+                            emit.Line("%s output{};" % retval.str_nocvref)
+                        emit.Line("return (output);")
+
+                count += 1
 
                 emit.IndentDec()
                 emit.Line("}")
