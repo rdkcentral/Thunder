@@ -305,6 +305,9 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
             class EmitType:
                 def __init__(self, type_, cv=[]):
+                    if not isinstance(type_.type, CppParser.Type):
+                        raise TypenameError(type_, "'%s': undefined type" % (" ".join(type_.type)))
+
                     self.proto_long = type_.type.Proto()
                     self.proto = Strip(self.proto_long)
 
@@ -368,10 +371,6 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                     self.length_type = "uint16_t"
                     self.str_nocv = TypeStr(self.type).replace("const ", "").replace("volatile ", "")
 
-                    if not isinstance(type, CppParser.Type):
-                        raise TypenameError(
-                            type_, "unable to serialise '%s %s': undefined type '%s'" %
-                            (self.CppType(), self.origname, self.str_typename))
                     if not self.obj and self.is_nonconstptr and not self.is_inputptr and not self.is_outputptr and not interface:
                         raise TypenameError(
                             type_, "unable to serialise '%s %s': a non-const pointer requires an in/out tag" %
@@ -864,7 +863,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                     (m.name, retval.str_typename))
                         else:
                             emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
-                            if retval.is_interface:
+                            if retval.is_interface and not retval.type.IsConst():
                                 if isinstance(retval.type.Type(), CppParser.Void):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s, %s);" %
                                               (retval.name, retval.interface_ref.length_name))
@@ -892,7 +891,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                             elif p.is_nonconstref:
                                 if not p.is_length:
                                     emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
-                                if p.is_interface:
+                                if p.is_interface and not p.type.IsConst():
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
 
                     if proxy_count:
