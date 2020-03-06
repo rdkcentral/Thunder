@@ -132,7 +132,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
             if isinstance(tree, CppParser.Namespace) or isinstance(tree, CppParser.Class):
                 for c in tree.classes:
                     if not isinstance(c, CppParser.TemplateClass) and c.methods:
-                        if (c.full_name.index(INTERFACE_NAMESPACE + "::")) == 0:
+                        if (c.full_name.find(INTERFACE_NAMESPACE + "::")) == 0:
                             inherits_iunknown = False
                             for a in c.ancestors:
                                 if CLASS_IUNKNOWN in str(a[0]):
@@ -897,12 +897,12 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                     if proxy_count:
                         emit.IndentDec()
                         emit.String(emit.indent + "}")
-                        if any(x in ["uint32_t", "int", "long"] for x in str(retval.typename).split()):
+                        if isinstance(retval.typename, CppParser.Integer) and retval.typename.type == "uint32_t":
                             emit.String(" else {")
                             emit.Line()
                             emit.IndentInc()
                             emit.Line("// return error code")
-                            emit.Line("writer.Number<const %s>(Core::ERROR_RPC_CALL_FAILED);" % retval.typename)
+                            emit.Line("writer.Number<const %s>(Core::ERROR_RPC_CALL_FAILED);" % retval.str_typename)
                             emit.IndentDec()
                             emit.Line("}")
                         else:
@@ -1086,7 +1086,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                         emit.Line("%s %s%s%s;" %
                                   (retval.str_nocvref, retval.name, "_proxy" if retval_has_proxy else "", default))
                         # assume it's a status code
-                        if any(x in ["uint32_t"] for x in str(retval.typename).split()):
+                        if isinstance(retval.typename, CppParser.Integer) and retval.typename.type == "uint32_t":
                             emit.Line("if ((%s = Invoke(newMessage)) == Core::ERROR_NONE) {" % retval.name)
                         else:
                             emit.Line("if (Invoke(newMessage) == Core::ERROR_NONE) {")
