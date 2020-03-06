@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "Module.h"
+
 #ifndef __IPLUGIN_H
 #define __IPLUGIN_H
 
@@ -41,6 +43,7 @@ namespace PluginHost {
             ID = RPC::ID_PLUGIN
         };
 
+        /* @stubgen:omit */
         struct INotification
             : virtual public Core::IUnknown {
 
@@ -92,6 +95,7 @@ namespace PluginHost {
         virtual string Information() const = 0;
     };
 
+    /* @stubgen:skip */
     struct IPluginExtended
         : public IPlugin {
 

@@ -30,77 +30,6 @@ namespace ProxyStubs {
     // -------------------------------------------------------------------------------------------
 
     //
-    // IPlugin interface stub definitions (plugins/IPlugin.h)
-    //
-    ProxyStub::MethodHandler PluginStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual const string Initialize(PluginHost::IShell* shell) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Output& response(message->Response());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-            RPC::Data::Frame::Writer writer(response.Writer());
-
-            IPlugin* implementation(parameters.Implementation<IPlugin>());
-            string result(_T("Implementation of ProxyStub NOT supplied."));
-
-            ASSERT(implementation != nullptr);
-
-            if (implementation != nullptr) {
-                ProxyStub::UnknownProxy* proxy = nullptr;
-                IShell* param0_proxy = reader.Number<IShell*>();
-
-                if (param0_proxy != nullptr) {
-                    proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, IShell::ID, false, IShell::ID, true);
-                    param0_proxy = (proxy != nullptr ? proxy->QueryInterface<IShell>() : nullptr);
-
-                    ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
-                }
-
-                result = (implementation->Initialize(param0_proxy));
-
-                if (param0_proxy != nullptr) {
-                    RPC::Administrator::Instance().Release(proxy, message->Response());
-                }
-            }
-
-            writer.Text(result);
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Deinitialize(PluginHost::IShell* shell) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            ProxyStub::UnknownProxy* proxy = nullptr;
-            IShell* param0_proxy = message->Parameters().Reader().Number<IShell*>();
-
-            if (param0_proxy != nullptr) {
-                proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, IShell::ID, false, IShell::ID, true);
-                param0_proxy = (proxy != nullptr ? proxy->QueryInterface<IShell>() : nullptr);
-
-                ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
-            }
-
-            message->Parameters().Implementation<IPlugin>()->Deinitialize(param0_proxy);
-
-            if (param0_proxy != nullptr) {
-                RPC::Administrator::Instance().Release(proxy, message->Response());
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& /* channel */, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual string Information() const = 0;
-            //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-
-            response.Text(message->Parameters().Implementation<IPlugin>()->Information());
-        },
-        nullptr
-    };
-    // IPlugin stub definitions
-
-    //
     // IShell interface stub definitions (plugins/IShell.h)
     //
     ProxyStub::MethodHandler ShellStubMethods[] = {
@@ -425,117 +354,6 @@ namespace ProxyStubs {
     // IShell stub definitions
 
     //
-    // IStateControl interface stub definitions (plugins/IStateControl.h)
-    //
-    ProxyStub::MethodHandler StateControlStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-            RPC::Data::Frame::Writer writer(message->Response().Writer());
-
-            ProxyStub::UnknownProxy* proxy = nullptr;
-            IShell* param0_proxy = reader.Number<IShell*>();
-
-            if (param0_proxy != nullptr) {
-                proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, IShell::ID, false, IShell::ID, true);
-                param0_proxy = (proxy != nullptr ? proxy->QueryInterface<IShell>() : nullptr);
-
-                ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
-            }
-
-            writer.Number<uint32_t>(message->Parameters().Implementation<IStateControl>()->Configure(param0_proxy));
-
-            if (param0_proxy != nullptr) {
-                RPC::Administrator::Instance().Release(proxy, message->Response());
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual IStateControl::state State() const = 0;
-            //
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-            response.Number<IStateControl::state>(message->Parameters().Implementation<IStateControl>()->State());
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Request(const IStateControl::Command command) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            RPC::Data::Frame::Writer response(message->Response().Writer());
-            IStateControl::command command = parameters.Number<IStateControl::command>();
-            response.Number(message->Parameters().Implementation<IStateControl>()->Request(command));
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Register(IStateControl::INotification* notification) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            ProxyStub::UnknownProxy* proxy = nullptr;
-            IStateControl::INotification* param0_proxy = reader.Number<IStateControl::INotification*>();
-
-            if (param0_proxy != nullptr) {
-                proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, IStateControl::INotification::ID, false, IStateControl::INotification::ID, true);
-                param0_proxy = (proxy != nullptr ? proxy->QueryInterface<IStateControl::INotification>() : nullptr);
-
-                ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
-            }
-
-            parameters.Implementation<IStateControl>()->Register(param0_proxy);
-
-            if (param0_proxy != nullptr) {
-                RPC::Administrator::Instance().Release(proxy, message->Response());
-            }
-        },
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void Unregister(IStateControl::INotification* notification) = 0;
-            //
-            RPC::Data::Input& parameters(message->Parameters());
-            RPC::Data::Frame::Reader reader(parameters.Reader());
-
-            ProxyStub::UnknownProxy* proxy = nullptr;
-            IStateControl::INotification* param0_proxy = reader.Number<IStateControl::INotification*>();
-
-            if (param0_proxy != nullptr) {
-                proxy = RPC::Administrator::Instance().ProxyInstance(channel, param0_proxy, IStateControl::INotification::ID, false, IStateControl::INotification::ID, true);
-                param0_proxy = (proxy != nullptr ? proxy->QueryInterface<IStateControl::INotification>() : nullptr);
-
-                ASSERT((param0_proxy != nullptr) && "Failed to create proxy");
-            }
-
-            parameters.Implementation<IStateControl>()->Unregister(param0_proxy);
-
-            if (param0_proxy != nullptr) {
-                RPC::Administrator::Instance().Release(proxy, message->Response());
-            }
-        },
-        nullptr
-    };
-    // IStateControl stub definitions
-
-    //
-    // IStateControl::INotification interface stub definitions (plugins/IStateControl.h)
-    //
-    ProxyStub::MethodHandler StateControlNotificationStubMethods[] = {
-        [](Core::ProxyType<Core::IPCChannel>& channel VARIABLE_IS_NOT_USED, Core::ProxyType<RPC::InvokeMessage>& message) {
-            //
-            // virtual void StateChange(const IStateControl::state state) = 0;
-            //
-            RPC::Data::Frame::Reader parameters(message->Parameters().Reader());
-            IStateControl::state newState(parameters.Number<IStateControl::state>());
-
-            message->Parameters().Implementation<IStateControl::INotification>()->StateChange(newState);
-        },
-        nullptr
-    };
-    // IStateControl::INotification stub definitions
-
-    //
     // ISubSystem interface stub definitions (plugins/ISubSystem.h)
     //
     ProxyStub::MethodHandler SubSystemStubMethods[] = {
@@ -658,72 +476,13 @@ namespace ProxyStubs {
     };
     // ISubSystem::INotification stub definitions
 
-    typedef ProxyStub::UnknownStubType<IPlugin, PluginStubMethods> PluginStub;
     typedef ProxyStub::UnknownStubType<IShell, ShellStubMethods> ShellStub;
-    typedef ProxyStub::UnknownStubType<IStateControl, StateControlStubMethods> StateControlStub;
-    typedef ProxyStub::UnknownStubType<IStateControl::INotification, StateControlNotificationStubMethods> StateControlNotificationStub;
     typedef ProxyStub::UnknownStubType<ISubSystem, SubSystemStubMethods> SubSystemStub;
     typedef ProxyStub::UnknownStubType<ISubSystem::INotification, SubSystemNotificationStubMethods> SubSystemNotificationStub;
 
     // -------------------------------------------------------------------------------------------
     // PROXY
     // -------------------------------------------------------------------------------------------
-    class PluginProxy : public ProxyStub::UnknownProxyType<IPlugin> {
-    public:
-        PluginProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
-        {
-        }
-        virtual ~PluginProxy()
-        {
-        }
-
-    public:
-        // Stub order:
-        // virtual const string Initialize(PluginHost::IShell* shell) = 0;
-        // virtual void Deinitialize(PluginHost::IShell* shell) = 0;
-        // virtual string Information() const = 0;
-
-        virtual const string Initialize(IShell* service) override
-        {
-            string result;
-            IPCMessage newMessage(BaseClass::Message(0));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IShell*>(service);
-
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                result = reader.Text();
-                Complete(reader);
-            }
-
-            return (result);
-        }
-        virtual void Deinitialize(IShell* service) override
-        {
-            IPCMessage newMessage(BaseClass::Message(1));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IShell*>(service);
-
-            if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                Complete(reader);
-            }
-        }
-        virtual string Information() const override
-        {
-            string result;
-            IPCMessage newMessage(BaseClass::Message(2));
-
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                result = reader.Text();
-            }
-
-            return (result);
-        }
-    };
-
     class ShellProxy : public ProxyStub::UnknownProxyType<IShell> {
     public:
         ShellProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -1106,100 +865,6 @@ namespace ProxyStubs {
         }
     };
 
-    class StateControlProxy : public ProxyStub::UnknownProxyType<IStateControl> {
-    public:
-        StateControlProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
-        {
-        }
-        virtual ~StateControlProxy()
-        {
-        }
-
-    public:
-        // Stub order:
-        // virtual uint32_t Configure(PluginHost::IShell* framework) = 0;
-        // virtual IStateControl::state State() const = 0;
-        // virtual void Request(const IStateControl::Command command) = 0;
-        // virtual void Register(IStateControl::INotification* notification) = 0;
-        // virtual void Unregister(IStateControl::INotification* notification) = 0;
-        virtual uint32_t Configure(IShell* service) override
-        {
-            uint32_t result = ~0;
-            IPCMessage newMessage(BaseClass::Message(0));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IShell*>(service);
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                result = newMessage->Response().Reader().Number<uint32_t>();
-            }
-            return (result);
-        }
-        virtual IStateControl::state State() const override
-        {
-            IStateControl::state result = IStateControl::state::UNINITIALIZED;
-
-            IPCMessage newMessage(BaseClass::Message(1));
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                result = newMessage->Response().Reader().Number<IStateControl::state>();
-            }
-
-            return (result);
-        }
-        virtual uint32_t Request(const IStateControl::command command) override
-        {
-            uint32_t result = ~0;
-            IPCMessage newMessage(BaseClass::Message(2));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStateControl::command>(command);
-            if (Invoke(newMessage) == Core::ERROR_NONE) {
-                result = newMessage->Response().Reader().Number<uint32_t>();
-            }
-            return (result);
-        }
-        virtual void Register(IStateControl::INotification* notification) override
-        {
-            IPCMessage newMessage(BaseClass::Message(3));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStateControl::INotification*>(notification);
-            if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                Complete(reader);
-            }
-        }
-        virtual void Unregister(IStateControl::INotification* notification) override
-        {
-            IPCMessage newMessage(BaseClass::Message(4));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStateControl::INotification*>(notification);
-            if ((Invoke(newMessage) == Core::ERROR_NONE) && (newMessage->Response().Length() > 0)) {
-                RPC::Data::Frame::Reader reader(newMessage->Response().Reader());
-                Complete(reader);
-            }
-        }
-    };
-
-    class StateControlNotificationProxy : public ProxyStub::UnknownProxyType<IStateControl::INotification> {
-    public:
-        StateControlNotificationProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
-            : BaseClass(channel, implementation, otherSideInformed)
-        {
-        }
-        virtual ~StateControlNotificationProxy()
-        {
-        }
-
-    public:
-        // Stub order:
-        // virtual void StateChange(const IStateControl::state state) = 0;
-        virtual void StateChange(const IStateControl::state newState) override
-        {
-            IPCMessage newMessage(BaseClass::Message(0));
-            RPC::Data::Frame::Writer writer(newMessage->Parameters().Writer());
-            writer.Number<IStateControl::state>(newState);
-            Invoke(newMessage);
-        }
-    };
-
     class SubSystemProxy : public ProxyStub::UnknownProxyType<ISubSystem> {
     public:
         SubSystemProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
@@ -1310,10 +975,7 @@ namespace ProxyStubs {
     public:
         Instantiation()
         {
-            RPC::Administrator::Instance().Announce<IPlugin, PluginProxy, PluginStub>();
             RPC::Administrator::Instance().Announce<IShell, ShellProxy, ShellStub>();
-            RPC::Administrator::Instance().Announce<IStateControl, StateControlProxy, StateControlStub>();
-            RPC::Administrator::Instance().Announce<IStateControl::INotification, StateControlNotificationProxy, StateControlNotificationStub>();
             RPC::Administrator::Instance().Announce<ISubSystem, SubSystemProxy, SubSystemStub>();
             RPC::Administrator::Instance().Announce<ISubSystem::INotification, SubSystemNotificationProxy, SubSystemNotificationStub>();
         }

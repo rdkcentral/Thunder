@@ -18,8 +18,22 @@
 set(TARGET ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
+set(PLUGIN_INCLUDES
+        plugins/IPlugin.h
+        plugins/IStateControl.h
+        )
+
+foreach(file IN LISTS PLUGIN_INCLUDES)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+endforeach()
+
+ProxyStubGenerator(NAMESPACE "PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h)
+ProxyStubGenerator(NAMESPACE "PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h)
+
 add_library(${TARGET} SHARED
         PluginInterface.cpp
+        ProxyStubs_Plugin.cpp
+        ProxyStubs_StateControl.cpp
         Module.cpp
         )
 
