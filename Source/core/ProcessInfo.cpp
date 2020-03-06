@@ -654,7 +654,7 @@ namespace Core {
        }
     }
 
-    static void EnumerateChildProcesses(const Core::ProcessInfo& processInfo, std::list<uint32_t>& pids)
+    static void EnumerateChildProcesses(const Core::ProcessInfo& processInfo, std::list<ThreadId>& pids)
     {
         pids.push_back(processInfo.Id());
 
@@ -664,7 +664,7 @@ namespace Core {
         }
     }
 
-    ProcessTree::ProcessTree(const uint32_t processId)
+    ProcessTree::ProcessTree(const ThreadId processId)
     {
         ProcessInfo processInfo(processId);
         EnumerateChildProcesses(processInfo, _pids);
@@ -678,13 +678,13 @@ namespace Core {
         }
     }
 
-    bool ProcessTree::ContainsProcess(uint32_t pid) const
+    bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-        std::list<uint32_t>::const_iterator i = std::find(_pids.cbegin(), _pids.cend(), pid);
+        std::list<ThreadId>::const_iterator i = std::find(_pids.cbegin(), _pids.cend(), pid);
         return (i != _pids.cend());
     }
 
-    uint32_t ProcessTree::RootId() const
+    ThreadId ProcessTree::RootId() const
     {
        return _pids.front();
     }
