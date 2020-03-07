@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "Module.h"
+
 #ifndef __ISHELL_H
 #define __ISHELL_H
 
@@ -35,6 +37,7 @@ namespace PluginHost {
         // This interface is only returned if the IShell is accessed in the main process. The interface can
         // be used to instantiate new objects (COM objects) in a new process, or monitor the state of such a process.
         // If this interface is requested outside of the main process, it will return a nullptr.
+        /* @stubgen:omit */
         struct EXTERNAL ICOMLink {
             virtual ~ICOMLink() {}
             virtual void Register(RPC::IRemoteConnection::INotification* sink) = 0;
@@ -67,6 +70,7 @@ namespace PluginHost {
             CONDITIONS
         };
 
+        /* @stubgen:omit */
         class EXTERNAL Job : public Core::IDispatch {
         protected:
              Job(IShell* shell, IShell::state toState, IShell::reason why)
@@ -204,7 +208,7 @@ namespace PluginHost {
         virtual void Register(IPlugin::INotification* sink) = 0;
         virtual void Unregister(IPlugin::INotification* sink) = 0;
         virtual state State() const = 0;
-        virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
+        virtual void* /* @interface:id */ QueryInterfaceByCallsign(const uint32_t id, const string& name) = 0;
 
         // Methods to Activate and Deactivate the aggregated Plugin to this shell.
         // NOTE: These are Blocking calls!!!!!
@@ -214,10 +218,12 @@ namespace PluginHost {
 
         // Method to access, in the main process space, the channel factory to submit JSON objects to be send.
         // This method will return a error if it is NOT in the main process.
+        /* @stubgen:stub */
         virtual uint32_t Submit(const uint32_t Id, const Core::ProxyType<Core::JSON::IElement>& response) = 0;
 
         // Method to access, in the main space, a COM factory to instantiate objects out-of-process.
         // This method will return a nullptr if it is NOT in the main process.
+        /* @stubgen:stub */
         virtual ICOMLink* COMLink() = 0;
 
         inline void Register(RPC::IRemoteConnection::INotification* sink)
