@@ -69,6 +69,8 @@ namespace PluginHost {
         Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
     };
 
+    typedef Factories IFactories;
+
     class EXTERNAL Service : public IShell {
         // This object is created by the instance that instantiates the plugins. As the lifetime
         // of this object is controlled by the server, instantiating this object, do not allow
