@@ -806,6 +806,9 @@ namespace RPC {
                     _adminLock.Unlock();
 
                 } else {
+                    Communicator::RemoteConnection* connection = index->second;
+                    connection->AddRef();
+
                     // Remove any channel associated, we had.
                     Core::ProxyType<Core::IPCChannel> destructed = index->second->Channel();
                     index->second->Close();
@@ -826,6 +829,8 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     _parent.Closed(destructed);
+
+                    connection->Release();
                 }
             }
             inline Communicator::RemoteConnection* Connection(const uint32_t id)

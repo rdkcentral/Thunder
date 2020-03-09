@@ -17,13 +17,29 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "Module.h"
-#include "JSONRPC.h"
 
 namespace WPEFramework {
-
 namespace PluginHost {
 
-    /* static */ Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC::_jsonRPCMessageFactory(4);
-}
-} // namespace WPEFramework::PluginHost
+
+    class IFactories {
+    public:
+        virtual ~IFactories();
+
+        static void Assign(IFactories* instance);
+        static IFactories& Instance();
+        static bool IsAvailable();
+
+    public:
+        virtual Core::ProxyType<Web::Request> Request() = 0;
+        virtual Core::ProxyType<Web::Response> Response() = 0;
+        virtual Core::ProxyType<Web::FileBody> FileBody() = 0;
+        virtual Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() = 0;
+    };
+
+    typedef DEPRECATED Core::WorkerPool WorkerPool;
+    typedef DEPRECATED IFactories Factories;
+} }

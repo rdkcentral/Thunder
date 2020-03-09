@@ -34,8 +34,9 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
-          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
           ${NAMESPACE}Core::${NAMESPACE}Core
+          ${NAMESPACE}Tracing::${NAMESPACE}Tracing
+          ${NAMESPACE}Plugins::${NAMESPACE}Plugins
         )
 
 if (PROTOCOLS)
