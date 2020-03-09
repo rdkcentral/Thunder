@@ -473,46 +473,47 @@ namespace Core {
         char procPath[PATH_MAX];
         sprintf(procPath, "/proc/%u/cmdline", _pid);
 
+        std::list<string> output;
+
         FILE * cmdFile = fopen(procPath, "rb");
         if (cmdFile == nullptr) {
             TRACE_L1("Failed to open /proc/.../cmdline for process %u", _pid);
-            return std::list<string>();
+        } else {
+            uint32_t index = 0;
+            const int bufferSize = 256;
+            char buffer[bufferSize];
+            while (true) {
+                char c;
+                size_t readChars = fread(&c, 1, 1, cmdFile);
+                if (readChars == 0) {
+                    break;
+                }
+
+                buffer[index] = c;
+                if (c == '\0') {
+                    output.emplace_back(buffer);
+                    index = 0;
+                    continue;
+                }
+
+                index++;
+                if (index == (sizeof(buffer) - 1)) {
+                    TRACE_L1("Command line argument is too big, will split in parts");
+                    buffer[index] = '\0';
+                    output.emplace_back(buffer);
+                    index = 0;
+                    continue;
+                }
+            }
+
+            if (index != 0) {
+                buffer[index] = '\0';
+                output.emplace_back(buffer);
+                index = 0;
+            }
+
+            fclose(cmdFile);
         }
-
-        uint32_t index = 0;
-        std::list<string> output;
-        char buffer[256];
-        while (true) {
-           char c;
-           size_t readChars = fread(&c, 1, 1, cmdFile);
-           if (readChars == 0) {
-               break;
-           }
-
-           buffer[index] = c;
-           if (c == '\0') {
-               output.emplace_back(buffer);
-               index = 0;
-               continue;
-           }
-
-           index++;
-           if (index == (sizeof(buffer) - 1)) {
-               TRACE_L1("Command line argument is too big, will split in parts");
-               buffer[index] = '\0';
-               output.emplace_back(buffer);
-               index = 0;
-               continue;
-           }
-        }
-
-        if (index != 0) {
-            buffer[index] = '\0';
-            output.emplace_back(buffer);
-            index = 0;
-        }
-
-        fclose(cmdFile);
 
         return output;
     }
