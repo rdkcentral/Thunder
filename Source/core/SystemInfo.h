@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __SYSTEMINFO_H
 #define __SYSTEMINFO_H
 
@@ -37,7 +56,7 @@ namespace Core {
         static bool SetEnvironment(const string& name, const TCHAR* value, const bool forced = true);
         static bool SetEnvironment(const string& name, const string& value, const bool forced = true);
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         static SystemInfo& Instance();
 #else
         inline static SystemInfo& Instance()
@@ -82,7 +101,7 @@ namespace Core {
             return m_freeram;
         }
 
-        inline double GetCpuLoad() const
+        inline uint64_t GetCpuLoad() const
         {
             UpdateCpuStats();
             return m_cpuload;
@@ -100,6 +119,7 @@ namespace Core {
             return m_freegpuram;
         }
 
+/*
         class EXTERNAL MemorySnapshot {
         public:
             MemorySnapshot(const MemorySnapshot& copy) = default;
@@ -166,6 +186,7 @@ namespace Core {
         inline MemorySnapshot TakeMemorySnapshot() const {
             return MemorySnapshot();
         }
+*/
 
         /*
         * Pentium cycle counter
@@ -299,16 +320,11 @@ namespace Core {
         uint32_t m_pageSize;
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
-        mutable double m_cpuload;
+        mutable uint64_t m_cpuload;
         mutable time_t m_lastUpdateCpuStats;
-        mutable uint64_t m_totalgpuram;
-        mutable uint64_t m_freegpuram;
 
         void UpdateCpuStats() const;
         void UpdateRealtimeInfo();
-
-        void UpdateTotalGpuRam();
-        void UpdateFreeGpuRam();
 
         static SystemInfo _systemInfo;
 

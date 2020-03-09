@@ -1,7 +1,27 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __JSON_H
 #define __JSON_H
 
 #include <map>
+#include <vector>
 
 #include "Enumerate.h"
 #include "FileSystem.h"
@@ -61,7 +81,7 @@ namespace Core {
             size_t _pos;
         };
 
-        string ErrorDisplayMessage(const Error& err);
+        string EXTERNAL ErrorDisplayMessage(const Error& err);
 
         struct EXTERNAL IElement {
 
@@ -120,7 +140,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -211,7 +231,7 @@ namespace Core {
                 }
 
                 if (error.IsSet() == true) {
-                    TRACE_L1(_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed with %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return (error.IsSet() == false);
@@ -247,7 +267,7 @@ namespace Core {
                 if (error.IsSet() == true) {
                     Clear();
                     error.Value().Context(Stream, MaxLength, loaded);
-                    TRACE_L1(_T("Parsing failed: %s"), ErrorDisplayMessage(error.Value()).c_str());
+                    TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
@@ -259,6 +279,136 @@ namespace Core {
             virtual ~IMessagePack() {}
 
             static constexpr uint8_t NullValue = 0xC0;
+
+            template <typename INSTANCEOBJECT>
+            static bool ToBuffer(std::vector<uint8_t>& stream, const INSTANCEOBJECT& realObject)
+            {
+                uint8_t buffer[1024];
+                uint16_t loaded;
+                uint16_t offset = 0;
+
+                stream.clear();
+                // Serialize object
+                do {
+                    loaded = static_cast<const IMessagePack&>(realObject).Serialize(buffer, sizeof(buffer), offset);
+
+                    ASSERT(loaded <= sizeof(buffer));
+                    DEBUG_VARIABLE(loaded);
+
+                    stream.reserve(stream.size() + loaded);
+                    stream.insert(stream.end(), buffer, buffer + loaded);
+                } while ((offset != 0) && (loaded == sizeof(buffer)));
+
+                return (offset == 0);
+            }
+            template <typename INSTANCEOBJECT>
+            static bool FromBuffer(const std::vector<uint8_t>& stream, INSTANCEOBJECT& realObject)
+            {
+                uint16_t offset = 0;
+
+                realObject.Clear();
+
+                if (stream.size() != 0) {
+                    // Deserialize object
+                    uint16_t loaded = static_cast<IMessagePack&>(realObject).Deserialize(&stream[0], static_cast<uint16_t>(stream.size() + 1), offset);
+
+                    ASSERT(loaded <= (stream.size() + 1));
+                    DEBUG_VARIABLE(loaded);
+                }
+
+                if (offset) {
+                    realObject.Clear();
+                }
+
+                return (offset == 0);
+            }
+
+            template <typename INSTANCEOBJECT>
+            static bool ToFile(Core::File& fileObject, const INSTANCEOBJECT& realObject)
+            {
+                bool completed = false;
+
+                if (fileObject.IsOpen()) {
+
+                    uint8_t buffer[1024];
+                    uint16_t loaded;
+                    uint16_t offset = 0;
+
+                    // Serialize object
+                    do {
+                        loaded = static_cast<const IMessagePack&>(realObject).Serialize(buffer, sizeof(buffer), offset);
+
+                        ASSERT(loaded <= sizeof(buffer));
+
+                    } while ((fileObject.Write(reinterpret_cast<const uint8_t*>(buffer), loaded) == loaded) && (loaded == sizeof(buffer)) && (offset != 0));
+
+                    completed = (offset == 0);
+                }
+
+                return (completed);
+            }
+
+            template <typename INSTANCEOBJECT>
+            static bool FromFile(Core::File& fileObject, INSTANCEOBJECT& realObject)
+            {
+                bool completed = false;
+
+                Core::OptionalType<Error> error;
+                if (fileObject.IsOpen()) {
+
+                    uint8_t buffer[1024];
+                    uint16_t readBytes;
+                    uint16_t loaded;
+                    uint16_t offset = 0;
+
+                    realObject.Clear();
+
+                    // Serialize object
+                    do {
+                        readBytes = static_cast<uint16_t>(fileObject.Read(reinterpret_cast<uint8_t*>(buffer), sizeof(buffer)));
+
+                        if (readBytes == 0) {
+                            loaded = ~0;
+                        } else {
+                            loaded = static_cast<IMessagePack&>(realObject).Deserialize(buffer, sizeof(buffer), offset);
+
+                            ASSERT(loaded <= readBytes);
+
+                            if (loaded != readBytes) {
+                                fileObject.Position(true, -(readBytes - loaded));
+                            }
+                        }
+
+                    } while ((loaded == readBytes) && (offset != 0));
+
+                    if (offset != 0) {
+                        realObject.Clear();
+                    }
+                    completed = (offset == 0);
+                }
+
+                return completed;
+            }
+
+            bool ToBuffer(std::vector<uint8_t>& stream) const
+            {
+                return (Core::JSON::IMessagePack::ToBuffer(stream, *this));
+            }
+
+            bool FromBuffer(const std::vector<uint8_t>& stream)
+            {
+                return (Core::JSON::IMessagePack::FromBuffer(stream, *this));
+            }
+
+            bool ToFile(Core::File& fileObject) const
+            {
+                return (Core::JSON::IMessagePack::ToFile(fileObject, *this));
+            }
+
+            bool FromFile(Core::File& fileObject)
+            {
+                return (Core::JSON::IMessagePack::FromFile(fileObject, *this));
+            }
 
             // JSON Serialization interface
             // --------------------------------------------------------------------------------
@@ -409,6 +559,7 @@ namespace Core {
                         stream[loaded++] = IElement::NullTag[offset++];
                         if (offset == 4) {
                             offset = 0;
+                            break;
                         }
                     } else if (BASETYPE == BASE_DECIMAL) {
                         if ((SIGNED == true) && (_value < 0)) {
@@ -447,9 +598,10 @@ namespace Core {
                     }
                 }
 
-                if (loaded < maxLength) {
+                if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
                     loaded += Convert(&(stream[loaded]), (maxLength - loaded), offset, TemplateIntToType<SIGNED>());
                 }
+                   
                 if ((offset != 0) && (loaded < maxLength)) {
                     stream[loaded++] = '\"';
                     offset = 0;
@@ -608,7 +760,7 @@ namespace Core {
                     if (header == IMessagePack::NullValue) {
                         _set = UNDEFINED;
                     } else if ((header >= 0xCC) && (header <= 0xCF)) {
-                        _set = (1 < (header - 0xCC)) << 12;
+                        _set = (1 << (header - 0xCC)) << 12;
                         offset = 1;
                     } else if ((header >= 0xD0) && (header <= 0xD3)) {
                         _set = (1 << (header - 0xD0)) << 12;
@@ -617,6 +769,7 @@ namespace Core {
                         _value = (header & 0x7F);
                     } else if ((header & 0xE0) == 0xE0) {
                         _value = (header & 0x0F);
+                        _set = NEGATIVE;
                     } else {
                         _set = ERROR;
                     }
@@ -626,6 +779,10 @@ namespace Core {
                     _value = _value << 8;
                     _value += stream[loaded++];
                     offset = (offset == ((_set >> 12) & 0xF) ? 0 : offset + 1);
+                }
+
+                if (_value != 0) {
+                    _set |= SET;
                 }
                 return (loaded);
             }
@@ -682,7 +839,11 @@ namespace Core {
 
                 if (offset == 0) {
                     if (bytes == 0) {
-                        stream[loaded++] = static_cast<uint8_t>(_value);
+                        if (_value != 0) {
+                            stream[loaded++] = static_cast<uint8_t>(_value);
+                        } else {
+                            stream[loaded++] = IMessagePack::NullValue;
+                        }
                     } else {
                         switch (bytes) {
                         case 1:
@@ -1255,9 +1416,7 @@ namespace Core {
                     _value.clear();
                     if (stream[result] != '\"') {
                         _unaccountedCount = 0;
-                        SetQuoted(false);
                     } else {
-                        SetQuoted(true);
                         result++;
                         _scopeCount |= (QuoteFoundBit | 1);
                         _unaccountedCount = 1;
@@ -1363,18 +1522,18 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
-                    if ((_scopeCount & NullBit) == 0) {
+                    if ((_scopeCount & NullBit) != 0) {
                         stream[loaded++] = IMessagePack::NullValue;
                     } else if (_value.length() <= 31) {
-                        _unaccountedCount = 0;
+                        _unaccountedCount = 1;
                         stream[loaded++] = static_cast<uint8_t>(_value.length() | 0xA0);
                         offset++;
                     } else if (_value.length() <= 0xFF) {
-                        _unaccountedCount = 1;
+                        _unaccountedCount = 2;
                         stream[loaded++] = 0xD9;
                         offset++;
                     } else if (_value.length() <= 0xFFFF) {
-                        _unaccountedCount = 2;
+                        _unaccountedCount = 3;
                         stream[loaded++] = 0xDA;
                         offset++;
                     } else {
@@ -1383,15 +1542,22 @@ namespace Core {
                 }
 
                 if (offset != 0) {
-                    while ((loaded < maxLength) && (offset <= _unaccountedCount)) {
-                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset))) & 0xFF);
+                    while ((loaded < maxLength) && (offset < _unaccountedCount)) {
+                        stream[loaded++] = static_cast<uint8_t>((_value.length() >> (8 * (_unaccountedCount - offset - 1))) & 0xFF);
+                        offset++;
                     }
 
-                    while ((loaded < maxLength) && (offset == 0)) {
-                        loaded += static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
-                        offset += loaded;
+                    uint16_t copied = 0;
+                    while ((loaded < maxLength) && (offset != 0)) {
+                        copied = static_cast<uint16_t>(_value.copy(reinterpret_cast<char*>(&stream[loaded]), (maxLength - loaded), offset - _unaccountedCount));
+                        offset += copied;
+                        loaded += copied;
+                        if (_unaccountedCount) {
+                           offset -=_unaccountedCount;
+                           _unaccountedCount = 0;
+                        }
 
-                        if (offset - _unaccountedCount >= _value.length()) {
+                        if (offset >= _value.length()) {
                             offset = 0;
                         }
                     }
@@ -1404,10 +1570,11 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 if (offset == 0) {
+                    _value.clear();
                     if (stream[loaded] == IMessagePack::NullValue) {
                         _scopeCount |= NullBit;
                         loaded++;
-                    } else if (stream[loaded] == 0xA0) {
+                    } else if ((stream[loaded] & 0xA0) == 0xA0) {
                         _unaccountedCount = stream[loaded] & 0x1F;
                         offset = 3;
                         loaded++;
@@ -1419,6 +1586,8 @@ namespace Core {
                         _unaccountedCount = 0;
                         offset = 1;
                         loaded++;
+                    } else {
+                        loaded = maxLength;
                     }
                 }
 
@@ -1433,8 +1602,9 @@ namespace Core {
                         offset++;
                     }
 
-                    if ((offset > 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
+                    if ((offset >= 3) && (static_cast<uint16_t>(offset - 3) == _unaccountedCount)) {
                         offset = 0;
+                        _scopeCount |= ((_scopeCount & QuoteFoundBit) ? SetBit : (_value == NullTag ? NullBit : SetBit));
                     }
                 }
 
@@ -1942,8 +2112,8 @@ namespace Core {
                             _value = converted.Value();
                             _state = SET;
                         } else {
-                            _state = ERROR;
-                            error = Error{ "Unknown enum value \"" + _parser.Value() + "\"" };
+                            _state = UNDEFINED;
+                            TRACE_L1(_T("Unknown enum value: %s"), _parser.Value().c_str());
                         }
                     } else {
                         error = Error{ "Invalid enum" };
@@ -2103,7 +2273,7 @@ namespace Core {
 
                 inline uint32_t Count() const
                 {
-                    return (_container == nullptr ? 0 : _container->size());
+                    return (_container == nullptr ? 0 : static_cast<uint32_t>(_container->size()));
                 }
 
             private:
@@ -2752,6 +2922,7 @@ namespace Core {
                 if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
                     stream[loaded++] = '}';
                     offset = 0;
+                    _fieldName.Clear();
                 }
 
                 return (loaded);
@@ -2913,10 +3084,11 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
+                uint16_t elementSize = Size();
                 if (offset == 0) {
                     _iterator = _data.begin();
-                    if (_data.size() <= 15) {
-                        stream[loaded++] = (0x80 | static_cast<uint8_t>(_data.size()));
+                    if (elementSize <= 15) {
+                        stream[loaded++] = (0x80 | static_cast<uint8_t>(Size()));
                         if (_iterator != _data.end()) {
                             offset = PARSE;
                         }
@@ -2925,15 +3097,19 @@ namespace Core {
                         offset = 1;
                     }
                     if (offset != 0) {
-                        _fieldName = string(_iterator->first);
+                        if ((_iterator->second->IsSet() == false) && (FindNext() == false)) {
+                            offset = 0;
+                        } else {
+                            _fieldName = string(_iterator->first);
+                        }
                     }
                 }
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
                     if (offset == 1) {
-                        stream[loaded++] = (_data.size() >> 8) & 0xFF;
+                        stream[loaded++] = (elementSize >> 8) & 0xFF;
                         offset = 2;
                     } else if (offset == 2) {
-                        stream[loaded++] = _data.size() & 0xFF;
+                        stream[loaded++] = elementSize & 0xFF;
                         offset = PARSE;
                     }
                 }
@@ -2947,18 +3123,21 @@ namespace Core {
                         offset += PARSE;
                     } else {
                         const IMessagePack* element = dynamic_cast<const IMessagePack*>(_iterator->second);
-                        if (element == nullptr) {
+                        if (element != nullptr) {
                             loaded += element->Serialize(&(stream[loaded]), maxLength - loaded, offset);
+                            if (offset == 0) {
+                                _fieldName.Clear();
+                            }
                         } else {
                             stream[loaded++] = IMessagePack::NullValue;
                         }
                         offset += PARSE;
                         if (offset == PARSE) {
-                            _iterator++;
-                            if (_iterator == _data.end()) {
-                                offset = 0;
-                            } else {
+                            if (FindNext() != false) {
                                 _fieldName = string(_iterator->first);
+                            } else {
+                               offset = 0;
+                               _fieldName.Clear();
                             }
                         }
                     }
@@ -2974,13 +3153,13 @@ namespace Core {
                 if (offset == 0) {
                     if (stream[0] == IMessagePack::NullValue) {
                         _state = UNDEFINED;
-                        loaded = 1;
                     } else if ((stream[0] & 0x80) == 0x80) {
                         _count = (stream[0] & 0x0F);
                         offset = (_count > 0 ? PARSE : 0);
                     } else if (stream[0] & 0xDE) {
                         offset = 1;
                     }
+                    loaded = 1;
                 }
 
                 while ((loaded < maxLength) && (offset > 0) && (offset < PARSE)) {
@@ -2995,27 +3174,30 @@ namespace Core {
 
                 while ((loaded < maxLength) && (offset >= PARSE)) {
 
-                    if (_current.pack == nullptr) {
-                        offset -= PARSE;
-                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
-                        offset += PARSE;
-                    } else if (_fieldName.IsSet() == true) {
-                        _current.pack = dynamic_cast<IMessagePack*>(Find(_fieldName.Value().c_str()));
-                        if (_current.pack == nullptr) {
-                            _current.pack = &(static_cast<IMessagePack&>(_fieldName));
-                        }
-                        _fieldName.Clear();
-                    } else {
-                        offset -= PARSE;
-                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(stream, maxLength, offset);
-                        offset += PARSE;
-                        if (offset == PARSE) {
+                    if (_fieldName.IsSet() == true) {
+                        if (_current.pack != nullptr) {
+                            offset -= PARSE;
+                            loaded += _current.pack->Deserialize(&stream[loaded], maxLength - loaded, offset);
+                            offset += PARSE;
+                            if (offset == PARSE) {
+                                _fieldName.Clear();
                             // Seems like another field is completed. Reduce the count
-                            _count--;
-                            if (_count == 0) {
-                                offset = 0;
+                                _count--;
+                                if (_count == 0) {
+                                    offset = 0;
+                                }
+                            }
+                        } else {
+                            _current.pack = dynamic_cast<IMessagePack*>(Find(_fieldName.Value().c_str()));
+                            if (_current.pack == nullptr) {
+                                _current.pack = &(static_cast<IMessagePack&>(_fieldName));
                             }
                         }
+                    } else {
+                        offset -= PARSE;
+                        loaded += static_cast<IMessagePack&>(_fieldName).Deserialize(&stream[loaded], maxLength - loaded, offset);
+                        offset += PARSE;
+                        _current.pack = nullptr;
                     }
                 }
 
@@ -3055,6 +3237,21 @@ namespace Core {
                     _iterator++;
                 }
                 return (_iterator != _data.end());
+            }
+
+            uint16_t Size() const
+            {
+                uint16_t count = 0;
+                if (_data.size() > 0) {
+                    JSONElementList::const_iterator iterator = _data.begin();
+                    while (iterator != _data.end()) {
+                        if (iterator->second->IsSet() != false) {
+                            count++;
+                        }
+                        iterator++;
+                    }
+                }
+                return count;
             }
 
             virtual bool Request(const TCHAR label[])

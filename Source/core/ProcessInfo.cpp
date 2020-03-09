@@ -1,8 +1,27 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #include "ProcessInfo.h"
 #include "FileSystem.h"
 #include "SystemInfo.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <psapi.h>
 #include <tlhelp32.h>
 #else
@@ -48,11 +67,11 @@ namespace
 
 namespace WPEFramework {
 namespace Core {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     const uint32_t PageSize = getpagesize();
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     static string ExecutableName(HANDLE handle)
     {
         string result;
@@ -212,7 +231,7 @@ namespace Core {
     // Get the Processes with this name.
     ProcessInfo::Iterator::Iterator(const string& name, const bool exact)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         PROCESSENTRY32 processInfo;
         processInfo.dwSize = sizeof(PROCESSENTRY32);
@@ -296,7 +315,7 @@ namespace Core {
     // Get the Children of the given PID.
     ProcessInfo::Iterator::Iterator(const uint32_t parentPID)
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         PROCESSENTRY32 processInfo;
         processInfo.dwSize = sizeof(PROCESSENTRY32);
@@ -319,7 +338,7 @@ namespace Core {
 
     // Current Process Information
     ProcessInfo::ProcessInfo()
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         : _pid(GetCurrentProcessId())
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #else
@@ -331,7 +350,7 @@ namespace Core {
     // Copy Info
     ProcessInfo::ProcessInfo(const ProcessInfo& copy)
         : _pid(copy._pid)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #endif
     {
@@ -339,7 +358,7 @@ namespace Core {
     // Specifice Process Info
     ProcessInfo::ProcessInfo(const uint32_t id)
         : _pid(id)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         , _handle(OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, _pid))
 #endif
     {
@@ -347,7 +366,7 @@ namespace Core {
 
     ProcessInfo::~ProcessInfo()
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_handle) {
             CloseHandle(_handle);
         }
@@ -358,7 +377,7 @@ namespace Core {
     {
         _pid = rhs._pid;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_handle) {
             CloseHandle(_handle);
         }
@@ -371,7 +390,7 @@ namespace Core {
     {
         uint64_t result = 0;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_handle) {
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(_handle, &pmc, sizeof(pmc))) {
@@ -399,7 +418,7 @@ namespace Core {
     {
         uint64_t result = 0;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_handle) {
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(_handle, &pmc, sizeof(pmc))) {
@@ -427,7 +446,7 @@ namespace Core {
     {
         uint64_t result = 0;
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         if (_handle) {
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(_handle, &pmc, sizeof(pmc))) {
@@ -453,7 +472,7 @@ namespace Core {
     }
     string ProcessInfo::Name() const
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (Core::File::FileName(ExecutableName(_handle)));
 #else
         return (Core::File::FileName(ExecutableName(_pid)));
@@ -461,7 +480,7 @@ namespace Core {
     }
     string ProcessInfo::Executable() const
     {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         return (ExecutableName(_handle));
 #else
         return (ExecutableName(_pid));
@@ -523,7 +542,7 @@ namespace Core {
         uint32_t result = ERROR_BAD_REQUEST;
         if (groupName.empty() == false) {
             result = ERROR_UNKNOWN_KEY;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             struct group* grp = getgrnam(groupName.c_str());
             if (grp != nullptr) {
                 result = (::setpgid(_pid, grp->gr_gid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
@@ -535,7 +554,7 @@ namespace Core {
     string ProcessInfo::Group() const
     {
         string result;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         struct group* grp = getgrgid(::getpgid(_pid));
         if (grp != nullptr) {
             result = grp->gr_name;
@@ -623,7 +642,7 @@ namespace Core {
         uint32_t result = ERROR_BAD_REQUEST;
         if (userName.empty() == false) {
             result = ERROR_UNKNOWN_KEY;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             struct passwd* pwd = getpwnam(userName.c_str());
             if (pwd != nullptr) {
                 result = (::setuid(pwd->pw_uid) == 0 ? ERROR_NONE : ERROR_UNAVAILABLE);
@@ -635,7 +654,7 @@ namespace Core {
     /* static */ string ProcessInfo::User()
     {
         string result;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         struct passwd* pwd = getpwuid(::getuid());
         if (pwd != nullptr) {
             result = pwd->pw_name;

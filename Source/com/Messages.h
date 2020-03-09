@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __COM_MESSAGES_H
 #define __COM_MESSAGES_H
 
@@ -320,28 +339,40 @@ namespace RPC {
             {
                 _data.Clear();
             }
-            void Set(void* implementation, const string& proxyStubPath, const string& traceCategories)
+            void Set(void* implementation, const uint32_t sequenceNumber, const string& proxyStubPath, const string& traceCategories)
             {
                 _data.SetNumber<void*>(0, implementation);
-                uint16_t length = _data.SetText(sizeof(void*), proxyStubPath);
-                _data.SetText(sizeof(void*) + length, traceCategories);
+                _data.SetNumber<uint32_t>(sizeof(void*), sequenceNumber);
+                uint16_t length = _data.SetText(sizeof(void*) + sizeof(uint32_t), proxyStubPath);
+                _data.SetText(sizeof(void*)+ sizeof(uint32_t) + length, traceCategories);
             }
-			inline bool IsSet() const {
+            inline bool IsSet() const {
                 return (_data.Size() > 0);
-			}
+            }
+            uint32_t SequenceNumber() const
+            {
+                uint32_t result;
+                _data.GetNumber<uint32_t>(sizeof(void*), result);
+                return (result);
+            }
             string ProxyStubPath() const
             {
                 string value;
 
-                _data.GetText(sizeof(void*), value);
+                uint16_t length = sizeof(void*) + sizeof(uint32_t) ;   // skip implentation and sequencenumber
 
+                _data.GetText(length, value); 
+                
                 return (value);
             }
             string TraceCategories() const
             {
                 string value;
 
-                _data.GetText(sizeof(void*) + _data.GetText(sizeof(void*), value), value);
+                uint16_t length = sizeof(void*) + sizeof(uint32_t) ;   // skip implentation and sequencenumber 
+                length += _data.GetText(length, value);  // skip proxyStub path
+
+                _data.GetText(length, value); 
 
                 return (value);
             }

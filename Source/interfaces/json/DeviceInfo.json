@@ -46,25 +46,8 @@
             "example": "2",
             "type": "string"
           },
-          "totalgpuram": {
-            "description": "Total GPU DRAM memory (in bytes)",
-            "example": 381681664,
-            "type": "number",
-            "size": 64
-          },
-          "freegpuram": {
-            "description": "Free GPU DRAM memory (in bytes)",
-            "example": 358612992,
-            "type": "number",
-            "size": 64
-          },
           "serialnumber": {
             "description": "Device serial number",
-            "example": "WPEuCfrLF45",
-            "type": "string"
-          },
-          "deviceid": {
-            "description": "Device ID",
             "example": "WPEuCfrLF45",
             "type": "string"
           },
@@ -81,10 +64,7 @@
           "freeram",
           "devicename",
           "cpuload",
-          "togalgpuram",
-          "freegpuram",
           "serialnumber",
-          "deviceid",
           "time"
         ]
       }

@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef RESOURCE_MONITOR_TYPE_H
 #define RESOURCE_MONITOR_TYPE_H
 
@@ -67,6 +86,14 @@ namespace Core {
         };
 
     public:
+        struct Metadata {
+            signed int descriptor;
+            uint16_t monitor;
+            uint16_t events;
+            const char* classname;
+        };
+
+    public:
         ResourceMonitorType()
             : _monitor(nullptr)
             , _adminLock()
@@ -74,7 +101,7 @@ namespace Core {
             , _monitorRuns(0)
             , _watchDog()
             , _name(_T("Monitor::") + ClassNameOnly(typeid(RESOURCE).name()).Text())
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _action(WSACreateEvent())
 #else
             , _descriptorArrayLength(FileDescriptorAllocation)
@@ -111,7 +138,7 @@ namespace Core {
                 ::close(_signalDescriptor);
             }
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             WSACloseEvent(_action);
 #endif
         }
@@ -128,6 +155,39 @@ namespace Core {
         ::ThreadId Id() const
         {
             return (_monitor != nullptr ? _monitor->Id() : 0);
+        }
+        uint32_t Count() const 
+        {
+            return (static_cast<uint32_t>(_resourceList.size()));
+        }
+        bool Info (const uint32_t position, Metadata& info) const
+        {
+            uint32_t count = position;
+
+            _adminLock.Lock();
+
+            typename std::list<RESOURCE*>::const_iterator index(_resourceList.cbegin());
+            while ( (count != 0) && (index != _resourceList.cend()) ) { count--; index++; }
+
+            bool found = (index != _resourceList.cend());
+
+            if (found == true) {
+                info.descriptor = (*index)->Descriptor();
+                info.classname  = typeid(*(*index)).name();
+
+#ifdef __LINUX__
+                info.monitor = _descriptorArray[position + 1].events;
+                info.events  = _descriptorArray[position + 1].revents;
+#endif
+#ifdef __WINDOWS__
+                info.monitor = 0;
+                info.events  = 0;
+#endif
+            }
+
+            _adminLock.Unlock();
+
+            return (found);
         }
         void Register(RESOURCE& resource)
         {
@@ -161,7 +221,7 @@ namespace Core {
             typename std::list<RESOURCE*>::iterator index(std::find(_resourceList.begin(), _resourceList.end(), &resource));
 
             if (index != _resourceList.end()) {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
                 _resourceList.erase(index);
 #else
                 *index = nullptr;
@@ -185,7 +245,7 @@ namespace Core {
                 _signalNode.Size());
 #elif defined(__LINUX__)
             _monitor->Signal(SIGUSR2);
-#elif defined(__WIN32__)
+#elif defined(__WINDOWS__)
             ::WSASetEvent(_action);
 #endif
         };
@@ -376,7 +436,7 @@ namespace Core {
         }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint32_t Worker()
         {
             uint32_t delay = 0;
@@ -467,7 +527,7 @@ namespace Core {
         int _signalDescriptor;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _action;
 #endif
 #ifdef __APPLE__

@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #include "open_cdm_ext.h"
 
 #include "open_cdm_impl.h"
@@ -82,13 +101,13 @@ uint32_t opencdm_system_ext_reset_secure_stop(struct OpenCDMSystem* system)
 
 OpenCDMError opencdm_system_ext_get_secure_stop_ids(OpenCDMSystem* system,
     uint8_t ids[],
-    uint8_t idSize,
+    uint16_t idsLength,
     uint32_t* count)
 {
     ASSERT(system != nullptr);
     OpenCDMAccessor* accessor = OpenCDMAccessor::Instance();
     return (OpenCDMError)accessor->GetSecureStopIds(system->keySystem(), ids,
-        idSize, *count);
+        idsLength, *count);
 }
 
 OpenCDMError opencdm_system_ext_get_secure_stop(OpenCDMSystem* system,

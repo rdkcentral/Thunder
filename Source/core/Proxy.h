@@ -1,24 +1,28 @@
-// ===========================================================================
-//
-// Filename:    Proxy.h
-//
-// Description: Header file for the Posix thread functions. This class
-//              encapsulates all posix thread functionality defined by the
-//              system.
-//
-// History
-//
-// Author        Reason                                             Date
-// ---------------------------------------------------------------------------
-// P. Wielders   Initial creation                                   2002/05/24
-//
-// ===========================================================================
-
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __PROXY_H
 #define __PROXY_H
 
 // ---- Include system wide include files ----
 #include <map>
+#include <memory>
 
 // ---- Include local include files ----
 #include "StateTrigger.h"
@@ -37,17 +41,17 @@ namespace WPEFramework {
 namespace Core {
 
     template <typename CONTEXT>
-    class ProxyObject : public CONTEXT, public IReferenceCounted {
+    class ProxyService : public CONTEXT {
     private:
         // ----------------------------------------------------------------
         // Never, ever allow reference counted objects to be assigned.
         // Create a new object and modify it. If the assignment operator
         // is used, give a compile error.
         // ----------------------------------------------------------------
-        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
+        ProxyService<CONTEXT>& operator=(const ProxyService<CONTEXT>& rhs) = delete;
 
     protected:
-        ProxyObject(CONTEXT& copy)
+        ProxyService(CONTEXT& copy)
             : CONTEXT(copy)
             , m_RefCount(0)
         {
@@ -67,15 +71,12 @@ namespace Core {
             size_t alignedSize = ((stAllocateBlock + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
 
             if (AdditionalSize != 0) {
-                Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(uint32_t) + AdditionalSize));
+                Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize + sizeof(void*) + AdditionalSize));
 
                 if (Space != nullptr) {
                     *(reinterpret_cast<uint32_t*>(&Space[alignedSize])) = AdditionalSize;
                 }
             } else {
-                // If we do not have an additional buffer, it has to be "empty". The elements m_Size and m_Buffer will not be used !!!
-                ASSERT(AdditionalSize == 0);
-
                 Space = reinterpret_cast<uint8_t*>(::malloc(alignedSize));
             }
 
@@ -90,24 +91,22 @@ namespace Core {
         }
 
     public:
-        inline ProxyObject()
-            : CONTEXT()
-            , m_RefCount(0)
-        {
-            __Initialize<CONTEXT>();
-        }
-		template <typename... Args>
-        inline ProxyObject(Args... args)
+        template <typename... Args>
+        inline ProxyService(Args&&... args)
             : CONTEXT(args...)
             , m_RefCount(0)
         {
             __Initialize<CONTEXT>();
         }
-        virtual ~ProxyObject()
+        virtual ~ProxyService()
         {
             __Deinitialize<CONTEXT>();
 
-            ASSERT(m_RefCount == 0);
+            /* Hotfix for gcc linker issue preventing debug builds.
+             *
+             * Please see WPE-546 for details.
+             */
+            // ASSERT(m_RefCount == 0);
 
             TRACE_L5("Destructor ProxyObject <%p>", (this));
         }
@@ -141,6 +140,33 @@ namespace Core {
             return (*this);
         }
 
+        inline uint32_t Size() const
+        {
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+
+            return (*(reinterpret_cast<const uint32_t*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize]))));
+        }
+
+        template <typename TYPE>
+        TYPE* Store()
+        {
+            size_t size = Size();
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
+            void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            return (reinterpret_cast<TYPE*>(result));
+        }
+
+        template <typename TYPE>
+        const TYPE* Store() const
+        {
+            size_t size = Size();
+            size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
+            void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
+            const void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            return (reinterpret_cast<const TYPE*>(result));
+        }
+
         inline bool LastRef() const
         {
             return (m_RefCount == 1);
@@ -163,14 +189,14 @@ namespace Core {
         typedef hasInitialize<CONTEXT, void (CONTEXT::*)()> TraitInitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyObject<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitInitialize::value, void>::type
         __Initialize()
         {
             CONTEXT::Initialize();
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyObject<TYPE>::TraitInitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitInitialize::value, void>::type
         __Initialize()
         {
         }
@@ -183,20 +209,58 @@ namespace Core {
         typedef hasDeinitialize<CONTEXT, void (CONTEXT::*)()> TraitDeinitialize;
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<ProxyObject<TYPE>::TraitDeinitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<ProxyService<TYPE>::TraitDeinitialize::value, void>::type
         __Deinitialize()
         {
             CONTEXT::Deinitialize();
         }
 
         template <typename TYPE>
-        inline typename Core::TypeTraits::enable_if<!ProxyObject<TYPE>::TraitDeinitialize::value, void>::type
+        inline typename Core::TypeTraits::enable_if<!ProxyService<TYPE>::TraitDeinitialize::value, void>::type
         __Deinitialize()
         {
         }
 
     protected:
         mutable uint32_t m_RefCount;
+    };
+
+    template <typename CONTEXT>
+    class ProxyObject : public ProxyService<CONTEXT>, public IReferenceCounted {
+    private:
+        // ----------------------------------------------------------------
+        // Never, ever allow reference counted objects to be assigned.
+        // Create a new object and modify it. If the assignment operator
+        // is used, give a compile error.
+        // ----------------------------------------------------------------
+        ProxyObject<CONTEXT>& operator=(const ProxyObject<CONTEXT>& rhs) = delete;
+
+    protected:
+        ProxyObject(CONTEXT& copy)
+            : ProxyService<CONTEXT>(copy)
+        {
+        }
+
+    public:
+        template <typename... Args>
+        inline ProxyObject(Args&&... args)
+            : ProxyService<CONTEXT>(std::forward<Args>(args)...)
+        {
+        }
+        virtual ~ProxyObject()
+        {
+        }
+
+    public:
+        virtual void AddRef() const
+        {
+            ProxyService<CONTEXT>::AddRef();
+        }
+
+        virtual uint32_t Release() const
+        {
+            return (ProxyService<CONTEXT>::Release());
+        }
     };
 
     // ------------------------------------------------------------------------------
@@ -259,24 +323,17 @@ namespace Core {
             }
         }
 
-        inline static ProxyType<CONTEXT> Create()
-        {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>());
-        }
+    public:
         template <typename... Args>
-        inline static ProxyType<CONTEXT> Create(Args... args)
+        inline static ProxyType<CONTEXT> Create(Args&&... args)
         {
-            return ProxyType<CONTEXT>(*new (0) ProxyObject<CONTEXT>(args...));
+            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), 0, std::forward<Args>(args)...));
         }
 
-        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size)
-        {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>());
-        }
         template <typename... Args>
-		inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args... args)
+        inline static ProxyType<CONTEXT> CreateEx(const uint32_t size, Args&&... args)
         {
-            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(args...));
+            return (CreateObject(TemplateIntToType<std::is_base_of<IReferenceCounted, CONTEXT>::value>(), size, std::forward<Args>(args)...));
         }
 
         ProxyType<CONTEXT>& operator=(const ProxyType<CONTEXT>& rhs)
@@ -360,6 +417,11 @@ namespace Core {
             return (m_RefCount);
         }
 
+        void Destroy() {
+            delete m_RefCount;
+            m_RefCount = nullptr;
+        }
+
     private:
         template <typename DERIVED>
         inline void Construct(const ProxyType<DERIVED>& source, const TemplateIntToType<true>&)
@@ -378,6 +440,17 @@ namespace Core {
                 _realObject = result;
                 m_RefCount->AddRef();
             }
+        }
+
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<false>&, const uint32_t size, Args&&... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyObject<CONTEXT>(std::forward<Args>(args)...));
+        }
+        template <typename... Args>
+        inline static ProxyType<CONTEXT> CreateObject(const ::TemplateIntToType<true>&, const uint32_t size, Args&&... args)
+        {
+            return ProxyType<CONTEXT>(*new (size) ProxyService<CONTEXT>(std::forward<Args>(args)...));
         }
 
     private:
@@ -919,23 +992,24 @@ namespace Core {
     class ProxyPoolType {
     private:
         template <typename ELEMENT>
-        class ProxyObjectType : public Core::ProxyObject<ELEMENT> {
-        private:
-            typedef ProxyObjectType<ELEMENT> ThisClass;
+        using PoolElement = typename std::conditional<std::is_base_of<IReferenceCounted, ELEMENT>::value != 0, ProxyService<ELEMENT>, ProxyObject<ELEMENT>>::type;
 
+        template <typename ELEMENT>
+        class ProxyObjectType : public PoolElement<ELEMENT> {
+        private:
             ProxyObjectType() = delete;
             ProxyObjectType(const ProxyObjectType<ELEMENT>&) = delete;
             ProxyObjectType<ELEMENT>& operator=(const ProxyObjectType<ELEMENT>&) = delete;
 
             ProxyObjectType(ProxyPoolType<ELEMENT>* queue)
-                : Core::ProxyObject<ELEMENT>()
+                : PoolElement<ELEMENT>()
                 , _queue(*queue)
             {
                 ASSERT(queue != nullptr);
             }
             template <typename Arg1>
             ProxyObjectType(ProxyPoolType<ELEMENT>* queue, Arg1 a_Arg1)
-                : Core::ProxyObject<ELEMENT>(a_Arg1)
+                : PoolElement<ELEMENT>(a_Arg1)
                 , _queue(*queue)
             {
                 ASSERT(queue != nullptr);
@@ -944,19 +1018,16 @@ namespace Core {
         public:
             ~ProxyObjectType()
             {
-                this->__Deinitialize<PROXYPOOLELEMENT>();
             }
             inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue)
             {
-                ThisClass* newElement(new (0) ThisClass(&queue));
-                newElement->__Initialize<PROXYPOOLELEMENT>();
+                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue));
                 return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
             }
             template <typename Arg1>
             inline static Core::ProxyType<ELEMENT> Create(ProxyPoolType<ELEMENT>& queue, Arg1 argument)
             {
-                ThisClass* newElement(new (0) ThisClass(&queue, argument));
-                newElement->__Initialize<PROXYPOOLELEMENT>();
+                ProxyObjectType* newElement(new (0) ProxyObjectType(&queue, argument));
                 return Core::ProxyType<ELEMENT>(static_cast<IReferenceCounted*>(newElement), newElement);
             }
 
@@ -965,13 +1036,13 @@ namespace Core {
             {
                 uint32_t result;
 
-                if ((result = Core::InterlockedDecrement(Core::ProxyObject<ELEMENT>::m_RefCount)) == 0) {
+                if ((result = Core::InterlockedDecrement(ProxyService<ELEMENT>::m_RefCount)) == 0) {
 
-                    ThisClass* baseElement(const_cast<ThisClass*>(this));
+                    ProxyObjectType* baseElement(const_cast<ProxyObjectType*>(this));
 
-                    baseElement->__Clear<PROXYPOOLELEMENT>();
+                    baseElement->__Clear<ELEMENT>();
 
-                    Core::ProxyType<ThisClass> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
+                    Core::ProxyType<ProxyObjectType> returnObject(static_cast<IReferenceCounted*>(baseElement), baseElement);
 
                     _queue.Return(returnObject);
 
@@ -1002,46 +1073,6 @@ namespace Core {
             {
             }
 
-            // -----------------------------------------------------
-            // Check for Initialize method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Initialize, hasInitialize);
-
-            typedef hasInitialize<ELEMENT, void (ELEMENT::*)()> TraitInitialize;
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitInitialize::value, void>::type
-            __Initialize()
-            {
-                ELEMENT::Initialize();
-            }
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitInitialize::value, void>::type
-            __Initialize()
-            {
-            }
-
-            // -----------------------------------------------------
-            // Check for Deinitialize method on Object
-            // -----------------------------------------------------
-            HAS_MEMBER(Deinitialize, hasDeinitialize);
-
-            typedef hasDeinitialize<ELEMENT, void (ELEMENT::*)()> TraitDeinitialize;
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<ProxyObjectType<TYPE>::TraitDeinitialize::value, void>::type
-            __Deinitialize()
-            {
-                ELEMENT::Deinitialize();
-            }
-
-            template <typename TYPE>
-            inline typename Core::TypeTraits::enable_if<!ProxyObjectType<TYPE>::TraitDeinitialize::value, void>::type
-            __Deinitialize()
-            {
-            }
-
         private:
             ProxyPoolType<ELEMENT>& _queue;
         };
@@ -1061,6 +1092,30 @@ namespace Core {
         }
         ~ProxyPoolType()
         {
+            // Clear the created objects..
+            uint16_t attempt = 500;
+            while ((attempt != 0) && (_createdElements != 0)) {
+                if (_queue.Count() == 0) {
+                    // Give up the slice, we are waiting for ProxyPool 
+                    // objects to return.
+                    TRACE_L1("Pending ProxyPool objects. Waiting for %d objects.", _createdElements);
+                    ::SleepMs(1);
+
+                    attempt--;
+                } 
+                else {
+                    Core::ProxyType<ProxyPoolElement> listLoad;
+
+                    _createdElements--;
+
+                    _queue.Remove(0, listLoad);
+
+                    listLoad.Destroy();
+                }
+            }
+            if (_createdElements != 0) {
+                TRACE_L1("Missing Pool Elements. PLease find leaking objects in: %s", typeid(PROXYPOOLELEMENT).name());
+            }
         }
 
     public:

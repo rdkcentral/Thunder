@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __WEBREQUEST_H
 #define __WEBREQUEST_H
 
@@ -197,6 +216,9 @@ namespace Web {
     };
 
     class EXTERNAL Request {
+    private:
+        static constexpr const TCHAR* DELIMETERS = _T(" ,");
+
     public:
         typedef Request BaseElement;
 
@@ -344,7 +366,7 @@ namespace Web {
             Deserializer& operator=(const Deserializer&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             Deserializer()
@@ -354,7 +376,7 @@ namespace Web {
                 , _parser(*this)
             {
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             ~Deserializer()
@@ -639,7 +661,28 @@ namespace Web {
         {
             return (_marshalMode);
         }
+        template<typename SCANVALUE>
+        static bool ScanForKeyword (const string& buffer, const SCANVALUE value) {
+            bool status = false;
+            std::size_t start = 0;
+            std::size_t end = 0;
 
+            string strValue = Core::EnumerateType<SCANVALUE>(value).Data();
+            do {
+                end = buffer.find_first_of(DELIMETERS, start);
+                if (end - start > 0) {
+                    string word = string(buffer, start, end - start);
+                    std::transform(word.begin(), word.end(), word.begin(), std::ptr_fun<int, int>(std::toupper));
+                    if (word == strValue) {
+                        status = true;
+                        break;
+                    }
+                }
+                start = end + 1;
+            } while (end != std::string::npos);
+
+            return status;
+        }
     private:
         Core::ProxyType<IBody> _body;
         MarshalType _marshalMode;

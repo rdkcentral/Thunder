@@ -86,6 +86,9 @@
     <ClInclude Include="VirtualInput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="IRemoteInstantiation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />

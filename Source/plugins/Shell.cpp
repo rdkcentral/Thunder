@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Module.h"
 #include "IShell.h"
 
@@ -61,16 +80,20 @@ namespace PluginHost
             , User()
             , Group()
             , Threads(1)
+            , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
+            , RemoteAddress()
             , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
         Object(const IShell* info)
@@ -78,25 +101,37 @@ namespace PluginHost
             , User()
             , Group()
             , Threads()
+            , Priority(0)
             , OutOfProcess(true)
             , Mode(ModeType::LOCAL)
+            , RemoteAddress()
             , Configuration(false)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
 
             RootObject config;
-            config.FromString(info->ConfigLine());
+            Core::OptionalType<Core::JSON::Error> error;
+            config.FromString(info->ConfigLine(), error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             if (config.Config.IsSet() == true) {
                 // Yip we want to go out-of-process
                 Object settings;
-                settings.FromString(config.Config.Value());
+                Core::OptionalType<Core::JSON::Error> error;
+                settings.FromString(config.Config.Value(), error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
                 *this = settings;
 
                 if (Locator.Value().empty() == true) {
@@ -109,16 +144,20 @@ namespace PluginHost
             , User(copy.User)
             , Group(copy.Group)
             , Threads(copy.Threads)
+            , Priority(copy.Priority)
             , OutOfProcess(true)
             , Mode(copy.Mode)
+            , RemoteAddress(copy.RemoteAddress)
             , Configuration(copy.Configuration)
         {
             Add(_T("locator"), &Locator);
             Add(_T("user"), &User);
             Add(_T("group"), &Group);
             Add(_T("threads"), &Threads);
+            Add(_T("priority"), &Priority);
             Add(_T("outofprocess"), &OutOfProcess);
             Add(_T("mode"), &Mode);
+            Add(_T("remoteaddress"), &RemoteAddress);
             Add(_T("configuration"), &Configuration);
         }
         virtual ~Object()
@@ -132,8 +171,10 @@ namespace PluginHost
             User = RHS.User;
             Group = RHS.Group;
             Threads = RHS.Threads;
+            Priority = RHS.Priority;
             OutOfProcess = RHS.OutOfProcess;
             Mode = RHS.Mode;
+            RemoteAddress = RHS.RemoteAddress;
             Configuration = RHS.Configuration;
 
             return (*this);
@@ -160,9 +201,11 @@ namespace PluginHost
         Core::JSON::String User;
         Core::JSON::String Group;
         Core::JSON::DecUInt8 Threads;
+        Core::JSON::DecSInt8 Priority;
         Core::JSON::Boolean OutOfProcess;
         Core::JSON::EnumType<ModeType> Mode; 
-        Core::JSON::String Configuration; 
+        Core::JSON::String RemoteAddress; 
+        Core::JSON::String Configuration;
     };
 
     void* IShell::Root(uint32_t & pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version)
@@ -206,14 +249,17 @@ namespace PluginHost
                 if (locator.empty() == true) {
                     locator = Locator();
                 }
-                RPC::Object definition(Callsign(), locator,
+                RPC::Object definition(locator,
                     className,
+                    Callsign(),
                     interface,
                     version,
                     rootObject.User.Value(),
                     rootObject.Group.Value(),
                     rootObject.Threads.Value(),
+                    rootObject.Priority.Value(),
                     rootObject.HostType(), 
+                    rootObject.RemoteAddress.Value(),
                     rootObject.Configuration.Value());
 
                 result = handler->Instantiate(definition, waitTime, pid, ClassName(), Callsign());

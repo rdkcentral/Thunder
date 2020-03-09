@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __PROCESSINFO_H
 #define __PROCESSINFO_H
 
@@ -11,7 +30,7 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL ProcessInfo {
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         enum scheduler {
             BATCH,
             IDLE,
@@ -131,7 +150,7 @@ namespace Core {
 
         inline int8_t Priority() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (0);
 #else
             errno = 0;
@@ -142,7 +161,7 @@ namespace Core {
         }
         inline void Priority(const int8_t priority)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
                 TRACE_L1("Failed to set priority. Error: %d", errno);
             }
@@ -150,7 +169,7 @@ namespace Core {
         }
         inline scheduler Policy() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (OTHER);
 #else
             errno = 0;
@@ -161,7 +180,7 @@ namespace Core {
         }
         inline void Policy(const scheduler priority)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (setpriority(PRIO_PROCESS, _pid, priority) == -1) {
                 TRACE_L1("Failed to set priority. Error: %d", errno);
             }
@@ -169,7 +188,7 @@ namespace Core {
         }
         inline int8_t OOMAdjust() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (0);
 #else
             int8_t result = 0;
@@ -186,7 +205,7 @@ namespace Core {
         }
         inline void OOMAdjust(const int8_t adjust)
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             FILE* fp = fopen(_T("/proc/self/oom_adj"), _T("w"));
 
             if (fp) {
@@ -198,7 +217,7 @@ namespace Core {
 
         inline bool IsActive() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             DWORD exitCode = 0;
             if ((_handle != 0) && (GetExitCodeProcess(_handle, &exitCode) != 0) && (exitCode == STILL_ACTIVE)) {
                 return (true);
@@ -227,7 +246,7 @@ namespace Core {
 
     private:
         uint32_t _pid;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
