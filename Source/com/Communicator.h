@@ -806,6 +806,9 @@ namespace RPC {
                     _adminLock.Unlock();
 
                 } else {
+                    Communicator::RemoteConnection* connection = index->second;
+                    connection->AddRef();
+
                     // Remove any channel associated, we had.
                     Core::ProxyType<Core::IPCChannel> destructed = index->second->Channel();
                     index->second->Close();
@@ -826,6 +829,8 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     _parent.Closed(destructed);
+
+                    connection->Release();
                 }
             }
             inline Communicator::RemoteConnection* Connection(const uint32_t id)
@@ -1227,38 +1232,16 @@ namespace RPC {
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
             std::list<ProxyStub::UnknownProxy*> deadProxies;
-            std::list<RPC::ExposedInterface> pendingInterfaces;
 
-            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies, pendingInterfaces);
+            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Revoke((*loop)->Parent(), (*loop)->InterfaceId());
-                (*loop)->Destroy();
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
                 (*loop)->Release();
                 loop++;
-            }
-
-            std::list<RPC::ExposedInterface>::const_iterator loop2(pendingInterfaces.begin());
-
-            while (loop2 != pendingInterfaces.end()) {
-                const Core::IUnknown* source = loop2->first;
-
-                // This is a situation that should not occure. Needs further
-                // investigation if this ASSERT fires !!!
-                ASSERT(source != nullptr);
-
-                if (source != nullptr) {
-                    uint32_t count = loop2->second;
-                    Cleanup(source, count);
-                    while (count != 0) {
-                        source->Release();
-                        count--;
-                    }
-                }
-                loop2++;
             }
         }
         virtual void* Aquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
@@ -1272,7 +1255,7 @@ namespace RPC {
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
         {
         }
-        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* refCount */)
+        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* interfaceid */)
         {
         }
 
