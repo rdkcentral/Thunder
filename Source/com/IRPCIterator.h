@@ -37,14 +37,15 @@ namespace RPC {
 
         virtual ~IIteratorType(){};
 
-        virtual bool Next(ELEMENT& info) = 0;
-        virtual bool Previous(ELEMENT& info) = 0;
+        virtual bool Next(ELEMENT& info /* @out */) = 0;
+        virtual bool Previous(ELEMENT& info /* @out */) = 0;
         virtual void Reset(const uint32_t position) = 0;
         virtual bool IsValid() const = 0;
         virtual uint32_t Count() const = 0;
         virtual ELEMENT Current() const = 0;
     };
 
+    /* @stubgen:skip */
     template<typename INTERFACE>
     class IteratorType : public INTERFACE {
     private:
