@@ -533,14 +533,14 @@ namespace RPC {
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess : public LocalRemoteProcess {
+        class EXTERNAL ContainerRemoteProcess  : public RemoteConnection, public IMonitorableProcess {
         private:
-            class Config : public Core::JSON::Container {
+            class ContainerConfig : public Core::JSON::Container {
             public:
-                Config(const Config&) = delete;
-                Config& operator=(const Config&) = delete;
+                ContainerConfig(const ContainerConfig&) = delete;
+                ContainerConfig& operator=(const ContainerConfig&) = delete;
 
-                Config()
+                ContainerConfig()
                     : Core::JSON::Container()
 #ifdef __DEBUG__
                     , ContainerPath()
@@ -550,7 +550,7 @@ namespace RPC {
                     Add(_T("containerpath"), &ContainerPath);
 #endif
                 }
-                ~Config() = default;
+                ~ContainerConfig() = default;
 
 #ifdef __DEBUG__
                 Core::JSON::String ContainerPath;
@@ -563,17 +563,15 @@ namespace RPC {
             ContainerRemoteProcess(const ContainerRemoteProcess&) = delete;
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
 
-        private:
             ContainerRemoteProcess(const Config& baseConfig, const Object& instance)
-                : LocalRemoteProcess(config, instance)
+                : _callsign(instance.Callsign())
+                , _id(0)
+                , _process(RemoteConnection::Id(), baseConfig, instance)
             {
 
                 static constexpr TCHAR ContainerName[] = _T("Container");
 
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-
-                Config config;
-                config.FromString(instance.Configuration());
 
                 std::vector<string> searchpaths(3);
                 searchpaths[0] = baseConfig.VolatilePath();
@@ -581,6 +579,8 @@ namespace RPC {
                 searchpaths[2] = baseConfig.DataPath();
 
 #ifdef __DEBUG__
+                ContainerConfig config;
+                config.FromString(instance.Configuration());
 
                 if (config.ContainerPath.IsSet() == true) {
                     searchpaths.emplace(searchpaths.cbegin(), config.ContainerPath.Value());
@@ -590,7 +590,8 @@ namespace RPC {
 
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
-                _container = admin.Container(ContainerName, searchpathsit, volatilecallsignpath, configuration);
+                string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
+                _container = admin.Container(ContainerName, searchpathsit, volatilecallsignpath, instance.Configuration());
 
                 admin.Release();
             }
@@ -602,12 +603,19 @@ namespace RPC {
                 }
             }
 
-            void Launch()
+            string Callsign() const override
             {
+                return (_callsign);
+            }
+
+            uint32_t Launch() override
+            {
+                uint32_t result = Core::ERROR_GENERAL;
+
                 if (_container != nullptr) {
 
                     // Note: replace below code with something more efficient when Iterators redesigned
-                    Core::Process::Options::Iterator it(LocalRemoteProcess::Options());
+                    Core::Process::Options::Iterator it(_process.Options());
 
                     std::vector<string> params;
                     while (it.Next() == true) {
@@ -615,11 +623,19 @@ namespace RPC {
                     }
 
                     Core::IteratorType<std::vector<string>, const string> temp(params);
-                    _container->Start(LocalRemoteProcess::Command(), temp);
-                }
+                    if (_container->Start(_process.Command(), temp) == true) {
+                        result = Core::ERROR_NONE;
+                    } 
+                } 
+
+                return result;
             }
 
-        public:
+        private:
+            BEGIN_INTERFACE_MAP(ContainerRemoteProcess)
+                INTERFACE_ENTRY(IRemoteConnection)
+                INTERFACE_ENTRY(IMonitorableProcess)
+            END_INTERFACE_MAP
             void Terminate() override;
 
             uint32_t RemoteId() const override
@@ -629,6 +645,9 @@ namespace RPC {
 
         private:
             ProcessContainers::IContainer* _container;
+            string _callsign;
+            uint32_t _id;
+            Process _process;
         };
 
 #endif
