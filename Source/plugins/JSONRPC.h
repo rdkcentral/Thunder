@@ -21,6 +21,7 @@
 
 #include "IShell.h"
 #include "Module.h"
+#include "System.h"
 
 namespace WPEFramework {
 
@@ -106,7 +107,7 @@ namespace PluginHost {
         // ------------------------------------------------------------------------------------------------------------------------------
         Core::ProxyType<Core::JSONRPC::Message> Message() const
         {
-            return (Core::ProxyType<Core::JSONRPC::Message>(_jsonRPCMessageFactory.Element()));
+            return (Core::ProxyType<Core::JSONRPC::Message>(IFactories::Instance().JSONRPC()));
         }
 
         //
@@ -231,7 +232,7 @@ namespace PluginHost {
         }
         uint32_t Response(const Core::JSONRPC::Connection& channel, const string& result)
         {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
@@ -243,7 +244,7 @@ namespace PluginHost {
         }
         uint32_t Response(const Core::JSONRPC::Connection& channel, const Core::JSONRPC::Error& result)
         {
-            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = _jsonRPCMessageFactory.Element();
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> message = IFactories::Instance().JSONRPC();
 
             ASSERT(_service != nullptr);
 
@@ -368,7 +369,7 @@ namespace PluginHost {
         }
         void Notify(const uint32_t id, const string& designator, const string& parameters)
         {
-            Core::ProxyType<Core::JSONRPC::Message> message(_jsonRPCMessageFactory.Element());
+            Core::ProxyType<Core::JSONRPC::Message> message(Message());
 
             ASSERT(_service != nullptr);
 
@@ -416,8 +417,6 @@ namespace PluginHost {
         std::list<Core::JSONRPC::Handler> _handlers;
         IShell* _service;
         string _callsign;
-
-        static Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCMessageFactory;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public JSONRPC {
