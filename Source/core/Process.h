@@ -33,12 +33,9 @@ namespace Core {
         class Options {
         private:
             Options() = delete;
-            Options& operator=(const Options&) = delete;
-
-            typedef std::map<const string, string> Map;
-
+            Options& operator=(const Options&) = delete;            
         public:
-            typedef Core::IteratorMapType<const Map, const string&, const string&, Map::const_iterator> Iterator;
+            typedef Core::IteratorType<const std::vector<string>, const string&, std::vector<string>::const_iterator> Iterator;
 
         public:
             Options(const string& command)
@@ -52,7 +49,7 @@ namespace Core {
                 , _options()
             {
                 ASSERT(command.empty() == false);
-                Set(options);
+                Add(options);
             }
             Options(const Options& copy)
                 : _command(copy._command)
@@ -68,39 +65,32 @@ namespace Core {
             {
                 return (_command);
             }
-            inline void Erase(const string& key)
+            inline void Erase(const string& value)
             {
-                _options.erase(key);
-            }
-            inline string& operator[](const TCHAR key[])
-            {
-                return (_options[string(key)]);
-            }
-            inline string& operator[](const string& key)
-            {
-                return (_options[string(key)]);
+                std::remove(_options.begin(), _options.end(), value);
             }
             inline void Clear()
             {
                 _options.clear();
             }
-            void Set(const string& parameter)
+            Options& Add(const string& parameter)
             {
-                _options.insert(std::pair<const string, const string>(parameter, string(_T(""))));
+                _options.push_back(parameter);
+
+                return *this;
             }
-            void Set(const string& key, const string value)
-            {
-                _options.insert(std::pair<const string, const string>(key, value));
-            }
-            void Set(const Iterator& options)
+
+            Options& Add(const Iterator& options)
             {
                 Iterator index(options);
 
                 _options.clear();
 
                 while (index.Next() == true) {
-                    _options.insert(std::pair<const string, const string>(index.Key(), *index));
+                    _options.push_back(index.Current());
                 }
+
+                return *this;
             }
             Iterator Get() const
             {
@@ -113,13 +103,8 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while (index.Next() == true) {
-                    const string& value(*index);
-
-                    size += 1 + static_cast<uint16_t>(index.Key().length());
-
-                    if ((value.empty() != true) && (value[0] != '\0')) {
-                        size += 1 + static_cast<uint16_t>(value.length());
-                    }
+                    // Add length of string plus 1 for '\0'
+                    size += 1 + static_cast<uint16_t>(index.Current().length());
                 }
                 size++; // closing '\0'
 
@@ -134,15 +119,11 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while (index.Next() == true) {
-                    string value(*index);
 
                     argCount++;
-                    size += static_cast<uint16_t>(index.Key().length()) + 1;
 
-                    if (value.empty() != true) {
-                        argCount++;
-                        size += static_cast<uint16_t>(value.length()) + 1;
-                    }
+                    // count for length of parameter + 1 for ending '\0'
+                    size += static_cast<uint16_t>(index.Current().length()) + 1;
                 }
 
                 return ((sizeof(char*) * argCount) + (size * sizeof(char)));
@@ -164,24 +145,13 @@ namespace Core {
 
                 // First option needs to be the application start name
                 while ((data > 2) && (index.Next() == true)) {
-                    const string& value(*index);
-
                     commandCount++;
                     *destination++ = ' ';
                     data -= 1;
 
-                    ::strncpy(destination, index.Key().c_str(), data);
-                    destination = &destination[index.Key().length()];
-                    data -= static_cast<uint16_t>(index.Key().length() > data ? data : index.Key().length());
-
-                    if ((data > 0) && (value.empty() != true)) {
-                        commandCount++;
-                        *destination++ = ' ';
-                        data--;
-                        ::strncpy(destination, value.c_str(), data);
-                        destination = &destination[value.length()];
-                        data -= static_cast<uint16_t>(value.length() > data ? data : value.length());
-                    }
+                    ::strncpy(destination, index.Current().c_str(), data);
+                    destination = &destination[index.Current().length()];
+                    data -= static_cast<uint16_t>(index.Current().length() > data ? data : index.Current().length());
                 }
 
                 if (data > 0) {
@@ -197,12 +167,6 @@ namespace Core {
                 uint16_t commandCount = 1 + static_cast<uint16_t>(_options.size()) + 1;
                 Iterator index(_options);
 
-                // Calculate the number of "not empty" values, they will trigger another argument
-                while (index.Next() == true) {
-                    if ((*index).empty() == false) {
-                        commandCount++;
-                    }
-                }
                 ASSERT(result != nullptr);
 
                 if ((result == nullptr) || (data <= (sizeof(char*) * commandCount))) {
@@ -225,23 +189,13 @@ namespace Core {
                     index.Reset(0);
 
                     // First option needs to be the application start name
-                    while ((data > 2) && (index.Next() == true)) {
-                        const string& value(*index);
-
+                    while ((data >= 2) && (index.Next() == true)) {
                         commandCount++;
                         *indexer++ = destination;
 
-                        ::strncpy(destination, index.Key().c_str(), data);
-                        destination = &destination[index.Key().length() + 1];
-                        data -= static_cast<uint16_t>((index.Key().length() + 1) > data ? data : (index.Key().length() + 1));
-
-                        if ((data > 0) && (value.empty() != true)) {
-                            commandCount++;
-                            *indexer++ = destination;
-                            ::strncpy(destination, value.c_str(), data);
-                            destination = &destination[value.length() + 1];
-                            data -= static_cast<uint16_t>((value.length() + 1) > data ? data : (value.length() + 1));
-                        }
+                        ::strncpy(destination, index.Current().c_str(), data);
+                        destination = &destination[index.Current().length() + 1];
+                        data -= static_cast<uint16_t>((index.Current().length() + 1) > data ? data : (index.Current().length() + 1));
                     }
 
                     *indexer = nullptr;
@@ -252,7 +206,7 @@ namespace Core {
 
         private:
             const string _command;
-            Map _options;
+            std::vector<string> _options;
         };
 
     private:
