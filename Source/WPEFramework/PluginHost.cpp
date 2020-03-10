@@ -156,18 +156,13 @@ namespace PluginHost {
     void ExitDaemonHandler(int signo)
     {
         if (_background) {
-            syslog(LOG_NOTICE, "Signal received %d.", signo);
+            syslog(LOG_NOTICE, "Signal received %d. in process [%d]", signo, getpid());
         } else {
-            fprintf(stderr, "Signal received %d.\n", signo);
+            fprintf(stderr, "Signal received %d. in process [%d]\n", signo, getpid());
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
             ExitHandler::Construct();
-        } else if (signo == SIGSEGV) {
-            DumpCallStack();
-            // now invoke the default segfault handler
-            signal(signo, SIG_DFL);
-            kill(getpid(), signo);
         }
     }
 
@@ -337,9 +332,6 @@ namespace PluginHost {
 
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
-#ifdef __DEBUG__
-            sigaction(SIGSEGV, &sa, nullptr);
-#endif
             sigaction(SIGQUIT, &sa, nullptr);
         }
 
@@ -437,6 +429,7 @@ namespace PluginHost {
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
+            serviceConfig.DefaultTraceCategories.SetQuoted(true);
             traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + serviceConfig.DefaultTraceCategories.Value();
 
             Core::File input (traceSettings, true);

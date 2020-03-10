@@ -127,7 +127,7 @@ namespace Plugin {
         ASSERT(request.HasBody() == false);
 
         if (request.Verb == Web::Request::HTTP_POST) {
-            request.Body(PluginHost::Factories::Instance().JSONRPC());
+            request.Body(PluginHost::IFactories::Instance().JSONRPC());
         } else if (request.Verb == Web::Request::HTTP_PUT) {
             Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
@@ -154,7 +154,7 @@ namespace Plugin {
 
         // For now, whatever the URL, we will just, on a get, drop all info we have
         if (request.Verb == Web::Request::HTTP_POST) {
-            result = PluginHost::Factories::Instance().Response();
+            result = PluginHost::IFactories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
             result->Message = _T("Request has no JSONRPC body!");
 
@@ -187,7 +187,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
         result->ContentType = Web::MIME_JSON;
 
         if (index.Next() == false) {
@@ -288,7 +288,7 @@ namespace Plugin {
     }
     Core::ProxyType<Web::Response> Controller::PutMethod(Core::TextSegmentIterator& index, const Web::Request& request)
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
 
         // All PUT commands require an additional parameter, so go look for it.
         if (index.Next() == true) {
@@ -397,7 +397,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Controller::DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& /* request */)
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
 
         // All delete commands require an additional parameter, so go look for it.
         if (index.Next() == true) {

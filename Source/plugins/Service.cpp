@@ -67,23 +67,6 @@ namespace PluginHost {
         return (Core::proxy_cast<Core::IDispatch>(Core::ProxyType<IShell::Job>::Create(shell, toState, why)));
     }
 
-    Factories::Factories()
-        : _requestFactory(5)
-        , _responseFactory(5)
-        , _fileBodyFactory(5)
-        , _jsonRPCFactory(5)
-    {
-    }
-
-    Factories::~Factories()
-    {
-    }
-
-    /* static */ Factories& Factories::Instance()
-    {
-        return (Core::SingletonType<Factories>::Instance());
-    }
-
 #ifdef RESTFULL_API
     void Service::Notification(const string& message)
     {
@@ -110,14 +93,14 @@ namespace PluginHost {
         string fileToService = _webServerFilePath;
 
         if ((webServiceRequest.length() <= offset) || (Web::MIMETypeForFile(webServiceRequest.substr(offset, -1), fileToService, result) == false)) {
-            Core::ProxyType<Web::FileBody> fileBody(Factories::Instance().FileBody());
+            Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
 
             // No filename gives, be default, we go for the index.html page..
             *fileBody = fileToService + _T("index.html");
             response.ContentType = Web::MIME_HTML;
             response.Body<Web::FileBody>(fileBody);
         } else {
-            Core::ProxyType<Web::FileBody> fileBody(Factories::Instance().FileBody());
+            Core::ProxyType<Web::FileBody> fileBody(IFactories::Instance().FileBody());
             *fileBody = fileToService;
             response.ContentType = result;
             response.Body<Web::FileBody>(fileBody);

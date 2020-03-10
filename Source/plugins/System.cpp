@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -17,19 +17,29 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_PROCESS_H
-#define __MODULE_PROCESS_H
+#include "System.h"
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Process
-#endif
+namespace WPEFramework {
 
-#include "../com/com.h"
-#include "../core/core.h"
-#include "../plugins/plugins.h"
+    namespace PluginHost {
 
-#ifdef EXTERNAL
-#undef EXTERNAL
-#endif
+        IFactories* _factoriesInstance = nullptr;
 
-#endif // __MODULE_PROCESS_H
+        IFactories::~IFactories() {
+            ASSERT (_factoriesInstance == nullptr);
+        }
+
+        /* static */ void IFactories::Assign(IFactories* instance) {
+            ASSERT ( (_factoriesInstance == nullptr) ^ (instance == nullptr) );
+            _factoriesInstance = instance;
+        }
+        /* static */ IFactories& IFactories::Instance() {
+            ASSERT(_factoriesInstance != nullptr);
+            return (*_factoriesInstance);
+        }
+        /* static */ bool IFactories::IsAvailable() {
+            return (_factoriesInstance != nullptr);
+        }
+    }
+}
+

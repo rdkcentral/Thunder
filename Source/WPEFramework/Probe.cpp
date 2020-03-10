@@ -221,7 +221,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Probe::Listener::CreateResponse(const uint64_t incomingTime, const uint64_t requestTime)
     {
-        Core::ProxyType<Web::Response> response(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> response(PluginHost::IFactories::Instance().Response());
         Core::ProxyType<Web::TextBody> body(_textResponseFactory.Element());
 
         uint32_t delta = static_cast<uint32_t>(Core::NumberType<uint64_t>(Core::Time::Now().Ticks()) - incomingTime);

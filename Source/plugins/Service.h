@@ -25,49 +25,11 @@
 #include "IPlugin.h"
 #include "IShell.h"
 #include "MetaData.h"
+#include "System.h"
 #include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {
-
-    typedef Core::WorkerPool WorkerPool;
-
-    class EXTERNAL Factories {
-    private:
-        Factories();
-        Factories(const Factories&) = delete;
-        Factories& operator=(const Factories&) = delete;
-
-    public:
-        static Factories& Instance();
-        ~Factories();
-
-    public:
-        inline Core::ProxyType<Web::Request> Request()
-        {
-            return (_requestFactory.Element());
-        }
-        inline Core::ProxyType<Web::Response> Response()
-        {
-            return (_responseFactory.Element());
-        }
-        inline Core::ProxyType<Web::FileBody> FileBody()
-        {
-            return (_fileBodyFactory.Element());
-        }
-        inline Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC()
-        {
-            return (_jsonRPCFactory.Element());
-        }
-
-    private:
-        friend class Core::SingletonType<Factories>;
-
-        Core::ProxyPoolType<Web::Request> _requestFactory;
-        Core::ProxyPoolType<Web::Response> _responseFactory;
-        Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
-        Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
-    };
 
     class EXTERNAL Service : public IShell {
         // This object is created by the instance that instantiates the plugins. As the lifetime
@@ -331,7 +293,14 @@ namespace PluginHost {
 #ifdef RESTFULL_API
             metaData.Observers = static_cast<uint32_t>(_notifiers.size());
 #endif
+            // When we do this, we need to make sure that the Service does not change state, otherwise it might
+            // be that the the plugin is deinitializing and the IStateControl becomes invalid during our run.
+            // Now we can first check if
+            Lock();
+
             metaData.JSONState = this;
+
+            Unlock();
 
 #ifdef RUNTIME_STATISTICS
             metaData.ProcessedRequests = _processedRequests;

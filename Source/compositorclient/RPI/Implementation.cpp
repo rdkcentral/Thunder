@@ -742,7 +742,7 @@ uint32_t Display::SurfaceImplementation::ZOrder(const uint16_t zorder)
         _layer = layer;
     }
 
-    Platform::Instance().ZOrder(_nativeSurface, layer);
+    //Platform::Instance().ZOrder(_nativeSurface, layer);
 
     return (Core::ERROR_NONE);
 }

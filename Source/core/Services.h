@@ -179,6 +179,11 @@ namespace Core {
         {
             if (_referenceCount != 0) {
                 TRACE_L1("Oops this is scary, destructing a (%s) sink that still is being refered by something", typeid(ACTUALSINK).name());
+
+                // this is prbably due to the fcat that the "other" side killed the connection, we need to
+                // Remove our selves at the COM Administrator map.. no need to signal Releases on behalf of the dropped connection anymore..
+                
+                
             }
         }
 
