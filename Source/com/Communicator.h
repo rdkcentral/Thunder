@@ -293,41 +293,41 @@ namespace RPC {
             ASSERT(instance.ClassName().empty() == false);
             ASSERT(config.Connector().empty() == false);
 
-            _options[_T("-l")] = instance.Locator();
-            _options[_T("-c")] = instance.ClassName();
-            _options[_T("-r")] = config.Connector();
-            _options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-            _options[_T("-x")] = Core::NumberType<uint32_t>(sequenceNumber).Text();
-
+            _options.Add(_T("-l")).Add(instance.Locator());
+            _options.Add(_T("-c")).Add(instance.ClassName());
+            _options.Add(_T("-r")).Add(config.Connector());
+            _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
+            _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
+            
             if (instance.Version() != static_cast<uint32_t>(~0)) {
-                _options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+                _options.Add(_T("-V")).Add(Core::NumberType<uint32_t>(instance.Version()).Text());
             }
             if (instance.User().empty() == false) {
-                _options[_T("-u")] = instance.User();
+                _options.Add(_T("-u")).Add(instance.User());
             }
             if (instance.Group().empty() == false) {
-                _options[_T("-g")] = instance.Group();
+                _options.Add(_T("-g")).Add(instance.Group());
             }
             if (config.PersistentPath().empty() == false) {
-                _options[_T("-p")] = '"' + config.PersistentPath() + '"';
+                _options.Add(_T("-p")).Add('"' + config.PersistentPath() + '"');
             }
             if (config.SystemPath().empty() == false) {
-                _options[_T("-s")] = '"' + config.SystemPath() + '"';
+                _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
             }
             if (config.DataPath().empty() == false) {
-                _options[_T("-d")] = '"' + config.DataPath() + '"';
+                _options.Add(_T("-d")).Add('"' + config.DataPath() + '"');
             }
             if (config.ApplicationPath().empty() == false) {
-                _options[_T("-a")] = '"' + config.ApplicationPath() + '"';
+                _options.Add(_T("-a")).Add('"' + config.ApplicationPath() + '"');
             }
             if (config.VolatilePath().empty() == false) {
-                _options[_T("-v")] = '"' + config.VolatilePath() + '"';
+                _options.Add(_T("-v")).Add('"' + config.VolatilePath() + '"');
             }
             if (config.ProxyStubPath().empty() == false) {
-                _options[_T("-m")] = '"' + config.ProxyStubPath() + '"';
+                _options.Add(_T("-m")).Add('"' + config.ProxyStubPath() + '"');
             }
             if (instance.Threads() > 1) {
-                _options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
             }
 
             _priority = instance.Priority();
@@ -343,7 +343,7 @@ namespace RPC {
         uint32_t Launch(uint32_t& id)
         {
             uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) | (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) | (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
-            _options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
             // Start the external process launch..
             Core::Process fork(false);
@@ -619,7 +619,7 @@ namespace RPC {
 
                     std::vector<string> params;
                     while (it.Next() == true) {
-                        params.emplace_back(string(it.Key()) + it.Current());
+                        params.emplace_back(it.Current());
                     }
 
                     Core::IteratorType<std::vector<string>, const string> temp(params);
