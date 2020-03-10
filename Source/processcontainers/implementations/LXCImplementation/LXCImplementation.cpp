@@ -128,9 +128,6 @@ namespace ProcessContainers {
         , _containerLogDir(containerLogDir)
         , _referenceCount(1)
         , _lxcContainer(lxcContainer)
-#ifdef __DEBUG__
-        , _attach(false)
-#endif
     {
         Config config;
         Core::OptionalType<Core::JSON::Error> error;
@@ -142,12 +139,7 @@ namespace ProcessContainers {
 #ifdef __DEBUG__
             _attach = config.Attach.Value();
 #endif
-        string pathName;
-        Core::SystemInfo::GetEnvironment("PATH", pathName);
-        string key("PATH");
-        key += "=";
-        key += pathName;
-        _lxcContainer->set_config_item(_lxcContainer, "lxc.environment", key.c_str());
+        InheritRequestedEnvironment();
 
         if( config.ConsoleLogging.Value() != _T("0") ) {
 
@@ -210,7 +202,7 @@ namespace ProcessContainers {
 
                 if (strcmp(name, "rss") == 0) {
                     result.resident = value;
-                } else if (strcmp(name, "shmem") == 0) {
+                } else if (strcmp(name, "mapped_file") == 0) {
                     result.shared = value;
                 }
 
@@ -278,34 +270,34 @@ namespace ProcessContainers {
     {
         bool result = false;
 
-        std::vector<const char*> params(parameters.Count()+2);
+        std::vector<const char*> params;
+        params.reserve(parameters.Count()+2);
         parameters.Reset(0);
-        uint16_t pos = 0;
-        params[pos++] = command.c_str();
+
+        params.push_back(command.c_str());
 
         while( parameters.Next() == true ) {
-            params[pos++] = parameters.Current().c_str();
+            params.push_back(parameters.Current().c_str());
         }
-        params[pos++] = nullptr;
-        ASSERT(pos == parameters.Count()+2);
+        params.push_back(nullptr);
 
 #ifdef __DEBUG__
-            if( _attach == true ) {
-                result = _lxcContainer->start(_lxcContainer, 0, NULL);
-                if( result == true ) {
+        if( _attach == true ) {
+            result = _lxcContainer->start(_lxcContainer, 0, NULL);
+            if( result == true ) {
 
-                    lxc_attach_command_t lxccommand;
-                    lxccommand.program = (char *)command.c_str();
-                    lxccommand.argv = const_cast<char**>(params.data());
+                lxc_attach_command_t lxccommand;
+                lxccommand.program = (char *)command.c_str();
+                lxccommand.argv = const_cast<char**>(params.data());
 
-                    lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
-                    int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, reinterpret_cast<pid_t*>(&_pid));
-                    if( ret != 0 ) {
-                        _lxcContainer->shutdown(_lxcContainer, 0);
-                    }
-                    result = ret == 0;
+                lxc_attach_options_t options = LXC_ATTACH_OPTIONS_DEFAULT;
+                int ret = _lxcContainer->attach(_lxcContainer, lxc_attach_run_command, &lxccommand, &options, reinterpret_cast<pid_t*>(&_pid));
+                if( ret != 0 ) {
+                    _lxcContainer->shutdown(_lxcContainer, 0);
                 }
-            } else
+                result = (ret == 0);
+            }
+        } else
 #endif
         {
             result = _lxcContainer->start(_lxcContainer, 0, const_cast<char**>(params.data()));
@@ -329,8 +321,15 @@ namespace ProcessContainers {
             int internaltimeout = timeout/1000;
             if( timeout == Core::infinite ) {
                 internaltimeout = -1;
+            } 
+
+            if (internaltimeout != -1) {
+                result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
             }
-            result = _lxcContainer->shutdown(_lxcContainer, internaltimeout);
+
+            if (internaltimeout == -1 || result == false) {
+                _lxcContainer->stop(_lxcContainer);
+            }
         }
         return result;
     }
@@ -356,6 +355,38 @@ namespace ProcessContainers {
         return retval;
     }
 
+    void LXCContainer::InheritRequestedEnvironment() {
+        // According to https://linuxcontainers.org/lxc/manpages/man5/lxc.container.conf.5.html#lbBM we
+        // should be able to inherit env variables from host by using config syntax lxc.environment = ENV_NAME.
+        // For some reason this doesn't work with current build of lxc, so we have to provide this functionality
+        // from by ourselves 
+
+        uint32_t len = _lxcContainer->get_config_item(_lxcContainer, "lxc.environment", nullptr, 0 );
+        if (len > 0) {
+            char* buffer = new char[len];
+
+            uint32_t read = _lxcContainer->get_config_item(_lxcContainer, "lxc.environment", buffer, len);
+
+            if (read > 0) {
+                char* tmp;
+                char* token = strtok_r(buffer, "\n", &tmp);
+
+                while (token != nullptr) {
+                    if (strchr(token, '=') == nullptr) {
+                        string envVar;
+                        Core::SystemInfo::GetEnvironment(token, envVar);
+                        string key = string(token) + "=" + envVar;
+                        _lxcContainer->set_config_item(_lxcContainer, "lxc.environment", key.c_str());
+                    }
+
+                    token = strtok_r(nullptr, "\n", &tmp);
+                }
+            }
+
+            delete[] buffer;
+        }
+    }
+
     LXCContainerAdministrator::LXCContainerAdministrator() 
         : _lock() 
         ,_containers()
@@ -379,6 +410,7 @@ namespace ProcessContainers {
             LxcContainerType **clist = nullptr;
             int32_t numberofcontainersfound = list_defined_containers(searchpaths.Current().c_str(), nullptr, &clist);
             int32_t index = 0;
+
             while( ( container == nullptr) && ( index < numberofcontainersfound ) ) {
                 LxcContainerType *c = clist[index];
                 if( name == c->name ) {

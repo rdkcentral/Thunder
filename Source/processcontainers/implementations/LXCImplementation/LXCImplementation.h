@@ -102,16 +102,19 @@ namespace ProcessContainers {
         void AddRef() const override;
         uint32_t Release() override;
 
-        private:
-            const string _name;
-            uint32_t _pid;
-            string _lxcPath;
-            string _containerLogDir;
-            mutable Core::CriticalSection _adminLock;
-            mutable uint32_t _referenceCount;
-            LxcContainerType* _lxcContainer;
+    protected:
+        void InheritRequestedEnvironment();
+
+    private:
+        const string _name;
+        uint32_t _pid;
+        string _lxcPath;
+        string _containerLogDir;
+        mutable Core::CriticalSection _adminLock;
+        mutable uint32_t _referenceCount;
+        LxcContainerType* _lxcContainer;
 #ifdef __DEBUG__
-            bool _attach;
+        bool _attach;
 #endif
     };
 
