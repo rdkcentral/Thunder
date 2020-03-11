@@ -1186,7 +1186,10 @@ def EmitEvent(emit, root, event, static=False):
     if params != "void":
         emit.Line("%s params;" % params)
         for p in event.Properties()[0].Properties():
-            emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+            if isinstance(p, JsonEnum):
+                emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
+            else:
+                emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
         emit.Line()
     if event.HasSendif():
         emit.Line('Notify(_T("%s")%s, [&](const string& designator) -> bool {' %
