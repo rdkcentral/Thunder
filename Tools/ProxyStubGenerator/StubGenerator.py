@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.1"
+VERSION = "1.6.2"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -480,8 +480,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                 acc += " /* in */"
                             elif p.is_output:
                                 acc += " /* out */"
-                    proto += TypeStr(p.unexpanded) + acc + " param%i%s" % (c,
-                                                                           (", " if c != len(method.vars) - 1 else ""))
+                    proto += TypeStr(p.unexpanded) + acc + " param%i%s" % (c, (", " if c != len(method.vars) - 1 else ""))
                 proto += ")"
                 for q in method.qualifiers:
                     proto += " " + q
@@ -1327,26 +1326,19 @@ if __name__ == "__main__":
 
     if args.help_tags:
         print("The following special tags are supported:")
-        print("   @stubgen:skip           - skip parsing of the rest of the file")
-        print("   @stubgen:omit           - omit generating code for the next item (class or method)")
-        print("   @stubgen:stub           - generate empty stub for the next item (class or method)")
-        print("   @stubgen:include \"file\" - include another file, relative to the directory of the current file")
-        print("For non-const pointer and reference method/function parameters:")
-        print("   @in                     - denotes an input parameter")
-        print("   @out                    - denotes an output parameter")
-        print("   @inout                  - denotes an input/output parameter (equivalent of @in @out)")
-        print(
-            "   @interface:<expr>       - specifies a parameter holding interface ID value for void* interface passing")
-        print(
-            "   @length:<expr>          - specifies a buffer length value (a constant, a parameter name or a math expression)"
-        )
-        print(
-            "   @maxlength:<expr>       - specifies a maximum buffer length value (a constant, a parameter name or a math expression),"
-        )
-        print(
-            "                             if not specified @length is used as maximum length, use round parenthesis for expressions,"
-        )
-        print("                             e.g.: @length:bufferSize @length:(width*height*4)")
+        print("   @stop               - skip parsing of the rest of the file")
+        print("   @omit               - omit generating code for the next item (class or method)")
+        print("   @stub               - generate empty stub for the next item (class or method)")
+        print("   @encompass \"file\"   - include another file, relative to the directory of the current file")
+        print("For non-const pointer and reference method parameters:")
+        print("   @in                 - denotes an input parameter")
+        print("   @out                - denotes an output parameter")
+        print("   @inout              - denotes an input/output parameter (equivalent to @in @out)")
+        print("   @interface:<expr>   - specifies a parameter holding interface ID value for void* interface passing")
+        print("   @length:<expr>      - specifies a buffer length value (a constant, a parameter name or a math expression)")
+        print("   @maxlength:<expr>   - specifies a maximum buffer length value (a constant, a parameter name or a math expression),")
+        print("                         if not specified @length is used as maximum length, use round parenthesis for expressions",)
+        print("                         e.g.: @length:bufferSize @length:(width*height*4)")
         print("")
         print("The tags shall be placed inside comments.")
         sys.exit()
