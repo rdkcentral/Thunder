@@ -250,7 +250,7 @@ class JsonEnum(JsonType):
         self.type = enumType
         if "typename" in schema:
             self.cpptype = schema["typename"]
-            self.enumName = MakeEnum(self.cpptype.capitalize())
+            self.enumName = MakeEnum(self.cpptype.split("::")[-1].capitalize())
         else:
             self.enumName = MakeEnum(self.name.capitalize())
         self.enumerators = schema["enum"]
@@ -757,7 +757,7 @@ def LoadInterface(file):
                 if size:
                     if isinstance(size, list):
                         properties["enum"] = size
-                        properties["typename"] = var.type.Type().name
+                        properties["typename"] = var.type.Type().full_name.replace(INTERFACE_NAMESPACE+"::","")
                         properties["enumtyped"] = var.type.Type().scoped
                         if isinstance(signed, list):
                             properties["enumvalues"] = signed
@@ -918,6 +918,10 @@ def LoadInterface(file):
                 if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
                     params = BuildParameters(method.vars)
+                    if method.retval.meta.brief:
+                        obj["summary"] = method.retval.meta.brief
+                    if method.retval.meta.details:
+                        obj["description"] = method.retval.meta.details
                     if "properties" in params and params["properties"]:
                         obj["params"] = params
                     events[method.name] = obj
@@ -2535,7 +2539,7 @@ if __name__ == "__main__":
     DEFAULT_INT_SIZE = args.def_int_size
     DUMP_JSON = args.dump_json
     DEFAULT_DEFINITIONS_FILE = args.extra_include
-    INTERFACE_NAMESPACE = args.if_namespace
+    INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep
