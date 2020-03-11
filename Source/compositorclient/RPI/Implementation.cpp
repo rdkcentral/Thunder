@@ -104,13 +104,12 @@ namespace {
 
 #ifdef VC6
 
+using namespace WPEFramework;
+
 class Platform {
 private:
-    Platform()
+    Platform() : _platform()
     {
-        if (_platorm.Initialize() == false) {
-            TRACE_L1(_T("Could not initialize the platform!"));
-        }
     }
 
 public:
@@ -123,9 +122,6 @@ public:
     }
     ~Platform()
     {
-        if (_platorm.Deinitialize() == false) {
-            TRACE_L1(_T("Could not deinitialize the platform!"));
-        }
     }
 
 public:
@@ -133,31 +129,31 @@ public:
     {
         EGLNativeDisplayType result (static_cast<EGLNativeDisplayType>(EGL_DEFAULT_DISPLAY));
 
-        void* pointer = _platform[ModeSet::TYPE::CURRENT].UnderlyingHandle());
+        const struct gbm_device* pointer = _platform.UnderlyingHandle();
 
         if(pointer) {
-            result = reinterpret_cast<EGLNativeDisplayType>(pointer);
+            result = reinterpret_cast<EGLNativeDisplayType>(const_cast<struct gbm_device*>(pointer));
         }
         else {
             TRACE_L1(_T("The native display (id) might be invalid / unsupported. Using the EGL default display instead!"));
+        }
 
         return (result);
     }
     uint32_t Width() const
     {
-        return (_platform[ModeSet::TYPE::CURRENT].ScanOutBufferWidth());
+        return (_platform.Width());
     }
     uint32_t Height() const
     {
-        return (_platform[ModeSet::TYPE::CURRENT].ScanOutBufferHeight());
+        return (_platform.Height());
     }
-    EGLSurface CreateSurface (const EGLNativeWindowType& display, const uint32_t width, const uint32_t height) 
+    EGLSurface CreateSurface (const EGLNativeDisplayType& display, const uint32_t width, const uint32_t height) 
     {
         EGLSurface result;
 
         // A Native surface that acts as a native window
-        result = reinterpret_cast<EGLSurface>(ModeSet::CreateRenderTargetFromUnderlyingHandle(
-                     reinterpret_cast<struct gbm_device*>(display), width, height));
+        result = reinterpret_cast<EGLSurface>(_platform.CreateRenderTarget(width, height));
 
         if (!result) {
             TRACE_L1(_T("The native window (handle) might be invalid / unsupported. Expect undefined behavior!"));
@@ -167,9 +163,7 @@ public:
     }
     void DestroySurface(const EGLSurface& surface) 
     {
-        ModeSet::DestroyRenderTargetFromUnderlyingHandle(
-            reinterpret_cast<struct gbm_device*>(_display.Native()), 
-            reinterpret_cast<struct gbm_surface*>(surface));
+        _platform.DestroyRenderTarget(reinterpret_cast<struct gbm_surface*>(surface));
     }
     void Opacity(const EGLSurface&, const uint8_t) 
     {
@@ -185,7 +179,7 @@ public:
     }
  
 private:
-    EnumeratedModeSets _platform;
+    ModeSet _platform;
 };
 
 #else
@@ -434,7 +428,7 @@ private:
 
         inline EGLNativeWindowType Native() const
         {
-            return (_nativeSurface);
+            return (reinterpret_cast<EGLNativeWindowType>(_nativeSurface));
         }
         inline int32_t Width() const
         {

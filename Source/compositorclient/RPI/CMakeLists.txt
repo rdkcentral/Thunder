@@ -32,9 +32,12 @@ if(VC6)
     if(NOT LIBDRM_FOUND)
         message(FATAL_ERROR "The libDRM library and its headers cannot be found.")
     endif()
-endif()
 
-add_library(${TARGET} SHARED Implementation.cpp)
+    add_library(${TARGET} SHARED ModeSet.cpp Implementation.cpp)
+    target_compile_definitions(${TARGET} PRIVATE VC6)
+else()
+    add_library(${TARGET} SHARED Implementation.cpp)
+endif()
 
 target_link_libraries(${TARGET}
     PRIVATE
@@ -42,6 +45,7 @@ target_link_libraries(${TARGET}
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
         ${EGL_LIBRARIES}
+        libdrm::libdrm
 )
 
 if(PROTOCOLS)
