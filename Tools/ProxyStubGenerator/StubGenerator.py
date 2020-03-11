@@ -634,12 +634,12 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                 retval = EmitRetVal(m, cv=["const"])
                 params = [EmitParam(v, cv=["const"]) for v in m.vars]
                 orig_params = [EmitParam(v) for v in m.vars]
-                for c, p in enumerate(params):
+                for i, p in enumerate(params):
                     if p.proxy and p.obj:
                         proxy_count += 1
                     if p.is_output:
                         output_params += 1
-                    p.name += str(c)
+                    p.name += str(i)
 
                 LinkPointers(retval, params)
                 # emit a comment with function signature (optional)
@@ -1007,8 +1007,8 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
                 LinkPointers(retval, params)
 
-                for c, p in enumerate(params):
-                    p.name += str(c)
+                for i, p in enumerate(params):
+                    p.name += str(i)
                     if (not p.is_nonconstref and not p.is_nonconstptr) or (p.is_input and not p.is_length) or (
                             p.is_ptr and p.obj) or (p.is_length and not params[p.length_target].is_input):
                         input_params += 1

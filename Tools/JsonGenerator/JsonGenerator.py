@@ -243,11 +243,16 @@ class JsonString(JsonType):
 
 class JsonEnum(JsonType):
     def __init__(self, name, parent, schema, enumType, included=None):
+        self.cpptype = "undefined"
         JsonType.__init__(self, name, parent, schema, included)
         if enumType != "string":
             raise JsonParseError("Only strings are supported in enums")
         self.type = enumType
-        self.enumName = MakeEnum(self.name.capitalize())
+        if "typename" in schema:
+            self.cpptype = schema["typename"]
+            self.enumName = MakeEnum(self.cpptype.capitalize())
+        else:
+            self.enumName = MakeEnum(self.name.capitalize())
         self.enumerators = schema["enum"]
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
@@ -283,7 +288,7 @@ class JsonEnum(JsonType):
             elif isinstance(self.parent, JsonProperty):
                 classname = MakeEnum(self.parent.name.capitalize())
             else:
-                classname = MakeEnum(self.CppName())
+                classname = self.enumName
             return classname
 
     def CppEnumerators(self):
@@ -305,7 +310,7 @@ class JsonEnum(JsonType):
         return len(self.refs)
 
     def CppStdClass(self):
-        return self.CppClass()
+        return self.cpptype
 
     def IsStronglyTyped(self):
         return self.strongly_typed
@@ -752,6 +757,8 @@ def LoadInterface(file):
                 if size:
                     if isinstance(size, list):
                         properties["enum"] = size
+                        properties["typename"] = var.type.Type().name
+                        properties["enumtyped"] = var.type.Type().scoped
                         if isinstance(signed, list):
                             properties["enumvalues"] = signed
                     else:
@@ -1161,7 +1168,7 @@ def EmitEvent(emit, root, event, static=False):
     params = event.Properties()[0].CppType()
     par = "const string& id, " if event.HasSendif() else ""
     par = par + ", ".join(
-        map(lambda x: "const " + GetNamespace(root, x, False) + x.CppStdClass() + "& " + x.JsonName(),
+        map(lambda x: "const " + x.CppStdClass() + "& " + x.JsonName(),
             event.Properties()[0].Properties()))
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
