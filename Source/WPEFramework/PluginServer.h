@@ -1014,7 +1014,7 @@ namespace PluginHost {
             bool HasVersionSupport(const string& number) const
             {
 
-                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
+                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
         private:
