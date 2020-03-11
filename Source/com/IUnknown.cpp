@@ -71,7 +71,10 @@ namespace ProxyStub {
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
                 response.Number<void*>(newInterface);
 
-                RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                if (newInterface != nullptr) {
+                    RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                }
+
                 break;
             }
             default: {
