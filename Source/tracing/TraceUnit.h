@@ -196,7 +196,7 @@ namespace Trace {
         static TraceUnit& Instance();
 
         uint32_t Open(const uint32_t identifier);
-        uint32_t Open(const string& pathName);
+        uint32_t Open(const string& pathName, const uint32_t identifier);
         uint32_t Close();
 
         void Announce(ITraceControl& Category);
