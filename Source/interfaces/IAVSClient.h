@@ -26,12 +26,12 @@ namespace Exchange {
     //@json
     struct IAVSController : virtual public Core::IUnknown {
         enum { ID = ID_AVSCONTROLLER };
-        virtual ~IAVSController(){};
+        virtual ~IAVSController(){}
 
         //@event
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_AVSCONTROLLER_NOTIFICATION };
-            virtual ~INotification(){};
+            virtual ~INotification(){}
 
             enum dialoguestate {
                 IDLE,
@@ -43,22 +43,20 @@ namespace Exchange {
 
             /// @brief notifies about dialogue state changes
             /// @param state The new state (e.g. SPEAKING)
-            virtual void DialogueStateChange(const dialoguestate state) const = 0;
+            virtual void DialogueStateChange(const dialoguestate state) = 0;
         };
 
         virtual void Register(INotification* sink) = 0;
-        virtual void Unregister(INotification* sink) = 0;
+        virtual void Unregister(const INotification* sink) = 0;
 
-        /// @brief Mutes both AVS_SPEAKER_VOLUME and AVS_ALERTS_VOLUME
+        /// @brief Mutes
         /// @param mute Mute or umute (e.g. true)
         /// @retval ERROR_GENERAL when there is a fatal error or authorisation is not possible
-        /// @retval ERROR_UNAVAILABLE when the AVSController is unavailable
         virtual uint32_t Mute(const bool mute) = 0;
 
         /// @brief Starts or stops the voice recording, skipping keyword detection
         /// @param start Start or stop voice recording (e.g. true)
         /// @retval ERROR_GENERAL when there is a fatal error or authorisation is not possible
-        /// @retval ERROR_UNAVAILABLE when the AVSController is unavailable
         virtual uint32_t Record(const bool start) = 0;
     };
 
