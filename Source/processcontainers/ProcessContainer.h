@@ -78,7 +78,7 @@ namespace ProcessContainers {
         IContainer() = default;
         virtual ~IContainer() = default;
 
-        // Return the Name (Identificator) of the Container
+        // Return the Name of the Container
         virtual const string Id() const = 0;
 
         // Get PID of the container in Host namespace
@@ -118,11 +118,10 @@ namespace ProcessContainers {
         /**
             Creates new Container instance
 
-            \param id Name of created container. Must match the foldername in which container config 
-                        and rootfs are stored.
+            \param id Name of the created created container.
             \param searchpaths List of locations, which will be checked (in order from first to last) 
                                for presence of the container. Eg. when id="ContainerName", then it will
-                               search for <searchpath>/ContainerName.
+                               search for <searchpath>/Container.
             \param containerLogPath Path to the folder, where logfile for created container will be created
             \param configuration Implementation-specific configuration provided to the container.
         */

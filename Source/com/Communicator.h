@@ -568,9 +568,6 @@ namespace RPC {
                 , _id(0)
                 , _process(RemoteConnection::Id(), baseConfig, instance)
             {
-
-                static constexpr TCHAR ContainerName[] = _T("Container");
-
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
 
                 std::vector<string> searchpaths(3);
@@ -591,7 +588,7 @@ namespace RPC {
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
                 string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
-                _container = admin.Container(ContainerName, searchpathsit, volatilecallsignpath, instance.Configuration());
+                _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
 
                 admin.Release();
             }
