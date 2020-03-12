@@ -188,16 +188,16 @@ namespace Trace {
 
         if (fileName.empty() == false) {
        
-            fileName +=  '.' + Core::NumberType<uint32_t>(identifier).Text();
+            fileName +=  '-' + Core::NumberType<uint32_t>(identifier).Text();
             result = Open(doorBell, fileName);
         }
 
         return (result);
     }
 
-    uint32_t TraceUnit::Open(const string& pathName)
+    uint32_t TraceUnit::Open(const string& pathName, const uint32_t identifier)
     {
-        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName);
+        string fileName(Core::Directory::Normalize(pathName) + CyclicBufferName + '.' + Core::NumberType<uint32_t>(identifier).Text());
         #ifdef __WINDOWS__
         string doorBell("127.0.0.1:62001");
         #else
