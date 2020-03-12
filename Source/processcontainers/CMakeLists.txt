@@ -67,18 +67,19 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include>
         )
 
-find_package(LXC REQUIRED)
+if (PROCESSCONTAINERS_LXC)
+        find_package(LXC REQUIRED)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                LXC::LXC
+                CompileSettingsDebug::CompileSettingsDebug
+                )
 
-target_link_libraries(${TARGET}
-        PRIVATE
-        LXC::LXC
-        CompileSettingsDebug::CompileSettingsDebug
-        )
-
-target_include_directories( ${TARGET}
-        PRIVATE
-        LXC::LXC
-        )
+        target_include_directories( ${TARGET}
+                PRIVATE
+                LXC::LXC
+                )
+endif()
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies

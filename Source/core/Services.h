@@ -279,7 +279,7 @@ namespace Core {
     };
 
 #define SERVICE_REGISTRATION(ACTUALCLASS, MAJOR, MINOR) \
-    static Core::ServiceMetadata<ACTUALCLASS, &Core::System::MODULE_NAME> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR);
+    static WPEFramework::Core::ServiceMetadata<ACTUALCLASS, &WPEFramework::Core::System::MODULE_NAME> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR);
 
 #ifdef BEGIN_INTERFACE_MAP
 #undef BEGIN_INTERFACE_MAP

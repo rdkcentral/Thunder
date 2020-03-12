@@ -702,7 +702,7 @@ def TypeStr(s):
 
 
 def ValueStr(s):
-    return str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else str(s)
+    return str(s) if isinstance(s, int) else str(Undefined(s, "/* unparsable */ ")) if not isinstance(s, str) else s
 
 
 # Holds typedef definition
@@ -962,6 +962,7 @@ class Enumerator(Identifier, Name):
         Name.__init__(self, parent_enum, self.name)
         self.parent = parent_block
         self.value = parent_block.GetValue() if value == None else Evaluate(value)
+        self.autoValue = (value == None)
         if isinstance(self.value, (int)):
             self.parent.SetValue(self.value)
         self.parent.items.append(self)
@@ -1146,17 +1147,21 @@ def __Tokenize(contents):
     tokens = [s.strip() for s in re.split(r"([\r\n])", contents, flags=re.MULTILINE) if s]
     eoltokens = []
     line = 1
+    inComment = 0
     for token in tokens:
-        if token.startswith("// @file:"):
+        if token.startswith("// @_file:"):
             line = 1
         if token == '':
-            eoltokens.append("// @line:" + str(line) + " ")
+            if not inComment:
+                eoltokens.append("// @_line:" + str(line) + " ")
             line = line + 1
         elif (len(eoltokens) > 1) and eoltokens[-2].endswith("\\"):
             del eoltokens[-1]
             eoltokens[-1] = eoltokens[-1][:-1] + token
         else:
             eoltokens.append(token)
+
+        inComment += eoltokens[-1].count("/*") - eoltokens[-1].count("*/")
 
     contents = "\n".join(eoltokens)
 
@@ -1181,7 +1186,7 @@ def __Tokenize(contents):
     for token in tokens:
         if token:
             if skipmode:
-                if "@file" in token:
+                if "@_file" in token:
                     skipmode = False
                 else:
                     continue
@@ -1248,6 +1253,12 @@ def __Tokenize(contents):
                         pass                                   # nothing to do here
                     else:
                         raise ParserError("invalid @stubgen tag")
+                if _find("@stop", token):
+                    skipMode = True
+                if _find("@omit", token):
+                    tagtokens.append("@OMIT")
+                if _find("@stub", token):
+                    tagtokens.append("@STUB")
                 if _find("@in", token):
                     tagtokens.append("@IN")
                 if _find("@out", token):
@@ -1261,50 +1272,54 @@ def __Tokenize(contents):
                     tagtokens.append("@JSON")
                 if _find("@event", token):
                     tagtokens.append("@EVENT")
-                if _find("@brief", token):
-                    tagtokens.append("@BRIEF")
-                    desc = token[token.index("@brief") + 7:token.index("*/") if "*/" in token else None].strip()
-                    if desc:
-                        tagtokens.append(desc)
-                if _find("@details", token):
-                    tagtokens.append("@DETAILS")
-                    desc = token[token.index("@details") + 9:token.index("*/") if "*/" in token else None].strip()
-                    if desc:
-                        tagtokens.append(desc)
-                if _find("@param", token):
-                    tagtokens.append("@PARAM")
-                    idx = token.index("@param")
-                    paramName = token[idx + 7:].split()[0]
-                    paramDesc = token[token.index(paramName) +
-                                      len(paramName):token.index("*/") if "*/" in token else None].strip()
-                    if paramName and paramDesc:
-                        tagtokens.append(paramName)
-                        tagtokens.append(paramDesc)
-                if _find("@retval", token):
-                    tagtokens.append("@RETVAL")
-                    idx = token.index("@retval")
-                    errorName = token[idx + 8:].split()[0]
-                    errorDesc = token[token.index(errorName) +
-                                      len(errorName):token.index("*/") if "*/" in token else None].strip()
-                    if errorName and errorDesc:
-                        tagtokens.append(errorName)
-                        tagtokens.append(errorDesc)
                 if _find("@length", token):
                     tagtokens.append(__ParseLength(token, "@length"))
                 if _find("@maxlength", token):
                     tagtokens.append(__ParseLength(token, "@maxlength"))
                 if _find("@interface", token):
                     tagtokens.append(__ParseLength(token, "@interface"))
-                if _find("@file", token):
-                    idx = token.index("@file:") + 6
+
+                def FindDoxyString(tag, hasParam, string, tagtokens):
+                    def EndOfTag(string, start):
+                        end_comment = string.find("*/", start)
+                        next_tag = string.find("@", start)
+                        end = None
+                        if next_tag != -1 and end_comment != -1:
+                            if next_tag < end_comment:
+                                end = next_tag
+                        elif end_comment != -1:
+                            end = end_comment
+                        return end
+
+                    start = string.find(tag)
+                    if (start != -1):
+                        start += len(tag) + 1
+                        desc = string[start:EndOfTag(token, start)].strip(" *\n")
+                        if desc:
+                            tagtokens.append(tag.upper())
+                            if hasParam:
+                                tagtokens.append(desc.split(" ",1)[0])
+                                tagtokens.append(desc.split(" ",1)[1])
+                            else:
+                                tagtokens.append(desc)
+                            FindDoxyString(tag, hasParam, string[start+1], tagtokens)
+
+                FindDoxyString("@brief", False, token, tagtokens)
+                FindDoxyString("@details", False, token, tagtokens)
+                FindDoxyString("@param", True, token, tagtokens)
+                FindDoxyString("@retval", True, token, tagtokens)
+
+                if _find("@_file", token):
+                    idx = token.index("@_file:") + 7
                     tagtokens.append("@FILE:" + token[idx:])
                     current_file = token[idx:]
-                if _find("@line", token):
-                    idx = token.index("@line:") + 6
+                if _find("@_line", token):
+                    idx = token.index("@_line:") + 7
                     if len(tagtokens) and tagtokens[-1].startswith("@LINE:"):
                         del tagtokens[-1]
                     current_line = int(token[idx:].split()[0])
                     tagtokens.append("@LINE:" + token[idx:])
+
             elif len(token) > 0 and token[0] != '#' and token != "EXTERNAL":
                 tagtokens.append(token)
 
@@ -1775,20 +1790,21 @@ def ReadFile(source_file, quiet=False, initial=""):
         with open(source_file) as file:
             file_content = file.read()
             idx = file_content.find("@stubgen:include")
+            if idx == -1:
+                idx = file_content.find("@encompass")
             if idx != -1:
                 match = re.search(r'\"(.+?)\"', file_content[idx:])
                 if match:
                     if match.group(1) != os.path.basename(os.path.realpath(source_file)):
                         prev = current_file
                         current_file = source_file
-                        print("including " + match.group(1))
                         contents += ReadFile(
                             os.path.dirname(os.path.realpath(source_file)) + os.sep + match.group(1), contents)
                         current_file = prev
                     else:
                         raise ParserError("can't recursively include file '%s'" % source_file)
 
-            contents += "// @file:%s\n" % source_file
+            contents += "// @_file:%s\n" % source_file
             contents += file_content
             return contents
     except FileNotFoundError:
