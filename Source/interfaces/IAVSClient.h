@@ -49,7 +49,7 @@ namespace Exchange {
         virtual void Register(INotification* sink) = 0;
         virtual void Unregister(const INotification* sink) = 0;
 
-        /// @brief Mutes
+        /// @brief Mutes the audio output of AVS
         /// @param mute Mute or umute (e.g. true)
         /// @retval ERROR_GENERAL when there is a fatal error or authorisation is not possible
         virtual uint32_t Mute(const bool mute) = 0;
