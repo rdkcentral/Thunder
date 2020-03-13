@@ -21,7 +21,9 @@
 #define __RECTANGLE_H
 
 #include <algorithm>
+#ifdef WIN32
 #include <xutility>
+#endif
 
 #include "Module.h"
 
