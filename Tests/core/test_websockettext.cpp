@@ -91,6 +91,7 @@ namespace TextWebSocketTest {
             Core::SocketServerType<TextSocketServer> textWebSocketServer(Core::NodeId(TextWebSocketTest::g_connector));
             textWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
+            sleep(2);
             while(!TextWebSocketTest::g_done);
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");

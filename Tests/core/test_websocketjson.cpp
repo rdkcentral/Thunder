@@ -154,6 +154,7 @@ namespace JsonWebSocketTest {
             Core::SocketServerType<JsonSocketServer<Core::JSON::IElement>> jsonWebSocketServer(Core::NodeId(JsonWebSocketTest::g_connector));
             jsonWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
+            sleep(2);
             while(!JsonWebSocketTest::g_done);
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");

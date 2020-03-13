@@ -208,7 +208,7 @@ TEST(Core_tracing, simpleTracing)
    IPTestAdministrator testAdmin(otherSide);
    {
         CreateTraceBuffer();
-        Trace::TraceUnit::Instance().Open(g_tracingPathName,0);
+        Trace::TraceUnit::Instance().Open(g_tracingPathName);
         testAdmin.Sync("client start");
         sleep(2);
         Trace::TraceType<Trace::Information, &Core::System::MODULE_NAME>::Enable(true);

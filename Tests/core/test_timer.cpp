@@ -72,6 +72,7 @@ namespace Tests {
         Core::Time nextTick = Core::Time::Now();
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
+        sleep(2);
         while(!(g_done == 2));
     }
 
@@ -89,6 +90,7 @@ namespace Tests {
 
         nextTick.Add(3 * time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
+        sleep(2);
         while(!(g_done == 5));
     }
 
@@ -100,6 +102,7 @@ namespace Tests {
         Core::Time pastTime = Core::Time::Now();
         pastTime.Sub(time);
         timer.Schedule(pastTime.Ticks(), TimeHandler());
+        sleep(2);
         while(!(g_done == 6));
     }
 

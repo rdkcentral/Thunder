@@ -79,6 +79,7 @@ namespace StreamTextTest {
             Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(StreamTextTest::g_connector));
             textSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
+            sleep(2);
             while(!StreamTextTest::g_done);
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");

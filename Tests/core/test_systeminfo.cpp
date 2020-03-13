@@ -23,9 +23,9 @@ TEST(Core_SystemInfo, simpleSet)
 
     std::cout << "Test GetFreeRam: " << WPEFramework::Core::SystemInfo::Instance().GetFreeRam() << " bytes" << std::endl;
 
-    std::cout << "Test GetTotalGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetTotalGpuRam() << " bytes" << std::endl;
+    //std::cout << "Test GetTotalGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetTotalGpuRam() << " bytes" << std::endl;
 
-    std::cout << "Test GetFreeGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetFreeGpuRam() << " bytes" << std::endl;
+    //std::cout << "Test GetFreeGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetFreeGpuRam() << " bytes" << std::endl;
 
     std::cout << "Test Ticks(Time stamp counter): " << WPEFramework::Core::SystemInfo::Instance().Ticks() << std::endl;
 
