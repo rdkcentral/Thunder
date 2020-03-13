@@ -9,7 +9,8 @@ using namespace WPEFramework::Core;
 TEST(Core_Library, simpleSet)
 {
     Library libObj;
-    const string file = string(BUILD_DIR) + _T("/../../Source/core/libWPEFrameworkCore.so");
+    //const string file = string(BUILD_DIR) + _T("/../../Source/core/libWPEFrameworkCore.so");
+    const string file =  _T("/usr/lib/libwpe-0.2.so"); //For box.
     const TCHAR* function = _T("Core::Library::AddRef()");
     const string file1 = _T("libWPEFramework.so");
     Library LibObj1(file.c_str());
