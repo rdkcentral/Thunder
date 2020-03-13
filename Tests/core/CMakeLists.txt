@@ -45,35 +45,35 @@ add_executable(${TEST_RUNNER_NAME}
    test_numbertype.cpp
    test_optional.cpp
    test_parser.cpp
-   #test_portability.cpp
+   test_portability.cpp
    test_processinfo.cpp
    test_queue.cpp
    test_rangetype.cpp
    test_readwritelock.cpp
-   #test_rectangle.cpp
+   test_rectangle.cpp
    test_rpc.cpp
    test_semaphore.cpp
    test_sharedbuffer.cpp
    test_singleton.cpp
-   #test_socketstreamjson.cpp
-   #test_socketstreamtext.cpp
+   test_socketstreamjson.cpp
+   test_socketstreamtext.cpp
    test_statetrigger.cpp
    test_stopwatch.cpp
    test_synchronize.cpp
    test_synchronous.cpp
-   #test_systeminfo.cpp
+   test_systeminfo.cpp
    test_textfragment.cpp
    test_textreader.cpp
-   #test_thread.cpp
+   test_thread.cpp
    test_time.cpp
-   #test_timer.cpp
+   test_timer.cpp
    #test_tracing.cpp
    test_tristate.cpp
    test_valuerecorder.cpp
    test_weblinkjson.cpp
    test_weblinktext.cpp
-   #test_websocketjson.cpp
-   #test_websockettext.cpp
+   test_websocketjson.cpp
+   test_websockettext.cpp
    test_workerpool.cpp
    test_xgetopt.cpp
 )
