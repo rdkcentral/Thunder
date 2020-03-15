@@ -413,7 +413,8 @@ namespace ProcessContainers {
 
             while( ( container == nullptr) && ( index < numberofcontainersfound ) ) {
                 LxcContainerType *c = clist[index];
-                if( name == c->name ) {
+                if( strcmp(c->name, "Container") == 0 ) {
+                    
                     container = new LXCContainer(name, c, containerLogDir, configuration, searchpaths.Current());
 
                     _containers.push_back(container);
