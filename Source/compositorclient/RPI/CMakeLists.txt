@@ -45,8 +45,14 @@ target_link_libraries(${TARGET}
         ${NAMESPACE}Core::${NAMESPACE}Core
         ${NAMESPACE}VirtualInput::${NAMESPACE}VirtualInput
         ${EGL_LIBRARIES}
-        libdrm::libdrm
 )
+
+if(VC6)
+    target_link_libraries(${TARGET}
+        PRIVATE
+            libdrm::libdrm
+    )
+endif()
 
 if(PROTOCOLS)
     target_link_libraries(${TARGET}
