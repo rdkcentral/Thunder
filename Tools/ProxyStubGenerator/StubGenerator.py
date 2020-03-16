@@ -30,7 +30,7 @@ import copy
 import CppParser
 from collections import OrderedDict
 
-VERSION = "1.6.2"
+VERSION = "1.6.3"
 NAME = "ProxyStubGenerator"
 
 # runtime changeable configuration
@@ -783,18 +783,12 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                 emit.IndentInc()
                                 # create proxy
                                 emit.Line(
-                                    "%s_inst = RPC::Administrator::Instance().ProxyInstance(channel, %s, %s::ID, false, %s::ID, true);"
-                                    % (proxy_name, p.name, p.str_typename, p.str_typename))
-                                emit.Line("if (%s_inst != %s) {" % (proxy_name, NULLPTR))
-                                emit.IndentInc()
-                                emit.Line("%s = %s_inst->QueryInterface<%s>();" %
-                                          (proxy_name, proxy_name, p.str_typename))
-                                emit.IndentDec()
-                                emit.Line("}")
+                                    "%s_inst = RPC::Administrator::Instance().ProxyInstance(channel, %s, false, %s);"
+                                    % (proxy_name, p.name, proxy_name))
+                                emit.Line("ASSERT((%s_inst != %s) && (%s != %s) && \"Failed to get instance of %s proxy\");" %
+                                          (proxy_name, NULLPTR, proxy_name, NULLPTR, p.str_typename))
                                 emit.Line()
-                                emit.Line("ASSERT((%s != %s) && \"Failed to get instance of %s proxy\");" %
-                                          (proxy_name, NULLPTR, p.str_typename))
-                                emit.Line("if (%s == %s) {" % (proxy_name, NULLPTR))
+                                emit.Line("if ((%s_inst == %s) || (%s == %s)) {" % (proxy_name, NULLPTR, proxy_name, NULLPTR))
                                 emit.IndentInc()
                                 emit.Line("TRACE_L1(\"Failed to get instance of %s proxy\");" % p.str_typename)
                                 emit.IndentDec()
