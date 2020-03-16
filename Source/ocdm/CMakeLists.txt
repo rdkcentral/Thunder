@@ -88,13 +88,8 @@ if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
 
     target_link_libraries(${TARGET}
             PRIVATE
-            -lnexus
+            NEXUS::NEXUS
             -lbrcmsvpmeta
-            )
-
-    target_include_directories( ${TARGET}
-            PRIVATE
-            ${LIBNEXUS_INCLUDE}
             )
 endif()
 
