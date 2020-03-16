@@ -131,7 +131,7 @@ public:
 
         const struct gbm_device* pointer = _platform.UnderlyingHandle();
 
-        if(pointer) {
+        if(pointer != nullptr) {
             result = reinterpret_cast<EGLNativeDisplayType>(const_cast<struct gbm_device*>(pointer));
         }
         else {
@@ -150,12 +150,10 @@ public:
     }
     EGLSurface CreateSurface (const EGLNativeDisplayType& display, const uint32_t width, const uint32_t height) 
     {
-        EGLSurface result;
-
         // A Native surface that acts as a native window
-        result = reinterpret_cast<EGLSurface>(_platform.CreateRenderTarget(width, height));
+        EGLSurface result = reinterpret_cast<EGLSurface>(_platform.CreateRenderTarget(width, height));
 
-        if (!result) {
+        if (result != 0) {
             TRACE_L1(_T("The native window (handle) might be invalid / unsupported. Expect undefined behavior!"));
         }
 

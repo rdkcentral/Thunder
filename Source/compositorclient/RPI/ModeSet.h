@@ -12,13 +12,13 @@ class ModeSet
         ~ModeSet();
 
     public:
-        const struct gbm_device* const UnderlyingHandle() const
+        const struct gbm_device* UnderlyingHandle() const
         {
             return _device;
         }
         uint32_t Width() const;
         uint32_t Height() const;
-        struct gbm_surface* CreateRenderTarget(uint32_t width, uint32_t height);
+        struct gbm_surface* CreateRenderTarget(const uint32_t width, const uint32_t height);
         void DestroyRenderTarget(struct gbm_surface* surface);
 
     private:

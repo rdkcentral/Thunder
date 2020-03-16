@@ -113,13 +113,14 @@ static uint32_t GetCRTCS(int fd, bool valid)
 
             if(nullptr != crtc)
             {
-                if(valid == (1 == crtc->mode_valid ? true : false))
+                bool currentSet = (crtc->mode_valid == 1);
+
+                if(valid == currentSet)
                 {
                     bitmask = bitmask | (1 << i);
                 }
+                drmModeFreeCrtc(crtc);
             }
-
-            drmModeFreeCrtc(crtc);
         }
 
         drmModeFreeResources(resources);
@@ -366,7 +367,7 @@ uint32_t ModeSet::Height() const
 }
 
 // These created resources are automatically destroyed if gbm_device is destroyed
-struct gbm_surface* ModeSet::CreateRenderTarget(uint32_t width, uint32_t height)
+struct gbm_surface* ModeSet::CreateRenderTarget(const uint32_t width, const uint32_t height)
 {
     struct gbm_surface* result = nullptr;
 
@@ -385,8 +386,6 @@ void ModeSet::DestroyRenderTarget(struct gbm_surface* surface)
         gbm_surface_release_buffer(surface, _buffer);
 
         gbm_surface_destroy(surface);
-
-        surface = nullptr;
     }
 }
 
