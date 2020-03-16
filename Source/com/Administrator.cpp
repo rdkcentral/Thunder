@@ -130,9 +130,9 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
-    void* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId)
+    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, void*& interface)
     {
-        void* result = nullptr;
+        ProxyStub::UnknownProxy* result = nullptr;
 
         _adminLock.Lock();
 
@@ -144,7 +144,10 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                result = (*entry)->QueryInterface(interfaceId);
+                interface = (*entry)->QueryInterface(id);
+                if (interface != nullptr) {
+                    result = (*entry);
+                }
             }
         }
 
@@ -153,11 +156,11 @@ namespace RPC {
         return (result);
     }
 
-    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound, const uint32_t interfaceId, const bool piggyBack)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
-        ASSERT(piggyBack == !outbound);
+        interface = nullptr;
 
         if (impl != nullptr) {
 
@@ -171,40 +174,41 @@ namespace RPC {
                     entry++;
                 }
                 if (entry != index->second.end()) {
-                    result = (*entry);
+
+                    ASSERT(index->second != nullptr);
+                    interface = (*entry)->Aquire(outbound, id);
+
+                    ASSERT(interface != nullptr);
+
+                    if (interface != nullptr) {
+                        result = (*entry);
+                    }
                 }
             }
 
             if (result == nullptr) {
-                std::map<uint32_t, IMetadata*>::iterator index(_proxy.find(id));
+                std::map<uint32_t, IMetadata*>::iterator factory(_proxy.find(id));
 
-                if (index != _proxy.end()) {
+                if (factory != _proxy.end()) {
 
-                    result = index->second->CreateProxy(channel, impl, outbound);
+                    result = factory->second->CreateProxy(channel, impl, outbound);
 
                     ASSERT(result != nullptr);
 
                     // Register it as it is remotely registered :-)
                     _channelProxyMap[channel.operator->()].push_back(result);
 
+                    // This will increment the reference count to 1.
+                    interface = result->QueryInterface(id);
+
                 } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
+                _adminLock.Unlock();
             }
 
-            _adminLock.Unlock();
         }
 
-        return (result);
-    }
-
-    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
-    {
-        void* result = nullptr;
-        ProxyStub::UnknownProxy* proxyStub = ProxyInstance(channel, impl, id, refCounted, interfaceId, piggyBack);
-        if (proxyStub != nullptr) {
-            result = proxyStub->QueryInterface(interfaceId);
-        }
         return (result);
     }
 

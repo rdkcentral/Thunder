@@ -104,19 +104,19 @@ namespace RPC {
         template <typename ACTUALINTERFACE>
         ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl)
         {
-            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyFind(channel, impl, ACTUALINTERFACE::ID, ACTUALINTERFACE::ID)));
+            ACTUALINTERFACE* result = nullptr;
+            ProxyFind(channel, impl, ACTUALINTERFACE::ID, result);
+            return (result);
         }
+        ProxyStub::UnknownProxy* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, void*& interface);
+
         template <typename ACTUALINTERFACE>
-        ACTUALINTERFACE* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id)
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, ACTUALINTERFACE*& interface)
         {
-            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyFind(channel, impl, id, ACTUALINTERFACE::ID)));
+            return (ProxyInstance(channel, impl, outbound, ACTUALINTERFACE::ID, interface));
         }
-        template <typename ACTUALINTERFACE>
-        ACTUALINTERFACE* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound)
-        {
-            return (reinterpret_cast<ACTUALINTERFACE*>(ProxyInstanceQuery(channel, impl, id, outbound, ACTUALINTERFACE::ID, false)));
-        }
-        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack);
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, const uint32_t id, void*& interface);
+
 
         // ----------------------------------------------------------------------------------------------------
         // Methods for the Proxy Environment
@@ -183,9 +183,6 @@ namespace RPC {
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
-        void* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId);
-        void* ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound, const uint32_t ifId, const bool);
-
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.

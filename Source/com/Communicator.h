@@ -784,12 +784,9 @@ namespace RPC {
 
                         // Get the interface pointer that was stored during the triggering of the event...
                         // It is reference counted so it has to be dereferenced by the caller.
-                        ProxyStub::UnknownProxy* proxyStub = RPC::Administrator::Instance().ProxyInstance(result->Channel(), locator.first->second.second, interfaceId, true, interfaceId, false);
+                        RPC::Administrator::Instance().ProxyInstance(result->Channel(), locator.first->second.second, true, interfaceId, interfaceReturned);
 
-                        if (proxyStub != nullptr) {
-                            interfaceReturned = proxyStub->QueryInterface(interfaceId);
-
-                            ASSERT(interfaceReturned != nullptr);
+                        if (interfaceReturned != nullptr) {
 
                             id = result->Id();
                         }
@@ -956,40 +953,41 @@ namespace RPC {
 
             void* Handle(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
+                Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+                void* implementation = info.Implementation();
+                void* realIF = nullptr;
+                void* result = nullptr;
+
+                ASSERT(implementation != nullptr);
+                ASSERT(baseChannel.IsValid() == true);
 
                 if (info.IsOffer() == true) {
 
-                    ASSERT(result != nullptr);
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId(), true);
-
-                    if (baseIUnknown != nullptr) {
-                        _parent.Offer(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        ASSERT(realIFbase != nullptr);
+                        _parent.Offer(realIFbase, info.InterfaceId());
+                        realIFbase->Release();
                     }
-                    result = nullptr;
 
                 } else if (info.IsRevoke() == true) {
 
-                    ASSERT(result != nullptr);
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId());
-                    if (baseIUnknown != nullptr) {
-                        _parent.Revoke(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        _parent.Revoke(realIFbase, info.InterfaceId());
+                        realIFbase->Release();
                     }
-                    result = nullptr;
 
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
-
-                    ASSERT(result == nullptr);
 
                     // See if we have something we can return right away, if it has been requested..
                     result = _parent.Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 
                     if (result != nullptr) {
-                        Core::ProxyType<Core::IPCChannel> baseChannel(channel);
                         Administrator::Instance().RegisterInterface(baseChannel, result, info.InterfaceId());
                     }
                 }

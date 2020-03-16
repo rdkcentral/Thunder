@@ -43,7 +43,6 @@ namespace PluginHost {
             ID = RPC::ID_PLUGIN
         };
 
-        /* @stubgen:omit */
         struct INotification
             : virtual public Core::IUnknown {
 
