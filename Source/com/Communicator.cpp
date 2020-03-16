@@ -257,8 +257,7 @@ namespace RPC {
 
                 if (implementation != nullptr) {
                     // From what is returned, we need to create a proxy
-                    ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(Core::ProxyType<Core::IPCChannel>(_channel), implementation, interfaceId, true, interfaceId, false);
-                    result = (instance != nullptr ? instance->QueryInterface(interfaceId) : nullptr);
+                    RPC::Administrator::Instance().ProxyInstance(Core::ProxyType<Core::IPCChannel>(_channel), implementation, true, interfaceId, result);
                 }
             }
         }

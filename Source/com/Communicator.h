@@ -1498,7 +1498,7 @@ namespace RPC {
 
                     ASSERT(baseChannel.IsValid() == true);
 
-                    result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+                    Administrator::Instance().ProxyInstance(baseChannel, implementation, true, result);
                 }
             }
 

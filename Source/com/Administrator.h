@@ -111,9 +111,12 @@ namespace RPC {
         ProxyStub::UnknownProxy* ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, void*& interface);
 
         template <typename ACTUALINTERFACE>
-        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, ACTUALINTERFACE*& interface)
+        ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, ACTUALINTERFACE*& base)
         {
-            return (ProxyInstance(channel, impl, outbound, ACTUALINTERFACE::ID, interface));
+            void* proxyInterface;
+            ProxyStub::UnknownProxy* result = ProxyInstance(channel, impl, outbound, ACTUALINTERFACE::ID, proxyInterface);
+            base = reinterpret_cast<ACTUALINTERFACE*>(proxyInterface);
+            return (result);
         }
         ProxyStub::UnknownProxy* ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, const uint32_t id, void*& interface);
 
