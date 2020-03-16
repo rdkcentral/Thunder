@@ -56,7 +56,9 @@ namespace Exchange {
 
                 virtual ~ICallback () {}
 
-                virtual void Updated () = 0;
+                virtual void Updated() = 0;
+                virtual bool PasskeyRequest() { return false; }
+                virtual bool PasskeyConfirmRequest(const uint32_t passkey) { return false; }
             };
 
             enum type : uint8_t {
@@ -75,17 +77,24 @@ namespace Exchange {
 
             virtual ~IDevice() {}
 
-            virtual type Type () const = 0;
+            virtual type Type() const = 0;
             virtual bool IsValid() const = 0;
             virtual bool IsBonded() const = 0;
             virtual bool IsConnected() const = 0;
             virtual string LocalId() const = 0;
             virtual string RemoteId() const = 0;
             virtual string Name() const = 0;
+            virtual uint32_t Class() const = 0;
+
             virtual uint32_t Pair(const capabilities) = 0;
+            virtual uint32_t AbortPairing() = 0;
             virtual uint32_t Unpair() = 0;
             virtual uint32_t Connect() = 0;
             virtual uint32_t Disconnect(const uint16_t reason) = 0;
+
+            virtual void Passkey(const uint32_t passkey) = 0;
+            virtual void ConfirmPasskey(const bool confirm) = 0;
+
             virtual uint32_t Callback(ICallback* callback) = 0;
         };
 

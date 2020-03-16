@@ -261,6 +261,11 @@
           "type": {
             "$ref": "#/definitions/devicetype"
           },
+          "class": {
+            "type": "integer",
+            "example": 2360324,
+            "description": "Class of device (3 octets)"
+          },
           "connected": {
             "description": "Denotes if the device is currently connected to host",
             "type": "boolean",

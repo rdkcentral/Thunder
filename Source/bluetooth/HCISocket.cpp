@@ -102,7 +102,7 @@ void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t
         // Core::Time endTime = Core::Time::Now().Add(scanTime * 1000);
 
         // while ((ir->length != 0) && (ioctl(descriptor, HCIINQUIRY, reinterpret_cast<unsigned long>(buf)) >= 0)) {
-            if (ioctl(descriptor, HCIINQUIRY, reinterpret_cast<unsigned long>(buf)) >= 0) {
+        if (ioctl(descriptor, HCIINQUIRY, reinterpret_cast<unsigned long>(buf)) >= 0) {
 
             for (uint8_t index = 0; index < (ir->num_rsp); index++) {
                 inquiry_info* info = reinterpret_cast<inquiry_info*>(&(reinterpret_cast<uint8_t*>(buf)[sizeof(hci_inquiry_req)]));
@@ -110,11 +110,13 @@ void HCISocket::Scan(const uint16_t scanTime, const uint32_t type, const uint8_t
                 bdaddr_t* address = &(info[index].bdaddr);
                 Address newSource(*address);
 
+                EIR eir("", ((info->dev_class[2] << 16) | (info->dev_class[1] << 8) | (info->dev_class[0])));
+
                 std::list<Address>::const_iterator finder(std::find(reported.begin(), reported.end(), newSource));
 
                 if (finder == reported.end()) {
                     reported.push_back(newSource);
-                    Discovered(false, newSource, _T("[Unknown]"));
+                    Discovered(false, newSource, eir);
                 }
             }
 
@@ -190,7 +192,7 @@ uint32_t HCISocket::ReadStoredLinkKeys(const Address adr, const bool all, LinkKe
 void HCISocket::Abort()
 {
     _state.Lock();
-            
+
     if ((_state & ACTION_MASK) != 0) {
         // TODO: Find if we can actually abort a IOCTL:HCIINQUIRY !!
         _state.SetState(static_cast<state>(_state.GetState() | ABORT));
@@ -199,7 +201,7 @@ void HCISocket::Abort()
     _state.Unlock();
 }
 
-/* virtual */ void HCISocket::StateChange() 
+/* virtual */ void HCISocket::StateChange()
 {
     Core::SynchronousChannelType<Core::SocketPort>::StateChange();
     if (IsOpen() == true) {
@@ -239,32 +241,12 @@ void HCISocket::Abort()
     }
 }
 
-uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
-    const uint8_t* buffer = info.data;
-    std::string store;
-    uint8_t offset = 0;
-    uint8_t type = 0;
-
-    while (((offset + buffer[offset]) <= info.length) && (buffer[offset+1] != 0)) {
-
-        if (((buffer[offset + 1] == EIR_NAME_SHORT) && (name.empty() == true)) || (buffer[offset + 1] == EIR_NAME_COMPLETE)) {
-            store = std::string(reinterpret_cast<const char*>(&(buffer[offset + 2])), buffer[offset] - 1);
-            type = buffer[offset + 1];
-        }
-        offset += (1 /* length */ + 1 /* type */ + buffer[offset] /* size */);
-    }
-    if (type != 0) {
-        name = Core::ToString(store.c_str());
-    }
-    return (type);
-}
-
 /* virtual */ uint16_t HCISocket::Deserialize(const uint8_t* dataFrame, const uint16_t availableData)
 {
     uint16_t result = 0;
     const hci_event_hdr* hdr = reinterpret_cast<const hci_event_hdr*>(&(dataFrame[1]));
 
-    // printf ("GENERAL RECEIVED: ");
+    // printf("GENERAL RECEIVED: ");
     // for (uint16_t loop = 0; loop < availableData; loop++) { printf("%02X:", dataFrame[loop]); } printf("\n");
 
     if ( (availableData > sizeof(hci_event_hdr)) && (availableData > (sizeof(hci_event_hdr) + hdr->plen)) ) {
@@ -277,7 +259,7 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
         }
         else {
             const uint8_t* segment = reinterpret_cast<const evt_le_meta_event*>(ptr)->data;
-            uint8_t  entries = segment[0];
+            uint8_t entries = segment[0];
             segment++;
 
             for (uint8_t loop = 0; loop < entries; loop++) {
@@ -288,7 +270,7 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
         }
     }
     else {
-        TRACE_L1(_T("EVT_HCI: Message too short => (hci_event_hdr)")); 
+        TRACE_L1(_T("EVT_HCI: Message too short => (hci_event_hdr)"));
     }
 
     return (result);
@@ -302,8 +284,38 @@ uint8_t HCISocket::Name(const le_advertising_info& info, string& name) const {
 {
 }
 
-/* virtual */ void HCISocket::Discovered(const bool lowEnergy, const Bluetooth::Address& address, const string& name)
+/* virtual */ void HCISocket::Discovered(const bool lowEnergy, const Bluetooth::Address& address, const EIR& info)
 {
+}
+
+void EIR::Ingest(const uint8_t buffer[], const uint16_t bufferLength)
+{
+    std::string store;
+    uint8_t offset = 0;
+
+    while (((offset + buffer[offset]) <= bufferLength) && (buffer[offset+1] != 0)) {
+        const uint8_t length = (buffer[offset] - 1);
+        const uint8_t type = buffer[offset + 1];
+        const uint8_t* const data = &buffer[offset + 2];
+
+        if (type == EIR_NAME_SHORT) {
+            _shortName = std::string(reinterpret_cast<const char*>(data), length);
+        } else if (type == EIR_NAME_COMPLETE) {
+            _completeName = std::string(reinterpret_cast<const char*>(data), length);
+        } else if (type == EIR_CLASS_OF_DEV) {
+            _class = (data[0] | (data[1] << 8) | (data[2] << 16));
+        } else if ((type == EIR_UUID16_SOME) || (type == EIR_UUID16_ALL)) {
+            for (uint8_t i = 0; i < (length / 2); i++) {
+                _UUIDs.emplace_back(btohs(*reinterpret_cast<const short*>(data + (i * 2))));
+            }
+        } else if ((type == EIR_UUID128_SOME) || (type == EIR_UUID128_ALL)) {
+            for (uint8_t i = 0; i < (length / 16); i++) {
+                _UUIDs.emplace_back(data + (i * 16));
+            }
+        }
+
+        offset += (1 /* length */ + 1 /* type */ + length);
+    }
 }
 
 // --------------------------------------------------------------------------------------------------
@@ -352,7 +364,7 @@ public:
     uint16_t Result() const {
         return (_error);
     }
-    const INBOUND& Response() 
+    const INBOUND& Response()
     {
         return (_inbound);
     }
@@ -396,7 +408,7 @@ private:
                 const mgmt_ev_cmd_status* data = reinterpret_cast<const mgmt_ev_cmd_status*>(&(stream[sizeof(mgmt_hdr)]));
                 if (btohs(data->opcode) == OPCODE) {
                     if (len < sizeof(mgmt_ev_cmd_status)) {
-                        TRACE(Trace::Error, (_T("MGMT_EV_CMD_STATUS: Message too short; opcode=%04X"), data->opcode)); 
+                        TRACE(Trace::Error, (_T("MGMT_EV_CMD_STATUS: Message too short; opcode=%04X"), data->opcode));
                         _error  = Core::ERROR_GENERAL;
                     } else {
                         TRACE(Trace::Information, (_T("MGMT_EV_CMD_STATUS: opcode=0x%04X, status=%d"), data->opcode, data->status));
@@ -493,7 +505,7 @@ private:
 };
 
 /* 500 ms to execute a management command. Should be enough for a kernel message exchange. */
-static uint32_t MANAGMENT_TIMEOUT = 500; 
+static uint32_t MANAGMENT_TIMEOUT = 500;
 
 static constexpr uint8_t DISABLE_MODE = 0x00;
 static constexpr uint8_t ENABLE_MODE  = 0x01;
@@ -511,11 +523,16 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_SET_ADVERTISING, mgmt_mode, uint32_t> Advertising;
     typedef ManagementFixedType<MGMT_OP_SET_CONNECTABLE, mgmt_mode, uint32_t> Connectable;
     typedef ManagementFixedType<MGMT_OP_SET_DISCOVERABLE, mgmt_cp_set_discoverable, uint32_t> Discoverable;
+    typedef ManagementFixedType<MGMT_OP_SET_DEV_CLASS, mgmt_cp_set_dev_class, Core::Void> DeviceClass;
     typedef ManagementFixedType<MGMT_OP_START_DISCOVERY, mgmt_cp_start_discovery, uint8_t> StartDiscovery;
     typedef ManagementFixedType<MGMT_OP_STOP_DISCOVERY, mgmt_cp_stop_discovery, uint8_t> StopDiscovery;
-    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, mgmt_rp_pair_device> Pair;
+    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, Core::Void> Pair;
     typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, mgmt_rp_unpair_device> Unpair;
     typedef ManagementFixedType<MGMT_OP_CANCEL_PAIR_DEVICE, mgmt_addr_info, Core::Void> PairAbort;
+    typedef ManagementFixedType<MGMT_OP_USER_CONFIRM_REPLY, mgmt_cp_user_confirm_reply, Core::Void> UserConfirmReply;
+    typedef ManagementFixedType<MGMT_OP_USER_CONFIRM_NEG_REPLY, mgmt_cp_user_confirm_reply, Core::Void> UserConfirmNegReply;
+    typedef ManagementFixedType<MGMT_OP_USER_PASSKEY_REPLY, mgmt_cp_user_passkey_reply, Core::Void> UserPasskeyReply;
+    typedef ManagementFixedType<MGMT_OP_USER_PASSKEY_NEG_REPLY, mgmt_cp_user_passkey_reply, Core::Void> UserPasskeyNegReply;
     typedef ManagementFixedType<MGMT_OP_READ_INDEX_LIST, Core::Void, uint16_t[33]> Indexes;
     typedef ManagementFixedType<MGMT_OP_SET_LOCAL_NAME, mgmt_cp_set_local_name, mgmt_cp_set_local_name> DeviceName;
     typedef ManagementFixedType<MGMT_OP_SET_PRIVACY, mgmt_cp_set_privacy, Core::Void> Privacy;
@@ -527,7 +544,6 @@ namespace Management {
     typedef ManagementListType<MGMT_OP_LOAD_LINK_KEYS, mgmt_cp_load_link_keys, uint32_t, LinkKeys> LinkKeys;
     typedef ManagementListType<MGMT_OP_LOAD_LONG_TERM_KEYS, mgmt_cp_load_long_term_keys, uint32_t, LongTermKeys> LongTermKeys;
     typedef ManagementListType<MGMT_OP_LOAD_IRKS, mgmt_cp_load_irks, uint32_t, IdentityKeys> IdentityKeys;
-
 }
 
 /* static */ void ManagementSocket::Devices(std::list<uint16_t>& adapters)
@@ -552,6 +568,16 @@ uint32_t ManagementSocket::Name(const string& shortName, const string& longName)
 
     strcpy (reinterpret_cast<char*>(message->short_name), shortName2.c_str());
     strcpy (reinterpret_cast<char*>(message->name), longName2.c_str());
+
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
+    return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::DeviceClass(const uint8_t major, const uint8_t minor)
+{
+    Management::DeviceClass message(_deviceId);
+    message->major = (major & 0x1F);
+    message->minor = (minor << 2);
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, message, message);
     return (result != Core::ERROR_NONE ? result : (message.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
@@ -780,6 +806,7 @@ ManagementSocket::Info ManagementSocket::Settings() const
     if (const_cast<ManagementSocket*>(this)->Exchange(MANAGMENT_TIMEOUT, message, message) == Core::ERROR_NONE) {
         result = Info(message.Response());
     }
+
     return (result);
 }
 
@@ -792,8 +819,7 @@ uint32_t ManagementSocket::Pair(const Address& remote, const Address::type type,
     command->addr.type = type;
     command->io_cap = cap;
 
-    // Pairing takes longer, so allow for a larget timeout...
-    uint32_t result = Exchange(20 * MANAGMENT_TIMEOUT, command, command);
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, command, command);
     if (result == Core::ERROR_NONE) {
         switch (command.Result()) {
             case MGMT_STATUS_SUCCESS:
@@ -802,10 +828,12 @@ uint32_t ManagementSocket::Pair(const Address& remote, const Address::type type,
                 result = Core::ERROR_ALREADY_CONNECTED;
                 break;
             default:
+                TRACE(Trace::Error, (_T("Pair command failed [%i]"),command.Result()));
                 result = Core::ERROR_ASYNC_FAILED;
                 break;
         }
     }
+
     return (result);
 }
 
@@ -818,7 +846,7 @@ uint32_t ManagementSocket::Unpair(const Address& remote, const Address::type typ
     command->addr.type = type;
     command->disconnect = 1;
 
-    uint32_t result = Exchange(20 * MANAGMENT_TIMEOUT, command, command);
+    uint32_t result = Exchange(MANAGMENT_TIMEOUT, command, command);
     if (result == Core::ERROR_NONE) {
         switch (command.Result()) {
             case MGMT_STATUS_SUCCESS:
@@ -831,6 +859,7 @@ uint32_t ManagementSocket::Unpair(const Address& remote, const Address::type typ
                 break;
         }
     }
+
     return (result);
 }
 
@@ -844,6 +873,55 @@ uint32_t ManagementSocket::PairAbort(const Address& remote, const Address::type 
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, command, command);
     return (result != Core::ERROR_NONE ? result : (command.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm)
+{
+    uint32_t result = Core::ERROR_UNAVAILABLE;
+    uint32_t commandResult = MGMT_STATUS_FAILED;
+
+    if (confirm == true) {
+        Management::UserConfirmReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    } else {
+        Management::UserConfirmNegReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    }
+
+    return (result != Core::ERROR_NONE ? result : (commandResult == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::UserPasskeyReply(const Address& remote, const Address::type type, const uint32_t passkey)
+{
+    uint32_t result = Core::ERROR_UNAVAILABLE;
+    uint32_t commandResult = MGMT_STATUS_FAILED;
+
+    if (passkey != static_cast<uint32_t>(~0)) {
+        Management::UserPasskeyReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        command->passkey = passkey;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    } else {
+        Management::UserPasskeyNegReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    }
+
+    return (result != Core::ERROR_NONE ? result : (commandResult == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
 uint32_t ManagementSocket::Notifications(const bool enabled)
