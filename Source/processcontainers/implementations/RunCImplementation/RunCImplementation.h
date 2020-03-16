@@ -17,7 +17,7 @@ namespace ProcessContainers {
     class RunCContainer : public IContainer 
     {
     public:
-        RunCContainer(string name, string path);
+        RunCContainer(string name, string path, string logPath);
         virtual ~RunCContainer();
 
         // IContainerMethods
@@ -38,6 +38,7 @@ namespace ProcessContainers {
         mutable uint32_t _refCount;
         string _name;
         string _path;
+        string _logPath;
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
@@ -61,6 +62,7 @@ namespace ProcessContainers {
         void AddRef() const override;
         uint32_t Release() override;
     protected:
+        void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
         void RemoveContainer(IContainer*);
 
     private:

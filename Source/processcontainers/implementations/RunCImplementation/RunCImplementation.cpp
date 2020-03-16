@@ -27,6 +27,26 @@ public:
     Core::JSON::DecUInt32 Pid;
     Core::JSON::String Status;
 };
+
+class RunCListEntry : public Core::JSON::Container {
+private:
+    RunCListEntry(const RunCListEntry&);
+    RunCListEntry& operator=(const RunCListEntry&);
+
+public:
+    RunCListEntry()
+        : Core::JSON::Container()
+        , Id()
+    {
+        Add(_T("id"), &Id);
+    }
+    ~RunCListEntry()
+    {
+    }
+
+public:
+    Core::JSON::String Id;
+};
     
 namespace ProcessContainers
 {
@@ -78,10 +98,13 @@ namespace ProcessContainers
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
-            Core::File configFile(path + "/" + id + "/config.json");
+            Core::File configFile(path + "/Container/config.json");
 
             if (configFile.Exists()) {
-                RunCContainer* container = new RunCContainer(id, path + "/" + id);
+                // Make sure no leftover will interfere...
+                DestroyContainer(id);
+
+                RunCContainer* container = new RunCContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
                 AddRef();
 
@@ -132,6 +155,27 @@ namespace ProcessContainers
         return (Core::ERROR_NONE);
     }
 
+    void RunCContainerAdministrator::DestroyContainer(const string& name)
+    {
+        Core::Process::Options options("/usr/bin/runc");
+        options.Add("delete").Add("-f").Add(name);
+
+        Core::Process process(false);
+        
+        uint32_t pid;
+
+        // TODO: Get rid of annoying "container Container does not exist" message
+        if (process.Launch(options, &pid) != Core::ERROR_NONE) {
+            TRACE_L1("[RunC] Failed to get a destroy a container");
+        } else {
+            process.WaitProcessCompleted(Core::infinite);
+        
+            if (process.ExitCode() == 0) {
+                TRACE_L1("[RunC] Container named %s was already existent when trying to create it. Destroying previous instance...", name.c_str());
+            }
+        }
+    }
+
     void RunCContainerAdministrator::RemoveContainer(IContainer* container)
     {
         _containers.remove(container);
@@ -142,10 +186,11 @@ namespace ProcessContainers
 
     // Container
     // ------------------------------------
-    RunCContainer::RunCContainer(string name, string path)
+    RunCContainer::RunCContainer(string name, string path, string logPath)
         : _refCount(1)
         , _name(name)        
         , _path(path)
+        , _logPath(logPath)
         , _pid()
     {
 
@@ -358,6 +403,14 @@ namespace ProcessContainers
         paramsJSON.ToString(paramsFormated);
 
         Core::Process::Options options("/usr/bin/runc");
+
+        if (_logPath.empty() == false) {
+            // Create logging directory
+            Core::Directory (_logPath.c_str()).CreatePath();
+
+            options.Add("-log").Add(_logPath + "container.log");
+        }
+
         options.Add("run").Add("-d").Add("--args").Add(paramsFormated).Add("-b").Add(_path).Add("--no-new-keyring")
             .Add(_name).Add(command);
 
