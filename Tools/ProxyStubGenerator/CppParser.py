@@ -680,6 +680,7 @@ class Type:
         str = "const" if self.IsConst() else ""
         str += " " if self.IsConst() and self.IsVolatile() else ""
         str += "volatile" if self.IsVolatile() else ""
+        return str
 
     def Proto(self):
         _str = "const " if self.IsConst() else ""
