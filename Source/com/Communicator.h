@@ -924,7 +924,7 @@ namespace RPC {
             }
             void Request(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
+                void* result = reinterpret_cast<void*>(info.Implementation());
 
                 ASSERT(result != nullptr);
 
@@ -954,7 +954,7 @@ namespace RPC {
             void* Handle(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
                 Core::ProxyType<Core::IPCChannel> baseChannel(channel);
-                void* implementation = info.Implementation();
+                void* implementation = reinterpret_cast<void*>(info.Implementation());
                 void* realIF = nullptr;
                 void* result = nullptr;
 
@@ -1093,7 +1093,7 @@ namespace RPC {
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(result, proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(reinterpret_cast<instance_id>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1310,7 +1310,7 @@ namespace RPC {
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
                 void* implementation = _parent.Aquire(className, interfaceId, versionId);
-                message->Response().Implementation(implementation);
+                message->Response().Implementation(reinterpret_cast<instance_id>(implementation));
 
                 channel.ReportResponse(data);
             }
@@ -1395,7 +1395,7 @@ namespace RPC {
                 if (BaseClass::Invoke(_announceMessage, waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
                     void* implementation(_announceMessage->Response().Implementation());
 
@@ -1418,7 +1418,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::OFFER);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::OFFER);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1426,7 +1426,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -1442,7 +1442,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::REVOKE);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::REVOKE);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1450,7 +1450,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
                 }
@@ -1486,12 +1486,12 @@ namespace RPC {
             INTERFACE* result = nullptr;
 
             ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-            ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+            ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
             // Lock event until Dispatch() sets it.
             if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
-                void* implementation(_announceMessage->Response().Implementation());
+                void* implementation(reinterpret_cast<void*>(_announceMessage->Response().Implementation()));
 
                 if (implementation != nullptr) {
                     Core::ProxyType<Core::IPCChannel> baseChannel(*this);

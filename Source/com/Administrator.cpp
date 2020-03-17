@@ -174,8 +174,6 @@ namespace RPC {
                     entry++;
                 }
                 if (entry != index->second.end()) {
-
-                    ASSERT(index->second != nullptr);
                     interface = (*entry)->Aquire(outbound, id);
 
                     ASSERT(interface != nullptr);

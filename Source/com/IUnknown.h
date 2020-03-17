@@ -189,11 +189,11 @@ namespace ProxyStub {
             else {
 
                 if ( (_mode & CACHING_RELEASE) == 0) {
-  
+
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
-                    message->Parameters().Set(_implementation, _interfaceId, 1);
+                    message->Parameters().Set(reinterpret_cast<RPC::instance_id>(_implementation), _interfaceId, 1);
 
                     // Just try the destruction for few Seconds...
                     result = Invoke(message, RPC::CommunicationTimeOut);
@@ -221,7 +221,7 @@ namespace ProxyStub {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
             RPC::Data::Frame::Writer parameters(message->Parameters().Writer());
 
-            message->Parameters().Set(_implementation, _interfaceId, 2);
+            message->Parameters().Set(reinterpret_cast<RPC::instance_id>(_implementation), _interfaceId, 2);
             parameters.Number<uint32_t>(id);
             if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
@@ -254,7 +254,7 @@ namespace ProxyStub {
         {
             Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
-            message->Parameters().Set(_implementation, _interfaceId, methodId + 3);
+            message->Parameters().Set(reinterpret_cast<RPC::instance_id>(_implementation), _interfaceId, methodId + 3);
 
             return (message);
         }
@@ -318,7 +318,7 @@ namespace ProxyStub {
                 _mode ^= CACHING_ADDREF;
 
                 if (_refCount == 1) {
-                    response.AddImplementation(_implementation, _interfaceId);
+                    response.AddImplementation(reinterpret_cast<RPC::instance_id>(_implementation), _interfaceId);
                 }
             }
             else if ((_mode & CACHING_RELEASE) != 0)  {
@@ -327,7 +327,7 @@ namespace ProxyStub {
                 _mode ^= CACHING_RELEASE;
 
                 if (_refCount == 0) {
-                    response.AddImplementation(_implementation, _interfaceId | 0x80000000); 
+                    response.AddImplementation(reinterpret_cast<RPC::instance_id>(_implementation), _interfaceId | 0x80000000);
                 }
             }
 

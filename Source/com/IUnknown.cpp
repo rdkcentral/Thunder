@@ -37,7 +37,7 @@ namespace ProxyStub {
         Core::ProxyType<Core::IPCChannel>& channel,
         Core::ProxyType<RPC::InvokeMessage>& message)
     {
-        void* rawIdentifier(message->Parameters().Implementation<void*>());
+        void* rawIdentifier(reinterpret_cast<void*>(message->Parameters().Implementation()));
         Core::IUnknown* implementation(Convert(rawIdentifier));
 
         ASSERT(implementation != nullptr);
@@ -55,7 +55,7 @@ namespace ProxyStub {
                 RPC::Data::Frame::Reader reader(message->Parameters().Reader());
 
                 uint32_t result = implementation->Release();
-                
+
                 // This is an external referenced interface that we handed out, so it should
                 // be registered. Lets unregister this reference, it is dropped
                 RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId());

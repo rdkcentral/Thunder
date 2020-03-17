@@ -253,7 +253,7 @@ namespace RPC {
             uint32_t feedback = _channel->Invoke(message, waitTime);
 
             if (feedback == Core::ERROR_NONE) {
-                void* implementation = message->Response().Implementation();
+                void* implementation = reinterpret_cast<void*>(message->Response().Implementation());
 
                 if (implementation != nullptr) {
                     // From what is returned, we need to create a proxy
@@ -430,7 +430,7 @@ namespace RPC {
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, implementation, exchangeId);
+        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, reinterpret_cast<instance_id>(implementation), exchangeId);
 
         uint32_t result = BaseClass::Open(waitTime);
 
@@ -465,7 +465,7 @@ namespace RPC {
                     ASSERT(refChannel.IsValid());
 
                     // Register the interface we are passing to the otherside:
-                    RPC::Administrator::Instance().RegisterInterface(refChannel, setupFrame.Implementation(), setupFrame.InterfaceId());
+                    RPC::Administrator::Instance().RegisterInterface(refChannel, reinterpret_cast<void*>(setupFrame.Implementation()), setupFrame.InterfaceId());
                 }
             }
         } else {

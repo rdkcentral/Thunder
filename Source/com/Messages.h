@@ -25,8 +25,8 @@
 namespace WPEFramework {
 namespace RPC {
 
-    // As COMRPC might run between a 32 bit and 64 bit system, the largest must be accommodated. 
-    typedef void* instance_id;
+    // As COMRPC might run between a 32 bit and 64 bit system, the largest must be accommodated.
+    typedef uint32_t instance_id;
 
     namespace Data {
         static const uint16_t IPC_BLOCK_SIZE = 512;
@@ -213,12 +213,10 @@ namespace RPC {
                 REQUEST = 3
             };
 
-        
-
         public:
             Init()
                 : _id(0)
-				, _implementation(nullptr)
+                , _implementation(0)
                 , _interfaceId(~0)
                 , _exchangeId(~0)
                 , _versionId(0)
@@ -248,13 +246,12 @@ namespace RPC {
             void Set(const uint32_t myId)
             {
                 _exchangeId = ParentId();
-                _implementation = nullptr;
+                _implementation = 0;
                 _interfaceId = ~0;
                 _versionId = ~0;
                 _id = myId;
                 _className[0] = '\0';
                 _className[1] = AQUIRE;
-   
             }
             void Set(const uint32_t myId, const uint32_t interfaceId, instance_id implementation, const uint32_t exchangeId)
             {
@@ -281,7 +278,7 @@ namespace RPC {
             void Set(const uint32_t myId, const string& className, const uint32_t interfaceId, const uint32_t versionId)
             {
                 _exchangeId = ParentId();
-                _implementation = nullptr;
+                _implementation = 0;
                 _interfaceId = interfaceId;
                 _versionId = versionId;
                 _id = myId;
@@ -380,7 +377,7 @@ namespace RPC {
             }
             instance_id Implementation() const
             {
-                instance_id result = nullptr;
+                instance_id result = 0;
                 _data.GetNumber<instance_id>(0, result);
                 return (result);
             }
