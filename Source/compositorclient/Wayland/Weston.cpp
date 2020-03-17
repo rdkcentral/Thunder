@@ -529,11 +529,6 @@ namespace Wayland {
         Trace("WARNING: Display::SurfaceImplementation::BringToFront is not implemented\n");
     }
 
-    void Display::SurfaceImplementation::SetTop()
-    {
-        Trace("WARNING: Display::SurfaceImplementation::SetTop is not implemented\n");
-    }
-
     void Display::SurfaceImplementation::Dimensions(
         const uint32_t visible,
         const int32_t x, const int32_t y, const int32_t width, const int32_t height,
