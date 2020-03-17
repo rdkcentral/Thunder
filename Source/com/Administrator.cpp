@@ -130,7 +130,7 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
-    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, void*& interface)
+    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
@@ -156,13 +156,13 @@ namespace RPC {
         return (result);
     }
 
-    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const bool outbound, const uint32_t id, void*& interface)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
         interface = nullptr;
 
-        if (impl != nullptr) {
+        if (impl) {
 
             _adminLock.Lock();
 
@@ -210,9 +210,11 @@ namespace RPC {
         return (result);
     }
 
-    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
+    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id)
     {
         ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
+
+        Core::IUnknown* reference = Convert(impl, id);
 
         if (index == _channelReferenceMap.end()) {
             auto result = _channelReferenceMap.emplace(std::piecewise_construct,

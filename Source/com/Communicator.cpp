@@ -253,9 +253,9 @@ namespace RPC {
             uint32_t feedback = _channel->Invoke(message, waitTime);
 
             if (feedback == Core::ERROR_NONE) {
-                void* implementation = reinterpret_cast<void*>(message->Response().Implementation());
+                instance_id implementation = message->Response().Implementation();
 
-                if (implementation != nullptr) {
+                if (implementation) {
                     // From what is returned, we need to create a proxy
                     RPC::Administrator::Instance().ProxyInstance(Core::ProxyType<Core::IPCChannel>(_channel), implementation, true, interfaceId, result);
                 }
@@ -430,7 +430,9 @@ namespace RPC {
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, reinterpret_cast<instance_id>(implementation), exchangeId);
+        instance_id impl = reinterpret_cast<instance_id>(implementation);
+
+        _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
 
         uint32_t result = BaseClass::Open(waitTime);
 
