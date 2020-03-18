@@ -225,7 +225,6 @@ namespace Exchange {
         virtual ~ExternalBase()
         {
             _job.Dispose();
-            _timed.Period(0);
             _job.CompositRelease();
             _timed.CompositRelease();
         }
