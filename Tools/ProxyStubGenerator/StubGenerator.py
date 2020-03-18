@@ -428,12 +428,18 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                         else:
                             return "Buffer<%s>" % self.length_type
                     elif isinstance(self.expanded_typename, CppParser.Enum):
+                        if self.type.Type().type.Type().size == "int":
+                            log.Warn("%s: underlying type of enumeration is not fixed" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Size_t):
+                        log.Warn("%s: size_t size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Time_t):
+                        log.Warn("%s: time_t size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.Integer):
+                        if self.type.Type().size == "int":
+                            log.Warn("%s: integer size is not fixed, use a stdint type instead" % self.str_typename)
                         return "Number<%s>" % noref
                     elif isinstance(self.expanded_typename, CppParser.String):
                         return "Text"
