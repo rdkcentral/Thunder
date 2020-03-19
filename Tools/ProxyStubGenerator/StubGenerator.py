@@ -1288,6 +1288,12 @@ if __name__ == "__main__":
                            action="store",
                            default=INTERFACE_NAMESPACE,
                            help="set namespace to look for interfaces in (default: %s)" % INTERFACE_NAMESPACE)
+    argparser.add_argument("--outdir",
+                           dest="outdir",
+                           metavar="DIR",
+                           action="store",
+                           default="",
+                           help="specify output directory (default: generate files in the same directory as source)")
     argparser.add_argument("--indent",
                            dest="indent_size",
                            metavar="SIZE",
@@ -1327,6 +1333,7 @@ if __name__ == "__main__":
     SHOW_WARNINGS = not args.no_warnings
     BE_VERBOSE = args.verbose
     INTERFACE_NAMESPACE = args.if_namespace
+    OUTDIR = args.outdir
     EMIT_TRACES = args.traces
     scan_only = False
     keep_incomplete = args.keep_incomplete
@@ -1378,7 +1385,7 @@ if __name__ == "__main__":
             for source_file in interface_files:
                 try:
                     output_file = os.path.join(
-                        os.path.dirname(source_file),
+                        os.path.dirname(source_file) if not OUTDIR else OUTDIR,
                         PROXYSTUB_CPP_NAME % CreateName(os.path.basename(source_file)).split(".", 1)[0])
 
                     output = GenerateStubs(
