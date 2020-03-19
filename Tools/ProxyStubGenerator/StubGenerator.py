@@ -813,20 +813,6 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                         emit.Line("RPC::Data::Frame::Writer writer(message->Response().Writer());")
                         emit.Line()
 
-                    # emit code to validate the proxy(s)
-                    if proxy_count:
-                        if_proxy_line = "if " + \
-                            ("(" if proxy_count > 1 else "")
-                        c = 0
-                        for p in params:
-                            if p.proxy:
-                                if_proxy_line += "((" + p.name + " == 0) || (" + p.name + "_proxy != %s" % NULLPTR + "))" + (
-                                    " && " if (c != proxy_count - 1) else "")
-                                c += 1
-                        if_proxy_line += (")" if proxy_count > 1 else "") + " {"
-                        emit.Line(if_proxy_line)
-                        emit.IndentInc()
-
                     # emit function call
                     emit.Line("// call implementation")
                     emit.Line("%s* implementation = reinterpret_cast<%s*>(input.Implementation());" %
@@ -905,19 +891,6 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                     emit.Line("RPC::Administrator::Instance().RegisterInterface(channel, %s);" % p.name)
 
                     if proxy_count:
-                        emit.IndentDec()
-                        emit.String(emit.indent + "}")
-                        if isinstance(retval.typename, CppParser.Integer) and retval.typename.type == "uint32_t":
-                            emit.String(" else {")
-                            emit.Line()
-                            emit.IndentInc()
-                            emit.Line("// return error code")
-                            emit.Line("writer.Number<const %s>(Core::ERROR_RPC_CALL_FAILED);" % retval.str_typename)
-                            emit.IndentDec()
-                            emit.Line("}")
-                        else:
-                            emit.Line()
-
                         # emit release proxy call if applicable
                         emit.Line()
                         for p in params:
