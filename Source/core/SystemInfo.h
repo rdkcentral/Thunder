@@ -107,19 +107,6 @@ namespace Core {
             return m_cpuload;
         }
 
-        inline uint64_t GetTotalGpuRam()
-        {
-            UpdateTotalGpuRam();
-            return m_totalgpuram;
-        }
-
-        inline uint64_t GetFreeGpuRam()
-        {
-            UpdateFreeGpuRam();
-            return m_freegpuram;
-        }
-
-/*
         class EXTERNAL MemorySnapshot {
         public:
             MemorySnapshot(const MemorySnapshot& copy) = default;
@@ -186,7 +173,6 @@ namespace Core {
         inline MemorySnapshot TakeMemorySnapshot() const {
             return MemorySnapshot();
         }
-*/
 
         /*
         * Pentium cycle counter
