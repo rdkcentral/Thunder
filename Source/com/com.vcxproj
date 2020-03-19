@@ -21,10 +21,8 @@
   <ItemGroup>
     <ClCompile Include="Administrator.cpp" />
     <ClCompile Include="Communicator.cpp" />
-    <ClCompile Include="IStringIterator.cpp" />
     <ClCompile Include="ITracing.cpp" />
     <ClCompile Include="IUnknown.cpp" />
-    <ClCompile Include="IValueIterator.cpp" />
     <ClCompile Include="Module.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -132,6 +130,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -147,6 +148,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -162,6 +166,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -181,6 +188,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
+    <PreBuildEvent>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
