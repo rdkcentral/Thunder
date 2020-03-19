@@ -21,6 +21,7 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
 add_library(${TARGET} SHARED
         Channel.cpp
+        JSONRPC.cpp
         MetaData.cpp
         Module.cpp
         Service.cpp

@@ -24,6 +24,9 @@
     <ClCompile Include="ITracing.cpp" />
     <ClCompile Include="IUnknown.cpp" />
     <ClCompile Include="Module.cpp" />
+    <ClCompile Include="ProxyStubs_Communicator.cpp" />
+    <ClCompile Include="ProxyStubs_StringIterator.cpp" />
+    <ClCompile Include="ProxyStubs_ValueIterator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Administrator.h" />
@@ -131,7 +134,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -149,7 +152,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -167,7 +170,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -189,7 +192,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::RPC "$(ProjectDir)Communicator.h" "$(ProjectDir)ITracing.h" "$(ProjectDir)IStringIterator.h"  "$(ProjectDir)IValueIterator.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
