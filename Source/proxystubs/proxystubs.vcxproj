@@ -19,11 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\plugins\ProxyStubs_Plugin.cpp" />
-    <ClCompile Include="..\plugins\ProxyStubs_Shell.cpp" />
-    <ClCompile Include="..\plugins\ProxyStubs_StateControl.cpp" />
-    <ClCompile Include="..\plugins\ProxyStubs_SubSystem.cpp" />
     <ClCompile Include="Module.cpp" />
+    <ClCompile Include="ProxyStubs_Shell.cpp" />
+    <ClCompile Include="ProxyStubs_StateControl.cpp" />
+    <ClCompile Include="ProxyStubs_SubSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Module.h" />
@@ -126,7 +125,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -144,7 +143,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -162,7 +161,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -184,7 +183,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace WPEFramework::PluginHost  "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

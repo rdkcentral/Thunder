@@ -188,7 +188,7 @@ namespace ProxyStub {
             }
             else {
 
-                if ( (_mode & CACHING_RELEASE) == 0) {
+                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0) {
 
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());

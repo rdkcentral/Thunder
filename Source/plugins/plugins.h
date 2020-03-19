@@ -31,6 +31,7 @@
 #include "JSONRPC.h"
 #include "Request.h"
 #include "Service.h"
+#include "System.h"
 #include "VirtualInput.h"
 
 #ifdef __WINDOWS__

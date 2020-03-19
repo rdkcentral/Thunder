@@ -18,16 +18,13 @@
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\plugins\ProxyStubs_Plugin.cpp">
+    <ClCompile Include="ProxyStubs_Shell.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\plugins\ProxyStubs_Shell.cpp">
+    <ClCompile Include="ProxyStubs_StateControl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\plugins\ProxyStubs_StateControl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\plugins\ProxyStubs_SubSystem.cpp">
+    <ClCompile Include="ProxyStubs_SubSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

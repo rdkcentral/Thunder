@@ -55,7 +55,7 @@ namespace RPC {
 
             if (implementation != nullptr) {
                 implementation->AddRef();
-                RegisterInterface(channel, implementation, interfaceId);
+                RegisterUnknownInterface(channel, implementation, interfaceId);
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
@@ -210,11 +210,9 @@ namespace RPC {
         return (result);
     }
 
-    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id)
+    void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
         ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
-
-        Core::IUnknown* reference = Convert(impl, id);
 
         if (index == _channelReferenceMap.end()) {
             auto result = _channelReferenceMap.emplace(std::piecewise_construct,

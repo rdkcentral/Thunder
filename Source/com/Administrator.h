@@ -141,7 +141,9 @@ namespace RPC {
         {
             RegisterInterface(channel, reference, ACTUALINTERFACE::ID);
         }
-        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* source, const uint32_t id);
+        void RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, void* source, const uint32_t id) {
+            RegisterUnknownInterface(channel, Convert(source, id), id);
+        }
 
         void UnregisterInterface(Core::ProxyType<Core::IPCChannel>& channel, const Core::IUnknown* source, const uint32_t interfaceId)
         {
@@ -154,8 +156,7 @@ namespace RPC {
                     element++;
                 }
 
-                // Comment this out as long as not all interfaces are generated automagically..
-                // ASSERT(element != index->second.end());
+                ASSERT(element != index->second.end());
 
                 if (element != index->second.end()) {
                     index->second.erase(element);
@@ -176,6 +177,7 @@ namespace RPC {
         // Methods for the Stub Environment
         // ----------------------------------------------------------------------------------------------------
         Core::IUnknown* Convert(void* rawImplementation, const uint32_t id);
+       void RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* source, const uint32_t id);
 
     private:
         // Seems like we have enough information, open up the Process communcication Channel.
