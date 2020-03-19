@@ -31,7 +31,7 @@ function(ProxyStubGenerator)
     endif()
 
     set(optionsArgs SCAN_IDS TRACES OLD_CPP NO_WARNINGS KEEP VERBOSE)
-    set(oneValueArgs INCLUDE NAMESPACE INDENT)
+    set(oneValueArgs INCLUDE NAMESPACE INDENT OUTDIR)
     set(multiValueArgs INPUT)
 
     cmake_parse_arguments(Argument "${optionsArgs}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
@@ -78,6 +78,10 @@ function(ProxyStubGenerator)
 
     if (Argument_INDENT)
         list(APPEND _execute_command  "--indent" "${Argument_INDENT}")
+    endif()
+
+    if (Argument_OUTDIR)
+        list(APPEND _execute_command  "--outdir" "${Argument_OUTDIR}")
     endif()
 
     foreach(_input ${Argument_INPUT})

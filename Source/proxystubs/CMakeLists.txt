@@ -26,13 +26,8 @@ set(PLUGIN_INCLUDES
         )
 
 foreach(file IN LISTS PLUGIN_INCLUDES)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+        ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../${file}" OUTDIR "${CMAKE_CURRENT_SOURCE_DIR}")
 endforeach()
-
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IPlugin.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IShell.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IStateControl.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/ISubSystem.h)
 
 add_library(${TARGET} SHARED
         ProxyStubs_Shell.cpp
