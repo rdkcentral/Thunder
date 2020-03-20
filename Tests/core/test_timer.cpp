@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 #include <core/core.h>
+#include <condition_variable>
+#include <mutex>
 
 namespace WPEFramework {
 namespace Tests {
-
-    int g_done = 0;
 
     class TimeHandler {
     public:
@@ -20,24 +20,35 @@ namespace Tests {
     public:
         uint64_t Timed(const uint64_t scheduledTime)
         {
-            if (!g_done) {
+            if (!_timerDone) {
                 Core::Time nextTick = Core::Time::Now();
                 uint32_t time = 100; // 0.1 second
                 nextTick.Add(time);
-                g_done++;
+                std::unique_lock<std::mutex> lk(_mutex);
+                _timerDone++;
+                _cv.notify_one();
                 return nextTick.Ticks();
             }
-            g_done++;
+            std::unique_lock<std::mutex> lk(_mutex);
+            _timerDone++;
+            _cv.notify_one();
             return 0;
         }
+    public:
+        static int _timerDone;
+        static std::mutex _mutex;
+        static std::condition_variable _cv;
     };
+    int TimeHandler::_timerDone = 0;
+    std::mutex TimeHandler::_mutex;
+    std::condition_variable TimeHandler::_cv;
 
     class WatchDogHandler : Core::WatchDogType<WatchDogHandler&> {
     private:
-        WatchDogHandler& operator=(const WatchDogHandler&) = delete;
-
         typedef Core::WatchDogType<WatchDogHandler&> BaseClass;
+
     public:
+        WatchDogHandler& operator=(const WatchDogHandler&) = delete;
         WatchDogHandler()
             : BaseClass(Core::Thread::DefaultStackSize(), _T("WatchDogTimer"), *this)
             , _event(false, false)
@@ -72,8 +83,12 @@ namespace Tests {
         Core::Time nextTick = Core::Time::Now();
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        sleep(2);
-        while(!(g_done == 2));
+        TimeHandler handler;
+        std::unique_lock<std::mutex> lk(handler._mutex);
+        while(!(handler._timerDone == 2))
+        {
+            handler._cv.wait(lk);
+        }
     }
 
     TEST(Core_Timer, QueuedTimer)
@@ -90,8 +105,12 @@ namespace Tests {
 
         nextTick.Add(3 * time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        sleep(2);
-        while(!(g_done == 5));
+        TimeHandler handler;
+        std::unique_lock<std::mutex> lk(handler._mutex);
+        while(!(handler._timerDone == 5))
+        {
+            handler._cv.wait(lk);
+        }
     }
 
     TEST(Core_Timer, PastTime)
@@ -102,8 +121,12 @@ namespace Tests {
         Core::Time pastTime = Core::Time::Now();
         pastTime.Sub(time);
         timer.Schedule(pastTime.Ticks(), TimeHandler());
-        sleep(2);
-        while(!(g_done == 6));
+        TimeHandler handler;
+        std::unique_lock<std::mutex> lk(handler._mutex);
+        while(!(handler._timerDone == 6))
+        {
+            handler._cv.wait(lk);
+        }
     }
 
     TEST(Core_Timer, WatchDogType)
