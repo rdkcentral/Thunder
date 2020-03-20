@@ -113,13 +113,14 @@ namespace PluginHost {
             {
                 _parent.RepeatKey(_code);
 
-                ASSERT(_nextSlot.IsValid());
-
                 _adminLock.Lock();
 
-                _nextSlot.Add(_intervalTime);
-
                 if(_code != static_cast<uint32_t>(~0)) {
+
+                    ASSERT(_nextSlot.IsValid());
+
+                    _nextSlot.Add(_intervalTime);
+
                     Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
                 }
  
