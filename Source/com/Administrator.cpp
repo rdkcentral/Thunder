@@ -202,9 +202,9 @@ namespace RPC {
                 } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
-                _adminLock.Unlock();
             }
-
+		
+            _adminLock.Unlock();
         }
 
         return (result);
