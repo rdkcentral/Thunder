@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+// event codes can be found here: https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+
 #ifndef __VIRTUAL_INPUT__
 #define __VIRTUAL_INPUT__
 
@@ -53,7 +55,7 @@ namespace PluginHost {
                 , _adminLock()
                 , _startTime(0)
                 , _intervalTime(0)
-                , _code(0)
+                , _code(~0)
                 , _nextSlot()
                 , _job()
             {
@@ -73,6 +75,7 @@ namespace PluginHost {
 
             void DropReference()
             {
+                Reset();
                 _job.Release();
             }
             void Interval(const uint16_t startTime, const uint16_t intervalTime)
@@ -82,25 +85,27 @@ namespace PluginHost {
             }
             void Arm(const uint16_t code)
             {
-                if (_startTime != 0) {
-                    _adminLock.Lock();
+                ASSERT(_code == static_cast<uint32_t>(~0));
 
+                if (_startTime != 0) {
+      
                     _nextSlot = Core::Time::Now().Add(_startTime);
 
+                    _adminLock.Lock();
+
                     _code = code;
-                    Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
 
                     _adminLock.Unlock();
+
+                    Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
                 }
             }
             void Reset()
             {
                 _adminLock.Lock();
-
-                _nextSlot = Core::Time();
-                Core::WorkerPool::Instance().Revoke(_job);
-
+                _code = ~0;
                 _adminLock.Unlock();
+                Core::WorkerPool::Instance().Revoke(_job);
             }
 
         private:
@@ -110,15 +115,17 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                if (_nextSlot.IsValid() == true) {
+                if(_code != static_cast<uint32_t>(~0)) {
+
+                    ASSERT(_nextSlot.IsValid());
 
                     _nextSlot.Add(_intervalTime);
 
-                    // Let's schedule ourselves for the retrigger..
                     Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
                 }
-
+ 
                 _adminLock.Unlock();
+
             }
 
         private:
