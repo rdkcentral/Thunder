@@ -3,32 +3,39 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 #include <websocket/websocket.h>
+#include <condition_variable>
+#include <mutex>
 
 namespace WPEFramework {
 namespace Tests {
 
-namespace StreamJsonTest {
-    typedef enum {
-        ExecuteShell,
-        WiFiSettings,
-        FanControl,
-        PlayerControl
-    } CommandType;
+    enum class CommandType {
+        EXECUTESHELL,
+        WIFISETTINGS,
+        FANCONTROL,
+        PLAYERCONTROL
+    };
 
     class Parameters : public Core::JSON::Container {
-    private:
-        Parameters(const Parameters&);
-        Parameters& operator=(const Parameters&);
+    public:
+        Parameters(const Parameters&) = delete;
+        Parameters& operator=(const Parameters&) = delete;
 
     public:
         Parameters()
+            : Core::JSON::Container()
+            , Speed(0)
+            , Duration(0)
+            , Command()
+            , Settings()
         {
             Add(_T("speed"), &Speed);
             Add(_T("duration"), &Duration);
             Add(_T("command"), &Command);
             Add(_T("settings"), &Settings);
         }
-        ~Parameters()
+
+       ~Parameters()
         {
         }
 
@@ -40,12 +47,18 @@ namespace StreamJsonTest {
     };
 
     class Command : public Core::JSON::Container {
-    private:
-        Command(const Command&);
-        Command& operator=(const Command&);
+    public:
+        Command(const Command&) = delete;
+        Command& operator=(const Command&) = delete;
 
     public:
         Command()
+            : Core::JSON::Container()
+            , Identifier(0)
+            , Name()
+            , BaseAddress(0)
+            , TrickFlag(false)
+            , Params()
         {
             Add(_T("id"), &Identifier);
             Add(_T("name"), &Name);
@@ -53,9 +66,11 @@ namespace StreamJsonTest {
             Add(_T("trickFlag"), &TrickFlag);
             Add(_T("parameters"), &Params);
         }
+
         ~Command()
         {
         }
+
     public:
         Core::JSON::DecUInt32 Identifier;
         Core::JSON::String Name;
@@ -65,24 +80,25 @@ namespace StreamJsonTest {
     };
 
     const TCHAR* g_connector = "/tmp/wpestreamjson0";
-    bool g_done = false;
-} // StreamJsonTest
 
-    class JSONObjectFactory : public Core::ProxyPoolType<StreamJsonTest::Command> {
-    private:
+    class JSONObjectFactory : public Core::ProxyPoolType<Command> {
+    public:
         JSONObjectFactory() = delete;
         JSONObjectFactory(const JSONObjectFactory&) = delete;
         JSONObjectFactory& operator= (const JSONObjectFactory&) = delete;
 
     public:
-        JSONObjectFactory(const uint32_t number) : Core::ProxyPoolType<StreamJsonTest::Command>(number) {
+        JSONObjectFactory(const uint32_t number) : Core::ProxyPoolType<Command>(number)
+        {
         }
-        virtual ~JSONObjectFactory() {
+        virtual ~JSONObjectFactory()
+        {
         }
 
     public:
-        Core::ProxyType<Core::JSON::IElement> Element(const string&) {
-            return (Core::proxy_cast<Core::JSON::IElement>(Core::ProxyPoolType<StreamJsonTest::Command>::Element()));
+        Core::ProxyType<Core::JSON::IElement> Element(const string&)
+        {
+            return (Core::proxy_cast<Core::JSON::IElement>(Core::ProxyPoolType<Command>::Element()));
         }
     };
 
@@ -91,9 +107,10 @@ namespace StreamJsonTest {
     private:
         typedef Core::StreamJSONType<Core::SocketStream, JSONObjectFactory&, INTERFACE> BaseClass;
 
-        JSONConnector();
-        JSONConnector(const JSONConnector& copy);
-        JSONConnector& operator=(const JSONConnector&);
+    public:
+        JSONConnector() = delete;
+        JSONConnector(const JSONConnector& copy) = delete;
+        JSONConnector& operator=(const JSONConnector&) = delete;
 
     public:
         JSONConnector(const Core::NodeId& remoteNode)
@@ -103,6 +120,7 @@ namespace StreamJsonTest {
             , _objectFactory(1)
         {
         }
+
         JSONConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONConnector<INTERFACE>>*)
             : BaseClass(5, _objectFactory, false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
@@ -110,6 +128,7 @@ namespace StreamJsonTest {
             , _objectFactory(1)
         {
         }
+
         virtual ~JSONConnector()
         {
         }
@@ -127,44 +146,75 @@ namespace StreamJsonTest {
                 _dataPending.Unlock();
             }
         }
+
         virtual void Send(Core::ProxyType<Core::JSON::IElement>& newElement)
         {
         }
+
         virtual void StateChange()
         {
             if (this->IsOpen()) {
-                if (_serverSocket)
-                    StreamJsonTest::g_done = true;
+                if (_serverSocket) {
+                    std::unique_lock<std::mutex> lk(_mutex);
+                    _done = true;
+                    _cv.notify_one();
+                 }
             }
         }
+
         virtual bool IsIdle() const
         {
             return (true);
         }
+
         int Wait() const
         {
             return _dataPending.Lock();
         }
+
         void Retrieve(string& text)
         {
             text = _dataReceived;
             _dataReceived.clear();
         }
+
+        bool GetState()
+        {
+            return _done;
+        }
+
     private:
         bool _serverSocket;
         string _dataReceived;
         mutable Core::Event _dataPending;
         JSONObjectFactory _objectFactory;
+        static bool _done;
+
+    public:
+        static std::mutex _mutex;
+        static std::condition_variable _cv;
     };
+
+    template<typename INTERFACE>
+    std::mutex JSONConnector<INTERFACE>::_mutex;
+    template<typename INTERFACE>
+    std::condition_variable JSONConnector<INTERFACE>::_cv;
+    template<typename INTERFACE>
+    bool JSONConnector<INTERFACE>::_done = false;
 
     TEST(Core_Socket, StreamJSON)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(StreamJsonTest::g_connector));
+            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(Tests::g_connector));
             jsonSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
-            sleep(2);
-            while(!StreamJsonTest::g_done);
+            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(Tests::g_connector));
+            std::unique_lock<std::mutex> lk(jsonSocketClient._mutex);
+            while(!jsonSocketClient.GetState())
+            {
+                jsonSocketClient._cv.wait(lk);
+            }
+
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");
         };
@@ -172,14 +222,14 @@ namespace StreamJsonTest {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            Core::ProxyType<StreamJsonTest::Command> sendObject = Core::ProxyType<StreamJsonTest::Command>::Create();
+            Core::ProxyType<Command> sendObject = Core::ProxyType<Command>::Create();
             sendObject->Identifier = 1;
             sendObject->Name = _T("TestCase");
             sendObject->Params.Duration = 100;
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(StreamJsonTest::g_connector));
+            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(Tests::g_connector));
             jsonSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             jsonSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
@@ -189,16 +239,16 @@ namespace StreamJsonTest {
             EXPECT_STREQ(sendString.c_str(), received.c_str());
             jsonSocketClient.Close(Core::infinite);
             testAdmin.Sync("client done");
-        }
-        Core::Singleton::Dispose();
+       }
+       Core::Singleton::Dispose();
     }
 } // Tests
 
-ENUM_CONVERSION_BEGIN(Tests::StreamJsonTest::CommandType)
-    { Tests::StreamJsonTest::ExecuteShell, _TXT("ExecuteShell") },
-    { Tests::StreamJsonTest::WiFiSettings, _TXT("WiFiSettings") },
-    { Tests::StreamJsonTest::FanControl, _TXT("FanControl") },
-    { Tests::StreamJsonTest::PlayerControl, _TXT("PlayerControl") },
-ENUM_CONVERSION_END(Tests::StreamJsonTest::CommandType)
+ENUM_CONVERSION_BEGIN(Tests::CommandType)
+    { Tests::CommandType::EXECUTESHELL, _TXT("ExecuteShell") },
+    { Tests::CommandType::WIFISETTINGS, _TXT("WiFiSettings") },
+    { Tests::CommandType::FANCONTROL, _TXT("FanControl") },
+    { Tests::CommandType::PLAYERCONTROL, _TXT("PlayerControl") },
+ENUM_CONVERSION_END(Tests::CommandType)
 
 } // WPEFramework

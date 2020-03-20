@@ -3,24 +3,23 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 #include <websocket/websocket.h>
+#include <condition_variable>
+#include <mutex>
 
 namespace WPEFramework {
 namespace Tests {
 
-namespace StreamTextTest {
-    const TCHAR* g_connector = "/tmp/wpestreamtext0";
-    bool g_done = false;
-} // StreamTextTest 
+    const TCHAR* g_streamTextConnector = "/tmp/wpestreamtext0";
 
     class TextConnector : public Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> {
     private:
         typedef Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> BaseClass;
 
-        TextConnector();
-        TextConnector(const TextConnector& copy);
-        TextConnector& operator=(const TextConnector&);
-
     public:
+        TextConnector() = delete;
+        TextConnector(const TextConnector& copy) = delete;
+        TextConnector& operator=(const TextConnector&) = delete;
+
         TextConnector(const WPEFramework::Core::NodeId& remoteNode)
             : BaseClass(false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _serverSocket(false)
@@ -33,6 +32,7 @@ namespace StreamTextTest {
             , _dataPending(false, false)
         {
         }
+
         virtual ~TextConnector()
         {
         }
@@ -47,40 +47,65 @@ namespace StreamTextTest {
                 _dataPending.Unlock();
             }
         }
+
         int Wait() const
         {
             return _dataPending.Lock();
         }
+
         void Retrieve(string& text)
         {
             text = _dataReceived;
             _dataReceived.clear();
         }
+
         virtual void Send(const string& text)
         {
         }
+
         virtual void StateChange()
         {
             if (IsOpen()) {
-                if (_serverSocket)
-                    StreamTextTest::g_done = true;
+                if (_serverSocket) {
+                    std::unique_lock<std::mutex> lk(_mutex);
+                    _done = true;
+                    _cv.notify_one();
+                }
             }
+        }
+
+        bool GetState()
+        {
+            return _done;
         }
 
     private:
         bool _serverSocket;
         string _dataReceived;
         mutable WPEFramework::Core::Event _dataPending;
+        static bool _done;
+
+    public:
+        static std::mutex _mutex;
+        static std::condition_variable _cv;
     };
+
+    std::mutex TextConnector::_mutex;
+    std::condition_variable TextConnector::_cv;
+    bool TextConnector::_done = false;
 
     TEST(Core_Socket, StreamText)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(StreamTextTest::g_connector));
+            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(Tests::g_streamTextConnector));
             textSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
-            sleep(2);
-            while(!StreamTextTest::g_done);
+            TextConnector textSocketClient(Core::NodeId(Tests::g_streamTextConnector));
+            std::unique_lock<std::mutex> lk(textSocketClient._mutex);
+            while(!textSocketClient.GetState())
+            {
+                textSocketClient._cv.wait(lk);
+            }
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");
         };
@@ -88,7 +113,7 @@ namespace StreamTextTest {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            TextConnector textSocketClient(Core::NodeId(StreamTextTest::g_connector));
+            TextConnector textSocketClient(Core::NodeId(Tests::g_streamTextConnector));
             textSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             string message = "hello";

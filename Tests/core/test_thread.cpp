@@ -3,21 +3,25 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 #include <thread>
+#include <chrono>
+#include <condition_variable>
+#include <mutex>
 
 namespace WPEFramework {
 namespace Tests {
 
-    bool g_threadDone = false;
-    std::thread::id g_parentTid;
-
     class ThreadClass : public Core::Thread {
-    private:
+    public:
+        ThreadClass() = delete;
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-    public:
-        ThreadClass()
+        ThreadClass(bool* threadDone, std::mutex* mutex,std::condition_variable* cv, std::thread::id parentTid)
             : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
+            , _done(threadDone)
+            , _threadMutex(mutex)
+            , _threadCV(cv)
+            , _parentTid(parentTid)
         {
         }
 
@@ -27,20 +31,27 @@ namespace Tests {
 
         virtual uint32_t Worker() override
         {
-            while (IsRunning() && (!g_threadDone)) {
-                EXPECT_NE(g_parentTid, std::this_thread::get_id());
-                g_threadDone = true;
+            while (IsRunning() && (!*_done)) {
+                EXPECT_NE(_parentTid, std::this_thread::get_id());
+                std::unique_lock<std::mutex> lk(*_threadMutex);
+                *_done = true;
+                _threadCV->notify_one();
             }
             return (Core::infinite);
         }
+
+    private :
+        bool* _done;
+        std::mutex* _threadMutex;
+        std::condition_variable* _threadCV;
+        std::thread::id _parentTid;
     };
 
     class Job : public Core::IDispatch {
-    private:
+    public:
         Job(const Job&) = delete;
         Job& operator=(const Job&) = delete;
 
-    public:
         Job()
         {
         }
@@ -49,20 +60,45 @@ namespace Tests {
         }
         virtual void Dispatch() override
         {
-            EXPECT_NE(g_parentTid, std::this_thread::get_id());
-            g_threadDone = true;
+            EXPECT_NE(_parentTPid, std::this_thread::get_id());
+            std::unique_lock<std::mutex> lk(_mutex);
+            _threadDone = true;
+            _cv.notify_one();
         }
+        bool GetState()
+        {
+            return _threadDone;
+        }
+
+    private:
+        static bool _threadDone;
+        static std::thread::id _parentTPid;
+
+    public:
+        static std::mutex _mutex;
+        static std::condition_variable _cv;
     };
+
+    bool Job::_threadDone = false;
+    std::mutex Job::_mutex;
+    std::condition_variable Job::_cv;
+    std::thread::id Job::_parentTPid = std::this_thread::get_id();
 
     TEST(Core_Thread, SimpleThread)
     {
-        g_parentTid = std::this_thread::get_id();
-        g_threadDone = false;
-        ThreadClass object;
+        std::thread::id parentTid = std::this_thread::get_id();
+        bool threadDone = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+
+        ThreadClass object(&threadDone, &mutex, &cv, parentTid);
         object.Run();
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
-        sleep(2);
-        while(!g_threadDone);
+        std::unique_lock<std::mutex> lk(mutex);
+        while(!threadDone)
+        {
+            cv.wait(lk);
+        }
         object.Stop();
         EXPECT_EQ(object.State(), Core::Thread::STOPPING);
         object.Wait(Core::Thread::BLOCKED | Core::Thread::STOPPED | Core::Thread::STOPPING, Core::infinite);
@@ -70,13 +106,16 @@ namespace Tests {
 
     TEST(Core_Thread, ThreadPool)
     {
-        g_parentTid = std::this_thread::get_id();
-        g_threadDone = false;
         Core::ProxyType<Core::IDispatch> job(Core::ProxyType<Job>::Create());
         Core::ThreadPoolType<Core::Job, 1> executor(0, _T("TestPool"));
         executor.Submit(Core::Job(job), Core::infinite);
-        sleep(2);
-        while(!g_threadDone);
+
+        Job jobs;
+        std::unique_lock<std::mutex> lk(jobs._mutex);
+        while(!jobs.GetState())
+        {
+            jobs._cv.wait(lk);
+        }
         Core::Singleton::Dispose();
     }
 } // Tests

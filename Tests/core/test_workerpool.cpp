@@ -9,59 +9,54 @@ using namespace WPEFramework::Core;
 
 #define THREADPOOL_COUNT 4
 
-static std::thread::id g_parentworkerId;
-static bool g_workerthreadDone = false;
-
 class WorkerPoolImplementation : public Core::WorkerPool {
-    public:
-        WorkerPoolImplementation() = delete;
-        WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
-        WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
+public:
+    WorkerPoolImplementation() = delete;
+    WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
+    WorkerPoolImplementation& operator=(const WorkerPoolImplementation&) = delete;
 
-        WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
-            : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
-            , _minions()
-        {
-            for (uint8_t index = 1; index < threads; index++) {
-                _minions.emplace_back();
-            }
-
+    WorkerPoolImplementation(const uint8_t threads, const uint32_t stackSize)
+        : WorkerPool(threads, reinterpret_cast<uint32_t*>(::malloc(sizeof(uint32_t) * threads)))
+        , _minions()
+    {
+        for (uint8_t index = 1; index < threads; index++) {
+            _minions.emplace_back();
         }
-        ~WorkerPoolImplementation()
-        {
-            // Diable the queue so the minions can stop, even if they are processing and waiting for work..
-            Stop();
-        }
-     public:
-        void Run() {
+    }
+    ~WorkerPoolImplementation()
+    {
+        // Diable the queue so the minions can stop, even if they are processing and waiting for work..
+        Stop();
+    }
+public:
+    void Run() {
+        Core::WorkerPool::Run();
+        Core::WorkerPool::Join();
+    }
+    void Stop() {
+        Core::WorkerPool::Stop();
+    }
 
-            Core::WorkerPool::Run();
-            Core::WorkerPool::Join();
-        }
-        void Stop() {
-            Core::WorkerPool::Stop();
-        }
+protected:
+    virtual Core::WorkerPool::Minion& Index(const uint8_t index) override {
+        uint8_t count = index;
+        std::list<Core::WorkerPool::Minion>::iterator element (_minions.begin());
 
-    protected:
-        virtual Core::WorkerPool::Minion& Index(const uint8_t index) override {
-            uint8_t count = index;
-            std::list<Core::WorkerPool::Minion>::iterator element (_minions.begin());
-
-            while ((element != _minions.end()) && (count > 1)) {
-                count--;
-                element++;
-            }
-
-            ASSERT (element != _minions.end());
-
-            return (*element);
+        while ((element != _minions.end()) && (count > 1)) {
+            count--;
+            element++;
         }
 
-        virtual bool Running() override {
-            return true;
-        }
-    private:
-        std::list<Core::WorkerPool::Minion> _minions;
+        ASSERT (element != _minions.end());
+
+        return (*element);
+    }
+
+    virtual bool Running() override {
+        return true;
+    }
+private:
+    std::list<Core::WorkerPool::Minion> _minions;
 };
 class WorkerPoolTypeImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
 public:
@@ -82,13 +77,15 @@ public:
 Core::ProxyType<WorkerPoolImplementation> workerpool = Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize());
 
 class WorkerThreadClass : public Core::Thread {
-private:
+public:
+    WorkerThreadClass() = delete;
     WorkerThreadClass(const WorkerThreadClass&) = delete;
     WorkerThreadClass& operator=(const WorkerThreadClass&) = delete;
 
-public:
-    WorkerThreadClass()
+    WorkerThreadClass(std::thread::id parentworkerId ,bool threadDone)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
+        , _parentworkerId(parentworkerId)
+        , _threadDone(threadDone)
     {
     }
 
@@ -98,22 +95,25 @@ public:
 
     virtual uint32_t Worker() override
     {
-        while (IsRunning() && (!g_workerthreadDone)) {
-            EXPECT_TRUE(g_parentworkerId != std::this_thread::get_id());
+        while (IsRunning() && (!_threadDone)) {
+            EXPECT_TRUE(_parentworkerId != std::this_thread::get_id());
             ::SleepMs(250);
-            g_workerthreadDone = true;
+            _threadDone = true;
             workerpool->Stop();
         }
         return (Core::infinite);
     }
+
+private:
+    std::thread::id _parentworkerId;
+    bool _threadDone;
 };
 
 class WorkerJob : public Core::IDispatch {
-private:
+public:
     WorkerJob(const WorkerJob&) = delete;
     WorkerJob& operator=(const WorkerJob&) = delete;
 
-public:
     WorkerJob()
     {
     }
@@ -122,13 +122,17 @@ public:
     }
     virtual void Dispatch() override
     {
-        EXPECT_NE(g_parentworkerId, std::this_thread::get_id());
-        g_workerthreadDone = true;
+        EXPECT_NE(_parentJobId, std::this_thread::get_id());
     }
+
+public:
+    static std::thread::id _parentJobId;
 };
+std::thread::id WorkerJob::_parentJobId;
+
 TEST(test_workerpool, simple_workerpool)
 {
-    WorkerThreadClass object;
+    WorkerThreadClass object(std::this_thread::get_id(),false);
     object.Run();
     workerpool->Run();
     workerpool->Id(0);
