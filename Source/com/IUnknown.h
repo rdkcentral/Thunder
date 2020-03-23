@@ -295,7 +295,7 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // This method should only be called from the administrator from stub implementation methods
         // It should be called through the Administrator::Release(ProxyStub*, Message::Response) !!
-	// Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
+	    // Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* QueryInterface() const
         {
@@ -309,7 +309,7 @@ namespace ProxyStub {
         }
         inline void Complete(RPC::Data::Output& response) 
         {
-            _parent.Release();
+            uint32_t result = Release();
 
             _adminLock.Lock();
 
@@ -334,6 +334,9 @@ namespace ProxyStub {
 
             _adminLock.Unlock();
 
+            if (result != Core::ERROR_NONE) {
+                delete &_parent;
+            }
         }
 
     private:
