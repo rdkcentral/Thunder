@@ -241,12 +241,12 @@ public:
         vc_dispmanx_rect_set(&(surface->rectangle), 0, 0, displayWidth, displayHeight);
         vc_dispmanx_rect_set(&srcRect, 0, 0, displayWidth << 16, displayHeight << 16);
         surface->layer = 0;
-        surface->opacity = 0;
+        surface->opacity = 255;
 
         VC_DISPMANX_ALPHA_T alpha = {
             static_cast<DISPMANX_FLAGS_ALPHA_T>(DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_MIX),
-            255,
-            surface->opacity
+            surface->opacity,
+            255
         };
 
         DISPMANX_DISPLAY_HANDLE_T dispmanDisplay = vc_dispmanx_display_open(0);
