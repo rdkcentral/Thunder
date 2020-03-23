@@ -85,7 +85,7 @@ namespace PluginHost {
             }
             void Arm(const uint16_t code)
             {
-                ASSERT(_code == static_cast<uint32_t>(~0));
+                ASSERT(_code == static_cast<uint16_t>(~0));
 
                 if (_startTime != 0) {
       
@@ -115,7 +115,7 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                if(_code != static_cast<uint32_t>(~0)) {
+                if(_code != static_cast<uint16_t>(~0)) {
 
                     ASSERT(_nextSlot.IsValid());
 
