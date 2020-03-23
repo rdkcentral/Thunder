@@ -18,11 +18,11 @@ namespace TextWebLinkTest {
     private:
         typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > BaseClass;
 
-        WebServer();
-        WebServer(const WebServer& copy);
-        WebServer& operator=(const WebServer&);
-
     public:
+        WebServer() = delete;
+        WebServer(const WebServer& copy) = delete;
+        WebServer& operator=(const WebServer&) = delete;
+
         WebServer(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<WebServer>*)
             : BaseClass(5, false, connector, remoteId, 2048, 2048)
         {
