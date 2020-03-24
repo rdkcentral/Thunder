@@ -9,17 +9,14 @@
 namespace WPEFramework {
 namespace Tests {
 
-    bool g_webSocketDone = false;
-    const TCHAR* g_webSocketConnector = "/tmp/wpewebsockettext0";
-
-    std::mutex g_webSocketMutex;
-    std::condition_variable g_webSocketCV;
+    const TCHAR* g_socketConnector = "/tmp/wpewebsockettext0";
 
     class TextSocketServer : public Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
     private:
         typedef Core::StreamTextType<Web::WebSocketServerType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
 
     public:
+        TextSocketServer() = delete;
 	    TextSocketServer(const TextSocketServer&) = delete;
 	    TextSocketServer& operator=(const TextSocketServer&) = delete;
 
@@ -27,6 +24,7 @@ namespace Tests {
             : BaseClass(false, true, false, socket, remoteNode, 1024, 1024)
         {
         }
+
         virtual ~TextSocketServer()
         {
         }
@@ -35,9 +33,9 @@ namespace Tests {
 	    virtual void StateChange()
         {
 		    if (IsOpen()) {
-                std::unique_lock<std::mutex> lk(g_webSocketMutex);
-                g_webSocketDone = true;
-                g_webSocketCV.notify_one();
+                std::unique_lock<std::mutex> lk(_mutex);
+                _done = true;
+                _cv.notify_one();
             }
         }
 
@@ -45,16 +43,34 @@ namespace Tests {
         {
             Submit(text);
         }
+
         virtual void Send(const string& text)
         {
         }
+
+        static bool GetState()
+        {
+            return _done;
+        }
+
+    private:
+        static bool _done;
+
+    public:
+        static std::mutex _mutex;
+        static std::condition_variable _cv;
     };
+
+    bool TextSocketServer::_done = false;
+    std::mutex TextSocketServer::_mutex;
+    std::condition_variable TextSocketServer::_cv;
 
     class TextSocketClient : public Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> {
     private:
 		typedef Core::StreamTextType<Web::WebSocketClientType<Core::SocketStream>, Core::TerminatorCarriageReturn> BaseClass;
 
     public:
+        TextSocketClient() = delete;
 	    TextSocketClient(const TextSocketClient&) = delete;
         TextSocketClient& operator=(const TextSocketClient&) = delete;
 
@@ -102,13 +118,12 @@ namespace Tests {
     TEST(WebSocket, Text)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextSocketServer> textWebSocketServer(Core::NodeId(Tests::g_webSocketConnector));
+            Core::SocketServerType<TextSocketServer> textWebSocketServer(Core::NodeId(Tests::g_socketConnector));
             textWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
-            std::unique_lock<std::mutex> lk(g_webSocketMutex);
-            while(!g_webSocketDone)
-            {
-                g_webSocketCV.wait(lk);
+            std::unique_lock<std::mutex> lk(TextSocketServer::_mutex);
+            while(!TextSocketServer::GetState()) {
+                TextSocketServer::_cv.wait(lk);
             }
 
             testAdmin.Sync("server open");
@@ -118,7 +133,7 @@ namespace Tests {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            TextSocketClient textWebSocketClient(Core::NodeId(Tests::g_webSocketConnector));
+            TextSocketClient textWebSocketClient(Core::NodeId(Tests::g_socketConnector));
             textWebSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             string sentString = "Test String";

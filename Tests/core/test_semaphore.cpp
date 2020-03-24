@@ -8,18 +8,18 @@ using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
 int g_shared = 1;
-bool g_threadCritDone = false;
-static std::thread::id g_parentId;
-Core::CriticalSection lock;
 
 class ThreadClass : public Core::Thread {
-private:
+public:
+    ThreadClass() = delete;
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
-public:
-    ThreadClass()
+    ThreadClass(Core::CriticalSection* lock,std::thread::id parentId)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
+        , _lock(lock)
+        , _parentId(parentId)
+        , _done(false)
     {
     }
 
@@ -29,22 +29,30 @@ public:
 
     virtual uint32_t Worker() override
     {
-        while (IsRunning() && (!g_threadCritDone)) {
-            EXPECT_TRUE(g_parentId != std::this_thread::get_id());
-            g_threadCritDone = true;
-            lock.Lock();
+        while (IsRunning() && (!_done)) {
+            EXPECT_TRUE(_parentId != std::this_thread::get_id());
+            _done = true;
+            _lock->Lock();
             g_shared++;
-            lock.Unlock();
+            _lock->Unlock();
             ::SleepMs(50);
         }
         return (Core::infinite);
     }
+
+private:
+    Core::CriticalSection* _lock;
+    std::thread::id _parentId;
+    bool _done;
 };
 
 
 TEST(test_criticalsection, simple_criticalsection)
 {
-    ThreadClass object;
+    Core::CriticalSection lock;
+    std::thread::id parentId;
+
+    ThreadClass object(&lock,parentId);
     object.Run();
     lock.Lock();
     g_shared++;

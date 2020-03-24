@@ -34,11 +34,20 @@ namespace Tests {
             _cv.notify_one();
             return 0;
         }
-    public:
+
+        static int GetCount()
+        {
+            return _timerDone;
+        }
+
+    private:
         static int _timerDone;
+
+    public:
         static std::mutex _mutex;
         static std::condition_variable _cv;
     };
+
     int TimeHandler::_timerDone = 0;
     std::mutex TimeHandler::_mutex;
     std::condition_variable TimeHandler::_cv;
@@ -83,11 +92,9 @@ namespace Tests {
         Core::Time nextTick = Core::Time::Now();
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        TimeHandler handler;
-        std::unique_lock<std::mutex> lk(handler._mutex);
-        while(!(handler._timerDone == 2))
-        {
-            handler._cv.wait(lk);
+        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
+        while(!(TimeHandler::GetCount() == 2)) {
+            TimeHandler::_cv.wait(lk);
         }
     }
 
@@ -105,11 +112,9 @@ namespace Tests {
 
         nextTick.Add(3 * time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
-        TimeHandler handler;
-        std::unique_lock<std::mutex> lk(handler._mutex);
-        while(!(handler._timerDone == 5))
-        {
-            handler._cv.wait(lk);
+        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
+        while(!(TimeHandler::GetCount() == 5)) {
+            TimeHandler::_cv.wait(lk);
         }
     }
 
@@ -121,11 +126,9 @@ namespace Tests {
         Core::Time pastTime = Core::Time::Now();
         pastTime.Sub(time);
         timer.Schedule(pastTime.Ticks(), TimeHandler());
-        TimeHandler handler;
-        std::unique_lock<std::mutex> lk(handler._mutex);
-        while(!(handler._timerDone == 6))
-        {
-            handler._cv.wait(lk);
+        std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
+        while(!(TimeHandler::GetCount() == 6)) {
+            TimeHandler::_cv.wait(lk);
         }
     }
 

@@ -25,27 +25,28 @@
 namespace WPEFramework {
 namespace Tests {
 
-    const uint32_t g_bufferSize = 8 * 1024;
-    const uint16_t g_administrationSize = 64;
-    const char g_bufferName[] = "testbuffer01";
 
-    void CleanUpBuffer()
+    void CleanUpBuffer(char bufferName[])
     {
        // TODO: shouldn't this be done producer-side?
        char systemCmd[1024];
-       sprintf(systemCmd, "rm -f %s", g_bufferName);
+       sprintf(systemCmd, "rm -f %s", bufferName);
        system(systemCmd);
-       sprintf(systemCmd, "rm -f %s.admin", g_bufferName);
+       sprintf(systemCmd, "rm -f %s.admin", bufferName);
        system(systemCmd);
     }
 
     TEST(Core_SharedBuffer, simpleSet)
     {
        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-           CleanUpBuffer();
+           char bufferName[] = "testbuffer01";
+           CleanUpBuffer(bufferName);
 
+           uint16_t administrationSize = 64;
+           uint32_t bufferSize = 8 * 1024;
            uint32_t result;
-           Core::SharedBuffer buff01(g_bufferName,
+
+           Core::SharedBuffer buff01(bufferName,
                Core::File::USER_READ    |
                Core::File::USER_WRITE   |
                Core::File::USER_EXECUTE |
@@ -53,8 +54,8 @@ namespace Tests {
                Core::File::GROUP_WRITE  |
                Core::File::OTHERS_READ  |
                Core::File::OTHERS_WRITE,
-               g_bufferSize,
-               g_administrationSize);
+               bufferSize,
+               administrationSize);
            result = buff01.RequestProduce(Core::infinite);
            EXPECT_EQ(result, Core::ERROR_NONE);
 
@@ -63,8 +64,7 @@ namespace Tests {
            testAdmin.Sync("setup consumer");
 
            uint8_t * buffer = buff01.Buffer();
-           uint64_t bufferSize = buff01.Size();
-           EXPECT_EQ(bufferSize, g_bufferSize);
+           EXPECT_EQ(buff01.Size(), bufferSize);
 
            buffer[0] = 42;
            buffer[1] = 43;
@@ -83,8 +83,10 @@ namespace Tests {
            // In extra scope, to make sure "buff01" is destructed before producer.
            testAdmin.Sync("setup producer");
 
+           char bufferName[] = "testbuffer01";
+           uint32_t bufferSize = 8 * 1024;
            uint32_t result;
-           Core::SharedBuffer buff01(g_bufferName);
+           Core::SharedBuffer buff01(bufferName);
 
            testAdmin.Sync("setup consumer");
 
@@ -92,8 +94,7 @@ namespace Tests {
            EXPECT_EQ(result, Core::ERROR_NONE);
 
            uint8_t * buffer = buff01.Buffer();
-           uint64_t bufferSize = buff01.Size();
-           EXPECT_EQ(bufferSize, g_bufferSize);
+           EXPECT_EQ(buff01.Size(), bufferSize);
 
            EXPECT_EQ(buffer[0], 42);
            EXPECT_EQ(buffer[1], 43);

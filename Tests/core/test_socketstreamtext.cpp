@@ -74,7 +74,7 @@ namespace Tests {
             }
         }
 
-        bool GetState()
+        static bool GetState()
         {
             return _done;
         }
@@ -100,11 +100,10 @@ namespace Tests {
             Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(Tests::g_streamTextConnector));
             textSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
-            TextConnector textSocketClient(Core::NodeId(Tests::g_streamTextConnector));
-            std::unique_lock<std::mutex> lk(textSocketClient._mutex);
-            while(!textSocketClient.GetState())
+            std::unique_lock<std::mutex> lk(TextConnector::_mutex);
+            while(!TextConnector::GetState())
             {
-                textSocketClient._cv.wait(lk);
+                TextConnector::_cv.wait(lk);
             }
             testAdmin.Sync("server open");
             testAdmin.Sync("client done");

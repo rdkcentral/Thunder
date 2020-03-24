@@ -25,8 +25,6 @@
 #include <com/com.h>
 #include <core/Portability.h>
 
-static string g_connectorName = _T("/tmp/wperpc01");
-
 namespace WPEFramework {
 namespace Exchange {
     struct IAdder : virtual public Core::IUnknown {
@@ -254,7 +252,8 @@ namespace Tests {
     TEST(Core_RPC, adder)
     {
        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-          Core::NodeId remoteNode(g_connectorName.c_str());
+          string connectorName = _T("/tmp/wperpc01");
+          Core::NodeId remoteNode(connectorName.c_str());
 
           ExternalAccess communicator(remoteNode);
 
@@ -270,7 +269,8 @@ namespace Tests {
        testAdmin.Sync("setup server");
 
        {
-          Core::NodeId remoteNode(g_connectorName.c_str());
+          string connectorName = _T("/tmp/wperpc01");
+          Core::NodeId remoteNode(connectorName.c_str());
 
           Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
           Core::ProxyType<RPC::CommunicatorClient> client(
