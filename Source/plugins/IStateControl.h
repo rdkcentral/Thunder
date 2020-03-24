@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
+#include "Module.h"
+
 #ifndef __ISTATECONTROL_H
 #define __ISTATECONTROL_H
 
 #include "IShell.h"
-#include "Module.h"
 
 namespace WPEFramework {
 namespace PluginHost {

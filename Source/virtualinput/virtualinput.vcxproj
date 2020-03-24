@@ -28,7 +28,6 @@
   <ItemGroup>
     <ClInclude Include="Module.h" />
     <ClInclude Include="virtualinput.h" />
-    <ClInclude Include="VirtualKeyboard.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
