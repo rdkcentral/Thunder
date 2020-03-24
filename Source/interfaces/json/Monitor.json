@@ -10,7 +10,7 @@
     "$ref": "common.json"
   },
   "definitions": {
-    "restartsettings": {
+    "restart": {
       "type": "object",
       "properties": {
         "limit": {
@@ -25,26 +25,13 @@
           "size": 16,
           "signed": false,
           "example": 60,
-          "description": "Time period within which failures must happen for the limit to be considered crossed"
+          "description": "Time period (in seconds) within which failures must happen for the limit to be considered crossed"
         }
       },
       "required": [
         "limit",
         "window"
       ]
-    },
-    "restart": {
-      "type": "object",
-      "properties": {
-        "memory": {
-          "$ref": "#/definitions/restartsettings",
-          "description": "Restart limits for memory consumption related failures applying to the service"
-        },
-        "operational": {
-          "$ref": "#/definitions/restartsettings",
-          "description": "Restart limits for stability failures applying to the service"
-        }
-      }
     },
     "measurement": {
       "type": "object",
@@ -134,14 +121,13 @@
         },
         "restart": {
           "$ref": "#/definitions/restart",
-          "description": "Restart limits for memory/operational failures applying to the service"
+          "description": "Restart limits for failures applying to the service"
         }
       },
       "required": [
         "measurements",
         "observable",
-        "memoryrestartsettings",
-        "operationalrestartsettings"
+        "restart"
       ]
     }
   },
@@ -156,19 +142,13 @@
             "type": "string",
             "example": "WebServer"
           },
-          "operational": {
-            "description": "Restart settings for memory consumption type of failures",
-            "$ref": "#/definitions/restartsettings"
-          },
-          "memory": {
-            "description": "Restart settings for stability type of failures",
-            "$ref": "#/definitions/restartsettings"
+          "restart": {
+            "$ref": "#/definitions/restart"
           }
         },
         "required": [
           "callsign",
-          "operational",
-          "memory"
+          "restart"
         ]
       },
       "result": {
