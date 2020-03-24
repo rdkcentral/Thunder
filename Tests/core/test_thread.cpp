@@ -64,7 +64,7 @@ namespace Tests {
             _threadDone = true;
             _cv.notify_one();
         }
-        bool GetState()
+        static bool GetState()
         {
             return _threadDone;
         }
@@ -94,8 +94,7 @@ namespace Tests {
         object.Run();
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
         std::unique_lock<std::mutex> lk(mutex);
-        while(!threadDone)
-        {
+        while(!threadDone) {
             cv.wait(lk);
         }
         object.Stop();
@@ -109,11 +108,9 @@ namespace Tests {
         Core::ThreadPoolType<Core::Job, 1> executor(0, _T("TestPool"));
         executor.Submit(Core::Job(job), Core::infinite);
 
-        Job jobs;
-        std::unique_lock<std::mutex> lk(jobs._mutex);
-        while(!jobs.GetState())
-        {
-            jobs._cv.wait(lk);
+        std::unique_lock<std::mutex> lk(Job::_mutex);
+        while(!Job::GetState()) {
+            Job::_cv.wait(lk);
         }
         Core::Singleton::Dispose();
     }

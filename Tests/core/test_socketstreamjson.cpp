@@ -178,7 +178,7 @@ namespace Tests {
             _dataReceived.clear();
         }
 
-        bool GetState()
+        static bool GetState()
         {
             return _done;
         }
@@ -208,11 +208,10 @@ namespace Tests {
             Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(Tests::g_connector));
             jsonSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
-            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(Tests::g_connector));
-            std::unique_lock<std::mutex> lk(jsonSocketClient._mutex);
-            while(!jsonSocketClient.GetState())
+            std::unique_lock<std::mutex> lk(JSONConnector<Core::JSON::IElement>::_mutex);
+            while(!JSONConnector<Core::JSON::IElement>::GetState())
             {
-                jsonSocketClient._cv.wait(lk);
+                JSONConnector<Core::JSON::IElement>::_cv.wait(lk);
             }
 
             testAdmin.Sync("server open");

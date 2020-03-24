@@ -7,12 +7,7 @@
 namespace WPEFramework {
 namespace Tests {
 
-namespace TextWebLinkTest {
-    const TCHAR* g_connector = "0.0.0.0";
-
-    static Core::ProxyPoolType<Web::TextBody> g_textBodyFactory(5);
-    static Core::ProxyPoolType<Web::Response> g_responseFactory(5);
-} // TextWebLinkTest
+    const TCHAR* g_webLinkConnector = "0.0.0.0";
 
     class WebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > {
     private:
@@ -37,7 +32,7 @@ namespace TextWebLinkTest {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
         {
             // Time to attach a String Body
-            element->Body(TextWebLinkTest::g_textBodyFactory.Element());
+            element->Body(_textBodyFactory.Element());
         }
         virtual void Received(Core::ProxyType<WPEFramework::Web::Request>& request)
         {
@@ -60,19 +55,24 @@ namespace TextWebLinkTest {
         virtual void StateChange()
         {
         }
+
+    private:
+        static Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
+
+    Core::ProxyPoolType<Web::TextBody> WebServer::_textBodyFactory(5);
 
     class WebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
     private:
         typedef Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> BaseClass;
 
-        WebClient();
-        WebClient(const WebClient& copy);
-        WebClient& operator=(const WebClient&);
-
     public:
+        WebClient() = delete;
+        WebClient(const WebClient& copy) = delete;
+        WebClient& operator=(const WebClient&) = delete;
+
         WebClient(const WPEFramework::Core::NodeId& remoteNode)
-            : BaseClass(5, TextWebLinkTest::g_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
+            : BaseClass(5,_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
         {
         }
@@ -86,7 +86,7 @@ namespace TextWebLinkTest {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
         {
             // Time to attach a String Body
-            element->Body(TextWebLinkTest::g_textBodyFactory.Element());
+            element->Body(_textBodyFactory.Element());
         }
         virtual void Received(Core::ProxyType<WPEFramework::Web::Response>& response)
         {
@@ -120,12 +120,17 @@ namespace TextWebLinkTest {
     private:
         mutable WPEFramework::Core::Event _dataPending;
         string _dataReceived;
+        static Core::ProxyPoolType<Web::Response> _responseFactory;
+        static Core::ProxyPoolType<Web::TextBody> _textBodyFactory;
     };
+
+    Core::ProxyPoolType<Web::Response> WebClient::_responseFactory(5);
+    Core::ProxyPoolType<Web::TextBody> WebClient::_textBodyFactory(5);
 
     TEST(WebLink, Text)
     {
         IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<WebServer> _webServer(Core::NodeId(TextWebLinkTest::g_connector, 12343));
+            Core::SocketServerType<WebServer> _webServer(Core::NodeId(g_webLinkConnector, 12343));
             _webServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
@@ -134,7 +139,7 @@ namespace TextWebLinkTest {
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            WebClient webConnector(Core::NodeId(TextWebLinkTest::g_connector, 12343));
+            WebClient webConnector(Core::NodeId(g_webLinkConnector, 12343));
             Core::ProxyType<Web::Request> webRequest(Core::ProxyType<Web::Request>::Create());
             Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
             webRequest->Body<Web::TextBody>(webRequestBody);
