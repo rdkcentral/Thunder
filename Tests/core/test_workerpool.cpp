@@ -23,22 +23,28 @@ public:
             _minions.emplace_back();
         }
     }
+
     ~WorkerPoolImplementation()
     {
         // Diable the queue so the minions can stop, even if they are processing and waiting for work..
         Stop();
     }
+
 public:
-    void Run() {
+    void Run()
+    {
         Core::WorkerPool::Run();
         Core::WorkerPool::Join();
     }
-    void Stop() {
+
+    void Stop()
+    {
         Core::WorkerPool::Stop();
     }
 
 protected:
-    virtual Core::WorkerPool::Minion& Index(const uint8_t index) override {
+    virtual Core::WorkerPool::Minion& Index(const uint8_t index) override
+    {
         uint8_t count = index;
         std::list<Core::WorkerPool::Minion>::iterator element (_minions.begin());
 
@@ -52,12 +58,15 @@ protected:
         return (*element);
     }
 
-    virtual bool Running() override {
+    virtual bool Running() override
+    {
         return true;
     }
+
 private:
     std::list<Core::WorkerPool::Minion> _minions;
 };
+
 class WorkerPoolTypeImplementation : public Core::WorkerPoolType<THREADPOOL_COUNT> {
 public:
     WorkerPoolTypeImplementation() = delete;
@@ -66,12 +75,13 @@ public:
 
     WorkerPoolTypeImplementation(const uint32_t stackSize)
         : Core::WorkerPoolType<THREADPOOL_COUNT>(stackSize)
-        {
-            Core::WorkerPool::Minion minion(Core::Thread::DefaultStackSize());
-        }
-        virtual ~WorkerPoolTypeImplementation()
-        {
-        }
+    {
+        Core::WorkerPool::Minion minion(Core::Thread::DefaultStackSize());
+    }
+
+    virtual ~WorkerPoolTypeImplementation()
+    {
+    }
 };
 
 Core::ProxyType<WorkerPoolImplementation> workerpool = Core::ProxyType<WorkerPoolImplementation>::Create(2, Core::Thread::DefaultStackSize());
@@ -117,9 +127,11 @@ public:
     WorkerJob()
     {
     }
+
     ~WorkerJob()
     {
     }
+
     virtual void Dispatch() override
     {
         EXPECT_NE(_parentJobId, std::this_thread::get_id());
@@ -128,6 +140,7 @@ public:
 public:
     static std::thread::id _parentJobId;
 };
+
 std::thread::id WorkerJob::_parentJobId;
 
 TEST(test_workerpool, simple_workerpool)
@@ -148,6 +161,7 @@ TEST(test_workerpool, simple_workerpool)
 
     object.Stop();
 }
+
 TEST(test_workerjobpooltype, simple_workerjobpooltype)
 {
     workerpool.Release();

@@ -26,6 +26,7 @@ namespace Tests {
             , _dataPending(false, false)
         {
         }
+
         TextConnector(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<TextConnector>*)
             : BaseClass(false, connector, remoteId, 1024, 1024)
             , _serverSocket(true)
@@ -101,8 +102,7 @@ namespace Tests {
             textSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(TextConnector::_mutex);
-            while(!TextConnector::GetState())
-            {
+            while (!TextConnector::GetState()) {
                 TextConnector::_cv.wait(lk);
             }
             testAdmin.Sync("server open");

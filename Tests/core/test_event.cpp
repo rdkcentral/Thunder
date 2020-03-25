@@ -7,7 +7,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 class ThreadClass : public Core::Thread {
 public:
     ThreadClass() = delete;
@@ -72,6 +71,7 @@ TEST(test_event, simple_event)
         }
     } while (timeOut < Core::Time::Now().Ticks());
 }
+
 TEST(test_event, unlock_event)
 {    
     Event event(false,true);
@@ -87,6 +87,7 @@ TEST(test_event, unlock_event)
     EXPECT_FALSE(lock);
     object.Stop();
 }
+
 TEST(test_event, set_event)
 {
     Event event(false,true);
@@ -103,6 +104,7 @@ TEST(test_event, set_event)
     EXPECT_FALSE(setEvent);
     object.Stop();     
 }
+
 TEST(test_event, pulse_event)
 {
     Event event(false,true);

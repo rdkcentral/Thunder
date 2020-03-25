@@ -11,11 +11,14 @@ const unsigned int BLOCKSIZE = 20;
 class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
 {
     public:
+        WriterClass() = delete;
+
         WriterClass(string filename)
-            :Writer(filename)
-            ,file(filename)
+            : Writer(filename)
+            , _file(filename)
         {
         }
+
         ~WriterClass()
         {
         }
@@ -25,7 +28,7 @@ class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
         {
             uint8_t arr[] = {1,2,3};
             SetBuffer(arr);
-            Create(file);
+            Create(_file);
             Record(10);
             Time();
             Source();
@@ -33,22 +36,26 @@ class WriterClass : public RecorderType<uint32_t, BLOCKSIZE>::Writer
         }
 
     private:
-        string file;
+        string _file;
 };
 
 class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
 {
     public:
+        ReaderClass() = delete;
+
         ReaderClass(string filename)
-            :Reader(filename)
-            ,file(filename)
+            : Reader(filename)
+            , _file(filename)
         {
         }
+
         ReaderClass(const ProxyType<WriterClass>& recorder, const uint32_t id = static_cast<uint32_t>(~0))
                 : Reader(recorder->Source())
-                , file(recorder->Source())
+                , _file(recorder->Source())
         {
         }
+
         ~ReaderClass()
         {
         }
@@ -64,7 +71,7 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             StepForward();
             StepBack();
             ClearData();
-            Reader obj1(file, 1u);
+            Reader obj1(_file, 1u);
             EXPECT_FALSE(obj1.Previous());
             EXPECT_TRUE(obj1.Next());
 
@@ -72,8 +79,9 @@ class ReaderClass : public RecorderType<uint32_t, BLOCKSIZE>::Reader
             EXPECT_EQ(EndId(),2u);
             Source();
         }
+
     private:
-        string file;
+        string _file;
 };
 
 TEST(test_valuerecorder, test_writer)

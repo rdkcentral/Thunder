@@ -54,9 +54,11 @@ namespace Tests {
         Job()
         {
         }
+
         ~Job()
         {
         }
+
         virtual void Dispatch() override
         {
             EXPECT_NE(_parentTPid, std::this_thread::get_id());
@@ -64,6 +66,7 @@ namespace Tests {
             _threadDone = true;
             _cv.notify_one();
         }
+
         static bool GetState()
         {
             return _threadDone;
@@ -94,7 +97,7 @@ namespace Tests {
         object.Run();
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
         std::unique_lock<std::mutex> lk(mutex);
-        while(!threadDone) {
+        while (!threadDone) {
             cv.wait(lk);
         }
         object.Stop();
@@ -109,7 +112,7 @@ namespace Tests {
         executor.Submit(Core::Job(job), Core::infinite);
 
         std::unique_lock<std::mutex> lk(Job::_mutex);
-        while(!Job::GetState()) {
+        while (!Job::GetState()) {
             Job::_cv.wait(lk);
         }
         Core::Singleton::Dispose();

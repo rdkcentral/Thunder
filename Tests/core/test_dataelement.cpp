@@ -6,7 +6,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 TEST(test_data, simple_data)
 {
     const uint8_t arr[] = {10,20,30,40,50,60,70,80,90,100};

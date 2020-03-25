@@ -20,7 +20,6 @@ namespace {
         Parameters(const Parameters&) = delete;
         Parameters& operator=(const Parameters&) = delete;
 
-    public:
         Parameters()
             : Core::JSON::Container()
             , Speed(0)
@@ -33,6 +32,7 @@ namespace {
             Add(_T("command"), &Command);
             Add(_T("settings"), &Settings);
         }
+
         ~Parameters()
         {
         }
@@ -49,7 +49,6 @@ namespace {
         Command(const Command&) = delete;
         Command& operator=(const Command&) = delete;
 
-    public:
         Command()
             : Core::JSON::Container()
             , Identifier(0)
@@ -64,6 +63,7 @@ namespace {
             Add(_T("trickFlag"), &TrickFlag);
             Add(_T("parameters"), &Params);
         }
+
         ~Command()
         {
         }
@@ -79,9 +79,6 @@ namespace {
     typedef Web::JSONBodyType<Command> CommandBody;
 
     const TCHAR* g_connector = "0.0.0.0";
-    static Core::ProxyPoolType<Web::Response> g_responseFactory(5);
-    static Core::ProxyPoolType<Web::Request> g_requestFactory(5);
-    static Core::ProxyPoolType<CommandBody> g_commandBodyFactory(5);
     }
 
     class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> {
@@ -93,11 +90,13 @@ namespace {
         JSONWebServer(const JSONWebServer& copy) = delete;
         JSONWebServer& operator=(const JSONWebServer&) = delete;
 
-    public:
         JSONWebServer(const SOCKET& connector, const Core::NodeId& remoteId, Core::SocketServerType<JSONWebServer>*)
-            : BaseClass(5, g_requestFactory, false, connector, remoteId, 2048, 2048)
+            : BaseClass(5, _requestFactory, false, connector, remoteId, 2048, 2048)
+            , _requestFactory(5)
+            , _commandBodyFactory(5)
         {
         }
+
         virtual ~JSONWebServer()
         {
             Close(WPEFramework::Core::infinite);
@@ -108,8 +107,9 @@ namespace {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Request>& element)
         {
             // Time to attach a Command Body
-            element->Body<CommandBody>(g_commandBodyFactory.Element());
+            element->Body<CommandBody>(_commandBodyFactory.Element());
         }
+
         virtual void Received(Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
@@ -123,14 +123,20 @@ namespace {
             response->Body<CommandBody>(request->Body<CommandBody>());
             Submit(response);
         }
+
         virtual void Send(const Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
         }
+
         virtual void StateChange()
         {
         }
+
+    private:
+        Core::ProxyPoolType<Web::Request> _requestFactory;
+        Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
     class JSONWebClient : public Web::WebLinkType<Core::SocketStream, Web::Response, Web::Request, WPEFramework::Core::ProxyPoolType<Web::Response>&> {
@@ -142,12 +148,14 @@ namespace {
         JSONWebClient(const JSONWebClient& copy) = delete;
         JSONWebClient& operator=(const JSONWebClient&) = delete;
 
-    public:
         JSONWebClient(const WPEFramework::Core::NodeId& remoteNode)
-            : BaseClass(5, g_responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
+            : BaseClass(5, _responseFactory, false, remoteNode.AnyInterface(), remoteNode, 2048, 208)
             , _dataPending(false, false)
+            , _responseFactory(5)
+            , _commandBodyFactory(5)
         {
         }
+
         virtual ~JSONWebClient()
         {
             Close(WPEFramework::Core::infinite);
@@ -158,8 +166,9 @@ namespace {
         virtual void LinkBody(Core::ProxyType<WPEFramework::Web::Response>& element)
         {
             // Time to attach a Command Body
-            element->Body<CommandBody>(g_commandBodyFactory.Element());
+            element->Body<CommandBody>(_commandBodyFactory.Element());
         }
+
         virtual void Received(Core::ProxyType<Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
@@ -172,26 +181,33 @@ namespace {
             response->Body<CommandBody>()->ToString(_dataReceived);
             _dataPending.Unlock();
         }
+
         virtual void Send(const Core::ProxyType<Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
         }
+
         virtual void StateChange()
         {
         }
+
         int Wait() const
         {
             return _dataPending.Lock();
         }
+
         void Retrieve(string& text)
         {
             text = _dataReceived;
             _dataReceived.clear();
         }
+
     private:
         mutable WPEFramework::Core::Event _dataPending;
         string _dataReceived;
+        Core::ProxyPoolType<Web::Response> _responseFactory;
+        Core::ProxyPoolType<CommandBody> _commandBodyFactory;
     };
 
     TEST(WebLink, Json)
@@ -211,7 +227,7 @@ namespace {
             Core::ProxyType<CommandBody> jsonRequestBody(Core::ProxyType<CommandBody>::Create());
             jsonRequest->Body<CommandBody>(jsonRequestBody);
             jsonWebConnector.Open(Core::infinite);
-            while(!jsonWebConnector.IsOpen());
+            while (!jsonWebConnector.IsOpen());
             jsonRequest->Verb = Web::Request::HTTP_GET;
             jsonRequestBody->Identifier = 123;
             jsonRequestBody->Name = _T("TestCase");

@@ -21,7 +21,6 @@ namespace Tests {
         Parameters(const Parameters&) = delete;
         Parameters& operator=(const Parameters&) = delete;
 
-    public:
         Parameters()
             : Core::JSON::Container()
             , Speed(0)
@@ -51,7 +50,6 @@ namespace Tests {
         Command(const Command&) = delete;
         Command& operator=(const Command&) = delete;
 
-    public:
         Command()
             : Core::JSON::Container()
             , Identifier(0)
@@ -87,10 +85,10 @@ namespace Tests {
         JSONObjectFactory(const JSONObjectFactory&) = delete;
         JSONObjectFactory& operator= (const JSONObjectFactory&) = delete;
 
-    public:
         JSONObjectFactory(const uint32_t number) : Core::ProxyPoolType<Command>(number)
         {
         }
+
         virtual ~JSONObjectFactory()
         {
         }
@@ -112,7 +110,6 @@ namespace Tests {
         JSONConnector(const JSONConnector& copy) = delete;
         JSONConnector& operator=(const JSONConnector&) = delete;
 
-    public:
         JSONConnector(const Core::NodeId& remoteNode)
             : BaseClass(5, _objectFactory, false, remoteNode.AnyInterface(), remoteNode, 1024, 1024)
             , _serverSocket(false)
@@ -209,8 +206,7 @@ namespace Tests {
             jsonSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(JSONConnector<Core::JSON::IElement>::_mutex);
-            while(!JSONConnector<Core::JSON::IElement>::GetState())
-            {
+            while (!JSONConnector<Core::JSON::IElement>::GetState()) {
                 JSONConnector<Core::JSON::IElement>::_cv.wait(lk);
             }
 

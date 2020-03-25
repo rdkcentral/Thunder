@@ -11,20 +11,25 @@ using namespace WPEFramework::Core;
 class DataFile: public Core::DataElementFile
 {
     public:
+        DataFile() = delete;
+
         DataFile(File& file)
             : DataElementFile(file)
         {
         }
+
         DataFile(string fileName, uint32_t type, uint32_t size)
             :DataElementFile(fileName, type, size)
         {
         }
+
         void MemoryMap()
         {
             Reallocation(54);
             ReopenMemoryMappedFile();
         }
 };
+
 TEST(test_datafile, simple_test)
 {
     char buffer[100];
@@ -39,8 +44,8 @@ TEST(test_datafile, simple_test)
     obj1.Sync();
     obj2.MemoryMap();
 
-    const string& Name = obj1.Name();
-    EXPECT_EQ(Name.c_str(), fileName);
+    const string& name = obj1.Name();
+    EXPECT_EQ(name.c_str(), fileName);
     EXPECT_FALSE(obj2.IsValid());
     obj1.Storage();
     obj1.ReloadFileInfo();

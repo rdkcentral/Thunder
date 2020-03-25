@@ -41,6 +41,7 @@ public:
         Add(_T("i"), &I);
         Add(_T("j"), &J);
     }
+
     ~CommandParameters()
     {
     }
@@ -74,6 +75,7 @@ public:
         Add(_T("e"), &E);
         Add(_T("f"), &F);
     }
+
     ~CommandRequest()
     {
     }
@@ -170,4 +172,3 @@ TEST(Core_JSON, simpleSet)
         }
     }
 }
-

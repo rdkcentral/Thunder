@@ -91,4 +91,3 @@ TEST(test_void, simple_void)
     Void v;
     Void v2 = v;
 }
- 

@@ -13,6 +13,7 @@ namespace Tests {
         TimeHandler()
         {
         }
+
         ~TimeHandler()
         {
         }
@@ -66,19 +67,23 @@ namespace Tests {
         ~WatchDogHandler()
         {
         }
+
         void Start(uint32_t delay)
         {
             BaseClass::Arm(delay);
         }
+
         uint32_t Expired()
         {
             _event.SetEvent();
             return Core::infinite;
         }
+
         int Wait(unsigned int milliseconds) const
         {
             return _event.Lock(milliseconds);
         }
+
     private:
         uint32_t _delay;
         mutable Core::Event _event;
@@ -93,7 +98,7 @@ namespace Tests {
         nextTick.Add(time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
         std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while(!(TimeHandler::GetCount() == 2)) {
+        while (!(TimeHandler::GetCount() == 2)) {
             TimeHandler::_cv.wait(lk);
         }
     }
@@ -113,7 +118,7 @@ namespace Tests {
         nextTick.Add(3 * time);
         timer.Schedule(nextTick.Ticks(), TimeHandler());
         std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while(!(TimeHandler::GetCount() == 5)) {
+        while (!(TimeHandler::GetCount() == 5)) {
             TimeHandler::_cv.wait(lk);
         }
     }
@@ -127,7 +132,7 @@ namespace Tests {
         pastTime.Sub(time);
         timer.Schedule(pastTime.Ticks(), TimeHandler());
         std::unique_lock<std::mutex> lk(TimeHandler::_mutex);
-        while(!(TimeHandler::GetCount() == 6)) {
+        while (!(TimeHandler::GetCount() == 6)) {
             TimeHandler::_cv.wait(lk);
         }
     }

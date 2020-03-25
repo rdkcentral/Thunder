@@ -6,7 +6,6 @@
 namespace WPEFramework {
 namespace Tests {
 
-
     void CleanUpBuffer(char bufferName[])
     {
        // TODO: shouldn't this be done producer-side?
@@ -59,7 +58,6 @@ namespace Tests {
 
        // This side (tested) acts as client (consumer).
        IPTestAdministrator testAdmin(otherSide);
-
        {
            // In extra scope, to make sure "buff01" is destructed before producer.
            testAdmin.Sync("setup producer");

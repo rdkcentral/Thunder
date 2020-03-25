@@ -8,18 +8,20 @@ using namespace WPEFramework::Core;
 
 class Container
 {
-    private:
-        int length;
-        int* m_data;
     public:
         Container()
-            :length(0)
-            ,m_data(nullptr)
+            : _length(0)
+            , _data(nullptr)
         {
         }
+
         ~Container()
         {
         }
+
+    private:
+        int _length;
+        int* _data;
 };
 TEST(test_lockableContainer, lockContainer_test)
 {

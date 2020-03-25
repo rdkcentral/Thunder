@@ -17,13 +17,12 @@ namespace Tests {
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-    public:
-        ThreadClass(CyclicBuffer* cyclicBuffer,bool* cyclicThreadDone, std::mutex* cyclicMutex,std::condition_variable* cyclicCV)
+        ThreadClass(CyclicBuffer* cyclicBuffer,bool* done, std::mutex* mutex,std::condition_variable* cv)
             : Thread(Thread::DefaultStackSize(), _T("Test"))
             , _cyclicBuffer(cyclicBuffer)
-            , _cyclicThreadDone(cyclicThreadDone)
-            , _cyclicMutex(cyclicMutex)
-            , _cyclicCV(cyclicCV)
+            , _done(done)
+            , _mutex(mutex)
+            , _cv(cv)
         {
         }
 
@@ -33,20 +32,20 @@ namespace Tests {
 
         virtual uint32_t Worker() override
         {
-            while (IsRunning() && (!*_cyclicThreadDone)) {
+            while (IsRunning() && (!*_done)) {
                 _cyclicBuffer->Alert();
-                std::unique_lock<std::mutex> lk(*_cyclicMutex);
-                *_cyclicThreadDone = true;
-                _cyclicCV->notify_one();
+                std::unique_lock<std::mutex> lk(*_mutex);
+                *_done = true;
+                _cv->notify_one();
             }
             return (infinite);
         }
 
     private:
         CyclicBuffer* _cyclicBuffer;
-        bool* _cyclicThreadDone;
-        std::mutex* _cyclicMutex;
-        std::condition_variable* _cyclicCV;
+        bool* _done;
+        std::mutex* _mutex;
+        std::condition_variable* _cv;
     };
 
     TEST(Core_CyclicBuffer, WithoutOverwrite)
@@ -241,21 +240,20 @@ namespace Tests {
     TEST(Core_CyclicBuffer, lock_unlock)
     {
         char bufferName[] = "cyclicbuffer01";
-        uint32_t cyclicBufferSize = 10;
+        uint32_t bufferSize = 10;
 
-        CyclicBuffer buffer(bufferName, cyclicBufferSize, true);
+        CyclicBuffer buffer(bufferName, bufferSize, true);
 
-        bool cyclicThreadDone = false;
-        std::mutex cyclicMutex;
-        std::condition_variable cyclicCV;
+        bool done = false;
+        std::mutex mutex;
+        std::condition_variable cv;
 
-        ThreadClass object(&buffer,&cyclicThreadDone,&cyclicMutex,&cyclicCV);
+        ThreadClass object(&buffer,&done,&mutex,&cv);
         object.Run();
         buffer.Lock(true,infinite);
-        std::unique_lock<std::mutex> lk(cyclicMutex);
-        while(!cyclicThreadDone)
-        {
-            cyclicCV.wait(lk);
+        std::unique_lock<std::mutex> lk(mutex);
+        while (!done) {
+            cv.wait(lk);
         }
         object.Stop();
     }
