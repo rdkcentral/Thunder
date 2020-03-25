@@ -76,6 +76,7 @@ namespace PluginHost {
             void DropReference()
             {
                 Reset();
+                Core::WorkerPool::Instance().Revoke(_job);
                 _job.Release();
             }
             void Interval(const uint16_t startTime, const uint16_t intervalTime)
@@ -85,7 +86,7 @@ namespace PluginHost {
             }
             void Arm(const uint16_t code)
             {
-                ASSERT(_code == static_cast<uint32_t>(~0));
+                ASSERT(_code == static_cast<uint16_t>(~0));
 
                 if (_startTime != 0) {
       
@@ -105,19 +106,18 @@ namespace PluginHost {
                 _adminLock.Lock();
                 _code = ~0;
                 _adminLock.Unlock();
-                Core::WorkerPool::Instance().Revoke(_job);
             }
 
         private:
             void Dispatch() override
             {
-                _parent.RepeatKey(_code);
-
                 _adminLock.Lock();
 
-                if(_code != static_cast<uint32_t>(~0)) {
+                if(_code != static_cast<uint16_t>(~0)) {
 
                     ASSERT(_nextSlot.IsValid());
+
+                    _parent.RepeatKey(_code);
 
                     _nextSlot.Add(_intervalTime);
 

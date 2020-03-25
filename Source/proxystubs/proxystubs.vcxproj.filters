@@ -18,7 +18,13 @@
     <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PluginInterface.cpp">
+    <ClCompile Include="ProxyStubs_Shell.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_StateControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_SubSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -26,5 +32,8 @@
     <ClInclude Include="Module.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

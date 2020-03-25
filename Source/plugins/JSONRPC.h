@@ -81,25 +81,9 @@ namespace PluginHost {
     public:
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator=(const JSONRPC&) = delete;
-        JSONRPC()
-            : _adminLock()
-            , _handlers()
-            , _service(nullptr)
-        {
-            std::vector<uint8_t> versions = { 1 };
-
-            _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
-        }
-        JSONRPC(const std::vector<uint8_t> versions)
-            : _adminLock()
-            , _handlers()
-            , _service(nullptr)
-        {
-            _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
-        }
-        virtual ~JSONRPC()
-        {
-        }
+        JSONRPC();
+        JSONRPC(const std::vector<uint8_t> versions);
+        virtual ~JSONRPC();
 
     public:
         //

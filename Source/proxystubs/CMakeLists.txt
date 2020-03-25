@@ -18,8 +18,22 @@
 set(TARGET ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
+set(PLUGIN_INCLUDES
+        plugins/IPlugin.h
+        plugins/IShell.h
+        plugins/IStateControl.h
+        plugins/ISubSystem.h
+        )
+
+foreach(file IN LISTS PLUGIN_INCLUDES)
+        ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../${file}" OUTDIR "${CMAKE_CURRENT_SOURCE_DIR}")
+endforeach()
+
 add_library(${TARGET} SHARED
-        PluginInterface.cpp
+        ProxyStubs_Shell.cpp
+        ProxyStubs_Plugin.cpp
+        ProxyStubs_StateControl.cpp
+        ProxyStubs_SubSystem.cpp
         Module.cpp
         )
 
