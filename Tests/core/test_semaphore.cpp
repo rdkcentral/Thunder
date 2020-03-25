@@ -7,7 +7,7 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-int g_shared = 1;
+static int g_shared = 1;
 
 class ThreadClass : public Core::Thread {
 public:

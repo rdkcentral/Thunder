@@ -217,12 +217,11 @@ namespace Tests {
     namespace {
     class ExternalAccess : public RPC::Communicator
     {
-    private:
+    public:
         ExternalAccess() = delete;
         ExternalAccess(const ExternalAccess &) = delete;
         ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-    public:
         ExternalAccess(const Core::NodeId & source)
             : RPC::Communicator(source, _T(""))
         {

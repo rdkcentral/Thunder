@@ -8,6 +8,8 @@ namespace Tests {
 
     class DataClass {
     public:
+        DataClass() = delete;
+
         DataClass(uint8_t value)
             : _value(value)
         {
@@ -31,11 +33,14 @@ namespace Tests {
     private:
         typedef Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
     public:
+        IteratorClass() =delete;
+
         IteratorClass(CONTAINER& container)
             : BaseClass(container)
         {
             EXPECT_EQ(container, *(BaseClass::Container()));
         }
+
         ~IteratorClass()
         {
         }
@@ -46,12 +51,16 @@ namespace Tests {
     {
     private:
         typedef Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
+
     public:
+        IteratorMapClass() = delete;
+
         IteratorMapClass(CONTAINER& container)
             : BaseClass(container)
         {
             EXPECT_EQ(container, *(BaseClass::Container()));
         }
+
         ~IteratorMapClass()
         {
         }
@@ -92,7 +101,7 @@ namespace Tests {
         DataIterator iterator(list);
         EXPECT_EQ(iterator.Count(), 3u);
 
-        for(uint8_t i = 0; i <= 4; i++) {
+        for (uint8_t i = 0; i <= 4; i++) {
             iterator.Reset(i);
             Validate<DataIterator>(iterator, i);
         }
@@ -113,7 +122,7 @@ namespace Tests {
         DataMapIterator iterator(map);
         EXPECT_EQ(iterator.Count(), 3u);
 
-        for(uint8_t i = 0; i <= 4; i++) {
+        for (uint8_t i = 0; i <= 4; i++) {
             iterator.Reset(i);
             ValidateMap<DataMapIterator>(iterator, i);
         }

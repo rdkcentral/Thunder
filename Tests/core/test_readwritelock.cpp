@@ -6,7 +6,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-
 TEST(test_ReadWritelock, simpleSet)
 {
     ReadWriteLock readObj;

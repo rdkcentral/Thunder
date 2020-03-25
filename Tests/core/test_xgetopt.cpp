@@ -11,14 +11,18 @@ using namespace WPEFramework::Core;
 
 class ConsoleOptions : public Core::Options {
     public:
+        ConsoleOptions() = delete;
+
         ConsoleOptions(int argumentCount, TCHAR* arguments[])
             : Core::Options(argumentCount, arguments, _T("chb"))
         {
             Parse();
         }
-         ~ConsoleOptions()
+
+        ~ConsoleOptions()
         {
         }
+
      private:
         virtual void Option(const TCHAR option, const TCHAR* argument)
         {
@@ -39,11 +43,9 @@ class ConsoleOptions : public Core::Options {
                 break;
             }
         }
-
 };
 
 TEST(test_xgetopt, simple_xgetopt)
 {
     ConsoleOptions consoleOptions(argumentCount,arguments);
 }
-

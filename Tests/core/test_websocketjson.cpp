@@ -168,7 +168,6 @@ namespace Tests {
 		    return (true);
         }
 
-
         Core::ProxyType<Core::JSON::IElement> Element()
         {
             return _objectFactory.Element("");
@@ -185,7 +184,7 @@ namespace Tests {
             _dataReceived.clear();
         }
 
-        private:
+    private:
         Factory _objectFactory;
         string _dataReceived;
         mutable Core::Event _dataPending;
@@ -199,7 +198,7 @@ namespace Tests {
             testAdmin.Sync("setup server");
 
             std::unique_lock<std::mutex> lk(JsonSocketServer<Core::JSON::IElement>::_mutex);
-            while(!JsonSocketServer<Core::JSON::IElement>::GetState()) {
+            while (!JsonSocketServer<Core::JSON::IElement>::GetState()) {
                 JsonSocketServer<Core::JSON::IElement>::_cv.wait(lk);
             }
             testAdmin.Sync("server open");

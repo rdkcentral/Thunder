@@ -22,6 +22,7 @@ namespace Tests {
             : BaseClass(5, false, connector, remoteId, 2048, 2048)
         {
         }
+
         virtual ~WebServer()
         {
             Close(WPEFramework::Core::infinite);
@@ -34,6 +35,7 @@ namespace Tests {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
+
         virtual void Received(Core::ProxyType<WPEFramework::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
@@ -47,11 +49,13 @@ namespace Tests {
             response->Body<Web::TextBody>(request->Body<Web::TextBody>());
             Submit(response);
         }
+
         virtual void Send(const Core::ProxyType<WPEFramework::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
             EXPECT_TRUE(response->HasBody());
         }
+
         virtual void StateChange()
         {
         }
@@ -76,6 +80,7 @@ namespace Tests {
             , _dataPending(false, false)
         {
         }
+
         virtual ~WebClient()
         {
             Close(WPEFramework::Core::infinite);
@@ -88,6 +93,7 @@ namespace Tests {
             // Time to attach a String Body
             element->Body(_textBodyFactory.Element());
         }
+
         virtual void Received(Core::ProxyType<WPEFramework::Web::Response>& response)
         {
             EXPECT_EQ(response->ErrorCode, 200);
@@ -100,23 +106,28 @@ namespace Tests {
             _dataReceived = *(response->Body<Web::TextBody>());
             _dataPending.Unlock();
         }
+
         virtual void Send(const Core::ProxyType<WPEFramework::Web::Request>& request)
         {
             EXPECT_EQ(request->Verb, Web::Request::HTTP_GET);
             EXPECT_TRUE(request->HasBody());
         }
+
         virtual void StateChange()
         {
         }
+
         int Wait() const
         {
             return _dataPending.Lock();
         }
+
         void Retrieve(string& text)
         {
             text = _dataReceived;
             _dataReceived.clear();
         }
+
     private:
         mutable WPEFramework::Core::Event _dataPending;
         string _dataReceived;
@@ -144,7 +155,7 @@ namespace Tests {
             Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
             webRequest->Body<Web::TextBody>(webRequestBody);
             webConnector.Open(Core::infinite);
-            while(!webConnector.IsOpen());
+            while (!webConnector.IsOpen());
             webRequest->Verb = Web::Request::HTTP_GET;
             string sent = "Just a body to send";
             *webRequestBody = sent;

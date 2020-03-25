@@ -122,7 +122,7 @@ namespace Tests {
             textWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(TextSocketServer::_mutex);
-            while(!TextSocketServer::GetState()) {
+            while (!TextSocketServer::GetState()) {
                 TextSocketServer::_cv.wait(lk);
             }
 
