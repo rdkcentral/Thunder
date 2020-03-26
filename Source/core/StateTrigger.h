@@ -110,7 +110,7 @@ namespace Core {
         m_AdminLock.Lock();
 
         // Now wait till our state is reached.
-        while (((a_State & static_cast<uint32_t>(m_State)) == 0) && (blTimeOut == false)) {
+        while (((a_State & static_cast<unsigned int>(m_State)) == 0) && (blTimeOut == false)) {
             InterlockedIncrement(m_InterestCount);
 
             m_AdminLock.Unlock();
@@ -138,7 +138,7 @@ namespace Core {
         m_AdminLock.Lock();
 
         // Now wait till our state is reached.
-        while (((a_State & static_cast<uint32_t>(m_State)) != 0) && (blTimeOut == false)) {
+        while (((a_State & static_cast<unsigned int>(m_State)) != 0) && (blTimeOut == false)) {
             InterlockedIncrement(m_InterestCount);
 
             m_AdminLock.Unlock();
