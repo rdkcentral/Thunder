@@ -483,7 +483,7 @@ namespace Core {
         snprintf(buffer, sizeof(buffer), "/proc/%d/stat", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
             if (read(fd, buffer, sizeof(buffer)) > 0) {
-                const int utimeIndex = 15;
+                const int utimeIndex = 13;
                 const TCHAR * pointer = buffer;
 
                 // Skip to utime fields
@@ -492,12 +492,13 @@ namespace Core {
                     if (pointer == nullptr) {
                         break;
                     }
+                    pointer++;
                 }
 
                 if (pointer != nullptr) {
-                    uint32_t cutime = 0, cstime = 0;
-                    sscanf(pointer, "%d %d", &cutime, &cstime);
-                    result = static_cast<uint64_t>(cutime) + static_cast<uint64_t>(cstime);
+                    uint32_t utime = 0, stime = 0;
+                    sscanf(pointer, "%d %d", &utime, &stime);
+                    result = static_cast<uint64_t>(utime) + static_cast<uint64_t>(stime);
                 }
             }
             close(fd);
