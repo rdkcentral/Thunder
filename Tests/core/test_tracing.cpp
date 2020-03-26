@@ -160,10 +160,11 @@ TEST(Core_tracing, simpleTracing)
 {
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
 
-       testAdmin.Sync("client start");
        string tracePath = "/tmp/tracebuffer01";
        std::string db = (tracePath + "/tracebuffer.doorbell");
-       string cycBufferName = (tracePath + "/tracebuffer.0");
+       string cycBufferName = (tracePath + "/tracebuffer");
+
+       testAdmin.Sync("client start");
        Core::DoorBell doorBell(db.c_str());
        ServerCyclicBuffer01 cycBuffer(cycBufferName);
 
@@ -188,7 +189,7 @@ TEST(Core_tracing, simpleTracing)
                string time(Core::Time::Now().ToRFC1123(true));
 
                EXPECT_STREQ(traceData._File.c_str(),"test_tracing.cpp");
-               EXPECT_STREQ(traceData._Class.c_str(),"<<Global>>");
+               EXPECT_STREQ(traceData._Class.c_str(),"TestBody");
                EXPECT_STREQ(traceData._Category.c_str(),"Information");
                EXPECT_STREQ(traceData._Text.c_str(),"Trace Log");
 

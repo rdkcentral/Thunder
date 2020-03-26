@@ -126,7 +126,7 @@ public:
     }
 };
 
-TEST(test_synchronous, simple_synchronous)
+TEST(DISABLED_test_synchronous, simple_synchronous)
 {
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) {
         SynchronousSocket synchronousServerSocket(true);
