@@ -83,14 +83,23 @@ target_include_directories( ${TARGET}
         ${GSTREAMER_BASE_INCLUDES}
         )
 
-if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
+if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp" OR
+    ${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp-secbuf")
     find_package(NEXUS REQUIRED)
-
+if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
     target_link_libraries(${TARGET}
             PRIVATE
             NEXUS::NEXUS
             -lbrcmsvpmeta
             )
+else()
+    target_link_libraries(${TARGET}
+            PRIVATE
+            NEXUS::NEXUS
+            -lb_secbuf
+            -lgstsvpext
+            )
+endif()
 endif()
 
 set_target_properties(${TARGET} PROPERTIES
