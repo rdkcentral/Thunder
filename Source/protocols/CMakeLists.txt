@@ -21,6 +21,8 @@ find_package(ZLIB REQUIRED)
 
 ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h)
 ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/ITracing.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/IStringIterator.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/IValueIterator.h)
 
 # Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
 # new source file again. This is in case CMAKE forgets :-)
@@ -38,8 +40,8 @@ set(SOURCES_COM
         com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
         com/ProxyStubs_Tracing.cpp
-        com/IStringIterator.cpp
-        com/IValueIterator.cpp
+        com/ProxyStubs_StringIterator.cpp
+        com/ProxyStubs_ValueIterator.cpp
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
@@ -116,8 +118,8 @@ add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
         ProxyStubs_Communicator.cpp
-        IStringIterator.cpp
-        IValueIterator.cpp
+        ProxyStubs_StringIterator.cpp
+        ProxyStubs_ValueIterator.cpp
         )
 
 target_link_libraries(${TARGET}

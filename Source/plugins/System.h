@@ -25,7 +25,7 @@ namespace WPEFramework {
 namespace PluginHost {
 
 
-    class IFactories {
+    class EXTERNAL IFactories {
     public:
         virtual ~IFactories();
 

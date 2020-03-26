@@ -17,25 +17,31 @@
  * limitations under the License.
  */
 
-#ifndef __PLUGIN_FRAMEWORK_SUPPORT_H
-#define __PLUGIN_FRAMEWORK_SUPPORT_H
-
-#include "Module.h"
-
-#include "Channel.h"
-#include "Configuration.h"
-#include "IPlugin.h"
-#include "IShell.h"
-#include "IStateControl.h"
-#include "ISubSystem.h"
 #include "JSONRPC.h"
-#include "Request.h"
-#include "Service.h"
-#include "System.h"
-#include "VirtualInput.h"
 
-#ifdef __WINDOWS__
-#pragma comment(lib, "plugins.lib")
-#endif
+namespace WPEFramework {
 
-#endif // __PLUGIN_FRAMEWORK_SUPPORT_H
+namespace PluginHost {
+
+    JSONRPC::JSONRPC()
+        : _adminLock()
+        , _handlers()
+        , _service(nullptr)
+    {
+        std::vector<uint8_t> versions = { 1 };
+
+        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+    }
+
+    JSONRPC::JSONRPC(const std::vector<uint8_t> versions)
+        : _adminLock()
+        , _handlers()
+        , _service(nullptr)
+    {
+        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+    }
+    /* virtual */ JSONRPC::~JSONRPC()
+    {
+    }
+
+} }
