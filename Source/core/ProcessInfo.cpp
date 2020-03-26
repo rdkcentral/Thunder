@@ -33,6 +33,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 #ifdef __APPLE__
 #include <libproc.h>
@@ -709,9 +710,9 @@ namespace Core {
        }
     }
 
-    static void EnumerateChildProcesses(const Core::ProcessInfo& processInfo, std::list<ThreadId>& pids)
+    static void EnumerateChildProcesses(const ProcessInfo& processInfo, std::list<ProcessInfo>& pids)
     {
-        pids.push_back(processInfo.Id());
+        pids.push_back(processInfo);
 
         Core::ProcessInfo::Iterator iterator(processInfo.Children());
         while (iterator.Next()) {
@@ -719,29 +720,47 @@ namespace Core {
         }
     }
 
-    ProcessTree::ProcessTree(const ThreadId processId)
+    ProcessTree::ProcessTree(const ProcessInfo& processInfo)
     {
-        ProcessInfo processInfo(processId);
-        EnumerateChildProcesses(processInfo, _pids);
+        EnumerateChildProcesses(processInfo, _processes);
     }
 
     void ProcessTree::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
     {
-        for (uint32_t pid : _pids) {
-            ProcessInfo processInfo(pid);
-            processInfo.MarkOccupiedPages(bitSet, size);
+        for (const ProcessInfo& process : _processes) {
+            process.MarkOccupiedPages(bitSet, size);
         }
     }
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-        std::list<ThreadId>::const_iterator i = std::find(_pids.cbegin(), _pids.cend(), pid);
-        return (i != _pids.cend());
+        auto comparator = [pid](const ProcessInfo& processInfo){ return processInfo.Id() == pid; };
+
+        std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
+        return (i != _processes.cend());
+    }
+
+    void ProcessTree::GetProcessIds(std::list<ThreadId>& processIds) const
+    {
+        processIds.clear();
+
+        for (const ProcessInfo& process : _processes) {
+            processIds.push_back(process.Id());
+        }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-       return _pids.front();
+       return _processes.front().Id();
+    }
+
+    uint64_t ProcessTree::Jiffies() const
+    {
+        uint64_t output = 0;
+        for (const ProcessInfo process : _processes) {
+            output += process.Jiffies();
+        }
+        return output;
     }
 }
 }

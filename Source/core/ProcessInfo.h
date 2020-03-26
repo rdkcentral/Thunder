@@ -255,15 +255,16 @@ namespace Core {
    class ProcessTree
    {
       public:
-         explicit ProcessTree(const ThreadId processId);
+         explicit ProcessTree(const ProcessInfo& processInfo);
 
          void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
          bool ContainsProcess(ThreadId pid) const;
-         const std::list<ThreadId>& GetProcessIds() const { return _pids; }
+         void GetProcessIds(std::list<ThreadId>& processIds) const;
          ThreadId RootId() const;
+         uint64_t Jiffies() const;
 
       private:
-         std::list<ThreadId> _pids;
+         std::list<ProcessInfo> _processes;
    };
 
 } // namespace Core
