@@ -20,9 +20,6 @@
 #ifndef __RECTANGLE_H
 #define __RECTANGLE_H
 
-#include <algorithm>
-#include <xutility>
-
 #include "Module.h"
 
 namespace WPEFramework {

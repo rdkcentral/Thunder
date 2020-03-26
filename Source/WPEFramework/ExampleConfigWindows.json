@@ -3,11 +3,11 @@
   "binding_": "0.0.0.0",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "W:/Persistent",
-  "volatilepath": "W:/temp",
-  "datapath": "W:/Debug/Plugins",
-  "systempath": "W:/Debug",
-  "proxystubpath": "W:/ProxyStubs/Debug",
+  "persistentpath": "D:/Thunder/artifacts/Persistent",
+  "volatilepath": "D:/Thunder/artifacts/temp",
+  "datapath": "D:/Thunder/artifacts/Debug/Plugins",
+  "systempath": "D:/Thunder/artifacts/Debug",
+  "proxystubpath": "D:/Thunder/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
@@ -20,19 +20,20 @@
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems": [  ]
+        "subsystems": []
       }
     },
     {
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
-        "sleep": "10000",
-        "crash": false
+        "sleep": "5",
+        "single": false,
+        "crash": true
       }
     },
     {

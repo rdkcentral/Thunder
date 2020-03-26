@@ -564,7 +564,15 @@ namespace Wayland {
 
     void Display::SurfaceImplementation::ZOrder(const uint32_t order)
     {
-        wl_simple_shell_set_zorder(_display->_simpleShell, _id, order);
+        ASSERT (order <= std::numeric_limits<uint8_t>::max());
+
+        #ifdef BCM_HOST
+        double fractionalOrder = (order / std::numeric_limits<uint8_t>::max());
+        #else
+        double fractionalOrder = 1.0 - (order / std::numeric_limits<uint8_t>::max());
+        #endif
+
+        wl_simple_shell_set_zorder(_display->_simpleShell, _id, wl_fixed_from_double(fractionalOrder));
         wl_display_flush(_display->_display);
         Redraw();
     }
@@ -572,13 +580,6 @@ namespace Wayland {
     void Display::SurfaceImplementation::BringToFront()
     {
         wl_shell_surface_set_toplevel(_shellSurface);
-        wl_display_flush(_display->_display);
-        Redraw();
-    }
-
-    void Display::SurfaceImplementation::SetTop()
-    {
-        wl_simple_shell_set_zorder(_display->_simpleShell, _id, 0);
         wl_display_flush(_display->_display);
         Redraw();
     }

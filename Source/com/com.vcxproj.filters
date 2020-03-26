@@ -21,19 +21,22 @@
     <ClCompile Include="Communicator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IStringIterator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ITracing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="IUnknown.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="IValueIterator.cpp">
+    <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Module.cpp">
+    <ClCompile Include="ProxyStubs_Communicator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_StringIterator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProxyStubs_ValueIterator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
