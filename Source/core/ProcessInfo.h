@@ -231,6 +231,7 @@ namespace Core {
         uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
+        uint64_t Jiffies() const;
         string Name() const;
         string Executable() const;
         std::list<string> CommandLine() const;

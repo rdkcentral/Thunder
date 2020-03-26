@@ -107,6 +107,12 @@ namespace Core {
             return m_cpuload;
         }
 
+        inline uint64_t GetJiffies() const
+        {
+            UpdateCpuStats();
+            return m_jiffies;
+        }
+
         class EXTERNAL MemorySnapshot {
         public:
             MemorySnapshot(const MemorySnapshot& copy) = default;
@@ -307,6 +313,7 @@ namespace Core {
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
         mutable uint64_t m_cpuload;
+        mutable uint64_t m_jiffies;
         mutable time_t m_lastUpdateCpuStats;
 
         void UpdateCpuStats() const;

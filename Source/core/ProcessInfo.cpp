@@ -470,6 +470,41 @@ namespace Core {
 
         return (result);
     }
+
+    uint64_t ProcessInfo::Jiffies() const
+    {
+        uint64_t result = 0;
+
+        int fd;
+        TCHAR buffer[256];
+        int Share = 0;
+
+        snprintf(buffer, sizeof(buffer), "/proc/%d/stat", _pid);
+        if ((fd = open(buffer, O_RDONLY)) > 0) {
+            if (read(fd, buffer, sizeof(buffer)) > 0) {
+                const int utimeIndex = 15;
+                const TCHAR * pointer = buffer;
+
+                // Skip to utime fields
+                for (int index = 0; index < utimeIndex; index++) {
+                    pointer = strstr(pointer, " ");
+                    if (pointer == nullptr) {
+                        break;
+                    }
+                }
+
+                if (pointer != nullptr) {
+                    uint32_t cutime = 0, cstime = 0;
+                    sscanf(pointer, "%d %d", &cutime, &cstime);
+                    result = static_cast<uint64_t>(cutime) + static_cast<uint64_t>(cstime);
+                }
+            }
+            close(fd);
+        }
+
+        return (result);
+    }
+
     string ProcessInfo::Name() const
     {
 #ifdef __WINDOWS__
