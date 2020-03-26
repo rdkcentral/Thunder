@@ -579,6 +579,11 @@ public:
 
         _session->Close();
     }
+    inline void PlaybackStopped() {
+        ASSERT (_session != nullptr);
+
+        _session->PlaybackStopped();
+    }
     inline int Remove()
     {
 

@@ -390,6 +390,13 @@ EXTERNAL OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* sess
     uint16_t* metadataSize);
 
 /**
+ * Let CDM know playback stopped
+ * \param session \ref OpenCDMSession instance.
+ * \return Zero on success, non-zero on error.
+ */
+OpenCDMError opencdm_session_playbackstopped(struct OpenCDMSession* session);
+
+/**
  * Gets Session ID for a session.
  * \param session \ref OpenCDMSession instance.
  * \return Session ID, valid as long as \ref session is valid.

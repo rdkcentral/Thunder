@@ -110,6 +110,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     // We are completely done with the session, it can be closed.
     virtual void Close() = 0;
 
+    // Let the CDM know playback has stopped in order to disable output protection
+    virtual void PlaybackStopped() = 0;
+
     // During instantiation a callback is set, here we can decouple.
     virtual void Revoke(OCDM::ISession::ICallback* callback) = 0;
 };
