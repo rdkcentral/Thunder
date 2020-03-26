@@ -37,6 +37,7 @@ file(GLOB JSON_ENUM_SOURCES json/JsonEnum*.cpp)
 file(GLOB JSON_LINK_HEADERS json/J*.h)
 
 add_library(${TargetDefinitions} SHARED
+        Module.cpp
         Definitions.cpp
         ${JSON_ENUM_SOURCES}
         )
