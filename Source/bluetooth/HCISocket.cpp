@@ -526,9 +526,11 @@ namespace Management {
     typedef ManagementFixedType<MGMT_OP_SET_DEV_CLASS, mgmt_cp_set_dev_class, Core::Void> DeviceClass;
     typedef ManagementFixedType<MGMT_OP_START_DISCOVERY, mgmt_cp_start_discovery, uint8_t> StartDiscovery;
     typedef ManagementFixedType<MGMT_OP_STOP_DISCOVERY, mgmt_cp_stop_discovery, uint8_t> StopDiscovery;
-    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, Core::Void> Pair;
+    typedef ManagementFixedType<MGMT_OP_PAIR_DEVICE, mgmt_cp_pair_device, mgmt_rp_pair_device> Pair;
     typedef ManagementFixedType<MGMT_OP_UNPAIR_DEVICE, mgmt_cp_unpair_device, mgmt_rp_unpair_device> Unpair;
     typedef ManagementFixedType<MGMT_OP_CANCEL_PAIR_DEVICE, mgmt_addr_info, Core::Void> PairAbort;
+    typedef ManagementFixedType<MGMT_OP_PIN_CODE_REPLY, mgmt_cp_pin_code_reply, Core::Void> UserPINCodeReply;
+    typedef ManagementFixedType<MGMT_OP_PIN_CODE_NEG_REPLY, mgmt_cp_pin_code_neg_reply, Core::Void> UserPINCodeNegReply;
     typedef ManagementFixedType<MGMT_OP_USER_CONFIRM_REPLY, mgmt_cp_user_confirm_reply, Core::Void> UserConfirmReply;
     typedef ManagementFixedType<MGMT_OP_USER_CONFIRM_NEG_REPLY, mgmt_cp_user_confirm_reply, Core::Void> UserConfirmNegReply;
     typedef ManagementFixedType<MGMT_OP_USER_PASSKEY_REPLY, mgmt_cp_user_passkey_reply, Core::Void> UserPasskeyReply;
@@ -832,6 +834,9 @@ uint32_t ManagementSocket::Pair(const Address& remote, const Address::type type,
                 result = Core::ERROR_ASYNC_FAILED;
                 break;
         }
+    } else if (result == Core::ERROR_TIMEDOUT) {
+        // OP_PAIR does not seem to send CMD_STATUS unfortunately...
+        result = Core::ERROR_INPROGRESS;
     }
 
     return (result);
@@ -855,6 +860,7 @@ uint32_t ManagementSocket::Unpair(const Address& remote, const Address::type typ
                 result = Core::ERROR_ALREADY_RELEASED;
                 break;
             default:
+                TRACE(Trace::Error, (_T("Unpair command failed [%i]"),command.Result()));
                 result = Core::ERROR_ASYNC_FAILED;
                 break;
         }
@@ -875,20 +881,22 @@ uint32_t ManagementSocket::PairAbort(const Address& remote, const Address::type 
     return (result != Core::ERROR_NONE ? result : (command.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
 }
 
-uint32_t ManagementSocket::UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm)
+uint32_t ManagementSocket::UserPINCodeReply(const Address& remote, const Address::type type, const string& pinCode)
 {
     uint32_t result = Core::ERROR_UNAVAILABLE;
     uint32_t commandResult = MGMT_STATUS_FAILED;
 
-    if (confirm == true) {
-        Management::UserConfirmReply command(_deviceId);
+    if (pinCode.empty() == false) {
+        Management::UserPINCodeReply command(_deviceId);
         command.Clear();
         command->addr.bdaddr = *remote.Data();
         command->addr.type = type;
+        command->pin_len = std::max(pinCode.length(), sizeof(command->pin_code));
+        strncpy(reinterpret_cast<char*>(command->pin_code), pinCode.c_str(), sizeof(command->pin_code));
         result = Exchange(MANAGMENT_TIMEOUT, command, command);
         commandResult = command.Result();
     } else {
-        Management::UserConfirmNegReply command(_deviceId);
+        Management::UserPasskeyNegReply command(_deviceId);
         command.Clear();
         command->addr.bdaddr = *remote.Data();
         command->addr.type = type;
@@ -914,6 +922,30 @@ uint32_t ManagementSocket::UserPasskeyReply(const Address& remote, const Address
         commandResult = command.Result();
     } else {
         Management::UserPasskeyNegReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    }
+
+    return (result != Core::ERROR_NONE ? result : (commandResult == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+}
+
+uint32_t ManagementSocket::UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm)
+{
+    uint32_t result = Core::ERROR_UNAVAILABLE;
+    uint32_t commandResult = MGMT_STATUS_FAILED;
+
+    if (confirm == true) {
+        Management::UserConfirmReply command(_deviceId);
+        command.Clear();
+        command->addr.bdaddr = *remote.Data();
+        command->addr.type = type;
+        result = Exchange(MANAGMENT_TIMEOUT, command, command);
+        commandResult = command.Result();
+    } else {
+        Management::UserConfirmNegReply command(_deviceId);
         command.Clear();
         command->addr.bdaddr = *remote.Data();
         command->addr.type = type;

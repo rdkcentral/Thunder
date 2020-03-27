@@ -649,7 +649,7 @@ namespace Bluetooth {
                     _offset += result;
 
                     //printf("SEND: ");cfor (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
-                    printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
+                    //printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
                 }
                 return (result);
             }
@@ -697,8 +697,8 @@ namespace Bluetooth {
                     } else if (hdr->evt == EVT_CMD_COMPLETE) {
                         const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
                         if (btohs(cc->opcode) == OPCODE) {
-                            printf(_T("HCI command complete: %X:%03X %s\n"),
-                                      cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
+                            // printf(_T("HCI command complete: %X:%03X %s\n"),
+                            //          cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
 
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
                                 _error = Core::ERROR_GENERAL;
@@ -1219,8 +1219,9 @@ namespace Bluetooth {
         uint32_t Pair(const Address& remote, const Address::type type, const capabilities cap = NO_INPUT_NO_OUTPUT);
         uint32_t Unpair(const Address& remote, const Address::type type);
         uint32_t PairAbort(const Address& remote, const Address::type type);
-        uint32_t UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm);
+        uint32_t UserPINCodeReply(const Address& remote, const Address::type type, const string& pinCode);
         uint32_t UserPasskeyReply(const Address& remote, const Address::type type, const uint32_t passkey);
+        uint32_t UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm);
 
         uint32_t Notifications(const bool enabled);
 
