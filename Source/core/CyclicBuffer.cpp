@@ -332,10 +332,8 @@ namespace Core {
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
         uint32_t oldTail = _administration->_tail;
-        uint32_t head = _administration->_head;
-
         uint32_t tail = oldTail & _administration->_tailIndexMask;
-        uint32_t free = Free(head, tail);
+        uint32_t free = Free(_administration->_head, tail);
 
         while (free <= required) {
             uint32_t remaining = required - free;
@@ -343,17 +341,17 @@ namespace Core {
             uint32_t offset = GetOverwriteSize(cursor);
             ASSERT((offset + free) >= required);
 
-            uint32_t newTail = (cursor.GetCompleteTail(offset) + 1); // Differentiate between full and empty buffer.
+            uint32_t newTail = cursor.GetCompleteTail(offset);
 
-            if (!std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail)) {
+            if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
+                oldTail = _administration->_tail;
                 tail = oldTail & _administration->_tailIndexMask;
-                free = Free(head, tail);
+                free = Free(_administration->_head, tail);
             } else {
-                ASSERT(Free(head, newTail & _administration->_tailIndexMask) >= required);
+                free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
+                ASSERT(Free() >= required);
             }
         }
-
-        ASSERT(Free() >= required);
     }
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
