@@ -84,7 +84,7 @@ install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websock
 
 InstallPackageConfig(
         TARGETS ${TARGET} 
-        DESCRIPTION "Basic library containing JSONRPC headers.")
+        DESCRIPTION "library containing HTTP protocol (RFC2616), WebSocket (RFC6455) and JSONRPC functionality.")
 
 
 InstallCMakeConfig(TARGETS ${TARGET})
