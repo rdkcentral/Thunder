@@ -229,7 +229,7 @@ namespace Core {
                 uint8_t adjust(static_cast<uint8_t>(newPointer - m_Buffer));
                 m_Buffer = newPointer;
                 m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
-                m_MaxSize -= adjust;
+                m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
                 TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
             }
         }
