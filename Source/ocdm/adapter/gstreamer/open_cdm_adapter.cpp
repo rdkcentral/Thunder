@@ -19,6 +19,7 @@
  
 #include "open_cdm_adapter.h"
 
+#include <stdlib.h>
 #include <gst/gst.h>
 #include <gst/base/gstbytereader.h>
 
@@ -86,7 +87,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
             }
             gst_byte_reader_set_pos(reader, 0);
 
-            uint8_t* encryptedData = reinterpret_cast<uint8_t*> (malloc(totalEncrypted));
+            uint8_t* encryptedData = reinterpret_cast<uint8_t*>(malloc(totalEncrypted));
             uint8_t* encryptedDataIter = encryptedData;
 
             uint32_t index = 0;
