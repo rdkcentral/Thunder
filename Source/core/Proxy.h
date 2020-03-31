@@ -150,20 +150,18 @@ namespace Core {
         template <typename TYPE>
         TYPE* Store()
         {
-            size_t size = Size();
             size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = reinterpret_cast<void*>(&(reinterpret_cast<uint8_t*>(this)[alignedSize + sizeof(void*)]));
-            void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            void* result = Alignment(alignof(TYPE), data);
             return (reinterpret_cast<TYPE*>(result));
         }
 
         template <typename TYPE>
         const TYPE* Store() const
         {
-            size_t size = Size();
             size_t alignedSize = ((sizeof(ProxyService<CONTEXT>) + (sizeof(void*) - 1)) & (static_cast<size_t>(~(sizeof(void*) - 1))));
             void* data = const_cast<void*>(reinterpret_cast<const void*>(&(reinterpret_cast<const uint8_t*>(this)[alignedSize + sizeof(void*)])));
-            const void* result = std::align(alignof(TYPE), sizeof(TYPE), data, size);
+            const void* result = Alignment(alignof(TYPE), data);
             return (reinterpret_cast<const TYPE*>(result));
         }
 
