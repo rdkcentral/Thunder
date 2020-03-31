@@ -343,7 +343,7 @@ namespace Core {
                     copied = true;
                 }
             } else {
-                ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
+                ::memmove(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
 
                 if (m_Size < (offset + RHS.m_Size)) {
                     m_Size = offset + RHS.m_Size;

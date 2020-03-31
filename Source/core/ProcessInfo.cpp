@@ -132,9 +132,10 @@ namespace Core {
                 if ('\0' == endptr[0]) {
                     // We have a valid PID, Find, the parent of this process..
                     TCHAR buffer[512];
+                    memset(buffer, 0, sizeof(buffer));
                     int fd;
 
-                    snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
+                    snprintf(buffer, sizeof(buffer) - sizeof(buffer[0]), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) > 0) {
                         if (read(fd, buffer, sizeof(buffer)) > 0) {
                             int ppid = 0;
@@ -315,7 +316,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%d", &VmSize);
                 result = VmSize * PageSize;
             }
@@ -343,7 +347,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%*d %d", &VmRSS);
                 result = VmRSS * PageSize;
             }
@@ -371,7 +378,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%*d %*d %d", &Share);
                 result = Share * PageSize;
             }

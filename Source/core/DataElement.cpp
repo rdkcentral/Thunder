@@ -103,7 +103,7 @@ namespace Core {
             uint32_t bytesToRead = static_cast<uint32_t>(Size() - offset);
 
             // read as musch as we can from this buffer, move on to the next
-            ::memcpy(buffer, &(Buffer()[offset]), bytesToRead);
+            ::memmove(buffer, &(Buffer()[offset]), bytesToRead);
 
             ASSERT(m_Next != nullptr);
 
@@ -125,7 +125,7 @@ namespace Core {
             uint32_t bytesToWrite = static_cast<uint32_t>(Size() - offset);
 
             // read as musch as we can from this buffer, move on to the next
-            ::memcpy(&(Buffer()[offset]), buffer, bytesToWrite);
+            ::memmove(&(Buffer()[offset]), buffer, bytesToWrite);
 
             ASSERT(m_Next != nullptr);
 
@@ -152,7 +152,7 @@ namespace Core {
                 destinationOffset = 0;
             } else {
                 // The source is the limiting factor, fill the source up..
-                ::memcpy(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(source->Size() - sourceOffset));
+                ::memmove(&(destination->Buffer()[destinationOffset]), &(source->Buffer()[sourceOffset]), static_cast<uint32_t>(source->Size() - sourceOffset));
 
                 destinationOffset += (source->Size() - sourceOffset);
                 copiedSize += (source->Size() - sourceOffset);
