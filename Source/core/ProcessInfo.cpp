@@ -135,9 +135,9 @@ namespace Core {
                     memset(buffer, 0, sizeof(buffer));
                     int fd;
 
-                    snprintf(buffer, sizeof(buffer) - sizeof(buffer[0]), "/proc/%d/stat", pid);
+                    snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) > 0) {
-                        if (read(fd, buffer, sizeof(buffer)) > 0) {
+                        if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
