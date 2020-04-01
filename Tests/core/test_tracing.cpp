@@ -152,7 +152,8 @@ void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuff
 void CreateTraceBuffer(string tracePath)
 {
    char systemCmd[1024];
-   sprintf(systemCmd, "mkdir -p %s", tracePath.c_str());
+   string command = "mkdir -p ";
+   snprintf(systemCmd, command.size()+tracePath.size()+1, "%s%s", command.c_str(),tracePath.c_str());
    system(systemCmd);
 }
 

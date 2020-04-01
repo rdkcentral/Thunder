@@ -6,35 +6,34 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-#define FILENAME "dataFile.txt"
-
 class DataFile: public Core::DataElementFile
 {
-    public:
-        DataFile() = delete;
+public:
+    DataFile() = delete;
 
-        DataFile(File& file)
-            : DataElementFile(file)
-        {
-        }
+    DataFile(File& file)
+        : DataElementFile(file)
+    {
+    }
 
-        DataFile(string fileName, uint32_t type, uint32_t size)
-            :DataElementFile(fileName, type, size)
-        {
-        }
+    DataFile(string fileName, uint32_t type, uint32_t size)
+        :DataElementFile(fileName, type, size)
+    {
+    }
 
-        void MemoryMap()
-        {
-            Reallocation(54);
-            ReopenMemoryMappedFile();
-        }
+    void MemoryMap()
+    {
+        Reallocation(54);
+        ReopenMemoryMappedFile();
+    }
 };
 
 TEST(test_datafile, simple_test)
 {
     char buffer[100];
-    sprintf(buffer,"echo 'DataElement file checking......' >%s",FILENAME);
-    const string fileName = FILENAME;
+    const string fileName = "dataFile.txt";
+    string message = ">echo 'DataElement file checking......'";
+    snprintf(buffer,(message.size() + fileName.size()+1), "%s%s",message.c_str(),fileName.c_str());
     File file(fileName);
     File fileSample(file);
     DataFile obj1(fileSample);
