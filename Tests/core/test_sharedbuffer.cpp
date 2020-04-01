@@ -6,13 +6,15 @@
 namespace WPEFramework {
 namespace Tests {
 
-    void CleanUpBuffer(char bufferName[])
+    void CleanUpBuffer(char bufferName[], int buffSize)
     {
        // TODO: shouldn't this be done producer-side?
        char systemCmd[1024];
-       sprintf(systemCmd, "rm -f %s", bufferName);
+       string command = "rm -f ";
+       snprintf(systemCmd, command.size()+buffSize+1, "%s%s", command.c_str(),bufferName);
        system(systemCmd);
-       sprintf(systemCmd, "rm -f %s.admin", bufferName);
+       string ext = ".admin";
+       snprintf(systemCmd, command.size()+buffSize+ext.size()+1, "%s%s%s", command.c_str(),bufferName,ext.c_str());
        system(systemCmd);
     }
 
@@ -20,7 +22,8 @@ namespace Tests {
     {
        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
            char bufferName[] = "testbuffer01";
-           CleanUpBuffer(bufferName);
+           int buffSize = sizeof(bufferName)/sizeof(bufferName[0]);
+           CleanUpBuffer(bufferName, buffSize);
 
            uint16_t administrationSize = 64;
            uint32_t bufferSize = 8 * 1024;
