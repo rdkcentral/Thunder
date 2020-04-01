@@ -68,6 +68,21 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include/${NAMESPACE}>
         )
 
+if(SECURE_SOCKET)
+    message ("FUCK CMAKE  =====================================================================================")
+    find_package(OpenSSL REQUIRED)
+
+    if (OPENSSL_FOUND)
+        include_directories(${OPENSSL_INCLUDE_DIR})
+        target_sources(${TARGET}
+            PRIVATE
+                WebSecureLink.cpp)
+        target_link_libraries(${TARGET}
+            PRIVATE
+                OpenSSL::SSL)
+    endif()
+endif()
+
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib

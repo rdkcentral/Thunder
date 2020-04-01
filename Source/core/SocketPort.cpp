@@ -794,6 +794,14 @@ namespace Core {
         }
     }
 
+    /* virtual */ int32_t SocketPort::Read(uint8_t buffer[], const uint16_t length) const {
+        return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, 0));
+    }
+
+    /* virtual */ int32_t SocketPort::Write(const uint8_t buffer[], const uint16_t length) {
+        return (::send(m_Socket, reinterpret_cast<const char*>(buffer), length, 0));
+    }
+
     void SocketPort::Write()
     {
         bool dataLeftToSend = true;
@@ -820,15 +828,13 @@ namespace Core {
                     ASSERT(m_RemoteNode.IsValid() == true);
 
                     sendSize = ::sendto(m_Socket,
-                        reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
+                        reinterpret_cast<const char*>(&(m_SendBuffer[m_SendOffset])),
                         m_SendBytes - m_SendOffset, 0,
                         static_cast<const NodeId&>(m_RemoteNode),
                         m_RemoteNode.Size());
 
                 } else {
-                    sendSize = ::send(m_Socket,
-                        reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
-                        m_SendBytes - m_SendOffset, 0);
+                    sendSize = Write(&(m_SendBuffer[m_SendOffset]), m_SendBytes - m_SendOffset);
                 }
 
                 if (sendSize >= 0) {
@@ -875,9 +881,7 @@ namespace Core {
 
                 m_ReceivedNode = l_Remote;
             } else {
-                l_Size = ::recv(m_Socket,
-                    reinterpret_cast<char*>(&m_ReceiveBuffer[m_ReadBytes]),
-                    m_ReceiveBufferSize - m_ReadBytes, 0);
+                l_Size = Read(&(m_ReceiveBuffer[m_ReadBytes]), m_ReceiveBufferSize - m_ReadBytes);
             }
 
             if (l_Size == 0) {

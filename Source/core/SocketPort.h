@@ -225,6 +225,8 @@ namespace Core {
 
     protected:
         virtual bool Initialize();
+        virtual int32_t Read(uint8_t buffer[], const uint16_t length) const;
+        virtual int32_t Write(const uint8_t buffer[], const uint16_t length);
 
     private:
         virtual IResource::handle Descriptor() const override

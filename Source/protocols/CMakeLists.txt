@@ -54,6 +54,7 @@ set(SOURCES_WEBSOCKETS
         websocket/WebSerializer.cpp
         websocket/WebSocketLink.cpp
         websocket/JSONRPCLink.cpp
+        websocket/WebSecureLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
         websocket/JSONRPCLink.h
@@ -65,6 +66,7 @@ set(SOURCES_WEBSOCKETS
         websocket/WebSocketLink.h
         websocket/WebTransfer.h
         websocket/WebTransform.h
+        websocket/WebSecureLink.h
         )
 
 foreach(file IN LISTS SOURCES_COM SOURCES_WEBSOCKETS)
@@ -132,15 +134,6 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
-set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 11
-        CXX_STANDARD_REQUIRED YES
-        FRAMEWORK FALSE
-        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
-        VERSION ${VERSION}
-        SOVERSION ${VERSION_MAJOR}
-        )
-
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
         PUBLIC
@@ -149,6 +142,32 @@ if(PROCESSCONTAINERS)
         PUBLIC
             PROCESSCONTAINERS_ENABLED=1)
 endif(PROCESSCONTAINERS)
+
+if(SECURE_SOCKET)
+    find_package(OpenSSL REQUIRED)
+
+    if (OPENSSL_FOUND)
+        include_directories(${OPENSSL_INCLUDE_DIR})
+        target_sources(${TARGET}
+            PRIVATE
+                WebSecureLink.cpp)
+        target_link_libraries(${TARGET}
+            PRIVATE
+                OpenSSL::SSL)
+    endif()
+
+    list(APPEND PUBLIC_HEADERS "WebSecureLink.h")
+    
+endif()
+
+set_target_properties(${TARGET} PROPERTIES
+        CXX_STANDARD 11
+        CXX_STANDARD_REQUIRED YES
+        FRAMEWORK FALSE
+        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        VERSION ${VERSION}
+        SOVERSION ${VERSION_MAJOR}
+        )
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
