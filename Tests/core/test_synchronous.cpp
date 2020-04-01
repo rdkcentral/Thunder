@@ -6,11 +6,11 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-namespace SockInfo {
+namespace {
     const string localhost = "127.0.0.1";
-    const uint16_t portNumber = 8080;
+    const uint16_t portNumber = 9749;
     const uint16_t bufferSize = 1024;
-} // SockInfo
+}
 
 class Message : public Core::IOutbound {
 protected:
@@ -110,7 +110,7 @@ public:
     SynchronousSocket() = delete;
 
     SynchronousSocket(bool listening)
-        :SynchronousChannelType<SocketPort>((listening ? SocketPort::LISTEN : SocketPort::STREAM),listening ?Core::NodeId(_T(SockInfo::localhost.c_str()),(SockInfo::portNumber),Core::NodeId::TYPE_IPV4):Core::NodeId(),listening ?Core::NodeId():Core::NodeId(_T(SockInfo::localhost.c_str()),(SockInfo::portNumber),Core::NodeId::TYPE_IPV4), SockInfo::bufferSize, SockInfo::bufferSize)
+        :SynchronousChannelType<SocketPort>((listening ? SocketPort::LISTEN : SocketPort::STREAM),listening ?Core::NodeId(_T(localhost.c_str()),(portNumber),Core::NodeId::TYPE_IPV4):Core::NodeId(_T(localhost.c_str()),(portNumber),Core::NodeId::TYPE_DOMAIN),listening ?Core::NodeId(_T(localhost.c_str()),(portNumber),Core::NodeId::TYPE_DOMAIN):Core::NodeId(_T(localhost.c_str()),(portNumber),Core::NodeId::TYPE_IPV4), bufferSize, bufferSize)
     {
         EXPECT_FALSE(Core::SynchronousChannelType<Core::SocketPort>::Open(Core::infinite) != Core::ERROR_NONE);
     }
@@ -126,11 +126,12 @@ public:
     }
 };
 
-TEST(DISABLED_test_synchronous, simple_synchronous)
+TEST(test_synchronous, simple_synchronous)
 {
     IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin) {
         SynchronousSocket synchronousServerSocket(true);
         testAdmin.Sync("setup server");
+
         testAdmin.Sync("connect client");
         testAdmin.Sync("client msg");
         testAdmin.Sync("client newmsg");
@@ -141,6 +142,7 @@ TEST(DISABLED_test_synchronous, simple_synchronous)
     {
         testAdmin.Sync("setup server");
         SynchronousSocket synchronousClientSocket(false);
+
         testAdmin.Sync("connect client");
         uint8_t buffer[] = "Hello";
         Message message(5,buffer);
