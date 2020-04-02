@@ -92,6 +92,8 @@ namespace PluginHost {
       
                     _nextSlot = Core::Time::Now().Add(_startTime);
 
+                    Core::WorkerPool::Instance().Revoke(_job);
+                    
                     _adminLock.Lock();
 
                     _code = code;
