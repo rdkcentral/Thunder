@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+#include "Module.h"
+
 #ifndef __ISYSTEMINFO_H
 #define __ISYSTEMINFO_H
 
@@ -77,6 +79,7 @@ namespace PluginHost {
             virtual void Updated() = 0;
         };
 
+        /* @stubgen:omit */
         struct ISecurity
             : virtual public Core::IUnknown {
 
@@ -92,6 +95,7 @@ namespace PluginHost {
             virtual string Callsign() const = 0;
         };
 
+        /* @stubgen:omit */
         struct IInternet
             : virtual public Core::IUnknown {
 
@@ -116,6 +120,7 @@ namespace PluginHost {
             static const TCHAR* ToString(const network_type value);
         };
 
+        /* @stubgen:omit */
         // Location information
         struct ILocation
             : virtual public Core::IUnknown {
@@ -134,6 +139,7 @@ namespace PluginHost {
             virtual string City() const = 0;
         };
 
+        /* @stubgen:omit */
         // Device specific identification.
         struct IIdentifier
             : virtual public Core::IUnknown {
@@ -149,6 +155,7 @@ namespace PluginHost {
             virtual uint8_t Identifier(const uint8_t length, uint8_t buffer[]) const = 0;
         };
 
+        /* @stubgen:omit */
         // Time synchronisation reporting
         struct ITime
             : virtual public Core::IUnknown {
@@ -164,6 +171,7 @@ namespace PluginHost {
             virtual uint64_t TimeSync() const = 0;
         };
 
+        /* @stubgen:omit */
         // IProvisioning reporting
         struct IProvisioning : public RPC::IStringIterator {
 
@@ -172,6 +180,7 @@ namespace PluginHost {
             };
         };
 
+        /* @stubgen:omit */
         // Decryption reporting
         struct IDecryption : public RPC::IStringIterator {
 

@@ -19,6 +19,8 @@ set(TARGET ${NAMESPACE}COM)
 
 ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Communicator.h)
 ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/ITracing.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IStringIterator.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/IValueIterator.h)
 
 add_library(${TARGET} SHARED
         Administrator.cpp
@@ -26,8 +28,8 @@ add_library(${TARGET} SHARED
         ProxyStubs_Communicator.cpp
         ITracing.cpp
         ProxyStubs_Tracing.cpp
-        IStringIterator.cpp
-        IValueIterator.cpp
+        ProxyStubs_StringIterator.cpp
+        ProxyStubs_ValueIterator.cpp
         IUnknown.cpp
         Module.cpp
         )

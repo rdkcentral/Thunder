@@ -507,6 +507,12 @@ uint32_t EXTERNAL GetCallStack(const ThreadId threadId, void* addresses[], const
 namespace WPEFramework {
 namespace Core {
 
+    inline void* Alignment(size_t alignment, void* incoming)
+    {
+        const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
+        return reinterpret_cast<void*>((basePtr - 1u + alignment) & -alignment);
+    }
+
     inline uint8_t* PointerAlign(uint8_t* pointer)
     {
         uintptr_t addr = reinterpret_cast<uintptr_t>(pointer);

@@ -241,12 +241,12 @@ public:
         vc_dispmanx_rect_set(&(surface->rectangle), 0, 0, displayWidth, displayHeight);
         vc_dispmanx_rect_set(&srcRect, 0, 0, displayWidth << 16, displayHeight << 16);
         surface->layer = 0;
-        surface->opacity = 0;
+        surface->opacity = 255;
 
         VC_DISPMANX_ALPHA_T alpha = {
             static_cast<DISPMANX_FLAGS_ALPHA_T>(DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_MIX),
-            255,
-            surface->opacity
+            surface->opacity,
+            255
         };
 
         DISPMANX_DISPLAY_HANDLE_T dispmanDisplay = vc_dispmanx_display_open(0);
@@ -327,10 +327,12 @@ public:
 
     void ZOrder(const EGLSurface& surface, const int8_t layer)
     {
+        // RPI is unique: layer #0 actually means "deepest", so we need to convert.
+        const int8_t actualLayer = 127 - layer;
         Surface* object = reinterpret_cast<Surface*>(surface);
         DISPMANX_UPDATE_HANDLE_T  dispmanUpdate = vc_dispmanx_update_start(0);
         object->layer = layer;
-        vc_dispmanx_element_change_layer(dispmanUpdate, object->surface.element, object->layer);
+        vc_dispmanx_element_change_layer(dispmanUpdate, object->surface.element, actualLayer);
         vc_dispmanx_update_submit_sync(dispmanUpdate);
     }
 };
@@ -734,7 +736,7 @@ uint32_t Display::SurfaceImplementation::ZOrder(const uint16_t zorder)
         _layer = layer;
     }
 
-    //Platform::Instance().ZOrder(_nativeSurface, layer);
+    Platform::Instance().ZOrder(_nativeSurface, layer);
 
     return (Core::ERROR_NONE);
 }
