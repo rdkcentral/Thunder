@@ -579,6 +579,11 @@ public:
 
         _session->Close();
     }
+    inline void ResetOutputProtection() {
+        ASSERT (_session != nullptr);
+
+        _session->ResetOutputProtection();
+    }
     inline int Remove()
     {
 
