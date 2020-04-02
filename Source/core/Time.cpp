@@ -18,6 +18,7 @@
  */
 
 #include "Time.h"
+#include "Number.h"
 #include <time.h>
 
 namespace WPEFramework {
@@ -432,7 +433,8 @@ namespace Core {
                                     // Handle fractions of seconds
                                     if (*endptr == '.') {
                                         if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 2)) {
-                                            miliseconds = static_cast<int>(floor(std::strtof(endptr, &endptr) * MilliSecondsPerSecond));
+                                            uint32_t length = static_cast<uint32_t>(buffer.length() -  static_cast<size_t>((endptr - cbuffer) + 2));
+                                            miliseconds = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Value();
                                         } else {
                                             result = false;
                                         }
