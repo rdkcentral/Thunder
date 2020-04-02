@@ -56,6 +56,7 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include <stdio.h>
 #include <list>
 
@@ -114,11 +115,13 @@ typedef enum {
     Expired,
     Released,
     OutputRestricted,
+    OutputRestrictedHDCP22,
     OutputDownscaled,
     StatusPending,
-    InternalError
+    InternalError,
+    HWError
 } KeyStatus;
-
+  
 /**
  * OpenCDM error code. Zero always means success.
  */
