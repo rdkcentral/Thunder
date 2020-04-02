@@ -411,6 +411,23 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session)
 }
 
 /**
+ * Let CDM know playback stopped and reset output protection
+ * \param session \ref OpenCDMSession instance.
+ * \return Zero on success, non-zero on error.
+ */
+OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session)
+{
+    OpenCDMError result(ERROR_INVALID_SESSION);
+
+    if (session != nullptr) {
+        session->ResetOutputProtection();
+        result = OpenCDMError::ERROR_NONE;
+    }
+
+    return (result);
+}
+
+/**
  * Closes a session.
  * \param session \ref OpenCDMSession instance.
  * \return zero on success, non-zero on error.
