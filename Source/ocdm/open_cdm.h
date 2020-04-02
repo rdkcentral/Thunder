@@ -56,6 +56,39 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
+#include <list>
+
+#ifdef _MSVC_LANG
+#undef EXTERNAL
+#ifdef OCDM_EXPORTS
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#pragma comment(lib, "ocdm.lib")
+#endif
+
+/**
+ * Sometimes the compiler would like to be smart, if we do not reference
+ * anything here
+ * and you enable the rightflags, the linker drops the dependency. Than
+ * Proxy/Stubs do
+ * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
+ */
+extern "C" {
+EXTERNAL void ForceLinkingOfOpenCDM();
+}
+
+#else
+#define EXTERNAL
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define SESSION_ID_LEN 16
+#define MAX_NUM_SECURE_STOPS 8
 
 /**
  * Represents an OCDM system
@@ -85,40 +118,6 @@ typedef enum {
     StatusPending,
     InternalError
 } KeyStatus;
-
-#ifdef _MSVC_LANG
-#undef EXTERNAL
-#ifdef OCDM_EXPORTS
-#define EXTERNAL __declspec(dllexport)
-#else
-#define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "ocdm.lib")
-#endif
-/**
- * Sometimes the compiler would like to be smart, if we do not reference
- * anything here
- * and you enable the rightflags, the linker drops the dependency. Than
- * Proxy/Stubs do
- * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
- */
-extern "C" {
-EXTERNAL void ForceLinkingOfOpenCDM();
-}
-#else
-#define EXTERNAL
-#endif
-
-#ifdef __cplusplus
-
-#include <list>
-#include <string>
-
-#define SESSION_ID_LEN 16
-#define MAX_NUM_SECURE_STOPS 8
-
-extern "C" {
-
-#endif
 
 /**
  * OpenCDM error code. Zero always means success.
