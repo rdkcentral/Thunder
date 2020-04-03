@@ -34,6 +34,13 @@ namespace RPC {
 
     /* virtual */ Administrator::~Administrator()
     {
+        for (std::pair<uint32_t, IMetadata*> proxy : _proxy) {
+            delete proxy.second;
+        }
+
+        for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
+            delete stub.second;
+        }
     }
 
     /* static */ Administrator& Administrator::Instance()

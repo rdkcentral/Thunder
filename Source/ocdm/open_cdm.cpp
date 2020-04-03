@@ -83,6 +83,14 @@ KeyStatus CDMState(const OCDM::ISession::KeyStatus state)
         return KeyStatus::Released;
     case OCDM::ISession::Expired:
         return KeyStatus::Expired;
+    case OCDM::ISession::OutputRestricted:
+        return KeyStatus::OutputRestricted;
+    case OCDM::ISession::OutputRestrictedHDCP22:
+        return KeyStatus::OutputRestrictedHDCP22;
+    case OCDM::ISession::OutputDownscaled:
+        return KeyStatus::OutputDownscaled;
+    case OCDM::ISession::HWError:
+        return KeyStatus::HWError;
     default:
         assert(false);
     }
@@ -405,6 +413,23 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session)
 
     if (session != nullptr) {
         result = static_cast<OpenCDMError>(session->Remove());
+    }
+
+    return (result);
+}
+
+/**
+ * Let CDM know playback stopped and reset output protection
+ * \param session \ref OpenCDMSession instance.
+ * \return Zero on success, non-zero on error.
+ */
+OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session)
+{
+    OpenCDMError result(ERROR_INVALID_SESSION);
+
+    if (session != nullptr) {
+        session->ResetOutputProtection();
+        result = OpenCDMError::ERROR_NONE;
     }
 
     return (result);

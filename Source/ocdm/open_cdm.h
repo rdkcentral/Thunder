@@ -56,6 +56,7 @@
 
 #include <stdint.h>
 #include <string.h>
+
 #include <stdio.h>
 #include <list>
 
@@ -114,11 +115,13 @@ typedef enum {
     Expired,
     Released,
     OutputRestricted,
+    OutputRestrictedHDCP22,
     OutputDownscaled,
     StatusPending,
-    InternalError
+    InternalError,
+    HWError
 } KeyStatus;
-
+  
 /**
  * OpenCDM error code. Zero always means success.
  */
@@ -387,6 +390,13 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 EXTERNAL OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* session, 
     char metadata[], 
     uint16_t* metadataSize);
+
+/**
+ * Let CDM know playback stopped and reset output protection
+ * \param session \ref OpenCDMSession instance.
+ * \return Zero on success, non-zero on error.
+ */
+OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session);
 
 /**
  * Gets Session ID for a session.
