@@ -1013,6 +1013,7 @@ namespace Wayland {
 
         // Wait till we are fully registered.
         _waylandSurfaces.insert(std::pair<struct wl_surface*, SurfaceImplementation*>(surface->_surface, surface));
+        surface->AddRef();
 
         result = surface;
 

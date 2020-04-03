@@ -484,8 +484,11 @@ namespace Core {
         }
 
         if ((receiveBuffer != 0) || (sendBuffer != 0)) {
-            uint8_t* allocatedMemory = static_cast<uint8_t*>(::malloc(sendBuffer + receiveBuffer));
+            uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(sendBuffer + receiveBuffer, 1));
             if (sendBuffer != 0) {
+                if (m_SendBuffer != nullptr) {
+                    free(m_SendBuffer);
+                }
                 m_SendBuffer = allocatedMemory;
             }
             if (receiveBuffer != 0) {

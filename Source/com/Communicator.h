@@ -987,10 +987,11 @@ namespace RPC {
                 void* realIF = nullptr;
                 void* result = nullptr;
 
-                ASSERT(implementation);
                 ASSERT(baseChannel.IsValid() == true);
 
                 if (info.IsOffer() == true) {
+
+                    ASSERT(implementation);
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
 
@@ -1002,6 +1003,8 @@ namespace RPC {
                     }
 
                 } else if (info.IsRevoke() == true) {
+
+                    ASSERT(implementation);
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
 
