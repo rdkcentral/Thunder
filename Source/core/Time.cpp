@@ -664,6 +664,37 @@ namespace Core {
         return (static_cast<uint16_t>(convertedTime.tm_yday));
     }
 
+    string Time::ToTimeOnly(const bool localTime) const {
+
+        TCHAR buffer[32];
+
+        if (!IsValid())
+            return string();
+
+        const TCHAR* zone = (localTime == false ? _T(" GMT") : nullptr);
+
+        if (localTime != IsLocalTime()) {
+            SYSTEMTIME convertedTime;
+            if (IsLocalTime()) {
+                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            } else {
+                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+            }
+            Time converted(convertedTime, localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        } else
+#pragma warning(disable : 4996)
+            _stprintf(buffer, _T("]%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+#pragma warning(default : 4996)
+
+        string value(buffer);
+        if( zone != nullptr ) {
+            value += zone;
+        }
+
+        return (value);
+    }
+
     string Time::ToRFC1123(const bool localTime) const
     {
         // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
