@@ -951,6 +951,37 @@ namespace Core {
         return (string(buffer));
     }
 
+    string Time::ToTimeOnly(const bool localTime) const {
+        // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
+        TCHAR buffer[32];
+        const TCHAR* zone = (localTime == false) ? _T("GMT") : nullptr;
+
+        if (!IsValid())
+            return string();
+
+        if (localTime != IsLocalTime()) {
+            // We need to convert from local to GMT or vv
+            time_t epochTimestamp;
+            struct tm originalTime = _time;
+            if (IsLocalTime())
+                epochTimestamp = mktime(&originalTime);
+            else
+                epochTimestamp = mktimegm(&originalTime);
+            timespec convertedTime{ epochTimestamp, 0 };
+            Time converted(convertedTime, localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        } else {
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+        }
+
+        string value(buffer);
+        if( zone != nullptr ) {
+            value += zone;
+        }
+
+        return (value);
+    }
+
     string Time::Format(const TCHAR* formatter) const
     {
         TCHAR buffer[200];
