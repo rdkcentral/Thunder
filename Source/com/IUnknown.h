@@ -24,6 +24,8 @@
 #include "Messages.h"
 #include "Module.h"
 
+#define TO_INSTANCE_ID(x) ((WPEFramework::RPC::instance_id)*(WPEFramework::RPC::instance_id*)(x))
+
 namespace WPEFramework {
 
 namespace RPC {

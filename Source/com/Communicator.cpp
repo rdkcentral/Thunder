@@ -430,7 +430,7 @@ namespace RPC {
         ASSERT(BaseClass::IsOpen() == false);
         _announceEvent.ResetEvent();
 
-        instance_id impl = reinterpret_cast<instance_id>(implementation);
+        instance_id impl = TO_INSTANCE_ID(implementation);
 
         _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), interfaceId, impl, exchangeId);
 
