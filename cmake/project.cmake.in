@@ -94,6 +94,10 @@ macro(write_config)
                 endforeach()
             endif()
 
+            if (NOT ${callsign} STREQUAL "")
+                map_append(${plugin_config} callsign ${callsign})
+            endif()
+
             if (NOT ${autostart} STREQUAL "")
                 map_append(${plugin_config} autostart ${autostart})
             endif()

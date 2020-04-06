@@ -81,4 +81,10 @@ install(
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/jsonrpc)")
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket/jsonrpc.h)")
 
+
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "library containing HTTP protocol (RFC2616), WebSocket (RFC6455) and JSONRPC functionality.")
+
+
 InstallCMakeConfig(TARGETS ${TARGET})
