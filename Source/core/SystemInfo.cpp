@@ -233,7 +233,10 @@ namespace Core {
             uint64_t DeltaTickCount = CurrentTickCount - previousTickCount;
             uint64_t DeltaIdleTime = CurrentIdleTime - previousIdleTime;
 
-            SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
+            if (DeltaTickCount == 0)
+                SystemInfo::m_cpuload = 0;
+            else
+                SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
 
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;
