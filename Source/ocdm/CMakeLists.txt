@@ -85,16 +85,18 @@ target_include_directories( ${TARGET}
 
 if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
     find_package(NEXUS REQUIRED)
-
     target_link_libraries(${TARGET}
             PRIVATE
-            -lnexus
+            NEXUS::NEXUS
             -lbrcmsvpmeta
             )
+endif()
 
-    target_include_directories( ${TARGET}
+if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp-secbuf")
+    target_link_libraries(${TARGET}
             PRIVATE
-            ${LIBNEXUS_INCLUDE}
+            -lb_secbuf
+            -lgstsvpext
             )
 endif()
 

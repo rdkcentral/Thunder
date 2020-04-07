@@ -104,13 +104,12 @@ namespace {
 
 #ifdef VC6
 
+using namespace WPEFramework;
+
 class Platform {
 private:
-    Platform()
+    Platform() : _platform()
     {
-        if (_platorm.Initialize() == false) {
-            TRACE_L1(_T("Could not initialize the platform!"));
-        }
     }
 
 public:
@@ -123,9 +122,6 @@ public:
     }
     ~Platform()
     {
-        if (_platorm.Deinitialize() == false) {
-            TRACE_L1(_T("Could not deinitialize the platform!"));
-        }
     }
 
 public:
@@ -133,33 +129,31 @@ public:
     {
         EGLNativeDisplayType result (static_cast<EGLNativeDisplayType>(EGL_DEFAULT_DISPLAY));
 
-        void* pointer = _platform[ModeSet::TYPE::CURRENT].UnderlyingHandle());
+        const struct gbm_device* pointer = _platform.UnderlyingHandle();
 
-        if(pointer) {
-            result = reinterpret_cast<EGLNativeDisplayType>(pointer);
+        if(pointer != nullptr) {
+            result = reinterpret_cast<EGLNativeDisplayType>(const_cast<struct gbm_device*>(pointer));
         }
         else {
             TRACE_L1(_T("The native display (id) might be invalid / unsupported. Using the EGL default display instead!"));
+        }
 
         return (result);
     }
     uint32_t Width() const
     {
-        return (_platform[ModeSet::TYPE::CURRENT].ScanOutBufferWidth());
+        return (_platform.Width());
     }
     uint32_t Height() const
     {
-        return (_platform[ModeSet::TYPE::CURRENT].ScanOutBufferHeight());
+        return (_platform.Height());
     }
-    EGLSurface CreateSurface (const EGLNativeWindowType& display, const uint32_t width, const uint32_t height) 
+    EGLSurface CreateSurface (const EGLNativeDisplayType& display, const uint32_t width, const uint32_t height) 
     {
-        EGLSurface result;
-
         // A Native surface that acts as a native window
-        result = reinterpret_cast<EGLSurface>(ModeSet::CreateRenderTargetFromUnderlyingHandle(
-                     reinterpret_cast<struct gbm_device*>(display), width, height));
+        EGLSurface result = reinterpret_cast<EGLSurface>(_platform.CreateRenderTarget(width, height));
 
-        if (!result) {
+        if (result != 0) {
             TRACE_L1(_T("The native window (handle) might be invalid / unsupported. Expect undefined behavior!"));
         }
 
@@ -167,9 +161,7 @@ public:
     }
     void DestroySurface(const EGLSurface& surface) 
     {
-        ModeSet::DestroyRenderTargetFromUnderlyingHandle(
-            reinterpret_cast<struct gbm_device*>(_display.Native()), 
-            reinterpret_cast<struct gbm_surface*>(surface));
+        _platform.DestroyRenderTarget(reinterpret_cast<struct gbm_surface*>(surface));
     }
     void Opacity(const EGLSurface&, const uint8_t) 
     {
@@ -185,7 +177,7 @@ public:
     }
  
 private:
-    EnumeratedModeSets _platform;
+    ModeSet _platform;
 };
 
 #else
@@ -249,12 +241,12 @@ public:
         vc_dispmanx_rect_set(&(surface->rectangle), 0, 0, displayWidth, displayHeight);
         vc_dispmanx_rect_set(&srcRect, 0, 0, displayWidth << 16, displayHeight << 16);
         surface->layer = 0;
-        surface->opacity = 0;
+        surface->opacity = 255;
 
         VC_DISPMANX_ALPHA_T alpha = {
             static_cast<DISPMANX_FLAGS_ALPHA_T>(DISPMANX_FLAGS_ALPHA_FROM_SOURCE | DISPMANX_FLAGS_ALPHA_MIX),
-            255,
-            surface->opacity
+            surface->opacity,
+            255
         };
 
         DISPMANX_DISPLAY_HANDLE_T dispmanDisplay = vc_dispmanx_display_open(0);
@@ -335,10 +327,12 @@ public:
 
     void ZOrder(const EGLSurface& surface, const int8_t layer)
     {
+        // RPI is unique: layer #0 actually means "deepest", so we need to convert.
+        const int8_t actualLayer = 127 - layer;
         Surface* object = reinterpret_cast<Surface*>(surface);
         DISPMANX_UPDATE_HANDLE_T  dispmanUpdate = vc_dispmanx_update_start(0);
         object->layer = layer;
-        vc_dispmanx_element_change_layer(dispmanUpdate, object->surface.element, object->layer);
+        vc_dispmanx_element_change_layer(dispmanUpdate, object->surface.element, actualLayer);
         vc_dispmanx_update_submit_sync(dispmanUpdate);
     }
 };
@@ -434,7 +428,7 @@ private:
 
         inline EGLNativeWindowType Native() const
         {
-            return (_nativeSurface);
+            return (reinterpret_cast<EGLNativeWindowType>(_nativeSurface));
         }
         inline int32_t Width() const
         {

@@ -330,7 +330,8 @@ namespace PluginHost {
 #endif
         };
 
-        class WorkerPoolImplementation : public Core::WorkerPool {
+    private:
+        class EXTERNAL WorkerPoolImplementation : public Core::WorkerPool {
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
@@ -345,7 +346,47 @@ namespace PluginHost {
             }
         };
 
-    private:
+        class EXTERNAL FactoriesImplementation : public IFactories {
+        private:
+           FactoriesImplementation(const FactoriesImplementation&) = delete;
+            FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
+
+        public:
+            FactoriesImplementation()
+                : _requestFactory(5)
+                , _responseFactory(5)
+                , _fileBodyFactory(5)
+                , _jsonRPCFactory(5)
+            {
+            }
+            ~FactoriesImplementation() override {
+            }
+
+        public:
+            Core::ProxyType<Web::Request> Request() override
+            {
+                return (_requestFactory.Element());
+            }
+            Core::ProxyType<Web::Response> Response() override
+            {
+                return (_responseFactory.Element());
+            }
+            Core::ProxyType<Web::FileBody> FileBody() override
+            {
+                return (_fileBodyFactory.Element());
+            }
+            Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
+            {
+                return (_jsonRPCFactory.Element());
+            }
+
+        private:
+            Core::ProxyPoolType<Web::Request> _requestFactory;
+            Core::ProxyPoolType<Web::Response> _responseFactory;
+            Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
+            Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+        };
+ 
         class ServiceMap;
         friend class Plugin::Controller;
 
@@ -777,11 +818,11 @@ namespace PluginHost {
                 if (IsActive() == false) {
                     result = _unavailableHandler;
                 } else if (IsWebServerRequest(request.Path) == true) {
-                    result = Factories::Instance().Response();
+                    result = IFactories::Instance().Response();
                     FileToServe(request.Path, *result);
                 } else if (request.Verb == Web::Request::HTTP_OPTIONS) {
 
-                    result = Factories::Instance().Response();
+                    result = IFactories::Instance().Response();
 
                     TRACE_L1("Filling the Options on behalf of: %s", request.Path.c_str());
 
@@ -973,7 +1014,7 @@ namespace PluginHost {
             bool HasVersionSupport(const string& number) const
             {
 
-                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR c) { return std::isdigit(c); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
+                return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
             }
 
         private:
@@ -2071,7 +2112,7 @@ namespace PluginHost {
                             
                             if (_service.IsValid() == true) {
                                 if ((_jsonrpc == true) && (_request->HasBody() == true)) {
-                                    response = Factories::Instance().Response();
+                                    response = IFactories::Instance().Response();
                                     Core::ProxyType<Core::JSONRPC::Message> message(_request->Body<Core::JSONRPC::Message>());
                                     
                                     if (message->IsSet()) {
@@ -2360,7 +2401,7 @@ namespace PluginHost {
                         if (serviceCall == true) {
                             service->Inbound(*request);
                         } else {
-                            request->Body(Factories::Instance().JSONRPC());
+                            request->Body(IFactories::Instance().JSONRPC());
                         }
                     }
                 }
@@ -2422,7 +2463,7 @@ namespace PluginHost {
 
                     switch (request->State()) {
                     case Request::OBLIVIOUS: {
-                        Core::ProxyType<Web::Response> result(Factories::Instance().Response());
+                        Core::ProxyType<Web::Response> result(IFactories::Instance().Response());
 
                         if ((request->Path.empty() == true) || (request->Path == _T("/"))) {
                             result->ErrorCode = Web::STATUS_MOVED_PERMANENTLY;
@@ -2496,7 +2537,7 @@ namespace PluginHost {
 
                     if (_service.IsValid() == true) {
                         if (State() == JSONRPC) {
-                            result = Core::ProxyType<Core::JSON::IElement>(Factories::Instance().JSONRPC());
+                            result = Core::ProxyType<Core::JSON::IElement>(IFactories::Instance().JSONRPC());
                         } else {
                             result = _service->Inbound(identifier);
                         }
@@ -2906,6 +2947,10 @@ namespace PluginHost {
             Core::ProxyType<Service> _controller;
 
             Environment _environment;
+
+            // All the object required for regular communication are coming from proxypools, which
+            // will be parts of this server.
+            FactoriesImplementation _factoriesImplementation;
         };
     }
 }

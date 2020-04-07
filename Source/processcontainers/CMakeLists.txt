@@ -17,13 +17,29 @@
 
 set(TARGET  ${NAMESPACE}ProcessContainers)
 
+# Backend options
+option(PROCESSCONTAINERS_LXC
+        "Use LXC backend." OFF)
+option(PROCESSCONTAINERS_RUNC
+        "Use RunC backend." OFF)
+option(PROCESSCONTAINERS_CLIB
+        "Use c-library nackend." OFF)
+
+
 # Construct a library object
 add_library(${TARGET} SHARED
         ProcessContainer.cpp
-        implementations/LXCImplementation/LXCImplementation.cpp
-        # implementations/CProxyImplementation/CImplementation.cpp
         Module.cpp
         )
+
+# Selects backend
+if (PROCESSCONTAINERS_LXC)
+        target_sources(${TARGET} PRIVATE implementations/LXCImplementation/LXCImplementation.cpp)
+elseif(PROCESSCONTAINERS_RUNC)
+        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
+elseif(PROCESSCONTAINERS_CLIB)
+        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
+endif()
 
 set(PUBLIC_HEADERS
         ProcessContainer.h
@@ -51,18 +67,19 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include>
         )
 
-find_package(LXC REQUIRED)
+if (PROCESSCONTAINERS_LXC)
+        find_package(LXC REQUIRED)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                LXC::LXC
+                CompileSettingsDebug::CompileSettingsDebug
+                )
 
-target_link_libraries(${TARGET}
-        PRIVATE
-        LXC::LXC
-        CompileSettingsDebug::CompileSettingsDebug
-        )
-
-target_include_directories( ${TARGET}
-        PRIVATE
-        LXC::LXC
-        )
+        target_include_directories( ${TARGET}
+                PRIVATE
+                LXC::LXC
+                )
+endif()
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies

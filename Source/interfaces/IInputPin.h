@@ -28,16 +28,14 @@ namespace Exchange {
         enum { ID = ID_INPUT_PIN };
 
         struct INotification : virtual public Core::IUnknown {
-            enum {
-                ID = ID_INPUT_PIN_NOTIFICATION
-            };
+            enum { ID = ID_INPUT_PIN_NOTIFICATION };
 
-            virtual ~INotification()
-            {
-            }
+            virtual ~INotification() { }
 
             virtual void Marker(const uint32_t marker) = 0;
         };
+
+        virtual ~IInputPin() { }
 
         virtual void Register(IInputPin::INotification* sink) = 0;
         virtual void Unregister(IInputPin::INotification* sink) = 0;

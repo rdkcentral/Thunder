@@ -37,8 +37,9 @@ namespace ProxyStub {
         Core::ProxyType<Core::IPCChannel>& channel,
         Core::ProxyType<RPC::InvokeMessage>& message)
     {
-        void* rawIdentifier(message->Parameters().Implementation<void*>());
-        Core::IUnknown* implementation(Convert(rawIdentifier));
+        RPC::instance_id rawIdentifier(message->Parameters().Implementation());
+
+        Core::IUnknown* implementation(Convert(reinterpret_cast<void*>(rawIdentifier)));
 
         ASSERT(implementation != nullptr);
 
@@ -53,15 +54,12 @@ namespace ProxyStub {
                 // Release
                 RPC::Data::Frame::Writer response(message->Response().Writer());
                 RPC::Data::Frame::Reader reader(message->Parameters().Reader());
-                uint32_t dropCount(reader.Number<uint32_t>());
-                uint32_t result = Core::ERROR_NONE;
-                uint32_t index = dropCount;
 
-                while (index-- != 0) { result = implementation->Release(); }
-                
+                uint32_t result = implementation->Release();
+
                 // This is an external referenced interface that we handed out, so it should
                 // be registered. Lets unregister this reference, it is dropped
-                RPC::Administrator::Instance().UnregisterInterface(channel, rawIdentifier, InterfaceId(), dropCount);
+                RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId());
                 response.Number<uint32_t>(result);
                 break;
             }
@@ -72,9 +70,12 @@ namespace ProxyStub {
                 uint32_t newInterfaceId(reader.Number<uint32_t>());
 
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
-                response.Number<void*>(newInterface);
+                response.Number<RPC::instance_id>(reinterpret_cast<RPC::instance_id>(newInterface));
 
-                RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                if (newInterface != nullptr) {
+                    RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                }
+
                 break;
             }
             default: {

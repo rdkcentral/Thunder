@@ -179,6 +179,11 @@ namespace Core {
         {
             if (_referenceCount != 0) {
                 TRACE_L1("Oops this is scary, destructing a (%s) sink that still is being refered by something", typeid(ACTUALSINK).name());
+
+                // this is prbably due to the fcat that the "other" side killed the connection, we need to
+                // Remove our selves at the COM Administrator map.. no need to signal Releases on behalf of the dropped connection anymore..
+                
+                
             }
         }
 
@@ -274,7 +279,7 @@ namespace Core {
     };
 
 #define SERVICE_REGISTRATION(ACTUALCLASS, MAJOR, MINOR) \
-    static Core::ServiceMetadata<ACTUALCLASS, &Core::System::MODULE_NAME> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR);
+    static WPEFramework::Core::ServiceMetadata<ACTUALCLASS, &WPEFramework::Core::System::MODULE_NAME> ServiceMetadata_##ACTUALCLASS(MAJOR, MINOR);
 
 #ifdef BEGIN_INTERFACE_MAP
 #undef BEGIN_INTERFACE_MAP

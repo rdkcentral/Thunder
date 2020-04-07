@@ -293,41 +293,41 @@ namespace RPC {
             ASSERT(instance.ClassName().empty() == false);
             ASSERT(config.Connector().empty() == false);
 
-            _options[_T("-l")] = instance.Locator();
-            _options[_T("-c")] = instance.ClassName();
-            _options[_T("-r")] = config.Connector();
-            _options[_T("-i")] = Core::NumberType<uint32_t>(instance.Interface()).Text();
-            _options[_T("-x")] = Core::NumberType<uint32_t>(sequenceNumber).Text();
-
+            _options.Add(_T("-l")).Add(instance.Locator());
+            _options.Add(_T("-c")).Add(instance.ClassName());
+            _options.Add(_T("-r")).Add(config.Connector());
+            _options.Add(_T("-i")).Add(Core::NumberType<uint32_t>(instance.Interface()).Text());
+            _options.Add(_T("-x")).Add(Core::NumberType<uint32_t>(sequenceNumber).Text());
+            
             if (instance.Version() != static_cast<uint32_t>(~0)) {
-                _options[_T("-V")] = Core::NumberType<uint32_t>(instance.Version()).Text();
+                _options.Add(_T("-V")).Add(Core::NumberType<uint32_t>(instance.Version()).Text());
             }
             if (instance.User().empty() == false) {
-                _options[_T("-u")] = instance.User();
+                _options.Add(_T("-u")).Add(instance.User());
             }
             if (instance.Group().empty() == false) {
-                _options[_T("-g")] = instance.Group();
+                _options.Add(_T("-g")).Add(instance.Group());
             }
             if (config.PersistentPath().empty() == false) {
-                _options[_T("-p")] = '"' + config.PersistentPath() + '"';
+                _options.Add(_T("-p")).Add('"' + config.PersistentPath() + '"');
             }
             if (config.SystemPath().empty() == false) {
-                _options[_T("-s")] = '"' + config.SystemPath() + '"';
+                _options.Add(_T("-s")).Add('"' + config.SystemPath() + '"');
             }
             if (config.DataPath().empty() == false) {
-                _options[_T("-d")] = '"' + config.DataPath() + '"';
+                _options.Add(_T("-d")).Add('"' + config.DataPath() + '"');
             }
             if (config.ApplicationPath().empty() == false) {
-                _options[_T("-a")] = '"' + config.ApplicationPath() + '"';
+                _options.Add(_T("-a")).Add('"' + config.ApplicationPath() + '"');
             }
             if (config.VolatilePath().empty() == false) {
-                _options[_T("-v")] = '"' + config.VolatilePath() + '"';
+                _options.Add(_T("-v")).Add('"' + config.VolatilePath() + '"');
             }
             if (config.ProxyStubPath().empty() == false) {
-                _options[_T("-m")] = '"' + config.ProxyStubPath() + '"';
+                _options.Add(_T("-m")).Add('"' + config.ProxyStubPath() + '"');
             }
             if (instance.Threads() > 1) {
-                _options[_T("-t")] = Core::NumberType<uint8_t>(instance.Threads()).Text();
+                _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
             }
 
             _priority = instance.Priority();
@@ -343,7 +343,7 @@ namespace RPC {
         uint32_t Launch(uint32_t& id)
         {
             uint32_t loggingSettings = (Logging::LoggingType<Logging::Startup>::IsEnabled() ? 0x01 : 0) | (Logging::LoggingType<Logging::Shutdown>::IsEnabled() ? 0x02 : 0) | (Logging::LoggingType<Logging::Notification>::IsEnabled() ? 0x04 : 0);
-            _options[_T("-e")] = Core::NumberType<uint32_t>(loggingSettings).Text();
+            _options.Add(_T("-e")).Add(Core::NumberType<uint32_t>(loggingSettings).Text());
 
             // Start the external process launch..
             Core::Process fork(false);
@@ -533,14 +533,14 @@ namespace RPC {
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess : public LocalRemoteProcess {
+        class EXTERNAL ContainerRemoteProcess  : public RemoteConnection, public IMonitorableProcess {
         private:
-            class Config : public Core::JSON::Container {
+            class ContainerConfig : public Core::JSON::Container {
             public:
-                Config(const Config&) = delete;
-                Config& operator=(const Config&) = delete;
+                ContainerConfig(const ContainerConfig&) = delete;
+                ContainerConfig& operator=(const ContainerConfig&) = delete;
 
-                Config()
+                ContainerConfig()
                     : Core::JSON::Container()
 #ifdef __DEBUG__
                     , ContainerPath()
@@ -550,7 +550,7 @@ namespace RPC {
                     Add(_T("containerpath"), &ContainerPath);
 #endif
                 }
-                ~Config() = default;
+                ~ContainerConfig() = default;
 
 #ifdef __DEBUG__
                 Core::JSON::String ContainerPath;
@@ -563,17 +563,12 @@ namespace RPC {
             ContainerRemoteProcess(const ContainerRemoteProcess&) = delete;
             ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
 
-        private:
             ContainerRemoteProcess(const Config& baseConfig, const Object& instance)
-                : LocalRemoteProcess(config, instance)
+                : _callsign(instance.Callsign())
+                , _id(0)
+                , _process(RemoteConnection::Id(), baseConfig, instance)
             {
-
-                static constexpr TCHAR ContainerName[] = _T("Container");
-
                 ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
-
-                Config config;
-                config.FromString(instance.Configuration());
 
                 std::vector<string> searchpaths(3);
                 searchpaths[0] = baseConfig.VolatilePath();
@@ -581,6 +576,8 @@ namespace RPC {
                 searchpaths[2] = baseConfig.DataPath();
 
 #ifdef __DEBUG__
+                ContainerConfig config;
+                config.FromString(instance.Configuration());
 
                 if (config.ContainerPath.IsSet() == true) {
                     searchpaths.emplace(searchpaths.cbegin(), config.ContainerPath.Value());
@@ -590,7 +587,8 @@ namespace RPC {
 
                 Core::IteratorType<std::vector<string>, const string> searchpathsit(searchpaths);
 
-                _container = admin.Container(ContainerName, searchpathsit, volatilecallsignpath, configuration);
+                string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
+                _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
 
                 admin.Release();
             }
@@ -602,24 +600,39 @@ namespace RPC {
                 }
             }
 
-            void Launch()
+            string Callsign() const override
             {
+                return (_callsign);
+            }
+
+            uint32_t Launch() override
+            {
+                uint32_t result = Core::ERROR_GENERAL;
+
                 if (_container != nullptr) {
 
                     // Note: replace below code with something more efficient when Iterators redesigned
-                    Core::Process::Options::Iterator it(LocalRemoteProcess::Options());
+                    Core::Process::Options::Iterator it(_process.Options());
 
                     std::vector<string> params;
                     while (it.Next() == true) {
-                        params.emplace_back(string(it.Key()) + it.Current());
+                        params.emplace_back(it.Current());
                     }
 
                     Core::IteratorType<std::vector<string>, const string> temp(params);
-                    _container->Start(LocalRemoteProcess::Command(), temp);
-                }
+                    if (_container->Start(_process.Command(), temp) == true) {
+                        result = Core::ERROR_NONE;
+                    } 
+                } 
+
+                return result;
             }
 
-        public:
+        private:
+            BEGIN_INTERFACE_MAP(ContainerRemoteProcess)
+                INTERFACE_ENTRY(IRemoteConnection)
+                INTERFACE_ENTRY(IMonitorableProcess)
+            END_INTERFACE_MAP
             void Terminate() override;
 
             uint32_t RemoteId() const override
@@ -629,6 +642,9 @@ namespace RPC {
 
         private:
             ProcessContainers::IContainer* _container;
+            string _callsign;
+            uint32_t _id;
+            Process _process;
         };
 
 #endif
@@ -657,6 +673,39 @@ namespace RPC {
         private:
             RemoteConnectionMap(const RemoteConnectionMap&) = delete;
             RemoteConnectionMap& operator=(const RemoteConnectionMap&) = delete;
+
+            class Info {
+            public:
+                Info () = delete;
+                Info (const Info&) = delete;
+                Info (Core::Event& event, const uint32_t id) 
+                    : _event(event) 
+                    , _id(id)
+                    , _interface(nullptr) {
+                }
+                ~Info() {
+                }
+
+            public:
+                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation) {
+
+                    ASSERT (_interface == nullptr);
+
+                    // Get the interface pointer that was stored during the triggering of the event...
+                    // It is reference counted so it has to be dereferenced by the caller.
+                    RPC::Administrator::Instance().ProxyInstance(channel, implementation, true, _id, _interface);
+
+                    _event.SetEvent();
+                }
+                inline void* Interface() {
+                    return (_interface);
+                }
+
+            private:
+                Core::Event& _event;
+                uint32_t _id;
+                void* _interface;
+            };
 
         public:
             RemoteConnectionMap(Communicator& parent)
@@ -752,7 +801,7 @@ namespace RPC {
                     _connections.insert(std::pair<uint32_t, RemoteConnection*>(result->Id(), result));
                     auto locator = _announcements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(result->Id()),
-                        std::forward_as_tuple(std::pair<Core::Event&, void*>(trigger, nullptr)));
+                        std::forward_as_tuple(trigger, instance.Interface()));
 
                     _adminLock.Unlock();
 
@@ -762,28 +811,20 @@ namespace RPC {
                     // wait for the announce message to be exchanged
                     if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
 
-                        uint32_t interfaceId = instance.Interface();
+                        interfaceReturned = locator.first->second.Interface();
 
-                        _adminLock.Lock();
-
-                        // Get the interface pointer that was stored during the triggering of the event...
-                        // It is reference counted so it has to be dereferenced by the caller.
-                        ProxyStub::UnknownProxy* proxyStub = RPC::Administrator::Instance().ProxyInstance(result->Channel(), locator.first->second.second, interfaceId, true, interfaceId, false);
-
-                        if (proxyStub != nullptr) {
-                            interfaceReturned = proxyStub->QueryInterface(interfaceId);
-
-                            ASSERT(interfaceReturned != nullptr);
+                        if (interfaceReturned != nullptr) {
 
                             id = result->Id();
                         }
 
                     } else {
-                        _adminLock.Lock();
 
                         // Seems we could not start the application. Cleanout
                         result->Terminate();
                     }
+
+                    _adminLock.Lock();
 
                     // Kill the Event registration. We are no longer interested in what will be hapening..
                     _announcements.erase(locator.first);
@@ -806,6 +847,9 @@ namespace RPC {
                     _adminLock.Unlock();
 
                 } else {
+                    Communicator::RemoteConnection* connection = index->second;
+                    connection->AddRef();
+
                     // Remove any channel associated, we had.
                     Core::ProxyType<Core::IPCChannel> destructed = index->second->Channel();
                     index->second->Close();
@@ -826,6 +870,8 @@ namespace RPC {
                     _adminLock.Unlock();
 
                     _parent.Closed(destructed);
+
+                    connection->Release();
                 }
             }
             inline Communicator::RemoteConnection* Connection(const uint32_t id)
@@ -906,10 +952,6 @@ namespace RPC {
             }
             void Request(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
-
-                ASSERT(result != nullptr);
-
                 std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(info.ExchangeId()));
 
                 ASSERT(index != _connections.end());
@@ -925,8 +967,12 @@ namespace RPC {
                 auto processConnection = _announcements.find(index->second->Id());
 
                 if (processConnection != _announcements.end()) {
-                    processConnection->second.second = result;
-                    processConnection->second.first.SetEvent();
+
+                    Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+
+                    ASSERT(info.Implementation());
+
+                    processConnection->second.Implementation(baseChannel, info.Implementation());
                 } else {
                     // No one picks it up, release it..
                     // TODO: Release an object that will never be used...
@@ -935,40 +981,45 @@ namespace RPC {
 
             void* Handle(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
+                Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+
+                instance_id implementation = info.Implementation();
+                void* realIF = nullptr;
+                void* result = nullptr;
+
+                ASSERT(baseChannel.IsValid() == true);
 
                 if (info.IsOffer() == true) {
 
-                    ASSERT(result != nullptr);
+                    ASSERT(implementation);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId(), true);
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
 
-                    if (baseIUnknown != nullptr) {
-                        _parent.Offer(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        ASSERT(realIFbase != nullptr);
+                        _parent.Offer(realIFbase, info.InterfaceId());
+                        realIFbase->Release();
                     }
-                    result = nullptr;
 
                 } else if (info.IsRevoke() == true) {
 
-                    ASSERT(result != nullptr);
+                    ASSERT(implementation);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId());
-                    if (baseIUnknown != nullptr) {
-                        _parent.Revoke(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
+
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        _parent.Revoke(realIFbase, info.InterfaceId());
+                        realIFbase->Release();
                     }
-                    result = nullptr;
 
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
-
-                    ASSERT(result == nullptr);
 
                     // See if we have something we can return right away, if it has been requested..
                     result = _parent.Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 
                     if (result != nullptr) {
-                        Core::ProxyType<Core::IPCChannel> baseChannel(channel);
                         Administrator::Instance().RegisterInterface(baseChannel, result, info.InterfaceId());
                     }
                 }
@@ -978,7 +1029,7 @@ namespace RPC {
 
         private:
             mutable Core::CriticalSection _adminLock;
-            std::map<uint32_t, std::pair<Core::Event&, void*>> _announcements;
+            std::map<uint32_t, Info> _announcements;
             std::map<uint32_t, RemoteConnection*> _connections;
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
@@ -1074,7 +1125,7 @@ namespace RPC {
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(result, proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(reinterpret_cast<instance_id>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1227,38 +1278,16 @@ namespace RPC {
         void Closed(const Core::ProxyType<Core::IPCChannel>& channel)
         {
             std::list<ProxyStub::UnknownProxy*> deadProxies;
-            std::list<RPC::ExposedInterface> pendingInterfaces;
 
-            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies, pendingInterfaces);
+            RPC::Administrator::Instance().DeleteChannel(channel, deadProxies);
 
             std::list<ProxyStub::UnknownProxy*>::const_iterator loop(deadProxies.begin());
             while (loop != deadProxies.end()) {
                 Revoke((*loop)->Parent(), (*loop)->InterfaceId());
-                (*loop)->Destroy();
                 // To avoid race conditions, the creation of the deadProxies took a reference
                 // on the interfaces, we presented here. Do not forget to release this reference.
                 (*loop)->Release();
                 loop++;
-            }
-
-            std::list<RPC::ExposedInterface>::const_iterator loop2(pendingInterfaces.begin());
-
-            while (loop2 != pendingInterfaces.end()) {
-                const Core::IUnknown* source = loop2->first;
-
-                // This is a situation that should not occure. Needs further
-                // investigation if this ASSERT fires !!!
-                ASSERT(source != nullptr);
-
-                if (source != nullptr) {
-                    uint32_t count = loop2->second;
-                    Cleanup(source, count);
-                    while (count != 0) {
-                        source->Release();
-                        count--;
-                    }
-                }
-                loop2++;
             }
         }
         virtual void* Aquire(const string& /* className */, const uint32_t /* interfaceId */, const uint32_t /* version */)
@@ -1272,7 +1301,7 @@ namespace RPC {
         virtual void Revoke(const Core::IUnknown* /* remote */, const uint32_t /* interfaceId */)
         {
         }
-        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* refCount */)
+        virtual void Cleanup(const Core::IUnknown* /* source */, const uint32_t /* interfaceid */)
         {
         }
 
@@ -1312,7 +1341,8 @@ namespace RPC {
                 const string className(message->Parameters().ClassName());
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
-                void* implementation = _parent.Aquire(className, interfaceId, versionId);
+
+                instance_id implementation = reinterpret_cast<instance_id>(_parent.Aquire(className, interfaceId, versionId));
                 message->Response().Implementation(implementation);
 
                 channel.ReportResponse(data);
@@ -1398,16 +1428,16 @@ namespace RPC {
                 if (BaseClass::Invoke(_announceMessage, waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
-                    void* implementation(_announceMessage->Response().Implementation());
+                    instance_id implementation(_announceMessage->Response().Implementation());
 
-                    if (implementation != nullptr) {
+                    if (implementation) {
                         Core::ProxyType<Core::IPCChannel> baseChannel(*this);
 
                         ASSERT(baseChannel.IsValid() == true);
 
-                        result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+                        Administrator::Instance().ProxyInstance(baseChannel, implementation, true, result);
                     }
                 }
             }
@@ -1421,7 +1451,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::OFFER);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::OFFER);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1429,7 +1459,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -1445,7 +1475,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::REVOKE);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::REVOKE);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1453,7 +1483,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
                 }
@@ -1489,19 +1519,19 @@ namespace RPC {
             INTERFACE* result = nullptr;
 
             ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-            ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+            ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
             // Lock event until Dispatch() sets it.
             if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
-                void* implementation(_announceMessage->Response().Implementation());
+                instance_id implementation(_announceMessage->Response().Implementation());
 
-                if (implementation != nullptr) {
+                if (implementation) {
                     Core::ProxyType<Core::IPCChannel> baseChannel(*this);
 
                     ASSERT(baseChannel.IsValid() == true);
 
-                    result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+                    Administrator::Instance().ProxyInstance(baseChannel, implementation, true, result);
                 }
             }
 

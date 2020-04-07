@@ -21,6 +21,7 @@ option(VIRTUALINPUT_TOOLS "Build VirtualInput tools" OFF)
 
 add_library(${TARGET} SHARED
         Channel.cpp
+        JSONRPC.cpp
         MetaData.cpp
         Module.cpp
         Service.cpp
@@ -28,7 +29,7 @@ add_library(${TARGET} SHARED
         StateControl.cpp
         SubSystem.cpp
         VirtualInput.cpp
-        JSONRPC.cpp
+        System.cpp
         )
 
 set(PUBLIC_HEADERS
@@ -44,6 +45,7 @@ set(PUBLIC_HEADERS
         plugins.h
         Request.h
         Service.h
+        System.h
         VirtualInput.h
         Module.h
         )

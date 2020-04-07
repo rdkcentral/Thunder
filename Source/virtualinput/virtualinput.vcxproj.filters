@@ -32,8 +32,5 @@
     <ClInclude Include="virtualinput.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VirtualKeyboard.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

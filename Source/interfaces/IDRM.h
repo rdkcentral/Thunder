@@ -289,6 +289,8 @@ public:
         const uint32_t f_cbClearContentOpaque,
         uint8_t* f_pbClearContentOpaque)
         = 0;
+
+    virtual CDMi_RESULT ResetOutputProtection() {return CDMi_SUCCESS;}
 };
 
 // IMediaKeySession defines the MediaKeySession interface.

@@ -31,7 +31,7 @@ namespace Core {
             msg += err.Message();
             string context = err.Context();
             if (!context.empty())
-                msg += "\nAt character " + std::to_string(err.Position()) + ": " + context;
+                msg += "\nAt character " + Core::NumberType<size_t>(err.Position()).Text() + ": " + context;
 
             return msg;
         }

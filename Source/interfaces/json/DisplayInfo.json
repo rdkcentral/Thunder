@@ -47,17 +47,11 @@
             "size": 32,
             "example": 720
           },
-          "hdcpmajor": {
-            "description": "Major version of the HDCP supported by the device",
-            "type": "number",
-            "size": 8,
-            "example": 2
-          },
-          "hdcpminor": {
-            "description": "Minor version of the HDCP supported by the device",
-            "type": "number",
-            "size": 8,
-            "example": 2
+          "hdcpprotection": {
+            "description": "HDCP Protection",
+            "type": "string",
+            "enum": [ "Unencrypted", "HDCP1x", "HDCP2x"],
+            "example": "HDCP1x"
           },
           "hdrtype": {
             "description": "HDR Type used",
@@ -73,8 +67,7 @@
           "connected",
           "width",
           "height",
-          "hdcpmajor",
-          "hdcpminor",
+          "hdcpprotection",
           "hdrtype"
         ]
       }

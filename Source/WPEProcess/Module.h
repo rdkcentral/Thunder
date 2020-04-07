@@ -26,6 +26,7 @@
 
 #include "../com/com.h"
 #include "../core/core.h"
+#include "../plugins/plugins.h"
 
 #ifdef EXTERNAL
 #undef EXTERNAL

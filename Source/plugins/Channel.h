@@ -104,21 +104,21 @@ namespace PluginHost {
             {
                 return (_current.IsValid() == false);
             }
-			inline uint16_t Serialize(char* stream, const uint16_t length) const {
+            inline uint16_t Serialize(char* stream, const uint16_t length) const {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
                     _current = Core::ProxyType<const Core::JSON::IElement>(_parent.Element());
-				}
+                }
 
-				if (_current.IsValid() == true) {
+                if (_current.IsValid() == true) {
                     loaded = _current->Serialize(stream, length, _offset);
                     if ( (_offset == 0) || (loaded != length) ) {
                         _current.Release();
                     }
                 }
 
-				return (loaded);
+                return (loaded);
             }
 
         private:
@@ -428,7 +428,7 @@ namespace PluginHost {
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
-		Core::ProxyType<Core::JSON::IElement> Element() {
+        Core::ProxyType<Core::JSON::IElement> Element() {
             Core::ProxyType<Core::JSON::IElement> result;
 
             _adminLock.Lock();
@@ -439,8 +439,8 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
 
-			return (result);
-		}
+            return (result);
+        }
 
     private:
         mutable Core::CriticalSection _adminLock;

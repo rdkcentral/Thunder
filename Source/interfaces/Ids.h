@@ -158,7 +158,11 @@ namespace Exchange {
 
         ID_REMOTEINVOCATION,
 
-        ID_WEB_BROWSER
+        ID_WEB_BROWSER,
+
+        ID_AVSCLIENT,
+        ID_AVSCONTROLLER,
+        ID_AVSCONTROLLER_NOTIFICATION
     };
 }
 }

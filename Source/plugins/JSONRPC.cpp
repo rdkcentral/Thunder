@@ -17,13 +17,31 @@
  * limitations under the License.
  */
 
-#include "Module.h"
 #include "JSONRPC.h"
 
 namespace WPEFramework {
 
 namespace PluginHost {
 
-    /* static */ Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC::_jsonRPCMessageFactory(4);
-}
-} // namespace WPEFramework::PluginHost
+    JSONRPC::JSONRPC()
+        : _adminLock()
+        , _handlers()
+        , _service(nullptr)
+    {
+        std::vector<uint8_t> versions = { 1 };
+
+        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+    }
+
+    JSONRPC::JSONRPC(const std::vector<uint8_t> versions)
+        : _adminLock()
+        , _handlers()
+        , _service(nullptr)
+    {
+        _handlers.emplace_back([&](const uint32_t id, const string& designator, const string& data) { Notify(id, designator, data); }, versions);
+    }
+    /* virtual */ JSONRPC::~JSONRPC()
+    {
+    }
+
+} }

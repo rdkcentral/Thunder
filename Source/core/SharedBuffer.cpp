@@ -110,14 +110,21 @@ namespace Core {
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
-
-        if (sem_timedwait(_semaphore, &structTime) == 0) {
-            result = Core::ERROR_NONE;
-        } else if ((errno == EINTR) || (errno == ETIMEDOUT)) {
-            result = Core::ERROR_TIMEDOUT;
-        } else {
-            ASSERT(false);
-        }
+        do {
+            if (sem_timedwait(_semaphore, &structTime) == 0) {
+                result = Core::ERROR_NONE;
+            }
+            else if ( errno == EINTR ) {
+                continue;
+            }
+            else if ( errno == ETIMEDOUT ) {
+                result = Core::ERROR_TIMEDOUT;
+            }
+            else {
+                ASSERT(false);
+            }
+            break;
+        } while (true);
 #endif
         return (result);
     }

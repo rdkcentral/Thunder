@@ -18,6 +18,7 @@
  */
 
 #include "Time.h"
+#include "Number.h"
 #include <time.h>
 
 namespace WPEFramework {
@@ -432,7 +433,8 @@ namespace Core {
                                     // Handle fractions of seconds
                                     if (*endptr == '.') {
                                         if (buffer.length() >= static_cast<size_t>((endptr - cbuffer) + 2)) {
-                                            miliseconds = static_cast<int>(floor(std::strtof(endptr, &endptr) * MilliSecondsPerSecond));
+                                            uint32_t length = static_cast<uint32_t>(buffer.length() -  static_cast<size_t>((endptr - cbuffer) + 2));
+                                            miliseconds = NumberType<uint32_t>(TextFragment(&(endptr[1]), length)).Value();
                                         } else {
                                             result = false;
                                         }
@@ -660,6 +662,37 @@ namespace Core {
         convertedTime = *localtime(&timeStamp);
 
         return (static_cast<uint16_t>(convertedTime.tm_yday));
+    }
+
+    string Time::ToTimeOnly(const bool localTime) const {
+
+        TCHAR buffer[32];
+
+        if (!IsValid())
+            return string();
+
+        const TCHAR* zone = (localTime == false ? _T(" GMT") : nullptr);
+
+        if (localTime != IsLocalTime()) {
+            SYSTEMTIME convertedTime;
+            if (IsLocalTime()) {
+                TzSpecificLocalTimeToSystemTime(nullptr, &_time, &convertedTime);
+            } else {
+                SystemTimeToTzSpecificLocalTime(nullptr, &_time, &convertedTime);
+            }
+            Time converted(convertedTime, localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        } else
+#pragma warning(disable : 4996)
+            _stprintf(buffer, _T("]%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+#pragma warning(default : 4996)
+
+        string value(buffer);
+        if( zone != nullptr ) {
+            value += zone;
+        }
+
+        return (value);
     }
 
     string Time::ToRFC1123(const bool localTime) const
@@ -916,6 +949,37 @@ namespace Core {
         }
 
         return (string(buffer));
+    }
+
+    string Time::ToTimeOnly(const bool localTime) const {
+        // Sun, 06 Nov 1994 08:49:37 GMT  ; RFC 822, updated by RFC 1123
+        TCHAR buffer[32];
+        const TCHAR* zone = (localTime == false) ? _T("GMT") : nullptr;
+
+        if (!IsValid())
+            return string();
+
+        if (localTime != IsLocalTime()) {
+            // We need to convert from local to GMT or vv
+            time_t epochTimestamp;
+            struct tm originalTime = _time;
+            if (IsLocalTime())
+                epochTimestamp = mktime(&originalTime);
+            else
+                epochTimestamp = mktimegm(&originalTime);
+            timespec convertedTime{ epochTimestamp, 0 };
+            Time converted(convertedTime, localTime);
+            _stprintf(buffer, _T("%02d:%02d:%02d"), converted.Hours(), converted.Minutes(), converted.Seconds());
+        } else {
+            _stprintf(buffer, _T("%02d:%02d:%02d"), Hours(), Minutes(), Seconds());
+        }
+
+        string value(buffer);
+        if( zone != nullptr ) {
+            value += zone;
+        }
+
+        return (value);
     }
 
     string Time::Format(const TCHAR* formatter) const

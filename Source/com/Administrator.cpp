@@ -34,6 +34,13 @@ namespace RPC {
 
     /* virtual */ Administrator::~Administrator()
     {
+        for (std::pair<uint32_t, IMetadata*> proxy : _proxy) {
+            delete proxy.second;
+        }
+
+        for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
+            delete stub.second;
+        }
     }
 
     /* static */ Administrator& Administrator::Instance()
@@ -43,7 +50,7 @@ namespace RPC {
         return (systemAdministrator);
     }
 
-    void Administrator::AddRef(void* impl, const uint32_t interfaceId)
+    void Administrator::AddRef(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
         std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
@@ -55,6 +62,7 @@ namespace RPC {
 
             if (implementation != nullptr) {
                 implementation->AddRef();
+                RegisterUnknownInterface(channel, implementation, interfaceId);
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
@@ -62,7 +70,7 @@ namespace RPC {
         }
     }
 
-    void Administrator::Release(void* impl, const uint32_t interfaceId)
+    void Administrator::Release(Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t interfaceId)
     {
         // stub are loaded before any action is taken and destructed if the process closes down, so no need to lock..
         std::map<uint32_t, ProxyStub::UnknownStub*>::iterator index(_stubs.find(interfaceId));
@@ -73,6 +81,7 @@ namespace RPC {
             ASSERT(implementation != nullptr);
 
             if (implementation != nullptr) {
+                UnregisterInterface(channel, implementation, interfaceId);
                 implementation->Release();
             }
         } else {
@@ -81,16 +90,36 @@ namespace RPC {
         }
     }
 
+    // This Release is only called from the Stub code, once the invoke is completed...
     void Administrator::Release(ProxyStub::UnknownProxy* proxy, Data::Output& response)
     {
-        if (proxy->ShouldAddRefRemotely()) {
-            response.AddImplementation(proxy->Implementation(), proxy->InterfaceId());
-        } else if (proxy->ShouldReleaseRemotely()) {
-            response.AddImplementation(proxy->Implementation(), proxy->InterfaceId() | 0x80000000);
+        proxy->Complete(response);
+    }
+
+    void Administrator::UnregisterProxy(const ProxyStub::UnknownProxy& proxy)
+    {
+        _adminLock.Lock();
+
+        ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
+
+        if (index != _channelProxyMap.end()) {
+            ProxyList::iterator entry(index->second.begin());
+            while ((entry != index->second.end()) && ((*entry) != &proxy)) {
+                entry++;
+            }
+            if (entry != index->second.end()) {
+                index->second.erase(entry);
+                if (index->second.size() == 0) {
+                    _channelProxyMap.erase(index);
+                }
+            } else {
+                TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
+            }
         } else {
-            proxy->ClearCache();
+            TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
         }
-        proxy->Release();
+
+        _adminLock.Unlock();
     }
 
     void Administrator::Invoke(Core::ProxyType<Core::IPCChannel>& channel, Core::ProxyType<InvokeMessage>& message)
@@ -108,60 +137,9 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
-
-    void Administrator::RegisterProxy(ProxyStub::UnknownProxy& proxy)
+    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const uint32_t id, void*& interface)
     {
-        const Core::IPCChannel* channel = proxy.Channel().operator->();
-
-        _adminLock.Lock();
-
-        ChannelMap::iterator index(_channelProxyMap.find(channel));
-
-        if (index == _channelProxyMap.end()) {
-            auto slot = _channelProxyMap.emplace(std::piecewise_construct,
-                std::forward_as_tuple(channel),
-                std::forward_as_tuple());
-            slot.first->second.push_back(&proxy);
-
-        } else {
-            ASSERT(std::find(index->second.begin(), index->second.end(), &proxy) == index->second.end());
-
-            index->second.push_back(&proxy);
-        }
-
-        Core::InterlockedIncrement(proxy._refCount);
-
-        _adminLock.Unlock();
-    }
-    void Administrator::UnregisterProxy(ProxyStub::UnknownProxy& proxy)
-    {
-        _adminLock.Lock();
-
-        ChannelMap::iterator index(_channelProxyMap.find(proxy.Channel().operator->()));
-
-        if (index != _channelProxyMap.end()) {
-            ProxyList::iterator entry(index->second.begin());
-            while ((entry != index->second.end()) && ((*entry) != &proxy)) {
-                entry++;
-            }
-            if (entry != index->second.end()) {
-                index->second.erase(entry);
-                Core::InterlockedDecrement(proxy._refCount);
-                if (index->second.size() == 0) {
-                    _channelProxyMap.erase(index);
-                }
-            } else {
-                TRACE_L1("Could not find the Proxy entry to be unregistered in the channel list.");
-            }
-        } else {
-            TRACE_L1("Could not find the Proxy entry to be unregistered from a channel perspective.");
-        }
-
-        _adminLock.Unlock();
-    }
-    void* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId)
-    {
-        void* result = nullptr;
+        ProxyStub::UnknownProxy* result = nullptr;
 
         _adminLock.Lock();
 
@@ -173,7 +151,10 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                result = (*entry)->QueryInterface(interfaceId);
+                interface = (*entry)->QueryInterface(id);
+                if (interface != nullptr) {
+                    result = (*entry);
+                }
             }
         }
 
@@ -182,11 +163,13 @@ namespace RPC {
         return (result);
     }
 
-    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
-        if (impl != nullptr) {
+        interface = nullptr;
+
+        if (impl) {
 
             _adminLock.Lock();
 
@@ -198,59 +181,43 @@ namespace RPC {
                     entry++;
                 }
                 if (entry != index->second.end()) {
-                    result = (*entry);
+                    interface = (*entry)->Aquire(outbound, id);
 
-                    if (refCounted == true) {
-                       if( (*entry)->AddRefCachedCount() == false ) {
-                           result = nullptr; // we cannot use this proxy it is being destructed, we need to create a new one
-                       }
-                    } else if (piggyBack == true) {
-                        // Reference counting can be cached on this on object for now. This is a request
-                        // from an incoming interface of which the lifetime is guaranteed by the callee.
-                        result->EnableCaching();
+                    ASSERT(interface != nullptr);
+
+                    if (interface != nullptr) {
+                        result = (*entry);
                     }
                 }
             }
 
             if (result == nullptr) {
-                std::map<uint32_t, IMetadata*>::iterator index(_proxy.find(id));
+                std::map<uint32_t, IMetadata*>::iterator factory(_proxy.find(id));
 
-                if (index != _proxy.end()) {
+                if (factory != _proxy.end()) {
 
-                    result = index->second->CreateProxy(channel, impl, refCounted);
+                    result = factory->second->CreateProxy(channel, impl, outbound);
 
                     ASSERT(result != nullptr);
 
-                    if (refCounted == true) {
-                        // Register it as it is remotely registered :-)
-                        _channelProxyMap[channel.operator->()].push_back(result);
-                    } else if (piggyBack == true) {
-                        // Reference counting can be cached on this on object for now. This is a request
-                        // from an incoming interface of which the lifetime is guaranteed by the callee.
-                        result->EnableCaching();
-                    }
+                    // Register it as it is remotely registered :-)
+                    _channelProxyMap[channel.operator->()].push_back(result);
+
+                    // This will increment the reference count to 1.
+                    interface = result->QueryInterface(id);
+
                 } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
             }
-
+		
             _adminLock.Unlock();
         }
 
         return (result);
     }
 
-    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
-    {
-        void* result = nullptr;
-        ProxyStub::UnknownProxy* proxyStub = ProxyInstance(channel, impl, id, refCounted, interfaceId, piggyBack);
-        if (proxyStub != nullptr) {
-            result = proxyStub->QueryInterface(interfaceId);
-        }
-        return (result);
-    }
-
-    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, void* rawImplementation, const uint32_t id)
+    void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
         ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
 
@@ -258,23 +225,23 @@ namespace RPC {
             auto result = _channelReferenceMap.emplace(std::piecewise_construct,
                 std::forward_as_tuple(channel.operator->()),
                 std::forward_as_tuple());
-            index = result.first;
+            result.first->second.emplace_back(id, reference);
         } else {
             // See that it does not already exists on this channel, no need to register
             // it again!!!
-            std::list<ExternalReference>::iterator element(std::find(index->second.begin(), index->second.end(), rawImplementation));
+            std::list< std::pair<uint32_t, Core::IUnknown*> >::iterator element(index->second.begin());
 
-            if (element != index->second.end()) {
-                element->Increment();
-                rawImplementation = nullptr;
+            while ( (element != index->second.end()) && ((element->first != id) || (element->second != reference)) ) {
+                element++;
             }
-        }
 
-        if (rawImplementation != nullptr) {
-            index->second.emplace_back(
-                reference,
-                rawImplementation,
-                id);
+            if (element == index->second.end()) {
+                // Add this element to the list. We are referencing it now with a proxy on the other side..
+                index->second.emplace_back(id, reference);
+            }
+            else {
+                printf("====> According to Bartjes law, this should not happen !\n");
+            }
         }
     }
 
@@ -284,9 +251,21 @@ namespace RPC {
         return(index != _stubs.end() ? index->second->Convert(rawImplementation) : nullptr);
     }
 
-    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies, std::list<ExposedInterface>& usedInterfaces)
+    void Administrator::DeleteChannel(const Core::ProxyType<Core::IPCChannel>& channel, std::list<ProxyStub::UnknownProxy*>& pendingProxies)
     {
         _adminLock.Lock();
+
+        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+
+        if (remotes != _channelReferenceMap.end()) {
+            std::list<std::pair<uint32_t, Core::IUnknown*>>::iterator loop(remotes->second.begin());
+            while (loop != remotes->second.end()) {
+                // We will release on behalf of the other side :-)
+                loop->second->Release();
+                loop++;
+            }
+            _channelReferenceMap.erase(remotes);
+        }
 
         ChannelMap::iterator index(_channelProxyMap.find(channel.operator->()));
 
@@ -297,22 +276,11 @@ namespace RPC {
                 // interface is released in the same time before we report this interface
                 // to be dead. So lets keep a refernce so we can work on a real object
                 // still. This race condition, was observed by customer testing.
-                if( (*loop)->DropRegistration() == true ) {
-                    pendingProxies.push_back(*loop);
-                }
-                loop++;
-            }
-            _channelProxyMap.erase(index);
-        }
-        ReferenceMap::iterator remotes(_channelReferenceMap.find(channel.operator->()));
+                (*loop)->AddRef();
+                pendingProxies.push_back(*loop);
 
-        if (remotes != _channelReferenceMap.end()) {
-            std::list<ExternalReference>::iterator loop(remotes->second.begin());
-            while (loop != remotes->second.end()) {
-                usedInterfaces.emplace_back(loop->Source(), loop->RefCount());
                 loop++;
             }
-            _channelReferenceMap.erase(remotes);
         }
 
         _adminLock.Unlock();

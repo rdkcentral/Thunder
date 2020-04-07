@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-            { PluginHost::InputHandler::DEVICE, _TXT("device") },
+    { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-        namespace PluginHost
+namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -642,7 +642,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
               configuration.Redirect.Value())
         , _services(*this, _config, configuration.Process.IsSet() ? configuration.Process.StackSize.Value() : 0)
         , _controller()
+        , _factoriesImplementation()
     {
+        IFactories::Assign(&_factoriesImplementation);
 
         // See if the persitent path for our-selves exist, if not we will create it :-)
         Core::File persistentPath(_config.PersistentPath() + _T("PluginHost"));
@@ -656,7 +658,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         }
 
         // Lets assign a workerpool, we created it...
-        WorkerPool::Assign(&_dispatcher);
+        Core::WorkerPool::Assign(&_dispatcher);
 
         Core::JSON::ArrayType<Plugin::Config>::Iterator index = configuration.Plugins.Elements();
 
@@ -727,7 +729,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     Server::~Server()
     {
         // The workerpool is about to dissapear!!!!
-        WorkerPool::Assign(nullptr);
+        Core::WorkerPool::Assign(nullptr);
+        IFactories::Assign(nullptr);
     }
 
     void Server::Notification(const ForwardMessage& data)

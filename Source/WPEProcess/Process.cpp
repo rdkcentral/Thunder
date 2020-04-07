@@ -36,7 +36,15 @@ namespace Process {
             void Dispatch() {
                 Core::ServiceAdministrator::Instance().FlushLibraries();
 
-                if (Core::ServiceAdministrator::Instance().Instances() == 0) {
+                uint32_t instances = Core::ServiceAdministrator::Instance().Instances();
+
+                if (instances != 0) {
+                    TRACE_L1("We still have living object [%d].", instances);
+                }
+                else {
+                    
+                    TRACE_L1("All living objects are killed. Time for HaraKiri!!.");
+
                     // Seems there is no more live here, time to signal the
                     // WorkerPool to quit running and close down...
                     _parent.Stop();
@@ -284,6 +292,49 @@ namespace Process {
     }
 
 class ProcessFlow {
+private:
+    class FactoriesImplementation : public PluginHost::IFactories {
+    private:
+        FactoriesImplementation(const FactoriesImplementation&) = delete;
+        FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
+
+    public:
+        FactoriesImplementation()
+            : _requestFactory(2)
+            , _responseFactory(2)
+            , _fileBodyFactory(2)
+            , _jsonRPCFactory(2)
+        {
+        }
+        ~FactoriesImplementation() override {
+        }
+
+    public:
+        Core::ProxyType<Web::Request> Request() override
+        {
+            return (_requestFactory.Element());
+        }
+        Core::ProxyType<Web::Response> Response() override
+        {
+            return (_responseFactory.Element());
+        }
+        Core::ProxyType<Web::FileBody> FileBody() override
+        {
+            return (_fileBodyFactory.Element());
+        }
+        Core::ProxyType<Web::JSONBodyType<Core::JSONRPC::Message>> JSONRPC() override
+        {
+            return (_jsonRPCFactory.Element());
+        }
+
+    private:
+        Core::ProxyPoolType<Web::Request> _requestFactory;
+        Core::ProxyPoolType<Web::Response> _responseFactory;
+        Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
+        Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
+    };
+
+
 public:
     ProcessFlow(const ProcessFlow&) = delete;
     ProcessFlow& operator=(const ProcessFlow&) = delete;
@@ -292,6 +343,7 @@ public:
         : _server()
         , _engine()
         , _proxyStubs()
+        , _factories()
     {
         _instance = this;
 
@@ -305,9 +357,6 @@ public:
 
         sigaction(SIGINT, &sa, nullptr);
         sigaction(SIGTERM, &sa, nullptr);
-        #ifdef __DEBUG__
-        sigaction(SIGSEGV, &sa, nullptr);
-        #endif
         sigaction(SIGQUIT, &sa, nullptr);
         #endif
     }
@@ -336,6 +385,7 @@ public:
 
         // We are going to tear down the stugg. Unregistere the Worker Pool
         Core::IWorkerPool::Assign(nullptr);
+        PluginHost::IFactories::Assign(nullptr);
 
         Core::Singleton::Dispose();
         TRACE_L1("Leaving Shutdown. Cleaned up process: %d.", Core::ProcessInfo().Id());
@@ -359,6 +409,9 @@ public:
 
         // Whenever someone is looking for a WorkerPool, here it is, register it..
         Core::IWorkerPool::Assign(&(*_engine));
+
+        // Some generic object that require instantiation could come form a generic factory.
+        PluginHost::IFactories::Assign(&_factories);
 
         _server = (Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(_engine)));
         _engine->Announcements(_server->Announcement());
@@ -414,6 +467,7 @@ private:
     Core::ProxyType<RPC::CommunicatorClient> _server;
     Core::ProxyType<WorkerPoolImplementation> _engine;
     std::list<Core::Library> _proxyStubs;
+    FactoriesImplementation _factories;
 
     static Core::CriticalSection _lock;
     static ProcessFlow* _instance;
@@ -422,8 +476,9 @@ private:
 /* static */ Core::CriticalSection  ProcessFlow::_lock;
 /* static */ ProcessFlow*           ProcessFlow::_instance = nullptr;
 
-}
 } // Process
+
+} // WPEFramework
 
 using namespace WPEFramework;
 
@@ -511,5 +566,6 @@ int main(int argc, char** argv)
         }
     }
 
+    TRACE_L1("End of Process!!!!");
     return 0;
 }
