@@ -28,7 +28,7 @@
 #include "HashStream.h"
 #include "Random.h"
 
-#ifdef SECURESOCKETS_ENABLED
+#if defined(SECURESOCKETS_ENABLED) || defined(__WINDOWS__)
 #include "SecureSocketPort.h"
 #endif
 

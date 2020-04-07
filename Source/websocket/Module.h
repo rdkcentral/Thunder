@@ -27,11 +27,7 @@
 #include "../core/core.h"
 #include "../cryptalgo/cryptalgo.h"
 
-#ifdef __WINDOWS__
-#include "./windows/include/zlib.h"
-#else
-#include "zlib.h"
-#endif
+#include <zlib.h>
 
 #ifdef __WINDOWS__
 #undef EXTERNAL
