@@ -56,7 +56,9 @@ SecureSocketPort::Handler::~Handler() {
 }
 
 bool SecureSocketPort::Handler::Initialize() {
-    _context = SSL_CTX_new(TLS_method());
+    // _context = SSL_CTX_new(TLS_method());
+    _context = SSL_CTX_new(SSLv23_method());
+    
     _ssl = SSL_new(static_cast<SSL_CTX*>(_context));
     SSL_set_fd(static_cast<SSL*>(_ssl), static_cast<Core::IResource&>(*this).Descriptor());
 
