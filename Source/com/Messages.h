@@ -32,6 +32,11 @@ namespace RPC {
     typedef uint32_t instance_id;
     #endif
 
+    template<typename INCOMING>
+    RPC::instance_id instance_cast(INCOMING value) {
+        return ((RPC::instance_id) value);
+    }
+
     namespace Data {
         static const uint16_t IPC_BLOCK_SIZE = 512;
 

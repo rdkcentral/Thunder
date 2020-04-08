@@ -21,6 +21,7 @@
 
 #include <openssl/ssl.h>
 
+#ifndef __WINDOWS__
 namespace {
 
     class OpenSSL {
@@ -41,6 +42,7 @@ namespace {
 
     static OpenSSL _initialization;
 }
+#endif
 
 namespace WPEFramework {
 
