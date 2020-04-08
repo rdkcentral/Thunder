@@ -13,7 +13,7 @@ public:
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
-    ThreadClass(Event* event, std::thread::id parentTid,bool* threadDone, bool* lock, bool* setEvent,bool* pulseEvent)
+    ThreadClass(Event& event, std::thread::id parentTid, bool& threadDone, volatile bool& lock, volatile bool& setEvent, volatile bool& pulseEvent)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
         , _threadDone(threadDone)
         , _lock(lock)
@@ -30,31 +30,31 @@ public:
 
     virtual uint32_t Worker() override
     {
-        while (IsRunning() && (!*_threadDone)) {
+        while (IsRunning() && (!_threadDone)) {
             EXPECT_TRUE(_parentTid != std::this_thread::get_id());
-            if (*_lock) {
-                *_threadDone = true;
-                *_lock = false;
-                _event->Unlock();
-            }else if (*_setEvent) {
-                *_threadDone = true;
-                *_setEvent = false;
-                _event->SetEvent();
-            }else if (*_pulseEvent) {
-                *_threadDone = true;
-                *_pulseEvent = false;
-                _event->PulseEvent();
+            if (_lock) {
+                _threadDone = true;
+                _lock = false;
+                _event.Unlock();
+            }else if (_setEvent) {
+                _threadDone = true;
+                _setEvent = false;
+                _event.SetEvent();
+            }else if (_pulseEvent) {
+                _threadDone = true;
+                _pulseEvent = false;
+                _event.PulseEvent();
             }
             ::SleepMs(50);
         }
         return (Core::infinite);
     }
 private:
-    bool*  _threadDone;
-    bool*  _lock;
-    bool*  _setEvent;
-    bool*  _pulseEvent;
-    Event* _event;
+    volatile bool&  _threadDone;
+    volatile bool&  _lock;
+    volatile bool&  _setEvent;
+    volatile bool&  _pulseEvent;
+    Event& _event;
     std::thread::id _parentTid;
 };
 
@@ -77,11 +77,11 @@ TEST(test_event, unlock_event)
     Event event(false,true);
     std::thread::id parentTid;
     bool threadDone = false;
-    bool lock = true;
-    bool setEvent = false;
-    bool pulseEvent = false;
+    volatile bool lock = true;
+    volatile bool setEvent = false;
+    volatile bool pulseEvent = false;
 
-    ThreadClass object(&event,parentTid,&threadDone,&lock,&setEvent,&pulseEvent);
+    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
     object.Run();
     event.Lock();
     EXPECT_FALSE(lock);
@@ -93,11 +93,11 @@ TEST(test_event, set_event)
     Event event(false,true);
     std::thread::id parentTid;
     bool threadDone = false;
-    bool lock = false;
-    bool setEvent = true;
-    bool pulseEvent = false;
+    volatile bool lock = false;
+    volatile bool setEvent = true;
+    volatile bool pulseEvent = false;
 
-    ThreadClass object(&event,parentTid, &threadDone,&lock,&setEvent,&pulseEvent);
+    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
     object.Run();
     event.ResetEvent();
     event.Lock();
@@ -110,11 +110,11 @@ TEST(test_event, pulse_event)
     Event event(false,true);
     std::thread::id parentTid;
     bool threadDone = false;
-    bool lock = false;
-    bool setEvent = false;
-    bool pulseEvent = true;
+    volatile bool lock = false;
+    volatile bool setEvent = false;
+    volatile bool pulseEvent = true;
 
-    ThreadClass object(&event,parentTid, &threadDone,&lock,&setEvent,&pulseEvent);
+    ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
     object.Run();
     event.ResetEvent();
     event.Lock();

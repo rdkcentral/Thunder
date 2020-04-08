@@ -182,9 +182,9 @@ namespace Tests {
 
     TEST(Core_IPC, ContinuousChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            string continuousConnector = _T("/tmp/testserver0");
-            Core::NodeId continousNode(continuousConnector.c_str());
+        std::string connector = _T("/tmp/testserver0");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -219,10 +219,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            string continuousConnector = _T("/tmp/testserver0");
-            Core::NodeId continousNode(continuousConnector.c_str());
+            Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
@@ -278,9 +281,9 @@ namespace Tests {
     }
     TEST(Core_IPC, FlashChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            string flashConnector = _T("/tmp/testserver1");
-            Core::NodeId flashNode(flashConnector.c_str());
+        std::string connector = _T("/tmp/testserver1");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -315,10 +318,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            string flashConnector = _T("/tmp/testserver1");
-            Core::NodeId flashNode(flashConnector.c_str());
+            Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
@@ -380,9 +386,9 @@ namespace Tests {
     }
     TEST(Core_IPC, MultiChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            string multiConnector = _T("/tmp/testserver2");
-            Core::NodeId multiNode(multiConnector.c_str());
+        std::string connector = _T("/tmp/testserver2");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -414,10 +420,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            string multiConnector = _T("/tmp/testserver2");
-            Core::NodeId multiNode(multiConnector.c_str());
+            Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");

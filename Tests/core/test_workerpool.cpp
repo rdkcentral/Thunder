@@ -92,10 +92,10 @@ public:
     WorkerThreadClass(const WorkerThreadClass&) = delete;
     WorkerThreadClass& operator=(const WorkerThreadClass&) = delete;
 
-    WorkerThreadClass(std::thread::id parentworkerId ,bool threadDone)
+    WorkerThreadClass(std::thread::id parentworkerId)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
         , _parentworkerId(parentworkerId)
-        , _threadDone(threadDone)
+        , _threadDone(false)
     {
     }
 
@@ -116,7 +116,7 @@ public:
 
 private:
     std::thread::id _parentworkerId;
-    bool _threadDone;
+    volatile bool _threadDone;
 };
 
 class WorkerJob : public Core::IDispatch {
@@ -145,7 +145,7 @@ std::thread::id WorkerJob::_parentJobId;
 
 TEST(test_workerpool, simple_workerpool)
 {
-    WorkerThreadClass object(std::this_thread::get_id(),false);
+    WorkerThreadClass object(std::this_thread::get_id());
     object.Run();
     workerpool->Run();
     workerpool->Id(0);

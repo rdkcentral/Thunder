@@ -7,8 +7,6 @@
 namespace WPEFramework {
 namespace Tests {
 
-    const TCHAR* g_webLinkConnector = "0.0.0.0";
-
     class WebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > {
     private:
         typedef Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request> > BaseClass;
@@ -140,17 +138,22 @@ namespace Tests {
 
     TEST(WebLink, Text)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<WebServer> _webServer(Core::NodeId(g_webLinkConnector, 12343));
+        std::string connector {"127.0.0.1"};
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<WebServer> _webServer(Core::NodeId(connector.c_str(), 12343));
             _webServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            WebClient webConnector(Core::NodeId(g_webLinkConnector, 12343));
+            WebClient webConnector(Core::NodeId(connector.c_str(), 12343));
             Core::ProxyType<Web::Request> webRequest(Core::ProxyType<Web::Request>::Create());
             Core::ProxyType<Web::TextBody> webRequestBody(Core::ProxyType<Web::TextBody>::Create());
             webRequest->Body<Web::TextBody>(webRequestBody);

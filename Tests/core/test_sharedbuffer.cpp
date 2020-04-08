@@ -25,30 +25,29 @@
 namespace WPEFramework {
 namespace Tests {
 
-    void CleanUpBuffer(char bufferName[], int buffSize)
+    void CleanUpBuffer(string bufferName)
     {
        // TODO: shouldn't this be done producer-side?
        char systemCmd[1024];
        string command = "rm -f ";
-       snprintf(systemCmd, command.size()+buffSize+1, "%s%s", command.c_str(),bufferName);
+       snprintf(systemCmd, command.size()+bufferName.size()+1, "%s%s", command.c_str(),bufferName.c_str());
        system(systemCmd);
        string ext = ".admin";
-       snprintf(systemCmd, command.size()+buffSize+ext.size()+1, "%s%s%s", command.c_str(),bufferName,ext.c_str());
+       snprintf(systemCmd, command.size()+bufferName.size()+ext.size()+1, "%s%s%s", command.c_str(),bufferName.c_str(),ext.c_str());
        system(systemCmd);
     }
 
     TEST(Core_SharedBuffer, simpleSet)
     {
-       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-           char bufferName[] = "testbuffer01";
-           int buffSize = sizeof(bufferName)/sizeof(bufferName[0]);
-           CleanUpBuffer(bufferName, buffSize);
+        std::string bufferName {"testbuffer01"} ;
+        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
+            CleanUpBuffer(bufferName);
 
-           uint16_t administrationSize = 64;
-           uint32_t bufferSize = 8 * 1024;
-           uint32_t result;
+            uint16_t administrationSize = 64;
+            uint32_t bufferSize = 8 * 1024;
+            uint32_t result;
 
-           Core::SharedBuffer buff01(bufferName,
+            Core::SharedBuffer buff01(bufferName.c_str(),
                Core::File::USER_READ    |
                Core::File::USER_WRITE   |
                Core::File::USER_EXECUTE |
@@ -58,56 +57,59 @@ namespace Tests {
                Core::File::OTHERS_WRITE,
                bufferSize,
                administrationSize);
-           result = buff01.RequestProduce(Core::infinite);
-           EXPECT_EQ(result, Core::ERROR_NONE);
+            result = buff01.RequestProduce(Core::infinite);
+            EXPECT_EQ(result, Core::ERROR_NONE);
 
-           testAdmin.Sync("setup producer");
+            testAdmin.Sync("setup producer");
 
-           testAdmin.Sync("setup consumer");
+            testAdmin.Sync("setup consumer");
 
-           uint8_t * buffer = buff01.Buffer();
-           EXPECT_EQ(buff01.Size(), bufferSize);
+            uint8_t * buffer = buff01.Buffer();
+            EXPECT_EQ(buff01.Size(), bufferSize);
 
-           buffer[0] = 42;
-           buffer[1] = 43;
-           buffer[2] = 44;
+            buffer[0] = 42;
+            buffer[1] = 43;
+            buffer[2] = 44;
 
-           result = buff01.Produced();
-           EXPECT_EQ(result, Core::ERROR_NONE);
+            result = buff01.Produced();
+            EXPECT_EQ(result, Core::ERROR_NONE);
 
-           testAdmin.Sync("consumer done");
-       };
+            testAdmin.Sync("consumer done");
+        };
 
-       // This side (tested) acts as client (consumer).
-       IPTestAdministrator testAdmin(otherSide);
-       {
-           // In extra scope, to make sure "buff01" is destructed before producer.
-           testAdmin.Sync("setup producer");
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
 
-           char bufferName[] = "testbuffer01";
-           uint32_t bufferSize = 8 * 1024;
-           uint32_t result;
-           Core::SharedBuffer buff01(bufferName);
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
-           testAdmin.Sync("setup consumer");
+        // This side (tested) acts as client (consumer).
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            // In extra scope, to make sure "buff01" is destructed before producer.
+            testAdmin.Sync("setup producer");
 
-           result = buff01.RequestConsume(Core::infinite);
-           EXPECT_EQ(result, Core::ERROR_NONE);
+            uint32_t bufferSize = 8 * 1024;
+            uint32_t result;
+            Core::SharedBuffer buff01(bufferName.c_str());
 
-           uint8_t * buffer = buff01.Buffer();
-           EXPECT_EQ(buff01.Size(), bufferSize);
+            testAdmin.Sync("setup consumer");
 
-           EXPECT_EQ(buffer[0], 42);
-           EXPECT_EQ(buffer[1], 43);
-           EXPECT_EQ(buffer[2], 44);
+            result = buff01.RequestConsume(Core::infinite);
+            EXPECT_EQ(result, Core::ERROR_NONE);
 
-           buff01.Consumed();
-           EXPECT_EQ(result, Core::ERROR_NONE);
-       }
+            uint8_t * buffer = buff01.Buffer();
+            EXPECT_EQ(buff01.Size(), bufferSize);
 
-       testAdmin.Sync("consumer done");
+            EXPECT_EQ(buffer[0], 42);
+            EXPECT_EQ(buffer[1], 43);
+            EXPECT_EQ(buffer[2], 44);
 
-       Core::Singleton::Dispose();
+            buff01.Consumed();
+            EXPECT_EQ(result, Core::ERROR_NONE);
+        }
+
+        testAdmin.Sync("consumer done");
+
+        Core::Singleton::Dispose();
     }
 } // Tests
 } // WPEFramework

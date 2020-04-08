@@ -215,44 +215,44 @@ namespace Tests {
     } // namespace
 
     namespace {
-    class ExternalAccess : public RPC::Communicator
-    {
-    public:
-        ExternalAccess() = delete;
-        ExternalAccess(const ExternalAccess &) = delete;
-        ExternalAccess & operator=(const ExternalAccess &) = delete;
-
-        ExternalAccess(const Core::NodeId & source)
-            : RPC::Communicator(source, _T(""))
+        class ExternalAccess : public RPC::Communicator
         {
-            Open(Core::infinite);
-        }
+        public:
+            ExternalAccess() = delete;
+            ExternalAccess(const ExternalAccess &) = delete;
+            ExternalAccess & operator=(const ExternalAccess &) = delete;
 
-        ~ExternalAccess()
-        {
-            Close(Core::infinite);
-        }
-
-    private:
-        virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
-        {
-            void* result = nullptr;
-
-            if (interfaceId == Exchange::IAdder::ID) {
-                Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
-                result = newAdder;
+            ExternalAccess(const Core::NodeId & source)
+                : RPC::Communicator(source, _T(""))
+            {
+                Open(Core::infinite);
             }
 
-            return result;
-        }
-    };
+            ~ExternalAccess()
+            {
+                Close(Core::infinite);
+            }
+
+        private:
+            virtual void* Aquire(const string& className, const uint32_t interfaceId, const uint32_t versionId)
+            {
+                void* result = nullptr;
+
+                if (interfaceId == Exchange::IAdder::ID) {
+                    Exchange::IAdder * newAdder = Core::Service<Adder>::Create<Exchange::IAdder>();
+                    result = newAdder;
+                }
+
+                return result;
+            }
+        };
     }
 
     TEST(Core_RPC, adder)
     {
-       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-          string connectorName = _T("/tmp/wperpc01");
-          Core::NodeId remoteNode(connectorName.c_str());
+       std::string connector{"/tmp/wperpc01"};
+       auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+          Core::NodeId remoteNode(connector.c_str());
 
           ExternalAccess communicator(remoteNode);
 
@@ -263,13 +263,16 @@ namespace Tests {
           communicator.Close(Core::infinite);
        };
 
+       static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+       IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
        IPTestAdministrator testAdmin(otherSide);
 
        testAdmin.Sync("setup server");
 
        {
-          string connectorName = _T("/tmp/wperpc01");
-          Core::NodeId remoteNode(connectorName.c_str());
+          Core::NodeId remoteNode(connector.c_str());
 
           Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
           Core::ProxyType<RPC::CommunicatorClient> client(

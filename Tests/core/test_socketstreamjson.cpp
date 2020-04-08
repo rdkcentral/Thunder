@@ -77,8 +77,6 @@ namespace Tests {
         Parameters Params;
     };
 
-    const TCHAR* g_connector = "/tmp/wpestreamjson0";
-
     class JSONObjectFactory : public Core::ProxyPoolType<Command> {
     public:
         JSONObjectFactory() = delete;
@@ -201,8 +199,9 @@ namespace Tests {
 
     TEST(Core_Socket, StreamJSON)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(Tests::g_connector));
+        std::string connector = "/tmp/wpestreamjson0";
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<JSONConnector<Core::JSON::IElement>> jsonSocketServer(Core::NodeId(connector.c_str()));
             jsonSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(JSONConnector<Core::JSON::IElement>::_mutex);
@@ -214,6 +213,10 @@ namespace Tests {
             testAdmin.Sync("client done");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
@@ -224,7 +227,7 @@ namespace Tests {
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(Tests::g_connector));
+            JSONConnector<Core::JSON::IElement> jsonSocketClient(Core::NodeId(connector.c_str()));
             jsonSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             jsonSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));
