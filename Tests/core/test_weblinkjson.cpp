@@ -78,7 +78,6 @@ namespace {
 
     typedef Web::JSONBodyType<Command> CommandBody;
 
-    const TCHAR* g_connector = "0.0.0.0";
     }
 
     class JSONWebServer : public Web::WebLinkType<Core::SocketStream, Web::Request, Web::Response, WPEFramework::Core::ProxyPoolType<Web::Request>&> {
@@ -212,17 +211,22 @@ namespace {
 
     TEST(WebLink, Json)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JSONWebServer> _webServer(Core::NodeId(g_connector, 12341));
+        std::string connector {"0.0.0.0"};
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<JSONWebServer> _webServer(Core::NodeId(connector.c_str(), 12341));
             _webServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             testAdmin.Sync("client done");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            JSONWebClient jsonWebConnector(Core::NodeId(g_connector, 12341));
+            JSONWebClient jsonWebConnector(Core::NodeId(connector.c_str(), 12341));
             Core::ProxyType<Web::Request> jsonRequest(Core::ProxyType<Web::Request>::Create());
             Core::ProxyType<CommandBody> jsonRequestBody(Core::ProxyType<CommandBody>::Create());
             jsonRequest->Body<CommandBody>(jsonRequestBody);

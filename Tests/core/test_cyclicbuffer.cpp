@@ -17,7 +17,7 @@ namespace Tests {
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-        ThreadClass(CyclicBuffer* cyclicBuffer,bool* done, std::mutex* mutex,std::condition_variable* cv)
+        ThreadClass(CyclicBuffer& cyclicBuffer, volatile bool& done, std::mutex& mutex, std::condition_variable& cv)
             : Thread(Thread::DefaultStackSize(), _T("Test"))
             , _cyclicBuffer(cyclicBuffer)
             , _done(done)
@@ -32,32 +32,32 @@ namespace Tests {
 
         virtual uint32_t Worker() override
         {
-            while (IsRunning() && (!*_done)) {
-                _cyclicBuffer->Alert();
-                std::unique_lock<std::mutex> lk(*_mutex);
-                *_done = true;
-                _cv->notify_one();
+            while (IsRunning() && (!_done)) {
+                _cyclicBuffer.Alert();
+                std::unique_lock<std::mutex> lk(_mutex);
+                _done = true;
+                _cv.notify_one();
             }
             return (infinite);
         }
 
     private:
-        CyclicBuffer* _cyclicBuffer;
-        bool* _done;
-        std::mutex* _mutex;
-        std::condition_variable* _cv;
+        CyclicBuffer& _cyclicBuffer;
+        volatile bool& _done;
+        std::mutex& _mutex;
+        std::condition_variable& _cv;
     };
 
     TEST(Core_CyclicBuffer, WithoutOverwrite)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+        std::string bufferName {"cyclicbuffer02"};
+        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             uint32_t result;
             string data;
             uint32_t cyclicBufferSize = 10;
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            char bufferName[] = "cyclicbuffer02";
 
-            CyclicBuffer buffer(bufferName, cyclicBufferSize, false);
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, false);
 
             testAdmin.Sync("setup server");
 
@@ -90,6 +90,10 @@ namespace Tests {
             testAdmin.Sync("server read");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         // This side (tested) acts as client
         IPTestAdministrator testAdmin(otherSide);
         {
@@ -99,9 +103,8 @@ namespace Tests {
             string data;
             uint32_t cyclicBufferSize = 10;
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            char bufferName[] = "cyclicbuffer02";
 
-            CyclicBuffer buffer(bufferName, cyclicBufferSize, false);
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, false);
 
             testAdmin.Sync("setup client");
 
@@ -130,14 +133,15 @@ namespace Tests {
 
     TEST(Core_CyclicBuffer, WithOverwrite)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+        std::string bufferName {"cyclicbuffer03"};
+
+        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
             uint32_t result;
             string data;
             uint32_t cyclicBufferSize = 10;
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            char bufferName[] = "cyclicbuffer03";
 
-            CyclicBuffer buffer(bufferName, cyclicBufferSize, true);
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, true);
 
             testAdmin.Sync("setup server");
 
@@ -173,18 +177,22 @@ namespace Tests {
             EXPECT_FALSE(buffer.Overwritten());
             EXPECT_FALSE(buffer.IsLocked());
 
-            EXPECT_EQ(buffer.ErrorCode(),2u);
-            EXPECT_EQ(buffer.LockPid(),0u);
-            EXPECT_EQ(buffer.Free(),10u);
+            EXPECT_EQ(buffer.ErrorCode(), 2u);
+            EXPECT_EQ(buffer.LockPid(), 0u);
+            EXPECT_EQ(buffer.Free(), 10u);
 
-            EXPECT_STREQ(buffer.Name().c_str(),bufferName);
-            EXPECT_STREQ(buffer.Storage().Name().c_str(),bufferName);
+            EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
+            EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
 
             EXPECT_TRUE(buffer.IsOverwrite());
             EXPECT_TRUE(buffer.IsValid());
 
             testAdmin.Sync("server read");
         };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
 
         // This side (tested) acts as client
         IPTestAdministrator testAdmin(otherSide);
@@ -195,9 +203,8 @@ namespace Tests {
             string data;
             uint32_t cyclicBufferSize = 10;
             uint8_t loadBuffer[cyclicBufferSize + 1];
-            char bufferName[] = "cyclicbuffer03";
 
-            CyclicBuffer buffer(bufferName, cyclicBufferSize, true);
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, true);
 
             testAdmin.Sync("setup client");
 
@@ -232,9 +239,9 @@ namespace Tests {
         uint32_t cyclicBufferSize = 10;
 
         CyclicBuffer buffer(bufferName, cyclicBufferSize, true);
-        buffer.Lock(false,500);
+        buffer.Lock(false, 500);
         buffer.Unlock();
-        buffer.Lock(true,1000);
+        buffer.Lock(true, 1000);
     }
 
     TEST(Core_CyclicBuffer, lock_unlock)
@@ -244,13 +251,13 @@ namespace Tests {
 
         CyclicBuffer buffer(bufferName, bufferSize, true);
 
-        bool done = false;
+        volatile bool done = false;
         std::mutex mutex;
         std::condition_variable cv;
 
-        ThreadClass object(&buffer,&done,&mutex,&cv);
+        ThreadClass object(buffer, done, mutex, cv);
         object.Run();
-        buffer.Lock(true,infinite);
+        buffer.Lock(true, infinite);
         std::unique_lock<std::mutex> lk(mutex);
         while (!done) {
             cv.wait(lk);

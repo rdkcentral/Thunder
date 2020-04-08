@@ -7,28 +7,28 @@ using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
 class SynchronizeClass {
-    public:
-        SynchronizeClass()
+public:
+    SynchronizeClass()
         : _msg("")
-        {
-        }
+    {
+    }
 
-        ~SynchronizeClass()
-        {
-        }
+    ~SynchronizeClass()
+    {
+    }
 
-    public:
-        bool Copy(const string message)
-        {
-            bool result = false;
-            _msg = message;
-            if (!_msg.empty())
-                result = true;
-            return result;
-        }
+public:
+    bool Copy(const string message)
+    {
+        bool result = false;
+        _msg = message;
+        if (!_msg.empty())
+            result = true;
+        return result;
+    }
 
-    private:
-        string _msg;
+private:
+    string _msg;
 };
 
 TEST(test_synchronize, synchronize_test)

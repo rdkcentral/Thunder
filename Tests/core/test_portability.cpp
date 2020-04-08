@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    bool _threadDone;
+    volatile bool _threadDone;
     std::thread::id _parentId;
 };
 

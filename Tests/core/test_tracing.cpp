@@ -151,59 +151,61 @@ void DebugCheckIfConsistent(const uint8_t * buffer, int length, Core::CyclicBuff
 
 void CreateTraceBuffer(string tracePath)
 {
-   char systemCmd[1024];
-   string command = "mkdir -p ";
-   snprintf(systemCmd, command.size()+tracePath.size()+1, "%s%s", command.c_str(),tracePath.c_str());
-   system(systemCmd);
+    char systemCmd[1024];
+    string command = "mkdir -p ";
+    snprintf(systemCmd, command.size()+tracePath.size()+1, "%s%s", command.c_str(),tracePath.c_str());
+    system(systemCmd);
 }
 
 TEST(Core_tracing, simpleTracing)
 {
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
+    std::string tracePath = "/tmp/tracebuffer01";
+    auto lambdaFunc = [tracePath](IPTestAdministrator & testAdmin) {
+        std::string db = (tracePath + "/tracebuffer.doorbell");
+        string cycBufferName = (tracePath + "/tracebuffer");
 
-       string tracePath = "/tmp/tracebuffer01";
-       std::string db = (tracePath + "/tracebuffer.doorbell");
-       string cycBufferName = (tracePath + "/tracebuffer");
+        testAdmin.Sync("client start");
+        Core::DoorBell doorBell(db.c_str());
+        ServerCyclicBuffer01 cycBuffer(cycBufferName);
 
-       testAdmin.Sync("client start");
-       Core::DoorBell doorBell(db.c_str());
-       ServerCyclicBuffer01 cycBuffer(cycBufferName);
+        // TODO: maximum running time?
+        if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
+            doorBell.Acknowledge();
+            constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
+            uint32_t bufferLength = bufferSize;
+            uint8_t buffer[bufferLength];
+            uint32_t actuallyRead = cycBuffer.Read(buffer, sizeof(buffer));
+            testAdmin.Sync("server done");
 
-       // TODO: maximum running time?
-       if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
-           doorBell.Acknowledge();
-           constexpr uint32_t bufferSize = ((8 * 1024) - (sizeof(struct Core::CyclicBuffer::control))); /* 8Kb */
-           uint32_t bufferLength = bufferSize;
-           uint8_t buffer[bufferLength];
-           uint32_t actuallyRead = cycBuffer.Read(buffer, sizeof(buffer));
-           testAdmin.Sync("server done");
+            EXPECT_TRUE(actuallyRead < cycBuffer.Size());
 
-           EXPECT_TRUE(actuallyRead < cycBuffer.Size());
+            DebugCheckIfConsistent(buffer, actuallyRead, cycBuffer, bufferSize);
 
-           DebugCheckIfConsistent(buffer, actuallyRead, cycBuffer, bufferSize);
+            uint32_t offset = 0;
+            int traceCount = 0;
+            while (offset < actuallyRead) {
+                TraceData traceData;
+                EXPECT_TRUE(ParseTraceData(buffer, actuallyRead, offset, traceData, bufferSize));
+                string time(Core::Time::Now().ToRFC1123(true));
 
-           uint32_t offset = 0;
-           int traceCount = 0;
-           while (offset < actuallyRead) {
-               TraceData traceData;
-               EXPECT_TRUE(ParseTraceData(buffer, actuallyRead, offset, traceData, bufferSize));
-               string time(Core::Time::Now().ToRFC1123(true));
+                EXPECT_STREQ(traceData._File.c_str(), "test_tracing.cpp");
+                EXPECT_STREQ(traceData._Class.c_str(), "TestBody");
+                EXPECT_STREQ(traceData._Category.c_str(), "Information");
+                EXPECT_STREQ(traceData._Text.c_str(), "Trace Log");
 
-               EXPECT_STREQ(traceData._File.c_str(),"test_tracing.cpp");
-               EXPECT_STREQ(traceData._Class.c_str(),"TestBody");
-               EXPECT_STREQ(traceData._Category.c_str(),"Information");
-               EXPECT_STREQ(traceData._Text.c_str(),"Trace Log");
-
-               traceCount++;
-           }
-       }
-       doorBell.Relinquish();
+                traceCount++;
+            }
+        }
+        doorBell.Relinquish();
     };
 
-   // This side (tested) acts as client.
-   IPTestAdministrator testAdmin(otherSide);
-   {
-        string tracePath = "/tmp/tracebuffer01";
+    static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+    // This side (tested) acts as client.
+    IPTestAdministrator testAdmin(otherSide);
+    {
         CreateTraceBuffer(tracePath);
         Trace::TraceUnit::Instance().Open(tracePath);
         testAdmin.Sync("client start");
@@ -218,12 +220,12 @@ TEST(Core_tracing, simpleTracing)
 
         while (index.Next() == true)
             if ((*index)->Enabled() == true) {
-                EXPECT_STREQ((*index)->Module(),"Tracing");
-                EXPECT_STREQ((*index)->Category(),"Information");
+                EXPECT_STREQ((*index)->Module(), "Tracing");
+                EXPECT_STREQ((*index)->Category(), "Information");
             }
 
         bool enabled = false;
-        Trace::TraceUnit::Instance().IsDefaultCategory("Tracing",reinterpret_cast<const char*>("Information"),enabled);
+        Trace::TraceUnit::Instance().IsDefaultCategory("Tracing", reinterpret_cast<const char*>("Information"), enabled);
 
 #if 0
         string jsonDefaultCategories("Information");
@@ -235,7 +237,7 @@ TEST(Core_tracing, simpleTracing)
 
         TRACE(Trace::Information,(Trace::Format(_T("Checking the Format() with 1 parameter"))));
         std::string text = "Hello";
-        TRACE(Trace::Information,(Trace::Format(text.c_str(),_T("Checking the Format() with 2 parameter"))));
+        TRACE(Trace::Information,(Trace::Format(text.c_str(), _T("Checking the Format() with 2 parameter"))));
         Trace::TraceUnit::Instance().Close();
         Trace::TraceUnit::Instance().Open(1);
    }

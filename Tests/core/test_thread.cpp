@@ -15,7 +15,7 @@ namespace Tests {
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-        ThreadClass(bool* threadDone, std::mutex* mutex,std::condition_variable* cv, std::thread::id parentTid)
+        ThreadClass(volatile bool& threadDone, std::mutex& mutex, std::condition_variable& cv, std::thread::id parentTid)
             : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
             , _done(threadDone)
             , _threadMutex(mutex)
@@ -30,19 +30,19 @@ namespace Tests {
 
         virtual uint32_t Worker() override
         {
-            while (IsRunning() && (!*_done)) {
+            while (IsRunning() && (!_done)) {
                 EXPECT_NE(_parentTid, std::this_thread::get_id());
-                std::unique_lock<std::mutex> lk(*_threadMutex);
-                *_done = true;
-                _threadCV->notify_one();
+                std::unique_lock<std::mutex> lk(_threadMutex);
+                _done = true;
+                _threadCV.notify_one();
             }
             return (Core::infinite);
         }
 
     private :
-        bool* _done;
-        std::mutex* _threadMutex;
-        std::condition_variable* _threadCV;
+        volatile bool& _done;
+        std::mutex& _threadMutex;
+        std::condition_variable& _threadCV;
         std::thread::id _parentTid;
     };
 
@@ -89,11 +89,11 @@ namespace Tests {
     TEST(Core_Thread, SimpleThread)
     {
         std::thread::id parentTid = std::this_thread::get_id();
-        bool threadDone = false;
+        volatile bool threadDone = false;
         std::mutex mutex;
         std::condition_variable cv;
 
-        ThreadClass object(&threadDone, &mutex, &cv, parentTid);
+        ThreadClass object(threadDone, mutex, cv, parentTid);
         object.Run();
         EXPECT_EQ(object.State(), Core::Thread::RUNNING);
         std::unique_lock<std::mutex> lk(mutex);

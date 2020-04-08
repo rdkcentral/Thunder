@@ -15,7 +15,7 @@ public:
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
-    ThreadClass(Core::CriticalSection* lock,std::thread::id parentId)
+    ThreadClass(Core::CriticalSection& lock,std::thread::id parentId)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
         , _lock(lock)
         , _parentId(parentId)
@@ -32,18 +32,18 @@ public:
         while (IsRunning() && (!_done)) {
             EXPECT_TRUE(_parentId != std::this_thread::get_id());
             _done = true;
-            _lock->Lock();
+            _lock.Lock();
             g_shared++;
-            _lock->Unlock();
+            _lock.Unlock();
             ::SleepMs(50);
         }
         return (Core::infinite);
     }
 
 private:
-    Core::CriticalSection* _lock;
+    Core::CriticalSection& _lock;
     std::thread::id _parentId;
-    bool _done;
+    volatile bool _done;
 };
 
 
@@ -52,7 +52,7 @@ TEST(test_criticalsection, simple_criticalsection)
     Core::CriticalSection lock;
     std::thread::id parentId;
 
-    ThreadClass object(&lock,parentId);
+    ThreadClass object(lock,parentId);
     object.Run();
     lock.Lock();
     g_shared++;

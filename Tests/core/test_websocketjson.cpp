@@ -9,8 +9,6 @@
 namespace WPEFramework {
 namespace Tests {
 
-    const TCHAR* g_webJsonConnector = "/tmp/wpewebsocketjson0";
-
     class Message : public Core::JSON::Container {
     public:
         Message(const Message&) = delete;
@@ -192,8 +190,9 @@ namespace Tests {
 
     TEST(WebSocket, Json)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<JsonSocketServer<Core::JSON::IElement>> jsonWebSocketServer(Core::NodeId(Tests::g_webJsonConnector));
+        std::string connector {"/tmp/wpewebsocketjson0"};
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<JsonSocketServer<Core::JSON::IElement>> jsonWebSocketServer(Core::NodeId(connector.c_str()));
             jsonWebSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
 
@@ -205,6 +204,10 @@ namespace Tests {
             testAdmin.Sync("client done");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
@@ -214,7 +217,7 @@ namespace Tests {
             std::string sendString;
             sendObject->ToString(sendString);
 
-            JsonSocketClient<Core::JSON::IElement> jsonWebSocketClient(Core::NodeId(Tests::g_webJsonConnector));
+            JsonSocketClient<Core::JSON::IElement> jsonWebSocketClient(Core::NodeId(connector.c_str()));
             jsonWebSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             jsonWebSocketClient.Submit(Core::proxy_cast<Core::JSON::IElement>(sendObject));

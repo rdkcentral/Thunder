@@ -8,8 +8,8 @@ namespace Tests {
 
     TEST(Core_DoorBell, simpleSet)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            string fileName = "/tmp/doorbell01";
+        std::string fileName {"/tmp/doorbell01"};
+        auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
             Core::DoorBell doorBell(fileName.c_str());
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
@@ -23,9 +23,12 @@ namespace Tests {
             doorBell.Relinquish();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            string fileName = "/tmp/doorbell01";
             Core::DoorBell doorBell(fileName.c_str());
             ::SleepMs(1);
             doorBell.Ring();

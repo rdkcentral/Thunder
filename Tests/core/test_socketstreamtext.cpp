@@ -9,8 +9,6 @@
 namespace WPEFramework {
 namespace Tests {
 
-    const TCHAR* g_streamTextConnector = "/tmp/wpestreamtext0";
-
     class TextConnector : public Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> {
     private:
         typedef Core::StreamTextType<Core::SocketStream, Core::TerminatorCarriageReturn> BaseClass;
@@ -97,8 +95,10 @@ namespace Tests {
 
     TEST(Core_Socket, StreamText)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(Tests::g_streamTextConnector));
+        std::string connector {"/tmp/wpestreamtext0"};
+
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::SocketServerType<TextConnector> textSocketServer(Core::NodeId(connector.c_str()));
             textSocketServer.Open(Core::infinite);
             testAdmin.Sync("setup server");
             std::unique_lock<std::mutex> lk(TextConnector::_mutex);
@@ -109,10 +109,14 @@ namespace Tests {
             testAdmin.Sync("client done");
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         testAdmin.Sync("setup server");
         {
-            TextConnector textSocketClient(Core::NodeId(Tests::g_streamTextConnector));
+            TextConnector textSocketClient(Core::NodeId(connector.c_str()));
             textSocketClient.Open(Core::infinite);
             testAdmin.Sync("server open");
             string message = "hello";
