@@ -510,7 +510,11 @@ namespace Core {
     inline void* Alignment(size_t alignment, void* incoming)
     {
         const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
+#ifdef __WINDOWS__
+        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~alignment);
+#else
         return reinterpret_cast<void*>((basePtr - 1u + alignment) & -alignment);
+#endif
     }
 
     inline uint8_t* PointerAlign(uint8_t* pointer)
