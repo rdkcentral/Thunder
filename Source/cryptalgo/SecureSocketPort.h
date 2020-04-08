@@ -24,9 +24,9 @@
 namespace WPEFramework {
 namespace Crypto {
 
-    class SecureSocketPort : public Core::IResource {
+    class EXTERNAL SecureSocketPort : public Core::IResource {
     private:
-        class Handler : public Core::SocketPort {
+        class EXTERNAL Handler : public Core::SocketPort {
         private:
             enum state : uint8_t {
                 IDLE,

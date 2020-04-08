@@ -265,7 +265,7 @@ namespace Core {
     : _pids()
     , _current()
     , _index(0) {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) { return true; });
 #endif
         Reset();
@@ -276,7 +276,7 @@ namespace Core {
     : _pids()
     , _current()
     , _index(0) {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
             char fullname[PATH_MAX];
@@ -299,7 +299,7 @@ namespace Core {
     : _pids()
     , _current()
     , _index(0) {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
             bool accept = false;
 
@@ -486,6 +486,8 @@ namespace Core {
     {
         uint64_t result = 0;
 
+        #ifndef __WINDOWS__
+
         int fd;
         TCHAR buffer[256];
         int Share = 0;
@@ -513,6 +515,7 @@ namespace Core {
             }
             close(fd);
         }
+#endif
 
         return (result);
     }
@@ -534,6 +537,7 @@ namespace Core {
 #endif
     }
 
+#ifndef __WINDOWS__
     std::list<string> ProcessInfo::CommandLine() const
     {
         char procPath[PATH_MAX];
@@ -583,6 +587,7 @@ namespace Core {
 
         return output;
     }
+#endif
 
     uint32_t ProcessInfo::Group(const string& groupName)
     {
@@ -615,6 +620,8 @@ namespace Core {
     void ProcessInfo::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
     {
         uint32_t entryCount = size / sizeof(uint32_t);
+
+        #ifndef __WINDOWS__
 
         char mapsPath[PATH_MAX];
         sprintf(mapsPath, "/proc/%u/maps", _pid);
@@ -682,6 +689,7 @@ namespace Core {
         }
 
         fclose(pagemapFile);
+        #endif // __WINDOWS__
     }
 
     /* static */ uint32_t ProcessInfo::User(const string& userName)
@@ -712,13 +720,17 @@ namespace Core {
 
     /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
     {
-       std::list<uint32_t> pidList;
-       FindPid(name, exact, pidList);
+#ifndef __WINDOWS__
+        std::list<uint32_t> pidList;
+        FindPid(name, exact, pidList);
 
-       processInfos.clear();
-       for (const pid_t pid : pidList) {
-          processInfos.emplace_back(pid);
-       }
+        processInfos.clear();
+        for (const pid_t pid : pidList) {
+            processInfos.emplace_back(pid);
+        }
+
+#endif // !__WINDOWS__
+
     }
 
     static void EnumerateChildProcesses(const ProcessInfo& processInfo, std::list<ProcessInfo>& pids)
@@ -745,7 +757,7 @@ namespace Core {
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-        auto comparator = [pid](const ProcessInfo& processInfo){ return processInfo.Id() == pid; };
+        auto comparator = [pid](const ProcessInfo& processInfo){ return (reinterpret_cast<ThreadId>(processInfo.Id()) == pid); };
 
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
@@ -756,13 +768,13 @@ namespace Core {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
-            processIds.push_back(process.Id());
+            processIds.push_back(reinterpret_cast<ThreadId>(process.Id()));
         }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-       return _processes.front().Id();
+       return reinterpret_cast<ThreadId>(_processes.front().Id());
     }
 
     uint64_t ProcessTree::Jiffies() const

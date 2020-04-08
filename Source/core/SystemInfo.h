@@ -86,7 +86,7 @@ namespace Core {
 
         inline uint32_t GetPhysicalPageCount() const
         {
-           return m_totalram / m_pageSize;
+           return static_cast<uint32_t>(m_totalram / m_pageSize);
         }
 
         inline uint32_t GetUpTime()
