@@ -28,6 +28,7 @@
 
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 
 #ifdef __APPLE__
 #import <mach/host_info.h>
@@ -153,6 +154,7 @@ namespace Core {
 #ifdef __APPLE__
         m_uptime = 0;
         m_totalram = 0;
+        m_pageSize = 0;
         m_freeram = 0;
         m_prevCpuSystemTicks = 0;
         m_prevCpuUserTicks = 0;
@@ -163,6 +165,7 @@ namespace Core {
 
         m_uptime = info.uptime;
         m_totalram = info.totalram;
+        m_pageSize = static_cast<uint32_t>(sysconf(_SC_PAGESIZE));
         m_freeram = info.freeram;
 #endif
 #endif
@@ -172,6 +175,32 @@ namespace Core {
 
     SystemInfo::~SystemInfo()
     {
+    }
+
+    SystemInfo::MemorySnapshot::MemorySnapshot() {
+        std::ifstream file("/proc/meminfo", std::ifstream::in);
+        std::string line;
+        while( std::getline(file, line).eof() == false && file.good() == true ) {
+            std::stringstream stream(line);
+            std::string key;
+            stream >> key;
+            if( key == "MemTotal:" ) {
+                stream >> _total; 
+            } else if( key == "MemFree:" ) {
+                stream >> _free; 
+            } else if( key == "MemAvailable:" ) {
+                stream >> _available; 
+            } else if( key == "Cached:" ) {
+                stream >> _cached; 
+            } else if( key == "SwapTotal:" ) {
+                stream >> _swapTotal; 
+            } else if( key == "SwapFree:" ) {
+                stream >> _swapFree; 
+            } else if( key == "SwapCached:" ) {
+                stream >> _swapCached; 
+            } 
+        }
+        file.close();
     }
 
     void SystemInfo::UpdateCpuStats() const
@@ -237,6 +266,8 @@ namespace Core {
                 SystemInfo::m_cpuload = 0;
             else
                 SystemInfo::m_cpuload = ((DeltaTickCount - DeltaIdleTime) * 100) / DeltaTickCount;
+
+            SystemInfo::m_jiffies = CurrentTickCount;
 
             // Store current tick statistics for next cycle
             previousTickCount = CurrentTickCount;

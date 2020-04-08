@@ -56,8 +56,14 @@ namespace Core {
 
         class EXTERNAL Iterator {
         public:
-            // Get the Processes with this name.
-            Iterator(const string& name, const bool exact);
+            // Get all processes
+            Iterator();
+
+            // Get the Child Processes with a name name from a Parent with a certain name
+            Iterator(const string& parentname, const string& childname, const bool removepath);
+
+            // Get the Child Processes with a name name from a Parent pid
+            Iterator(const uint32_t parentPID, const string& childname, const bool removepath);
 
             // Get the Children of the given PID.
             Iterator(const uint32_t parentPID);
@@ -137,7 +143,7 @@ namespace Core {
             return (_pid);
         }
 
-        inline Iterator Children()
+        inline Iterator Children() const
         {
             return (Iterator(_pid));
         }
@@ -225,15 +231,19 @@ namespace Core {
         uint64_t Allocated() const;
         uint64_t Resident() const;
         uint64_t Shared() const;
+        uint64_t Jiffies() const;
         string Name() const;
         string Executable() const;
+        std::list<string> CommandLine() const;
         uint32_t Group(const string& groupName);
         string Group() const;
+        void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
 
         // Setting, or getting, the user can onl be done for the
         // current process, hence why they are static.
         static uint32_t User(const string& userName);
         static string User();
+        static void FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos);
 
     private:
         uint32_t _pid;
@@ -241,6 +251,22 @@ namespace Core {
         HANDLE _handle;
 #endif
     }; // class ProcessInfo
+
+   class ProcessTree
+   {
+      public:
+         explicit ProcessTree(const ProcessInfo& processInfo);
+
+         void MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const;
+         bool ContainsProcess(ThreadId pid) const;
+         void GetProcessIds(std::list<ThreadId>& processIds) const;
+         ThreadId RootId() const;
+         uint64_t Jiffies() const;
+
+      private:
+         std::list<ProcessInfo> _processes;
+   };
+
 } // namespace Core
 } // namespace WPEFramework
 
