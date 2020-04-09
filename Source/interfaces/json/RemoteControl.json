@@ -470,5 +470,23 @@
         }
       ]
     }
+  },
+  "events": {
+    "keypressed": {
+      "summary": "Notifies of a key press/release action.",
+      "id": {
+        "name": "key code",
+        "example": "42"
+      },
+      "params": {
+        "type": "object",
+        "properties": {
+          "pressed": {
+            "type": "boolean",
+            "description": "Denotes if the key was pressed (true) or released (false)"
+          }
+        }
+      }
+    }
   }
 }
