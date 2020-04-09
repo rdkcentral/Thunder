@@ -15,16 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(GTest REQUIRED)
+set(CRYPTOGRAPHY_IMPLEMENTATION "None" CACHE STRING "Defines what implementation to use")
 
-include_directories(${GTEST_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Source)
+if(NOT EXISTS ${CMAKE_CURRENT_LIST_DIR}/${CRYPTOGRAPHY_IMPLEMENTATION})
+    message(FATAL_ERROR "Invalid value \'${CRYPTOGRAPHY_IMPLEMENTATION}\' for CRYPTOGRAPHY_IMPLEMENTATION.")
+endif()
 
-set(CMAKE_CXX_STANDARD 11)
-
-enable_testing()
-
-add_subdirectory(core)
-add_subdirectory(tests)
-add_subdirectory(cryptography)
-
+add_subdirectory(${CRYPTOGRAPHY_IMPLEMENTATION})

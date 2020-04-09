@@ -15,16 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(GTest REQUIRED)
+set(TARGET implementation)
 
-include_directories(${GTEST_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Source)
+add_library(${TARGET} STATIC
+    Signing.cpp
+    Vault.cpp
+    Cipher.cpp
+)
 
-set(CMAKE_CXX_STANDARD 11)
+target_link_libraries(${TARGET}
+    PUBLIC
+        ${NAMESPACE}Core::${NAMESPACE}Core
+        ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
+)
 
-enable_testing()
-
-add_subdirectory(core)
-add_subdirectory(tests)
-add_subdirectory(cryptography)
-
+target_include_directories(${TARGET}
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../..>)
