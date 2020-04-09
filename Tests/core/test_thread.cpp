@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 #include <core/core.h>
-#include <thread>
 #include <condition_variable>
 #include <mutex>
 
@@ -15,7 +14,7 @@ namespace Tests {
         ThreadClass(const ThreadClass&) = delete;
         ThreadClass& operator=(const ThreadClass&) = delete;
 
-        ThreadClass(volatile bool& threadDone, std::mutex& mutex, std::condition_variable& cv, std::thread::id parentTid)
+        ThreadClass(volatile bool& threadDone, std::mutex& mutex, std::condition_variable& cv, ::ThreadId parentTid)
             : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
             , _done(threadDone)
             , _threadMutex(mutex)
@@ -31,7 +30,7 @@ namespace Tests {
         virtual uint32_t Worker() override
         {
             while (IsRunning() && (!_done)) {
-                EXPECT_NE(_parentTid, std::this_thread::get_id());
+                EXPECT_NE(_parentTid, Core::Thread::ThreadId());
                 std::unique_lock<std::mutex> lk(_threadMutex);
                 _done = true;
                 _threadCV.notify_one();
@@ -43,7 +42,7 @@ namespace Tests {
         volatile bool& _done;
         std::mutex& _threadMutex;
         std::condition_variable& _threadCV;
-        std::thread::id _parentTid;
+        ::ThreadId _parentTid;
     };
 
     class Job : public Core::IDispatch {
@@ -61,7 +60,7 @@ namespace Tests {
 
         virtual void Dispatch() override
         {
-            EXPECT_NE(_parentTPid, std::this_thread::get_id());
+            EXPECT_NE(_parentTPid, Core::Thread::ThreadId());
             std::unique_lock<std::mutex> lk(_mutex);
             _threadDone = true;
             _cv.notify_one();
@@ -74,7 +73,7 @@ namespace Tests {
 
     private:
         static bool _threadDone;
-        static std::thread::id _parentTPid;
+        static ::ThreadId _parentTPid;
 
     public:
         static std::mutex _mutex;
@@ -84,11 +83,11 @@ namespace Tests {
     bool Job::_threadDone = false;
     std::mutex Job::_mutex;
     std::condition_variable Job::_cv;
-    std::thread::id Job::_parentTPid = std::this_thread::get_id();
+    ::ThreadId Job::_parentTPid = Core::Thread::ThreadId();
 
     TEST(Core_Thread, SimpleThread)
     {
-        std::thread::id parentTid = std::this_thread::get_id();
+        ::ThreadId parentTid = Core::Thread::ThreadId();
         volatile bool threadDone = false;
         std::mutex mutex;
         std::condition_variable cv;
