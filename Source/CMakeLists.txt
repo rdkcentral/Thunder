@@ -22,6 +22,8 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
+option(CRYPTOGRAPHY
+        "Include the cryptography library." OFF)
 option(BLUETOOTH
         "Include the bluetooth library." OFF)
 option(BROADCAST
@@ -143,6 +145,10 @@ endif()
 
 if(BLUETOOTH)
     add_subdirectory(bluetooth)
+endif()
+
+if(CRYPTOGRAPHY)
+    add_subdirectory(cryptography)
 endif()
 
 if(PROFILER)
