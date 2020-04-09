@@ -15,13 +15,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TARGET  ${NAMESPACE}ProcessContainers)
+set(TARGET ${NAMESPACE}ProcessContainers)
 
 # Backend options
 option(PROCESSCONTAINERS_LXC
         "Use LXC backend." OFF)
 option(PROCESSCONTAINERS_RUNC
         "Use RunC backend." OFF)
+option(PROCESSCONTAINERS_CRUN
+        "Use CRun backend." OFF)
 option(PROCESSCONTAINERS_CLIB
         "Use c-library nackend." OFF)
 
@@ -37,6 +39,8 @@ if (PROCESSCONTAINERS_LXC)
         target_sources(${TARGET} PRIVATE implementations/LXCImplementation/LXCImplementation.cpp)
 elseif(PROCESSCONTAINERS_RUNC)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
+elseif(PROCESSCONTAINERS_CRUN)
+        target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp)
 elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 endif()
@@ -79,6 +83,18 @@ if (PROCESSCONTAINERS_LXC)
                 PRIVATE
                 LXC::LXC
                 )
+elseif (PROCESSCONTAINERS_CRUN)
+        find_package(LibCRUN REQUIRED)
+
+        target_link_libraries(${TARGET}
+                PRIVATE
+                libcrun::libcrun
+                )
+
+        target_include_directories( ${TARGET}
+                PRIVATE
+                libcrun::libcrun
+        )
 endif()
 
 install(
