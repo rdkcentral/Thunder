@@ -490,7 +490,6 @@ namespace Core {
 
         int fd;
         TCHAR buffer[256];
-        int Share = 0;
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/stat", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
@@ -757,7 +756,7 @@ namespace Core {
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
-        auto comparator = [pid](const ProcessInfo& processInfo){ return (reinterpret_cast<ThreadId>(processInfo.Id()) == pid); };
+        auto comparator = [pid](const ProcessInfo& processInfo){ return ((ThreadId)(processInfo.Id()) == pid); };
 
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
@@ -768,13 +767,13 @@ namespace Core {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
-            processIds.push_back(reinterpret_cast<ThreadId>(process.Id()));
+            processIds.push_back((ThreadId)(process.Id()));
         }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-       return reinterpret_cast<ThreadId>(_processes.front().Id());
+       return (ThreadId)(_processes.front().Id());
     }
 
     uint64_t ProcessTree::Jiffies() const
