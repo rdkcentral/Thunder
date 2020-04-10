@@ -1223,6 +1223,17 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
         emit.IndentDec()
         emit.Line("}")
+
+        emit.Line("~Instantiation()")
+        emit.Line("{")
+        emit.IndentInc()
+
+        for key, val in announce_list.items():
+            emit.Line("RPC::Administrator::Instance().Recall<%s>();" % (key))
+
+        emit.IndentDec()
+        emit.Line("}")
+
         emit.IndentDec()
         emit.Line("} ProxyStubRegistration;")
         emit.Line()

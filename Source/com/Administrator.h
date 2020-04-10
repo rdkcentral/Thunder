@@ -94,6 +94,30 @@ namespace RPC {
             _adminLock.Unlock();
         }
 
+        template <typename ACTUALINTERFACE>
+        void Recall()
+        {
+            _adminLock.Lock();
+
+            std::map<uint32_t, ProxyStub::UnknownStub*>::iterator stub(_stubs.find(ACTUALINTERFACE::ID));
+            if (stub != _stubs.end()) {
+                delete stub->second;
+                _stubs.erase(ACTUALINTERFACE::ID);
+            } else {
+                TRACE_L1("Failed to find a Stub for %d.", ACTUALINTERFACE::ID);
+            }
+
+            std::map<uint32_t, IMetadata*>::iterator proxy(_proxy.find(ACTUALINTERFACE::ID));
+            if (proxy != _proxy.end()) {
+                delete proxy->second;
+                _proxy.erase(ACTUALINTERFACE::ID);
+            } else {
+                TRACE_L1("Failed to find a Proxy for %d.", ACTUALINTERFACE::ID);
+            }
+
+            _adminLock.Unlock();
+        }
+
         Core::ProxyType<InvokeMessage> Message()
         {
             return (_factory.Element());
