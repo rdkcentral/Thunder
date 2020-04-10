@@ -93,7 +93,9 @@ namespace Core {
         enum Parity {
             NONE = NOPARITY,
             EVEN = EVENPARITY,
-            ODD = ODDPARITY
+            ODD = ODDPARITY,
+            MARK = MARKPARITY,
+            SPACE = SPACEPARITY
         };
 
         enum DataBits {
@@ -105,7 +107,8 @@ namespace Core {
 
         enum StopBits {
             BITS_1 = ONESTOPBIT,
-            BITS_2 = TWOSTOPBITS
+            BITS_2 = TWOSTOPBITS,
+            BITS_15 = ONE5STOPBITS
         };
 
 #ifdef __WINDOWS__

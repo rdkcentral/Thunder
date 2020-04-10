@@ -26,11 +26,16 @@ namespace WPEFramework {
 namespace RPC {
 
     // As COMRPC might run between a 32 bit and 64 bit system, the largest must be accommodated.
-    #if defined(_WIN64) 
+    #if defined(__SIZEOF_POINTER__) && (__SIZEOF_POINTER__ == 8) 
     typedef uint64_t instance_id;
     #else
     typedef uint32_t instance_id;
     #endif
+
+    template<typename INCOMING>
+    RPC::instance_id instance_cast(INCOMING value) {
+        return ((RPC::instance_id) value);
+    }
 
     namespace Data {
         static const uint16_t IPC_BLOCK_SIZE = 512;

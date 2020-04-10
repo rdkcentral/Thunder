@@ -70,7 +70,7 @@ namespace ProxyStub {
                 uint32_t newInterfaceId(reader.Number<uint32_t>());
 
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
-                response.Number<RPC::instance_id>(reinterpret_cast<RPC::instance_id>(newInterface));
+                response.Number<RPC::instance_id>(RPC::instance_cast<void*>(newInterface));
 
                 if (newInterface != nullptr) {
                     RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);

@@ -259,9 +259,12 @@ int clock_gettime(int, struct timespec*);
 
 #define ONESTOPBIT 0
 #define TWOSTOPBITS CSTOPB
+#define ONE5STOPBITS 3
 #define NOPARITY 0
 #define EVENPARITY PARENB
 #define ODDPARITY (PARENB | PARODD)
+#define MARKPARITY  8
+#define SPACEPARITY 9
 
 #define ESUCCESS 0
 #define _Geterrno() errno
@@ -510,7 +513,11 @@ namespace Core {
     inline void* Alignment(size_t alignment, void* incoming)
     {
         const auto basePtr = reinterpret_cast<uintptr_t>(incoming);
+#ifdef __WINDOWS__
+        return reinterpret_cast<void*>((basePtr - 1u + alignment) & ~alignment);
+#else
         return reinterpret_cast<void*>((basePtr - 1u + alignment) & -alignment);
+#endif
     }
 
     inline uint8_t* PointerAlign(uint8_t* pointer)

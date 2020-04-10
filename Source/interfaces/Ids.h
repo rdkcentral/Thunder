@@ -135,6 +135,8 @@ namespace Exchange {
         ID_REMOTECONTROL,
         ID_REMOTECONTROL_NOTIFICATION,
 
+        ID_RESOURCEMONITOR,
+
         ID_INPUT_PIN,
         ID_INPUT_PIN_NOTIFICATION,
 
