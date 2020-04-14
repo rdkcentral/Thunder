@@ -25,14 +25,12 @@
 
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-#include <openssl/sha.h>
-#include <openssl/hmac.h>
 
 #include "Vault.h"
+#include "Derive.h"
 
 
 namespace Implementation {
-
 
 static constexpr uint8_t IV_SIZE = 16;
 
@@ -43,47 +41,16 @@ static constexpr uint32_t KPH_ID = 2;
 static constexpr uint32_t KPW_ID = 3;
 static constexpr uint32_t ESN_ID = 4;
 
-uint16_t HKDF(const uint16_t inSize, const uint8_t input[], const uint16_t in2Size, const uint8_t input2[], uint8_t output[])
-{
-    // As per https://github.com/Netflix/msl/wiki/Pre-shared-Keys-or-Model-Group-Keys-Entity-Authentication
-
-    uint8_t inputBuffer[inSize + in2Size];
-    ::memcpy(inputBuffer, input, inSize);
-    ::memcpy(inputBuffer + inSize, input2, in2Size);
-
-    static const uint8_t salt[] = { 0x02, 0x76, 0x17, 0x98, 0x4f, 0x62, 0x27, 0x53, 0x9a, 0x63, 0x0b, 0x89, 0x7c, 0x01, 0x7d, 0x69 };
-    static const uint8_t data[] = { 0x80, 0x9f, 0x82, 0xa7, 0xad, 0xdf, 0x54, 0x8d, 0x3e, 0xa9, 0xdd, 0x06, 0x7f, 0xf9, 0xbb, 0x91 };
-
-    uint8_t hmac[SHA256_DIGEST_LENGTH];
-    uint32_t hmacSize = 0;
-    HMAC(EVP_sha256(), salt, sizeof(salt), inputBuffer, sizeof(inputBuffer), hmac, &hmacSize);
-    ASSERT(hmacSize == SHA256_DIGEST_LENGTH);
-
-    uint32_t outSize = 0;
-    HMAC(EVP_sha256(), hmac, hmacSize, data, sizeof(data), output, &outSize);
-    ASSERT(outSize == SHA256_DIGEST_LENGTH);
-
-    return (outSize);
-}
+static constexpr uint8_t MAX_ESN_SIZE = 64;
 
 } // namespace Netflix
 
 
 /* static */ Vault& Vault::NetflixInstance()
 {
-    static Vault instance(CRYPTOGRAPHY_VAULT_NETFLIX);
-    return (instance);
-}
+    static const uint8_t key[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 };
 
-Vault::Vault(cryptographyvault id)
-    : _lock()
-    , _items()
-    , _lastHandle(0)
-    , _id(id)
-    , _vaultKey({ 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 }, 16)
-{
-    /* Netflix vault specific initialisation */
-    if (id == CRYPTOGRAPHY_VAULT_NETFLIX) {
+    auto ctor = [](Vault& vault) {
         std::string path;
         WPEFramework::Core::SystemInfo::GetEnvironment(_T("NETFLIX_VAULT"), path);
         WPEFramework::Core::File file(path.c_str(), true);
@@ -94,33 +61,62 @@ Vault::Vault(cryptographyvault id)
                 uint8_t kpe[16];
                 uint8_t kph[32];
                 uint8_t esn[0];
-            };
+            } __attribute__((packed));
 
-            uint8_t input[file.Size()];
-            uint8_t output[file.Size() - IV_SIZE];
-            uint16_t inSize = file.Read(input, file.Size());
-            uint16_t decryptedSize = Cipher(false, inSize, input, sizeof(output), output);
+            uint64_t fileSize = file.Size();
 
-            if (decryptedSize >= sizeof(NetflixData)) {
-                NetflixData *data = reinterpret_cast<NetflixData*>(output);
+            if ((fileSize > (IV_SIZE + sizeof(NetflixData))) && (fileSize <= (IV_SIZE + sizeof(NetflixData) + Netflix::MAX_ESN_SIZE))) {
+                uint8_t input[fileSize];
+                uint8_t output[fileSize - IV_SIZE];
+                uint16_t inSize = file.Read(input, fileSize);
+                uint16_t decryptedSize = vault.Cipher(false, inSize, input, sizeof(output), output);
 
-                uint32_t kpeId = Import(sizeof(NetflixData::kpe), data->kpe, false);
-                ASSERT(kpeId == Netflix::KPE_ID);
+                if (decryptedSize >= sizeof(NetflixData)) {
+                    NetflixData *data = reinterpret_cast<NetflixData*>(output);
 
-                uint32_t kphId = Import(sizeof(NetflixData::kph), data->kph, false);
-                ASSERT(kphId == Netflix::KPH_ID);
+                    uint32_t kpeId = vault.Import(sizeof(NetflixData::kpe), data->kpe, false);
+                    ASSERT(kpeId == Netflix::KPE_ID);
 
-                uint8_t kpw[16];
-                Netflix::HKDF(sizeof(NetflixData::kpe), data->kpe, sizeof(NetflixData::kph), data->kph, kpw);
-                uint32_t kdwId = Import(sizeof(kpw), kpw, false);
-                ASSERT(kdwId == Netflix::KPW_ID);
+                    uint32_t kphId = vault.Import(sizeof(NetflixData::kph), data->kph, false);
+                    ASSERT(kphId == Netflix::KPH_ID);
 
-                uint32_t esnId = Import((decryptedSize - sizeof(NetflixData)), data->esn, true);
-                ASSERT(esnId == Netflix::ESN_ID);
+                    uint8_t kpw[32];
+                    // kpe and kph are already concatenated in the correct order
+                    Netflix::DeriveWrappingKey(data->kpe, (sizeof(data->kpe) + sizeof(data->kph)), sizeof(kpw), kpw);
+                    uint32_t kdwId = vault.Import(16, kpw, false); // take the first 16 bytes only!
+                    ASSERT(kdwId == Netflix::KPW_ID);
+
+                    uint32_t esnId = vault.Import((decryptedSize - sizeof(NetflixData)), data->esn, true);
+                    ASSERT(esnId == Netflix::ESN_ID);
+
+                    TRACE_L1(_T("Imported pre-shared keys and ESN into the Netflix vault"));
+                }
             }
 
             file.Close();
         }
+    };
+
+    auto dtor = [](Vault& vault) {
+        vault.Delete(Netflix::ESN_ID);
+        vault.Delete(Netflix::KPW_ID);
+        vault.Delete(Netflix::KPH_ID);
+        vault.Delete(Netflix::KPE_ID);
+    };
+
+    static Vault instance(string(reinterpret_cast<const char*>(key), sizeof(key)), ctor, dtor);
+    return (instance);
+}
+
+Vault::Vault(const string key, const Callback& ctor, const Callback& dtor)
+    : _lock()
+    , _items()
+    , _lastHandle(0)
+    , _vaultKey(key)
+    , _dtor(dtor)
+{
+    if (ctor != nullptr) {
+        ctor(*this);
     }
 
     _lastHandle = 0x80000000;
@@ -128,11 +124,8 @@ Vault::Vault(cryptographyvault id)
 
 Vault::~Vault()
 {
-    if (_id == CRYPTOGRAPHY_VAULT_NETFLIX) {
-        Delete(Netflix::ESN_ID);
-        Delete(Netflix::KPW_ID);
-        Delete(Netflix::KPH_ID);
-        Delete(Netflix::KPE_ID);
+    if (_dtor != nullptr) {
+        _dtor(*this);
     }
 }
 

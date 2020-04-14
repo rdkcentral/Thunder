@@ -24,6 +24,7 @@ add_library(${TARGET} STATIC
     Hash.cpp
     Cipher.cpp
     DiffieHellman.cpp
+    Derive.cpp
 )
 
 target_link_libraries(${TARGET}

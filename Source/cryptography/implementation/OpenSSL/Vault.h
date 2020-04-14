@@ -28,7 +28,9 @@ public:
     static Vault& NetflixInstance();
 
 private:
-    Vault(const cryptographyvault id);
+    using Callback = std::function<void(Vault&)>;
+
+    Vault(const string key, const Callback& ctor = nullptr, const Callback& dtor = nullptr);
     ~Vault();
 
 public:
@@ -75,8 +77,8 @@ private:
     mutable WPEFramework::Core::CriticalSection _lock;
     std::map<uint32_t, Element> _items;
     uint32_t _lastHandle;
-    cryptographyvault _id;
     string _vaultKey;
+    Callback _dtor;
 };
 
 } // namespace Implementation

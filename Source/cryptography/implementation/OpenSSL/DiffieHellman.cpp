@@ -17,13 +17,17 @@
  * limitations under the License.
  */
 
+#include "../../Module.h"
+
 #include <diffiehellman_implementation.h>
+
 
 #include <openssl/dh.h>
 #include <openssl/sha.h>
 #include <openssl/hmac.h>
 
 #include "Vault.h"
+#include "Derive.h"
 
 
 namespace Implementation {
@@ -277,15 +281,14 @@ uint32_t DiffieHellmanDeriveSecret(KeyStore& store, const uint32_t privateKeyId,
     return (result);
 }
 
+
+namespace Netflix {
+
 uint32_t DiffieHellmanAuthenticatedDeriveSecret(KeyStore& store,
                                                 const uint32_t privateKeyId, const uint32_t peerPublicKeyId, const uint32_t derivationKeyId,
-                                                const uint16_t saltSize, const uint8_t salt[], const uint16_t dataSize, const uint8_t data[],
                                                 uint32_t& encryptionKeyId, uint32_t& hmacKeyId, uint32_t& wrappingKeyId)
 {
     uint32_t result = -1;
-
-    ASSERT(salt != nullptr);
-    ASSERT(data != nullptr);
 
     DH* privateKey = nullptr;
     store.Deserialize(privateKeyId, privateKey);
@@ -351,20 +354,12 @@ uint32_t DiffieHellmanAuthenticatedDeriveSecret(KeyStore& store,
             hmacKeyId = store.Serialize(hmac + 16 , SHA256_DIGEST_LENGTH);
             ASSERT(hmacKeyId != 0);
 
-            // Derive the wrapping key:
-            //   a) HMAC the HMAC vector with the salt into a HMAC2 key
-            uint8_t hmac2[SHA256_DIGEST_LENGTH];
-            uint32_t hmac2Size = 0;
-            HMAC(EVP_sha256(), salt, saltSize, hmac, hmacSize, hmac2, &hmac2Size);
-            ASSERT(hmac2Size == SHA256_DIGEST_LENGTH);
-
-            //   b) HMAC the constant data blob with the HMAC2 key
+            // Derive the wrapping key
             uint8_t wrappingKeyBuf[SHA256_DIGEST_LENGTH];
-            uint32_t wrappingKeyBufSize = 0;
-            HMAC(EVP_sha256(), hmac2, hmac2Size, data, dataSize, wrappingKeyBuf, &wrappingKeyBufSize);
+            uint32_t wrappingKeyBufSize = DeriveWrappingKey(hmac, hmacSize, sizeof(wrappingKeyBuf), wrappingKeyBuf);
             ASSERT(wrappingKeyBufSize == SHA256_DIGEST_LENGTH);
 
-            //   c) Take the first 16 bytes of the HMAC2 vector as the "wrapping key" (AES 128-bit)
+            // Take the first 16 bytes as the "wrapping key" (AES 128-bit)
             wrappingKeyId = store.Serialize(wrappingKeyBuf, 16);
             ASSERT(wrappingKeyId != 0);
 
@@ -396,18 +391,7 @@ uint32_t DiffieHellmanAuthenticatedDeriveSecret(KeyStore& store,
     return (result);
 }
 
-
-uint32_t DiffieHellmanAuthenticatedDeriveSecret(KeyStore& store,
-                                                const uint32_t privateKeyId, const uint32_t peerPublicKeyId, const uint32_t derivationKeyId,
-                                                uint32_t& encryptionKeyId, uint32_t& hmacKeyId, uint32_t& wrappingKeyId)
-{
-    static const uint8_t salt[] = { 0x02, 0x76, 0x17, 0x98, 0x4f, 0x62, 0x27, 0x53, 0x9a, 0x63, 0x0b, 0x89, 0x7c, 0x01, 0x7d, 0x69 };
-    static const uint8_t data[] = { 0x80, 0x9f, 0x82, 0xa7, 0xad, 0xdf, 0x54, 0x8d, 0x3e, 0xa9, 0xdd, 0x06, 0x7f, 0xf9, 0xbb, 0x91 };
-
-    return (DiffieHellmanAuthenticatedDeriveSecret(store, privateKeyId, peerPublicKeyId, derivationKeyId,
-                                                   sizeof(salt), salt, sizeof(data), data,
-                                                   encryptionKeyId, hmacKeyId, wrappingKeyId));
-}
+} // namespace Netflix
 
 } // namespace Implementation
 
@@ -449,8 +433,8 @@ uint32_t netflix_security_derive_keys(const uint32_t private_dh_key_id, const ui
     ASSERT(wrapping_key_id != nullptr);
 
     Implementation::KeyStore store(&Implementation::Vault::NetflixInstance());
-    return (Implementation::DiffieHellmanAuthenticatedDeriveSecret(store, private_dh_key_id, peer_public_dh_key_id, derivation_key_id,
-                                                                   (*encryption_key_id), (*hmac_key_id), (*wrapping_key_id)));
+    return (Implementation::Netflix::DiffieHellmanAuthenticatedDeriveSecret(store, private_dh_key_id, peer_public_dh_key_id, derivation_key_id,
+                                                                           (*encryption_key_id), (*hmac_key_id), (*wrapping_key_id)));
 }
 
 } // extern "C"
