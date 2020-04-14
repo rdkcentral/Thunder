@@ -133,9 +133,9 @@ uint16_t Vault::Cipher(bool encrypt, const uint16_t inSize, const uint8_t input[
 {
     uint16_t totalLen = 0;
 
-    ASSERT(maxOutSize >= (inSize + (encrypt? IV_SIZE : 0)));
+    ASSERT(maxOutSize >= (inSize + (encrypt? IV_SIZE : -IV_SIZE)));
 
-    if (maxOutSize >= (inSize + (encrypt? IV_SIZE : 0))) {
+    if (maxOutSize >= (inSize + (encrypt? IV_SIZE : -IV_SIZE))) {
         uint8_t newIv[IV_SIZE];
         const uint8_t* iv = nullptr;
         const uint8_t* inputBuffer = nullptr;
@@ -317,6 +317,7 @@ VaultImplementation* vault_instance(const cryptographyvault id)
     switch(id) {
         case CRYPTOGRAPHY_VAULT_NETFLIX:
             vault = &Implementation::Vault::NetflixInstance();
+            break;
         default:
             TRACE_L1(_T("Vault not supported: %d"), static_cast<uint32_t>(id));
             break;
@@ -372,22 +373,26 @@ bool vault_delete(VaultImplementation* vault, const uint32_t id)
 
 uint16_t netflix_security_esn(const uint16_t max_length, uint8_t data[])
 {
-    return (Implementation::Vault::NetflixInstance().Export(Implementation::Netflix::ESN_ID, max_length, data));
+    if (data == nullptr) {
+        return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::ESN_ID));
+    } else {
+        return (Implementation::Vault::NetflixInstance().Export(Implementation::Netflix::ESN_ID, max_length, data));
+    }
 }
 
 uint32_t netflix_security_encryption_key(void)
 {
-    return (Implementation::Netflix::KPE_ID);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPE_ID) != 0? Implementation::Netflix::KPE_ID : 0);
 }
 
 uint32_t netflix_security_hmac_key(void)
 {
-    return (Implementation::Netflix::KPH_ID);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPH_ID) != 0? Implementation::Netflix::KPH_ID : 0);
 }
 
 uint32_t netflix_security_wrapping_key(void)
 {
-    return (Implementation::Netflix::KPW_ID);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPW_ID) != 0? Implementation::Netflix::KPW_ID : 0);
 }
 
 } // extern "C"
