@@ -50,7 +50,7 @@ namespace Netflix {
 
         if (Nexus::Initialized() == true) {
             std::string binPath;
-            if (WPEFramework::Core::SystemInfo::GetEnvironment(_T("DEVICE_KEYS"), binPath) == false) {
+            if (WPEFramework::Core::SystemInfo::GetEnvironment(_T("NETFLIX_VAULT"), binPath) == false) {
                 binPath = _T("drm.bin");
             }
 
