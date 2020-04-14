@@ -1,3 +1,5 @@
+
+
 #include "CRunImplementation.h"
 #include "JSON.h"
 #include <thread>
@@ -51,6 +53,7 @@ namespace ProcessContainers
 
     IContainer* CRunContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,  const string& logpath, const string& configuration) 
     {
+        searchpaths.Reset(0);
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
@@ -81,6 +84,7 @@ namespace ProcessContainers
             
             while (_containers.size() > 0) {
                 _containers.back()->Release();
+                delete (_containers.back());
                 _containers.pop_back();
             }
         }
@@ -105,13 +109,26 @@ namespace ProcessContainers
     {
         --_refCount;
 
+        assert(_refCount >= 0);
+
         return (Core::ERROR_NONE);
+    }
+
+    void CRunContainerAdministrator::RemoveContainer(CRunContainer* container) 
+    {
+        auto found = std::find(_containers.begin(), _containers.end(), container);
+
+        if (found != _containers.end()) {
+            delete (*found);
+            _containers.erase(found);
+        }
     }
     
     // Container
     // ------------------------------------
     CRunContainer::CRunContainer(string name, string path, string logPath)
-        : _refCount(1)
+        : CGroupContainerInfo(name)
+        , _refCount(1)
         , _created(false)
         , _name(name)        
         , _bundle(path)
@@ -139,7 +156,6 @@ namespace ProcessContainers
         _context.state_root = "/run/crun";
         _context.systemd_cgroup = 0;
 
-        return;
         if (logPath.empty() == false) { 
             Core::Directory(logPath.c_str()).CreatePath();
 
@@ -175,113 +191,6 @@ namespace ProcessContainers
 
         return status.pid;
     }
-
-    CRunContainer::MemoryInfo CRunContainer::Memory() const
-    {
-      MemoryInfo result {UINT64_MAX, UINT64_MAX, UINT64_MAX};
-
-        // Load total allocated memory
-        string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";      
-
-        char buffer[2048];
-        auto fd = open(_memoryInfoPath.c_str(), O_RDONLY);
-
-        if (fd != 0) {
-            size_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-            if (bytesRead > 0) {
-                result.allocated = std::stoll(buffer);
-            }
-            
-            close(fd);
-        } else {
-            TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
-        }
-
-        // Load details about memory
-        string memoryFullInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.stat";
-
-        fd = open(memoryFullInfoPath.c_str(), O_RDONLY);
-        if (fd != 0) {
-            size_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-            if (bytesRead > 0) {
-                char* tmp;
-                char* token = strtok_r(buffer, " \n", &tmp);
-
-                while (token != nullptr) {
-                    if (token == nullptr) 
-                        break;
-
-                    char* label = token;
-
-                    token = strtok_r(NULL, " \n", &tmp);
-                    if (token == nullptr) 
-                        break;
-
-                    uint64_t value = std::stoll(token);
-
-                    if (strcmp(label, "rss") == 0) 
-                        result.resident = value;
-                    else if (strcmp(label, "mapped_file") == 0) 
-                        result.shared = value;
-
-                    token = strtok_r(NULL, " \n", &tmp);
-                }
-            }
-            
-            close(fd);
-        } else {
-            TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
-        }
-
-        return result;    }
-
-    CRunContainer::CPUInfo CRunContainer::Cpu() const
-    {
-        CPUInfo output {UINT64_MAX, std::vector<uint64_t>()};
-
-        // Load total cpu time
-        string cpuUsagePath = "/sys/fs/cgroup/cpuacct/" + _name + "/cpuacct.usage";
-
-        char buffer[2048];
-        auto fd = open(cpuUsagePath.c_str(), O_RDONLY);
-
-        if (fd != 0) {
-            uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-            if (bytesRead > 0) {
-                output.total = atoi((char*)buffer);
-            }            
-
-            close(fd);
-        }
-
-        // Load per-core cpu time
-        string cpuPerCoreUsagePath = "/sys/fs/cgroup/cpuacct/" + _name + "/cpuacct.usage_percpu";
-        fd = open(cpuPerCoreUsagePath.c_str(), O_RDONLY);
-
-        if (fd != 0) {
-            uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-            if (bytesRead > 0) {
-                char* tmp;
-                char* token = strtok_r((char*)buffer, " \n", &tmp);
-
-                while (token != nullptr) {
-                    // Sometimes (but not always for some reason?) a nonprintable character is caught as a separate token.
-                    if (isdigit(token[0])) {
-                        output.cores.push_back(atoi(token));
-                    }
-                    token = strtok_r(NULL, " \n", &tmp);
-                }
-            }
-
-            close(fd);
-        }
-
-        return output;
-    }
     
     NetworkInterfaceIterator* CRunContainer::NetworkInterfaces() const
     {
@@ -296,7 +205,7 @@ namespace ProcessContainers
 
         if (libcrun_read_container_status (&status, _context.state_root, _name.c_str(), &error) != 0) {
             // This most likely occurs when container is not found
-            // TODO: Find another way to make sure that this is not result of other cause
+            // TODO: Find another way to make sure that something else did not cause this error
             result = false;
         } else {
             int ret = libcrun_is_container_running(&status, &error);
@@ -364,10 +273,11 @@ namespace ProcessContainers
         libcrun_error_t error = nullptr;
 
         if (libcrun_container_delete (&_context, NULL, _name.c_str(), true, &error) != 0) {
-            TRACE_L1("Failed to stop a container \"%s\". Error: %s", _name.c_str(), error->msg);
+            TRACE_L1("Failed to destroy a container \"%s\". Error: %s", _name.c_str(), error->msg);
             result = false;
+        } else {
+            _created = false;
         }
-        _created = false;
 
         return result;
     }
@@ -382,7 +292,10 @@ namespace ProcessContainers
         if (--_refCount == 0) {
             if (_created == true) {
                 Stop(Core::infinite);
-            }        
+            }    
+
+            auto& administrator = static_cast<CRunContainerAdministrator&>(CRunContainerAdministrator::Instance());
+            administrator.RemoveContainer(this);
         }
 
         return Core::ERROR_NONE;

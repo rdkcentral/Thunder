@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#pragma once
+
 #include "processcontainers/process_containers.h"
 #include "processcontainers/ProcessContainer.h"
 

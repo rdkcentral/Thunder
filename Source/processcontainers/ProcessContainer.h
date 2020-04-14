@@ -96,10 +96,10 @@ namespace ProcessContainers {
         // Tells if the container is running or not
         virtual bool IsRunning() const = 0;
 
-        // Start the containerized process. Returns true if process is started successfully
+        // Start the container with provided process. Returns true if process is started successfully
         virtual bool Start(const string& command, IStringIterator& parameters) = 0; 
 
-        // Stops the running process. Returns true when stopped.
+        // Stops the running containerized process. Returns true when stopped.
         // Note: if timeout == 0, call is asynchronous
         virtual bool Stop(const uint32_t timeout /*ms*/) = 0; 
 

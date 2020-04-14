@@ -38,9 +38,17 @@ add_library(${TARGET} SHARED
 if (PROCESSCONTAINERS_LXC)
         target_sources(${TARGET} PRIVATE implementations/LXCImplementation/LXCImplementation.cpp)
 elseif(PROCESSCONTAINERS_RUNC)
-        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
+        target_sources(${TARGET} 
+                PRIVATE 
+                        implementations/RunCImplementation/RunCImplementation.cpp
+                        implementations/common/CGroupContainerInfo.cpp
+        )
 elseif(PROCESSCONTAINERS_CRUN)
-        target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp)
+        target_sources(${TARGET} 
+                PRIVATE 
+                        implementations/CRunImplementation/CRunImplementation.cpp
+                        implementations/common/CGroupContainerInfo.cpp
+        )
 elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 endif()
@@ -59,7 +67,7 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        PUBLIC_HEADER "${PUBLIC_HEADERS}"
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         )
