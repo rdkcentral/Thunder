@@ -414,6 +414,8 @@ uint32_t DiffieHellmanAuthenticatedDeriveSecret(KeyStore& store,
 
 extern "C" {
 
+// Diffie-Hellman
+
 uint32_t diffiehellman_generate(struct VaultImplementation* vault,
                                 const uint8_t generator, const uint16_t modulusSize, const uint8_t modulus[],
                                 uint32_t* private_key_id, uint32_t* public_key_id)
@@ -436,6 +438,9 @@ uint32_t diffiehellman_derive(struct VaultImplementation* vault, const uint32_t 
     return (Implementation::DiffieHellmanDeriveSecret(store, private_key_id, peer_public_key_id, (*secret_id)));
 }
 
+
+// Netflix Security
+
 uint32_t netflix_security_derive_keys(const uint32_t private_dh_key_id, const uint32_t peer_public_dh_key_id, const uint32_t derivation_key_id,
                                       uint32_t* encryption_key_id, uint32_t* hmac_key_id, uint32_t* wrapping_key_id)
 {
@@ -443,7 +448,7 @@ uint32_t netflix_security_derive_keys(const uint32_t private_dh_key_id, const ui
     ASSERT(hmac_key_id != nullptr);
     ASSERT(wrapping_key_id != nullptr);
 
-    Implementation::KeyStore store(&Implementation::Vault::Instance());
+    Implementation::KeyStore store(&Implementation::Vault::NetflixInstance());
     return (Implementation::DiffieHellmanAuthenticatedDeriveSecret(store, private_dh_key_id, peer_public_dh_key_id, derivation_key_id,
                                                                    (*encryption_key_id), (*hmac_key_id), (*wrapping_key_id)));
 }

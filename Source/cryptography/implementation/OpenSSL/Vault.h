@@ -25,11 +25,11 @@ namespace Implementation {
 
 class Vault {
 public:
-    static Vault& Instance();
+    static Vault& NetflixInstance();
 
 private:
-    Vault();
-    ~Vault() = default;
+    Vault(const cryptographyvault id);
+    ~Vault();
 
 public:
     Vault(Vault const&) = delete;
@@ -75,6 +75,8 @@ private:
     mutable WPEFramework::Core::CriticalSection _lock;
     std::map<uint32_t, Element> _items;
     uint32_t _lastHandle;
+    cryptographyvault _id;
+    string _vaultKey;
 };
 
 } // namespace Implementation
