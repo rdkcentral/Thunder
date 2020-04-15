@@ -853,7 +853,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                     (m.name, retval.str_typename))
                         else:
                             if retval.proxy:
-                                emit.Line("writer.%s(reinterpret_cast<RPC::instance_id>(%s));" % (retval.RpcType(), retval.name))
+                                emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (retval.RpcType(), retval.CppType(), retval.name))
                             else:
                                 emit.Line("writer.%s(%s);" % (retval.RpcType(), retval.name))
                             if retval.is_interface and not retval.type.IsConst():
@@ -884,7 +884,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                             elif p.is_nonconstref:
                                 if not p.is_length:
                                     if p.is_interface:
-                                        emit.Line("writer.%s(reinterpret_cast<RPC::instance_id>(%s));" % (p.RpcType(), p.name))
+                                        emit.Line("writer.%s(RPC::instance_cast<%s>(%s));" % (p.RpcType(), p.CppType(), p.name))
                                     else:
                                         emit.Line("writer.%s(%s);" % (p.RpcType(), p.name))
                                 if p.is_interface and not p.type.IsConst():
@@ -1052,7 +1052,7 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
                                       or p.is_maxlength) and (p.is_input or
                                                               (not p.is_nonconstref and not p.is_nonconstptr) or p.obj):
                                     if p.proxy:
-                                        emit.Line("writer.%s(reinterpret_cast<RPC::instance_id>(param%i));" % (p.RpcType(), c))
+                                        emit.Line("writer.%s(RPC::instance_cast<%s>(param%i));" % (p.RpcType(), p.CppType(), c))
                                     else:
                                         emit.Line("writer.%s(param%i);" % (p.RpcType(), c))
                         emit.Line()
@@ -1223,6 +1223,17 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
 
         emit.IndentDec()
         emit.Line("}")
+
+        emit.Line("~Instantiation()")
+        emit.Line("{")
+        emit.IndentInc()
+
+        for key, val in announce_list.items():
+            emit.Line("RPC::Administrator::Instance().Recall<%s>();" % (key))
+
+        emit.IndentDec()
+        emit.Line("}")
+
         emit.IndentDec()
         emit.Line("} ProxyStubRegistration;")
         emit.Line()

@@ -112,7 +112,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
 
                 totalEncrypted += sizeof(Rpc_Secbuf_Info); //make sure enough data for metadata
 
-                uint8_t* encryptedData = reinterpret_cast<uint8_t*> (malloc(totalEncrypted));
+                uint8_t* encryptedData = reinterpret_cast<uint8_t*> (g_malloc(totalEncrypted));
                 uint8_t* encryptedDataIter = encryptedData;
 
                 uint32_t index = 0;
@@ -147,7 +147,7 @@ OpenCDMError opencdm_gstreamer_session_decrypt(struct OpenCDMSession* session, G
                     g_free(ptr->info);
                     g_free(ptr);
                 }
-                free(encryptedData);
+                g_free(encryptedData);
             } else {
                 // no encrypted data, skip decryption...
                 result = ERROR_NONE;

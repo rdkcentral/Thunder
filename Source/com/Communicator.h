@@ -987,10 +987,11 @@ namespace RPC {
                 void* realIF = nullptr;
                 void* result = nullptr;
 
-                ASSERT(implementation);
                 ASSERT(baseChannel.IsValid() == true);
 
                 if (info.IsOffer() == true) {
+
+                    ASSERT(implementation);
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
 
@@ -1002,6 +1003,8 @@ namespace RPC {
                     }
 
                 } else if (info.IsRevoke() == true) {
+
+                    ASSERT(implementation);
 
                     ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
 
@@ -1122,7 +1125,7 @@ namespace RPC {
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(reinterpret_cast<instance_id>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1339,7 +1342,7 @@ namespace RPC {
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
 
-                instance_id implementation = reinterpret_cast<instance_id>(_parent.Aquire(className, interfaceId, versionId));
+                instance_id implementation = instance_cast<void*>(_parent.Aquire(className, interfaceId, versionId));
                 message->Response().Implementation(implementation);
 
                 channel.ReportResponse(data);
@@ -1448,7 +1451,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::OFFER);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::OFFER);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1472,7 +1475,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, reinterpret_cast<instance_id>(offer), Data::Init::REVOKE);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::REVOKE);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 

@@ -616,7 +616,7 @@ uint32_t ManagementSocket::Unblock(const Address::type type, const Address& addr
 uint32_t ManagementSocket::AddDevice(const Address::type type, const Address& address, const autoconnmode value)
 {
     Management::AddDevice message(_deviceId);
-    message->action = (type == Address::BREDR_ADDRESS? 0 : value); // ignore autoconnect for classic BT devices
+    message->action = value;
     message->addr.type = type;
     ::memcpy(&(message->addr.bdaddr), address.Data(), sizeof(message->addr.bdaddr));
 

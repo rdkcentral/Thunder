@@ -277,7 +277,7 @@ namespace JSONRPC {
     
                             typename CallsignMap::iterator index(_callsignMap.begin());
     
-                            while ((index != _callsignMap.end()) && (&(*object) == index->second)) {
+                            while ((index != _callsignMap.end()) && (&(*object) != index->second)) {
                                 index++;
                             }
     

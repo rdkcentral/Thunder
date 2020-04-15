@@ -43,6 +43,25 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+if(SECURE_SOCKET)
+    find_package(OpenSSL REQUIRED)
+
+    if (OPENSSL_FOUND)
+        include_directories(${OPENSSL_INCLUDE_DIR})
+        target_sources(${TARGET}
+            PRIVATE
+                SecureSocketPort.cpp)
+        target_link_libraries(${TARGET}
+            PRIVATE
+                OpenSSL::SSL)
+        target_compile_definitions(${TARGET}
+            PUBLIC
+                SECURESOCKETS_ENABLED=1)
+
+        list(APPEND PUBLIC_HEADERS "SecureSocketPort.h")
+    endif()
+endif()
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES

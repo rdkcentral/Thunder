@@ -19,6 +19,7 @@
  
 #include "ProcessInfo.h"
 #include "FileSystem.h"
+#include "SystemInfo.h"
 
 #ifdef __WINDOWS__
 #include <psapi.h>
@@ -30,9 +31,40 @@
 #include <unistd.h>
 #endif
 
+#include <fstream>
+#include <sstream>
+#include <algorithm>
+
 #ifdef __APPLE__
 #include <libproc.h>
 #endif
+
+namespace
+{
+    // Used to parse /proc/PID/maps
+    struct MemRange
+    {
+        uintptr_t m_start;
+        uintptr_t m_end;
+
+        explicit MemRange(const string & mapsLine)
+            : m_start(0)
+            , m_end(0)
+        {
+            // TODO: sscanf seems to be perfect here
+            size_t spaceIndex = mapsLine.find(' ');
+            string rangeStr = mapsLine.substr(0, spaceIndex);
+            size_t dashIndex = rangeStr.find('-');
+            string startStr = rangeStr.substr(0, dashIndex);
+            string endStr = rangeStr.substr(dashIndex + 1);
+
+            std::istringstream issStart(startStr);
+            issStart >> std::hex >> m_start;
+            std::istringstream issEnd(endStr);
+            issEnd >> std::hex >> m_end;
+        }
+    };
+}
 
 namespace WPEFramework {
 namespace Core {
@@ -114,7 +146,8 @@ namespace Core {
     }
 
     // Iterate over Processes
-    static void FindChildren(const uint32_t parent, std::list<uint32_t>& children)
+    template<typename ACCEPTFUNCTION>
+    static void FindChildren(std::list<uint32_t>& children, ACCEPTFUNCTION acceptfunction)
     {
         DIR* dp;
         struct dirent* ep;
@@ -132,15 +165,16 @@ namespace Core {
                 if ('\0' == endptr[0]) {
                     // We have a valid PID, Find, the parent of this process..
                     TCHAR buffer[512];
+                    memset(buffer, 0, sizeof(buffer));
                     int fd;
 
                     snprintf(buffer, sizeof(buffer), "/proc/%d/stat", pid);
                     if ((fd = open(buffer, O_RDONLY)) > 0) {
-                        if (read(fd, buffer, sizeof(buffer)) > 0) {
+                        if (read(fd, buffer, sizeof(buffer) - sizeof(buffer[0])) > 0) {
                             int ppid = 0;
                             sscanf(buffer, "%*d (%*[^)]) %*c %d", &ppid);
 
-                            if (static_cast<uint32_t>(ppid) == parent) {
+                            if( acceptfunction(ppid, pid) == true ) {
                                 children.push_back(pid);
                             }
                         }
@@ -195,7 +229,7 @@ namespace Core {
     }
 
 #endif
-
+/*
     // Get the Processes with this name.
     ProcessInfo::Iterator::Iterator(const string& name, const bool exact)
     {
@@ -224,6 +258,61 @@ namespace Core {
 #endif
         Reset();
     }
+*/
+
+    // Get all processes
+    ProcessInfo::Iterator::Iterator()
+    : _pids()
+    , _current()
+    , _index(0) {
+#ifndef __WINDOWS__
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) { return true; });
+#endif
+        Reset();
+    }
+
+    // Get the Child Processes with a name name from a Parent with a certain name
+    ProcessInfo::Iterator::Iterator(const string& parentname, const string& childname, const bool removepath)
+    : _pids()
+    , _current()
+    , _index(0) {
+#ifndef __WINDOWS__
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            bool accept = false;
+            char fullname[PATH_MAX];
+            ProcessName(foundparentPID, fullname, sizeof(fullname));
+
+            accept = ( parentname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+
+            if ( accept == true ) {
+                ProcessName(childPID, fullname, sizeof(fullname));
+                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+            }
+            return accept;
+        });
+#endif
+        Reset();
+    }
+
+    // Get the Child Processes with a name name from a Parent pid
+    ProcessInfo::Iterator::Iterator(const uint32_t parentPID, const string& childname, const bool removepath) 
+    : _pids()
+    , _current()
+    , _index(0) {
+#ifndef __WINDOWS__
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            bool accept = false;
+
+            if ( parentPID == foundparentPID ) {
+                char fullname[PATH_MAX];
+                ProcessName(childPID, fullname, sizeof(fullname));
+                accept = ( childname == ( removepath == true ? Core::File::FileNameExtended(fullname) : fullname ) );
+            }
+            return accept;
+        });
+#endif
+        Reset();
+    }
 
     // Get the Children of the given PID.
     ProcessInfo::Iterator::Iterator(const uint32_t parentPID)
@@ -241,7 +330,9 @@ namespace Core {
             }
         }
 #else
-        FindChildren(parentPID, _pids);
+        FindChildren(_pids, [=](const uint32_t foundparentPID, const uint32_t childPID) {
+            return parentPID == foundparentPID;
+        });
 #endif
 
         Reset();
@@ -315,7 +406,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%d", &VmSize);
                 result = VmSize * PageSize;
             }
@@ -343,7 +437,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%*d %d", &VmRSS);
                 result = VmRSS * PageSize;
             }
@@ -371,7 +468,10 @@ namespace Core {
 
         snprintf(buffer, sizeof(buffer), "/proc/%d/statm", _pid);
         if ((fd = open(buffer, O_RDONLY)) > 0) {
-            if (read(fd, buffer, sizeof(buffer)) > 0) {
+            ssize_t readAmount = 0;
+            if ((readAmount = read(fd, buffer, sizeof(buffer))) > 0) {
+                ssize_t nulIndex = std::min(readAmount, static_cast<ssize_t>(sizeof(buffer) - 1));
+                buffer[nulIndex] = '\0';
                 sscanf(buffer, "%*d %*d %d", &Share);
                 result = Share * PageSize;
             }
@@ -381,6 +481,44 @@ namespace Core {
 
         return (result);
     }
+
+    uint64_t ProcessInfo::Jiffies() const
+    {
+        uint64_t result = 0;
+
+        #ifndef __WINDOWS__
+
+        int fd;
+        TCHAR buffer[256];
+
+        snprintf(buffer, sizeof(buffer), "/proc/%d/stat", _pid);
+        if ((fd = open(buffer, O_RDONLY)) > 0) {
+            if (read(fd, buffer, sizeof(buffer)) > 0) {
+                const int utimeIndex = 13;
+                const TCHAR * pointer = buffer;
+
+                // Skip to utime fields
+                for (int index = 0; index < utimeIndex; index++) {
+                    pointer = strstr(pointer, " ");
+                    if (pointer == nullptr) {
+                        break;
+                    }
+                    pointer++;
+                }
+
+                if (pointer != nullptr) {
+                    uint32_t utime = 0, stime = 0;
+                    sscanf(pointer, "%d %d", &utime, &stime);
+                    result = static_cast<uint64_t>(utime) + static_cast<uint64_t>(stime);
+                }
+            }
+            close(fd);
+        }
+#endif
+
+        return (result);
+    }
+
     string ProcessInfo::Name() const
     {
 #ifdef __WINDOWS__
@@ -397,6 +535,59 @@ namespace Core {
         return (ExecutableName(_pid));
 #endif
     }
+
+#ifndef __WINDOWS__
+    std::list<string> ProcessInfo::CommandLine() const
+    {
+        char procPath[PATH_MAX];
+        sprintf(procPath, "/proc/%u/cmdline", _pid);
+
+        std::list<string> output;
+
+        FILE * cmdFile = fopen(procPath, "rb");
+        if (cmdFile == nullptr) {
+            TRACE_L1("Failed to open /proc/.../cmdline for process %u", _pid);
+        } else {
+            uint32_t index = 0;
+            const int bufferSize = 256;
+            char buffer[bufferSize];
+            while (true) {
+                char c;
+                size_t readChars = fread(&c, 1, 1, cmdFile);
+                if (readChars == 0) {
+                    break;
+                }
+
+                buffer[index] = c;
+                if (c == '\0') {
+                    output.emplace_back(buffer);
+                    index = 0;
+                    continue;
+                }
+
+                index++;
+                if (index == (sizeof(buffer) - 1)) {
+                    TRACE_L1("Command line argument is too big, will split in parts");
+                    buffer[index] = '\0';
+                    output.emplace_back(buffer);
+                    index = 0;
+                    continue;
+                }
+            }
+
+            if (index != 0) {
+                buffer[index] = '\0';
+                output.emplace_back(buffer);
+                index = 0;
+            }
+
+            fclose(cmdFile);
+        }
+
+        return output;
+    }
+#endif
+
     uint32_t ProcessInfo::Group(const string& groupName)
     {
         uint32_t result = ERROR_BAD_REQUEST;
@@ -422,6 +613,84 @@ namespace Core {
 #endif
         return (result);
     }
+
+    // pagemap file is documented here:
+    //   https://www.kernel.org/doc/Documentation/vm/pagemap.txt
+    void ProcessInfo::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
+    {
+        uint32_t entryCount = size / sizeof(uint32_t);
+
+        #ifndef __WINDOWS__
+
+        char mapsPath[PATH_MAX];
+        sprintf(mapsPath, "/proc/%u/maps", _pid);
+        std::ifstream is01(mapsPath);
+
+        char pagemapPath[PATH_MAX];
+        sprintf(pagemapPath, "/proc/%u/pagemap", _pid);
+
+        FILE * pagemapFile = fopen(pagemapPath, "rb");
+        while (!is01.eof()) {
+            string readLine;
+            getline(is01, readLine);
+            if (readLine.empty())
+                continue;
+
+            MemRange range(readLine);
+            uint32_t pageSize = Core::SystemInfo::Instance().GetPageSize();
+            uint64_t pageCount = (range.m_end - range.m_start) / pageSize;
+            uint64_t pageMapOffset = (range.m_start / pageSize) * sizeof(uint64_t);
+            int fseekStatus = fseek(pagemapFile, pageMapOffset, SEEK_SET);
+            if (fseekStatus != 0) {
+                TRACE_L1("Failed to seek in %s", pagemapPath);
+                continue;
+            }
+
+            for (uint64_t i = 0; i < pageCount; i++) {
+                uint64_t pageData = 0;
+                size_t readCount = fread(&pageData, sizeof(uint64_t), 1, pagemapFile);
+                if (readCount != 1) {
+                    TRACE_L1("Failed to read pageInfo from %s", pagemapPath);
+                }
+
+                // Skip pages that are swapped out.
+                bool isSwapped = ((pageData >> 62) & 1) != 0;
+                if (isSwapped) {
+                    continue;
+                }
+
+                // Skip pages that aren't present.
+                bool isPresent = ((pageData >> 63) & 1) != 0;
+                if (!isPresent) {
+                    continue;
+                }
+
+                // Skip pages mapped to files.
+                bool isFilePage = ((pageData >> 61) & 1) != 0;
+                if (isFilePage) {
+                    continue;
+                }
+
+                // Lower 54 bits contain actual page frame number (PFN).
+                uint64_t filter = (static_cast<uint64_t>(1) << 55) - 1;
+                uint32_t pageFrameNumber = static_cast<uint32_t>(pageData & filter);
+
+                uint32_t bufferIndex = pageFrameNumber / 32;
+                if (bufferIndex > entryCount) {
+                   TRACE_L1("Tried to mark page outside of buffer: %u (%u)", bufferIndex, pageFrameNumber);
+                   continue;
+                }
+
+                uint32_t bitIndex = pageFrameNumber % 32;
+
+                bitSet[bufferIndex] |= static_cast<uint32_t>(1) << bitIndex;
+            }
+        }
+
+        fclose(pagemapFile);
+        #endif // __WINDOWS__
+    }
+
     /* static */ uint32_t ProcessInfo::User(const string& userName)
     {
         uint32_t result = ERROR_BAD_REQUEST;
@@ -446,6 +715,74 @@ namespace Core {
         }
 #endif
         return (result);
+    }
+
+    /* static */ void ProcessInfo::FindByName(const string& name, const bool exact, std::list<ProcessInfo>& processInfos)
+    {
+#ifndef __WINDOWS__
+        std::list<uint32_t> pidList;
+        FindPid(name, exact, pidList);
+
+        processInfos.clear();
+        for (const pid_t pid : pidList) {
+            processInfos.emplace_back(pid);
+        }
+
+#endif // !__WINDOWS__
+
+    }
+
+    static void EnumerateChildProcesses(const ProcessInfo& processInfo, std::list<ProcessInfo>& pids)
+    {
+        pids.push_back(processInfo);
+
+        Core::ProcessInfo::Iterator iterator(processInfo.Children());
+        while (iterator.Next()) {
+            EnumerateChildProcesses(iterator.Current(), pids);
+        }
+    }
+
+    ProcessTree::ProcessTree(const ProcessInfo& processInfo)
+    {
+        EnumerateChildProcesses(processInfo, _processes);
+    }
+
+    void ProcessTree::MarkOccupiedPages(uint32_t bitSet[], const uint32_t size) const
+    {
+        for (const ProcessInfo& process : _processes) {
+            process.MarkOccupiedPages(bitSet, size);
+        }
+    }
+
+    bool ProcessTree::ContainsProcess(ThreadId pid) const
+    {
+        auto comparator = [pid](const ProcessInfo& processInfo){ return ((ThreadId)(processInfo.Id()) == pid); };
+
+        std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
+        return (i != _processes.cend());
+    }
+
+    void ProcessTree::GetProcessIds(std::list<ThreadId>& processIds) const
+    {
+        processIds.clear();
+
+        for (const ProcessInfo& process : _processes) {
+            processIds.push_back((ThreadId)(process.Id()));
+        }
+    }
+
+    ThreadId ProcessTree::RootId() const
+    {
+       return (ThreadId)(_processes.front().Id());
+    }
+
+    uint64_t ProcessTree::Jiffies() const
+    {
+        uint64_t output = 0;
+        for (const ProcessInfo process : _processes) {
+            output += process.Jiffies();
+        }
+        return output;
     }
 }
 }
