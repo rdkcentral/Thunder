@@ -15,19 +15,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 add_executable(cgimptests
         ImplementationTests.c
         Helpers.c
+        Test.c
     )
 
 find_package(OpenSSL)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography/implementation)
+include_directories($<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
 target_link_libraries(cgimptests
         PRIVATE
-        cryptography
+        ${NAMESPACE}Cryptography
         ssl
         crypto
         -Wl,--warn-unresolved-symbols
@@ -37,12 +40,14 @@ target_link_libraries(cgimptests
 add_executable(cgfacetests
         InterfaceTests.cpp
         Helpers.c
+        Test.c
     )
 
 find_package(OpenSSL)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography/implementation)
+include_directories($<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
 set_target_properties(cgfacetests PROPERTIES
         CXX_STANDARD 11
@@ -51,7 +56,7 @@ set_target_properties(cgfacetests PROPERTIES
 
 target_link_libraries(cgfacetests
         PRIVATE
-        cryptography
+        ${NAMESPACE}Cryptography
         ssl
         crypto
         -Wl,--warn-unresolved-symbols
@@ -60,10 +65,12 @@ target_link_libraries(cgfacetests
 add_executable(cgnfsecuritytests
         NetflixSecurityTests.cpp
         Helpers.c
+        Test.c
     )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../Source/cryptography/implementation)
+include_directories($<INSTALL_INTERFACE:include/${NAMESPACE}>)
 
 set_target_properties(cgnfsecuritytests PROPERTIES
         CXX_STANDARD 11
@@ -72,7 +79,7 @@ set_target_properties(cgnfsecuritytests PROPERTIES
 
 target_link_libraries(cgnfsecuritytests
         PRIVATE
-        cryptography
+        ${NAMESPACE}Cryptography
         ssl
         crypto
          -Wl,--warn-unresolved-symbols
