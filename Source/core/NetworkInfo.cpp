@@ -988,7 +988,7 @@ namespace Core {
 
                 uint16_t rtattrlen = length;
 
-                for (; RTA_OK(rtatp, length); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+                for (; (rtattrlen <= length) && RTA_OK(rtatp, length); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
                     /* Here we hit the fist chunk of the message. Time to validate the    *
              * the type. For more info on the different types see man(7) rtnetlink*
