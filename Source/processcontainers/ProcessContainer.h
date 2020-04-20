@@ -138,9 +138,6 @@ namespace ProcessContainers {
         
         // Return a container by its ID. Returns nullptr if not found
         virtual IContainer* Find(const string& id);
-
-        virtual void AddRef() const = 0;
-        virtual uint32_t Release() = 0;
     };
 } // ProcessContainers
 } // WPEFramework

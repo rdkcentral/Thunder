@@ -46,9 +46,9 @@ namespace ProcessContainers
     // ----------------------------------
     IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
     {
-        static CRunContainerAdministrator& runCContainerAdministrator = Core::SingletonType<CRunContainerAdministrator>::Instance();
+        static CRunContainerAdministrator& cRunContainerAdministrator = Core::SingletonType<CRunContainerAdministrator>::Instance();
 
-        return runCContainerAdministrator;
+        return cRunContainerAdministrator;
     }
 
     IContainer* CRunContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,  const string& logpath, const string& configuration) 
@@ -62,7 +62,6 @@ namespace ProcessContainers
             if (configFile.Exists()) {
                 CRunContainer* container = new CRunContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
-                AddRef();
 
                 return container;
             }
@@ -100,20 +99,6 @@ namespace ProcessContainers
         return ContainerIterator(_containers);
     }
 
-    void CRunContainerAdministrator::AddRef() const
-    {
-        _refCount++;
-    }
-
-    uint32_t CRunContainerAdministrator::Release()
-    {
-        --_refCount;
-
-        assert(_refCount >= 0);
-
-        return (Core::ERROR_NONE);
-    }
-
     void CRunContainerAdministrator::RemoveContainer(CRunContainer* container) 
     {
         auto found = std::find(_containers.begin(), _containers.end(), container);
@@ -126,7 +111,7 @@ namespace ProcessContainers
     
     // Container
     // ------------------------------------
-    CRunContainer::CRunContainer(string name, string path, string logPath)
+    CRunContainer::CRunContainer(const string& name, const string& path, const string& logPath)
         : CGroupContainerInfo(name)
         , _refCount(1)
         , _created(false)
@@ -284,12 +269,12 @@ namespace ProcessContainers
 
     void CRunContainer::AddRef() const 
     {
-        _refCount++;
+        Core::InterlockedIncrement(_refCount);
     };
 
     uint32_t CRunContainer::Release()
     {
-        if (--_refCount == 0) {
+        if (Core::InterlockedDecrement(_refCount) == 0) {
             if (_created == true) {
                 Stop(Core::infinite);
             }    
@@ -337,6 +322,7 @@ namespace ProcessContainers
 
     uint32_t CRunContainer::ClearLeftovers() 
     {
+        uint32_t result = Core::ERROR_NONE;
         libcrun_error_t error = nullptr;
         int ret = 0;
 
@@ -345,25 +331,25 @@ namespace ProcessContainers
         ret = libcrun_get_containers_list (&list, "/run/crun", &error);
         if (ret < 0) {
             TRACE_L1("Failed to get containers list. Error %d: %s", error->status, error->msg);
-            return Core::ERROR_UNAVAILABLE;
-        }
+            result = Core::ERROR_UNAVAILABLE;
+        } else {
+            for (libcrun_container_list_t* it = list; it != nullptr; it = it->next)
+            {
+                if (_name == it->name) {
+                    TRACE_L1("Found container %s already created (maybe leftover from another Thunder launch). Killing it!", _name.c_str());
+                    ret = libcrun_container_delete (&_context, nullptr, it->name, true, &error);
 
-        for (libcrun_container_list_t* it = list; it != nullptr; it = it->next)
-        {
-            if (_name == it->name) {
-                TRACE_L1("Found container %s already created (maybe leftover from another Thunder launch). Killing it!", _name.c_str());
-                ret = libcrun_container_delete (&_context, nullptr, it->name, true, &error);
-
-                if (ret < 0) {
-                    TRACE_L1("Failed to destroy a container %s. Error %d: %s", _name.c_str(), error->status, error->msg);
-                    return Core::ERROR_UNKNOWN_KEY;
-                } 
-                // its only possible to find one leftover. No sense looking for more...
-                break;
+                    if (ret < 0) {
+                        TRACE_L1("Failed to destroy a container %s. Error %d: %s", _name.c_str(), error->status, error->msg);
+                        result = Core::ERROR_UNKNOWN_KEY;
+                    } 
+                    // its only possible to find one leftover. No sense looking for more...
+                    break;
+                }
             }
         }
 
-        return Core::ERROR_NONE;
+        return result;
     }
 
 } // namespace ProcessContainers

@@ -474,17 +474,6 @@ namespace ProcessContainers {
         return ContainerIterator(_containers);
     }
 
-    void LXCContainerAdministrator::AddRef() const
-    {
-
-    }
-
-    uint32_t LXCContainerAdministrator::Release()
-    {
-        return (Core::ERROR_NONE);
-    }
-
-
     IContainerAdministrator& IContainerAdministrator::Instance()
     {
         static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();

@@ -589,8 +589,6 @@ namespace RPC {
 
                 string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
                 _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
-
-                admin.Release();
             }
 
             ~ContainerRemoteProcess()

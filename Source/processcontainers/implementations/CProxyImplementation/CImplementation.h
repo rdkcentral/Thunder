@@ -42,8 +42,13 @@ namespace ProcessContainers {
     
     class CContainer : public IContainer 
     {
-    public:
+    private:
+        friend class CContainerAdministrator;
+
         CContainer(ProcessContainer* container);
+        CContainer(const CContainer&) = delete;
+        CContainer& operator=(const CContainer&) = delete;
+    public:
         virtual ~CContainer();
 
         // IContainerMethods
@@ -68,22 +73,25 @@ namespace ProcessContainers {
 
     class CContainerAdministrator : public IContainerAdministrator 
     {
+    private:
         friend class CContainer;
+        friend class Core::SingletonType<CContainerAdministrator>;
+
+        CContainerAdministrator();
+        CContainerAdministrator(const CContainerAdministrator&) = delete;
+        CContainerAdministrator& operator=(const CContainerAdministrator&) = delete;
     public:
+        ~CContainerAdministrator();
+
         IContainer* Container(const string& id, 
                                 IStringIterator& searchpaths, 
                                 const string& logpath,
                                 const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
-        CContainerAdministrator();
-
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
         ContainerIterator Containers() override;
 
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() override;
     protected:
         void RemoveContainer(IContainer*);
 

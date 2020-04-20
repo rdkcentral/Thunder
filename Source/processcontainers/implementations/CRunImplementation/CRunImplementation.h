@@ -20,7 +20,7 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
-#include "processcontainers/implementations/common/CGroupContainerInfo.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 // TODO: Find more elegant alternative
 extern "C" {
@@ -46,8 +46,13 @@ namespace ProcessContainers {
 
     class CRunContainer : public CGroupContainerInfo, virtual public IContainer 
     {
+    private:
+        friend class CRunContainerAdministrator;
+
+        CRunContainer(const string& name, const string& path, const string& logPath);
+        CRunContainer(const CRunContainer&) = delete;
+        CRunContainer& operator=(const CRunContainer&) = delete;
     public:
-        CRunContainer(string name, string path, string logPath);
         virtual ~CRunContainer();
 
         // IContainerMethods
@@ -80,23 +85,25 @@ namespace ProcessContainers {
 
     class CRunContainerAdministrator : public IContainerAdministrator 
     {
+    private:
         friend class CRunContainer;
+        friend class Core::SingletonType<CRunContainerAdministrator>;
+
+        CRunContainerAdministrator();
+        CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
+        CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
+
     public:
         IContainer* Container(const string& id, 
                                 IStringIterator& searchpaths, 
                                 const string& logpath,
                                 const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
-        CRunContainerAdministrator();
         ~CRunContainerAdministrator();
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
         ContainerIterator Containers() override;
-
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() override;
 
     protected:
         void RemoveContainer(CRunContainer* container);

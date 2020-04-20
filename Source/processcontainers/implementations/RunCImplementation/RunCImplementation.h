@@ -20,7 +20,7 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
-#include "processcontainers/implementations/common/CGroupContainerInfo.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
@@ -38,8 +38,13 @@ namespace ProcessContainers {
 
     class RunCContainer : public CGroupContainerInfo, virtual public IContainer 
     {
+    private:
+        friend class RunCContainerAdministrator;
+
+        RunCContainer(const string& name, const string& path, const string& logPath);
+        RunCContainer(const RunCContainer&) = delete;
+        RunCContainer& operator=(const RunCContainer&) = delete;
     public:
-        RunCContainer(string name, string path, string logPath);
         virtual ~RunCContainer();
 
         // IContainerMethods
@@ -64,30 +69,32 @@ namespace ProcessContainers {
 
     class RunCContainerAdministrator : public IContainerAdministrator 
     {
+    private:
         friend class RunCContainer;
+        friend class Core::SingletonType<RunCContainerAdministrator>;
+
+        RunCContainerAdministrator();
+        RunCContainerAdministrator(const RunCContainerAdministrator&) = delete;
+        RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
     public:
+        ~RunCContainerAdministrator();
+
         IContainer* Container(const string& id, 
                                 IStringIterator& searchpaths, 
                                 const string& logpath,
                                 const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
-        RunCContainerAdministrator();
-        ~RunCContainerAdministrator();
-
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
         ContainerIterator Containers() override;
 
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() override;
     protected:
         void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
         void RemoveContainer(IContainer*);
 
+        bool ContainerNameTaken(const string& name);
     private:
         std::list<IContainer*> _containers;
-        mutable uint32_t _refCount;
     };
 }
 }

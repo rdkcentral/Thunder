@@ -75,6 +75,10 @@ namespace ProcessContainers
         }
     }
 
+    CCoontainerAdministrator::~CContainerAdministrator() {
+        process_container_deinitialize();
+    }
+
     IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
     {
         static CContainerAdministrator& cContainerAdministrator = Core::SingletonType<CContainerAdministrator>::Instance();
@@ -84,6 +88,7 @@ namespace ProcessContainers
 
     IContainer* CContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,  const string& logpath, const string& configuration) 
     {
+        IContainer* result = nullptr;
         ProcessContainer* container;
         const char** sp = new const char*[searchpaths.Count() + 1];
 
@@ -100,12 +105,13 @@ namespace ProcessContainers
 
         if (error != ContainerError::PC_ERROR_NONE) {
             TRACE_L1("Failed to create container %s. Error code %d", id.c_str(), error);
-            return nullptr;
         } else {
             _containers.push_back(new CContainer(container));
 
-            return _containers.back();
+            result = _containers.back();
         }
+
+        return result;
     }
 
     void CContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
@@ -116,20 +122,6 @@ namespace ProcessContainers
     CContainerAdministrator::ContainerIterator CContainerAdministrator::Containers()
     {
         return ContainerIterator(_containers);
-    }
-
-    void CContainerAdministrator::AddRef() const
-    {
-        _refCount++;
-    }
-
-    uint32_t CContainerAdministrator::Release()
-    {
-        if (--_refCount == 0) {
-            process_container_deinitialize();
-        }
-
-        return (Core::ERROR_NONE);
     }
 
     void CContainerAdministrator::RemoveContainer(IContainer* container)
@@ -165,12 +157,12 @@ namespace ProcessContainers
 
     uint32_t CContainer::Pid() const 
     {
-        uint32_t result;
-        if (process_container_pid(_container, &result) == PC_ERROR_NONE) {
-            return result;
-        } else {
-            return 0;
+        uint32_t pid;
+        if (process_container_pid(_container, &pid) != PC_ERROR_NONE) {
+            pid = 0;
         }
+
+        return pid;
     }
 
     CContainer::MemoryInfo CContainer::Memory() const
@@ -229,6 +221,7 @@ namespace ProcessContainers
     bool CContainer::Start(const string& command, IStringIterator& parameters) 
     {
         char const** params = new char const*[parameters.Count() + 1];
+        bool result = false;
 
         parameters.Reset(0);
         for (int i = 0; parameters.Next(); i++) {
@@ -243,31 +236,25 @@ namespace ProcessContainers
 
         if (error != ContainerError::PC_ERROR_NONE) {
             TRACE_L1("Failed to start command %s. Error code: %d", command.c_str(), error);
-            return false;
-        } else {
-            return true;
+        else {
+            result = true;
         }
-        
+
+        return result;
     }
     bool CContainer::Stop(const uint32_t timeout /*ms*/)
     {
-        if (process_container_stop(_container) != ContainerError::PC_ERROR_NONE) {
-            return false;
-        } else {
-            return true;
-        }
+        return (process_container_stop(_container) == ContainerError::PC_ERROR_NONE);
     }
 
     void CContainer::AddRef() const 
     {
-        ++_refCount;
+        Core::InterlockedIncrement(_refCount);
     };
 
     uint32_t CContainer::Release()
     {
-        --_refCount;
-
-        if (_refCount == 0) {
+        if (Core::InterlockedDecrement(_refCount) == 0) {
             delete this;
         }
 

@@ -81,14 +81,14 @@ namespace ProcessContainers {
             Core::JSON::Boolean Attach;
 #endif
         };
+    private:
+        friend class LXCContainerAdministrator;
 
-    public:
-
+        LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
         LXCContainer(const LXCContainer&) = delete;
         LXCContainer& operator=(const LXCContainer&) = delete;
 
-        LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
-
+    public:
         const string Id() const override;
         uint32_t Pid() const override;
         MemoryInfo Memory() const override;
@@ -119,18 +119,19 @@ namespace ProcessContainers {
     };
 
     class LXCContainerAdministrator : public ProcessContainers::IContainerAdministrator {
-    public:
         friend class LXCContainer;
+        friend class Core::SingletonType<LXCContainerAdministrator>;
 
     private:
         static constexpr char const* logFileName = "lxclogging.log";
         static constexpr char const* configFileName = "config";
         static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
-    public:
+    private:
         LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
         LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
-
         LXCContainerAdministrator();
+
+    public:
         virtual ~LXCContainerAdministrator();
 
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
@@ -138,8 +139,6 @@ namespace ProcessContainers {
         void Logging(const string& globalLogDir, const string& loggingOptions) override;
         ContainerIterator Containers() override;
 
-        void AddRef() const override;
-        uint32_t Release() override;
     protected:
         void RemoveContainer(ProcessContainers::IContainer* container);
 

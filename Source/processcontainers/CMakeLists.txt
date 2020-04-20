@@ -41,13 +41,13 @@ elseif(PROCESSCONTAINERS_RUNC)
         target_sources(${TARGET} 
                 PRIVATE 
                         implementations/RunCImplementation/RunCImplementation.cpp
-                        implementations/common/CGroupContainerInfo.cpp
+                        common/CGroupContainerInfo.cpp
         )
 elseif(PROCESSCONTAINERS_CRUN)
         target_sources(${TARGET} 
                 PRIVATE 
                         implementations/CRunImplementation/CRunImplementation.cpp
-                        implementations/common/CGroupContainerInfo.cpp
+                        common/CGroupContainerInfo.cpp
         )
 elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
