@@ -21,6 +21,7 @@
 
 #include "TEE.h"
 
+#include <nexus_config.h>
 #include <sage_srai.h>
 #include <bsagelib_types.h>
 
