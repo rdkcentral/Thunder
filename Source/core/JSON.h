@@ -1650,9 +1650,17 @@ namespace Core {
                                 stream[result++] = *source++;
                                 length--;
                             } else {
-                                // this we need to escape...
-                                stream[result++] = '\\';
-                                _unaccountedCount = 1;
+                                // Check if we need to escape...
+                                if(*(source - 1) != '\\')
+                                {
+                                    stream[result++] = '\\';
+                                    _unaccountedCount = 1;
+                                }
+                                else
+                                {
+                                    stream[result++] = *source++;
+                                    length--;   
+                                }
                             }
                         }
                     }
@@ -1894,7 +1902,7 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == '\"') {
                     action = EscapeSequenceAction::NOTHING;
                 } else {
                     if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
