@@ -20,6 +20,7 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace WPEFramework {
@@ -36,7 +37,7 @@ namespace ProcessContainers {
         std::string IP(uint32_t id) const override;
     };
 
-    class RunCContainer : public CGroupContainerInfo, virtual public IContainer 
+    class RunCContainer : public CGroupContainerInfo<IContainer>
     {
     private:
         friend class RunCContainerAdministrator;
@@ -67,7 +68,7 @@ namespace ProcessContainers {
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
-    class RunCContainerAdministrator : public IContainerAdministrator 
+    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, IContainerAdministrator>
     {
     private:
         friend class RunCContainer;
@@ -86,15 +87,10 @@ namespace ProcessContainers {
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
-        ContainerIterator Containers() override;
 
     protected:
         void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
-        void RemoveContainer(IContainer*);
-
         bool ContainerNameTaken(const string& name);
-    private:
-        std::list<IContainer*> _containers;
     };
 }
 }

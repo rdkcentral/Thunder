@@ -27,6 +27,7 @@
 #include <thread>
 #include <cctype>
 #include "../../ProcessContainer.h"
+#include "../../common/BaseAdministrator.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
@@ -118,7 +119,7 @@ namespace ProcessContainers {
 #endif
     };
 
-    class LXCContainerAdministrator : public ProcessContainers::IContainerAdministrator {
+    class LXCContainerAdministrator : public BaseAdministrator<LXCContainer, IContainerAdministrator> {
         friend class LXCContainer;
         friend class Core::SingletonType<LXCContainerAdministrator>;
 
@@ -137,14 +138,8 @@ namespace ProcessContainers {
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
 
         void Logging(const string& globalLogDir, const string& loggingOptions) override;
-        ContainerIterator Containers() override;
-
-    protected:
-        void RemoveContainer(ProcessContainers::IContainer* container);
 
     private:
-        mutable Core::CriticalSection _lock;
-        std::list<IContainer*> _containers;
         string _globalLogDir;
     };
 

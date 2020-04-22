@@ -66,21 +66,5 @@ namespace ProcessContainers {
     {
         return _count;
     }
-
-    IContainer* IContainerAdministrator::Find(const string& id)
-    {
-        auto iterator = Containers();
-        IContainer* result = nullptr;
-
-        while(iterator.Next() == true) {
-            if (iterator.Current()->Id() == id) {
-                result = &(*iterator.Current());
-                break;
-            }
-        }
-
-        return result;
-    }
-
 }
 }

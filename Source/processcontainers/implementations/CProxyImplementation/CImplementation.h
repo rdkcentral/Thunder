@@ -97,7 +97,7 @@ namespace ProcessContainers {
 
     private:
         std::list<IContainer*> _containers;
-        mutable uint32_t _refCount;
+        Core::CriticalSection _adminLock;
     };
 }
 }

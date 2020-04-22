@@ -156,9 +156,10 @@ namespace ProcessContainers
                 if (ContainerNameTaken(id)) {
                     DestroyContainer(id);
                 }
-
+                _adminLock.Lock();
                 RunCContainer* container = new RunCContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
+                _adminLock.Unlock();
 
                 return container;
             }
@@ -168,6 +169,7 @@ namespace ProcessContainers
     }
 
     RunCContainerAdministrator::RunCContainerAdministrator()
+        : BaseAdministrator()
     {
 
     }
@@ -189,22 +191,11 @@ namespace ProcessContainers
         // Only container-scope logging
     }
 
-    RunCContainerAdministrator::ContainerIterator RunCContainerAdministrator::Containers()
-    {
-        return ContainerIterator(_containers);
-    }
-
     void RunCContainerAdministrator::DestroyContainer(const string& name)
     {
          if (callRunC(Core::Process::Options("/usr/bin/runc").Add("delete").Add("-f").Add(name), nullptr) != Core::ERROR_NONE) {
             TRACE_L1("Failed do destroy a container named %s", name.c_str());
         } 
-    }
-
-    void RunCContainerAdministrator::RemoveContainer(IContainer* container)
-    {
-        _containers.remove(container);
-        delete container;
     }
 
     bool RunCContainerAdministrator::ContainerNameTaken(const string& name)
@@ -364,6 +355,7 @@ namespace ProcessContainers
 
     uint32_t RunCContainer::Release()
     {
+        uint32_t result = Core::ERROR_NONE;
         auto& admin = static_cast<RunCContainerAdministrator&>(RunCContainerAdministrator::Instance());
 
         if (Core::InterlockedDecrement(_refCount) == 0) {
@@ -371,10 +363,13 @@ namespace ProcessContainers
                 Stop(Core::infinite);
             }
 
-            static_cast<RunCContainerAdministrator&>(RunCContainerAdministrator::Instance()).RemoveContainer(this);
+            admin.RemoveContainer(this);
+            delete this;
+
+            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 
-        return Core::ERROR_NONE;
+        return result;
     };
 
 } // namespace ProcessContainers

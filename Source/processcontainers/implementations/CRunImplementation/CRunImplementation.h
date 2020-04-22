@@ -21,8 +21,8 @@
 
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
+#include "processcontainers/common/BaseAdministrator.h"
 
-// TODO: Find more elegant alternative
 extern "C" {
     #include <crun/error.h>
     #include <crun/container.h>
@@ -44,7 +44,7 @@ namespace ProcessContainers {
         std::string IP(uint32_t id) const override;
     };
 
-    class CRunContainer : public CGroupContainerInfo, virtual public IContainer 
+    class CRunContainer : public CGroupContainerInfo<IContainer>
     {
     private:
         friend class CRunContainerAdministrator;
@@ -83,10 +83,9 @@ namespace ProcessContainers {
         libcrun_error_t _error;
     };
 
-    class CRunContainerAdministrator : public IContainerAdministrator 
+    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, IContainerAdministrator>
     {
     private:
-        friend class CRunContainer;
         friend class Core::SingletonType<CRunContainerAdministrator>;
 
         CRunContainerAdministrator();
@@ -103,14 +102,6 @@ namespace ProcessContainers {
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
-        ContainerIterator Containers() override;
-
-    protected:
-        void RemoveContainer(CRunContainer* container);
-
-    private:
-        std::list<IContainer*> _containers;
-        mutable uint32_t _refCount;
     };
 }
 }

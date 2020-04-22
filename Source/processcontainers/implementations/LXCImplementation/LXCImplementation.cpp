@@ -328,7 +328,7 @@ namespace ProcessContainers {
             }
 
             if (internaltimeout == -1 || result == false) {
-                _lxcContainer->stop(_lxcContainer);
+                result = _lxcContainer->stop(_lxcContainer);
             }
         }
         return result;
@@ -341,8 +341,13 @@ namespace ProcessContainers {
 
     uint32_t LXCContainer::Release() {
         uint32_t retval = WPEFramework::Core::ERROR_NONE;
+
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
         if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
+            if (IsRunning()) {
+                Stop(2000);
+            }
+
             ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
 
@@ -388,8 +393,7 @@ namespace ProcessContainers {
     }
 
     LXCContainerAdministrator::LXCContainerAdministrator() 
-        : _lock() 
-        ,_containers()
+        : BaseAdministrator()
         , _globalLogDir()
     {
         TRACE(ProcessContainers::ProcessContainerization, (_T("LXC library initialization, version: %s"), lxc_get_version()));
@@ -402,10 +406,11 @@ namespace ProcessContainers {
 
     IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) 
     {
-        _lock.Lock();
+        _adminLock.Lock();
 
-        ProcessContainers::IContainer* container { nullptr };
+        LXCContainer* container =nullptr;
 
+        searchpaths.Reset(0);
         while( ( container == nullptr ) && ( searchpaths.Next() == true ) )  {
             LxcContainerType **clist = nullptr;
             int32_t numberofcontainersfound = list_defined_containers(searchpaths.Current().c_str(), nullptr, &clist);
@@ -429,13 +434,13 @@ namespace ProcessContainers {
             }
         };
 
-        _lock.Unlock();
+        _adminLock.Unlock();
 
         if( container == nullptr ) {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));
         }
 
-        return container;
+        return static_cast<IContainer*>(container);
     }
 
     void LXCContainerAdministrator::Logging(const string& globalLogDir, const string& loggingOptions) 
@@ -469,21 +474,11 @@ namespace ProcessContainers {
         }
     }
 
-    LXCContainerAdministrator::ContainerIterator LXCContainerAdministrator::Containers()
-    {
-        return ContainerIterator(_containers);
-    }
-
     IContainerAdministrator& IContainerAdministrator::Instance()
     {
         static LXCContainerAdministrator& myLXCContainerAdministrator = Core::SingletonType<LXCContainerAdministrator>::Instance();
 
         return myLXCContainerAdministrator;
-    }
-
-    void LXCContainerAdministrator::RemoveContainer(ProcessContainers::IContainer* container)
-    {
-        this->_containers.remove(container);
     }
 
     constexpr char const* LXCContainerAdministrator::logFileName;

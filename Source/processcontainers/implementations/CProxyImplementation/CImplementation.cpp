@@ -98,6 +98,7 @@ namespace ProcessContainers
         }
         sp[searchpaths.Count()] = nullptr;
 
+        _adminLock.Lock();
         ContainerError error = process_container_create(&container, const_cast<char*>(id.c_str())
             , const_cast<char**>(sp), const_cast<char*>(logpath.c_str()), const_cast<char*>(configuration.c_str()));
 
@@ -110,13 +111,16 @@ namespace ProcessContainers
 
             result = _containers.back();
         }
+        _adminLock.Unlock();
 
         return result;
     }
 
     void CContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
     {
+        _adminLock.Lock();
         process_container_logging(const_cast<char*>(logPath.c_str()), const_cast<char*>(loggingOptions.c_str()));
+        _adminLock.Unlock();
     }
 
     CContainerAdministrator::ContainerIterator CContainerAdministrator::Containers()
@@ -126,11 +130,13 @@ namespace ProcessContainers
 
     void CContainerAdministrator::RemoveContainer(IContainer* container)
     {
+        _adminLock.Lock();
         _containers.remove(container);
         
         if (_containers.size() == 0) {
             process_container_deinitialize();
         }
+        _adminLock.Unlock();
     }
 
     // Container
@@ -254,11 +260,14 @@ namespace ProcessContainers
 
     uint32_t CContainer::Release()
     {
+        uint32_t result = Core::ERROR_NONE;
         if (Core::InterlockedDecrement(_refCount) == 0) {
             delete this;
+
+            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 
-        return Core::ERROR_DESTRUCTION_SUCCEEDED;
+        return result;
     };
 
 } // namespace ProcessContainers

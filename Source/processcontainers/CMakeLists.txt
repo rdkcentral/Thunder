@@ -38,16 +38,10 @@ add_library(${TARGET} SHARED
 if (PROCESSCONTAINERS_LXC)
         target_sources(${TARGET} PRIVATE implementations/LXCImplementation/LXCImplementation.cpp)
 elseif(PROCESSCONTAINERS_RUNC)
-        target_sources(${TARGET} 
-                PRIVATE 
-                        implementations/RunCImplementation/RunCImplementation.cpp
-                        common/CGroupContainerInfo.cpp
+        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp
         )
 elseif(PROCESSCONTAINERS_CRUN)
-        target_sources(${TARGET} 
-                PRIVATE 
-                        implementations/CRunImplementation/CRunImplementation.cpp
-                        common/CGroupContainerInfo.cpp
+        target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp
         )
 elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)

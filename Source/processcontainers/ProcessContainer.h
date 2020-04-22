@@ -23,7 +23,7 @@
 
 namespace WPEFramework {
 namespace ProcessContainers {
-
+    
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
     using IConstStringIterator = Core::IteratorType<const std::vector<string>, const string, std::vector<string>::const_iterator>;
 
@@ -108,8 +108,6 @@ namespace ProcessContainers {
     };
 
     struct IContainerAdministrator {
-        using ContainerIterator = Core::IteratorType<std::list<IContainer*>, IContainer*>;
-
         static IContainerAdministrator& Instance();
 
         IContainerAdministrator() = default;
@@ -133,11 +131,12 @@ namespace ProcessContainers {
         // Enable logging for the container framework
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
 
-        // Returns list of all created containers
-        virtual ContainerIterator Containers() = 0;
+        // Returns ids of all created containers
+        virtual std::vector<string> Containers() = 0;
         
-        // Return a container by its ID. Returns nullptr if not found
-        virtual IContainer* Find(const string& id);
+        // Return a container by its ID. Returns nullptr if container is not found
+        // It needs to be released.
+        virtual IContainer* Get(const string& id) = 0;
     };
 } // ProcessContainers
 } // WPEFramework

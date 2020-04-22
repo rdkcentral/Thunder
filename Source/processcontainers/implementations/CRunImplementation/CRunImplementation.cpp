@@ -60,8 +60,10 @@ namespace ProcessContainers
             Core::File configFile(path + "/Container/config.json");
 
             if (configFile.Exists()) {
+                _adminLock.Lock();
                 CRunContainer* container = new CRunContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
+                _adminLock.Unlock();
 
                 return container;
             }
@@ -71,7 +73,7 @@ namespace ProcessContainers
     }
 
     CRunContainerAdministrator::CRunContainerAdministrator()
-        : _refCount(1)
+        : BaseAdministrator()
     {
 
     }
@@ -82,8 +84,7 @@ namespace ProcessContainers
             TRACE_L1("There are still active containers when shutting down administrator!");
             
             while (_containers.size() > 0) {
-                _containers.back()->Release();
-                delete (_containers.back());
+                while(_containers.back()->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {};
                 _containers.pop_back();
             }
         }
@@ -92,21 +93,6 @@ namespace ProcessContainers
     void CRunContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
     {
         // Only container-scope logging
-    }
-
-    CRunContainerAdministrator::ContainerIterator CRunContainerAdministrator::Containers()
-    {
-        return ContainerIterator(_containers);
-    }
-
-    void CRunContainerAdministrator::RemoveContainer(CRunContainer* container) 
-    {
-        auto found = std::find(_containers.begin(), _containers.end(), container);
-
-        if (found != _containers.end()) {
-            delete (*found);
-            _containers.erase(found);
-        }
     }
     
     // Container
@@ -274,6 +260,8 @@ namespace ProcessContainers
 
     uint32_t CRunContainer::Release()
     {
+        uint32_t result = Core::ERROR_NONE;
+
         if (Core::InterlockedDecrement(_refCount) == 0) {
             if (_created == true) {
                 Stop(Core::infinite);
@@ -281,9 +269,13 @@ namespace ProcessContainers
 
             auto& administrator = static_cast<CRunContainerAdministrator&>(CRunContainerAdministrator::Instance());
             administrator.RemoveContainer(this);
+
+            delete this;
+
+            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 
-        return Core::ERROR_NONE;
+        return result;
     };
 
     void CRunContainer::OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters)
