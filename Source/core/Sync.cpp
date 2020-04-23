@@ -138,10 +138,6 @@ namespace Core {
 
 #ifdef __POSIX__
     CriticalSection::CriticalSection()
-#ifdef CRITICAL_SECTION_LOCK_LOG
-        : _UsedStackEntries(0)
-        , _LockingThread(0)
-#endif // CRITICAL_SECTION_LOCK_LOG
     {
         TRACE_L5("Constructor CriticalSection <%p>", (this));
 
@@ -158,6 +154,10 @@ namespace Core {
             // That will be the day, if this fails...
             ASSERT(false);
         }
+#ifdef CRITICAL_SECTION_LOCK_LOG
+        memset(_UsedStackEntries, 0, sizeof(_UsedStackEntries));
+        memset(_LockingStack, 0, sizeof(_LockingStack));
+#endif // CRITICAL_SECTION_LOCK_LOG
     }
 
 #ifdef CRITICAL_SECTION_LOCK_LOG
@@ -169,6 +169,7 @@ namespace Core {
 
         clock_gettime(CLOCK_REALTIME, &structTime);
         structTime.tv_sec += nTimeSecs;
+
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         int result = pthread_mutex_timedlock(&m_syncMutex, &structTime);
@@ -189,8 +190,12 @@ namespace Core {
             fprintf(stderr, "Failing lock:\n");
             backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
 
+            // Only print last entry, use debugger to read all entries to find unmatched lock
+            int stackArrayIndex = m_syncMutex.__data.__count - 1;
+            ASSERT(stackArrayIndex >= 0);
+
             fprintf(stderr, "\nLocked location:\n");
-            backtrace_symbols_fd(_LockingStack, _UsedStackEntries, fileno(stderr));
+            backtrace_symbols_fd(_LockingStack[stackArrayIndex], _UsedStackEntries[stackArrayIndex], fileno(stderr));
 
             fprintf(stderr, "\nCurrent stack of locking thread:\n");
             addressCount = ::GetCallStack(_LockingThread, addresses, _AllocatedStackEntries);
@@ -202,12 +207,15 @@ namespace Core {
                 TRACE_L1("After detection, continued to wait. Wait failed with error: <%d>", result);
             }
         } else {
-            _UsedStackEntries = backtrace(_LockingStack, _AllocatedStackEntries);
-
-            // Remove top two frames because we are not interested in Lock+TryLock.
-            _UsedStackEntries = StripStackTop(_LockingStack, _UsedStackEntries, 2);
-
             _LockingThread = pthread_self();
+
+            int stackArrayIndex = m_syncMutex.__data.__count - 1;
+            if (stackArrayIndex < _AllocatedStacks) {
+                _UsedStackEntries[stackArrayIndex] = backtrace(_LockingStack[stackArrayIndex], _AllocatedStackEntries);
+
+                // Remove top two frames because we are not interested in Lock+TryLock.
+                _UsedStackEntries[stackArrayIndex] = StripStackTop(_LockingStack[stackArrayIndex], _UsedStackEntries[0], 2);
+            }
         }
     }
 
