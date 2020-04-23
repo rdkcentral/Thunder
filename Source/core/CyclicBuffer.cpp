@@ -31,6 +31,7 @@ namespace Core {
         , _realBuffer(nullptr)
         , _alert(false)
         , _administration(nullptr)
+        , _overwrite(overwrite)
     {
         if (bufferSize > 0) {
             Load();
@@ -59,23 +60,23 @@ namespace Core {
             } else if (_buffer.Size() > sizeof(struct control)) {
                 loaded = true;
                 _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
-                _administration = reinterpret_cast<struct control*>(_buffer.Buffer())
+                _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
 #ifdef __WINDOWS__
                 string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
                 _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
                 _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
                 _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
 #else
-                (_administration)->_signal = PTHREAD_COND_INITIALIZER;
-                (_administration)->_mutex = PTHREAD_MUTEX_INITIALIZER;
+                _administration->_signal = PTHREAD_COND_INITIALIZER;
+                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
                 _administration->_head.store(0);
                 _administration->_tail.store(0);
                 _administration->_agents.store(0);
-                _administration->_state.store(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0));
+                _administration->_state.store(state::UNLOCKED /* state::EMPTY */ | (_overwrite ? state::OVERWRITE : 0));
                 _administration->_lockPID = 0;
-                _administration->_size = bufferSize;
+                _administration->_size = (_buffer.Size() - sizeof(struct control));
 
                 _administration->_reserved = 0;
                 _administration->_reservedWritten = 0;
@@ -83,7 +84,7 @@ namespace Core {
 
                 _administration->_tailIndexMask = 1;
                 _administration->_roundCountModulo = 1L << 31;
-                while (_administration->_tailIndexMask < bufferSize) {
+                while (_administration->_tailIndexMask < _administration->_size) {
                     _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
                     _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
                 }
@@ -91,6 +92,7 @@ namespace Core {
 
             _maxSize = _administration->_size;
         }
+        return (loaded);
     }
     void CyclicBuffer::AdminLock()
     {
