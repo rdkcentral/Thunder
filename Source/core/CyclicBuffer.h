@@ -177,7 +177,7 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            return (_buffer.IsValid());
+            return (_administration != nullptr);
         }
         inline const File& Storage() const
         {
@@ -201,6 +201,8 @@ namespace Core {
         {
             return (_maxSize);
         }
+        
+        bool Load();
 
         // THREAD SAFE
         // If there are thread blocked in the Lock, they can be relinquised by
