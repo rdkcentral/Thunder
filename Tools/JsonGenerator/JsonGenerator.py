@@ -1305,8 +1305,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
                         for p in response.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
                                 emit.Line("response.%s = %s;" % (p.CppName(), p.JsonName()))
+                    elif isinstance(response, JsonEnum):
+                        emit.Line("response = static_cast<%s>(%s);" %(response.CppClass(), response.JsonName()))
                     else:
-                        emit.Line("%s = %s;" % ("response", response.JsonName()))
+                        emit.Line("response = %s;" % (response.JsonName()))
                     emit.Unindent()
                     emit.Line("}")
 
