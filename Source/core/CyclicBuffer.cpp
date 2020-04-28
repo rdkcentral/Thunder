@@ -30,8 +30,8 @@ namespace Core {
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(nullptr)
         , _alert(false)
-        , _administration(nullptr)
         , _overwrite(overwrite)
+        , _administration(nullptr)
     {
         if (bufferSize > 0) {
             Load();
