@@ -54,25 +54,6 @@
         }
       }
     },
-    "zorder": {
-      "summary": "List of compositor clients sorted by z-order",
-      "description": "Use this property to retrieve the list of all clients in z-order. Each client has an z-order-value that determines its position with respect to the screen. The ordering is that the top position is closest to the screen, the next z-order-value first behind the top, and so on.",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "description": "Client name",
-          "example": "Netflix"
-        }
-      },
-      "errors": [
-        {
-          "description": "Failed to get z-order",
-          "$ref": "#/common/errors/general"
-        }
-      ]
-    },
     "geometry": {
       "summary": "Client surface geometry",
       "description": "Use this property to update or retrieve the geometry of a client's surface.",
@@ -167,64 +148,6 @@
     "putontop": {
       "summary": "Puts client surface on top in z-order",
       "description": "Use this method to get a client's surface to the top position.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "client": {
-            "type": "string",
-            "description": "Client name",
-            "example": "Netflix"
-          }
-        },
-        "required": [
-          "client"
-        ]
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
-        }
-      ]
-    },
-    "putbelow": {
-      "summary": "Puts client surface below another surface",
-      "description": "Use this method to reorder client surfaces in the z-order list.",
-      "params": {
-        "type": "object",
-        "properties": {
-          "client": {
-            "type": "string",
-            "description": "Client name to change z-order position",
-            "example": "Netflix"
-          },
-          "relative": {
-            "type": "string",
-            "description": "Client to put the other surface below",
-            "example": "WebKitBrowser"
-          }
-        },
-        "required": [
-          "client",
-          "relative"
-        ]
-      },
-      "result": {
-        "$ref": "#/common/results/void"
-      },
-      "errors": [
-        {
-          "description": "Client(s) not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
-        }
-      ]
-    },
-    "kill": {
-      "summary": "Kills a client",
-      "description": "Use this method to kill a client. Whenever a client is killed, the execution of the client is stopped and all its resources are released.",
       "params": {
         "type": "object",
         "properties": {

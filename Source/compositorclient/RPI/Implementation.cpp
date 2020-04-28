@@ -416,11 +416,6 @@ private:
         {
             return _name;
         }
-        void Kill() override
-        {
-            //todo: implement
-            TRACE_L1(_T("Kill called for Client %s. Not supported."), Name().c_str());
-        }
         void Opacity(const uint32_t value) override;
         uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
         Exchange::IComposition::Rectangle Geometry() const override;
@@ -595,14 +590,14 @@ private:
         uint32_t result = _compositerServerRPCConnection->Open(RPC::CommunicationTimeOut);
 
         if (result != Core::ERROR_NONE) {
-            TRACE_L1(_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId(), Core::NumberType<uint32_t>(result).Text());
+            TRACE_L1(_T("Could not open connection to Compositor with node %s. Error: %s"), _compositerServerRPCConnection->Source().RemoteId().c_str(), Core::NumberType<uint32_t>(result).Text().c_str());
             _compositerServerRPCConnection.Release();
         }
 
         _virtualinput = virtualinput_open(_displayName.c_str(), connectorNameVirtualInput, VirtualKeyboardCallback, VirtualMouseCallback, VirtualTouchScreenCallback);
 
         if (_virtualinput == nullptr) {
-            TRACE_L1(_T("Initialization of virtual input failed for Display %s!"), Name());
+            TRACE_L1(_T("Initialization of virtual input failed for Display %s!"), Name().c_str());
         }
 
         if (pipe(g_pipefd) == -1) {
@@ -869,7 +864,7 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
         _adminLock.Unlock();
 
         if (result != Core::ERROR_NONE) {
-            TRACE_L1(_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text());
+            TRACE_L1(_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name().c_str(), Core::NumberType<uint32_t>(result).Text().c_str());
         }
     } else {
 #if defined(COMPOSITORSERVERPLUGIN)
@@ -889,7 +884,7 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
         _adminLock.Unlock();
 
         if (result != Core::ERROR_NONE) {
-            TRACE_L1(_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text());
+            TRACE_L1(_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name().c_str(), Core::NumberType<uint32_t>(result).Text().c_str());
         }
     }else {
 #if defined(COMPOSITORSERVERPLUGIN)

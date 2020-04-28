@@ -65,7 +65,6 @@ namespace Exchange {
             virtual ~IClient() {}
 
             virtual string Name() const = 0;
-            virtual void Kill() = 0;
             virtual void Opacity(const uint32_t value) = 0;
             virtual uint32_t Geometry(const Rectangle& rectangle) = 0;
             virtual Rectangle Geometry() const = 0; 
