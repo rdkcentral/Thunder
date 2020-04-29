@@ -649,11 +649,11 @@ private:
         _adminLock.Lock();
         _isRunning = false;
 
-        close(g_pipefd[0]);
         Message message;
         memset(&message, 0, sizeof(message));
         write(g_pipefd[1], &message, sizeof(message));
         close(g_pipefd[1]);
+        close(g_pipefd[0]);
 
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
@@ -723,6 +723,7 @@ Display::SurfaceImplementation::SurfaceImplementation(
     _display.Register(this);
 
     _remoteAccess = Core::Service<RemoteAccess>::Create<RemoteAccess>(nativeSurface, name, realWidth, realHeight);
+    _remoteAccess->AddRef();
 
     _display.OfferClientInterface(_remoteAccess);
 }
@@ -739,7 +740,7 @@ Display::SurfaceImplementation::~SurfaceImplementation()
 
     // This release is amndatory, sonce we took a reference during construction
     // however, it is not correct yet as it lead to a SEGMENTATION error.
-    // _remoteAccess->Release();
+    _remoteAccess->Release();
 
     _display.Release();
 }
