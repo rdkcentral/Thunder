@@ -399,7 +399,63 @@ private:
         string _text;
     };
 
-    class SurfaceImplementation : public Exchange::IComposition::IClient, public Compositor::IDisplay::ISurface {
+    class SurfaceImplementation : public Compositor::IDisplay::ISurface {
+    private:
+        class RemoteAccess : public Exchange::IComposition::IClient {
+        public:
+            RemoteAccess() = delete;
+            RemoteAccess(const RemoteAccess&) = delete;
+            RemoteAccess& operator= (const RemoteAccess&) = delete;
+
+            RemoteAccess(EGLSurface& surface, const string& name, const uint32_t width, const uint32_t height)
+                : _name(name)
+                , _opacity(Exchange::IComposition::maxOpacity)
+                , _layer(0)
+                , _nativeSurface(surface)
+                , _destination( { 0, 0, width, height } ) 
+            {
+            }
+            ~RemoteAccess() override 
+            {
+            }
+
+        public:
+            inline const EGLSurface& Surface() const
+            {
+                return (_nativeSurface);
+            }
+            inline int32_t Width() const
+            {
+                return _destination.width;
+            }
+            inline int32_t Height() const
+            {
+                return _destination.height;
+            }
+            string Name() const override
+            {
+                return _name;
+            }
+            void Opacity(const uint32_t value) override;
+            uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
+            Exchange::IComposition::Rectangle Geometry() const override;
+            uint32_t ZOrder(const uint16_t zorder) override;
+
+            BEGIN_INTERFACE_MAP(RemoteAccess)
+                INTERFACE_ENTRY(Exchange::IComposition::IClient)
+            END_INTERFACE_MAP
+ 
+        private:
+            const std::string _name;
+
+            uint32_t _opacity;
+            uint32_t _layer;
+
+            EGLSurface _nativeSurface;
+
+            Exchange::IComposition::Rectangle _destination;
+        };
+
     public:
         SurfaceImplementation() = delete;
         SurfaceImplementation(const SurfaceImplementation&) = delete;
@@ -410,28 +466,21 @@ private:
             const uint32_t width, const uint32_t height);
         virtual ~SurfaceImplementation();
 
-        using Exchange::IComposition::IClient::AddRef;
-
-        string Name() const override
-        {
-            return _name;
+    public:
+        std::string Name() const override {
+            return (_remoteAccess->Name());
         }
-        void Opacity(const uint32_t value) override;
-        uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
-        Exchange::IComposition::Rectangle Geometry() const override;
-        uint32_t ZOrder(const uint16_t zorder) override;
-
         inline EGLNativeWindowType Native() const
         {
-            return (reinterpret_cast<EGLNativeWindowType>(_nativeSurface));
+            return (reinterpret_cast<EGLNativeWindowType>(_remoteAccess->Surface()));
         }
         inline int32_t Width() const
         {
-            return _width;
+            return (_remoteAccess->Width());
         }
         inline int32_t Height() const
         {
-            return _height;
+            return (_remoteAccess->Height());
         }
         inline void Keyboard(Compositor::IDisplay::IKeyboard* keyboard) override
         {
@@ -487,26 +536,14 @@ private:
         }
 
     private:
-        BEGIN_INTERFACE_MAP(Entry)
-        INTERFACE_ENTRY(Exchange::IComposition::IClient)
-        END_INTERFACE_MAP
-
-    private:
         Display& _display;
-        const std::string _name;
-        uint32_t _width;
-        uint32_t _height;
-        uint32_t _opacity;
-        uint32_t _layer;
-
-        EGLSurface _nativeSurface;
 
         IKeyboard* _keyboard;
         IWheel* _wheel;
         IPointer* _pointer;
         ITouchPanel* _touchpanel;
 
-        Exchange::IComposition::Rectangle _destination;
+        RemoteAccess* _remoteAccess;
     };
 
 public:
@@ -626,7 +663,7 @@ private:
         while (index != _surfaces.end()) {
             string name = (*index)->Name();
 
-            if (static_cast<Core::IUnknown*>(*index)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
+            if ((*index)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
                 TRACE_L1(_T("Compositor Surface [%s] is not properly destructed"), name.c_str());
             }
 
@@ -658,19 +695,17 @@ Display::SurfaceImplementation::SurfaceImplementation(
     Display* display,
     const std::string& name,
     const uint32_t width, const uint32_t height)
-    : Exchange::IComposition::IClient()
-    , _display(*display)
-    , _name(name)
-    , _width(width)
-    , _height(height)
-    , _opacity(255)
-    , _layer(0)
+    : _display(*display)
     , _keyboard(nullptr)
     , _wheel(nullptr)
     , _pointer(nullptr)
     , _touchpanel(nullptr)
-    , _destination({ 0, 0, width, height})
 {
+    uint32_t realWidth(width);
+    uint32_t realHeight(height);
+
+    _display.AddRef();
+
     // To support scanout the underlying FB should be large enough to support the selected mode
     // An FB of 1280x720 on a 1920x1080 display will probably fail. Currently, they should have 
     // equal dimensions
@@ -679,25 +714,37 @@ Display::SurfaceImplementation::SurfaceImplementation(
         TRACE_L1(_T("Requested surface dimensions [%d, %d] might not be honered. Rendering might fail!"), width, height);
 
         // Truncating
-        if (_width  > _display.DisplaySizeWidth())  { _width  = _display.DisplaySizeWidth();  }
-        if (_height > _display.DisplaySizeHeight()) { _height = _display.DisplaySizeHeight(); }
+        if (realWidth  > _display.DisplaySizeWidth())  { realWidth  = _display.DisplaySizeWidth();  }
+        if (realHeight > _display.DisplaySizeHeight()) { realHeight = _display.DisplaySizeHeight(); }
     }
 
-    _nativeSurface = Platform::Instance().CreateSurface(_display.Native(), _width, _height);
+    EGLSurface nativeSurface = Platform::Instance().CreateSurface(_display.Native(), realWidth, realHeight);
 
     _display.Register(this);
+
+    _remoteAccess = Core::Service<RemoteAccess>::Create<RemoteAccess>(nativeSurface, name, realWidth, realHeight);
+
+    _display.OfferClientInterface(_remoteAccess);
 }
 
 Display::SurfaceImplementation::~SurfaceImplementation()
 {
-    TRACE_L1(_T("Destructing client named: %s"), _name.c_str());
+    TRACE_L1(_T("Destructing client named: %s"), _remoteAccess->Name().c_str());
 
     _display.Unregister(this);
 
-    Platform::Instance().DestroySurface(_nativeSurface);
+    Platform::Instance().DestroySurface(_remoteAccess->Surface());
+
+    _display.RevokeClientInterface(_remoteAccess);
+
+    // This release is amndatory, sonce we took a reference during construction
+    // however, it is not correct yet as it lead to a SEGMENTATION error.
+    // _remoteAccess->Release();
+
+    _display.Release();
 }
 
-void Display::SurfaceImplementation::Opacity(
+void Display::SurfaceImplementation::RemoteAccess::Opacity(
     const uint32_t value)
 {
 
@@ -707,7 +754,7 @@ void Display::SurfaceImplementation::Opacity(
 }
 
 
-uint32_t Display::SurfaceImplementation::Geometry(const Exchange::IComposition::Rectangle& rectangle)
+uint32_t Display::SurfaceImplementation::RemoteAccess::Geometry(const Exchange::IComposition::Rectangle& rectangle)
 {
     _destination = rectangle;
 
@@ -715,12 +762,12 @@ uint32_t Display::SurfaceImplementation::Geometry(const Exchange::IComposition::
     return (Core::ERROR_NONE);
 }
 
-Exchange::IComposition::Rectangle Display::SurfaceImplementation::Geometry() const 
+Exchange::IComposition::Rectangle Display::SurfaceImplementation::RemoteAccess::Geometry() const 
 {
     return (_destination);
 }
 
-uint32_t Display::SurfaceImplementation::ZOrder(const uint16_t zorder)
+uint32_t Display::SurfaceImplementation::RemoteAccess::ZOrder(const uint16_t zorder)
 {
     int8_t layer = 0;
 
@@ -816,11 +863,10 @@ int Display::FileDescriptor() const
 Compositor::IDisplay::ISurface* Display::Create(
     const std::string& name, const uint32_t width, const uint32_t height)
 {
-    SurfaceImplementation* retval = (Core::Service<SurfaceImplementation>::Create<SurfaceImplementation>(this, name, width, height));
-
-    OfferClientInterface(retval);
-
-    return retval;
+    Core::ProxyType<SurfaceImplementation> retval = (Core::ProxyType<SurfaceImplementation>::Create(this, name, width, height));
+    Compositor::IDisplay::ISurface* result = &(*retval);
+    result->AddRef();
+    return result;
 }
 
 inline void Display::Register(Display::SurfaceImplementation* surface)
@@ -829,8 +875,7 @@ inline void Display::Register(Display::SurfaceImplementation* surface)
 
     _adminLock.Lock();
 
-    std::list<SurfaceImplementation*>::iterator index(
-        std::find(_surfaces.begin(), _surfaces.end(), surface));
+    std::list<SurfaceImplementation*>::iterator index(std::find(_surfaces.begin(), _surfaces.end(), surface));
     if (index == _surfaces.end()) {
         _surfaces.push_back(surface);
     }
@@ -850,8 +895,6 @@ inline void Display::Unregister(Display::SurfaceImplementation* surface)
         _surfaces.erase(index);
     }
     _adminLock.Unlock();
-
-    RevokeClientInterface(surface);
 }
 
 void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
@@ -859,9 +902,7 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
     ASSERT(client != nullptr);
 
     if (_compositerServerRPCConnection.IsValid()) {
-        _adminLock.Lock();
         uint32_t result = _compositerServerRPCConnection->Offer(client);
-        _adminLock.Unlock();
 
         if (result != Core::ERROR_NONE) {
             TRACE_L1(_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name().c_str(), Core::NumberType<uint32_t>(result).Text().c_str());
@@ -879,9 +920,7 @@ void Display::RevokeClientInterface(Exchange::IComposition::IClient* client)
     ASSERT(client != nullptr);
 
     if (_compositerServerRPCConnection.IsValid()) {
-        _adminLock.Lock();
         uint32_t result = _compositerServerRPCConnection->Revoke(client);
-        _adminLock.Unlock();
 
         if (result != Core::ERROR_NONE) {
             TRACE_L1(_T("Could not revoke IClient interface with callsign %s to Compositor. Error: %s"), client->Name().c_str(), Core::NumberType<uint32_t>(result).Text().c_str());
