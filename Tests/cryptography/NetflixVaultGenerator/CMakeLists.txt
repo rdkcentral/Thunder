@@ -1,4 +1,4 @@
-# If not stated otherwise in this file or this component's license file the
+# If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
 #
 # Copyright 2020 RDK Management
@@ -15,23 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TEST_RUNNER_NAME "WPEFramework_test_core")
+find_package(OpenSSL REQUIRED)
 
-add_executable(${TEST_RUNNER_NAME}
-   ../IPTestAdministrator.cpp
-   test_ipcclient.cpp
-   #test_rpc.cpp
-   test_jsonparser.cpp
-   test_hex2strserialization.cpp
-   test_sharedbuffer.cpp
+add_executable(NetflixVaultGenerator
+   main.cpp
 )
 
-target_link_libraries(${TEST_RUNNER_NAME} 
-    ${GTEST_LIBRARY}
-    ${GTEST_MAIN_LIBRARY}
-    ${CMAKE_THREAD_LIBS_INIT}
-    WPEFrameworkCore
-    WPEFrameworkTracing
-    WPEFrameworkProtocols
+target_link_libraries(NetflixVaultGenerator
+   PRIVATE
+   ${NAMESPACE}Core::${NAMESPACE}Core
+   OpenSSL::Crypto
 )
+
+install(TARGETS NetflixVaultGenerator DESTINATION bin)
 
