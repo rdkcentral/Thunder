@@ -410,7 +410,23 @@ private:
             const uint32_t width, const uint32_t height);
         virtual ~SurfaceImplementation();
 
-        using Exchange::IComposition::IClient::AddRef;
+        virtual void AddRef() const override
+        {
+            if (Core::InterlockedIncrement(_refCount) == 1) {
+                _display.Register(const_cast<SurfaceImplementation*>(this));
+            }
+            return;
+        }
+
+        virtual uint32_t Release() const override
+        {
+            if (Core::InterlockedDecrement(_refCount) == 1) {
+                _display.Unregister(const_cast<SurfaceImplementation*>(this));
+                delete this;
+                return (Core::ERROR_CONNECTION_CLOSED);
+            }
+            return (Core::ERROR_NONE);
+        }
 
         string Name() const override
         {
@@ -512,6 +528,7 @@ private:
         ITouchPanel* _touchpanel;
 
         Exchange::IComposition::Rectangle _destination;
+        mutable uint32_t _refCount;
     };
 
 public:
@@ -616,27 +633,32 @@ private:
     {
         _adminLock.Lock();
         _isRunning = false;
-
-        close(g_pipefd[0]);
         Message message;
         memset(&message, 0, sizeof(message));
         write(g_pipefd[1], &message, sizeof(message));
+        close(g_pipefd[0]);
         close(g_pipefd[1]);
 
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
         }
 
-        std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
-        while (index != _surfaces.end()) {
-            string name = (*index)->Name();
+        while (_surfaces.size() > 0) {
+            std::list<SurfaceImplementation*>::iterator surface(_surfaces.begin());
+            if (surface != _surfaces.end()) {
+                string name = (*surface)->Name();
 
-            if (static_cast<Core::IUnknown*>(*index)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
-                TRACE_L1(_T("Compositor Surface [%s] is not properly destructed"), name.c_str());
+                if (static_cast<Core::IUnknown*>(*surface)->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) { //note, need cast to prevent ambigious call
+                    TRACE_L1(_T("Compositor Surface [%s] is not properly destructed"), name.c_str());
+                 }
             }
-
-            index = _surfaces.erase(index);
+            std::list<SurfaceImplementation*>::iterator index(std::find(_surfaces.begin(), _surfaces.end(), *surface));
+            ASSERT(index == _surfaces.end()); // surface is not released properly
+            if (index != _surfaces.end()) {
+                _surfaces.erase(index); // Make sure all non released surface also cleared
+            }
         }
+
         if (_compositerServerRPCConnection.IsValid() == true) {
             _compositerServerRPCConnection.Release();
         }
@@ -689,15 +711,11 @@ Display::SurfaceImplementation::SurfaceImplementation(
     }
 
     _nativeSurface = Platform::Instance().CreateSurface(_display.Native(), _width, _height);
-
-    _display.Register(this);
 }
 
 Display::SurfaceImplementation::~SurfaceImplementation()
 {
     TRACE_L1(_T("Destructing client named: %s"), _name.c_str());
-
-    _display.Unregister(this);
 
     Platform::Instance().DestroySurface(_nativeSurface);
 }
@@ -821,10 +839,8 @@ int Display::FileDescriptor() const
 Compositor::IDisplay::ISurface* Display::Create(
     const std::string& name, const uint32_t width, const uint32_t height)
 {
-    SurfaceImplementation* retval = (Core::Service<SurfaceImplementation>::Create<SurfaceImplementation>(this, name, width, height));
-
-    OfferClientInterface(retval);
-
+    SurfaceImplementation* retval = new SurfaceImplementation(this, name, width, height);
+    retval->AddRef();
     return retval;
 }
 
@@ -841,6 +857,8 @@ inline void Display::Register(Display::SurfaceImplementation* surface)
     }
 
     _adminLock.Unlock();
+
+    OfferClientInterface(surface);
 }
 
 inline void Display::Unregister(Display::SurfaceImplementation* surface)
@@ -870,6 +888,8 @@ void Display::OfferClientInterface(Exchange::IComposition::IClient* client)
 
         if (result != Core::ERROR_NONE) {
             TRACE_L1(_T("Could not offer IClient interface with callsign %s to Compositor. Error: %s"), client->Name(), Core::NumberType<uint32_t>(result).Text());
+        } else {
+            client->AddRef();
         }
     } else {
 #if defined(COMPOSITORSERVERPLUGIN)
