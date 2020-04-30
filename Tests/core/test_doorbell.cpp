@@ -30,7 +30,7 @@ namespace Tests {
         IPTestAdministrator testAdmin(otherSide);
         {
             Core::DoorBell doorBell(fileName.c_str());
-            ::SleepMs(1);
+            ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
             doorBell.Ring();
