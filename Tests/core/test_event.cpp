@@ -32,6 +32,7 @@ public:
     {
         while (IsRunning() && (!_threadDone)) {
             EXPECT_TRUE(_parentTid != std::this_thread::get_id());
+            ::SleepMs(50);
             if (_lock) {
                 _threadDone = true;
                 _lock = false;
@@ -45,7 +46,6 @@ public:
                 _pulseEvent = false;
                 _event.PulseEvent();
             }
-            ::SleepMs(50);
         }
         return (Core::infinite);
     }
@@ -97,9 +97,9 @@ TEST(test_event, set_event)
     volatile bool setEvent = true;
     volatile bool pulseEvent = false;
 
+    event.ResetEvent();
     ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
     object.Run();
-    event.ResetEvent();
     event.Lock();
     EXPECT_FALSE(setEvent);
     object.Stop();     
@@ -114,9 +114,9 @@ TEST(test_event, pulse_event)
     volatile bool setEvent = false;
     volatile bool pulseEvent = true;
 
+    event.ResetEvent();
     ThreadClass object(event, parentTid, threadDone, lock, setEvent, pulseEvent);
     object.Run();
-    event.ResetEvent();
     event.Lock();
     EXPECT_FALSE(pulseEvent);
     object.Stop();
