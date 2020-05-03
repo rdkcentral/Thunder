@@ -541,11 +541,14 @@ namespace PluginHost
 
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 
+    static const string ConsumerName (_T("LinuxKeyboard"));
+
     LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName)
         : VirtualInput()
         , _eventDescriptor(-1)
         , _source(source)
         , _deviceKeys()
+        , _enabled(true)
     {
         memset(&_uidev, 0, sizeof(_uidev));
 
@@ -560,6 +563,23 @@ namespace PluginHost
     {
         ClearKeyMap();
         Close();
+    }
+
+    /* virtual */ VirtualInput::Iterator LinuxKeyboardInput::Consumers() const
+    {
+        return (VirtualInput::Iterator(ConsumerName));
+    }
+
+    /* virtual */ bool LinuxKeyboardInput::Consumer(const string& name) const 
+    {
+        return (name == ConsumerName ? _enabled : false);
+    }
+
+    /* virtual */ void LinuxKeyboardInput::Consumer(const string& name, const bool enabled)
+    {
+        if (name == ConsumerName) {
+            _enabled = enabled;
+        }
     }
 
     /* virtual */ uint32_t LinuxKeyboardInput::Open()
@@ -635,7 +655,7 @@ namespace PluginHost
 
     /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::KeyData& data)
     {
-        if (_eventDescriptor > 0) {
+        if ((_enabled == true) && (_eventDescriptor > 0)) {
 
             struct input_event ev;
 
@@ -716,6 +736,50 @@ namespace PluginHost
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
         ClearKeyMap();
+    }
+
+    /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const
+    {
+        uint16_t index = 0;
+        std::list<string> container;
+        Core::ProxyType<const VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+                
+            if (client.IsValid() == true) {
+                container.push_back(client->Extension().Name());
+            }
+        } while (client.IsValid() == true);
+            
+        return (VirtualInput::Iterator(std::move(container)));
+    }
+
+    /* virtual */ bool IPCUserInput::Consumer(const string& name) const {
+        uint16_t index = 0;
+        Core::ProxyType<const VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+
+        return (client.IsValid() ? client->Extension().Enable() : false); 
+    }
+
+    /* virtual */ void IPCUserInput::Consumer(const string& name, const bool enabled) {
+        uint16_t index = 0;
+        Core::ProxyType<VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+
+        if (client.IsValid() == true) {
+            client->Extension().Enable(enabled);
+        }
     }
 
     /* virtual */ uint32_t IPCUserInput::Open()

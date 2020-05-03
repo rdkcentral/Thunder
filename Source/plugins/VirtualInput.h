@@ -295,6 +295,79 @@ namespace PluginHost {
             bool _passThrough;
         };
 
+        class EXTERNAL Iterator {
+        public:
+            Iterator()
+                : _consumers()
+                , _index()
+                , _position(~0)
+            {
+            }
+            Iterator(const string& consumer)
+                : _consumers()
+                , _index()
+                , _position(~0)
+            {
+                _consumers.push_back(consumer);
+            }
+            Iterator(const std::list<string>&& consumer)
+                : _consumers(consumer)
+                , _index()
+                , _position(~0)
+            {
+            }
+            Iterator(const Iterator& copy)
+                : _consumers(copy._consumers)
+                , _index(copy._index)
+                , _position(copy._position)
+            {
+            }
+            ~Iterator()
+            {
+            }
+
+            Iterator& operator=(const Iterator& rhs)
+            {
+                _consumers = rhs._consumers;
+                _position = ~0;
+
+                return (*this);
+            }
+
+        public:
+            bool IsValid() const
+            {
+                return (_position < _consumers.size());
+            }
+            void Reset()
+            {
+                _position = ~0;
+            }
+            bool Next()
+            {
+                if (_position == static_cast<uint32_t>(~0)) {
+                    _position = 0;
+                    _index = _consumers.cbegin();
+                }
+                else if (_index != _consumers.cend()) {
+                    _position++;
+                    _index++;
+                }
+                  
+                return (IsValid());
+            }
+            const string& Name() const 
+            {
+                ASSERT(IsValid() == true);
+                return (*_index);
+            }
+
+        private:
+            std::list<string> _consumers;
+            std::list<string>::const_iterator _index;
+            uint32_t _position;
+        };
+
     public:
         struct EXTERNAL INotifier {
             virtual ~INotifier() {}
@@ -396,6 +469,10 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
+        virtual Iterator Consumers () const = 0;
+        virtual bool Consumer(const string& name) const = 0;
+        virtual void Consumer(const string& name, const bool enabled) = 0;
+
         inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
         {
             _repeatKey.Interval(startTime, intervalTime);
@@ -593,12 +670,14 @@ namespace PluginHost {
         virtual ~LinuxKeyboardInput();
 
     public:
-        static const TCHAR* PostLookupName() {
-            return(".");
-        }
-        virtual uint32_t Open();
-        virtual uint32_t Close();
-        virtual void MapChanges(ChangeIterator& updated);
+        VirtualInput::Iterator Consumers() const override;
+        bool Consumer(const string& name) const override;
+        void Consumer(const string& name, const bool enabled) override;
+
+        uint32_t Open() override;
+        uint32_t Close() override;
+
+        void MapChanges(ChangeIterator& updated) override;
 
     private:
         virtual void Send(const IVirtualInput::KeyData& data) override;
@@ -612,7 +691,7 @@ namespace PluginHost {
         int _eventDescriptor;
         const string _source;
         std::map<uint16_t, uint16_t> _deviceKeys;
-        const PostLookupEntries* _postLookup;
+        bool _enabled;
     };
 #endif
 
@@ -746,95 +825,14 @@ namespace PluginHost {
             IPCUserInput& _parent;
         };
 
-        class EXTERNAL Iterator {
-        public:
-            Iterator()
-                : _server(nullptr)
-                , _index(~0)
-                , _element()
-            {
-            }
-            explicit Iterator(VirtualInputChannelServer& server)
-                : _server(&server)
-                , _index(~0)
-                , _element()
-            {
-            }
-            Iterator(const Iterator& copy)
-                : _server(copy._server)
-                , _index(copy._index)
-                , _element(copy._element)
-            {
-            }
-            ~Iterator()
-            {
-            }
-
-            Iterator& operator=(const Iterator& rhs)
-            {
-                _server = rhs._server;
-                _index = rhs._index;
-                _element = rhs._element;
-
-                return (*this);
-            }
-
-        public:
-            bool IsValid() const
-            {
-                return (_element.IsValid());
-            }
-            void Reset()
-            {
-                _index = ~0;
-                if (_element.IsValid() == true) {
-                    _element.Release();
-                }
-            }
-            bool Next()
-            {
-                if (_server != nullptr) {
-                    if (_index == static_cast<uint32_t>(~0)) {
-                        _index = 0;
-                        _element = (*_server)[_index];
-                    } else if (_element.IsValid() == true) {
-                        _index++;
-                        _element = (*_server)[_index];
-                    }
-                }
-
-                return (IsValid());
-            }
-            string Name() const
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Name());
-            }
-            bool Enabled() const
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Enable());
-            }
-            void Enable(const bool enabled)
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Enable(enabled));
-            }
-
-        public:
-            VirtualInputChannelServer* _server;
-            uint32_t _index;
-            Core::ProxyType<VirtualInputChannelServer::Client> _element;
-        };
-
     public:
         IPCUserInput(const Core::NodeId& sourceName);
         ~IPCUserInput() override;
 
-        Iterator Inputs()
-        {
-            return (Iterator(_service));
-        }
+        VirtualInput::Iterator Consumers() const override;
+        bool Consumer(const string& name) const override;
+        void Consumer(const string& name, const bool enabled) override;
+
         uint32_t Open() override;
         uint32_t Close() override;
         void MapChanges(ChangeIterator& updated) override;
