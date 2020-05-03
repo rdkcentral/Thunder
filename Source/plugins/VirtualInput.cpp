@@ -543,12 +543,12 @@ namespace PluginHost
 
     static const string ConsumerName (_T("LinuxKeyboard"));
 
-    LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName)
+    LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName, const bool defaultEnabled)
         : VirtualInput()
         , _eventDescriptor(-1)
         , _source(source)
         , _deviceKeys()
-        , _enabled(true)
+        , _enabled(defaultEnabled)
     {
         memset(&_uidev, 0, sizeof(_uidev));
 
@@ -724,8 +724,9 @@ namespace PluginHost
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-    IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
+    IPCUserInput::IPCUserInput(const Core::NodeId& sourceName, const bool defaultEnabled)
         : _service(*this, sourceName)
+        , _defaultEnabled(defaultEnabled)
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }

@@ -473,13 +473,9 @@ namespace PluginHost {
         virtual bool Consumer(const string& name) const = 0;
         virtual void Consumer(const string& name, const bool enabled) = 0;
 
-        inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
+        inline void Interval(const uint16_t startTime, const uint16_t intervalTime, const uint16_t limit)
         {
             _repeatKey.Interval(startTime, intervalTime);
-        }
-
-        inline void RepeatLimit(const uint16_t limit)
-        {
             _repeatLimit = limit;
         }
 
@@ -666,7 +662,7 @@ namespace PluginHost {
         LinuxKeyboardInput(const LinuxKeyboardInput&) = delete;
         LinuxKeyboardInput& operator=(const LinuxKeyboardInput&) = delete;
 
-        LinuxKeyboardInput(const string& source, const string& inputName);
+        LinuxKeyboardInput(const string& source, const string& inputName, const bool defaultEnabled);
         virtual ~LinuxKeyboardInput();
 
     public:
@@ -697,16 +693,11 @@ namespace PluginHost {
 
     class EXTERNAL IPCUserInput : public VirtualInput {
     private:
-        IPCUserInput(const IPCUserInput&) = delete;
-        IPCUserInput& operator=(const IPCUserInput&) = delete;
-
-    public:
         class EXTERNAL InputDataLink : public Core::IDispatchType<Core::IIPC> {
-        private:
+        public:
             InputDataLink(const InputDataLink&) = delete;
             InputDataLink& operator=(const InputDataLink&) = delete;
 
-        public:
             InputDataLink(Core::IPCChannelType<Core::SocketPort, InputDataLink>*)
                 : _enabled(false)
                 , _name()
@@ -759,11 +750,12 @@ namespace PluginHost {
             {
                 return (_name);
             }
-            inline void Parent(IPCUserInput& parent)
+            inline void Parent(IPCUserInput& parent, const bool enabled)
             {
                 // We assume it will only be set, if the client reports it self in, once !
                 ASSERT(_parent == nullptr);
                 _parent = &parent;
+                _enabled = enabled;
             }
             inline void Reload()
             {
@@ -783,7 +775,6 @@ namespace PluginHost {
 
                 _name = (static_cast<IVirtualInput::NameMessage&>(element).Response().Name);
                 _mode = (static_cast<IVirtualInput::NameMessage&>(element).Response().Mode);
-                _enabled = true;
                 _postLookup = _parent->FindPostLookup(_name);
             }
 
@@ -817,7 +808,7 @@ namespace PluginHost {
                 //       not, to be further investigated..
                 message.AddRef();
 
-                client->Extension().Parent(_parent);
+                client->Extension().Parent(_parent, _parent._defaultEnabled);
                 client->Invoke(message, &(client->Extension()));
             }
 
@@ -826,7 +817,10 @@ namespace PluginHost {
         };
 
     public:
-        IPCUserInput(const Core::NodeId& sourceName);
+        IPCUserInput(const IPCUserInput&) = delete;
+        IPCUserInput& operator=(const IPCUserInput&) = delete;
+
+        IPCUserInput(const Core::NodeId& sourceName, const bool defaultEnabled);
         ~IPCUserInput() override;
 
         VirtualInput::Iterator Consumers() const override;
@@ -845,6 +839,7 @@ namespace PluginHost {
 
     private:
         VirtualInputChannelServer _service;
+        bool _defaultEnabled;
     };
 
     class EXTERNAL InputHandler {
@@ -866,23 +861,23 @@ namespace PluginHost {
         };
 
     public:
-        void Initialize(const type t, const string& locator)
+        void Initialize(const type t, const string& locator, const bool enabled)
         {
             ASSERT(_keyHandler == nullptr);
 #if defined(__WINDOWS__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
-            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
+            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()), enabled);
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
 #else
             if (t == VIRTUAL) {
-                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
+                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()), enabled);
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
             } else {
                 if (Core::File(locator, false).Exists() == true) {
                     TRACE_L1("Creating a /dev/input device for key communication. %d", 0);
 
                     // Seems we have a possibility to use /dev/input, create it.
-                    _keyHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"));
+                    _keyHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"), enabled);
                 }
             }
 #endif
