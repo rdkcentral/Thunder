@@ -84,9 +84,9 @@ namespace PluginHost {
                 _startTime = startTime;
                 _intervalTime = intervalTime;
             }
-            void Arm(const uint16_t code)
+            void Arm(const uint32_t code)
             {
-                ASSERT(_code == static_cast<uint16_t>(~0));
+                ASSERT(_code == static_cast<uint32_t>(~0));
 
                 if (_startTime != 0) {
       
@@ -103,11 +103,13 @@ namespace PluginHost {
                     Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
                 }
             }
-            void Reset()
+            uint32_t Reset()
             {
                 _adminLock.Lock();
+                uint32_t result = _code;
                 _code = ~0;
                 _adminLock.Unlock();
+                return (result);
             }
 
         private:
@@ -115,11 +117,12 @@ namespace PluginHost {
             {
                 _adminLock.Lock();
 
-                if(_code != static_cast<uint16_t>(~0)) {
+                if(_code != static_cast<uint32_t>(~0)) {
+                    uint16_t code = static_cast<uint16_t>(_code & 0xFFFF);
 
                     ASSERT(_nextSlot.IsValid());
 
-                    _parent.RepeatKey(_code);
+                    _parent.RepeatKey(code);
 
                     _nextSlot.Add(_intervalTime);
 
@@ -135,7 +138,7 @@ namespace PluginHost {
             Core::CriticalSection _adminLock;
             uint16_t _startTime;
             uint16_t _intervalTime;
-            uint16_t _code;
+            uint32_t _code;
             Core::Time _nextSlot;
             Core::ProxyType<Core::IDispatch> _job;
         };
@@ -301,10 +304,6 @@ namespace PluginHost {
 
     private:
         class EXTERNAL PostLookupTable : public Core::JSON::Container {
-        private:
-            PostLookupTable(const PostLookupTable&) = delete;
-            PostLookupTable& operator=(const PostLookupTable&) = delete;
-
         public:
             class Conversion : public Core::JSON::Container {
             private:
@@ -368,6 +367,9 @@ namespace PluginHost {
             };
 
         public:
+            PostLookupTable(const PostLookupTable&) = delete;
+            PostLookupTable& operator=(const PostLookupTable&) = delete;
+
             PostLookupTable()
                 : Core::JSON::Container()
                 , Conversions()
@@ -473,40 +475,57 @@ namespace PluginHost {
 
                 Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
+                PostLookupEntries* table = &_postLookupParent;
+
                 _lock.Lock();
 
-                PostLookupMap::iterator postMap(_postLookupTable.find(linkName));
-                if (postMap != _postLookupTable.end()) {
-                    postMap->second.clear();
-                } else {
-                    auto newElement = _postLookupTable.emplace(std::piecewise_construct,
-                        std::make_tuple(linkName),
-                        std::make_tuple());
-                    postMap = newElement.first;
+                if (linkName.empty() == false) {
+                    PostLookupMap::iterator postMap(_postLookupTable.find(linkName));
+                    if (postMap != _postLookupTable.end()) {
+                        postMap->second.clear();
+                    } else {
+                        auto newElement = _postLookupTable.emplace(std::piecewise_construct,
+                            std::make_tuple(linkName),
+                            std::make_tuple());
+                        postMap = newElement.first;
+                    }
+                    table = &(postMap->second);
                 }
+
                 while (index.Next() == true) {
-                    if ((index.Current().In.IsSet() == true) && (index.Current().Out.IsSet() == true)) {
+                    if (index.Current().In.IsSet() == true) {
+                        uint32_t to;
                         uint32_t from = index.Current().In.Code.Value();
-                        uint32_t to = index.Current().Out.Code.Value();
 
                         from |= (Modifiers(index.Current().In.Mods) << 16);
-                        to |= (Modifiers(index.Current().In.Mods) << 16);
 
-                        postMap->second.insert(std::pair<const uint32_t, const uint32_t>(from, to));
+                        if (index.Current().Out.IsSet() == true) {
+                            to = index.Current().Out.Code.Value();
+                            to |= (Modifiers(index.Current().In.Mods) << 16);
+                        }
+                        else {
+                            to = ~0;
+                        }
+
+                        table->insert(std::pair<const uint32_t, const uint32_t>(from, to));
                     }
                 }
 
-                if (postMap->second.size() == 0) {
-                    _postLookupTable.erase(postMap);
-                }
+                if (linkName.empty() == false) {
+                    if ((table->size() == 0) && (linkName.empty() == false)) {
+                        _postLookupTable.erase(linkName);
+                    }
 
-                LookupChanges(linkName);
+                    LookupChanges(linkName);
+                }
 
                 _lock.Unlock();
             }
         }
         inline const PostLookupEntries* FindPostLookup(const string& linkName) const
         {
+            ASSERT (linkName.empty() == false);
+
             PostLookupMap::const_iterator linkMap(_postLookupTable.find(linkName));
 
             return (linkMap != _postLookupTable.end() ? &(linkMap->second) : nullptr);
@@ -521,13 +540,13 @@ namespace PluginHost {
         }
 
     private:
-        void RepeatKey(const uint32_t code);
+        void RepeatKey(const uint16_t code);
         virtual void MapChanges(ChangeIterator& updated) = 0;
         virtual void LookupChanges(const string&) = 0;
 
         void ModifierKey(const IVirtualInput::KeyData::type type, const uint16_t modifiers);
         bool SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode);
-        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code);
+        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, const uint32_t code);
 
         virtual void Send(const IVirtualInput::KeyData& data) = 0;
         virtual void Send(const IVirtualInput::MouseData& data) = 0;
@@ -556,6 +575,7 @@ namespace PluginHost {
         KeyMap* _defaultMap;
         NotifierList _notifierList;
         NotifierMap _notifierMap;
+        PostLookupEntries _postLookupParent;
         PostLookupMap _postLookupTable;
         string _keyTable;
         uint32_t _pressedCode;
@@ -565,14 +585,17 @@ namespace PluginHost {
 
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
     class EXTERNAL LinuxKeyboardInput : public VirtualInput {
-    private:
+    public:
         LinuxKeyboardInput(const LinuxKeyboardInput&) = delete;
         LinuxKeyboardInput& operator=(const LinuxKeyboardInput&) = delete;
 
-    public:
         LinuxKeyboardInput(const string& source, const string& inputName);
         virtual ~LinuxKeyboardInput();
 
+    public:
+        static const TCHAR* PostLookupName() {
+            return(".");
+        }
         virtual uint32_t Open();
         virtual uint32_t Close();
         virtual void MapChanges(ChangeIterator& updated);
@@ -589,6 +612,7 @@ namespace PluginHost {
         int _eventDescriptor;
         const string _source;
         std::map<uint16_t, uint16_t> _deviceKeys;
+        const PostLookupEntries* _postLookup;
     };
 #endif
 
@@ -642,8 +666,8 @@ namespace PluginHost {
                         PostLookupEntries::const_iterator index(_postLookup->find(copy.Parameters().Code));
                         if (index == _postLookup->end()) {
                             result = element;
-                        } else {
-
+                        } 
+                        else if (index->second != static_cast<uint32_t>(~0)) {
                             _replacement->Parameters().Action = copy.Parameters().Action;
                             _replacement->Parameters().Code = index->second;
                             result = Core::ProxyType<Core::IIPC>(_replacement);
