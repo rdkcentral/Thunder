@@ -37,6 +37,29 @@
           }
         ]
       },
+      "select": {
+        "summary": "Enable the given channel, disabling all othe channels, whish are not immune",
+        "params": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "description": "Callsign that is the owner of this channel",
+              "example": "WebKitBrowser",
+              "type": "string"
+            }
+          },
+          "required": [ "name" ]
+        },
+        "result": {
+          "$ref": "#/common/results/void"
+        },
+        "errors": [
+          {
+            "description": "Failed to scan",
+            "$ref": "#/common/errors/unknownkey"
+          }
+        ]
+      },
       "status": {
         "summary": "Check the status of the requested channel",
         "params": {

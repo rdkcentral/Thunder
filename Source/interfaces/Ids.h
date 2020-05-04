@@ -162,7 +162,9 @@ namespace Exchange {
 
         ID_AVSCLIENT,
         ID_AVSCONTROLLER,
-        ID_AVSCONTROLLER_NOTIFICATION
+        ID_AVSCONTROLLER_NOTIFICATION,
+
+        ID_INPUT_SWITCH
     };
 }
 }

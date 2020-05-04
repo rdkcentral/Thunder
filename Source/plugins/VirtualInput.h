@@ -361,6 +361,9 @@ namespace PluginHost {
                 ASSERT(IsValid() == true);
                 return (*_index);
             }
+            const std::list<string> Container() const {
+                return(_consumers);
+            }
 
         private:
             std::list<string> _consumers;
