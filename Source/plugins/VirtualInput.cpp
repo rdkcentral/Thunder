@@ -371,7 +371,6 @@ namespace PluginHost
                 if (conversionTable->PassThrough() == false) {
                     result = Core::ERROR_UNKNOWN_KEY;
                 } else {
-                    result = Core::ERROR_UNKNOWN_KEY;
                     sendCode = code;
                     sendModifiers = 0;
                 }
@@ -383,7 +382,7 @@ namespace PluginHost
             if ((!pressed) && (_pressedCode != code))
                 result = Core::ERROR_ALREADY_RELEASED;
 
-            if ((result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY)) {
+            if (result == Core::ERROR_NONE) {
                 if (pressed) {
                     if (_pressedCode)
                         KeyEvent(false, _pressedCode, _keyTable);

@@ -945,6 +945,269 @@ namespace Core {
         typedef NumberType<uint64_t, false, BASE_OCTAL> OctUInt64;
         typedef NumberType<int64_t, true, BASE_OCTAL> OctSInt64;
 
+        template <class TYPE>
+        class FloatType : public IElement, public IMessagePack {
+        private:
+            enum modes {
+                QUOTED = 0x020,
+                SET = 0x040,
+                ERROR = 0x080,
+                NEGATIVE = 0x100,
+                UNDEFINED = 0x200
+            };
+
+        public:
+            FloatType()
+                : _set(0)
+                , _value(0.0)
+                , _default(0.0)
+            {
+            }
+
+            FloatType(const TYPE Value, const bool set = false)
+                : _set(set ? SET : 0)
+                , _value(Value)
+                , _default(Value)
+            {
+            }
+
+            FloatType(const FloatType<TYPE>& copy)
+                : _set(copy._set)
+                , _value(copy._value)
+                , _default(copy._default)
+            {
+            }
+
+            ~FloatType() override
+            {
+            }
+
+            FloatType<TYPE>& operator=(const FloatType<TYPE>& RHS)
+            {
+                _value = RHS._value;
+                _set = RHS._set;
+
+                return (*this);
+            }
+
+            FloatType<TYPE>& operator=(const TYPE& RHS)
+            {
+                _value = RHS;
+                _set = SET;
+
+                return (*this);
+            }
+
+            inline TYPE Default() const
+            {
+                return _default;
+            }
+
+            inline TYPE Value() const
+            {
+                return ((_set & SET) != 0 ? _value : _default);
+            }
+
+            inline operator TYPE() const
+            {
+                return _value;
+            }
+
+            void Null(const bool enabled)
+            {
+                if (enabled == true)
+                    _set |= UNDEFINED;
+                else
+                    _set &= ~UNDEFINED;
+            }
+
+            // IElement and IMessagePack iface:
+            bool IsSet() const override
+            {
+                return ((_set & (SET | UNDEFINED)) != 0);
+            }
+
+            bool IsNull() const override
+            {
+                return ((_set & UNDEFINED) != 0);
+            }
+
+            void Clear() override
+            {
+                _set = 0;
+                _value = 0;
+            }
+
+        private:
+            // IElement iface:
+            // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
+            uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                uint16_t loaded = 0;
+
+                ASSERT(maxLength > 0);
+
+                if ((_set & UNDEFINED) != 0 || 
+                    std::isinf(_value) ||
+                    std::isnan(_value)) 
+                {
+                    auto len = strlen(IElement::NullTag);
+                    while(loaded < len)
+                    {
+                        stream[loaded] = IElement::NullTag[loaded];
+                        loaded++;
+                    }
+                }
+                else
+                {
+                    auto num = std::snprintf(stream,maxLength,"%g",_value);
+                    loaded = num > 0 ? num : 0;
+                }
+                
+                return loaded;
+            }
+            
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) override
+            {
+                uint16_t loaded = 0;
+
+                if (offset == 0) {
+                    _value = 0;
+                    _set = 0;
+                }
+
+                std::string str;
+
+                if (stream[loaded] == '\"') {
+                    _set = QUOTED;
+                    offset++;
+                    loaded++;
+                }
+
+                while(stream[loaded] != '\"' && 
+                      stream[loaded] != ',' && 
+                      stream[loaded] != ']' && 
+                      stream[loaded] != '}' &&
+                      stream[loaded] != ')') {
+                    
+                    str += stream[loaded++];
+
+                }
+
+                if(str == IElement::NullTag)
+                {
+                    _set |= UNDEFINED;
+                    return loaded;
+                }
+
+                TYPE val;
+                char* end;
+                if(std::is_same<float,TYPE>::value)
+                {
+                    val = std::strtof(str.c_str(), &end);
+                }
+                else
+                {
+                    val = std::strtod(str.c_str(), &end);
+                }
+
+                if(end == str.c_str())
+                {
+                    error = Error{ "Error converting \"" + str + "\" to a float/double" };
+                    _set = ERROR;
+                }
+                else
+                {
+                    _value = val;
+                    _set |= SET;
+                }
+                
+                offset = 0;
+
+                return loaded;
+            }
+
+            // IMessagePack iface:
+            // Refer to https://github.com/msgpack/msgpack/blob/master/spec.md#float-format-family 
+            // for MessagePack format for float.
+            uint16_t Serialize(uint8_t stream[], const uint16_t maxLength, uint16_t& offset) const override
+            {
+                if ((_set & UNDEFINED) != 0 || 
+                    std::isinf(_value) ||
+                    std::isnan(_value))  
+                {
+                    stream[0] = IMessagePack::NullValue;
+                    return (1);
+                }
+
+                uint16_t loaded = 0;
+                uint8_t bytes = std::is_same<float,TYPE>::value ? 4 : 8;
+
+                if (offset == 0) {
+                    switch (bytes) {
+                    case 4:
+                        stream[loaded++] = 0xCA;
+                        break;
+                    case 8:
+                        stream[loaded++] = 0xCB;
+                        break;
+                    default:
+                        ASSERT(false);
+                    }
+                }
+
+                uint8_t* val = (uint8_t*) &_value;
+
+                while ((loaded < maxLength) && (bytes != 0)) {
+                    stream[loaded++] = val[bytes - 1];
+                    bytes--;
+                }
+
+                return loaded;
+            }
+
+            uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength, uint16_t& offset) override
+            {
+                uint16_t loaded = 0;
+                int bytes = 0;
+                if (offset == 0) {
+                    // First byte depicts a lot. Find out what we need to read
+                    _value = 0;
+                    uint8_t header = stream[loaded++];
+
+                    if (header == IMessagePack::NullValue) {
+                        _set = UNDEFINED;
+                    } else if (header == 0xCA) {
+                        bytes = 4;
+                    } else if (header == 0xCB) {
+                        bytes = 8;
+                    } else {
+                        _set = ERROR;
+                    }
+                }
+
+                uint8_t* val = (uint8_t*) &_value;
+
+                while ((loaded < maxLength) && (bytes != 0)) {
+                    val[bytes - 1] = stream[loaded++];
+                    bytes--;
+                }
+
+                if (_value != 0) {
+                    _set |= SET;
+                }
+                return loaded;
+            }
+
+        private:
+            uint16_t _set;
+            TYPE _value;
+            TYPE _default;
+        };
+
+        typedef FloatType<float> Float;
+        typedef FloatType<double> Double;
+        
         class EXTERNAL Boolean : public IElement, public IMessagePack {
         private:
             static constexpr uint8_t None = 0x00;
@@ -1387,9 +1650,17 @@ namespace Core {
                                 stream[result++] = *source++;
                                 length--;
                             } else {
-                                // this we need to escape...
-                                stream[result++] = '\\';
-                                _unaccountedCount = 1;
+                                // Check if we need to escape...
+                                if(*(source - 1) != '\\')
+                                {
+                                    stream[result++] = '\\';
+                                    _unaccountedCount = 1;
+                                }
+                                else
+                                {
+                                    stream[result++] = *source++;
+                                    length--;   
+                                }
                             }
                         }
                     }
@@ -1631,7 +1902,7 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u') {
+                if (current == 'u' || current == '\"') {
                     action = EscapeSequenceAction::NOTHING;
                 } else {
                     if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')

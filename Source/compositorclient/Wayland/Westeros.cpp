@@ -566,11 +566,7 @@ namespace Wayland {
     {
         ASSERT (order <= std::numeric_limits<uint8_t>::max());
 
-        #ifdef BCM_HOST
-        double fractionalOrder = (order / std::numeric_limits<uint8_t>::max());
-        #else
         double fractionalOrder = 1.0 - (order / std::numeric_limits<uint8_t>::max());
-        #endif
 
         wl_simple_shell_set_zorder(_display->_simpleShell, _id, wl_fixed_from_double(fractionalOrder));
         wl_display_flush(_display->_display);
