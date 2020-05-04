@@ -222,9 +222,9 @@
         }
       ]
     },
-    "kill": {
-      "summary": "Kills a client",
-      "description": "Use this method to kill a client. Whenever a client is killed, the execution of the client is stopped and all its resources are released.",
+    "select": {
+      "summary": "Directs the input to the given client, disabling all the others",
+      "description": "Use this method to direct all inputs to this client. The client that is receiving the inputs prior to this call will nolonger receive it anymore after this call.",
       "params": {
         "type": "object",
         "properties": {
