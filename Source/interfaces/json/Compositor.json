@@ -41,19 +41,6 @@
         }
       ]
     },
-    "clients": {
-      "summary": "List of compositor clients",
-      "description": "Use this property to retrieve the information of actual running clients.",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "description": "Client name",
-          "example": "Netflix"
-        }
-      }
-    },
     "zorder": {
       "summary": "List of compositor clients sorted by z-order",
       "description": "Use this property to retrieve the list of all clients in z-order. Each client has an z-order-value that determines its position with respect to the screen. The ordering is that the top position is closest to the screen, the next z-order-value first behind the top, and so on.",
