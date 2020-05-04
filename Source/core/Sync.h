@@ -89,8 +89,9 @@ namespace Core {
         void TryLock();
 
         static const int _AllocatedStackEntries = 20;
-        int _UsedStackEntries;
-        void* _LockingStack[_AllocatedStackEntries];
+        static const int _AllocatedStacks = 20;
+        int _UsedStackEntries[_AllocatedStacks];
+        void* _LockingStack[_AllocatedStacks][_AllocatedStackEntries];
 
         pthread_t _LockingThread;
         static int StripStackTop(void** stack, int stackEntries, int stripped);

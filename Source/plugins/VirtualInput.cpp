@@ -373,7 +373,6 @@ namespace PluginHost
                 if (conversionTable->PassThrough() == false) {
                     result = Core::ERROR_UNKNOWN_KEY;
                 } else {
-                    result = Core::ERROR_UNKNOWN_KEY;
                     sendCode = code;
                 }
             } else {
