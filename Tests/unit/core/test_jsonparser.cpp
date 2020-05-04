@@ -374,11 +374,11 @@ namespace Tests {
         #endif
         ;
         ExecutePrimitiveJsonTest<Core::JSON::String>(data, expected, [&data](const Core::JSON::String& v) {
-        #ifdef QUIRKS_MODE
+            #ifdef QUIRKS_MODE
             EXPECT_EQ(data.value, v.Value());
-        #else
+            #else
             EXPECT_EQ(string{}, v.Value());
-        #endif
+            #endif
         });
     }
 
@@ -407,11 +407,11 @@ namespace Tests {
         const bool expected = true;
         #endif
         ExecutePrimitiveJsonTest<Core::JSON::String>(data, expected, [&data](const Core::JSON::String& v) {
-            #ifndef QUIRKS_MODE
-                EXPECT_EQ(string{}, v.Value());
-            #else
-                EXPECT_EQ(data.value + "\"", v.Value());
-            #endif
+        #ifndef QUIRKS_MODE
+            EXPECT_EQ(string{}, v.Value());
+        #else
+            EXPECT_EQ(data.value + "\"", v.Value());
+        #endif
         });
     }
 
