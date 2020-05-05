@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -49,8 +49,7 @@ namespace Core {
         CyclicBuffer& operator=(const CyclicBuffer&) = delete;
 
     public:
-        CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite = false);
-        CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite = false);
+        CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite);
         virtual ~CyclicBuffer();
 
     protected:
@@ -69,12 +68,12 @@ namespace Core {
             {
                 uint32_t startIndex = _Tail & _Parent._administration->_tailIndexMask;
                 startIndex += _Offset;
-                startIndex %= _Parent._maxSize;
+                startIndex %= _Parent._administration->_size;
 
                 uint8_t* bytePtr = reinterpret_cast<uint8_t*>(&buffer);
 
                 for (uint32_t i = 0; i < sizeof(buffer); i++) {
-                    uint32_t index = (startIndex + i) % _Parent._maxSize;
+                    uint32_t index = (startIndex + i) % _Parent._administration->_size;
                     bytePtr[i] = _Parent._realBuffer[index];
                 }
             }
@@ -101,7 +100,7 @@ namespace Core {
                 oldTail &= _Parent._administration->_tailIndexMask;
 
                 uint32_t completeTail = oldTail + offset;
-                completeTail %= _Parent._maxSize;
+                completeTail %= _Parent._administration->_size;
                 if (completeTail < oldTail) {
                     // Add one round, but prevent overflow.
                     roundCount = (roundCount + 1) % _Parent._administration->_roundCountModulo;
@@ -131,13 +130,13 @@ namespace Core {
 
         inline uint32_t Used(uint32_t head, uint32_t tail) const
         {
-            uint32_t output = (head >= tail ? head - tail : _maxSize - (tail - head));
+            uint32_t output = (head >= tail ? head - tail : _administration->_size - (tail - head));
             return output;
         }
 
         inline uint32_t Free(uint32_t head, uint32_t tail) const
         {
-            uint32_t result = (head >= tail ? _maxSize - (head - tail) : tail - head);
+            uint32_t result = (head >= tail ? _administration->_size - (head - tail) : tail - head);
             return result;
         }
 
@@ -199,10 +198,10 @@ namespace Core {
         }
         inline uint32_t Size() const
         {
-            return (_maxSize);
+            return (_administration->_size);
         }
         
-        bool Load();
+        bool Validate();
 
         // THREAD SAFE
         // If there are thread blocked in the Lock, they can be relinquised by
@@ -261,10 +260,8 @@ namespace Core {
         };
 
         Core::DataElementFile _buffer;
-        uint32_t _maxSize;
         uint8_t* _realBuffer;
         bool _alert;
-        bool _overwrite;
 
 // Synchronisation over Process boundaries
 #ifdef __WINDOWS__
