@@ -26,15 +26,50 @@ namespace Core {
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              mode,
+              (bufferSize > 0 ? (mode | File::CREATE) : (mode & ~File::CREATE) ),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
-        , _realBuffer(nullptr)
+        , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
         , _alert(false)
-        , _overwrite(overwrite)
-        , _administration(nullptr)
+        , _administration(_buffer.IsValid() ? reinterpret_cast<struct control*>(_buffer.Buffer()) : nullptr)
     {
-        if (bufferSize > 0) {
-            Load();
+        if (_buffer.IsValid() != true) {
+            TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
+		} else {
+#ifdef __WINDOWS__
+            string strippedName(Core::File::PathName(fileName) + Core::File::FileName(fileName));
+            _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
+            _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
+            _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
+#else
+
+#endif
+            if (bufferSize != 0) {
+
+#ifndef __WINDOWS__
+                (_administration)->_signal = PTHREAD_COND_INITIALIZER;
+                (_administration)->_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+                _administration->_head.store(0);
+                _administration->_tail.store(0);
+                _administration->_agents.store(0);
+                _administration->_state.store(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0));
+                _administration->_lockPID = 0;
+                _administration->_size = bufferSize;
+
+                _administration->_reserved = 0;
+                _administration->_reservedWritten = 0;
+                _administration->_reservedPID = 0;
+
+                _administration->_tailIndexMask = 1;
+                _administration->_roundCountModulo = 1L << 31;
+                while (_administration->_tailIndexMask < bufferSize) {
+                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
+                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
+                }
+            }
+
+            _maxSize = _administration->_size;
         }
     }
 
@@ -51,53 +86,8 @@ namespace Core {
     {
     }
 
-    bool CyclicBuffer::Load() {
-        bool loaded = (_administration != nullptr);
-
-        if (loaded == false) {
-            if (_buffer.IsValid() != true) {
-                TRACE_L1("Could not open a CyclicBuffer: %s", _buffer.Name().c_str());
-            } else if (_buffer.Size() > sizeof(struct control)) {
-                loaded = true;
-                _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
-                _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
-#ifdef __WINDOWS__
-                string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
-                _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
-                _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
-                _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
-#else
-                _administration->_signal = PTHREAD_COND_INITIALIZER;
-                _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-                _administration->_head.store(0);
-                _administration->_tail.store(0);
-                _administration->_agents.store(0);
-                _administration->_state.store(state::UNLOCKED /* state::EMPTY */ | (_overwrite ? state::OVERWRITE : 0));
-                _administration->_lockPID = 0;
-                _administration->_size = (_buffer.Size() - sizeof(struct control));
-
-                _administration->_reserved = 0;
-                _administration->_reservedWritten = 0;
-                _administration->_reservedPID = 0;
-
-                _administration->_tailIndexMask = 1;
-                _administration->_roundCountModulo = 1L << 31;
-                while (_administration->_tailIndexMask < _administration->_size) {
-                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
-                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
-                }
-            }
-
-            _maxSize = _administration->_size;
-        }
-        return (loaded);
-    }
     void CyclicBuffer::AdminLock()
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __POSIX__
         pthread_mutex_lock(&(_administration->_mutex));
 #else
@@ -117,8 +107,6 @@ namespace Core {
     {
 
         uint32_t result = waitTime;
-
-        ASSERT(IsValid() == true);
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
@@ -165,8 +153,6 @@ namespace Core {
 
     void CyclicBuffer::AdminUnlock()
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __POSIX__
         pthread_mutex_unlock(&(_administration->_mutex));
 #else
@@ -179,7 +165,6 @@ namespace Core {
 
     void CyclicBuffer::Reevaluate()
     {
-        ASSERT(IsValid() == true);
 
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
@@ -201,7 +186,6 @@ namespace Core {
 
     inline void CyclicBuffer::Alert()
     {
-        ASSERT(IsValid() == true);
 
         // Lock the administrator..
         AdminLock();
@@ -216,7 +200,6 @@ namespace Core {
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length)
     {
         ASSERT(length <= _maxSize);
-        ASSERT(IsValid() == true);
 
         bool foundData = false;
 
@@ -272,7 +255,6 @@ namespace Core {
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
         ASSERT(length < _maxSize);
-        ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
         bool startingEmpty = (Used() == 0);
@@ -349,8 +331,6 @@ namespace Core {
 
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
-        ASSERT(IsValid() == true);
-
         uint32_t oldTail = _administration->_tail;
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
@@ -376,8 +356,6 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __WINDOWS__
         DWORD processId = GetCurrentProcessId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
@@ -417,7 +395,6 @@ namespace Core {
 
         // Lock can not be called recursive, unlock if you would like to lock it..
         ASSERT(_administration->_lockPID == 0);
-        ASSERT(IsValid() == true);
 
         // Lock the administrator..
         AdminLock();
@@ -457,7 +434,6 @@ namespace Core {
 
     uint32_t CyclicBuffer::Unlock()
     {
-        ASSERT(IsValid() == true);
 
         uint32_t result(Core::ERROR_ILLEGAL_STATE);
 
@@ -487,7 +463,6 @@ namespace Core {
     uint32_t CyclicBuffer::Peek(uint8_t buffer[], const uint32_t length) const
     {
         ASSERT(length <= _maxSize);
-        ASSERT(IsValid() == true);
 
         bool foundData = false;
 

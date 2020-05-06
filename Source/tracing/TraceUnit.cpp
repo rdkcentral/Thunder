@@ -125,7 +125,6 @@ namespace Trace {
                                 Core::File::GROUP_WRITE  |
                                 Core::File::OTHERS_READ  |
                                 Core::File::OTHERS_WRITE | 
-                                Core::File::CREATE       | 
                                 Core::File::SHAREABLE,
                              CyclicBufferSize, true)
         , _doorBell(doorBell.c_str())
