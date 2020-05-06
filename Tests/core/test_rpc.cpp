@@ -91,7 +91,7 @@ namespace Tests {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
             ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetValue();
 
@@ -110,7 +110,7 @@ namespace Tests {
             const uint32_t param0 = reader.Number<uint32_t>();
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
             ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
             implementation->Add(param0);
         },
@@ -121,7 +121,7 @@ namespace Tests {
             RPC::Data::Input& input(message->Parameters());
 
             // call implementation
-            IAdder* implementation = input.Implementation<IAdder>();
+            IAdder* implementation = reinterpret_cast<IAdder*>(input.Implementation());
             ASSERT((implementation != nullptr) && "Null IAdder implementation pointer");
             const uint32_t output = implementation->GetPid();
 
@@ -148,7 +148,7 @@ namespace Tests {
 
     class AdderProxy final : public ProxyStub::UnknownProxyType<IAdder> {
     public:
-        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool otherSideInformed)
+        AdderProxy(const Core::ProxyType<Core::IPCChannel>& channel, RPC::instance_id implementation, const bool otherSideInformed)
             : BaseClass(channel, implementation, otherSideInformed)
         {
         }
@@ -274,12 +274,10 @@ namespace Tests {
        {
           Core::NodeId remoteNode(connector.c_str());
 
-          Core::ProxyType<RPC::InvokeServerType<4, 1>> engine(Core::ProxyType<RPC::InvokeServerType<4, 1>>::Create(Core::Thread::DefaultStackSize()));
-          Core::ProxyType<RPC::CommunicatorClient> client(
-               Core::ProxyType<RPC::CommunicatorClient>::Create(
-                   remoteNode,
-                   Core::ProxyType<Core::IIPCServer>(engine)
-               ));
+          Core::ProxyType<RPC::InvokeServerType<4, 0, 1>> engine = Core::ProxyType<RPC::InvokeServerType<4, 0, 1>>::Create();
+          ASSERT(engine != nullptr);
+          Core::ProxyType<RPC::CommunicatorClient> client = Core::ProxyType<RPC::CommunicatorClient>::Create(remoteNode, Core::ProxyType<Core::IIPCServer>(engine));
+          ASSERT(client != nullptr);
           engine->Announcements(client->Announcement());
 
           // Create remote instance of "IAdder".
