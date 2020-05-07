@@ -26,8 +26,6 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-#define THREADPOOL_COUNT 4
-
 class WorkerPoolImplementation : public Core::WorkerPool {
 public:
     WorkerPoolImplementation() = delete;
@@ -121,17 +119,19 @@ TEST(test_workerpool, simple_workerpool)
 {
     WorkerThreadClass object(std::this_thread::get_id());
     object.Run();
+
+    WorkerPoolImplementation workerpool_impl(2,Core::Thread::DefaultStackSize(),8);
+    Core::WorkerPool::Assign(&workerpool_impl);
     workerpool->Run();
     workerpool->Id(0);
     EXPECT_EQ(workerpool->Id(1),0u);
-    //EXPECT_EQ(workerpool->Id(-1),0u); TODO
     workerpool->Snapshot();
     Core::ProxyType<Core::IDispatch> job(Core::ProxyType<WorkerJob>::Create());
     workerpool->Submit(job);
     workerpool->Schedule(Core::infinite, job);
     workerpool->Revoke(job);
     workerpool->Instance();
-    //EXPECT_TRUE(workerpool->IsAvailable()); TODO
-
+    EXPECT_TRUE(workerpool->IsAvailable());
+    workerpool->Stop();
     object.Stop();
 }
