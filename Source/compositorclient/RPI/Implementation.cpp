@@ -171,7 +171,7 @@ public:
     {
         TRACE_L1(_T("Currently not supported"));
     }
-    void ZOrder(const EGLSurface&, const int8_t)
+    void ZOrder(const EGLSurface&, const uint16_t)
     {
         TRACE_L1(_T("Currently not supported"));
     }
@@ -187,7 +187,7 @@ private:
     struct Surface {
         EGL_DISPMANX_WINDOW_T surface;
         VC_RECT_T rectangle;
-        int8_t layer;
+        uint16_t layer;
         uint8_t opacity;
     };
 
@@ -325,10 +325,10 @@ public:
         vc_dispmanx_update_submit_sync(dispmanUpdate);
     }
 
-    void ZOrder(const EGLSurface& surface, const int8_t layer)
+    void ZOrder(const EGLSurface& surface, const uint16_t layer)
     {
         // RPI is unique: layer #0 actually means "deepest", so we need to convert.
-        const int8_t actualLayer = 127 - layer;
+        const uint16_t actualLayer = std::numeric_limits<uint16_t>::max() - layer;
         Surface* object = reinterpret_cast<Surface*>(surface);
         DISPMANX_UPDATE_HANDLE_T  dispmanUpdate = vc_dispmanx_update_start(0);
         object->layer = layer;
@@ -440,6 +440,7 @@ private:
             uint32_t Geometry(const Exchange::IComposition::Rectangle& rectangle) override;
             Exchange::IComposition::Rectangle Geometry() const override;
             uint32_t ZOrder(const uint16_t zorder) override;
+            uint32_t ZOrder() const override;
 
             BEGIN_INTERFACE_MAP(RemoteAccess)
                 INTERFACE_ENTRY(Exchange::IComposition::IClient)
@@ -769,18 +770,15 @@ Exchange::IComposition::Rectangle Display::SurfaceImplementation::RemoteAccess::
 
 uint32_t Display::SurfaceImplementation::RemoteAccess::ZOrder(const uint16_t zorder)
 {
-    int8_t layer = 0;
+    _layer = zorder;
 
-    if (zorder == static_cast<uint16_t>(~0)) {
-        layer = -1;
-    } else {
-        layer = static_cast<uint8_t>(zorder);
-        _layer = layer;
-    }
-
-    Platform::Instance().ZOrder(_nativeSurface, layer);
+    Platform::Instance().ZOrder(_nativeSurface, _layer);
 
     return (Core::ERROR_NONE);
+}
+
+uint32_t Display::SurfaceImplementation::RemoteAccess::ZOrder() const {
+    return (_layer);
 }
 
 Display::Display(const string& name)

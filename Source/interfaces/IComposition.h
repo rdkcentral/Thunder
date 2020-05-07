@@ -69,6 +69,7 @@ namespace Exchange {
             virtual uint32_t Geometry(const Rectangle& rectangle) = 0;
             virtual Rectangle Geometry() const = 0; 
             virtual uint32_t ZOrder(const uint16_t index) = 0;
+            virtual uint32_t ZOrder() const = 0;
         };
 
         struct INotification : virtual public Core::IUnknown {
