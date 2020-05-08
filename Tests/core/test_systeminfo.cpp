@@ -22,11 +22,12 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-TEST(Core_SystemInfo, simpleSet)
+TEST(Core_SystemInfo, systemInfo)
 {
     const uint8_t* rawDeviceId (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
 
     string id (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
+    string id_new (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
 
     std::cout << "SystemInfo Test:" << std::endl;
 
@@ -60,3 +61,15 @@ TEST(Core_SystemInfo, simpleSet)
     std::cout << "\t" << variable << " : " << (WPEFramework::Core::SystemInfo::Instance().GetEnvironment(variable, variable_value) ? variable_value : "--")  << std::endl;
 }
 
+TEST(Core_SystemInfo, memorySnapShot)
+{
+    WPEFramework::Core::SystemInfo::MemorySnapshot snapshot = WPEFramework::Core::SystemInfo::Instance().TakeMemorySnapshot();
+    std::cout<<"JSON : "<<snapshot.AsJSON()<<std::endl;
+    std::cout<<"Total : "<<snapshot.Total()<<std::endl;
+    std::cout<<"Free : "<<snapshot.Free()<<std::endl;
+    std::cout<<"Available : "<<snapshot.Available()<<std::endl;
+    std::cout<<"Cached : "<<snapshot.Cached()<<std::endl;
+    std::cout<<"SwapTotal : "<<snapshot.SwapTotal()<<std::endl;
+    std::cout<<"SwapFree : "<<snapshot.SwapFree()<<std::endl;
+    std::cout<<"SwapCached: "<<snapshot.SwapCached()<<std::endl;
+}
