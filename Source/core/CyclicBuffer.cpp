@@ -28,7 +28,7 @@ namespace Core {
               fileName,
               (bufferSize == 0 ? (mode & (~File::CREATE)) : (mode | File::CREATE)),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
-        , _realBuffer(nullptr)
+        , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
         , _alert(false)
         , _administration(nullptr)
     {
@@ -96,10 +96,22 @@ namespace Core {
 
         return (loaded);
     }
+
+    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
+        : CyclicBuffer( fileName, 
+                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
+                        bufferSize,
+                        overwrite
+                        ) 
+    {
+    }
+
+    CyclicBuffer::~CyclicBuffer()
+    {
+    }
+
     void CyclicBuffer::AdminLock()
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __POSIX__
         pthread_mutex_lock(&(_administration->_mutex));
 #else
@@ -119,8 +131,6 @@ namespace Core {
     {
 
         uint32_t result = waitTime;
-
-        ASSERT(IsValid() == true);
 
         if (waitTime != Core::infinite) {
 #ifdef __POSIX__
@@ -167,8 +177,6 @@ namespace Core {
 
     void CyclicBuffer::AdminUnlock()
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __POSIX__
         pthread_mutex_unlock(&(_administration->_mutex));
 #else
@@ -181,7 +189,6 @@ namespace Core {
 
     void CyclicBuffer::Reevaluate()
     {
-        ASSERT(IsValid() == true);
 
         // See if we need to have some interested actor reevaluate its state..
         if (_administration->_agents.load() > 0) {
@@ -203,7 +210,6 @@ namespace Core {
 
     inline void CyclicBuffer::Alert()
     {
-        ASSERT(IsValid() == true);
 
         // Lock the administrator..
         AdminLock();
@@ -351,8 +357,6 @@ namespace Core {
 
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
-        ASSERT(IsValid() == true);
-
         uint32_t oldTail = _administration->_tail;
         uint32_t tail = oldTail & _administration->_tailIndexMask;
         uint32_t free = Free(_administration->_head, tail);
@@ -378,8 +382,6 @@ namespace Core {
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
     {
-        ASSERT(IsValid() == true);
-
 #ifdef __WINDOWS__
         DWORD processId = GetCurrentProcessId();
         DWORD expectedProcessId = static_cast<DWORD>(0);
@@ -419,7 +421,6 @@ namespace Core {
 
         // Lock can not be called recursive, unlock if you would like to lock it..
         ASSERT(_administration->_lockPID == 0);
-        ASSERT(IsValid() == true);
 
         // Lock the administrator..
         AdminLock();
@@ -459,7 +460,6 @@ namespace Core {
 
     uint32_t CyclicBuffer::Unlock()
     {
-        ASSERT(IsValid() == true);
 
         uint32_t result(Core::ERROR_ILLEGAL_STATE);
 

@@ -176,7 +176,7 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            return (_administration != nullptr);
+            return (_buffer.IsValid());
         }
         inline const File& Storage() const
         {
@@ -199,10 +199,9 @@ namespace Core {
         inline uint32_t Size() const
         {
             return (_administration->_size);
-        }
-        
+        }        
         bool Validate();
-
+      
         // THREAD SAFE
         // If there are thread blocked in the Lock, they can be relinquised by
         // calling this method. This method, will un-block, all blocking calls
