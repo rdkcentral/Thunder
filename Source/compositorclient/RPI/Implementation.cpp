@@ -650,15 +650,16 @@ private:
         _adminLock.Lock();
         _isRunning = false;
 
-        close(g_pipefd[0]);
         Message message;
         memset(&message, 0, sizeof(message));
         write(g_pipefd[1], &message, sizeof(message));
-        close(g_pipefd[1]);
 
         if (_virtualinput != nullptr) {
             virtualinput_close(_virtualinput);
         }
+
+        close(g_pipefd[1]);
+        close(g_pipefd[0]);
 
         std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
         while (index != _surfaces.end()) {
@@ -738,9 +739,7 @@ Display::SurfaceImplementation::~SurfaceImplementation()
 
     _display.RevokeClientInterface(_remoteAccess);
 
-    // This release is amndatory, sonce we took a reference during construction
-    // however, it is not correct yet as it lead to a SEGMENTATION error.
-    // _remoteAccess->Release();
+    _remoteAccess->Release();
 
     _display.Release();
 }
