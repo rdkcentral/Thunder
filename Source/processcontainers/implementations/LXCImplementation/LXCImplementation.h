@@ -33,16 +33,22 @@ namespace WPEFramework {
 namespace ProcessContainers {
     using LxcContainerType = struct lxc_container;
 
-    class LXCNetworkInterfaceIterator : public NetworkInterfaceIterator 
+    class LXCNetworkInterfaceIterator : public Core::IIterator 
     {
     public:
         LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer);
         ~LXCNetworkInterfaceIterator();
 
-        std::string Name() const override;
-        uint32_t NumIPs() const override;
+        bool Next();
+        bool Previous();
+        void Reset(const uint32_t position);
+        bool IsValid() const;
+        uint32_t Index() const;
+        uint32_t Count() const;
 
-        std::string IP(uint32_t id) const override;
+        string Name() const;
+        uint32_t NumIPs() const;
+        string IP(uint32_t n = 0) const;
     private:
         struct LXCNetInterface {
             char* name;
@@ -50,6 +56,7 @@ namespace ProcessContainers {
             uint32_t numAddresses;
         };
 
+        uint32_t _current;
         std::vector<LXCNetInterface> _interfaces;
     };
 
@@ -86,22 +93,23 @@ namespace ProcessContainers {
         friend class LXCContainerAdministrator;
 
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
+    public:
         LXCContainer(const LXCContainer&) = delete;
+        ~LXCContainer();
         LXCContainer& operator=(const LXCContainer&) = delete;
 
-    public:
-        const string Id() const override;
+        const string& Id() const override;
         uint32_t Pid() const override;
-        MemoryInfo Memory() const override;
-        CPUInfo Cpu() const override;
-        NetworkInterfaceIterator* NetworkInterfaces() const override;
+        Core::ProxyType<IMemoryInfo> Memory() const override;
+        Core::ProxyType<IProcessorInfo> Cpu() const override;
+        Core::ProxyType<INetworkInterfaceIterator> NetworkInterfaces() const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
         void AddRef() const override;
-        uint32_t Release() override;
+        uint32_t Release() const override;
 
     protected:
         void InheritRequestedEnvironment();
@@ -119,7 +127,7 @@ namespace ProcessContainers {
 #endif
     };
 
-    class LXCContainerAdministrator : public BaseAdministrator<LXCContainer, IContainerAdministrator> {
+    class LXCContainerAdministrator : public BaseAdministrator<LXCContainer, Lockable<IContainerAdministrator>> {
         friend class LXCContainer;
         friend class Core::SingletonType<LXCContainerAdministrator>;
 

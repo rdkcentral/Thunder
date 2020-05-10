@@ -22,22 +22,14 @@
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
+#include "processcontainers/common/Lockable.h"
+#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
+    using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<Lockable<IContainer>>>;
 
-    class RunCNetworkInterfaceIterator : public NetworkInterfaceIterator
-    {
-    public:
-        RunCNetworkInterfaceIterator();
-        ~RunCNetworkInterfaceIterator();
-
-        std::string Name() const override;
-        uint32_t NumIPs() const override;
-        std::string IP(uint32_t id) const override;
-    };
-
-    class RunCContainer : public CGroupContainerInfo<IContainer>
+    class RunCContainer : public RunCContainerMixins
     {
     private:
         friend class RunCContainerAdministrator;
@@ -49,17 +41,15 @@ namespace ProcessContainers {
         virtual ~RunCContainer();
 
         // IContainerMethods
-        const string Id() const override;
+        const string& Id() const override;
         uint32_t Pid() const override;
-        NetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
         // Lifetime management
         void AddRef() const override;
-        uint32_t Release() override;
-
+        uint32_t Release() const override;
     private:
         mutable uint32_t _refCount;
         string _name;
@@ -68,7 +58,7 @@ namespace ProcessContainers {
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
-    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, IContainerAdministrator>
+    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, Lockable<IContainerAdministrator>>
     {
     private:
         friend class RunCContainer;

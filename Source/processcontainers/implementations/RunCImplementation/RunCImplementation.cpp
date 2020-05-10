@@ -100,40 +100,6 @@ public:
     
 namespace ProcessContainers
 {
-    // NetworkInterfaceIterator
-    // ----------------------------------
-    RunCNetworkInterfaceIterator::RunCNetworkInterfaceIterator()
-        : NetworkInterfaceIterator()
-    {
-        TRACE_L1("RunCNetworkInterfaceIterator::RunCNetworkInterfaceIterator() not implemented")
-    }
-
-    RunCNetworkInterfaceIterator::~RunCNetworkInterfaceIterator()
-    {
-        TRACE_L1("RunCNetworkInterfaceIterator::~RunCNetworkInterfaceIterator() not implemented")
-    }
-
-    std::string RunCNetworkInterfaceIterator::Name() const 
-    {
-        TRACE_L1("RunCNetworkInterfaceIterator::Name() not implemented")
-
-        return "";
-    }
-
-    uint32_t RunCNetworkInterfaceIterator::NumIPs() const 
-    {
-        TRACE_L1("RunCNetworkInterfaceIterator::NumIPs() not implemented")
-
-        return 0;
-    }
-
-    std::string RunCNetworkInterfaceIterator::IP(uint32_t id) const 
-    {
-        TRACE_L1("RunCNetworkInterfaceIterator::IP() not implemented")
-
-        return "";
-    }
-
     // Container administrator
     // ----------------------------------
     IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
@@ -156,10 +122,10 @@ namespace ProcessContainers
                 if (ContainerNameTaken(id)) {
                     DestroyContainer(id);
                 }
-                _adminLock.Lock();
+                this->InternalLock();
                 RunCContainer* container = new RunCContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
-                _adminLock.Unlock();
+                this->InternalUnlock();
 
                 return container;
             }
@@ -215,7 +181,7 @@ namespace ProcessContainers
     // Container
     // ------------------------------------
     RunCContainer::RunCContainer(const string& name, const string& path, const string& logPath)
-        : CGroupContainerInfo(name)
+        : RunCContainerMixins(name)
         , _refCount(1)
         , _name(name)        
         , _path(path)
@@ -227,10 +193,16 @@ namespace ProcessContainers
 
     RunCContainer::~RunCContainer() 
     {
+        auto& admin = static_cast<RunCContainerAdministrator&>(RunCContainerAdministrator::Instance());
+        
+        if (admin.ContainerNameTaken(_name) == true) {
+            Stop(Core::infinite);
+        }
 
+        admin.RemoveContainer(this);
     }  
 
-    const string RunCContainer::Id() const 
+    const string& RunCContainer::Id() const 
     {
         return _name;
     }
@@ -271,11 +243,6 @@ namespace ProcessContainers
         }
         
         return returnedPid;
-    }
-
-    NetworkInterfaceIterator* RunCContainer::NetworkInterfaces() const
-    {
-        return new RunCNetworkInterfaceIterator();
     }
 
     bool RunCContainer::IsRunning() const
@@ -353,17 +320,10 @@ namespace ProcessContainers
         Core::InterlockedIncrement(_refCount);
     };
 
-    uint32_t RunCContainer::Release()
+    uint32_t RunCContainer::Release() const
     {
         uint32_t result = Core::ERROR_NONE;
-        auto& admin = static_cast<RunCContainerAdministrator&>(RunCContainerAdministrator::Instance());
-
         if (Core::InterlockedDecrement(_refCount) == 0) {
-            if (admin.ContainerNameTaken(_name) == true) {
-                Stop(Core::infinite);
-            }
-
-            admin.RemoveContainer(this);
             delete this;
 
             result = Core::ERROR_DESTRUCTION_SUCCEEDED;

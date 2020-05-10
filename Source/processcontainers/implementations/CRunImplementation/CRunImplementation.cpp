@@ -8,40 +8,6 @@ namespace WPEFramework
 {    
 namespace ProcessContainers
 {
-    // NetworkInterfaceIterator
-    // ----------------------------------
-    CRunNetworkInterfaceIterator::CRunNetworkInterfaceIterator()
-        : NetworkInterfaceIterator()
-    {
-        TRACE_L1("CRunNetworkInterfaceIterator::CRunNetworkInterfaceIterator() not implemented")
-    }
-
-    CRunNetworkInterfaceIterator::~CRunNetworkInterfaceIterator()
-    {
-        TRACE_L1("CRunNetworkInterfaceIterator::~CRunNetworkInterfaceIterator() not implemented")
-    }
-
-    std::string CRunNetworkInterfaceIterator::Name() const 
-    {
-        TRACE_L1("CRunNetworkInterfaceIterator::Name() not implemented")
-
-        return "";
-    }
-
-    uint32_t CRunNetworkInterfaceIterator::NumIPs() const 
-    {
-        TRACE_L1("CRunNetworkInterfaceIterator::NumIPs() not implemented")
-
-        return 0;
-    }
-
-    std::string CRunNetworkInterfaceIterator::IP(uint32_t id) const 
-    {
-        TRACE_L1("CRunNetworkInterfaceIterator::IP() not implemented")
-
-        return "";
-    }
-
     // Container administrator
     // ----------------------------------
     IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
@@ -60,10 +26,10 @@ namespace ProcessContainers
             Core::File configFile(path + "/Container/config.json");
 
             if (configFile.Exists()) {
-                _adminLock.Lock();
+                this->InternalLock();
                 CRunContainer* container = new CRunContainer(id, path + "/Container", logpath);
                 _containers.push_back(container);
-                _adminLock.Unlock();
+                this->InternalUnlock();
 
                 return container;
             }
@@ -140,10 +106,15 @@ namespace ProcessContainers
 
     CRunContainer::~CRunContainer() 
     {
+        if (_created == true) {
+            Stop(Core::infinite);
+        }    
 
+        auto& administrator = static_cast<CRunContainerAdministrator&>(CRunContainerAdministrator::Instance());
+        administrator.RemoveContainer(this);
     }  
 
-    const string CRunContainer::Id() const 
+    const string& CRunContainer::Id() const 
     {
         return _name;
     }
@@ -163,11 +134,6 @@ namespace ProcessContainers
         return status.pid;
     }
     
-    NetworkInterfaceIterator* CRunContainer::NetworkInterfaces() const
-    {
-        return new CRunNetworkInterfaceIterator();
-    }
-
     bool CRunContainer::IsRunning() const
     {
         bool result = true;
@@ -258,20 +224,12 @@ namespace ProcessContainers
         Core::InterlockedIncrement(_refCount);
     };
 
-    uint32_t CRunContainer::Release()
+    uint32_t CRunContainer::Release() const
     {
         uint32_t result = Core::ERROR_NONE;
 
         if (Core::InterlockedDecrement(_refCount) == 0) {
-            if (_created == true) {
-                Stop(Core::infinite);
-            }    
-
-            auto& administrator = static_cast<CRunContainerAdministrator&>(CRunContainerAdministrator::Instance());
-            administrator.RemoveContainer(this);
-
             delete this;
-
             result = Core::ERROR_DESTRUCTION_SUCCEEDED;
         }
 

@@ -24,6 +24,92 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
+    struct CGroupMemoryInfo : public ProcessContainers::IMemoryInfo {
+        CGroupMemoryInfo()
+            : _allocated(UINT64_MAX)
+            , _resident(UINT64_MAX)
+            , _shared(UINT64_MAX)
+        {
+        }
+
+        uint64_t Allocated() const
+        {
+            return _allocated;
+        }
+
+        uint64_t Resident() const
+        {
+            return _resident;
+        }
+
+        uint64_t Shared() const
+        {
+            return _shared;
+        }
+
+        void Allocated(uint64_t value)
+        {
+            _allocated = value;
+        }
+
+        void Resident(uint64_t value)
+        {
+            _resident = value;
+        }
+
+        void Shared(uint64_t value)
+        {
+            _shared = value;
+        }
+    private:
+        uint64_t _allocated;
+        uint64_t _resident;
+        uint64_t _shared;
+        mutable uint32_t _refCount;
+    };
+
+    struct CGroupProcessorInfo : public ProcessContainers::IProcessorInfo {
+        CGroupProcessorInfo() 
+            : _coresUsage()
+            , _refCount(1)
+        {
+            
+        }
+
+        uint64_t TotalUsage() const
+        {
+            return _totalUsage;
+        }
+        
+        uint64_t CoreUsage(uint32_t coreNum) const
+        {
+            uint64_t usage;
+
+            if (coreNum >= _coresUsage.size()) {
+                usage = UINT64_MAX;
+            } else {
+                usage = _coresUsage[coreNum];
+            }
+
+            return usage;
+        }
+
+        void SetCores(std::vector<uint64_t>&& cores)
+        {
+            _coresUsage = std::move(cores);
+
+            _totalUsage = 0;
+            for (auto& usage : _coresUsage) {
+                _totalUsage += usage;
+            }
+        }
+        
+    private:
+        std::vector<uint64_t> _coresUsage;
+        uint64_t _totalUsage;
+        mutable uint32_t _refCount;
+    };
+
     template <typename Mixin> // IContainer Mixin
     class CGroupContainerInfo : public Mixin {
     public:
@@ -33,12 +119,12 @@ namespace ProcessContainers {
 
         }
 
-        IContainer::MemoryInfo Memory() const override
+        Core::ProxyType<IMemoryInfo> Memory() const override
         {
-            IContainer::MemoryInfo result {UINT64_MAX, UINT64_MAX, UINT64_MAX};
+            Core::ProxyType<CGroupMemoryInfo> result(Core::ProxyType<CGroupMemoryInfo>::Create());
 
             // Load total allocated memory
-            string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";      
+            string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";   
 
             char buffer[2048];
             auto fd = open(_memoryInfoPath.c_str(), O_RDONLY);
@@ -47,7 +133,7 @@ namespace ProcessContainers {
                 size_t bytesRead = read(fd, buffer, sizeof(buffer));
 
                 if (bytesRead > 0) {
-                    result.allocated = std::stoll(buffer);
+                    result->Allocated(std::stoll(buffer));
                 }
                 
                 close(fd);
@@ -79,9 +165,9 @@ namespace ProcessContainers {
                         uint64_t value = std::stoll(token);
 
                         if (strcmp(label, "rss") == 0) 
-                            result.resident = value;
+                            result->Resident(value);
                         else if (strcmp(label, "mapped_file") == 0) 
-                            result.shared = value;
+                            result->Shared(value);
 
                         token = strtok_r(NULL, " \n", &tmp);
                     }
@@ -92,33 +178,19 @@ namespace ProcessContainers {
                 TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
             }
 
-            return result;    
+            return Core::ProxyType<IMemoryInfo>(result);    
         }
 
-        IContainer::CPUInfo Cpu() const override
+        Core::ProxyType<IProcessorInfo> Cpu() const override
         {
-            IContainer::CPUInfo output {UINT64_MAX, std::vector<uint64_t>()};
-
-            // Load total cpu time
-            string cpuUsagePath = "/sys/fs/cgroup/cpuacct/" + _name + "/cpuacct.usage";
-
-            char buffer[2048];
-            auto fd = open(cpuUsagePath.c_str(), O_RDONLY);
-
-            if (fd != 0) {
-                uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
-
-                if (bytesRead > 0) {
-                    output.total = atoi((char*)buffer);
-                }            
-
-                close(fd);
-            }
+            Core::ProxyType<CGroupProcessorInfo> result(Core::ProxyType<CGroupProcessorInfo>::Create());
+            std::vector<uint64_t> coresUsage;
 
             // Load per-core cpu time
             string cpuPerCoreUsagePath = "/sys/fs/cgroup/cpuacct/" + _name + "/cpuacct.usage_percpu";
-            fd = open(cpuPerCoreUsagePath.c_str(), O_RDONLY);
-
+            auto fd = open(cpuPerCoreUsagePath.c_str(), O_RDONLY);
+            char buffer[2048];
+        
             if (fd != 0) {
                 uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
 
@@ -129,7 +201,7 @@ namespace ProcessContainers {
                     while (token != nullptr) {
                         // Sometimes (but not always for some reason?) a nonprintable character is caught as a separate token.
                         if (isdigit(token[0])) {
-                            output.cores.push_back(atoi(token));
+                            coresUsage.push_back(atoi(token));
                         }
                         token = strtok_r(NULL, " \n", &tmp);
                     }
@@ -137,8 +209,9 @@ namespace ProcessContainers {
 
                 close(fd);
             }
+            result->SetCores(std::move(coresUsage));
 
-            return output;
+            return Core::ProxyType<IProcessorInfo>(result);
         }
     private:
         string _name;

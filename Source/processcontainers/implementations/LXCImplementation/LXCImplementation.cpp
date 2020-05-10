@@ -18,11 +18,11 @@
  */
 
 #include "LXCImplementation.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
     LXCNetworkInterfaceIterator::LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer)
-        : NetworkInterfaceIterator()
     {
         char buf[256];
 
@@ -58,8 +58,50 @@ namespace ProcessContainers {
 
             _interfaces.push_back(interface);
         }
+    }
 
-        _count = _interfaces.size();
+    bool LXCNetworkInterfaceIterator::Next()
+    {
+        if (_current == UINT32_MAX) {
+            _current = 0;
+        } else {
+            ++_current;
+        }
+
+        return IsValid();
+    }
+
+    bool LXCNetworkInterfaceIterator::Previous()
+    {
+        if (_current == 0) {
+            _current = UINT32_MAX;
+        } else if(_current == UINT32_MAX) {
+            _current = _interfaces.size() - 1;
+        } else {
+            --_current;
+        }
+
+        return IsValid();
+    }
+
+    void LXCNetworkInterfaceIterator::Reset(const uint32_t position)
+    {
+        _current = UINT32_MAX;
+    }
+
+    bool LXCNetworkInterfaceIterator::IsValid() const
+    {
+        return _current < _interfaces.size();
+    }
+
+    uint32_t LXCNetworkInterfaceIterator::Index() const
+    {
+        return _current;
+    }
+
+    uint32_t LXCNetworkInterfaceIterator::Count() const
+    {
+        return _interfaces.size();
     }
 
     LXCNetworkInterfaceIterator::~LXCNetworkInterfaceIterator()
@@ -158,7 +200,18 @@ namespace ProcessContainers {
         };
     }
 
-    const string LXCContainer::Id() const 
+    LXCContainer::~LXCContainer() 
+    {
+        if (IsRunning()) {
+            Stop(2000);
+        }
+
+        TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
+
+        static_cast<LXCContainerAdministrator&>(LXCContainerAdministrator::Instance()).RemoveContainer(this);
+    }
+
+    const string& LXCContainer::Id() const 
     {
         return _name;
     }
@@ -168,17 +221,21 @@ namespace ProcessContainers {
         return _pid;
     }
 
-    LXCContainer::MemoryInfo LXCContainer::Memory() const  
+    Core::ProxyType<IMemoryInfo> LXCContainer::Memory() const  
     {
         ASSERT(_lxcContainer != nullptr);
 
-        MemoryInfo result {UINT64_MAX, UINT64_MAX, UINT64_MAX};
+        auto result(Core::ProxyType<CGroupMemoryInfo>::Create());
+
         char buffer[2048];
         int32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
 
         // Not sure if "read < sizeof(buffer)" is really needed, but it is checked in official lxc tools sources
         if ((read > 0) && (read < sizeof(buffer))) {
-            int32_t scanned = sscanf(buffer, "%llu", &result.allocated);
+            uint64_t allocated;
+            int32_t scanned = sscanf(buffer, "%llu", &allocated);
+
+            result->Allocated(allocated);
 
             if (scanned != 1) {
                 TRACE(Trace::Warning, ("Could not read allocated memory of LXC container"));
@@ -201,9 +258,9 @@ namespace ProcessContainers {
                 }
 
                 if (strcmp(name, "rss") == 0) {
-                    result.resident = value;
+                    result->Resident(value);
                 } else if (strcmp(name, "mapped_file") == 0) {
-                    result.shared = value;
+                    result->Shared(value);
                 }
 
                 position += charsRead;
@@ -212,24 +269,18 @@ namespace ProcessContainers {
             TRACE(Trace::Warning, ("Could not read memory usage of LXC container"));
         } 
 
-        return result;
+        return Core::ProxyType<IMemoryInfo>(result);
     }
 
-    LXCContainer::CPUInfo LXCContainer::Cpu() const
+    Core::ProxyType<IProcessorInfo> LXCContainer::Cpu() const
     {
         ASSERT(_lxcContainer != nullptr);
 
-        CPUInfo result;
+        auto result(Core::ProxyType<CGroupProcessorInfo>::Create());
+        std::vector<uint64_t> cores;
+
         char buffer[512];
-        uint32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage", buffer, sizeof(buffer));
-
-        if (read != 0 && read < sizeof(buffer)) {
-            result.total = strtoll(buffer, nullptr, 10);
-        } else {
-            TRACE(Trace::Warning, ("Could not read total cpu usage of LXC container"));
-        } 
-
-        read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
+        uint32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "cpuacct.usage_percpu", buffer, sizeof(buffer));
 
         if ((read != 0) && (static_cast<uint32_t>(read) < sizeof(buffer))) {
             char* pos = buffer;
@@ -238,7 +289,7 @@ namespace ProcessContainers {
             // We might know maximum number of cores in advance
             static const uint32_t numCores = std::thread::hardware_concurrency();
             if (numCores != 0)
-                result.cores.reserve(numCores);
+                cores.reserve(numCores);
 
             while(true) {
                 uint64_t value = strtoull(pos, &end, 10);
@@ -246,19 +297,23 @@ namespace ProcessContainers {
                 if (pos == end)
                     break;
 
-                result.cores.push_back(value);
+                cores.push_back(value);
                 pos = end;
             }
         } else {
             TRACE(Trace::Warning, ("Could not per thread cpu-usage of LXC container"));
         }
 
-        return result;
+        result->SetCores(std::move(cores));
+
+        return Core::ProxyType<IProcessorInfo>(result);
     }
 
-    NetworkInterfaceIterator* LXCContainer::NetworkInterfaces() const
+    Core::ProxyType<INetworkInterfaceIterator> LXCContainer::NetworkInterfaces() const
     {
-        return new LXCNetworkInterfaceIterator(_lxcContainer);
+        return Core::ProxyType<INetworkInterfaceIterator>(
+            Core::ProxyType<LXCNetworkInterfaceIterator>::Create(_lxcContainer)
+        );
     }
 
     bool LXCContainer::IsRunning() const 
@@ -339,19 +394,12 @@ namespace ProcessContainers {
         lxc_container_get(_lxcContainer);
     }
 
-    uint32_t LXCContainer::Release() {
+    uint32_t LXCContainer::Release() const {
         uint32_t retval = WPEFramework::Core::ERROR_NONE;
 
         uint32_t lxcresult = lxc_container_put(_lxcContainer);
         if (WPEFramework::Core::InterlockedDecrement(_referenceCount) == 0) {
-            if (IsRunning()) {
-                Stop(2000);
-            }
-
             ASSERT(lxcresult == 1); // if 1 is returned, lxc also released the container
-            TRACE(ProcessContainers::ProcessContainerization, (_T("Container [%s] released"), _name.c_str()));
-
-            static_cast<LXCContainerAdministrator&>(LXCContainerAdministrator::Instance()).RemoveContainer(this);
 
             delete this;
             retval = WPEFramework::Core::ERROR_DESTRUCTION_SUCCEEDED;
@@ -406,8 +454,6 @@ namespace ProcessContainers {
 
     IContainer* LXCContainerAdministrator::Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) 
     {
-        _adminLock.Lock();
-
         LXCContainer* container =nullptr;
 
         searchpaths.Reset(0);
@@ -420,9 +466,10 @@ namespace ProcessContainers {
                 LxcContainerType *c = clist[index];
                 if( strcmp(c->name, "Container") == 0 ) {
                     
+                    this->InternalLock();
                     container = new LXCContainer(name, c, containerLogDir, configuration, searchpaths.Current());
-
                     _containers.push_back(container);
+                    this->InternalUnlock();
                 }
                 else {
                     lxc_container_put(c);
@@ -433,8 +480,6 @@ namespace ProcessContainers {
                 free(clist);
             }
         };
-
-        _adminLock.Unlock();
 
         if( container == nullptr ) {
             TRACE(ProcessContainers::ProcessContainerization, (_T("Container Definition for name [%s] could not be found!"), name.c_str()));

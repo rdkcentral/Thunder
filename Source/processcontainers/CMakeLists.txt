@@ -30,7 +30,7 @@ option(PROCESSCONTAINERS_CLIB
 
 # Construct a library object
 add_library(${TARGET} SHARED
-        ProcessContainer.cpp
+        #ProcessContainer.cpp
         Module.cpp
         )
 

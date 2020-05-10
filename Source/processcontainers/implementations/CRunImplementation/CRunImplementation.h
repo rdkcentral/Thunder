@@ -22,6 +22,8 @@
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 #include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/common/Lockable.h"
+#include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 extern "C" {
     #include <crun/error.h>
@@ -32,19 +34,9 @@ extern "C" {
 
 namespace WPEFramework {
 namespace ProcessContainers {
+    using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<Lockable<IContainer>>>;
 
-    class CRunNetworkInterfaceIterator : public NetworkInterfaceIterator
-    {
-    public:
-        CRunNetworkInterfaceIterator();
-        ~CRunNetworkInterfaceIterator();
-
-        std::string Name() const override;
-        uint32_t NumIPs() const override;
-        std::string IP(uint32_t id) const override;
-    };
-
-    class CRunContainer : public CGroupContainerInfo<IContainer>
+    class CRunContainer : public CRunContainerMixins
     {
     private:
         friend class CRunContainerAdministrator;
@@ -56,16 +48,15 @@ namespace ProcessContainers {
         virtual ~CRunContainer();
 
         // IContainerMethods
-        const string Id() const override;
+        const string& Id() const override;
         uint32_t Pid() const override;
-        NetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
 
         // Lifetime management
         void AddRef() const override;
-        uint32_t Release() override;
+        uint32_t Release() const override;
 
     private:
         uint32_t ClearLeftovers();
@@ -83,7 +74,7 @@ namespace ProcessContainers {
         libcrun_error_t _error;
     };
 
-    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, IContainerAdministrator>
+    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, Lockable<IContainerAdministrator>>
     {
     private:
         friend class Core::SingletonType<CRunContainerAdministrator>;

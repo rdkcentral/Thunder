@@ -20,44 +20,45 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
+#include "BaseContainerIterator.h"
+#include "Lockable.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    template <typename TContainer, typename Mixin> // IContainerAdministrator Mixin
+    template <typename TContainer, typename Mixin> // IContainerAdministrator, Lockable Mixin
     class BaseAdministrator : public Mixin {
     public:
         BaseAdministrator() 
-            : _adminLock()
-            , _containers()
+            : _containers()
         {
 
         }
 
-        std::vector<string> Containers() override
+        IContainerIterator* Containers() override
         {
             std::vector<string> result;
 
-            _adminLock.Lock();
+            Mixin::InternalLock();
             for (auto container : _containers) {
                 result.push_back(container->Id());
             }
-            _adminLock.Unlock();
+            Mixin::InternalUnlock();
 
-            return result;
+            return new BaseContainerIterator(std::move(result));
         }
 
         IContainer* Get(const string& id) override
         {
             IContainer* result = nullptr;
 
-            _adminLock.Lock();
+            Mixin::InternalLock();
             auto found = std::find_if(_containers.begin(), _containers.end(), [&id](const IContainer* c) {return c->Id() == id;});
             if (found != _containers.end()) {
                 result = *found;
                 result->AddRef();
             }
-            _adminLock.Unlock();
+            Mixin::InternalUnlock();
 
             return result;
         }
@@ -65,14 +66,12 @@ namespace ProcessContainers {
         // Call only from TContainer when destructing instance!
         void RemoveContainer(TContainer* container)
         {
-            _adminLock.Lock();
+            Mixin::InternalLock();
             _containers.remove(container);
-            _adminLock.Unlock();
+            Mixin::InternalUnlock();
         }
 
     protected:
-
-        Core::CriticalSection _adminLock;
         std::list<TContainer*> _containers;
     };
 
