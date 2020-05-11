@@ -78,9 +78,10 @@ namespace ProcessContainers {
         friend class Core::SingletonType<CContainerAdministrator>;
 
         CContainerAdministrator();
+    public:
         CContainerAdministrator(const CContainerAdministrator&) = delete;
         CContainerAdministrator& operator=(const CContainerAdministrator&) = delete;
-    public:
+
         ~CContainerAdministrator();
 
         IContainer* Container(const string& id, 

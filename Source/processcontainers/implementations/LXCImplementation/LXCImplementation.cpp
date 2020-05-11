@@ -468,7 +468,7 @@ namespace ProcessContainers {
                     
                     this->InternalLock();
                     container = new LXCContainer(name, c, containerLogDir, configuration, searchpaths.Current());
-                    _containers.push_back(container);
+                    InsertContainer(container);
                     this->InternalUnlock();
                 }
                 else {

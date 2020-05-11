@@ -80,10 +80,10 @@ namespace ProcessContainers {
         friend class Core::SingletonType<CRunContainerAdministrator>;
 
         CRunContainerAdministrator();
+    public:
         CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
         CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
 
-    public:
         IContainer* Container(const string& id, 
                                 IStringIterator& searchpaths, 
                                 const string& logpath,

@@ -35,9 +35,9 @@ namespace ProcessContainers {
         friend class RunCContainerAdministrator;
 
         RunCContainer(const string& name, const string& path, const string& logPath);
+    public:
         RunCContainer(const RunCContainer&) = delete;
         RunCContainer& operator=(const RunCContainer&) = delete;
-    public:
         virtual ~RunCContainer();
 
         // IContainerMethods

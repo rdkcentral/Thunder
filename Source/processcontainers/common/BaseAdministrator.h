@@ -35,17 +35,33 @@ namespace ProcessContainers {
 
         }
 
-        IContainerIterator* Containers() override
+        virtual ~BaseAdministrator() 
         {
-            std::vector<string> result;
+            if (_containers.size() > 0) {
+                TRACE_L1("There are still active containers when shutting down administrator!");
+                
+                while (_containers.size() > 0) {
+                    _containers.back()->Release();
+                    _containers.pop_back();
+                }
+            }
+        }
+
+        Core::ProxyType<IContainerIterator> Containers() override
+        {
+            auto result(Core::ProxyType<BaseContainerIterator>::Create());
+            
+            std::vector<string> containers;
+            containers.reserve(_containers.size());
 
             Mixin::InternalLock();
-            for (auto container : _containers) {
-                result.push_back(container->Id());
+            for (auto& container : _containers) {
+                containers.push_back(container->Id());
             }
-            Mixin::InternalUnlock();
+            Mixin::InternalUnlock();            
 
-            return new BaseContainerIterator(std::move(result));
+            result->Set(std::move(containers));
+            return Core::ProxyType<IContainerIterator>(result);
         }
 
         IContainer* Get(const string& id) override
@@ -72,6 +88,13 @@ namespace ProcessContainers {
         }
 
     protected:
+        // Must be called in internal Lock!
+        void InsertContainer(TContainer* container)
+        {
+            _containers.push_back(container);
+        }
+
+    private:
         std::list<TContainer*> _containers;
     };
 

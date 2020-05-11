@@ -26,12 +26,10 @@ namespace ProcessContainers {
 
     class BaseContainerIterator : public IContainerIterator {
     public:
-        BaseContainerIterator(const std::vector<string>&& idList)
-            : _ids(idList)
+        BaseContainerIterator()
+            : _ids()
             , _current(UINT32_MAX)
-            , _refCount(1)
         {
-
         }
 
         virtual ~BaseContainerIterator() {};
@@ -83,25 +81,13 @@ namespace ProcessContainers {
             return _ids[_current];
         }
 
-        void AddRef() const 
+        void Set(std::vector<string>&& ids) 
         {
-            Core::InterlockedIncrement(_refCount);
-        };
-
-        uint32_t Release() const 
-        {
-            uint32_t result = Core::ERROR_NONE;
-            if (Core::InterlockedDecrement(_refCount) == 0) {
-                delete this;
-                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-            }
-
-            return result;
-        };
+            _ids = std::move(ids);
+        }
     private:
         std::vector<string> _ids;
         uint32_t _current;
-        mutable uint32_t _refCount;
     };
 
 } // ProcessContainers

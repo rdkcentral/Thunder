@@ -130,7 +130,7 @@ namespace ProcessContainers {
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
 
         // Returns ids of all created containers
-        virtual IContainerIterator* Containers() = 0;
+        virtual Core::ProxyType<IContainerIterator> Containers() = 0;
         
         // Return a container by its ID. Returns nullptr if container is not found
         // It needs to be released.

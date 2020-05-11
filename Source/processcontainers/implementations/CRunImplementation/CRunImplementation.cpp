@@ -28,7 +28,7 @@ namespace ProcessContainers
             if (configFile.Exists()) {
                 this->InternalLock();
                 CRunContainer* container = new CRunContainer(id, path + "/Container", logpath);
-                _containers.push_back(container);
+                InsertContainer(container);
                 this->InternalUnlock();
 
                 return container;
@@ -46,14 +46,7 @@ namespace ProcessContainers
 
     CRunContainerAdministrator::~CRunContainerAdministrator()
     {
-        if (_containers.size() > 0) {
-            TRACE_L1("There are still active containers when shutting down administrator!");
-            
-            while (_containers.size() > 0) {
-                while(_containers.back()->Release() != Core::ERROR_DESTRUCTION_SUCCEEDED) {};
-                _containers.pop_back();
-            }
-        }
+
     }
 
     void CRunContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)

@@ -124,7 +124,7 @@ namespace ProcessContainers
                 }
                 this->InternalLock();
                 RunCContainer* container = new RunCContainer(id, path + "/Container", logpath);
-                _containers.push_back(container);
+                InsertContainer(container);
                 this->InternalUnlock();
 
                 return container;
@@ -142,14 +142,7 @@ namespace ProcessContainers
 
     RunCContainerAdministrator::~RunCContainerAdministrator()
     {
-        if (_containers.size() > 0) {
-            TRACE_L1("There are still active containers when shutting down administrator!");
-            
-            while (_containers.size() > 0) {
-                _containers.back()->Release();
-                _containers.pop_back();
-            }
-        }
+        
     }
 
     void RunCContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)

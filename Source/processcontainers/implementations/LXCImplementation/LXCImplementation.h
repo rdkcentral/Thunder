@@ -136,11 +136,11 @@ namespace ProcessContainers {
         static constexpr char const* configFileName = "config";
         static constexpr uint32_t maxReadSize = 32 * (1 << 10); // 32KiB
     private:
-        LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
-        LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
         LXCContainerAdministrator();
 
     public:
+        LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
+        LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
         virtual ~LXCContainerAdministrator();
 
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
