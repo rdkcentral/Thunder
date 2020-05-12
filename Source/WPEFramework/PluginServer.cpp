@@ -125,11 +125,11 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             return (result);
         }
         //! Allow a JSONRPC message to be checked before it is offered for processing.
-        virtual bool Allowed(const Core::JSONRPC::Message& message) const override
+        bool Allowed(const Core::JSONRPC::Message& message) const override
         {
             return ((_hasSecurity == false) || CheckMessage(message));
         }
-        string Token(void) const
+        string Token(void) const override
         {
             return (EMPTY_STRING);
         }
