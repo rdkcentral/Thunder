@@ -209,9 +209,17 @@ namespace PluginHost {
 
         //! Allow a JSONRPC message to be checked before it is offered for processing.
         virtual bool Allowed(const Core::JSONRPC::Message& message) const = 0;
+
+        // The security validation is based on a token. This token holds a payload.
+        // The payload is used to determine the authorization that goes with this
+        // security interface. Others (plugins) that would like to know the payload 
+        // for their authentication/authorization might requre this payload as well.
+        // Hereby we give access to the payload that identifies the source/user of
+        // this ISecurity interface.
+        virtual string Identification() const = 0;
     };
 
-	struct IAuthenticate : virtual public Core::IUnknown {
+    struct IAuthenticate : virtual public Core::IUnknown {
 
         enum {
             ID = RPC::ID_AUTHENTICATE
