@@ -58,7 +58,7 @@ namespace Core {
             std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
             std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
             _administration->_lockPID = 0;
-            _administration->_size = (_buffer.Size() - sizeof(struct control));
+            _administration->_size = static_cast<uint32_t>(_buffer.Size() - sizeof(struct control));
 
             _administration->_reserved = 0;
             _administration->_reservedWritten = 0;
@@ -95,19 +95,6 @@ namespace Core {
         }
 
         return (loaded);
-    }
-
-    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
-        : CyclicBuffer( fileName, 
-                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
-                        bufferSize,
-                        overwrite
-                        ) 
-    {
-    }
-
-    CyclicBuffer::~CyclicBuffer()
-    {
     }
 
     void CyclicBuffer::AdminLock()

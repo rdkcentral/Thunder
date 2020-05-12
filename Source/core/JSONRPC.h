@@ -98,6 +98,9 @@ namespace Core {
                     case Core::ERROR_UNKNOWN_KEY:
                         Code = -32601; // Method not found
                         break;
+                    case Core::ERROR_PRIVILIGED_REQUEST:
+                        Code = -32604; // Priviliged
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         break;
@@ -647,8 +650,6 @@ namespace Core {
 
                 HandlerMap::iterator index = _handlers.find(Message::Method(method));
                 if (index != _handlers.end()) {
-                    result = Core::ERROR_PRIVILIGED_REQUEST;
-                    if ((_validate == nullptr) || (_validate(connection.Token(), method, paranme)) {
                     result = index->second.Invoke(connection, method, parameters, response);
                 }
                 return (result);
