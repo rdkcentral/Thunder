@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-    { PluginHost::InputHandler::DEVICE, _TXT("device") },
+            { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-namespace PluginHost
+        namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -128,6 +128,10 @@ namespace PluginHost
         virtual bool Allowed(const Core::JSONRPC::Message& message) const override
         {
             return ((_hasSecurity == false) || CheckMessage(message));
+        }
+        string Token(void) const
+        {
+            return (EMPTY_STRING);
         }
 
         //  IUnknown methods

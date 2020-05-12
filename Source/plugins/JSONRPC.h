@@ -20,6 +20,7 @@
 #pragma once
 
 #include "IShell.h"
+#include "IPlugin.h"
 #include "Module.h"
 #include "System.h"
 
@@ -32,7 +33,7 @@ namespace PluginHost {
 
         enum { ID = RPC::ID_DISPATCHER };
 
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& message) = 0;
+        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& message) = 0;
 
         // Methods used directly by the Framework to handle MetaData requirements.
         // There should be no need to call these methods from the implementation directly.
@@ -79,11 +80,15 @@ namespace PluginHost {
         };
 
     public:
+        typedef std::function<bool(const string& token, const string& method, const string& parameters)> TokenCheckFunction;
+
         JSONRPC(const JSONRPC&) = delete;
         JSONRPC& operator=(const JSONRPC&) = delete;
         JSONRPC();
+        JSONRPC(const TokenCheckFunction& validation);
         JSONRPC(const std::vector<uint8_t> versions);
-        virtual ~JSONRPC();
+        JSONRPC(const std::vector<uint8_t> versions, const TokenCheckFunction& validation);
+        ~JSONRPC() override;
 
     public:
         //
@@ -252,56 +257,63 @@ namespace PluginHost {
         {
             handler.Unsubscribe(channelId, eventName, callsign, response);
         }
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
+        Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound) override
         {
             Registration info;
             Core::ProxyType<Core::JSONRPC::Message> response(Message());
             Core::JSONRPC::Handler* source = nullptr;
+            string method(inbound.Designator.Value());
 
             if (inbound.Id.IsSet() == true) {
                 response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
                 response->Id = inbound.Id.Value();
             }
 
-            switch (Destination(inbound.Designator.Value(), source)) {
-            case STATE_INCORRECT_HANDLER:
-                response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
-                response->Error.Text = _T("Destined invoke failed.");
-                break;
-            case STATE_INCORRECT_VERSION:
-                response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
-                response->Error.Text = _T("Requested version is not supported.");
-                break;
-            case STATE_UNKNOWN_METHOD:
-                response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
-                response->Error.Text = _T("Unknown method.");
-                break;
-            case STATE_REGISTRATION:
-                info.FromString(inbound.Parameters.Value());
-                Subscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
-                break;
-            case STATE_UNREGISTRATION:
-                info.FromString(inbound.Parameters.Value());
-                Unsubscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
-                break;
-            case STATE_EXISTS:
-                if (Exists(*source, inbound.Parameters.Value()) == true) {
-                    response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
-                } else {
-                    response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
-                }
-                break;
-            case STATE_CUSTOM:
-                string result;
-                uint32_t code = source->Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), inbound.FullMethod(), inbound.Parameters.Value(), result);
-                if (response.IsValid() == true) {
-                    if (code == static_cast<uint32_t>(~0)) {
-                        response.Release();
-                    } else if (code == Core::ERROR_NONE) {
-                        response->Result = result;
+            if ((_validate != nullptr) && (_validate(token, method, inbound.Parameters.Value()) == false)) {
+                response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                response->Error.Text = _T("method invokation not allowed.");
+            } 
+            else {
+                switch (Destination(method, source)) {
+                case STATE_INCORRECT_HANDLER:
+                    response->Error.SetError(Core::ERROR_INVALID_DESIGNATOR);
+                    response->Error.Text = _T("Destined invoke failed.");
+                    break;
+                case STATE_INCORRECT_VERSION:
+                    response->Error.SetError(Core::ERROR_INVALID_SIGNATURE);
+                    response->Error.Text = _T("Requested version is not supported.");
+                    break;
+                case STATE_UNKNOWN_METHOD:
+                    response->Error.SetError(Core::ERROR_UNKNOWN_KEY);
+                    response->Error.Text = _T("Unknown method.");
+                    break;
+                case STATE_REGISTRATION:
+                    info.FromString(inbound.Parameters.Value());
+                    Subscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
+                    break;
+                case STATE_UNREGISTRATION:
+                    info.FromString(inbound.Parameters.Value());
+                    Unsubscribe(*source, channelId, info.Event.Value(), info.Callsign.Value(), *response);
+                    break;
+                case STATE_EXISTS:
+                    if (Exists(*source, inbound.Parameters.Value()) == true) {
+                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_NONE).Text();
                     } else {
-                        response->Error.Code = code;
-                        response->Error.Text = Core::ErrorToString(code);
+                        response->Result = Core::NumberType<uint32_t>(Core::ERROR_UNKNOWN_KEY).Text();
+                    }
+                    break;
+                case STATE_CUSTOM:
+                    string result;
+                    uint32_t code = source->Invoke(Core::JSONRPC::Connection(channelId, inbound.Id.Value()), inbound.FullMethod(), inbound.Parameters.Value(), result);
+                    if (response.IsValid() == true) {
+                        if (code == static_cast<uint32_t>(~0)) {
+                            response.Release();
+                        } else if (code == Core::ERROR_NONE) {
+                            response->Result = result;
+                        } else {
+                            response->Error.Code = code;
+                            response->Error.Text = Core::ErrorToString(code);
+                        }
                     }
                 }
             }
@@ -401,6 +413,7 @@ namespace PluginHost {
         std::list<Core::JSONRPC::Handler> _handlers;
         IShell* _service;
         string _callsign;
+        TokenCheckFunction _validate;
     };
 
     class EXTERNAL JSONRPCSupportsEventStatus : public JSONRPC {
