@@ -79,10 +79,6 @@ namespace Core {
         }
     }
 
-    CyclicBuffer::~CyclicBuffer()
-    {
-    }
-
     bool CyclicBuffer::Validate() {
         bool loaded = (_administration != nullptr);
 
