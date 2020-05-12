@@ -647,6 +647,8 @@ namespace Core {
 
                 HandlerMap::iterator index = _handlers.find(Message::Method(method));
                 if (index != _handlers.end()) {
+                    result = Core::ERROR_PRIVILIGED_REQUEST;
+                    if ((_validate == nullptr) || (_validate(connection.Token(), method, paranme)) {
                     result = index->second.Invoke(connection, method, parameters, response);
                 }
                 return (result);
