@@ -704,7 +704,10 @@ namespace PluginHost
         _services.Load();
 
         // Create input handle
-        _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
+        _inputHandler.Initialize(
+            configuration.Input.Type.Value(), 
+            configuration.Input.Locator.Value(), 
+            configuration.Input.OutputEnabled.Value());
 
         // Initialize static message.
         Service::Initialize();
