@@ -97,19 +97,6 @@ namespace Core {
         return (loaded);
     }
 
-    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
-        : CyclicBuffer( fileName, 
-                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
-                        bufferSize,
-                        overwrite
-                        ) 
-    {
-    }
-
-    CyclicBuffer::~CyclicBuffer()
-    {
-    }
-
     void CyclicBuffer::AdminLock()
     {
 #ifdef __POSIX__
