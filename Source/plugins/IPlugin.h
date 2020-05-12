@@ -216,7 +216,7 @@ namespace PluginHost {
         // for their authentication/authorization might requre this payload as well.
         // Hereby we give access to the payload that identifies the source/user of
         // this ISecurity interface.
-        virtual string Token() const = 0;
+        virtual string Identification() const = 0;
     };
 
     struct IAuthenticate : virtual public Core::IUnknown {
