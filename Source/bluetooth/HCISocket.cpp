@@ -236,7 +236,7 @@ void HCISocket::Abort()
 	hci_filter_set_event(EVT_DISCONN_COMPLETE, &_filter);
 
 	if (setsockopt(Handle(), SOL_HCI, HCI_FILTER, &_filter, sizeof(_filter)) < 0) {
-            printf("Can't set filter:  %s (%d)\n", strerror(errno), errno);
+            TRACE_L1("Can't set filter:  %s (%d)\n", strerror(errno), errno);
         }
     }
 }

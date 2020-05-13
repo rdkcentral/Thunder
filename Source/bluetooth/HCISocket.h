@@ -632,7 +632,7 @@ namespace Bluetooth {
             {
                 ::memset(&(_buffer[4]), 0, sizeof(_buffer) - 4);
             }
-            inline uint32_t Error() const
+            inline uint32_t Result() const
             {
                 return (_error);
             }
@@ -680,32 +680,32 @@ namespace Bluetooth {
                     if (hdr->evt == EVT_CMD_STATUS) {
                         const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
                         if (btohs(cs->opcode) == OPCODE) {
-                            printf(_T("HCI command status: %X:%03X Status=%d\n"),
-                                      cmd_opcode_ogf(cs->opcode), cmd_opcode_ocf(cs->opcode), cs->status);
+                            //printf(_T("HCI command status: %X:%03X Status=%d\n"),
+                            //          cmd_opcode_ogf(cs->opcode), cmd_opcode_ocf(cs->opcode), cs->status);
 
                             if (cs->status == 0) {
                                 // See if we are waiting for an event...
                                 if (RESPONSECODE == static_cast<uint8_t>(~0)) {
-                                    _error = Core::ERROR_NONE;
+                                    _error = 0;
                                 }
+                            } else {
+                                _error = cs->status;
                             }
-                            else {
-                                _error =  Core::ERROR_GENERAL;
-                            }
+
                             result = length;
                         }
                     } else if (hdr->evt == EVT_CMD_COMPLETE) {
                         const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
                         if (btohs(cc->opcode) == OPCODE) {
-                            // printf(_T("HCI command complete: %X:%03X %s\n"),
+                            //printf(_T("HCI command complete: %X:%03X %s\n"),
                             //          cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
 
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
-                                _error = Core::ERROR_GENERAL;
+                                _error = ~0;
                             } else {
                                 // See if we are waiting for an event...
                                 if (RESPONSECODE == static_cast<uint8_t>(~0)) {
-                                    _error = Core::ERROR_NONE;
+                                    _error = 0;
                                     uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_response)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
                                     ::memcpy(&_response, &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
                                 }
@@ -717,12 +717,12 @@ namespace Bluetooth {
                         if (eventMetaData->subevent == RESPONSECODE) {
                             uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_response)), static_cast<uint16_t>(len - EVT_LE_META_EVENT_SIZE));
                             ::memcpy(&_response, &(ptr[EVT_LE_META_EVENT_SIZE]), toCopy);
-                            _error = Core::ERROR_NONE;
+                            _error = 0;
                             result = length;
                         }
                     } else if (hdr->evt == RESPONSECODE) {
                         ::memcpy(&_response, ptr, std::min(static_cast<uint16_t>(sizeof(_response)), len));
-                        _error = Core::ERROR_NONE;
+                        _error = 0;
                         result = length;
                     }
                 }
