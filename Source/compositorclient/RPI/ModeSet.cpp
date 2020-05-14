@@ -8,11 +8,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <drm_fourcc.h>
+#include <drm/drm_fourcc.h>
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <gbm.h>
-#include <drm_fourcc.h>
 
 #define DRM_MAX_DEVICES 16
 
