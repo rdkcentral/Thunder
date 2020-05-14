@@ -21,7 +21,9 @@ message("Setup ${TARGET} v${VERSION}...")
 
 find_package(EGL REQUIRED)
 
-if(VC6)
+option(VIDEO_CORE "Select video core version" "None")
+
+if(VIDEO_CORE STREQUAL "VC6")
     find_package(GBM REQUIRED)
     find_package(LibDRM REQUIRED)
 
