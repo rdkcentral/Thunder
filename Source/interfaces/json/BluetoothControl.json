@@ -167,6 +167,30 @@
           "$ref": "#/common/errors/alreadyreleased"
         }
       ]
+    },
+    "abortpairing": {
+      "summary": "Aborts the pairing process",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device not currently pairing",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
     }
   },
   "properties": {
