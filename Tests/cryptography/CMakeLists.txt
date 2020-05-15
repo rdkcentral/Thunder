@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+option(BUILD_NETFLIX_VAULT_GENERATOR "Build Netflix Vault generator" OFF)
 
 add_executable(cgimptests
         ImplementationTests.c
@@ -88,3 +89,8 @@ target_link_libraries(cgnfsecuritytests
 install(TARGETS cgimptests DESTINATION bin)
 install(TARGETS cgfacetests DESTINATION bin)
 install(TARGETS cgnfsecuritytests DESTINATION bin)
+
+if (BUILD_NETFLIX_VAULT_GENERATOR)
+   add_subdirectory(NetflixVaultGenerator)
+endif (BUILD_NETFLIX_VAULT_GENERATOR)
+
