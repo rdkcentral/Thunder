@@ -23,18 +23,33 @@
 #include <gtest/gtest.h>
 #include <core/core.h>
 
-std::string getMem(std::string result, string func)
+namespace WPEFramework {
+namespace Tests {
+
+enum class Purpose {
+    MEM,
+    SWAP,
+    HOST
+};
+
+enum class Funcion {
+    TOTAL,
+    FREE,
+    UNKNOWN
+};
+
+std::string getMem(std::string result, Funcion func)
 {
     std::string word = "";
     int i = 1;
     std::stringstream iss(result);
     while (iss >> result)
     {
-        if(i == 2 && func == "total"){
+        if(i == 2 && func == Funcion::TOTAL){
             word.assign(result);
             break;
         }/* //retrieves the free memory
-        if(i == 4 && (func == "free")){
+        if(i == 4 && (func == Funcion::FREE)){
             word.assign(result);
             break;
         }*/
@@ -43,7 +58,7 @@ std::string getMem(std::string result, string func)
     return word;
 }
 
-std::string exec(const char* cmd, string purpose, string func) {
+std::string exec(const char* cmd, Purpose purpose, Funcion func) {
     char buffer[128];
     std::string result = "";
     std::string word = "";
@@ -52,15 +67,15 @@ std::string exec(const char* cmd, string purpose, string func) {
     try {
         while (fgets(buffer, sizeof buffer, pipe) != NULL) {
             result = buffer;
-            if (purpose == "mem") {
+            if (purpose == Purpose::MEM) {
                 if (result.find("Mem:") != std::string::npos) {
                     word = getMem(result, func);
                 }
-            } else if (purpose == "swap") {
+            } else if (purpose == Purpose::SWAP) {
                 if (result.find("Swap:") != std::string::npos) {
                     word = getMem(result, func);
                 }
-            } else if (purpose == "host") {
+            } else if (purpose == Purpose::HOST) {
                 word.assign(result);
                 break;
             }
@@ -89,14 +104,16 @@ TEST(Core_SystemInfo, systemInfo)
     string id1 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
     string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x7));
 
-    string hostname = exec("hostname", "host", "").c_str();
+    std::string cmd = "hostname";
+    string hostname = exec(cmd.c_str(), Purpose::HOST, Funcion::UNKNOWN).c_str();
     hostname.erase(std::remove(hostname.begin(), hostname.end(), '\n'), hostname.end());
     EXPECT_STREQ(WPEFramework::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
 
+    cmd = "free -b";
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetPageSize(),getpagesize());
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(exec("free -b", "mem", "total")));
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(exec(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
 
-    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(exec("free -b","free")));
+    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(exec(cmd.c_str(),Purpose::MEM, Funcion::FREE)));
     WPEFramework::Core::SystemInfo::Instance().GetFreeRam(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
 
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),getUptime());
@@ -119,12 +136,27 @@ TEST(Core_SystemInfo, memorySnapShot)
 {
     WPEFramework::Core::SystemInfo::MemorySnapshot snapshot = WPEFramework::Core::SystemInfo::Instance().TakeMemorySnapshot();
     snapshot.AsJSON();
-    EXPECT_EQ(snapshot.Total(), stoi(exec("free -k", "mem", "total")));
+    std::string cmd = "free -k";
+    EXPECT_EQ(snapshot.Total(), stoi(exec(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
     snapshot.Free(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
     snapshot.Available();//Returns the instant snapshot of the available memory at that moment, hence can't verify it's value.
     snapshot.Cached();
 
-    EXPECT_EQ(snapshot.SwapTotal(),stoi(exec("free -k", "swap", "total")));
+    EXPECT_EQ(snapshot.SwapTotal(),stoi(exec(cmd.c_str(), Purpose::SWAP, Funcion::TOTAL)));
     snapshot.SwapFree();
     snapshot.SwapCached();
 }
+} // Tests
+
+ENUM_CONVERSION_BEGIN(Tests::Purpose)
+    { WPEFramework::Tests::Purpose::MEM, _TXT("mem") },
+    { WPEFramework::Tests::Purpose::SWAP, _TXT("swap") },
+    { WPEFramework::Tests::Purpose::HOST, _TXT("host") },
+ENUM_CONVERSION_END(Tests::Purpose)
+
+ENUM_CONVERSION_BEGIN(Tests::Funcion)
+    { WPEFramework::Tests::Funcion::TOTAL, _TXT("total") },
+    { WPEFramework::Tests::Funcion::FREE, _TXT("free") },
+ENUM_CONVERSION_END(Tests::Funcion)
+
+} // WPEFramework
