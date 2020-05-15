@@ -564,6 +564,8 @@ namespace Wayland {
 
     void Display::SurfaceImplementation::ZOrder(const uint32_t order)
     {
+        // Max layers supported by Westeros have a limitation with 255, hence the ZOrder fraction
+        // difference calculation is limiting with std::numeric_limits<uint8_t>::max()
         ASSERT (order <= std::numeric_limits<uint8_t>::max());
 
         double fractionalOrder = 1.0 - (static_cast<double>(order) / static_cast<double>(std::numeric_limits<uint8_t>::max()));
