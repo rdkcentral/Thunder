@@ -23,8 +23,8 @@ add_executable(NetflixVaultGenerator
 
 target_link_libraries(NetflixVaultGenerator
    PRIVATE
-   ${NAMESPACE}Core::${NAMESPACE}Core
    OpenSSL::Crypto
+   dl
 )
 
 install(TARGETS NetflixVaultGenerator DESTINATION bin)

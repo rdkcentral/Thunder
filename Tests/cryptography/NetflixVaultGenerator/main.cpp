@@ -1,14 +1,15 @@
-#include <core/core.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
-#include <openssl/aes.h>
-#include <iostream>
+#include <cstdlib>
+#include <cstring>
 #include <fstream>
+#include <iostream>
+#include <openssl/aes.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
 #include <openssl/modes.h>
+#include <openssl/rand.h>
 
 using namespace std;
-
-const uint32_t g_esnSize = 42;
 
 const uint8_t g_key[16] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 
                             0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 };
@@ -18,7 +19,7 @@ struct NetflixData
     uint8_t m_salt[16];
     uint8_t m_kpe[16];
     uint8_t m_kph[32];
-    uint8_t m_esn[g_esnSize];
+    uint8_t m_esn[];
 } __attribute__((packed));
 
 void DecodeBase64(const char input[], uint8_t output[], uint32_t outputSize)
@@ -60,15 +61,8 @@ int main(int argc, const char * argv[])
         return EINVAL;
     }
 
-    NetflixData netflixData;
-
-    // 1. Create random IV vector and salt.
-    srand(time(nullptr));
-    uint8_t iv[16];
-    for (int i = 0; i < 16; i++) {
-        iv[i] = rand() % 256;
-        netflixData.m_salt[i] = rand() % 256;
-    }
+    // Initialize OpenSSL's RNG.
+    RAND_poll();
 
     ifstream inFile(argv[1]);
     if (!inFile) {
@@ -78,16 +72,25 @@ int main(int argc, const char * argv[])
 
     string line;
 
-    // 2. Read ESN and copy into NetflixData struct.
+    // Read ESN.
     std::getline(inFile, line);
-    if (line.length() != g_esnSize) {
-        cerr << "Expected ESN to be " << g_esnSize << " chars long, got " << line.length() << " instead." << endl;
-        return EINVAL;
-    }
+    uint32_t esnSize = line.length();
 
-    strncpy(reinterpret_cast<char *>(netflixData.m_esn), line.c_str(), g_esnSize);
+    // Allocate buffer.
+    uint32_t totalBufferSize = sizeof(NetflixData) + esnSize;
+    NetflixData * netflixData = static_cast<NetflixData *>(malloc(totalBufferSize));
+    memset(netflixData, 0, totalBufferSize);
 
-    // 3. Read KPE (base 64 encoded) and store in NetflixData struct.
+    // Copy ESN.
+    strncpy(reinterpret_cast<char *>(netflixData->m_esn), line.c_str(), esnSize);
+
+    // Create random IV vector and salt.
+    uint8_t iv[16];
+
+    RAND_bytes(iv, sizeof(iv));
+    RAND_bytes(netflixData->m_salt, sizeof(netflixData->m_salt));
+
+    // Read KPE (base 64 encoded) and store in NetflixData struct.
     const uint32_t expectedKpeB64Length = 24;
     std::getline(inFile, line);
     if (line.length() != expectedKpeB64Length) {
@@ -95,9 +98,9 @@ int main(int argc, const char * argv[])
         return EINVAL;
     }
 
-    DecodeBase64(line.c_str(), netflixData.m_kpe, sizeof(netflixData.m_kpe));
+    DecodeBase64(line.c_str(), netflixData->m_kpe, sizeof(netflixData->m_kpe));
 
-    // 3. Read KPH (base 64 encoded) and store in NetflixData struct.
+    // Read KPH (base 64 encoded) and store in NetflixData struct.
     const uint32_t expectedKphB64Length = 44;
     std::getline(inFile, line);
     if (line.length() != expectedKphB64Length) {
@@ -105,12 +108,12 @@ int main(int argc, const char * argv[])
         return EINVAL;
     }
 
-    DecodeBase64(line.c_str(), netflixData.m_kph, sizeof(netflixData.m_kph));
+    DecodeBase64(line.c_str(), netflixData->m_kph, sizeof(netflixData->m_kph));
 
-    // 4. Encrypt NetflixData struct 
-    uint8_t encryptBuffer[sizeof(NetflixData)];
-    memset(encryptBuffer, 0, sizeof(encryptBuffer));
-    EncodeAes(reinterpret_cast<uint8_t *>(&netflixData), encryptBuffer, sizeof(NetflixData), iv);
+    // Encrypt NetflixData buffer.
+    uint8_t * encryptBuffer = static_cast<uint8_t *>(malloc(totalBufferSize));
+    memset(encryptBuffer, 0, totalBufferSize);
+    EncodeAes(reinterpret_cast<uint8_t *>(netflixData), encryptBuffer, totalBufferSize, iv);
 
     ofstream outFile(argv[2], ofstream::binary);
     if (!outFile) {
@@ -118,13 +121,17 @@ int main(int argc, const char * argv[])
         return ENOENT;
     }
 
-    // 5. Write IV followed by encrypted NetflixData.
+    // Write IV followed by encrypted NetflixData.
     outFile.write(reinterpret_cast<const char *>(iv), sizeof(iv));
-    outFile.write(reinterpret_cast<const char *>(&encryptBuffer), sizeof(netflixData));
+    outFile.write(reinterpret_cast<const char *>(encryptBuffer), totalBufferSize);
 
     outFile.close();
     inFile.close();
 
-    cout << "SUCCESS: Written netflix fault to " << argv[2] << endl;
+    cout << "SUCCESS: Written netflix vault to " << argv[2] << endl;
+
+    free(encryptBuffer);
+    free(netflixData);
+
     return 0;
 }
