@@ -2085,9 +2085,10 @@ namespace PluginHost {
 
                 Job(Server* server)
                     : _ID(~0)
-                    , _server()
+                    , _server(server)
                     , _service()
                 {
+                    ASSERT(server != nullptr)
                 }
                 ~Job() override
                 {
@@ -2190,7 +2191,7 @@ namespace PluginHost {
                 void Dispatch() override
                 {
                     ASSERT(_request.IsValid());
-                    ASSERT(Job::HasService() == false);
+                    ASSERT(Job::HasService() == true);
 
                     Core::ProxyType<Web::Response> response;
 
