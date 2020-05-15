@@ -19,57 +19,112 @@
 
 #include "../IPTestAdministrator.h"
 
+#include <fstream>
 #include <gtest/gtest.h>
 #include <core/core.h>
+
+std::string getMem(std::string result, string func)
+{
+    std::string word = "";
+    int i = 1;
+    std::stringstream iss(result);
+    while (iss >> result)
+    {
+        if(i == 2 && func == "total"){
+            word.assign(result);
+            break;
+        }/* //retrieves the free memory
+        if(i == 4 && (func == "free")){
+            word.assign(result);
+            break;
+        }*/
+        i++;
+    }
+    return word;
+}
+
+std::string exec(const char* cmd, string purpose, string func) {
+    char buffer[128];
+    std::string result = "";
+    std::string word = "";
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) throw std::runtime_error("popen() failed!");
+    try {
+        while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+            result = buffer;
+            if (purpose == "mem") {
+                if (result.find("Mem:") != std::string::npos) {
+                    word = getMem(result, func);
+                }
+            } else if (purpose == "swap") {
+                if (result.find("Swap:") != std::string::npos) {
+                    word = getMem(result, func);
+                }
+            } else if (purpose == "host") {
+                word.assign(result);
+                break;
+            }
+        }
+    } catch (...) {
+        pclose(pipe);
+        throw;
+    }
+    pclose(pipe);
+    return word;
+}
+
+float getUptime() {
+    std::string uptime;
+    std::ifstream file("/proc/uptime");
+    while(file >> uptime)
+        return (ceil(stof(uptime)));
+    return 0;
+}
 
 TEST(Core_SystemInfo, systemInfo)
 {
     const uint8_t* rawDeviceId (WPEFramework::Core::SystemInfo::Instance().RawDeviceId());
 
     string id (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0xFF));
-    string id_new (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
+    string id1 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x11));
+    string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x7));
 
-    std::cout << "SystemInfo Test:" << std::endl;
+    string hostname = exec("hostname", "host", "").c_str();
+    hostname.erase(std::remove(hostname.begin(), hostname.end(), '\n'), hostname.end());
+    EXPECT_STREQ(WPEFramework::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
 
-    std::cout << "Test GetId: " << id << std::endl;
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetPageSize(),getpagesize());
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(exec("free -b", "mem", "total")));
 
-    // std::cout << "Test GetPrefix: " << WPEFramework::Core::SystemInfo::Instance().GetPrefix() << std::endl;
+    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(exec("free -b","free")));
+    WPEFramework::Core::SystemInfo::Instance().GetFreeRam(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
 
-    std::cout << "Test GetHostname: " << WPEFramework::Core::SystemInfo::Instance().GetHostName() << std::endl;
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),getUptime());
 
-    std::cout << "Test GetUpTime: " << WPEFramework::Core::SystemInfo::Instance().GetUpTime() << " s" << std::endl;
+    WPEFramework::Core::SystemInfo::Instance().Ticks();
 
-    std::cout << "Test GetTotalRam: " << WPEFramework::Core::SystemInfo::Instance().GetTotalRam() << " bytes" << std::endl;
+    WPEFramework::Core::SystemInfo::Instance().GetCpuLoad();
 
-    std::cout << "Test GetFreeRam: " << WPEFramework::Core::SystemInfo::Instance().GetFreeRam() << " bytes" << std::endl;
-
-    //std::cout << "Test GetTotalGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetTotalGpuRam() << " bytes" << std::endl;
-
-    //std::cout << "Test GetFreeGpuRam: " << WPEFramework::Core::SystemInfo::Instance().GetFreeGpuRam() << " bytes" << std::endl;
-
-    std::cout << "Test Ticks(Time stamp counter): " << WPEFramework::Core::SystemInfo::Instance().Ticks() << std::endl;
-
-    for (int a = 0; a < 3; a++) {
-        std::cout << a << ". Test GetCpuLoad: " << WPEFramework::Core::SystemInfo::Instance().GetCpuLoad() << " %" << std::endl;
-    }
     std::string variable = "TEST_VARIABLE";
-    std::string variable_value = "test value";
+    std::string value = "test value";
+    std::string getValue;
     bool forced = true;
-    std::cout << "Test SetEnvironment: " << std::endl;
-    WPEFramework::Core::SystemInfo::Instance().SetEnvironment(variable, variable_value, forced);
-    variable_value.clear();
-    std::cout << "\t" << variable << " : " << (WPEFramework::Core::SystemInfo::Instance().GetEnvironment(variable, variable_value) ? variable_value : "--")  << std::endl;
+    WPEFramework::Core::SystemInfo::Instance().SetEnvironment(variable, value, forced);
+    WPEFramework::Core::SystemInfo::Instance().GetEnvironment(variable, getValue);
+
+    EXPECT_STREQ(getValue.c_str(),value.c_str());
 }
 
 TEST(Core_SystemInfo, memorySnapShot)
 {
     WPEFramework::Core::SystemInfo::MemorySnapshot snapshot = WPEFramework::Core::SystemInfo::Instance().TakeMemorySnapshot();
-    std::cout<<"JSON : "<<snapshot.AsJSON()<<std::endl;
-    std::cout<<"Total : "<<snapshot.Total()<<std::endl;
-    std::cout<<"Free : "<<snapshot.Free()<<std::endl;
-    std::cout<<"Available : "<<snapshot.Available()<<std::endl;
-    std::cout<<"Cached : "<<snapshot.Cached()<<std::endl;
-    std::cout<<"SwapTotal : "<<snapshot.SwapTotal()<<std::endl;
-    std::cout<<"SwapFree : "<<snapshot.SwapFree()<<std::endl;
-    std::cout<<"SwapCached: "<<snapshot.SwapCached()<<std::endl;
+    snapshot.AsJSON();
+    EXPECT_EQ(snapshot.Total(), stoi(exec("free -k", "mem", "total")));
+    snapshot.Free(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
+    snapshot.Available();//Returns the instant snapshot of the available memory at that moment, hence can't verify it's value.
+    snapshot.Cached();
+
+    EXPECT_EQ(snapshot.SwapTotal(),stoi(exec("free -k", "swap", "total")));
+    snapshot.SwapFree();
+    snapshot.SwapCached();
 }
