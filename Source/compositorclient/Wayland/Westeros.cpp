@@ -566,7 +566,7 @@ namespace Wayland {
     {
         ASSERT (order <= std::numeric_limits<uint8_t>::max());
 
-        double fractionalOrder = 1.0 - (order / std::numeric_limits<uint8_t>::max());
+        double fractionalOrder = 1.0 - (static_cast<double>(order) / static_cast<double>(std::numeric_limits<uint8_t>::max()));
 
         wl_simple_shell_set_zorder(_display->_simpleShell, _id, wl_fixed_from_double(fractionalOrder));
         wl_display_flush(_display->_display);
