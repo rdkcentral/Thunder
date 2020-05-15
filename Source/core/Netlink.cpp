@@ -47,7 +47,6 @@ namespace Core {
 
     uint16_t Netlink::Serialize(uint8_t stream[], const uint16_t length) const
     {
-
         uint16_t result = 0;
 
         if (sizeof(struct nlmsghdr) < length) {
@@ -74,22 +73,31 @@ namespace Core {
 
     uint16_t Netlink::Deserialize(const uint8_t stream[], const uint16_t streamLength)
     {
-        bool completed = false;
-        Frames parser(stream, streamLength);
+        const nlmsghdr* header = reinterpret_cast<const nlmsghdr*>(stream);
+        uint16_t dataLeft = streamLength;
+        
+        while (NLMSG_OK(header, dataLeft)) {
+            if (header->nlmsg_type != NLMSG_NOOP) {
+                if (header->nlmsg_type == NLMSG_DONE) {
+                    _isMultimessage = false;
+                } else {                    
+                    _type = header->nlmsg_type;
+                    _flags = header->nlmsg_flags;
+                    _mySequence = header->nlmsg_seq;
 
-        _type = NLMSG_ERROR;
+                    _isMultimessage = header->nlmsg_flags & NLM_F_MULTI;
+                    
+                    Read(
+                        reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
+                        header->nlmsg_len - sizeof(header)
+                    );
+                }
+            }
 
-        while ((completed == false) && (parser.Next() == true)) {
-
-            _type = parser.Type();
-            _flags = parser.Flags();
-            _mySequence = parser.Sequence();
-
-            completed = (Read(parser.Data(), parser.Size()) < parser.Size());
+            header = NLMSG_NEXT(header, dataLeft);
         }
 
-        // Return the amount of data we have eaten...
-        return (completed == false ? 0 : streamLength);
+        return _isMultimessage ? 0 : streamLength - dataLeft;
     }
 
     uint32_t SocketNetlink::Send(const Core::Netlink& outbound, const uint32_t waitTime)
