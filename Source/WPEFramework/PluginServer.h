@@ -179,17 +179,21 @@ namespace PluginHost {
                     : Locator("/tmp/keyhandler|0760")
                     , Type(PluginHost::InputHandler::VIRTUAL)
 #endif
+                    , OutputEnabled(true)
                 {
 
                     Add(_T("locator"), &Locator);
                     Add(_T("type"), &Type);
+                    Add(_T("output"), &OutputEnabled);
                 }
                 InputConfig(const InputConfig& copy)
                     : Locator(copy.Locator)
                     , Type(copy.Type)
+                    , OutputEnabled(copy.OutputEnabled)
                 {
                     Add(_T("locator"), &Locator);
                     Add(_T("type"), &Type);
+                    Add(_T("output"), &OutputEnabled);
                 }
                 ~InputConfig()
                 {
@@ -198,11 +202,13 @@ namespace PluginHost {
                 {
                     Locator = RHS.Locator;
                     Type = RHS.Type;
+                    OutputEnabled = RHS.OutputEnabled;
                     return (*this);
                 }
 
                 Core::JSON::String Locator;
                 Core::JSON::EnumType<PluginHost::InputHandler::type> Type;
+                Core::JSON::Boolean OutputEnabled;
             };
 
 #ifdef PROCESSCONTAINERS_ENABLED

@@ -84,9 +84,9 @@ namespace PluginHost {
                 _startTime = startTime;
                 _intervalTime = intervalTime;
             }
-            void Arm(const uint16_t code)
+            void Arm(const uint32_t code)
             {
-                ASSERT(_code == static_cast<uint16_t>(~0));
+                ASSERT(_code == static_cast<uint32_t>(~0));
 
                 if (_startTime != 0) {
       
@@ -103,11 +103,13 @@ namespace PluginHost {
                     Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
                 }
             }
-            void Reset()
+            uint32_t Reset()
             {
                 _adminLock.Lock();
+                uint32_t result = _code;
                 _code = ~0;
                 _adminLock.Unlock();
+                return (result);
             }
 
         private:
@@ -115,11 +117,12 @@ namespace PluginHost {
             {
                 _adminLock.Lock();
 
-                if(_code != static_cast<uint16_t>(~0)) {
+                if(_code != static_cast<uint32_t>(~0)) {
+                    uint16_t code = static_cast<uint16_t>(_code & 0xFFFF);
 
                     ASSERT(_nextSlot.IsValid());
 
-                    _parent.RepeatKey(_code);
+                    _parent.RepeatKey(code);
 
                     _nextSlot.Add(_intervalTime);
 
@@ -135,7 +138,7 @@ namespace PluginHost {
             Core::CriticalSection _adminLock;
             uint16_t _startTime;
             uint16_t _intervalTime;
-            uint16_t _code;
+            uint32_t _code;
             Core::Time _nextSlot;
             Core::ProxyType<Core::IDispatch> _job;
         };
@@ -292,6 +295,82 @@ namespace PluginHost {
             bool _passThrough;
         };
 
+        class EXTERNAL Iterator {
+        public:
+            Iterator()
+                : _consumers()
+                , _index()
+                , _position(~0)
+            {
+            }
+            Iterator(const string& consumer)
+                : _consumers()
+                , _index()
+                , _position(~0)
+            {
+                _consumers.push_back(consumer);
+            }
+            Iterator(const std::list<string>&& consumer)
+                : _consumers(consumer)
+                , _index()
+                , _position(~0)
+            {
+            }
+            Iterator(const Iterator& copy)
+                : _consumers(copy._consumers)
+                , _index(copy._index)
+                , _position(copy._position)
+            {
+            }
+            ~Iterator()
+            {
+            }
+
+            Iterator& operator=(const Iterator& rhs)
+            {
+                _consumers = rhs._consumers;
+                _position = ~0;
+
+                return (*this);
+            }
+
+        public:
+            bool IsValid() const
+            {
+                return (_position < _consumers.size());
+            }
+            void Reset()
+            {
+                _position = ~0;
+            }
+            bool Next()
+            {
+                if (_position == static_cast<uint32_t>(~0)) {
+                    _position = 0;
+                    _index = _consumers.cbegin();
+                }
+                else if (_index != _consumers.cend()) {
+                    _position++;
+                    _index++;
+                }
+                  
+                return (IsValid());
+            }
+            const string& Name() const 
+            {
+                ASSERT(IsValid() == true);
+                return (*_index);
+            }
+            const std::list<string> Container() const {
+                return(_consumers);
+            }
+
+        private:
+            std::list<string> _consumers;
+            std::list<string>::const_iterator _index;
+            uint32_t _position;
+        };
+
     public:
         struct EXTERNAL INotifier {
             virtual ~INotifier() {}
@@ -301,10 +380,6 @@ namespace PluginHost {
 
     private:
         class EXTERNAL PostLookupTable : public Core::JSON::Container {
-        private:
-            PostLookupTable(const PostLookupTable&) = delete;
-            PostLookupTable& operator=(const PostLookupTable&) = delete;
-
         public:
             class Conversion : public Core::JSON::Container {
             private:
@@ -368,6 +443,9 @@ namespace PluginHost {
             };
 
         public:
+            PostLookupTable(const PostLookupTable&) = delete;
+            PostLookupTable& operator=(const PostLookupTable&) = delete;
+
             PostLookupTable()
                 : Core::JSON::Container()
                 , Conversions()
@@ -394,13 +472,13 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
-        inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
+        virtual Iterator Consumers () const = 0;
+        virtual bool Consumer(const string& name) const = 0;
+        virtual void Consumer(const string& name, const bool enabled) = 0;
+
+        inline void Interval(const uint16_t startTime, const uint16_t intervalTime, const uint16_t limit)
         {
             _repeatKey.Interval(startTime, intervalTime);
-        }
-
-        inline void RepeatLimit(const uint16_t limit)
-        {
             _repeatLimit = limit;
         }
 
@@ -473,40 +551,57 @@ namespace PluginHost {
 
                 Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
+                PostLookupEntries* table = &_postLookupParent;
+
                 _lock.Lock();
 
-                PostLookupMap::iterator postMap(_postLookupTable.find(linkName));
-                if (postMap != _postLookupTable.end()) {
-                    postMap->second.clear();
-                } else {
-                    auto newElement = _postLookupTable.emplace(std::piecewise_construct,
-                        std::make_tuple(linkName),
-                        std::make_tuple());
-                    postMap = newElement.first;
+                if (linkName.empty() == false) {
+                    PostLookupMap::iterator postMap(_postLookupTable.find(linkName));
+                    if (postMap != _postLookupTable.end()) {
+                        postMap->second.clear();
+                    } else {
+                        auto newElement = _postLookupTable.emplace(std::piecewise_construct,
+                            std::make_tuple(linkName),
+                            std::make_tuple());
+                        postMap = newElement.first;
+                    }
+                    table = &(postMap->second);
                 }
+
                 while (index.Next() == true) {
-                    if ((index.Current().In.IsSet() == true) && (index.Current().Out.IsSet() == true)) {
+                    if (index.Current().In.IsSet() == true) {
+                        uint32_t to;
                         uint32_t from = index.Current().In.Code.Value();
-                        uint32_t to = index.Current().Out.Code.Value();
 
                         from |= (Modifiers(index.Current().In.Mods) << 16);
-                        to |= (Modifiers(index.Current().In.Mods) << 16);
 
-                        postMap->second.insert(std::pair<const uint32_t, const uint32_t>(from, to));
+                        if (index.Current().Out.IsSet() == true) {
+                            to = index.Current().Out.Code.Value();
+                            to |= (Modifiers(index.Current().In.Mods) << 16);
+                        }
+                        else {
+                            to = ~0;
+                        }
+
+                        table->insert(std::pair<const uint32_t, const uint32_t>(from, to));
                     }
                 }
 
-                if (postMap->second.size() == 0) {
-                    _postLookupTable.erase(postMap);
-                }
+                if (linkName.empty() == false) {
+                    if ((table->size() == 0) && (linkName.empty() == false)) {
+                        _postLookupTable.erase(linkName);
+                    }
 
-                LookupChanges(linkName);
+                    LookupChanges(linkName);
+                }
 
                 _lock.Unlock();
             }
         }
         inline const PostLookupEntries* FindPostLookup(const string& linkName) const
         {
+            ASSERT (linkName.empty() == false);
+
             PostLookupMap::const_iterator linkMap(_postLookupTable.find(linkName));
 
             return (linkMap != _postLookupTable.end() ? &(linkMap->second) : nullptr);
@@ -521,13 +616,13 @@ namespace PluginHost {
         }
 
     private:
-        void RepeatKey(const uint32_t code);
+        void RepeatKey(const uint16_t code);
         virtual void MapChanges(ChangeIterator& updated) = 0;
         virtual void LookupChanges(const string&) = 0;
 
         void ModifierKey(const IVirtualInput::KeyData::type type, const uint16_t modifiers);
         bool SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode);
-        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code);
+        void DispatchRegisteredKey(const IVirtualInput::KeyData::type type, const uint32_t code);
 
         virtual void Send(const IVirtualInput::KeyData& data) = 0;
         virtual void Send(const IVirtualInput::MouseData& data) = 0;
@@ -556,6 +651,7 @@ namespace PluginHost {
         KeyMap* _defaultMap;
         NotifierList _notifierList;
         NotifierMap _notifierMap;
+        PostLookupEntries _postLookupParent;
         PostLookupMap _postLookupTable;
         string _keyTable;
         uint32_t _pressedCode;
@@ -565,17 +661,22 @@ namespace PluginHost {
 
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
     class EXTERNAL LinuxKeyboardInput : public VirtualInput {
-    private:
+    public:
         LinuxKeyboardInput(const LinuxKeyboardInput&) = delete;
         LinuxKeyboardInput& operator=(const LinuxKeyboardInput&) = delete;
 
-    public:
-        LinuxKeyboardInput(const string& source, const string& inputName);
+        LinuxKeyboardInput(const string& source, const string& inputName, const bool defaultEnabled);
         virtual ~LinuxKeyboardInput();
 
-        virtual uint32_t Open();
-        virtual uint32_t Close();
-        virtual void MapChanges(ChangeIterator& updated);
+    public:
+        VirtualInput::Iterator Consumers() const override;
+        bool Consumer(const string& name) const override;
+        void Consumer(const string& name, const bool enabled) override;
+
+        uint32_t Open() override;
+        uint32_t Close() override;
+
+        void MapChanges(ChangeIterator& updated) override;
 
     private:
         virtual void Send(const IVirtualInput::KeyData& data) override;
@@ -589,21 +690,17 @@ namespace PluginHost {
         int _eventDescriptor;
         const string _source;
         std::map<uint16_t, uint16_t> _deviceKeys;
+        bool _enabled;
     };
 #endif
 
     class EXTERNAL IPCUserInput : public VirtualInput {
     private:
-        IPCUserInput(const IPCUserInput&) = delete;
-        IPCUserInput& operator=(const IPCUserInput&) = delete;
-
-    public:
         class EXTERNAL InputDataLink : public Core::IDispatchType<Core::IIPC> {
-        private:
+        public:
             InputDataLink(const InputDataLink&) = delete;
             InputDataLink& operator=(const InputDataLink&) = delete;
 
-        public:
             InputDataLink(Core::IPCChannelType<Core::SocketPort, InputDataLink>*)
                 : _enabled(false)
                 , _name()
@@ -642,8 +739,8 @@ namespace PluginHost {
                         PostLookupEntries::const_iterator index(_postLookup->find(copy.Parameters().Code));
                         if (index == _postLookup->end()) {
                             result = element;
-                        } else {
-
+                        } 
+                        else if (index->second != static_cast<uint32_t>(~0)) {
                             _replacement->Parameters().Action = copy.Parameters().Action;
                             _replacement->Parameters().Code = index->second;
                             result = Core::ProxyType<Core::IIPC>(_replacement);
@@ -656,11 +753,12 @@ namespace PluginHost {
             {
                 return (_name);
             }
-            inline void Parent(IPCUserInput& parent)
+            inline void Parent(IPCUserInput& parent, const bool enabled)
             {
                 // We assume it will only be set, if the client reports it self in, once !
                 ASSERT(_parent == nullptr);
                 _parent = &parent;
+                _enabled = enabled;
             }
             inline void Reload()
             {
@@ -680,7 +778,6 @@ namespace PluginHost {
 
                 _name = (static_cast<IVirtualInput::NameMessage&>(element).Response().Name);
                 _mode = (static_cast<IVirtualInput::NameMessage&>(element).Response().Mode);
-                _enabled = true;
                 _postLookup = _parent->FindPostLookup(_name);
             }
 
@@ -714,7 +811,7 @@ namespace PluginHost {
                 //       not, to be further investigated..
                 message.AddRef();
 
-                client->Extension().Parent(_parent);
+                client->Extension().Parent(_parent, _parent._defaultEnabled);
                 client->Invoke(message, &(client->Extension()));
             }
 
@@ -722,95 +819,17 @@ namespace PluginHost {
             IPCUserInput& _parent;
         };
 
-        class EXTERNAL Iterator {
-        public:
-            Iterator()
-                : _server(nullptr)
-                , _index(~0)
-                , _element()
-            {
-            }
-            explicit Iterator(VirtualInputChannelServer& server)
-                : _server(&server)
-                , _index(~0)
-                , _element()
-            {
-            }
-            Iterator(const Iterator& copy)
-                : _server(copy._server)
-                , _index(copy._index)
-                , _element(copy._element)
-            {
-            }
-            ~Iterator()
-            {
-            }
-
-            Iterator& operator=(const Iterator& rhs)
-            {
-                _server = rhs._server;
-                _index = rhs._index;
-                _element = rhs._element;
-
-                return (*this);
-            }
-
-        public:
-            bool IsValid() const
-            {
-                return (_element.IsValid());
-            }
-            void Reset()
-            {
-                _index = ~0;
-                if (_element.IsValid() == true) {
-                    _element.Release();
-                }
-            }
-            bool Next()
-            {
-                if (_server != nullptr) {
-                    if (_index == static_cast<uint32_t>(~0)) {
-                        _index = 0;
-                        _element = (*_server)[_index];
-                    } else if (_element.IsValid() == true) {
-                        _index++;
-                        _element = (*_server)[_index];
-                    }
-                }
-
-                return (IsValid());
-            }
-            string Name() const
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Name());
-            }
-            bool Enabled() const
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Enable());
-            }
-            void Enable(const bool enabled)
-            {
-                ASSERT(_element.IsValid());
-                return (_element->Extension().Enable(enabled));
-            }
-
-        public:
-            VirtualInputChannelServer* _server;
-            uint32_t _index;
-            Core::ProxyType<VirtualInputChannelServer::Client> _element;
-        };
-
     public:
-        IPCUserInput(const Core::NodeId& sourceName);
+        IPCUserInput(const IPCUserInput&) = delete;
+        IPCUserInput& operator=(const IPCUserInput&) = delete;
+
+        IPCUserInput(const Core::NodeId& sourceName, const bool defaultEnabled);
         ~IPCUserInput() override;
 
-        Iterator Inputs()
-        {
-            return (Iterator(_service));
-        }
+        VirtualInput::Iterator Consumers() const override;
+        bool Consumer(const string& name) const override;
+        void Consumer(const string& name, const bool enabled) override;
+
         uint32_t Open() override;
         uint32_t Close() override;
         void MapChanges(ChangeIterator& updated) override;
@@ -823,6 +842,7 @@ namespace PluginHost {
 
     private:
         VirtualInputChannelServer _service;
+        bool _defaultEnabled;
     };
 
     class EXTERNAL InputHandler {
@@ -844,23 +864,23 @@ namespace PluginHost {
         };
 
     public:
-        void Initialize(const type t, const string& locator)
+        void Initialize(const type t, const string& locator, const bool enabled)
         {
             ASSERT(_keyHandler == nullptr);
 #if defined(__WINDOWS__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
-            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
+            _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()), enabled);
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
 #else
             if (t == VIRTUAL) {
-                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
+                _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()), enabled);
                 TRACE_L1("Creating a IPC Channel for key communication. %d", 0);
             } else {
                 if (Core::File(locator, false).Exists() == true) {
                     TRACE_L1("Creating a /dev/input device for key communication. %d", 0);
 
                     // Seems we have a possibility to use /dev/input, create it.
-                    _keyHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"));
+                    _keyHandler = new PluginHost::LinuxKeyboardInput(locator, _T("remote_input"), enabled);
                 }
             }
 #endif
