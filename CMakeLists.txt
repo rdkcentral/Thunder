@@ -45,7 +45,7 @@ set(PLATFORM "PC_UNIX" CACHE STRING
 
 option(INSTALL_LOCALLY "Install this project locally" OFF)
 option(BUILD_TESTS "Build framework tests (requires gtest)" OFF)
-option(BUILD_CRYPTOGRAPHY_TESTS "Build cryptography tests" ON)
+option(BUILD_CRYPTOGRAPHY_TESTS "Build cryptography tests" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
