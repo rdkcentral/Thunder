@@ -49,23 +49,26 @@ static void GetNodes(uint32_t type, std::vector<std::string>& list)
 
 static int FileDescriptor()
 {
-    int fd = -1;
+    static int fd = -1;
 
-    std::vector<std::string> nodes;
-    GetNodes(DRM_NODE_PRIMARY, nodes);
+    if(fd < 0) {
+        std::vector<std::string> nodes;
+        GetNodes(DRM_NODE_PRIMARY, nodes);
 
-    std::vector<std::string>::iterator index(nodes.begin());
+        std::vector<std::string>::iterator index(nodes.begin());
 
-    while ((index != nodes.end()) && (fd == -1)) {
-        // Select the first from the list
-        if (index->empty() == false)
-        {
-            // The node might be priviliged and the call will fail.
-            // Do not close fd with exec functions! No O_CLOEXEC!
-            fd = open(index->c_str(), O_RDWR); 
+        while ((index != nodes.end()) && (fd == -1)) {
+            // Select the first from the list
+            if (index->empty() == false)
+            {
+                // The node might be priviliged and the call will fail.
+                // Do not close fd with exec functions! No O_CLOEXEC!
+                fd = open(index->c_str(), O_RDWR); 
+            }
+            index++;
         }
-        index++;
     }
+
     return (fd);
 }
 
@@ -206,6 +209,7 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
 {
     assert(fd != -1);
 
+    bool created = false;
     buffer = nullptr;
     modeIndex = 0;
     id = 0;
@@ -254,8 +258,6 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
                 index++;
             }
 
-            drmModeFreeConnector(pconnector);
-
             // A large enough initial buffer for scan out
             struct gbm_bo* bo = gbm_bo_create(
                                   device, 
@@ -263,6 +265,8 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
                                   pconnector->modes[modeIndex].vdisplay,
                                   DRM_FORMAT_XRGB8888, 
                                   GBM_BO_USE_SCANOUT /* presented on a screen */ | GBM_BO_USE_RENDERING /* used for rendering */);
+
+            drmModeFreeConnector(pconnector);
 
             if(nullptr != bo)
             {
@@ -280,12 +284,14 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
                 if(0 == ret)
                 {
                     buffer = bo;
+
+                    created = true;
                 }
             }
         }
     }
 
-    return false;
+    return created;
 }
 
 ModeSet::ModeSet()
@@ -310,8 +316,6 @@ ModeSet::ModeSet()
                 // We are NOT initialized properly, destruct !!!
                 Destruct();
             }
-
-            close(fd);
         }
     }
 }
@@ -319,6 +323,12 @@ ModeSet::ModeSet()
 ModeSet::~ModeSet()
 {
     Destruct();
+
+    int fd = FileDescriptor();
+
+    if(fd >= 0) {
+        close(fd);
+    }
 }
 
 void ModeSet::Destruct()

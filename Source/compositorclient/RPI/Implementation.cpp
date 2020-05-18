@@ -676,16 +676,16 @@ Display::SurfaceImplementation::SurfaceImplementation(
     , _touchpanel(nullptr)
     , _destination({ 0, 0, width, height})
 {
-    // To support scanout the underlying FB should be large enough to support the selected mode
-    // An FB of 1280x720 on a 1920x1080 display will probably fail. Currently, they should have 
-    // equal dimensions
+    // To support scanout the underlying buffer should be large enough to support the selected mode
+    // A buffer of smaller dimensions than the display will fail. A larger one is possible but will
+    // probably fail in the current setup. Currently, it is best to give both equal dimensions
 
-    if ((width > _display.DisplaySizeWidth()) || (height >  _display.DisplaySizeHeight())) {
+    if ((width != _display.DisplaySizeWidth()) || (height != _display.DisplaySizeHeight())) {
         TRACE_L1(_T("Requested surface dimensions [%d, %d] might not be honered. Rendering might fail!"), width, height);
 
         // Truncating
-        if (_width  > _display.DisplaySizeWidth())  { _width  = _display.DisplaySizeWidth();  }
-        if (_height > _display.DisplaySizeHeight()) { _height = _display.DisplaySizeHeight(); }
+        if (_width  != _display.DisplaySizeWidth())  { _width  = _display.DisplaySizeWidth();  }
+        if (_height != _display.DisplaySizeHeight()) { _height = _display.DisplaySizeHeight(); }
     }
 
     _nativeSurface = Platform::Instance().CreateSurface(_display.Native(), _width, _height);
