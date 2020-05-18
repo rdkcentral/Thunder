@@ -19,24 +19,23 @@
 
 #pragma once
 
-#include "Module.h"
-#include "Tracing.h"
-#include <lxc/lxccontainer.h>
-#include <vector>
-#include <utility>
-#include <thread>
-#include <cctype>
 #include "../../ProcessContainer.h"
 #include "../../common/BaseAdministrator.h"
 #include "../../common/BaseRefCount.h"
 #include "../../common/Lockable.h"
+#include "Module.h"
+#include "Tracing.h"
+#include <cctype>
+#include <lxc/lxccontainer.h>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace WPEFramework {
 namespace ProcessContainers {
     using LxcContainerType = struct lxc_container;
 
-    class LXCNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator>
-    {
+    class LXCNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator> {
     public:
         LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer);
         ~LXCNetworkInterfaceIterator() override;
@@ -51,6 +50,7 @@ namespace ProcessContainers {
         string Name() const;
         uint16_t NumIPs() const;
         string Address(const uint16_t n = 0) const;
+
     private:
         struct LXCNetInterface {
             char* name;
@@ -72,12 +72,13 @@ namespace ProcessContainers {
 
                 ConfigItem(const ConfigItem& rhs);
                 ConfigItem();
-                
+
                 ~ConfigItem() = default;
 
                 Core::JSON::String Key;
                 Core::JSON::String Value;
             };
+
         public:
             Config(const Config&) = delete;
             Config& operator=(const Config&) = delete;
@@ -91,14 +92,16 @@ namespace ProcessContainers {
             Core::JSON::Boolean Attach;
 #endif
         };
+
     private:
         friend class LXCContainerAdministrator;
 
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
+
     public:
         LXCContainer(const LXCContainer&) = delete;
         ~LXCContainer() override;
-        
+
         LXCContainer& operator=(const LXCContainer&) = delete;
 
         const string& Id() const override;

@@ -20,31 +20,31 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
-#include "processcontainers/common/CGroupContainerInfo.h"
 #include "processcontainers/common/BaseAdministrator.h"
-#include "processcontainers/common/Lockable.h"
 #include "processcontainers/common/BaseRefCount.h"
+#include "processcontainers/common/CGroupContainerInfo.h"
+#include "processcontainers/common/Lockable.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 extern "C" {
-    #include <crun/error.h>
-    #include <crun/container.h>
-    #include <crun/utils.h>
-    #include <crun/status.h>
+#include <crun/container.h>
+#include <crun/error.h>
+#include <crun/status.h>
+#include <crun/utils.h>
 }
 
 namespace WPEFramework {
 namespace ProcessContainers {
     using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
-    class CRunContainer : public CRunContainerMixins
-    {
+    class CRunContainer : public CRunContainerMixins {
     private:
         friend class CRunContainerAdministrator;
 
         CRunContainer(const string& name, const string& path, const string& logPath);
         CRunContainer(const CRunContainer&) = delete;
         CRunContainer& operator=(const CRunContainer&) = delete;
+
     public:
         ~CRunContainer() override;
 
@@ -54,6 +54,7 @@ namespace ProcessContainers {
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
+
     private:
         uint32_t ClearLeftovers();
         void OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);
@@ -64,26 +65,26 @@ namespace ProcessContainers {
         string _bundle;
         string _configFile;
         string _logPath;
-        libcrun_container_t *_container;
+        libcrun_container_t* _container;
         libcrun_context_t _context;
         mutable Core::OptionalType<uint32_t> _pid;
         libcrun_error_t _error;
     };
 
-    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, Lockable<IContainerAdministrator>>
-    {
+    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, Lockable<IContainerAdministrator>> {
     private:
         friend class Core::SingletonType<CRunContainerAdministrator>;
 
         CRunContainerAdministrator();
+
     public:
         CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
         CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
 
-        IContainer* Container(const string& id, 
-                                IStringIterator& searchpaths, 
-                                const string& logpath,
-                                const string& configuration) override; //searchpaths will be searched in order in which they are iterated
+        IContainer* Container(const string& id,
+            IStringIterator& searchpaths,
+            const string& logpath,
+            const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
         ~CRunContainerAdministrator();
 

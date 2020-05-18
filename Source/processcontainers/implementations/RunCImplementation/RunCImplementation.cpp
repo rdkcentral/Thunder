@@ -21,10 +21,10 @@
 #include "JSON.h"
 #include <thread>
 
-namespace WPEFramework
-{
+namespace WPEFramework {
 
-uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t timeout = Core::infinite) {
+uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t timeout = Core::infinite)
+{
 
     uint32_t result = Core::ERROR_NONE;
     bool capture = (output != nullptr);
@@ -49,7 +49,7 @@ uint32_t callRunC(Core::Process::Options& options, string* output, uint32_t time
                     *output += buffer;
                 }
             }
-        } 
+        }
     }
 
     return result;
@@ -97,9 +97,8 @@ public:
 public:
     Core::JSON::String Id;
 };
-    
-namespace ProcessContainers
-{
+
+namespace ProcessContainers {
     // Container administrator
     // ----------------------------------
     IContainerAdministrator& ProcessContainers::IContainerAdministrator::Instance()
@@ -109,7 +108,7 @@ namespace ProcessContainers
         return runCContainerAdministrator;
     }
 
-    IContainer* RunCContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,  const string& logpath, const string& configuration) 
+    IContainer* RunCContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration)
     {
         searchpaths.Reset(0);
         while (searchpaths.Next()) {
@@ -137,12 +136,10 @@ namespace ProcessContainers
     RunCContainerAdministrator::RunCContainerAdministrator()
         : BaseAdministrator()
     {
-
     }
 
     RunCContainerAdministrator::~RunCContainerAdministrator()
     {
-        
     }
 
     void RunCContainerAdministrator::Logging(const string& logPath, const string& loggingOptions)
@@ -152,9 +149,9 @@ namespace ProcessContainers
 
     void RunCContainerAdministrator::DestroyContainer(const string& name)
     {
-         if (callRunC(Core::Process::Options("/usr/bin/runc").Add("delete").Add("-f").Add(name), nullptr) != Core::ERROR_NONE) {
+        if (callRunC(Core::Process::Options("/usr/bin/runc").Add("delete").Add("-f").Add(name), nullptr) != Core::ERROR_NONE) {
             TRACE_L1("Failed do destroy a container named %s", name.c_str());
-        } 
+        }
     }
 
     bool RunCContainerAdministrator::ContainerNameTaken(const string& name)
@@ -176,31 +173,30 @@ namespace ProcessContainers
     RunCContainer::RunCContainer(const string& name, const string& path, const string& logPath)
         : RunCContainerMixins(name)
         , _refCount(1)
-        , _name(name)        
+        , _name(name)
         , _path(path)
         , _logPath(logPath)
         , _pid()
     {
-        
     }
 
-    RunCContainer::~RunCContainer() 
+    RunCContainer::~RunCContainer()
     {
         auto& admin = static_cast<RunCContainerAdministrator&>(RunCContainerAdministrator::Instance());
-        
+
         if (admin.ContainerNameTaken(_name) == true) {
             Stop(Core::infinite);
         }
 
         admin.RemoveContainer(this);
-    }  
+    }
 
-    const string& RunCContainer::Id() const 
+    const string& RunCContainer::Id() const
     {
         return _name;
     }
 
-    uint32_t RunCContainer::Pid() const 
+    uint32_t RunCContainer::Pid() const
     {
         uint32_t returnedPid = 0;
 
@@ -218,14 +214,14 @@ namespace ProcessContainers
             } else {
 
                 process.WaitProcessCompleted(Core::infinite);
-                
+
                 if (process.ExitCode() != 0) {
                     returnedPid = 0;
                 } else {
 
                     char data[1024];
                     process.Output((uint8_t*)data, 2048);
-                    
+
                     RunCStatus info;
                     info.FromString(string(data));
 
@@ -234,7 +230,7 @@ namespace ProcessContainers
                 }
             }
         }
-        
+
         return returnedPid;
     }
 
@@ -248,13 +244,13 @@ namespace ProcessContainers
             RunCStatus info;
             info.FromString(string(output));
 
-            result = info.Status.Value() == "running";  
+            result = info.Status.Value() == "running";
         }
 
         return result;
     }
 
-    bool RunCContainer::Start(const string& command, IStringIterator& parameters) 
+    bool RunCContainer::Start(const string& command, IStringIterator& parameters)
     {
         Core::JSON::ArrayType<Core::JSON::String> paramsJSON;
         Core::JSON::String tmp;
@@ -274,18 +270,19 @@ namespace ProcessContainers
         Core::Process::Options options("/usr/bin/runc");
         if (_logPath.empty() == false) {
             // Create logging directory
-            Core::Directory (_logPath.c_str()).CreatePath();
+            Core::Directory(_logPath.c_str()).CreatePath();
 
             options.Add("-log").Add(_logPath + "container.log");
         }
         options.Add("run")
             .Add("-d")
-            .Add("--args").Add(paramsFormated)
-            .Add("-b").Add(_path)
+            .Add("--args")
+            .Add(paramsFormated)
+            .Add("-b")
+            .Add(_path)
             .Add("--no-new-keyring")
             .Add(_name)
             .Add(command);
-
 
         if (callRunC(options, nullptr) != Core::ERROR_NONE) {
             TRACE_L1("Failed to create RunC container with name: %s", _name.c_str());
@@ -311,5 +308,3 @@ namespace ProcessContainers
 } // namespace ProcessContainers
 
 } // namespace WPEFramework
-
-

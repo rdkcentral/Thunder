@@ -20,14 +20,13 @@
 
 #pragma once
 
-#include "processcontainers/process_containers.h"
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/process_containers.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    class CNetworkInterfaceIterator : public NetworkInterfaceIterator 
-    {
+    class CNetworkInterfaceIterator : public NetworkInterfaceIterator {
     public:
         CNetworkInterfaceIterator(const ProcessContainer* container);
         ~CNetworkInterfaceIterator();
@@ -36,18 +35,19 @@ namespace ProcessContainers {
         uint32_t NumIPs() const override;
 
         std::string IP(uint32_t id) const override;
+
     private:
         ProcessContainerNetworkStatus _networkStatus;
     };
-    
-    class CContainer : public IContainer 
-    {
+
+    class CContainer : public IContainer {
     private:
         friend class CContainerAdministrator;
 
         CContainer(ProcessContainer* container);
         CContainer(const CContainer&) = delete;
         CContainer& operator=(const CContainer&) = delete;
+
     public:
         virtual ~CContainer();
 
@@ -71,23 +71,23 @@ namespace ProcessContainers {
         std::vector<string> _networkInterfaces;
     };
 
-    class CContainerAdministrator : public IContainerAdministrator 
-    {
+    class CContainerAdministrator : public IContainerAdministrator {
     private:
         friend class CContainer;
         friend class Core::SingletonType<CContainerAdministrator>;
 
         CContainerAdministrator();
+
     public:
         CContainerAdministrator(const CContainerAdministrator&) = delete;
         CContainerAdministrator& operator=(const CContainerAdministrator&) = delete;
 
         ~CContainerAdministrator();
 
-        IContainer* Container(const string& id, 
-                                IStringIterator& searchpaths, 
-                                const string& logpath,
-                                const string& configuration) override; //searchpaths will be searched in order in which they are iterated
+        IContainer* Container(const string& id,
+            IStringIterator& searchpaths,
+            const string& logpath,
+            const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;

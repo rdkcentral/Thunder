@@ -27,12 +27,10 @@ namespace ProcessContainers {
     template <typename Mixin> // IContainer Mixin
     class Lockable : public Mixin {
     protected:
-        Lockable() 
+        Lockable()
             : _adminLock()
         {
         }
-        
-        virtual ~Lockable() {};
 
         void InternalLock()
         {
@@ -43,6 +41,7 @@ namespace ProcessContainers {
         {
             _adminLock.Unlock();
         }
+
     private:
         Core::CriticalSection _adminLock;
     };

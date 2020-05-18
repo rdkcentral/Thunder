@@ -20,11 +20,9 @@
 #include "CImplementation.h"
 #include <thread>
 
-namespace WPEFramework
-{
-    
-namespace ProcessContainers
-{
+namespace WPEFramework {
+
+namespace ProcessContainers {
     // NetworkInfo
     // ----------------------------------
     CNetworkInterfaceIterator::CNetworkInterfaceIterator(const ProcessContainer* container)
@@ -44,7 +42,7 @@ namespace ProcessContainers
         }
     }
 
-    string CNetworkInterfaceIterator::Name() const 
+    string CNetworkInterfaceIterator::Name() const
     {
         return _networkStatus.interfaces[_current].interfaceName;
     }
@@ -63,7 +61,7 @@ namespace ProcessContainers
 
     // Container administrator
     // ----------------------------------
-    CContainerAdministrator::CContainerAdministrator() 
+    CContainerAdministrator::CContainerAdministrator()
     {
         // make sure framework is initialized
         ContainerError error = process_container_initialize();
@@ -75,7 +73,8 @@ namespace ProcessContainers
         }
     }
 
-    CCoontainerAdministrator::~CContainerAdministrator() {
+    CCoontainerAdministrator::~CContainerAdministrator()
+    {
         process_container_deinitialize();
     }
 
@@ -86,7 +85,7 @@ namespace ProcessContainers
         return cContainerAdministrator;
     }
 
-    IContainer* CContainerAdministrator::Container(const string& id, IStringIterator& searchpaths,  const string& logpath, const string& configuration) 
+    IContainer* CContainerAdministrator::Container(const string& id, IStringIterator& searchpaths, const string& logpath, const string& configuration)
     {
         IContainer* result = nullptr;
         ProcessContainer* container;
@@ -99,8 +98,7 @@ namespace ProcessContainers
         sp[searchpaths.Count()] = nullptr;
 
         _adminLock.Lock();
-        ContainerError error = process_container_create(&container, const_cast<char*>(id.c_str())
-            , const_cast<char**>(sp), const_cast<char*>(logpath.c_str()), const_cast<char*>(configuration.c_str()));
+        ContainerError error = process_container_create(&container, const_cast<char*>(id.c_str()), const_cast<char**>(sp), const_cast<char*>(logpath.c_str()), const_cast<char*>(configuration.c_str()));
 
         delete[] sp;
 
@@ -132,7 +130,7 @@ namespace ProcessContainers
     {
         _adminLock.Lock();
         _containers.remove(container);
-        
+
         if (_containers.size() == 0) {
             process_container_deinitialize();
         }
@@ -145,23 +143,22 @@ namespace ProcessContainers
         : _container(container)
         , _refCount(1)
     {
-
     }
 
-    CContainer::~CContainer() 
+    CContainer::~CContainer()
     {
         static_cast<CContainerAdministrator&>(CContainerAdministrator::Instance()).RemoveContainer(this);
 
-        if (_container != nullptr) 
+        if (_container != nullptr)
             process_container_destroy(_container);
     }
 
-    const string CContainer::Id() const 
+    const string CContainer::Id() const
     {
         return string(_container->id);
     }
 
-    uint32_t CContainer::Pid() const 
+    uint32_t CContainer::Pid() const
     {
         uint32_t pid;
         if (process_container_pid(_container, &pid) != PC_ERROR_NONE) {
@@ -177,7 +174,7 @@ namespace ProcessContainers
         ProcessContainerMemory memory;
 
         process_container_memory_status(_container, &memory);
-        
+
         result.allocated = memory.allocated;
         result.resident = memory.resident;
         result.shared = memory.shared;
@@ -188,7 +185,8 @@ namespace ProcessContainers
     CContainer::CPUInfo CContainer::Cpu() const
     {
         const unsigned int cores = std::thread::hardware_concurrency();
-        CPUInfo cpuInfo;;
+        CPUInfo cpuInfo;
+        ;
 
         // Get total usage
         process_container_cpu_usage(_container, -1, &(cpuInfo.total));
@@ -213,7 +211,7 @@ namespace ProcessContainers
 
         return cpuInfo;
     }
-    
+
     NetworkInterfaceIterator* CContainer::NetworkInterfaces() const
     {
         return new CNetworkInterfaceIterator(_container);
@@ -224,7 +222,7 @@ namespace ProcessContainers
         return static_cast<bool>(process_container_running(_container));
     }
 
-    bool CContainer::Start(const string& command, IStringIterator& parameters) 
+    bool CContainer::Start(const string& command, IStringIterator& parameters)
     {
         char const** params = new char const*[parameters.Count() + 1];
         bool result = false;
@@ -235,43 +233,42 @@ namespace ProcessContainers
         }
 
         params[parameters.Count()] = nullptr;
-        
+
         ContainerError error = process_container_start(_container, const_cast<char*>(command.c_str()), const_cast<char**>(params));
 
         delete[] params;
 
         if (error != ContainerError::PC_ERROR_NONE) {
             TRACE_L1("Failed to start command %s. Error code: %d", command.c_str(), error);
-        else {
-            result = true;
+            else
+            {
+                result = true;
+            }
+
+            return result;
+        }
+        bool CContainer::Stop(const uint32_t timeout /*ms*/)
+        {
+            return (process_container_stop(_container) == ContainerError::PC_ERROR_NONE);
         }
 
-        return result;
-    }
-    bool CContainer::Stop(const uint32_t timeout /*ms*/)
-    {
-        return (process_container_stop(_container) == ContainerError::PC_ERROR_NONE);
-    }
+        void CContainer::AddRef() const
+        {
+            Core::InterlockedIncrement(_refCount);
+        };
 
-    void CContainer::AddRef() const 
-    {
-        Core::InterlockedIncrement(_refCount);
-    };
+        uint32_t CContainer::Release()
+        {
+            uint32_t result = Core::ERROR_NONE;
+            if (Core::InterlockedDecrement(_refCount) == 0) {
+                delete this;
 
-    uint32_t CContainer::Release()
-    {
-        uint32_t result = Core::ERROR_NONE;
-        if (Core::InterlockedDecrement(_refCount) == 0) {
-            delete this;
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            }
 
-            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-        }
+            return result;
+        };
 
-        return result;
-    };
-
-} // namespace ProcessContainers
+    } // namespace ProcessContainers
 
 } // namespace WPEFramework
-
-

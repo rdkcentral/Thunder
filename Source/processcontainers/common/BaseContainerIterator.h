@@ -63,7 +63,7 @@ namespace ProcessContainers {
         bool IsValid() const override
         {
             bool valid = (_current < _ids.size()) && (_current != UINT32_MAX);
-            
+
             return valid;
         }
 
@@ -76,13 +76,14 @@ namespace ProcessContainers {
         {
             return _ids.size();
         }
-        
+
         const string& Id() const override
         {
             ASSERT(IsValid() == true)
 
             return _ids[_current];
         }
+
     private:
         std::vector<string> _ids;
         uint32_t _current;

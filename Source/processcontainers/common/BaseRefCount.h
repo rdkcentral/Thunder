@@ -25,10 +25,9 @@ namespace ProcessContainers {
     template <typename Mixin> // Core::IRefCounted mixin
     class BaseRefCount : public Mixin {
     public:
-        BaseRefCount() 
+        BaseRefCount()
             : _refCount(1)
         {
-            
         }
 
         void AddRef() const override
@@ -47,6 +46,7 @@ namespace ProcessContainers {
 
             return result;
         }
+
     private:
         mutable uint32_t _refCount;
     };

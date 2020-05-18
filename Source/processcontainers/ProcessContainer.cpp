@@ -22,12 +22,11 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    NetworkInterfaceIterator::NetworkInterfaceIterator() 
+    NetworkInterfaceIterator::NetworkInterfaceIterator()
         : _current(UINT32_MAX)
         , _count(0)
         , _refCount(1)
     {
-        
     }
 
     void NetworkInterfaceIterator::AddRef()
@@ -42,7 +41,7 @@ namespace ProcessContainers {
         }
     }
 
-    bool NetworkInterfaceIterator::Next() 
+    bool NetworkInterfaceIterator::Next()
     {
         if (_current == UINT32_MAX)
             _current = 0;
@@ -52,7 +51,7 @@ namespace ProcessContainers {
         return IsValid();
     }
 
-    void NetworkInterfaceIterator::Reset() 
+    void NetworkInterfaceIterator::Reset()
     {
         _current = UINT32_MAX;
     }

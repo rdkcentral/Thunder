@@ -21,21 +21,21 @@
 
 #include "processcontainers/ProcessContainer.h"
 #include "processcontainers/common/BaseAdministrator.h"
+#include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 #include "processcontainers/common/Lockable.h"
-#include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
     using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
-    class RunCContainer : public RunCContainerMixins
-    {
+    class RunCContainer : public RunCContainerMixins {
     private:
         friend class RunCContainerAdministrator;
 
         RunCContainer(const string& name, const string& path, const string& logPath);
+
     public:
         RunCContainer(const RunCContainer&) = delete;
         RunCContainer& operator=(const RunCContainer&) = delete;
@@ -47,6 +47,7 @@ namespace ProcessContainers {
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
+
     private:
         mutable uint32_t _refCount;
         string _name;
@@ -55,8 +56,7 @@ namespace ProcessContainers {
         mutable Core::OptionalType<uint32_t> _pid;
     };
 
-    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, Lockable<IContainerAdministrator>>
-    {
+    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, Lockable<IContainerAdministrator>> {
     private:
         friend class RunCContainer;
         friend class Core::SingletonType<RunCContainerAdministrator>;
@@ -64,13 +64,14 @@ namespace ProcessContainers {
         RunCContainerAdministrator();
         RunCContainerAdministrator(const RunCContainerAdministrator&) = delete;
         RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
+
     public:
         ~RunCContainerAdministrator();
 
-        IContainer* Container(const string& id, 
-                                IStringIterator& searchpaths, 
-                                const string& logpath,
-                                const string& configuration) override; //searchpaths will be searched in order in which they are iterated
+        IContainer* Container(const string& id,
+            IStringIterator& searchpaths,
+            const string& logpath,
+            const string& configuration) override; //searchpaths will be searched in order in which they are iterated
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;

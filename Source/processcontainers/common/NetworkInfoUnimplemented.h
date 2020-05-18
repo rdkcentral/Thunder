@@ -25,8 +25,7 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    class UnimplementedNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator>
-    {
+    class UnimplementedNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator> {
     public:
         UnimplementedNetworkInterfaceIterator()
             : _empty("")
@@ -64,9 +63,10 @@ namespace ProcessContainers {
         void Reset(const uint32_t position) override
         {
         }
-        
+
         bool IsValid() const override
-        {           return false;
+        {
+            return false;
         }
 
         uint32_t Index() const override
@@ -79,23 +79,22 @@ namespace ProcessContainers {
             return 0;
         };
 
-        void AddRef() const override
-        {
-            
+        void AddRef() const override{
+
         };
 
-        uint32_t Release() const 
+        uint32_t Release() const
         {
             uint32_t result = Core::ERROR_NONE;
             return result;
         };
+
     private:
         const string _empty;
     };
 
     template <typename Mixin> // IContainer Mixin
-    class NetworkInfoUnimplemented : public Mixin
-    {
+    class NetworkInfoUnimplemented : public Mixin {
     public:
         INetworkInterfaceIterator* NetworkInterfaces() const override
         {

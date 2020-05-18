@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -24,9 +24,9 @@
 namespace WPEFramework {
 namespace ProcessContainers {
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
-    
+
     class INetworkInterfaceIterator : public Core::IIterator, public Core::IReferenceCounted {
-    public:    
+    public:
         // Return interface name (eg. veth0)
         virtual string Name() const = 0;
 
@@ -48,10 +48,10 @@ namespace ProcessContainers {
     class IProcessorInfo : public Core::IReferenceCounted {
     public:
         // total usage of cpu, in nanoseconds. Returns UINT64_MAX on error
-        virtual uint64_t TotalUsage() const = 0; 
+        virtual uint64_t TotalUsage() const = 0;
 
         // cpu usage per core in nanoseconds. Returns UINT64_MAX on error
-        virtual uint64_t CoreUsage(uint32_t coreNum) const = 0; 
+        virtual uint64_t CoreUsage(uint32_t coreNum) const = 0;
 
         // return number of cores
         virtual uint16_t NumberOfCores() const = 0;
@@ -84,11 +84,11 @@ namespace ProcessContainers {
         virtual bool IsRunning() const = 0;
 
         // Start the container with provided process. Returns true if process is started successfully
-        virtual bool Start(const string& command, IStringIterator& parameters) = 0; 
+        virtual bool Start(const string& command, IStringIterator& parameters) = 0;
 
         // Stops the running containerized process. Returns true when stopped.
         // Note: if timeout == 0, call is asynchronous
-        virtual bool Stop(const uint32_t timeout /*ms*/) = 0; 
+        virtual bool Stop(const uint32_t timeout /*ms*/) = 0;
     };
 
     struct IContainerAdministrator {
@@ -105,21 +105,21 @@ namespace ProcessContainers {
             \param containerLogPath Path to the folder, where logfile for created container will be created
             \param configuration Implementation-specific configuration provided to the container.
         */
-        virtual IContainer* Container(const string& id, 
-                                      IStringIterator& searchpaths, 
-                                      const string& containerLogPath,
-                                      const string& configuration) = 0; //searchpaths will be searched in order in which they are iterated
+        virtual IContainer* Container(const string& id,
+            IStringIterator& searchpaths,
+            const string& containerLogPath,
+            const string& configuration)
+            = 0; //searchpaths will be searched in order in which they are iterated
 
         // Enable logging for the container framework
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
 
         // Returns ids of all created containers
         virtual IContainerIterator* Containers() = 0;
-        
+
         // Return a container by its ID. Returns nullptr if container is not found
         // It needs to be released.
         virtual IContainer* Get(const string& id) = 0;
     };
 } // ProcessContainers
 } // WPEFramework
-

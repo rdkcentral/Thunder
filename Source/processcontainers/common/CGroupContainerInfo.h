@@ -62,6 +62,7 @@ namespace ProcessContainers {
         {
             _shared = value;
         }
+
     private:
         uint64_t _allocated;
         uint64_t _resident;
@@ -70,7 +71,7 @@ namespace ProcessContainers {
     };
 
     struct CGroupProcessorInfo : public BaseRefCount<ProcessContainers::IProcessorInfo> {
-        CGroupProcessorInfo(std::vector<uint64_t>&& cores) 
+        CGroupProcessorInfo(std::vector<uint64_t>&& cores)
             : _coresUsage(std::move(cores))
             , _refCount(1)
         {
@@ -84,7 +85,7 @@ namespace ProcessContainers {
         {
             return _totalUsage;
         }
-        
+
         uint64_t CoreUsage(uint32_t coreNum) const override
         {
             uint64_t usage;
@@ -98,7 +99,7 @@ namespace ProcessContainers {
             return usage;
         }
 
-        uint16_t NumberOfCores() const override 
+        uint16_t NumberOfCores() const override
         {
             return _coresUsage.size();
         }
@@ -112,10 +113,9 @@ namespace ProcessContainers {
     template <typename Mixin> // IContainer Mixin
     class CGroupContainerInfo : public Mixin {
     public:
-        CGroupContainerInfo(const string& name) 
+        CGroupContainerInfo(const string& name)
             : _name(name)
         {
-
         }
 
         IMemoryInfo* Memory() const override
@@ -123,7 +123,7 @@ namespace ProcessContainers {
             CGroupMemoryInfo* result = new CGroupMemoryInfo;
 
             // Load total allocated memory
-            string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";   
+            string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";
 
             char buffer[2048];
             auto fd = open(_memoryInfoPath.c_str(), O_RDONLY);
@@ -134,7 +134,7 @@ namespace ProcessContainers {
                 if (bytesRead > 0) {
                     result->Allocated(std::stoll(buffer));
                 }
-                
+
                 close(fd);
             } else {
                 TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
@@ -152,32 +152,32 @@ namespace ProcessContainers {
                     char* token = strtok_r(buffer, " \n", &tmp);
 
                     while (token != nullptr) {
-                        if (token == nullptr) 
+                        if (token == nullptr)
                             break;
 
                         char* label = token;
 
                         token = strtok_r(NULL, " \n", &tmp);
-                        if (token == nullptr) 
+                        if (token == nullptr)
                             break;
 
                         uint64_t value = std::stoll(token);
 
-                        if (strcmp(label, "rss") == 0) 
+                        if (strcmp(label, "rss") == 0)
                             result->Resident(value);
-                        else if (strcmp(label, "mapped_file") == 0) 
+                        else if (strcmp(label, "mapped_file") == 0)
                             result->Shared(value);
 
                         token = strtok_r(NULL, " \n", &tmp);
                     }
                 }
-                
+
                 close(fd);
             } else {
                 TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
             }
 
-            return result;    
+            return result;
         }
 
         IProcessorInfo* ProcessorInfo() const override
@@ -188,7 +188,7 @@ namespace ProcessContainers {
             string cpuPerCoreUsagePath = "/sys/fs/cgroup/cpuacct/" + _name + "/cpuacct.usage_percpu";
             auto fd = open(cpuPerCoreUsagePath.c_str(), O_RDONLY);
             char buffer[2048];
-        
+
             if (fd != 0) {
                 uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
 
@@ -210,6 +210,7 @@ namespace ProcessContainers {
 
             return new CGroupProcessorInfo(std::move(coresUsage));
         }
+
     private:
         string _name;
     };

@@ -28,17 +28,16 @@ namespace ProcessContainers {
     template <typename TContainer, typename Mixin> // IContainerAdministrator, Lockable Mixin
     class BaseAdministrator : public Mixin {
     public:
-        BaseAdministrator() 
+        BaseAdministrator()
             : _containers()
         {
-
         }
 
-        virtual ~BaseAdministrator() 
+        virtual ~BaseAdministrator()
         {
             if (_containers.size() > 0) {
                 TRACE_L1("There are still active containers when shutting down administrator!");
-                
+
                 while (_containers.size() > 0) {
                     _containers.back()->Release();
                     _containers.pop_back();
@@ -47,7 +46,7 @@ namespace ProcessContainers {
         }
 
         IContainerIterator* Containers() override
-        {            
+        {
             std::vector<string> containers;
             containers.reserve(_containers.size());
 
@@ -55,7 +54,7 @@ namespace ProcessContainers {
             for (auto& container : _containers) {
                 containers.push_back(container->Id());
             }
-            Mixin::InternalUnlock();            
+            Mixin::InternalUnlock();
 
             return new BaseContainerIterator(std::move(containers));
         }
@@ -65,7 +64,7 @@ namespace ProcessContainers {
             IContainer* result = nullptr;
 
             Mixin::InternalLock();
-            auto found = std::find_if(_containers.begin(), _containers.end(), [&id](const IContainer* c) {return c->Id() == id;});
+            auto found = std::find_if(_containers.begin(), _containers.end(), [&id](const IContainer* c) { return c->Id() == id; });
             if (found != _containers.end()) {
                 result = *found;
                 result->AddRef();
