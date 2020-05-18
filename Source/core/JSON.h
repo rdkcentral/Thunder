@@ -1902,7 +1902,9 @@ namespace Core {
             EscapeSequenceAction GetEscapeSequenceAction(char current) const
             {
                 EscapeSequenceAction action = EscapeSequenceAction::COLLAPSE;
-                if (current == 'u' || current == '\"') {
+                if (current == 'u') {
+                    action = EscapeSequenceAction::NOTHING;
+                } else if((current == '\"') && (_scopeCount & DepthCountMask)) {
                     action = EscapeSequenceAction::NOTHING;
                 } else {
                     if (current == 'n' || current == 'r' || current == 't' || current == 'f' || current == 'b')
@@ -3764,7 +3766,7 @@ namespace Core {
                 uint16_t endIndex = 0;
                 bool insideQuotes = false;
                 for (uint16_t i = 1; i < maxLength; ++i) {
-                    if (stream[i] == '\"') {
+                    if ((stream[i] == '\"') && (stream[i - 1] != '\\')) {
                         insideQuotes = !insideQuotes;
                     }
                     if (!insideQuotes) {

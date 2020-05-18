@@ -17,10 +17,14 @@
  * limitations under the License.
  */
 
-#include "Test.h"
+#include "UUID.h"
 
-int __cnt = 0;
-int __pass = 0;
+namespace WPEFramework {
 
-int TotalTests = 0;
-int TotalTestsPassed = 0;
+namespace Bluetooth {
+
+/* static */ const uint8_t UUID::BASE[] = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
+} // namespace Bluetooth
+
+}
