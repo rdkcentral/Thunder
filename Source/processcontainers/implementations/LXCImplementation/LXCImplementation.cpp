@@ -116,12 +116,12 @@ namespace ProcessContainers {
     {
         return _interfaces.at(_current).name;
     }
-    uint32_t LXCNetworkInterfaceIterator::NumIPs() const 
+    uint16_t LXCNetworkInterfaceIterator::NumIPs() const 
     {
         return _interfaces.at(_current).numAddresses;
     }
 
-    std::string LXCNetworkInterfaceIterator::IP(uint32_t id) const 
+    std::string LXCNetworkInterfaceIterator::Address(const uint16_t id) const 
     {
         ASSERT(id < _interfaces.at(_current).numAddresses);
 
@@ -221,11 +221,11 @@ namespace ProcessContainers {
         return _pid;
     }
 
-    Core::ProxyType<IMemoryInfo> LXCContainer::Memory() const  
+    IMemoryInfo* LXCContainer::Memory() const  
     {
         ASSERT(_lxcContainer != nullptr);
 
-        auto result(Core::ProxyType<CGroupMemoryInfo>::Create());
+        CGroupMemoryInfo* result = new CGroupMemoryInfo;
 
         char buffer[2048];
         int32_t read = _lxcContainer->get_cgroup_item(_lxcContainer, "memory.usage_in_bytes", buffer, sizeof(buffer));
@@ -269,14 +269,13 @@ namespace ProcessContainers {
             TRACE(Trace::Warning, ("Could not read memory usage of LXC container"));
         } 
 
-        return Core::ProxyType<IMemoryInfo>(result);
+        return result;
     }
 
-    Core::ProxyType<IProcessorInfo> LXCContainer::Cpu() const
+    IProcessorInfo* LXCContainer::ProcessorInfo() const
     {
         ASSERT(_lxcContainer != nullptr);
 
-        auto result(Core::ProxyType<CGroupProcessorInfo>::Create());
         std::vector<uint64_t> cores;
 
         char buffer[512];
@@ -304,16 +303,12 @@ namespace ProcessContainers {
             TRACE(Trace::Warning, ("Could not per thread cpu-usage of LXC container"));
         }
 
-        result->SetCores(std::move(cores));
-
-        return Core::ProxyType<IProcessorInfo>(result);
+        return new CGroupProcessorInfo(std::move(cores));
     }
 
-    Core::ProxyType<INetworkInterfaceIterator> LXCContainer::NetworkInterfaces() const
+    INetworkInterfaceIterator* LXCContainer::NetworkInterfaces() const
     {
-        return Core::ProxyType<INetworkInterfaceIterator>(
-            Core::ProxyType<LXCNetworkInterfaceIterator>::Create(_lxcContainer)
-        );
+        return new LXCNetworkInterfaceIterator(_lxcContainer);
     }
 
     bool LXCContainer::IsRunning() const 

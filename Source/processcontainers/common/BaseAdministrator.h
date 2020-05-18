@@ -20,8 +20,7 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
-#include "BaseContainerIterator.h"
-#include "Lockable.h"
+#include "processcontainers/common/BaseContainerIterator.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
@@ -47,10 +46,8 @@ namespace ProcessContainers {
             }
         }
 
-        Core::ProxyType<IContainerIterator> Containers() override
-        {
-            auto result(Core::ProxyType<BaseContainerIterator>::Create());
-            
+        IContainerIterator* Containers() override
+        {            
             std::vector<string> containers;
             containers.reserve(_containers.size());
 
@@ -60,8 +57,7 @@ namespace ProcessContainers {
             }
             Mixin::InternalUnlock();            
 
-            result->Set(std::move(containers));
-            return Core::ProxyType<IContainerIterator>(result);
+            return new BaseContainerIterator(std::move(containers));
         }
 
         IContainer* Get(const string& id) override

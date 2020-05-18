@@ -20,11 +20,12 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseRefCount.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    class UnimplementedNetworkInterfaceIterator : public INetworkInterfaceIterator
+    class UnimplementedNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator>
     {
     public:
         UnimplementedNetworkInterfaceIterator()
@@ -32,54 +33,53 @@ namespace ProcessContainers {
         {
         }
 
-        virtual string Name() const
+        string Name() const override
         {
             TRACE_L1("INetworkInterfaceIterator::Name() not implemented");
             return _empty;
         }
 
-        virtual uint32_t NumIPs() const
+        uint16_t NumIPs() const override
         {
             TRACE_L1("INetworkInterfaceIterator::NumIPs() not implemented");
             return 0;
         }
 
-        virtual string IP(uint32_t n = 0) const 
+        string Address(uint16_t n = 0) const override
         {
             TRACE_L1("INetworkInterfaceIterator::IP() not implemented");
             return _empty;
         }
 
-        virtual bool Next() 
+        bool Next() override
         {
             return false;
         }
 
-        virtual bool Previous() 
+        bool Previous() override
         {
             return false;
         }
 
-        virtual void Reset(const uint32_t position) 
+        void Reset(const uint32_t position) override
         {
         }
         
-        virtual bool IsValid() const 
-        {
-            return false;
+        bool IsValid() const override
+        {           return false;
         }
 
-        virtual uint32_t Index() const 
+        uint32_t Index() const override
         {
             return Core::infinite;
         }
 
-        virtual uint32_t Count() const 
+        uint32_t Count() const override
         {
             return 0;
         };
 
-        void AddRef() const 
+        void AddRef() const override
         {
             
         };
@@ -97,11 +97,9 @@ namespace ProcessContainers {
     class NetworkInfoUnimplemented : public Mixin
     {
     public:
-        Core::ProxyType<INetworkInterfaceIterator> NetworkInterfaces() const override
+        INetworkInterfaceIterator* NetworkInterfaces() const override
         {
-            return Core::ProxyType<INetworkInterfaceIterator>(
-                Core::ProxyType<UnimplementedNetworkInterfaceIterator>::Create()
-            );
+            return new UnimplementedNetworkInterfaceIterator;
         }
     };
 

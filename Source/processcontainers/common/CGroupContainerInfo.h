@@ -20,11 +20,12 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseRefCount.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    struct CGroupMemoryInfo : public ProcessContainers::IMemoryInfo {
+    struct CGroupMemoryInfo : public BaseRefCount<ProcessContainers::IMemoryInfo> {
         CGroupMemoryInfo()
             : _allocated(UINT64_MAX)
             , _resident(UINT64_MAX)
@@ -68,20 +69,23 @@ namespace ProcessContainers {
         mutable uint32_t _refCount;
     };
 
-    struct CGroupProcessorInfo : public ProcessContainers::IProcessorInfo {
-        CGroupProcessorInfo() 
-            : _coresUsage()
+    struct CGroupProcessorInfo : public BaseRefCount<ProcessContainers::IProcessorInfo> {
+        CGroupProcessorInfo(std::vector<uint64_t>&& cores) 
+            : _coresUsage(std::move(cores))
             , _refCount(1)
         {
-            
+            _totalUsage = 0;
+            for (auto& usage : _coresUsage) {
+                _totalUsage += usage;
+            }
         }
 
-        uint64_t TotalUsage() const
+        uint64_t TotalUsage() const override
         {
             return _totalUsage;
         }
         
-        uint64_t CoreUsage(uint32_t coreNum) const
+        uint64_t CoreUsage(uint32_t coreNum) const override
         {
             uint64_t usage;
 
@@ -94,16 +98,11 @@ namespace ProcessContainers {
             return usage;
         }
 
-        void SetCores(std::vector<uint64_t>&& cores)
+        uint16_t NumberOfCores() const override 
         {
-            _coresUsage = std::move(cores);
-
-            _totalUsage = 0;
-            for (auto& usage : _coresUsage) {
-                _totalUsage += usage;
-            }
+            return _coresUsage.size();
         }
-        
+
     private:
         std::vector<uint64_t> _coresUsage;
         uint64_t _totalUsage;
@@ -119,9 +118,9 @@ namespace ProcessContainers {
 
         }
 
-        Core::ProxyType<IMemoryInfo> Memory() const override
+        IMemoryInfo* Memory() const override
         {
-            Core::ProxyType<CGroupMemoryInfo> result(Core::ProxyType<CGroupMemoryInfo>::Create());
+            CGroupMemoryInfo* result = new CGroupMemoryInfo;
 
             // Load total allocated memory
             string _memoryInfoPath = "/sys/fs/cgroup/memory/" + _name + "/memory.usage_in_bytes";   
@@ -178,12 +177,11 @@ namespace ProcessContainers {
                 TRACE_L1("Cannot get memory information for container. Is device booted with memory cgroup enabled?");
             }
 
-            return Core::ProxyType<IMemoryInfo>(result);    
+            return result;    
         }
 
-        Core::ProxyType<IProcessorInfo> Cpu() const override
+        IProcessorInfo* ProcessorInfo() const override
         {
-            Core::ProxyType<CGroupProcessorInfo> result(Core::ProxyType<CGroupProcessorInfo>::Create());
             std::vector<uint64_t> coresUsage;
 
             // Load per-core cpu time
@@ -209,9 +207,8 @@ namespace ProcessContainers {
 
                 close(fd);
             }
-            result->SetCores(std::move(coresUsage));
 
-            return Core::ProxyType<IProcessorInfo>(result);
+            return new CGroupProcessorInfo(std::move(coresUsage));
         }
     private:
         string _name;

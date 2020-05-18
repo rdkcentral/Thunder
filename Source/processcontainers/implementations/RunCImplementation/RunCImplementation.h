@@ -23,11 +23,12 @@
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/CGroupContainerInfo.h"
 #include "processcontainers/common/Lockable.h"
+#include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
-    using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<Lockable<IContainer>>>;
+    using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
     class RunCContainer : public RunCContainerMixins
     {
@@ -38,7 +39,7 @@ namespace ProcessContainers {
     public:
         RunCContainer(const RunCContainer&) = delete;
         RunCContainer& operator=(const RunCContainer&) = delete;
-        virtual ~RunCContainer();
+        ~RunCContainer() override;
 
         // IContainerMethods
         const string& Id() const override;
@@ -46,10 +47,6 @@ namespace ProcessContainers {
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
-
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() const override;
     private:
         mutable uint32_t _refCount;
         string _name;

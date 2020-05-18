@@ -23,61 +23,48 @@
 
 namespace WPEFramework {
 namespace ProcessContainers {
-    
     using IStringIterator = Core::IteratorType<std::vector<string>, const string>;
-    using IConstStringIterator = Core::IteratorType<const std::vector<string>, const string, std::vector<string>::const_iterator>;
-
-    class INetworkInterfaceIterator : public Core::IIterator 
-    {
-    public:
-        virtual ~INetworkInterfaceIterator() = default;
     
+    class INetworkInterfaceIterator : public Core::IIterator, public Core::IReferenceCounted {
+    public:    
         // Return interface name (eg. veth0)
         virtual string Name() const = 0;
 
         // Return numver of ip addresses assigned to the interface
-        virtual uint32_t NumIPs() const = 0;
+        virtual uint16_t NumIPs() const = 0;
 
         // Get n-th ip assigned to the container. Empty string
         // is returned if n is larger than NumIPs()
-        virtual string IP(uint32_t n = 0) const = 0;
+        virtual string Address(const uint16_t n = 0) const = 0;
     };
 
-    class IMemoryInfo
-    {
+    class IMemoryInfo : public Core::IReferenceCounted {
     public:
-        ~IMemoryInfo() = default;
-
         virtual uint64_t Allocated() const = 0; // in bytes, returns UINT64_MAX on error
         virtual uint64_t Resident() const = 0; // in bytes, returns UINT64_MAX on error
         virtual uint64_t Shared() const = 0; // in bytes, returns UINT64_MAX on error
     };
 
-    class IProcessorInfo
-    {
+    class IProcessorInfo : public Core::IReferenceCounted {
     public:
-        ~IProcessorInfo() = default;
-
         // total usage of cpu, in nanoseconds. Returns UINT64_MAX on error
         virtual uint64_t TotalUsage() const = 0; 
 
         // cpu usage per core in nanoseconds. Returns UINT64_MAX on error
         virtual uint64_t CoreUsage(uint32_t coreNum) const = 0; 
+
+        // return number of cores
+        virtual uint16_t NumberOfCores() const = 0;
     };
 
-    class IContainerIterator : public Core::IIterator
-    {
+    class IContainerIterator : public Core::IIterator, public Core::IReferenceCounted {
     public:
-        ~IContainerIterator() = default;
-
         // Return Id of container
-        virtual const string& Id() = 0;
+        virtual const string& Id() const = 0;
     };
 
     class IContainer : public Core::IReferenceCounted {
     public:
-        virtual ~IContainer() = default;
-
         // Return the Name of the Container
         virtual const string& Id() const = 0;
 
@@ -85,13 +72,13 @@ namespace ProcessContainers {
         virtual uint32_t Pid() const = 0;
 
         // Return memory usage statistics for the whole container
-        virtual Core::ProxyType<IMemoryInfo> Memory() const = 0;
+        virtual IMemoryInfo* Memory() const = 0;
 
         // Return time of CPU spent in whole container
-        virtual Core::ProxyType<IProcessorInfo> Cpu() const = 0;
+        virtual IProcessorInfo* ProcessorInfo() const = 0;
 
         // Return information on network status of the container
-        virtual Core::ProxyType<INetworkInterfaceIterator> NetworkInterfaces() const = 0;
+        virtual INetworkInterfaceIterator* NetworkInterfaces() const = 0;
 
         // Tells if the container is running or not
         virtual bool IsRunning() const = 0;
@@ -104,11 +91,8 @@ namespace ProcessContainers {
         virtual bool Stop(const uint32_t timeout /*ms*/) = 0; 
     };
 
-    struct IContainerAdministrator 
-    {
+    struct IContainerAdministrator {
         static IContainerAdministrator& Instance();
-
-        IContainerAdministrator() = default;
         virtual ~IContainerAdministrator() = default;
 
         /**
@@ -130,7 +114,7 @@ namespace ProcessContainers {
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
 
         // Returns ids of all created containers
-        virtual Core::ProxyType<IContainerIterator> Containers() = 0;
+        virtual IContainerIterator* Containers() = 0;
         
         // Return a container by its ID. Returns nullptr if container is not found
         // It needs to be released.

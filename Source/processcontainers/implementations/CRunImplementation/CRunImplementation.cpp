@@ -212,23 +212,6 @@ namespace ProcessContainers
         return result;
     }
 
-    void CRunContainer::AddRef() const 
-    {
-        Core::InterlockedIncrement(_refCount);
-    };
-
-    uint32_t CRunContainer::Release() const
-    {
-        uint32_t result = Core::ERROR_NONE;
-
-        if (Core::InterlockedDecrement(_refCount) == 0) {
-            delete this;
-            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-        }
-
-        return result;
-    };
-
     void CRunContainer::OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters)
     {
         // Clear args that were set by runtime

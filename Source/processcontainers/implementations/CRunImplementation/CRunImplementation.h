@@ -23,6 +23,7 @@
 #include "processcontainers/common/CGroupContainerInfo.h"
 #include "processcontainers/common/BaseAdministrator.h"
 #include "processcontainers/common/Lockable.h"
+#include "processcontainers/common/BaseRefCount.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
 extern "C" {
@@ -34,7 +35,7 @@ extern "C" {
 
 namespace WPEFramework {
 namespace ProcessContainers {
-    using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<Lockable<IContainer>>>;
+    using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
     class CRunContainer : public CRunContainerMixins
     {
@@ -45,7 +46,7 @@ namespace ProcessContainers {
         CRunContainer(const CRunContainer&) = delete;
         CRunContainer& operator=(const CRunContainer&) = delete;
     public:
-        virtual ~CRunContainer();
+        ~CRunContainer() override;
 
         // IContainerMethods
         const string& Id() const override;
@@ -53,11 +54,6 @@ namespace ProcessContainers {
         bool IsRunning() const override;
         bool Start(const string& command, IStringIterator& parameters) override;
         bool Stop(const uint32_t timeout /*ms*/) override;
-
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() const override;
-
     private:
         uint32_t ClearLeftovers();
         void OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);

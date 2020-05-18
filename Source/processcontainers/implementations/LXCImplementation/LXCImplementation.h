@@ -28,16 +28,18 @@
 #include <cctype>
 #include "../../ProcessContainer.h"
 #include "../../common/BaseAdministrator.h"
+#include "../../common/BaseRefCount.h"
+#include "../../common/Lockable.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
     using LxcContainerType = struct lxc_container;
 
-    class LXCNetworkInterfaceIterator : public Core::IIterator 
+    class LXCNetworkInterfaceIterator : public BaseRefCount<INetworkInterfaceIterator>
     {
     public:
         LXCNetworkInterfaceIterator(LxcContainerType* lxcContainer);
-        ~LXCNetworkInterfaceIterator();
+        ~LXCNetworkInterfaceIterator() override;
 
         bool Next();
         bool Previous();
@@ -47,8 +49,8 @@ namespace ProcessContainers {
         uint32_t Count() const;
 
         string Name() const;
-        uint32_t NumIPs() const;
-        string IP(uint32_t n = 0) const;
+        uint16_t NumIPs() const;
+        string Address(const uint16_t n = 0) const;
     private:
         struct LXCNetInterface {
             char* name;
@@ -60,7 +62,7 @@ namespace ProcessContainers {
         std::vector<LXCNetInterface> _interfaces;
     };
 
-    class LXCContainer : public IContainer {
+    class LXCContainer : public BaseRefCount<IContainer> {
     private:
         class Config : public Core::JSON::Container {
         public:
@@ -95,14 +97,15 @@ namespace ProcessContainers {
         LXCContainer(const string& name, LxcContainerType* lxcContainer, const string& containerLogDir, const string& configuration, const string& lxcPath);
     public:
         LXCContainer(const LXCContainer&) = delete;
-        ~LXCContainer();
+        ~LXCContainer() override;
+        
         LXCContainer& operator=(const LXCContainer&) = delete;
 
         const string& Id() const override;
         uint32_t Pid() const override;
-        Core::ProxyType<IMemoryInfo> Memory() const override;
-        Core::ProxyType<IProcessorInfo> Cpu() const override;
-        Core::ProxyType<INetworkInterfaceIterator> NetworkInterfaces() const override;
+        IMemoryInfo* Memory() const override;
+        IProcessorInfo* ProcessorInfo() const override;
+        INetworkInterfaceIterator* NetworkInterfaces() const override;
         bool IsRunning() const override;
 
         bool Start(const string& command, ProcessContainers::IStringIterator& parameters) override;

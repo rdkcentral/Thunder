@@ -308,23 +308,6 @@ namespace ProcessContainers
         return result;
     }
 
-    void RunCContainer::AddRef() const 
-    {
-        Core::InterlockedIncrement(_refCount);
-    };
-
-    uint32_t RunCContainer::Release() const
-    {
-        uint32_t result = Core::ERROR_NONE;
-        if (Core::InterlockedDecrement(_refCount) == 0) {
-            delete this;
-
-            result = Core::ERROR_DESTRUCTION_SUCCEEDED;
-        }
-
-        return result;
-    };
-
 } // namespace ProcessContainers
 
 } // namespace WPEFramework

@@ -20,21 +20,22 @@
 #pragma once
 
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/common/BaseRefCount.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    class BaseContainerIterator : public IContainerIterator {
+    class BaseContainerIterator : public BaseRefCount<IContainerIterator> {
     public:
-        BaseContainerIterator()
-            : _ids()
+        BaseContainerIterator(std::vector<string>&& ids)
+            : _ids(std::move(ids))
             , _current(UINT32_MAX)
         {
         }
 
-        virtual ~BaseContainerIterator() {};
+        ~BaseContainerIterator() override = default;
 
-        virtual bool Next()
+        virtual bool Next() override
         {
             if (_current == UINT32_MAX)
                 _current = 0;
@@ -44,7 +45,7 @@ namespace ProcessContainers {
             return IsValid();
         }
 
-        virtual bool Previous()
+        bool Previous() override
         {
             if (_current == UINT32_MAX)
                 _current = _ids.size() - 1;
@@ -54,36 +55,33 @@ namespace ProcessContainers {
             return IsValid();
         }
 
-        virtual void Reset(const uint32_t position)
+        void Reset(const uint32_t position) override
         {
             _current = UINT32_MAX;
         }
 
-        virtual bool IsValid() const
+        bool IsValid() const override
         {
             bool valid = (_current < _ids.size()) && (_current != UINT32_MAX);
             
             return valid;
         }
 
-        virtual uint32_t Index() const
+        uint32_t Index() const override
         {
             return _current;
         }
 
-        virtual uint32_t Count() const
+        uint32_t Count() const override
         {
             return _ids.size();
         }
         
-        const string& Id()
+        const string& Id() const override
         {
-            return _ids[_current];
-        }
+            ASSERT(IsValid() == true)
 
-        void Set(std::vector<string>&& ids) 
-        {
-            _ids = std::move(ids);
+            return _ids[_current];
         }
     private:
         std::vector<string> _ids;
