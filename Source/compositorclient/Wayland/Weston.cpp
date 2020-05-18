@@ -42,8 +42,7 @@
 #include <sys/signalfd.h>
 #include <unistd.h>
 
-#include "xdg-shell-unstable-v6-client-protocol.h"
-
+#include "xdg-shell-client-protocol.h"
 // logical xor
 #define XOR(a, b) ((!a && b) || (a && !b))
 
@@ -259,13 +258,13 @@ static const struct wl_seat_listener seatListener = {
 };
 
 static void
-xdg_shell_ping(void *data, struct zxdg_shell_v6 *shell, uint32_t serial)
+xdg_wm_base_ping(void *data, struct xdg_wm_base *shell, uint32_t serial)
 {
-    zxdg_shell_v6_pong(shell, serial);
+    xdg_wm_base_pong(shell, serial);
 }
 
-static const struct zxdg_shell_v6_listener xdg_shell_listener = {
-    xdg_shell_ping,
+static const struct xdg_wm_base_listener wm_base_listener = {
+    xdg_wm_base_ping,
 };
 
 static const struct wl_registry_listener globalRegistryListener = {
@@ -293,11 +292,11 @@ static const struct wl_registry_listener globalRegistryListener = {
             struct wl_output* result = static_cast<struct wl_output*>(wl_registry_bind(registry, name, &wl_output_interface, 2));
             wl_output_add_listener(result, &outputListener, data);
             context._output = result;
-        } else if (strcmp(interface, "zxdg_shell_v6") == 0) {
-            struct zxdg_shell_v6* result = static_cast<struct zxdg_shell_v6*>(wl_registry_bind(registry, name, &zxdg_shell_v6_interface, 1));
+        } else if (strcmp(interface, "xdg_wm_base") == 0) {
+            struct xdg_wm_base* result = static_cast<struct xdg_wm_base*>(wl_registry_bind(registry, name, &xdg_wm_base_interface, 1));
 
-            zxdg_shell_v6_add_listener(result, &xdg_shell_listener, data);
-            context._xdg_shell = result;
+            xdg_wm_base_add_listener(result, &wm_base_listener, data);
+            context._wm_base = result;
         }
     },
     // global_remove
@@ -307,19 +306,19 @@ static const struct wl_registry_listener globalRegistryListener = {
 };
 
 static void
-handle_surface_configure(void *data, struct zxdg_surface_v6 *surface,
+handle_surface_configure(void *data, struct xdg_surface *surface,
              uint32_t serial)
 {
-    zxdg_surface_v6_ack_configure(surface, serial);
+    xdg_surface_ack_configure(surface, serial);
 }
 
-static const struct zxdg_surface_v6_listener xdg_surface_listener = {
+static const struct xdg_surface_listener xdg_surface_listener = {
     handle_surface_configure
 };
 
 
 static void
-handle_toplevel_configure(void *data, struct zxdg_toplevel_v6 *toplevel,
+handle_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
               int32_t width, int32_t height,
               struct wl_array *states)
 {
@@ -329,12 +328,12 @@ handle_toplevel_configure(void *data, struct zxdg_toplevel_v6 *toplevel,
 }
 
 static void
-handle_toplevel_close(void *data, struct zxdg_toplevel_v6 *xdg_toplevel)
+handle_toplevel_close(void *data, struct xdg_toplevel *xdg_toplevel)
 {
     //running = 0;
 }
 
-static const struct zxdg_toplevel_v6_listener xdg_toplevel_listener = {
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
     handle_toplevel_configure,
     handle_toplevel_close
 };
@@ -906,9 +905,9 @@ namespace Wayland {
             _output = nullptr;
         }
 
-        if (_xdg_shell != nullptr) {
-            zxdg_shell_v6_destroy(_xdg_shell);
-            _xdg_shell = nullptr;
+        if (_wm_base != nullptr) {
+            xdg_wm_base_destroy(_wm_base);
+            _wm_base = nullptr;
         }
 
         if (_shell != nullptr) {
@@ -964,21 +963,21 @@ namespace Wayland {
 
         SurfaceImplementation* surface = new SurfaceImplementation(*this, name, width, height);
 
-        if(_xdg_shell != nullptr) {
-            surface->_xdg_surface = zxdg_shell_v6_get_xdg_surface(_xdg_shell, surface->_surface);
+        if(_wm_base != nullptr) {
+            surface->_xdg_surface = xdg_wm_base_get_xdg_surface(_wm_base, surface->_surface);
             assert(surface->_xdg_surface != NULL);
-            zxdg_surface_v6_add_listener(surface->_xdg_surface, &xdg_surface_listener, this);
+            xdg_surface_add_listener(surface->_xdg_surface, &xdg_surface_listener, this);
 
-            surface->_xdg_toplevel = zxdg_surface_v6_get_toplevel(surface->_xdg_surface);
+            surface->_xdg_toplevel = xdg_surface_get_toplevel(surface->_xdg_surface);
             assert(surface->_xdg_toplevel != NULL);
-            zxdg_toplevel_v6_add_listener(surface->_xdg_toplevel, &xdg_toplevel_listener, this);
+            xdg_toplevel_add_listener(surface->_xdg_toplevel, &xdg_toplevel_listener, this);
 
-            zxdg_toplevel_v6_set_title(surface->_xdg_toplevel, "compositor_client");
+            xdg_toplevel_set_title(surface->_xdg_toplevel, "compositor_client");
 
             surface->_wait_for_configure = true;
             wl_surface_commit(surface->_surface);
 
-            zxdg_toplevel_v6_set_fullscreen(surface->_xdg_toplevel, NULL);
+            xdg_toplevel_set_fullscreen(surface->_xdg_toplevel, NULL);
         }
 
         // Wait till we are fully registered.
@@ -1007,7 +1006,7 @@ namespace Wayland {
         WaylandSurfaceMap::iterator index = _waylandSurfaces.find(surface);
 
         if (index != _waylandSurfaces.end()) {
-            zxdg_toplevel_v6_set_title(index->second->_xdg_toplevel, index->second->Name().c_str());
+            xdg_toplevel_set_title(index->second->_xdg_toplevel, index->second->Name().c_str());
 
             // Do not forget to update the actual surface, it is now alive..
             index->second->_id = id;
