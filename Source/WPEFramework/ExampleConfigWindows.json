@@ -53,7 +53,7 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "OpenCDMi",

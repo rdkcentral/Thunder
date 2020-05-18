@@ -269,7 +269,7 @@ namespace PluginHost {
                 response->Id = inbound.Id.Value();
             }
 
-            if ((_validate != nullptr) && (_validate(token, method, inbound.Parameters.Value()) == false)) {
+            if ((_validate != nullptr) && (_validate(token, Core::JSONRPC::Message::Method(method), inbound.Parameters.Value()) == false)) {
                 response->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
                 response->Error.Text = _T("method invokation not allowed.");
             } 

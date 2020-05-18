@@ -2275,7 +2275,7 @@ namespace PluginHost {
                 }
 
             public:
-                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const bool JSONRPC)
+                void Set(const uint32_t id, Core::ProxyType<Service>& service, Core::ProxyType<Core::JSON::IElement>& element, const string& token, const bool JSONRPC)
                 {
                     Job::Set(id, service);
 
@@ -2283,6 +2283,7 @@ namespace PluginHost {
 
                     _element = element;
                     _jsonrpc = JSONRPC;
+                    _token = token;
                 }
                 virtual void Dispatch()
                 {
@@ -2395,9 +2396,6 @@ namespace PluginHost {
             }
 
         private:
-            string Token() const {
-                return (_security->Token());
-            }
             bool Allowed(const string& pathParameter, const string& queryParameters)
             {
                 Core::URL::KeyValue options(queryParameters);
@@ -2561,7 +2559,7 @@ namespace PluginHost {
 
                         if (job.IsValid() == true) {
                             Core::ProxyType<Web::Request> baseRequest(Core::proxy_cast<Web::Request>(request));
-                            job->Set(Id(), service, baseRequest, Token(), !request->ServiceCall());
+                            job->Set(Id(), service, baseRequest, _security->Token(), !request->ServiceCall());
                             _parent.Submit(Core::proxy_cast<Core::IDispatchType<void>>(job));
                         }
                     }
@@ -2601,13 +2599,13 @@ namespace PluginHost {
             }
             virtual void Received(Core::ProxyType<Core::JSON::IElement>& element)
             {
-                bool securityClearance = true;
+                bool securityClearance = ((State() & Channel::JSONRPC) == 0);
 
                 ASSERT(_service.IsValid() == true);
 
                 TRACE(SocketFlow, (element));
 
-                if (State() & Channel::JSONRPC) {
+                if  (securityClearance == false) {
                     Core::ProxyType<Core::JSONRPC::Message> message(Core::proxy_cast<Core::JSONRPC::Message>(element));
                     if (message.IsValid()) {
                         PluginHost::Channel::Lock();
@@ -2617,6 +2615,9 @@ namespace PluginHost {
                         if (securityClearance == false) {
                             // Oopsie daisy we are not allowed to handle this request.
                             // TODO: How shall we report back on this?
+                            message->Error.SetError(Core::ERROR_PRIVILIGED_REQUEST);
+                            message->Error.Text = _T("method invokation not allowed.");
+                            Submit(Core::ProxyType<Core::JSON::IElement>(message));
                         }
                     }
                 }
@@ -2629,7 +2630,7 @@ namespace PluginHost {
                     ASSERT(job.IsValid() == true);
 
                     if ((_service.IsValid() == true) && (job.IsValid() == true)) {
-                        job->Set(Id(), _service, element, ((State() & Channel::JSONRPC) == Channel::JSONRPC));
+                        job->Set(Id(), _service, element, _security->Token(), ((State() & Channel::JSONRPC) != 0));
                         _parent.Submit(Core::proxy_cast<Core::IDispatch>(job));
                     }
                 }
