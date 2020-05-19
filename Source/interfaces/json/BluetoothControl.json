@@ -18,7 +18,7 @@
     "devicestate": {
       "description": "Device state",
       "type": "string",
-      "enum": [ "Paired", "Unpaired", "Connected", "Disconnected" ],
+      "enum": [ "Pairing", "Paired", "Unpaired", "Connected", "Disconnected" ],
       "example": "Disconnected"
     },
     "devicetype": {
@@ -39,9 +39,9 @@
             "$ref": "#/definitions/devicetype"
           },
           "timeout": {
-            "description": "Duration of the scan (in seconds); default: 10s",
+            "description": "Duration of the scan (in seconds); default: 10 seconds",
             "type": "number",
-            "example": 10
+            "example": 60
           }
         },
         "required": [ "type" ]
@@ -90,7 +90,7 @@
       ]
     },
     "disconnect": {
-      "summary": "Disconnects from a Bluetooth device",
+      "summary": "Disconnects from a connected Bluetooth device",
       "events": [ "devicestatechange" ],
       "params": {
         "type": "object",
@@ -116,14 +116,22 @@
     },
     "pair": {
       "summary": "Pairs a Bluetooth device",
-      "events": [ "devicestatechange" ],
+      "description": "The client may expect PIN or passkey requests during the pairing process. The process can be cancelled any time by calling the *abortpairing* method",
+      "events": [ "devicestatechange", "pincoderequest", "passkeyrequest", "passkeyconfirmrequest" ],
       "params": {
         "type": "object",
         "properties": {
           "address": {
             "$ref": "#/definitions/deviceaddress"
+          },
+          "timeout": {
+            "description": "Maximum time allowed for the pairing process to complete (in seconds); default: 20 seconds",
+            "type": "integer",
+            "size": 16,
+            "example": "60"
           }
-        }
+        },
+        "required" : [ "address" ]
       },
       "result": {
         "$ref": "#/common/results/void"
@@ -144,7 +152,7 @@
       ]
     },
     "unpair": {
-      "summary": "Unpairs a Bluetooth device",
+      "summary": "Unpairs a paired Bluetooth device",
       "events": [ "devicestatechange" ],
       "params": {
         "type": "object",
@@ -191,6 +199,102 @@
           "$ref": "#/common/errors/illegalstate"
         }
       ]
+    },
+    "pincode": {
+      "summary": "Specifies a PIN code for authentication during a legacy pairing process",
+      "description": "This method is to be called upon receiving a *pincoderequest* event during a legacy pairing process. If the specified PIN code is incorrect the pairing process will be aborted.",
+      "events": [ "pincoderequest" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "secret": {
+            "description": "A PIN code string, typically consisting of (but not limited to) four decimal digits",
+            "type": "string",
+            "example": "0000"
+          }
+        },
+        "required": [ "address", "secret"]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device not currently pairing or PIN code has not been requested",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "passkey": {
+      "summary": "Specifies a passkey for authentication during a pairing process",
+      "description": "This method is to be called upon receiving a *passkeyrequest* event during a pairing process. If the specified passkey is incorrect or empty the pairing process will be aborted.",
+      "events": [ "passkeyrequest" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "secret": {
+            "description": "A six-digit decimal number passkey",
+            "type": "integer",
+            "example": 123456
+          }
+        },
+        "required": [ "address", "secret"]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device not currently pairing or a passkey has not been requested",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
+    },
+    "confirmpasskey": {
+      "summary": "Confirms a passkey for authentication during a pairing process",
+      "description": "This method is to be called upon receiving a *passkeyconfirmationrequest* event during a pairing process. If the confirmation is negative or the pairing process will be aborted.",
+      "events": [ "passkeyconfirmrequest" ],
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "iscorrect": {
+            "description": "Specifies if the passkey sent in *passkeyconfirmrequest* event is correct (true) or incorrect (false)",
+            "type": "boolean",
+            "example": true
+          }
+        },
+        "required": [ "address", "iscorrect"]
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "Unknown device",
+          "$ref": "#/common/errors/unknownkey"
+        },
+        {
+          "description": "Device is currently not pairing or passkey confirmation has not been requested",
+          "$ref": "#/common/errors/illegalstate"
+        }
+      ]
     }
   },
   "properties": {
@@ -234,7 +338,7 @@
           "manufacturer": {
             "type": "number",
             "size": 16,
-            "description": "Device manfuacturer Company Identifer"
+            "description": "Device manufacturer Company Identifer"
           },
           "name": {
             "type": "string",
@@ -341,6 +445,48 @@
           }
         },
         "required": [ "address", "state" ]
+      }
+    },
+    "pincoderequest": {
+      "summary": "Notifies about a PIN code request",
+      "description": "Register to this event to be notified about PIN code requests during a legacy pairing process. Upon receiving this event the client is required to respond with a *pincode* call in order to complete the pairing procedure. The PIN code value would typically be collected by prompting the end-user. If the client fails to respond before the pairing timeout elapses the pairing procedure will be aborted.<br><br>Note that this event will never be send for a Bluetooth LowEnergy device.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      }
+    },
+    "passkeyrequest": {
+      "summary": "Notifies about a passkey request",
+      "description": "Register to this event to be notified about passkey requests that may be required during a pairing process. Upon receiving this event the client is required to respond with a *passkey* call in order to complete the pairing procedure. The passkey value would typically be collected by prompting the end-user. If the client fails to respond before the pairing timeout elapses the pairing procedure will be aborted.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          }
+        }
+      }
+    },
+    "passkeyconfirmrequest": {
+      "summary": "Notifies about a passkey confirmation request",
+      "description": "Register to this event to be notified about passkey confirmation requests that may required during a pairing process. Upon receiving this event the client is required to respond with a *passkeyconfirm* call in order to complete the pairing procedure. The passkey confirmation would typically be collected by prompting the end-user. If the client fails to respond before the pairing timeout elapses the pairing procedure will be aborted.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "$ref": "#/definitions/deviceaddress"
+          },
+          "secret": {
+            "description": "A six-digit decimal number passkey sent by the remote device for confirmation",
+            "type": "integer",
+            "example": 123456
+          }
+        },
+        "required": [ "address", "secret" ]
       }
     }
   }
