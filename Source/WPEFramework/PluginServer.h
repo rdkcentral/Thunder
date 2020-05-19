@@ -969,9 +969,7 @@ namespace PluginHost {
                 PluginHost::IShell::state current(State());
 
                 // Active or not, update the condition state !!!!
-                if ((_precondition.Evaluate(subsystems) == true)
-                        && ((current == PluginHost::IShell::PRECONDITION)
-                                || ((current == PluginHost::IShell::DEACTIVATED) && (Reason() == PluginHost::IShell::CONDITIONS)))) {
+                if ((_precondition.Evaluate(subsystems) == true) && (current == PluginHost::IShell::PRECONDITION)) {
                     if (_precondition.IsMet() == true) {
 
                         Unlock();
@@ -1061,7 +1059,7 @@ namespace PluginHost {
 
             void AquireInterfaces()
             {
-                ASSERT(State() == DEACTIVATED);
+                ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
 
                 PluginHost::IPlugin* newIF = nullptr;
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
