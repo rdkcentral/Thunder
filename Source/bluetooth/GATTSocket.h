@@ -797,7 +797,7 @@ namespace Bluetooth {
                     result = availableData;
                 }
                 else {
-                    printf ("**** Unexpected data, TYPE [%02X] !!!!\n", dataFrame[0]);
+                    TRACE_L1("**** Unexpected data, TYPE [%02X] !!!!\n", dataFrame[0]);
                 }
             }
             else {
