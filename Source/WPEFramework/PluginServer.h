@@ -392,7 +392,7 @@ namespace PluginHost {
             Core::ProxyPoolType<Web::FileBody> _fileBodyFactory;
             Core::ProxyPoolType<Web::JSONBodyType<Core::JSONRPC::Message>> _jsonRPCFactory;
         };
- 
+
         class ServiceMap;
         friend class Plugin::Controller;
 
@@ -583,11 +583,10 @@ namespace PluginHost {
                     Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator index(input.Elements());
 
                     while (index.Next() == true) {
-                        ASSERT(index.Current() <= 0xFF);
-                        uint8_t bitNr = static_cast<uint8_t>(index.Current());
+                        uint32_t bitNr = static_cast<uint32_t>(index.Current());
 
-                        if (bitNr > ISubSystem::END_LIST) {
-                            bitNr -= ISubSystem::END_LIST;
+                        if (bitNr >= ISubSystem::NEGATIVE_START) {
+                            bitNr -= ISubSystem::NEGATIVE_START;
                         } else {
                             _value |= (1 << bitNr);
                         }
@@ -970,7 +969,9 @@ namespace PluginHost {
                 PluginHost::IShell::state current(State());
 
                 // Active or not, update the condition state !!!!
-                if ((_precondition.Evaluate(subsystems) == true) && (current == PluginHost::IShell::PRECONDITION)) {
+                if ((_precondition.Evaluate(subsystems) == true)
+                        && ((current == PluginHost::IShell::PRECONDITION)
+                                || ((current == PluginHost::IShell::DEACTIVATED) && (Reason() == PluginHost::IShell::CONDITIONS)))) {
                     if (_precondition.IsMet() == true) {
 
                         Unlock();
