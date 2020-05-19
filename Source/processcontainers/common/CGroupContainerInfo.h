@@ -192,16 +192,23 @@ namespace ProcessContainers {
             if (fd != 0) {
                 uint32_t bytesRead = read(fd, buffer, sizeof(buffer));
 
+                // In about 30% of cases we got additional number information after new line
+                for(uint32_t i = 0; buffer[i] != '\0'; i++) {
+                    if (buffer[i] == '\n') {
+                        buffer[i] = '\0';
+                    }
+                }
+
                 if (bytesRead > 0) {
                     char* tmp;
-                    char* token = strtok_r((char*)buffer, " \n", &tmp);
+                    char* token = strtok_r((char*)buffer, " ", &tmp);
 
                     while (token != nullptr) {
                         // Sometimes (but not always for some reason?) a nonprintable character is caught as a separate token.
                         if (isdigit(token[0])) {
                             coresUsage.push_back(atoi(token));
                         }
-                        token = strtok_r(NULL, " \n", &tmp);
+                        token = strtok_r(NULL, " ", &tmp);
                     }
                 }
 
