@@ -109,6 +109,8 @@
 
 #define AF_NETLINK 16
 
+extern 
+
 inline void SleepS(unsigned int a_Time)
 {
     ::Sleep(a_Time * 1000);
@@ -494,7 +496,14 @@ extern "C" {
 
 #ifdef __WINDOWS__
 extern int EXTERNAL inet_aton(const char* cp, struct in_addr* inp);
+extern void EXTERNAL usleep(const uint32_t value);
 #endif
+
+inline void SleepUs(unsigned int a_Time)
+{
+    ::usleep(a_Time);
+}
+
 
 extern void EXTERNAL DumpCallStack(const ThreadId threadId = 0);
 }
