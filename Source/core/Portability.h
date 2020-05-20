@@ -109,8 +109,6 @@
 
 #define AF_NETLINK 16
 
-extern 
-
 inline void SleepS(unsigned int a_Time)
 {
     ::Sleep(a_Time * 1000);
