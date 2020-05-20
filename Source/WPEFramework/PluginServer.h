@@ -584,11 +584,10 @@ namespace PluginHost {
                     Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>>::ConstIterator index(input.Elements());
 
                     while (index.Next() == true) {
-                        ASSERT(index.Current() <= 0xFF);
-                        uint8_t bitNr = static_cast<uint8_t>(index.Current());
+                        uint32_t bitNr = static_cast<uint32_t>(index.Current());
 
-                        if (bitNr > ISubSystem::END_LIST) {
-                            bitNr -= ISubSystem::END_LIST;
+                        if (bitNr >= ISubSystem::NEGATIVE_START) {
+                            bitNr -= ISubSystem::NEGATIVE_START;
                         } else {
                             _value |= (1 << bitNr);
                         }
@@ -1082,7 +1081,7 @@ namespace PluginHost {
 
             void AquireInterfaces()
             {
-                ASSERT(State() == DEACTIVATED);
+                ASSERT((State() == DEACTIVATED) || (State() == PRECONDITION));
 
                 PluginHost::IPlugin* newIF = nullptr;
                 const string locator(PluginHost::Service::Configuration().Locator.Value());
