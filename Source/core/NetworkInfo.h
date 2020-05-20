@@ -282,6 +282,12 @@ namespace Core {
         uint16_t _index;
     };
 
+    struct INetworkNotification {
+        virtual ~INetworkNotification() {}
+
+        virtual void Event(const string& interface) = 0;
+    };
+
     class EXTERNAL AdapterObserver {
     private:
         AdapterObserver() = delete;
@@ -289,87 +295,11 @@ namespace Core {
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
     public:
-        struct INotification {
-            virtual ~INotification() {}
-
-            virtual void Event(const string&) = 0;
-        };
-
-#ifndef __WINDOWS__
-    private:
-        class EXTERNAL Observer : public SocketDatagram {
-        private:
-            Observer() = delete;
-            Observer(const Observer&) = delete;
-            Observer& operator=(const Observer&) = delete;
-
-            class Message : public Netlink {
-            private:
-                Message() = delete;
-                Message(const Message&) = delete;
-                Message& operator=(const Message&) = delete;
-
-            public:
-                Message(INotification* callback)
-                    : _callback(callback)
-                {
-                    ASSERT(callback != nullptr);
-                }
-                virtual ~Message()
-                {
-                }
-
-            public:
-                virtual uint16_t Write(uint8_t stream[], const uint16_t length) const;
-                virtual uint16_t Read(const uint8_t stream[], const uint16_t length);
-
-            private:
-                INotification* _callback;
-            };
-
-        public:
-            Observer(INotification* callback);
-            ~Observer();
-
-        public:
-            // Methods to extract and insert data into the socket buffers
-            virtual uint16_t SendData(uint8_t* dataFrame, const uint16_t maxSendSize) override;
-            virtual uint16_t ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize) override;
-            virtual void StateChange() override;
-
-        private:
-            Message _parser;
-        };
-#endif
-
-    public:
-        AdapterObserver(INotification* callback);
+        AdapterObserver(INetworkNotification* callback);
         ~AdapterObserver();
 
-    public:
-        inline uint32_t Open()
-        {
-#ifdef __WINDOWS__
-            return (Core::ERROR_NONE);
-#else
-            return (_link.Open(Core::infinite));
-#endif
-        }
-        inline uint32_t Close()
-        {
-#ifdef __WINDOWS__
-            return (Core::ERROR_NONE);
-#else
-            return (_link.Close(Core::infinite));
-#endif
-        }
-
     private:
-#ifdef __WINDOWS__
-        ;
-#else
-        Observer _link;
-#endif
+        INetworkNotification* _callback;
     };
 }
 }
