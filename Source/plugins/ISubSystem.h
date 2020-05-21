@@ -45,11 +45,12 @@ namespace PluginHost {
             DECRYPTION, // Decryption functionality is available.
             WEBSOURCE, // Content exposed via a local web server is available.
             STREAMING, // Content can be streamed.
-            BLUETOOTH, // The bluetooth susbsytem is up and running.
+            BLUETOOTH, // The bluetooth subsystem is up and running.
             END_LIST,
 
             // Also define a "negative" value.
-            NOT_PLATFORM = 0x80000000, // platform is NOT available.
+            NEGATIVE_START = 0x80000000,
+            NOT_PLATFORM = NEGATIVE_START, // platform is NOT available.
             NOT_SECURITY, // A security system can validate external requests (JSONRPC/WebRequest)
             NOT_NETWORK, // Network connectivity has NOT been established.
             NOT_IDENTIFIER, // System identification has NOT been accomplished.

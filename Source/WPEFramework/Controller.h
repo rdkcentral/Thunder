@@ -239,6 +239,10 @@ namespace Plugin {
         END_INTERFACE_MAP
 
     private:
+        //  IDispatch methods
+        // -------------------------------------------------------------------------------------------------------
+        Core::ProxyType<Core::JSONRPC::Message> Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
+
         inline Core::ProxyType<PluginHost::Server::Service> FromIdentifier(const string& callsign) const
         {
             Core::ProxyType<PluginHost::Server::Service> service;
@@ -267,7 +271,6 @@ namespace Plugin {
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StateChange(PluginHost::IShell* plugin);
-        virtual Core::ProxyType<Core::JSONRPC::Message> Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound) override;
         void DeleteDirectory(const string& directory);
 
         void RegisterAll();

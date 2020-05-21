@@ -156,23 +156,7 @@ namespace Plugin {
         if (request.Verb == Web::Request::HTTP_POST) {
             result = PluginHost::IFactories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-            result->Message = _T("Request has no JSONRPC body!");
-
-            if (request.HasBody() == true) {
-                Core::ProxyType<Web::TextBody> response(jsonBodyTextFactory.Element());
-                Core::ProxyType<Core::JSONRPC::Message> answer = Invoke(~0, *request.Body<Core::JSONRPC::Message>());
-                answer->ToString(*response);
-                if (response->empty() == false) {
-                    result->Body(response);
-                }
-                if (answer->Error.IsSet() == false) {
-                    result->ErrorCode = Web::STATUS_OK;
-                    result->Message = _T("JSONRPC executed succesfully");
-                } else {
-                    result->ErrorCode = Web::STATUS_ACCEPTED;
-                    result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(answer->Error.Code).Text();
-                }
-            }
+            result->Message = _T("There are no POST handlers!");
         } else if (request.Verb == Web::Request::HTTP_GET) {
             result = GetMethod(index);
         } else if (request.Verb == Web::Request::HTTP_PUT) {
@@ -516,7 +500,7 @@ namespace Plugin {
             Notify("subsystemchange", responseJsonRpc);
         }
     }
-    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
+    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         bool asyncCall = false;
@@ -524,7 +508,7 @@ namespace Plugin {
         Core::ProxyType<Core::JSONRPC::Message> response;
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
-            response = PluginHost::JSONRPC::Invoke(channelId, inbound);
+            response = PluginHost::JSONRPC::Invoke(token, channelId, inbound);
 		} else {
 			Core::ProxyType<PluginHost::Server::Service> service;
 
@@ -532,22 +516,15 @@ namespace Plugin {
 
             if (result == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
-                PluginHost::IDispatcher* plugin = service->Dispatcher();
 
-                if (plugin == nullptr) {
-                    result = Core::ERROR_BAD_REQUEST;
-                } else if (service->State() != PluginHost::IShell::ACTIVATED) {
-                    result = Core::ERROR_UNAVAILABLE;
-                } else {
-                    Core::JSONRPC::Message forwarder;
+                Core::JSONRPC::Message forwarder;
 
-                    forwarder.Id = inbound.Id;
-                    forwarder.Parameters = inbound.Parameters;
+                forwarder.Id = inbound.Id;
+                forwarder.Parameters = inbound.Parameters;
                     
-                    forwarder.Designator = inbound.VersionedFullMethod();
-                    response = plugin->Invoke(channelId, forwarder);
-                    asyncCall = (response.IsValid() == false);
-                }
+                forwarder.Designator = inbound.VersionedFullMethod();
+                response = service->Invoke(token, channelId, forwarder);
+                asyncCall = (response.IsValid() == false);
             }
 		}
 
