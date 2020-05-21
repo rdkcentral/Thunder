@@ -38,7 +38,7 @@ enum class Funcion {
     UNKNOWN
 };
 
-std::string getMem(std::string result, Funcion func)
+std::string GetMemory(std::string result, Funcion func)
 {
     std::string word = "";
     int i = 1;
@@ -58,7 +58,7 @@ std::string getMem(std::string result, Funcion func)
     return word;
 }
 
-std::string exec(const char* cmd, Purpose purpose, Funcion func) {
+std::string ExecuteCmd(const char* cmd, Purpose purpose, Funcion func) {
     char buffer[128];
     std::string result = "";
     std::string word = "";
@@ -69,11 +69,11 @@ std::string exec(const char* cmd, Purpose purpose, Funcion func) {
             result = buffer;
             if (purpose == Purpose::MEM) {
                 if (result.find("Mem:") != std::string::npos) {
-                    word = getMem(result, func);
+                    word = GetMemory(result, func);
                 }
             } else if (purpose == Purpose::SWAP) {
                 if (result.find("Swap:") != std::string::npos) {
-                    word = getMem(result, func);
+                    word = GetMemory(result, func);
                 }
             } else if (purpose == Purpose::HOST) {
                 word.assign(result);
@@ -88,7 +88,7 @@ std::string exec(const char* cmd, Purpose purpose, Funcion func) {
     return word;
 }
 
-float getUptime() {
+float GetUpTime() {
     std::string uptime;
     std::ifstream file("/proc/uptime");
     while(file >> uptime)
@@ -105,18 +105,18 @@ TEST(Core_SystemInfo, systemInfo)
     string id2 (WPEFramework::Core::SystemInfo::Instance().Id(rawDeviceId, 0x7));
 
     std::string cmd = "hostname";
-    string hostname = exec(cmd.c_str(), Purpose::HOST, Funcion::UNKNOWN).c_str();
+    string hostname = ExecuteCmd(cmd.c_str(), Purpose::HOST, Funcion::UNKNOWN).c_str();
     hostname.erase(std::remove(hostname.begin(), hostname.end(), '\n'), hostname.end());
     EXPECT_STREQ(WPEFramework::Core::SystemInfo::Instance().GetHostName().c_str(), hostname.c_str());
 
     cmd = "free -b";
     EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetPageSize(),getpagesize());
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(exec(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetTotalRam(), stoi(ExecuteCmd(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
 
-    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(exec(cmd.c_str(),Purpose::MEM, Funcion::FREE)));
+    //EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetFreeRam(),stoi(ExecuteCmd(cmd.c_str(),Purpose::MEM, Funcion::FREE)));
     WPEFramework::Core::SystemInfo::Instance().GetFreeRam(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
 
-    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),getUptime());
+    EXPECT_EQ(WPEFramework::Core::SystemInfo::Instance().GetUpTime(),GetUpTime());
 
     WPEFramework::Core::SystemInfo::Instance().Ticks();
 
@@ -137,12 +137,12 @@ TEST(Core_SystemInfo, memorySnapShot)
     WPEFramework::Core::SystemInfo::MemorySnapshot snapshot = WPEFramework::Core::SystemInfo::Instance().TakeMemorySnapshot();
     snapshot.AsJSON();
     std::string cmd = "free -k";
-    EXPECT_EQ(snapshot.Total(), stoi(exec(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
+    EXPECT_EQ(snapshot.Total(), stoi(ExecuteCmd(cmd.c_str(), Purpose::MEM, Funcion::TOTAL)));
     snapshot.Free(); //Returns the instant snapshot of the free memory at that moment, hence can't verify it's value.
     snapshot.Available();//Returns the instant snapshot of the available memory at that moment, hence can't verify it's value.
     snapshot.Cached();
 
-    EXPECT_EQ(snapshot.SwapTotal(),stoi(exec(cmd.c_str(), Purpose::SWAP, Funcion::TOTAL)));
+    EXPECT_EQ(snapshot.SwapTotal(),stoi(ExecuteCmd(cmd.c_str(), Purpose::SWAP, Funcion::TOTAL)));
     snapshot.SwapFree();
     snapshot.SwapCached();
 }
