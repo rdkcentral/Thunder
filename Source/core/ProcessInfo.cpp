@@ -756,7 +756,13 @@ namespace Core {
 
     bool ProcessTree::ContainsProcess(ThreadId pid) const
     {
+        #ifdef __WINDOWS__
+        #pragma warning(disable : 4312)
+        #endif
         auto comparator = [pid](const ProcessInfo& processInfo){ return ((ThreadId)(processInfo.Id()) == pid); };
+        #ifdef __WINDOWS__
+        #pragma warning(default : 4312)
+        #endif
 
         std::list<ProcessInfo>::const_iterator i = std::find_if(_processes.cbegin(), _processes.cend(), comparator);
         return (i != _processes.cend());
@@ -767,13 +773,25 @@ namespace Core {
         processIds.clear();
 
         for (const ProcessInfo& process : _processes) {
+            #ifdef __WINDOWS__
+            #pragma warning(disable : 4312)
+            #endif
             processIds.push_back((ThreadId)(process.Id()));
+            #ifdef __WINDOWS__
+            #pragma warning(default : 4312)
+            #endif
         }
     }
 
     ThreadId ProcessTree::RootId() const
     {
-       return (ThreadId)(_processes.front().Id());
+        #ifdef __WINDOWS__
+        #pragma warning(disable : 4312)
+        #endif
+        return (ThreadId)(_processes.front().Id());
+        #ifdef __WINDOWS__
+        #pragma warning(default : 4312)
+        #endif
     }
 
     uint64_t ProcessTree::Jiffies() const
