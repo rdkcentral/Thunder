@@ -21,8 +21,6 @@
 
 #include "Module.h"
 
-// @stubgen:skip
-
 namespace WPEFramework {
 namespace Exchange {
 
