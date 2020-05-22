@@ -273,7 +273,7 @@ namespace PluginHost {
         // Event methods
         virtual void Set(const subsystem type, Core::IUnknown* information) override
         {
-            bool sendUpdate(IsActive(type) == false);
+            bool sendUpdate(type < NEGATIVE_START ? IsActive(type) == false : IsActive(static_cast<subsystem>(type - NEGATIVE_START)) == true);
 
             switch (type) {
             case PLATFORM: {
@@ -524,6 +524,7 @@ namespace PluginHost {
             case NOT_BLUETOOTH: {
                 /* No information to set yet */
                 SYSLOG(Logging::Shutdown, (_T("EVENT: Bluetooth")));
+                break;
             }
             case SECURITY: {
                 PluginHost::ISubSystem::ISecurity* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::ISecurity>() : nullptr);
@@ -574,8 +575,8 @@ namespace PluginHost {
 
                 _adminLock.Lock();
 
-                if (type > END_LIST) {
-                    _flags &= ~(1 << (type & 0xFF));
+                if (type >= NEGATIVE_START) {
+                    _flags &= ~(1 << (type - NEGATIVE_START));
                 } else {
                     _flags |= (1 << type);
                 }
@@ -646,7 +647,7 @@ namespace PluginHost {
         }
         virtual bool IsActive(const subsystem type) const override
         {
-            return (((type < END_LIST) && ((_flags & (1 << type)) != 0)) || ((type > END_LIST) && ((_flags & (1 << (type & 0xFF))) == 0)));
+            return ((type < END_LIST) && ((_flags & (1 << type)) != 0));
         };
         inline uint32_t Value() const
         {

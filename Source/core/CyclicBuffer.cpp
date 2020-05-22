@@ -58,7 +58,7 @@ namespace Core {
             std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
             std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
             _administration->_lockPID = 0;
-            _administration->_size = (_buffer.Size() - sizeof(struct control));
+            _administration->_size = static_cast<uint32_t>(_buffer.Size() - sizeof(struct control));
 
             _administration->_reserved = 0;
             _administration->_reservedWritten = 0;

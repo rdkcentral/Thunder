@@ -3490,7 +3490,7 @@ namespace Core {
                 if (index != _data.end()) {
                     result = index->second;
                 }
-                if (Request(label) == true) {
+                else if (Request(label) == true) {
                     index = _data.end();
 
                     while ((result == nullptr) && (index != _data.begin())) {

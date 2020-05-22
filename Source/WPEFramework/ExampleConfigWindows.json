@@ -1,19 +1,19 @@
 {
   "port": 8080,
-  "binding_": "0.0.0.0",
+  "interface": "LAN",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Thunder/artifacts/Persistent",
-  "volatilepath": "D:/Thunder/artifacts/temp",
-  "datapath": "D:/Thunder/artifacts/Debug/Plugins",
-  "systempath": "D:/Thunder/artifacts/Debug",
-  "proxystubpath": "D:/Thunder/artifacts/ProxyStubs/Debug",
+  "persistentpath": "C:/Projects/Thunder/artifacts/Persistent",
+  "volatilepath": "C:/Projects/Thunder/artifacts/temp",
+  "datapath": "C:/Projects/Thunder/artifacts/Debug/Plugins",
+  "systempath": "C:/Projects/Thunder/artifacts/Debug",
+  "proxystubpath": "C:/Projects/Thunder/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
     {
-      "module": "Plugin_OCDM",
-      "enabled": false
+      "module": "Plugin_SecurityAgent",
+      "enabled": true
     }
   ],
   "plugins": [
@@ -27,7 +27,7 @@
       "callsign": "OutOfProcessPlugin",
       "locator": "libOutOfProcessPlugin.so",
       "classname": "OutOfProcessPlugin",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
@@ -43,7 +43,7 @@
       "precondition": [
         "Platform"
       ],
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "acl": "data.json",
         "connector": "127.0.0.1:63000"
