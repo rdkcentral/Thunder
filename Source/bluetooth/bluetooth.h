@@ -23,6 +23,8 @@
 #include "GATTSocket.h"
 #include "SDPSocket.h"
 #include "SDPProfile.h"
+#include "AVDTPSocket.h"
+#include "AVDTPProfile.h"
 #include "Profile.h"
 
 #ifdef __WINDOWS__
