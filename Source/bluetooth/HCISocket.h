@@ -150,15 +150,15 @@ namespace Bluetooth {
     };
 
     class EIR {
-        static constexpr uint8_t  EIR_UUID16_SOME = 0x02;
-        static constexpr uint8_t  EIR_UUID16_ALL = 0x03;
-        static constexpr uint8_t  EIR_UUID32_SOME = 0x04;
-        static constexpr uint8_t  EIR_UUID32_ALL = 0x05;
-        static constexpr uint8_t  EIR_UUID128_SOME = 0x06;
-        static constexpr uint8_t  EIR_UUID128_ALL = 0x07;
-        static constexpr uint8_t  EIR_NAME_SHORT = 0x08;
-        static constexpr uint8_t  EIR_NAME_COMPLETE = 0x09;
-        static constexpr uint8_t  EIR_CLASS_OF_DEV = 0x0D;
+        static constexpr uint8_t EIR_UUID16_SOME = 0x02;
+        static constexpr uint8_t EIR_UUID16_ALL = 0x03;
+        static constexpr uint8_t EIR_UUID32_SOME = 0x04;
+        static constexpr uint8_t EIR_UUID32_ALL = 0x05;
+        static constexpr uint8_t EIR_UUID128_SOME = 0x06;
+        static constexpr uint8_t EIR_UUID128_ALL = 0x07;
+        static constexpr uint8_t EIR_NAME_SHORT = 0x08;
+        static constexpr uint8_t EIR_NAME_COMPLETE = 0x09;
+        static constexpr uint8_t EIR_CLASS_OF_DEV = 0x0D;
 
     public:
         EIR()
@@ -180,6 +180,8 @@ namespace Bluetooth {
         {
             Ingest(buffer, bufferLength);
         }
+        EIR(const EIR&) = default;
+        EIR& operator =(const EIR&) = default;
         ~EIR() = default;
 
     public:
@@ -192,7 +194,7 @@ namespace Bluetooth {
             if (_shortName.empty() == true) {
                 return (_completeName);
             } else {
-                return _shortName;
+                return (_shortName);
             }
         }
         const string& CompleteName() const
@@ -205,7 +207,7 @@ namespace Bluetooth {
         }
         const std::list<UUID>& UUIDs() const
         {
-            return _UUIDs;
+            return (_UUIDs);
         }
 
         void Ingest(const uint8_t buffer[], const uint16_t bufferLength);
@@ -648,7 +650,7 @@ namespace Bluetooth {
                     ::memcpy(stream, &(_buffer[_offset]), result);
                     _offset += result;
 
-                    //printf("SEND: ");cfor (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    //printf("SEND: "); for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
                     //printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
                 }
                 return (result);

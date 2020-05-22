@@ -40,7 +40,7 @@ namespace Bluetooth {
             _uuid[15] = (uuid & 0xFF);
             _uuid[16] = (uuid >> 8) & 0xFF;
         }
-        UUID(const uint8_t uuid[16])
+        explicit UUID(const uint8_t uuid[16])
         {
             ::memcpy(&(_uuid[1]), uuid, 16);
 
@@ -81,8 +81,8 @@ namespace Bluetooth {
         }
         bool operator==(const UUID& rhs) const
         {
-            return ((rhs._uuid[0] == _uuid[0]) && 
-                    ((_uuid[0] == 2) ? ((rhs._uuid[15] == _uuid[15]) && (rhs._uuid[16] == _uuid[16])) : 
+            return ((rhs._uuid[0] == _uuid[0]) &&
+                    ((_uuid[0] == 2) ? ((rhs._uuid[15] == _uuid[15]) && (rhs._uuid[16] == _uuid[16])) :
                                        (::memcmp(_uuid, rhs._uuid, _uuid[0] + 1) == 0)));
         }
         bool operator!=(const UUID& rhs) const
@@ -111,7 +111,6 @@ namespace Bluetooth {
         }
         string ToString(const bool full = false) const
         {
-            // 00002a23-0000-1000-8000-00805f9b34fb
             static const TCHAR hexArray[] = "0123456789abcdef";
 
             uint8_t index = 0;

@@ -830,7 +830,7 @@ uint32_t ManagementSocket::Pair(const Address& remote, const Address::type type,
                 result = Core::ERROR_ALREADY_CONNECTED;
                 break;
             default:
-                TRACE(Trace::Error, (_T("Pair command failed [%i]"),command.Result()));
+                TRACE(Trace::Error, (_T("Pair command failed [0x%02x]"), command.Result()));
                 result = Core::ERROR_ASYNC_FAILED;
                 break;
         }
@@ -860,7 +860,7 @@ uint32_t ManagementSocket::Unpair(const Address& remote, const Address::type typ
                 result = Core::ERROR_ALREADY_RELEASED;
                 break;
             default:
-                TRACE(Trace::Error, (_T("Unpair command failed [%i]"),command.Result()));
+                TRACE(Trace::Error, (_T("Unpair command failed [0x%02x]"), command.Result()));
                 result = Core::ERROR_ASYNC_FAILED;
                 break;
         }
@@ -878,7 +878,25 @@ uint32_t ManagementSocket::PairAbort(const Address& remote, const Address::type 
     command->type = type;
 
     uint32_t result = Exchange(MANAGMENT_TIMEOUT, command, command);
-    return (result != Core::ERROR_NONE ? result : (command.Result() == MGMT_STATUS_SUCCESS ? result : Core::ERROR_ASYNC_FAILED));
+    if (result == Core::ERROR_NONE) {
+        switch (command.Result()) {
+            case MGMT_STATUS_SUCCESS:
+                break;
+            case MGMT_STATUS_INVALID_PARAMS:
+                // Not currently pairing
+                result = Core::ERROR_ILLEGAL_STATE;
+                break;
+            default:
+                TRACE(Trace::Error, (_T("Pairing abort command failed [0x%02x]"), command.Result()));
+                result = Core::ERROR_ASYNC_FAILED;
+                break;
+        }
+    } else if (result == Core::ERROR_TIMEDOUT) {
+        // Seems we need a bit more time... but it's fine.
+        result = Core::ERROR_INPROGRESS;
+    }
+
+    return (result);
 }
 
 uint32_t ManagementSocket::UserPINCodeReply(const Address& remote, const Address::type type, const string& pinCode)
