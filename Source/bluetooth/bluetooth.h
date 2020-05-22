@@ -21,6 +21,8 @@
 #include "IDriver.h"
 #include "HCISocket.h"
 #include "GATTSocket.h"
+#include "SDPSocket.h"
+#include "SDPProfile.h"
 #include "Profile.h"
 
 #ifdef __WINDOWS__
