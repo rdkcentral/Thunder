@@ -32,7 +32,7 @@ namespace PluginHost {
             ID = RPC::ID_SUBSYSTEM
         };
 
-        enum subsystem {
+        enum subsystem : uint32_t {
             PLATFORM = 0, // platform is available.
             SECURITY, // A security system can validate external requests (JSONRPC/WebRequest)
             NETWORK, // Network connectivity has been established.

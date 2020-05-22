@@ -273,7 +273,7 @@ namespace PluginHost {
         // Event methods
         virtual void Set(const subsystem type, Core::IUnknown* information) override
         {
-            bool sendUpdate(type < NEGATIVE_START? IsActive(type) == false : IsActive(static_cast<subsystem>(type - NEGATIVE_START)) == true);
+            bool sendUpdate(type < NEGATIVE_START ? IsActive(type) == false : IsActive(static_cast<subsystem>(type - NEGATIVE_START)) == true);
 
             switch (type) {
             case PLATFORM: {
