@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "WebSerializer.h"
 
 namespace WPEFramework {
@@ -1166,7 +1185,7 @@ namespace Web
                         } else if ((_keyIndex <= 22) && (_current->ApplicationURL.IsSet() == true)) {
                             _keyIndex = 23;
                             _buffer = (_current->Mode() == MARSHAL_UPPERCASE ? __APPLICATION_URL : _T("Application-URL:"));
-                            _value = _current->ApplicationURL.Value().Text().Text();
+                            _value = _current->ApplicationURL.Value().Text();
                             _offset = 0;
                         } else if ((_keyIndex <= 23) && (((_bodyLength = (_current->_body.IsValid() ? _current->_body->Serialize() : 0)) > 0) || (_current->ContentLength.IsSet() == true) || (!_current->Connection.IsSet()) || (_current->Connection.Value() != Response::CONNECTION_CLOSE))) {
                             _keyIndex = (_bodyLength > 0 ? 24 : 25);
@@ -1499,9 +1518,10 @@ namespace Web
             }
             case Request::CONNECTION: {
                 Core::EnumerateType<Request::connection> enumValue(buffer.c_str(), false);
-
                 if (enumValue.IsSet() == true) {
                     _current->Connection = enumValue.Value();
+                } else if (Request::ScanForKeyword(buffer, Request::connection::CONNECTION_UPGRADE) == true) {
+                    _current->Connection = Request::connection::CONNECTION_UPGRADE;
                 } else {
                     _current->Connection = Request::CONNECTION_UNKNOWN;
                 }
@@ -1813,7 +1833,7 @@ namespace Web
                 _current->ST = buffer;
                 break;
             case Response::APPLICATION_URL:
-                _current->ApplicationURL = buffer;
+                _current->ApplicationURL = Core::URL(buffer);
                 break;
             case Response::CACHE_CONTROL:
                 _current->CacheControl = buffer;

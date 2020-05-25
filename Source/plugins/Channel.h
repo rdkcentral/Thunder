@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __PLUGIN_FRAMEWORK_CHANNEL__
 #define __PLUGIN_FRAMEWORK_CHANNEL__
 
@@ -11,7 +30,7 @@ namespace PluginHost {
     private:
         typedef Web::WebSocketLinkType<Core::SocketStream, Request, Web::Response, RequestPool&> BaseClass;
 
-        union EXTERNAL Package {
+        class EXTERNAL Package {
         private:
             Package() = delete;
             Package(const Package&) = delete;
@@ -19,30 +38,50 @@ namespace PluginHost {
 
         public:
             explicit Package(const Core::ProxyType<Core::JSON::IElement>& json)
-                : _json(json)
+                : _json(true)
+                , _info(json)
             {
             }
-            explicit Package(const string& text)
-                : _text(text)
+            explicit Package(const string& text) 
+                : _json(false)
+                , _info(text)
             {
             }
             ~Package()
             {
+                if (_json) {
+                    _info.json.~ProxyType<Core::JSON::IElement>();                
+                } else {
+                    _info.text.~string();
+                }
             }
 
         public:
             const string& Text() const
             {
-                return (_text);
+                return (_info.text);
             }
             const Core::ProxyType<Core::JSON::IElement>& JSON() const
             {
-                return (_json);
+                return (_info.json);
             }
 
         private:
-            Core::ProxyType<Core::JSON::IElement> _json;
-            string _text;
+            bool _json;
+            union Info {
+                Info(const Core::ProxyType<Core::JSON::IElement>& value)
+                    : json(value)
+                {
+                }
+                Info(const string& value)
+                    : text(value)
+                {
+                }
+                ~Info() {}
+
+                Core::ProxyType<Core::JSON::IElement> json;
+                string text;
+            } _info;
         };
         class EXTERNAL SerializerImpl {
         public:
@@ -65,21 +104,21 @@ namespace PluginHost {
             {
                 return (_current.IsValid() == false);
             }
-			inline uint16_t Serialize(char* stream, const uint16_t length) const {
+            inline uint16_t Serialize(char* stream, const uint16_t length) const {
                 uint16_t loaded = 0;
 
                 if (_current.IsValid() == false) {
                     _current = Core::ProxyType<const Core::JSON::IElement>(_parent.Element());
-				}
+                }
 
-				if (_current.IsValid() == true) {
+                if (_current.IsValid() == true) {
                     loaded = _current->Serialize(stream, length, _offset);
                     if ( (_offset == 0) || (loaded != length) ) {
                         _current.Release();
                     }
                 }
 
-				return (loaded);
+                return (loaded);
             }
 
         private:
@@ -389,7 +428,7 @@ namespace PluginHost {
         {
             return ((BaseClass::IsWebSocket() == false) || ((_serializer.IsIdle() == true) && (_deserializer.IsIdle() == true)));
         }
-		Core::ProxyType<Core::JSON::IElement> Element() {
+        Core::ProxyType<Core::JSON::IElement> Element() {
             Core::ProxyType<Core::JSON::IElement> result;
 
             _adminLock.Lock();
@@ -400,8 +439,8 @@ namespace PluginHost {
             }
             _adminLock.Unlock();
 
-			return (result);
-		}
+            return (result);
+        }
 
     private:
         mutable Core::CriticalSection _adminLock;

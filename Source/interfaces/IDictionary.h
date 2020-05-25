@@ -1,7 +1,24 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __IDICTIONARY_H
 #define __IDICTIONARY_H
-
-// @stubgen:skip
 
 #include "Module.h"
 
@@ -13,7 +30,7 @@ namespace Exchange {
     struct IDictionary : virtual public Core::IUnknown {
         enum { ID = ID_DICTIONARY };
 
-        struct INotification : public Core::IUnknown {
+        struct INotification : virtual public Core::IUnknown {
 
             enum { ID = ID_DICTIONARY_NOTIFICATION };
 
@@ -23,7 +40,7 @@ namespace Exchange {
             virtual void Modified(const string& nameSpace, const string& key, const string& value) = 0;
         };
 
-        struct IIterator : public Core::IUnknown {
+        struct IIterator : virtual public Core::IUnknown {
 
             enum { ID = ID_DICTIONARY_ITERATOR };
 
@@ -45,7 +62,7 @@ namespace Exchange {
         virtual void Unregister(const string& nameSpace, struct IDictionary::INotification* sink) = 0;
 
         // Getters and Setters for the dictionary.
-        virtual bool Get(const string& nameSpace, const string& key, string& value) const = 0;
+        virtual bool Get(const string& nameSpace, const string& key, string& value /* @out */) const = 0;
         virtual bool Set(const string& nameSpace, const string& key, const string& value) = 0;
         virtual IIterator* Get(const string& nameSpace) const = 0;
     };

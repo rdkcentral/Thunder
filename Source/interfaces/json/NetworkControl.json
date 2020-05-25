@@ -33,6 +33,9 @@
       ]
     },
     "request": {
+      "events": [
+        "connectionchange"
+      ],
       "summary": "Reloads a non-static network interface adapter",
       "params": {
         "type": "object",
@@ -178,6 +181,43 @@
           "$ref": "#/common/errors/unavailable"
         }
       ]
+    }
+  },
+  "events": {
+    "connectionchange": {
+      "summary": "Notifies about connection status (created, updated, removed, connected and connectionfailed)",
+      "params": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of network interface",
+            "example": "eth0"
+          },
+          "address": {
+            "type": "string",
+            "description": "IP Address of network interface, if it is connected",
+            "example": "192.168.1.10"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+                "created",
+                "updated",
+                "removed",
+                "connected",
+                "connectionfailed"
+              ],
+            "description": "Status of the interface, update, connected or not",
+            "example": "connected"
+          }
+        },
+        "required": [
+          "name",
+          "address",
+          "status"
+        ]
+      }
     }
   }
 }

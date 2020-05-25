@@ -1,231 +1,286 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
 #include <core/core.h>
 #include <thread>
+#include <condition_variable>
+#include <mutex>
 
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
 namespace Tests {
 
-const char g_cyclicBuffer[] = "cyclicbuffer01";
-uint32_t g_cyclicBufferSize = 10;
-CyclicBuffer cyclicBuffer(g_cyclicBuffer, g_cyclicBufferSize, true);
-bool g_cyclicThreadDone = false;
+    class ThreadClass : public Thread {
+    public:
+        ThreadClass() = delete;
+        ThreadClass(const ThreadClass&) = delete;
+        ThreadClass& operator=(const ThreadClass&) = delete;
 
-class ThreadClass : public Thread {
-private:
-    ThreadClass(const ThreadClass&) = delete;
-    ThreadClass& operator=(const ThreadClass&) = delete;
-
-public:
-    ThreadClass()
-        : Thread(Thread::DefaultStackSize(), _T("Test"))
-    {
-    }
-
-    virtual ~ThreadClass()
-    {
-    }
-
-    virtual uint32_t Worker() override
-    {
-        while (IsRunning() && (!g_cyclicThreadDone)) {
-            sleep(2);
-            cyclicBuffer.Alert();
-            g_cyclicThreadDone = true;
+        ThreadClass(CyclicBuffer& cyclicBuffer, volatile bool& done, std::mutex& mutex, std::condition_variable& cv)
+            : Thread(Thread::DefaultStackSize(), _T("Test"))
+            , _cyclicBuffer(cyclicBuffer)
+            , _done(done)
+            , _mutex(mutex)
+            , _cv(cv)
+        {
         }
-        return (infinite);
-    }
-};
 
-TEST(Core_CyclicBuffer, WithoutOverwrite)
-{
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-        uint32_t result;
-        string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer02";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, false);
+        virtual ~ThreadClass()
+        {
+        }
 
-        testAdmin.Sync("setup server");
+        virtual uint32_t Worker() override
+        {
+            while (IsRunning() && (!_done)) {
+                _cyclicBuffer.Alert();
+                std::unique_lock<std::mutex> lk(_mutex);
+                _done = true;
+                _cv.notify_one();
+            }
+            return (infinite);
+        }
 
-        testAdmin.Sync("setup client");
-
-        EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
-
-        data = "abcdefghi";
-        result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-        EXPECT_EQ(result, data.size());
-
-        testAdmin.Sync("server wrote");
-
-        testAdmin.Sync("client read");
-
-        testAdmin.Sync("client wrote");
-
-        result = buffer.Peek(loadBuffer, buffer.Used());
-        loadBuffer[result] = '\0';
-        EXPECT_EQ(result, 5u);
-        EXPECT_STREQ((char*)loadBuffer, "efghi");
-
-        testAdmin.Sync("server peek");
-
-        result = buffer.Read(loadBuffer, buffer.Used());
-        loadBuffer[result] = '\0';
-        EXPECT_EQ(result, 5u);
-        EXPECT_STREQ((char*)loadBuffer, "efghi");
-
-        testAdmin.Sync("server read");
+    private:
+        CyclicBuffer& _cyclicBuffer;
+        volatile bool& _done;
+        std::mutex& _mutex;
+        std::condition_variable& _cv;
     };
 
-    // This side (tested) acts as client
-    IPTestAdministrator testAdmin(otherSide);
-
+    TEST(Core_CyclicBuffer, WithoutOverwrite)
     {
-        testAdmin.Sync("setup server");
+        std::string bufferName {"cyclicbuffer02"};
+        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
+            uint32_t result;
+            string data;
+            uint32_t cyclicBufferSize = 10;
+            uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        uint32_t result;
-        string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer02";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, false);
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, false);
 
-        testAdmin.Sync("setup client");
+            testAdmin.Sync("setup server");
 
-        testAdmin.Sync("server wrote");
+            testAdmin.Sync("setup client");
 
-        result = buffer.Read(loadBuffer, 4);
-        loadBuffer[result] = '\0';
-        EXPECT_STREQ((char*)loadBuffer, "abcd");
+            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
-        testAdmin.Sync("client read");
+            data = "abcdefghi";
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            EXPECT_EQ(result, data.size());
 
-        data = "klmnopq";
-        result = buffer.Reserve(data.size());
-        EXPECT_EQ(result, ERROR_INVALID_INPUT_LENGTH);
-        result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-        EXPECT_EQ(result, 0u);
+            testAdmin.Sync("server wrote");
 
-        testAdmin.Sync("client wrote");
+            testAdmin.Sync("client read");
 
-        testAdmin.Sync("server peek");
+            testAdmin.Sync("client wrote");
 
-        testAdmin.Sync("server read");
+            result = buffer.Peek(loadBuffer, buffer.Used());
+            loadBuffer[result] = '\0';
+            EXPECT_EQ(result, 5u);
+            EXPECT_STREQ((char*)loadBuffer, "efghi");
+
+            testAdmin.Sync("server peek");
+
+            result = buffer.Read(loadBuffer, buffer.Used());
+            loadBuffer[result] = '\0';
+            EXPECT_EQ(result, 5u);
+            EXPECT_STREQ((char*)loadBuffer, "efghi");
+
+            testAdmin.Sync("server read");
+        };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as client
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            testAdmin.Sync("setup server");
+
+            uint32_t result;
+            string data;
+            uint32_t cyclicBufferSize = 10;
+            uint8_t loadBuffer[cyclicBufferSize + 1];
+
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, false);
+
+            testAdmin.Sync("setup client");
+
+            testAdmin.Sync("server wrote");
+
+            result = buffer.Read(loadBuffer, 4);
+            loadBuffer[result] = '\0';
+            EXPECT_STREQ((char*)loadBuffer, "abcd");
+
+            testAdmin.Sync("client read");
+
+            data = "klmnopq";
+            result = buffer.Reserve(data.size());
+            EXPECT_EQ(result, ERROR_INVALID_INPUT_LENGTH);
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            EXPECT_EQ(result, 0u);
+
+            testAdmin.Sync("client wrote");
+
+            testAdmin.Sync("server peek");
+
+            testAdmin.Sync("server read");
+        }
+        Singleton::Dispose();
     }
-    Singleton::Dispose();
-}
 
-TEST(Core_CyclicBuffer, WithOverwrite)
-{
-    IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-        uint32_t result;
-        string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer03";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, true);
-
-        testAdmin.Sync("setup server");
-
-        testAdmin.Sync("setup client");
-
-        EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
-
-        data = "abcdefghi";
-        result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-        EXPECT_EQ(result, data.size());
-
-        testAdmin.Sync("server wrote");
-
-        testAdmin.Sync("client read");
-
-        testAdmin.Sync("client wrote");
-
-        result = buffer.Peek(loadBuffer, buffer.Used());
-        loadBuffer[result] = '\0';
-        EXPECT_EQ(result, 9u);
-        EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
-
-        testAdmin.Sync("server peek");
-
-        result = buffer.Read(loadBuffer, buffer.Used());
-        loadBuffer[result] = '\0';
-        EXPECT_EQ(result, 9u);
-        EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
-
-        buffer.Alert();
-        buffer.Flush();
-
-        EXPECT_FALSE(buffer.Overwritten());
-        EXPECT_FALSE(buffer.IsLocked());
-
-        EXPECT_EQ(buffer.ErrorCode(),2u);
-        EXPECT_EQ(buffer.LockPid(),0u);
-        EXPECT_EQ(buffer.Free(),10u);
-
-        EXPECT_STREQ(buffer.Name().c_str(),bufferName);
-        EXPECT_STREQ(buffer.Storage().Name().c_str(),bufferName);
-
-        EXPECT_TRUE(buffer.IsOverwrite());
-        EXPECT_TRUE(buffer.IsValid());
-
-        testAdmin.Sync("server read");
-    };
-
-    // This side (tested) acts as client
-    IPTestAdministrator testAdmin(otherSide);
-
+    TEST(Core_CyclicBuffer, WithOverwrite)
     {
-        testAdmin.Sync("setup server");
+        std::string bufferName {"cyclicbuffer03"};
 
-        uint32_t result;
-        string data;
-        uint8_t loadBuffer[g_cyclicBufferSize + 1];
-        const char bufferName[] = "cyclicbuffer03";
-        CyclicBuffer buffer(bufferName, g_cyclicBufferSize, true);
+        auto lambdaFunc = [bufferName](IPTestAdministrator & testAdmin) {
+            uint32_t result;
+            string data;
+            uint32_t cyclicBufferSize = 10;
+            uint8_t loadBuffer[cyclicBufferSize + 1];
 
-        testAdmin.Sync("setup client");
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, true);
 
-        testAdmin.Sync("server wrote");
+            testAdmin.Sync("setup server");
 
-        result = buffer.Read(loadBuffer, 4);
-        loadBuffer[result] = '\0';
-        EXPECT_STREQ((char*)loadBuffer, "abcd");
+            testAdmin.Sync("setup client");
 
-        testAdmin.Sync("client read");
+            EXPECT_EQ(buffer.Read(loadBuffer, buffer.Used()), 0u);
 
-        data = "j";
-        result = buffer.Reserve(8);
-        result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-        EXPECT_EQ(result, data.size());
-        data = "klmnopq";
-        result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
-        EXPECT_EQ(result, data.size());
+            data = "abcdefghi";
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            EXPECT_EQ(result, data.size());
 
-        testAdmin.Sync("client wrote");
+            testAdmin.Sync("server wrote");
 
-        testAdmin.Sync("server peek");
+            testAdmin.Sync("client read");
 
-        testAdmin.Sync("server read");
+            testAdmin.Sync("client wrote");
+
+            result = buffer.Peek(loadBuffer, buffer.Used());
+            loadBuffer[result] = '\0';
+            EXPECT_EQ(result, 9u);
+            EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
+
+            testAdmin.Sync("server peek");
+
+            result = buffer.Read(loadBuffer, buffer.Used());
+            loadBuffer[result] = '\0';
+            EXPECT_EQ(result, 9u);
+            EXPECT_STREQ((char*)loadBuffer, "ijklmnopq");
+
+            buffer.Alert();
+            buffer.Flush();
+
+            EXPECT_FALSE(buffer.Overwritten());
+            EXPECT_FALSE(buffer.IsLocked());
+
+            EXPECT_EQ(buffer.ErrorCode(), 2u);
+            EXPECT_EQ(buffer.LockPid(), 0u);
+            EXPECT_EQ(buffer.Free(), 10u);
+
+            EXPECT_STREQ(buffer.Name().c_str(), bufferName.c_str());
+            EXPECT_STREQ(buffer.Storage().Name().c_str(), bufferName.c_str());
+
+            EXPECT_TRUE(buffer.IsOverwrite());
+            EXPECT_TRUE(buffer.IsValid());
+
+            testAdmin.Sync("server read");
+        };
+
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
+        // This side (tested) acts as client
+        IPTestAdministrator testAdmin(otherSide);
+        {
+            testAdmin.Sync("setup server");
+
+            uint32_t result;
+            string data;
+            uint32_t cyclicBufferSize = 10;
+            uint8_t loadBuffer[cyclicBufferSize + 1];
+
+            CyclicBuffer buffer(bufferName.c_str(), cyclicBufferSize, true);
+
+            testAdmin.Sync("setup client");
+
+            testAdmin.Sync("server wrote");
+
+            result = buffer.Read(loadBuffer, 4);
+            loadBuffer[result] = '\0';
+            EXPECT_STREQ((char*)loadBuffer, "abcd");
+
+            testAdmin.Sync("client read");
+
+            data = "j";
+            result = buffer.Reserve(8);
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            EXPECT_EQ(result, data.size());
+            data = "klmnopq";
+            result = buffer.Write(reinterpret_cast<const uint8_t*>(data.c_str()), data.size());
+            EXPECT_EQ(result, data.size());
+
+            testAdmin.Sync("client wrote");
+
+            testAdmin.Sync("server peek");
+
+            testAdmin.Sync("server read");
+        }
+        Singleton::Dispose();
     }
-    Singleton::Dispose();
-}
-TEST(Core_CyclicBuffer, lock)
-{
-    const char bufferName[] = "cyclicbuffer04";
-    CyclicBuffer cyclicBuffer1(bufferName, g_cyclicBufferSize, true);
-    cyclicBuffer1.Lock(false,500);
-    cyclicBuffer1.Unlock();
-    cyclicBuffer1.Lock(true,1000);
-}
-TEST(Core_CyclicBuffer, lock_unlock)
-{
-    ThreadClass object;
-    object.Run();
-    cyclicBuffer.Lock(true,infinite);
-    sleep(2);
-    while(!g_cyclicThreadDone);
-    object.Stop();
-}
+
+    TEST(Core_CyclicBuffer, lock)
+    {
+        char bufferName[] = "cyclicbuffer04";
+        uint32_t cyclicBufferSize = 10;
+
+        CyclicBuffer buffer(bufferName, cyclicBufferSize, true);
+        buffer.Lock(false, 500);
+        buffer.Unlock();
+        buffer.Lock(true, 1000);
+    }
+
+    TEST(Core_CyclicBuffer, lock_unlock)
+    {
+        char bufferName[] = "cyclicbuffer01";
+        uint32_t bufferSize = 10;
+
+        CyclicBuffer buffer(bufferName, bufferSize, true);
+
+        volatile bool done = false;
+        std::mutex mutex;
+        std::condition_variable cv;
+
+        ThreadClass object(buffer, done, mutex, cv);
+        object.Run();
+        buffer.Lock(true, infinite);
+        std::unique_lock<std::mutex> lk(mutex);
+        while (!done) {
+            cv.wait(lk);
+        }
+        object.Stop();
+    }
 } // Tests

@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "VirtualInput.h"
 
 namespace WPEFramework {
@@ -47,7 +66,11 @@ namespace PluginHost
             if (mappingFile.Open(true) == true) {
                 result = Core::ERROR_NONE;
 
-                mappingTable.IElement::FromFile(mappingFile);
+                Core::OptionalType<Core::JSON::Error> error;
+                mappingTable.IElement::FromFile(mappingFile, error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
 
                 // Build the device info array..
                 Core::JSON::ArrayType<KeyMapEntry>::Iterator index(mappingTable.Elements());
@@ -168,7 +191,7 @@ namespace PluginHost
         return (result);
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     VirtualInput::VirtualInput()
@@ -185,7 +208,7 @@ namespace PluginHost
         _repeatKey.AddRef();
         _repeatKey.AddReference();
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -503,7 +526,7 @@ namespace PluginHost
         _lock.Unlock();
     }
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
 
     LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName)
         : VirtualInput()
@@ -664,7 +687,7 @@ namespace PluginHost
 #endif
 
     // Keyboard input
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
     IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
@@ -672,7 +695,7 @@ namespace PluginHost
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
 
@@ -724,13 +747,13 @@ namespace PluginHost
     /* virtual */ void IPCUserInput::LookupChanges(const string& linkName)
     {
         uint16_t index = 0;
-        Core::ProxyType<InputDataLink> current(_service[index++]);
+        Core::ProxyType<VirtualInputChannelServer::Client> current(_service[index++]);
 
         while (current.IsValid() == true) {
-            if (current->Name() == linkName) {
-                current->Reload();
+            if (current->Extension().Name() == linkName) {
+                current->Extension().Reload();
             }
-            current = Core::ProxyType<InputDataLink>(_service[index++]);
+            current = Core::ProxyType<VirtualInputChannelServer::Client>(_service[index++]);
         }
     }
 

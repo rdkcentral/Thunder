@@ -1,4 +1,22 @@
-
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __NETWORKINFO_H
 #define __NETWORKINFO_H
 
@@ -16,7 +34,7 @@ namespace Core {
         inline IPV4AddressIterator()
             : _adapter(static_cast<uint16_t>(~0))
             , _index(static_cast<uint16_t>(~0))
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _section1(0)
             , _section2(0)
             , _section3(0)
@@ -29,7 +47,7 @@ namespace Core {
         inline IPV4AddressIterator(const IPV4AddressIterator& copy)
             : _adapter(copy._adapter)
             , _index(copy._index)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _section1(copy._section1)
             , _section2(copy._section2)
             , _section3(copy._section3)
@@ -46,7 +64,7 @@ namespace Core {
         {
             _adapter = RHS._adapter;
             _index = RHS._index;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _section1 = RHS._section1;
             _section2 = RHS._section2;
             _section3 = RHS._section3;
@@ -77,7 +95,7 @@ namespace Core {
         }
         inline uint16_t Count() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (_section3);
 #else
             return (_count);
@@ -88,7 +106,7 @@ namespace Core {
     private:
         uint16_t _adapter;
         uint16_t _index;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint16_t _section1;
         uint16_t _section2;
         uint16_t _section3;
@@ -102,7 +120,7 @@ namespace Core {
         inline IPV6AddressIterator()
             : _adapter(static_cast<uint16_t>(~0))
             , _index(static_cast<uint16_t>(~0))
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _section1(0)
             , _section2(0)
             , _section3(0)
@@ -115,7 +133,7 @@ namespace Core {
         inline IPV6AddressIterator(const IPV6AddressIterator& copy)
             : _adapter(copy._adapter)
             , _index(copy._index)
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             , _section1(copy._section1)
             , _section2(copy._section2)
             , _section3(copy._section3)
@@ -132,7 +150,7 @@ namespace Core {
         {
             _adapter = RHS._adapter;
             _index = RHS._index;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             _section1 = RHS._section1;
             _section2 = RHS._section2;
             _section3 = RHS._section3;
@@ -163,7 +181,7 @@ namespace Core {
         }
         inline uint16_t Count() const
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (_section3);
 #else
             return (_count);
@@ -174,7 +192,7 @@ namespace Core {
     private:
         uint16_t _adapter;
         uint16_t _index;
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         uint16_t _section1;
         uint16_t _section2;
         uint16_t _section3;
@@ -277,7 +295,7 @@ namespace Core {
             virtual void Event(const string&) = 0;
         };
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     private:
         class EXTERNAL Observer : public SocketDatagram {
         private:
@@ -331,7 +349,7 @@ namespace Core {
     public:
         inline uint32_t Open()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (Core::ERROR_NONE);
 #else
             return (_link.Open(Core::infinite));
@@ -339,7 +357,7 @@ namespace Core {
         }
         inline uint32_t Close()
         {
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             return (Core::ERROR_NONE);
 #else
             return (_link.Close(Core::infinite));
@@ -347,7 +365,7 @@ namespace Core {
         }
 
     private:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         ;
 #else
         Observer _link;

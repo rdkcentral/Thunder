@@ -1,6 +1,25 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "PluginServer.h"
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 #include <dlfcn.h> // for dladdr
 #include <syslog.h>
 #endif
@@ -39,7 +58,7 @@ namespace PluginHost {
             case 'c':
                 configFile = argument;
                 break;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             case 'b':
                 _background = true;
                 break;
@@ -104,7 +123,7 @@ namespace PluginHost {
                 _dispatcher = nullptr;
                 delete destructor;
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 if (_background) {
                     syslog(LOG_NOTICE, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon closed down.");
                 } else
@@ -113,7 +132,7 @@ namespace PluginHost {
                    fprintf(stdout, EXPAND_AND_QUOTE(APPLICATION_NAME) " closed down.\n");
                 }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
                 closelog();
 #endif
                 // Now clear all singeltons we created.
@@ -132,23 +151,18 @@ namespace PluginHost {
 
     extern "C" {
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 
     void ExitDaemonHandler(int signo)
     {
         if (_background) {
-            syslog(LOG_NOTICE, "Signal received %d.", signo);
+            syslog(LOG_NOTICE, "Signal received %d. in process [%d]", signo, getpid());
         } else {
-            fprintf(stderr, "Signal received %d.\n", signo);
+            fprintf(stderr, "Signal received %d. in process [%d]\n", signo, getpid());
         }
 
         if ((signo == SIGTERM) || (signo == SIGQUIT)) {
             ExitHandler::Construct();
-        } else if (signo == SIGSEGV) {
-            DumpCallStack();
-            // now invoke the default segfault handler
-            signal(signo, SIG_DFL);
-            kill(getpid(), signo);
         }
     }
 
@@ -171,7 +185,11 @@ namespace PluginHost {
                     SYSLOG(Logging::Startup, (_T("Plugin config file [%s] could not be opened."), file.Name().c_str()));
                 } else {
                     Plugin::Config pluginConfig;
-                    pluginConfig.IElement::FromFile(file);
+                    Core::OptionalType<Core::JSON::Error> error;
+                    pluginConfig.IElement::FromFile(file, error);
+                    if (error.IsSet() == true) {
+                        SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                    }
                     file.Close();
 
                     if ((pluginConfig.ClassName.Value().empty() == true) || (pluginConfig.Locator.Value().empty() == true)) {
@@ -198,7 +216,7 @@ namespace PluginHost {
         }
     }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
     void StartLoopbackInterface()
     {
         Core::AdapterIterator adapter;
@@ -246,7 +264,7 @@ namespace PluginHost {
 
     static void PublishCallstack(const ::ThreadId threadId)
     {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         void* callstack[32];
         uint32_t entries = ::GetCallStack(threadId, callstack, (sizeof(callstack) / sizeof(void*)));
         char** symbols = backtrace_symbols(callstack, entries);
@@ -272,13 +290,13 @@ namespace PluginHost {
 #endif
     }
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
     int _tmain(int argc, _TCHAR* argv[])
 #else
     int main(int argc, char** argv)
 #endif
     {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         //Set our Logging Mask and open the Log
         setlogmask(LOG_UPTO(LOG_NOTICE));
         openlog(argv[0], LOG_PID, LOG_USER);
@@ -293,7 +311,7 @@ namespace PluginHost {
             ExitHandler::Destruct();
             exit(EXIT_FAILURE);
         } else if (options.RequestUsage()) {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             syslog(LOG_ERR, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Options.");
 #endif
             if ((_background == false) && (options.RequestUsage())) {
@@ -304,7 +322,7 @@ namespace PluginHost {
             exit(EXIT_FAILURE);
             ;
         }
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         else {
             struct sigaction sa;
             memset(&sa, 0, sizeof(struct sigaction));
@@ -314,7 +332,6 @@ namespace PluginHost {
 
             sigaction(SIGINT, &sa, nullptr);
             sigaction(SIGTERM, &sa, nullptr);
-            sigaction(SIGSEGV, &sa, nullptr);
             sigaction(SIGQUIT, &sa, nullptr);
         }
 
@@ -334,11 +351,15 @@ namespace PluginHost {
         Server::Config serviceConfig;
 
         if (configFile.Open(true) == true) {
-            serviceConfig.IElement::FromFile(configFile);
+            Core::OptionalType<Core::JSON::Error> error;
+            serviceConfig.IElement::FromFile(configFile, error);
+            if (error.IsSet() == true) {
+                SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+            }
 
             configFile.Close();
         } else {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             if (_background == true) {
                 syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Daemon failed to start. Incorrect Config file.");
             } else
@@ -377,7 +398,7 @@ namespace PluginHost {
             }
         }
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         ::umask(serviceConfig.Process.Umask.Value());
 #endif
         // Time to start loading the config of the plugins.
@@ -395,10 +416,20 @@ namespace PluginHost {
  
         // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
         // Define the environment variable for Tracing files, if it is not already set.
-        Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value(), 0);
+        if ( Trace::TraceUnit::Instance().Open(serviceConfig.VolatilePath.Value()) != Core::ERROR_NONE){
+#ifndef __WINDOWS__
+            if (_background == true) {
+                syslog(LOG_WARNING, EXPAND_AND_QUOTE(APPLICATION_NAME) " Could not enable trace functionality!");
+            } else
+#endif
+            {
+                fprintf(stdout, "Could not enable trace functionality!\n");
+            }
+        }
 
         if (serviceConfig.DefaultTraceCategories.IsQuoted() == true) {
 
+            serviceConfig.DefaultTraceCategories.SetQuoted(true);
             traceSettings = Core::Directory::Normalize(Core::File::PathName(options.configFile)) + serviceConfig.DefaultTraceCategories.Value();
 
             Core::File input (traceSettings, true);
@@ -420,7 +451,7 @@ namespace PluginHost {
         SYSLOG(Logging::Startup, (_T("Version:       %s"), serviceConfig.Version.Value().c_str()));
         SYSLOG(Logging::Startup, (_T("Traces:        %s"), traceSettings.c_str()));
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         // We need at least the loopback interface before we continue...
         StartLoopbackInterface();
 #endif
@@ -442,7 +473,7 @@ namespace PluginHost {
         // If we have handlers open up the gates to analyze...
         _dispatcher->Open();
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         if (_background == true) {
             Core::WorkerPool::Instance().Join();
         } else
@@ -604,16 +635,66 @@ namespace PluginHost {
                     status->Release();
                     break;
                 }
-#if !defined(__WIN32__) && !defined(__APPLE__)
+                case 'T': {
+                    printf("Triggering the Resource Monitor to do an evaluation.\n");
+                    Core::ResourceMonitor::Instance().Break();
+                    break;
+                }
                 case 'M': {
-                    printf("\nMonitor callstack:\n");
+                    printf("\nResource Monitor Entry states:\n");
                     printf("============================================================\n");
-                    PublishCallstack(Core::ResourceMonitor::Instance().Id());
+                    Core::ResourceMonitor& monitor = Core::ResourceMonitor::Instance();
+                    printf("Currently monitoring: %d resources\n", monitor.Count());
+                    uint32_t index = 0;
+                    Core::ResourceMonitor::Metadata info;
+
+                    info.classname = _T("");
+                    info.descriptor = ~0;
+                    info.events = 0;
+                    info.monitor = 0;
+
+                    while (monitor.Info(index, info) == true) {
+#ifdef __WINDOWS__
+                        TCHAR flags[12];
+                        flags[0]  = (info.monitor & FD_CLOSE   ? 'C' : '-');
+                        flags[1]  = (info.monitor & FD_READ    ? 'R' : '-');
+                        flags[2]  = (info.monitor & FD_WRITE   ? 'W' : '-');
+                        flags[3]  = (info.monitor & FD_ACCEPT  ? 'A' : '-');
+                        flags[4]  = (info.monitor & FD_CONNECT ? 'O' : '-');
+                        flags[5]  = ':';
+                        flags[6]  = (info.events & FD_CLOSE   ? 'C' : '-');
+                        flags[7]  = (info.events & FD_READ    ? 'R' : '-');
+                        flags[8]  = (info.events & FD_WRITE   ? 'W' : '-');
+                        flags[9]  = (info.events & FD_ACCEPT  ? 'A' : '-');
+                        flags[10] = (info.events & FD_CONNECT ? 'O' : '-');
+                        flags[11] = '\0';
+#else
+                        TCHAR flags[8];
+                        flags[0] = (info.monitor & POLLIN     ? 'I' : '-');
+                        flags[1] = (info.monitor & POLLOUT    ? 'O' : '-');
+                        flags[2] = (info.monitor & POLLHUP    ? 'H' : '-');
+                        flags[3]  = ':';
+                        flags[4] = (info.events & POLLIN     ? 'I' : '-');
+                        flags[5] = (info.events & POLLOUT    ? 'O' : '-');
+                        flags[6] = (info.events & POLLHUP    ? 'H' : '-');
+                        flags[7] = '\0';
+#endif
+                  
+                        printf ("%6d [%s]: %s\n", info.descriptor, flags, Core::ClassNameOnly(info.classname).Text().c_str());
+                        index++;
+                    }
                     break;
                 }
                 case 'Q':
                     break;
 
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
+                case 'R': {
+                    printf("\nMonitor callstack:\n");
+                    printf("============================================================\n");
+                    PublishCallstack(Core::ResourceMonitor::Instance().Id());
+                    break;
+                }
                 case '0':
                 case '1':
                 case '2':
@@ -623,16 +704,29 @@ namespace PluginHost {
                 case '6':
                 case '7':
                 case '8': {
-                    uint32_t threadId = _dispatcher->WorkerPool().ThreadId(keyPress - '0');
+                    uint32_t threadId = _dispatcher->WorkerPool().Id(keyPress - '0');
                     printf("\nThreadPool thread[%c,%d] callstack:\n", keyPress, threadId);
                     printf("============================================================\n");
-                    PublishCallstack(threadId);
+                    if (threadId != static_cast<uint32_t>(~0)) {
+                        PublishCallstack(threadId);
+                    } else {
+                       printf("The given Thread ID is not in a valid range, please give thread id between 0 and %d\n", THREADPOOL_COUNT);
+                    }
+
                     break;
                 }
 #endif
 
                 case '?':
-                    printf("\nOptions are: [P]lugins, [C]hannels, [S]erver stats, [M] Socket monitor stack, [0..8] Workerpool stack and [Q]uit\n\n");
+                    printf("\nOptions are: \n");
+                    printf("  [P]lugins\n");
+                    printf("  [C]hannels\n");
+                    printf("  [S]erver stats\n");
+                    printf("  [T]rigger resource monitor\n");
+                    printf("  [M]etadata resource monitor\n");
+                    printf("  [R]esource monitor stack\n");
+                    printf("  [0..%d] Workerpool stacks\n", THREADPOOL_COUNT);
+                    printf("  [Q]uit\n\n");
                     break;
 
                 default:

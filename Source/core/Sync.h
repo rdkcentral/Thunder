@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __SYNC_H
 #define __SYNC_H
 
@@ -13,48 +32,6 @@
 
 namespace WPEFramework {
 namespace Core {
-    class EXTERNAL SyncHandle {
-    public:
-        SyncHandle()
-            : m_SyncHandle(reinterpret_cast<SYSTEM_SYNC_HANDLE>(~0))
-        {
-        }
-        SyncHandle(SYSTEM_SYNC_HANDLE a_Handle)
-            : m_SyncHandle(a_Handle)
-        {
-        }
-        SyncHandle(const SyncHandle& a_Copy)
-            : m_SyncHandle(a_Copy.m_SyncHandle)
-        {
-        }
-        ~SyncHandle()
-        {
-        }
-
-        inline SyncHandle& operator=(const SyncHandle& a_RHS)
-        {
-            // Copy my own members
-            return (operator=(a_RHS.m_SyncHandle));
-        }
-
-        SyncHandle& operator=(SYSTEM_SYNC_HANDLE a_SyncHandle)
-        {
-            //  This does not change the base, so...
-            m_SyncHandle = a_SyncHandle;
-
-            return (*this);
-        }
-
-    public:
-        operator SYSTEM_SYNC_HANDLE() const
-        {
-            return (m_SyncHandle);
-        }
-
-    private:
-        SYSTEM_SYNC_HANDLE m_SyncHandle;
-    };
-
     // ===========================================================================
     // class CriticalSection
     // ===========================================================================
@@ -80,7 +57,7 @@ namespace Core {
 #endif
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::EnterCriticalSection(&m_syncMutex);
 #endif
         }
@@ -93,7 +70,7 @@ namespace Core {
             }
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
             ::LeaveCriticalSection(&m_syncMutex);
 #endif
         }
@@ -102,7 +79,7 @@ namespace Core {
 #ifdef __POSIX__
         pthread_mutex_t m_syncMutex;
 #endif
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         CRITICAL_SECTION m_syncMutex;
 #endif
 
@@ -145,13 +122,6 @@ namespace Core {
         void Unlock();
         bool Locked() const;
 
-#ifdef __WIN32__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncMutex));
-        }
-#endif
-
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncAdminLock;
@@ -159,7 +129,7 @@ namespace Core {
         volatile bool m_blLocked;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncMutex;
 #endif
     };
@@ -185,13 +155,6 @@ namespace Core {
         uint32_t Unlock(unsigned int nCount = 1);
         uint32_t TryUnlock(unsigned int nSeconds);
 
-#ifdef __WIN32__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncSemaphore));
-        }
-#endif
-
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncAdminLock;
@@ -201,7 +164,7 @@ namespace Core {
         unsigned int m_nMaxCount;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncSemaphore;
 #endif
     };
@@ -233,13 +196,6 @@ namespace Core {
         void PulseEvent();
         bool IsSet() const;
 
-#ifdef __WIN32__
-        inline operator SyncHandle()
-        {
-            return (SyncHandle(m_syncEvent));
-        }
-#endif
-
     protected: // Members
         bool m_blManualReset;
 
@@ -249,7 +205,7 @@ namespace Core {
         pthread_cond_t m_syncCondition;
 #endif
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
         HANDLE m_syncEvent;
 #endif
     };

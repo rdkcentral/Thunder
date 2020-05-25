@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
@@ -6,24 +25,23 @@
 namespace WPEFramework {
 namespace Tests {
 
-    string g_continuousConnector = _T("/tmp/testserver0");
-    string g_flashConnector = _T("/tmp/testserver1");
-    string g_multiConnector = _T("/tmp/testserver2");
-
     class Response {
     public:
         Response()
             : _result(0)
         {
         }
+
         Response(const uint32_t result)
             : _result(result)
         {
         }
+
         Response(const Response& copy)
             : _result(copy._result)
         {
         }
+
         ~Response()
         {
         }
@@ -53,18 +71,21 @@ namespace Tests {
             , _context(2)
         {
         }
+
         Triplet(const uint16_t display, const uint32_t surface, const uint64_t context)
             : _display(display)
             , _surface(surface)
             , _context(context)
         {
         }
+
         Triplet(const Triplet& copy)
             : _display(copy._display)
             , _surface(copy._surface)
             , _context(copy._context)
         {
         }
+
         ~Triplet()
         {
         }
@@ -83,10 +104,12 @@ namespace Tests {
         {
             return (_display);
         }
+
         inline uint32_t Surface() const
         {
             return (_surface);
         }
+
         inline uint64_t Context() const
         {
             return (_context);
@@ -103,14 +126,14 @@ namespace Tests {
     typedef Core::IPCMessageType<3, Core::IPC::Text<2048>, Core::IPC::Text<2048>> TextText;
 
     class HandleTripletResponse : public Core::IIPCServer {
-    private:
-        HandleTripletResponse(const HandleTripletResponse&);
-        HandleTripletResponse& operator=(const HandleTripletResponse&);
-
     public:
+        HandleTripletResponse(const HandleTripletResponse&) = delete;
+        HandleTripletResponse& operator=(const HandleTripletResponse&) = delete;
+
         HandleTripletResponse()
         {
         }
+
         virtual ~HandleTripletResponse()
         {
         }
@@ -128,11 +151,10 @@ namespace Tests {
     };
 
     class HandleVoidTriplet : public Core::IIPCServer {
-    private:
-        HandleVoidTriplet(const HandleVoidTriplet&);
-        HandleVoidTriplet& operator=(const HandleVoidTriplet&);
-
     public:
+        HandleVoidTriplet(const HandleVoidTriplet&) = delete;
+        HandleVoidTriplet& operator=(const HandleVoidTriplet&) = delete;
+
         HandleVoidTriplet()
         {
         }
@@ -153,14 +175,14 @@ namespace Tests {
     };
 
     class HandleTextText : public Core::IIPCServer {
-    private:
-        HandleTextText(const HandleTextText&);
-        HandleTextText& operator=(const HandleTextText&);
-
     public:
+        HandleTextText(const HandleTextText&) = delete;
+        HandleTextText& operator=(const HandleTextText&) = delete;
+
         HandleTextText()
         {
         }
+
         virtual ~HandleTextText()
         {
         }
@@ -179,8 +201,9 @@ namespace Tests {
 
     TEST(Core_IPC, ContinuousChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::NodeId continousNode(g_continuousConnector.c_str());
+        std::string connector = _T("/tmp/testserver0");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -215,9 +238,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId continousNode(g_continuousConnector.c_str());
+            Core::NodeId continousNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
@@ -273,8 +300,9 @@ namespace Tests {
     }
     TEST(Core_IPC, FlashChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::NodeId flashNode(g_flashConnector.c_str());
+        std::string connector = _T("/tmp/testserver1");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -309,9 +337,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId flashNode(g_flashConnector.c_str());
+            Core::NodeId flashNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");
@@ -373,8 +405,9 @@ namespace Tests {
     }
     TEST(Core_IPC, MultiChannel)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::NodeId multiNode(g_multiConnector.c_str());
+        std::string connector = _T("/tmp/testserver2");
+        auto lambdaFunc = [connector](IPTestAdministrator & testAdmin) {
+            Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> > factory(Core::ProxyType<Core::FactoryType<Core::IIPC, uint32_t> >::Create());
@@ -406,9 +439,13 @@ namespace Tests {
             factory->DestroyFactories();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::NodeId multiNode(g_multiConnector.c_str());
+            Core::NodeId multiNode(connector.c_str());
             uint32_t error;
 
             testAdmin.Sync("setup server");

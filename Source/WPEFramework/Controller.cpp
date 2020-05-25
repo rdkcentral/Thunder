@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "Controller.h"
 #include "SystemInfo.h"
 
@@ -108,7 +127,7 @@ namespace Plugin {
         ASSERT(request.HasBody() == false);
 
         if (request.Verb == Web::Request::HTTP_POST) {
-            request.Body(PluginHost::Factories::Instance().JSONRPC());
+            request.Body(PluginHost::IFactories::Instance().JSONRPC());
         } else if (request.Verb == Web::Request::HTTP_PUT) {
             Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
@@ -135,7 +154,7 @@ namespace Plugin {
 
         // For now, whatever the URL, we will just, on a get, drop all info we have
         if (request.Verb == Web::Request::HTTP_POST) {
-            result = PluginHost::Factories::Instance().Response();
+            result = PluginHost::IFactories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
             result->Message = _T("Request has no JSONRPC body!");
 
@@ -168,7 +187,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Controller::GetMethod(Core::TextSegmentIterator& index) const
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
         result->ContentType = Web::MIME_JSON;
 
         if (index.Next() == false) {
@@ -243,7 +262,7 @@ namespace Plugin {
             Probe::Iterator index(_probe->Instances());
 
             while (index.Next() == true) {
-                PluginHost::MetaData::Bridge newElement((*index).URL().Text().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
+                PluginHost::MetaData::Bridge newElement((*index).URL().Text(), (*index).Latency(), (*index).Model(), (*index).IsSecure());
                 response->Bridges.Add(newElement);
             }
 
@@ -269,7 +288,7 @@ namespace Plugin {
     }
     Core::ProxyType<Web::Response> Controller::PutMethod(Core::TextSegmentIterator& index, const Web::Request& request)
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
 
         // All PUT commands require an additional parameter, so go look for it.
         if (index.Next() == true) {
@@ -378,7 +397,7 @@ namespace Plugin {
 
     Core::ProxyType<Web::Response> Controller::DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& /* request */)
     {
-        Core::ProxyType<Web::Response> result(PluginHost::Factories::Instance().Response());
+        Core::ProxyType<Web::Response> result(PluginHost::IFactories::Instance().Response());
 
         // All delete commands require an additional parameter, so go look for it.
         if (index.Next() == true) {
@@ -506,8 +525,7 @@ namespace Plugin {
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
             response = PluginHost::JSONRPC::Invoke(channelId, inbound);
-		}
-		else {
+		} else {
 			Core::ProxyType<PluginHost::Server::Service> service;
 
             uint32_t result = _pluginServer->Services().FromIdentifier(callsign, service);
@@ -536,9 +554,22 @@ namespace Plugin {
         if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
             response = Message();
             response->JSONRPC = Core::JSONRPC::Message::DefaultVersion;
-            response->Error.SetError(result);
-            response->Error.Text = "Invalid JSONRPC Request";
             response->Id = inbound.Id.Value();
+            response->Error.SetError(result);
+
+            switch (result) {
+                case Core::ERROR_UNAVAILABLE:
+                    response->Error.Text = "Requested service is not available";
+                    break;
+                case Core::ERROR_INVALID_SIGNATURE:
+                    response->Error.Text = "Invalid service name or version";
+                    break;
+                case Core::ERROR_BAD_REQUEST:
+                    response->Error.Text = "Could not access requested service";
+                    break;
+                default:
+                    response->Error.Text = "Invalid JSONRPC Request";
+            }
         }
 
         return (response);

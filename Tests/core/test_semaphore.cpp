@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
@@ -7,19 +26,19 @@
 using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
-int g_shared = 1;
-bool g_threadCritDone = false;
-static std::thread::id g_parentId;
-Core::CriticalSection lock;
+static int g_shared = 1;
 
 class ThreadClass : public Core::Thread {
-private:
+public:
+    ThreadClass() = delete;
     ThreadClass(const ThreadClass&) = delete;
     ThreadClass& operator=(const ThreadClass&) = delete;
 
-public:
-    ThreadClass()
+    ThreadClass(Core::CriticalSection& lock,std::thread::id parentId)
         : Core::Thread(Core::Thread::DefaultStackSize(), _T("Test"))
+        , _lock(lock)
+        , _parentId(parentId)
+        , _done(false)
     {
     }
 
@@ -29,22 +48,30 @@ public:
 
     virtual uint32_t Worker() override
     {
-        while (IsRunning() && (!g_threadCritDone)) {
-            EXPECT_TRUE(g_parentId != std::this_thread::get_id());
-            g_threadCritDone = true;
-            lock.Lock();
+        while (IsRunning() && (!_done)) {
+            EXPECT_TRUE(_parentId != std::this_thread::get_id());
+            _done = true;
+            _lock.Lock();
             g_shared++;
-            lock.Unlock();
+            _lock.Unlock();
             ::SleepMs(50);
         }
         return (Core::infinite);
     }
+
+private:
+    Core::CriticalSection& _lock;
+    std::thread::id _parentId;
+    volatile bool _done;
 };
 
 
 TEST(test_criticalsection, simple_criticalsection)
 {
-    ThreadClass object;
+    Core::CriticalSection lock;
+    std::thread::id parentId;
+
+    ThreadClass object(lock,parentId);
     object.Run();
     lock.Lock();
     g_shared++;

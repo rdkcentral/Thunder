@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __VIRTUAL_INPUT__
 #define __VIRTUAL_INPUT__
 
@@ -19,14 +38,14 @@ namespace PluginHost {
             RIGHTCTRL = 20 // 20..23 bits are for RightCtrl reference counting (max 15)
         };
 
-		class RepeatKeyTimer : public Core::IDispatch {
+        class RepeatKeyTimer : public Core::IDispatch {
         private:
             RepeatKeyTimer() = delete;
             RepeatKeyTimer(const RepeatKeyTimer&) = delete;
             RepeatKeyTimer& operator=(const RepeatKeyTimer&) = delete;
 
         public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
             RepeatKeyTimer(VirtualInput* parent)
@@ -39,7 +58,7 @@ namespace PluginHost {
                 , _job()
             {
             }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
             ~RepeatKeyTimer() override
@@ -84,7 +103,7 @@ namespace PluginHost {
                 _adminLock.Unlock();
             }
 
-		private:
+        private:
             void Dispatch() override
             {
                 _parent.RepeatKey(_code);
@@ -93,7 +112,7 @@ namespace PluginHost {
 
                 if (_nextSlot.IsValid() == true) {
 
-					_nextSlot.Add(_intervalTime);
+                    _nextSlot.Add(_intervalTime);
 
                     // Let's schedule ourselves for the retrigger..
                     Core::WorkerPool::Instance().Schedule(_nextSlot, _job);
@@ -184,7 +203,6 @@ namespace PluginHost {
             }
             ~KeyMap()
             {
-
             }
 
         public:
@@ -238,7 +256,8 @@ namespace PluginHost {
             }
 
         private:
-            void ClearKeyMap() {
+            void ClearKeyMap()
+            {
                 std::map<uint16_t, int16_t> removedKeys;
 
                 while (_keyMap.size() > 0) {
@@ -366,13 +385,12 @@ namespace PluginHost {
         virtual ~VirtualInput();
 
     public:
-
-    inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
+        inline void Interval(const uint16_t startTime, const uint16_t intervalTime)
         {
             _repeatKey.Interval(startTime, intervalTime);
         }
 
-	inline void RepeatLimit(const uint16_t limit)
+        inline void RepeatLimit(const uint16_t limit)
         {
             _repeatLimit = limit;
         }
@@ -409,7 +427,7 @@ namespace PluginHost {
             return (index->second);
         }
 
-        inline void ClearTable(const std::string& name)
+        inline void ClearTable(const string& name)
         {
             TableMap::iterator index(_mappingTables.find(name));
 
@@ -438,7 +456,12 @@ namespace PluginHost {
             Core::File data(tableName);
             if (data.Open(true) == true) {
                 PostLookupTable info;
-                info.IElement::FromFile(data);
+                Core::OptionalType<Core::JSON::Error> error;
+                info.IElement::FromFile(data, error);
+                if (error.IsSet() == true) {
+                    SYSLOG(Logging::ParsingError, (_T("Parsing failed with %s"), ErrorDisplayMessage(error.Value()).c_str()));
+                }
+
                 Core::JSON::ArrayType<PostLookupTable::Conversion>::Iterator index(info.Conversions.Elements());
 
                 _lock.Lock();
@@ -481,8 +504,9 @@ namespace PluginHost {
         }
 
     protected:
-        inline void ClearKeyMap() {
-            for (auto& keyMap: _mappingTables) {
+        inline void ClearKeyMap()
+        {
+            for (auto& keyMap : _mappingTables) {
                 keyMap.second.ClearKeyMap();
             }
         }
@@ -530,7 +554,7 @@ namespace PluginHost {
         uint16_t _repeatLimit;
     };
 
-#if !defined(__WIN32__) && !defined(__APPLE__)
+#if !defined(__WINDOWS__) && !defined(__APPLE__)
     class EXTERNAL LinuxKeyboardInput : public VirtualInput {
     private:
         LinuxKeyboardInput(const LinuxKeyboardInput&) = delete;
@@ -585,6 +609,10 @@ namespace PluginHost {
             }
 
         public:
+            inline bool Enable() const
+            {
+                return (_enabled);
+            }
             inline void Enable(const bool enabled)
             {
                 _enabled = enabled;
@@ -593,8 +621,8 @@ namespace PluginHost {
             {
                 Core::ProxyType<Core::IIPC> result;
 
-                if ( (_enabled == true) && (Subscribed(element->Label()) == true) ) {
-                    if ( (element->Label() != IVirtualInput::KeyMessage::Id()) || (_postLookup == nullptr) ) {
+                if ((_enabled == true) && (Subscribed(element->Label()) == true)) {
+                    if ((element->Label() != IVirtualInput::KeyMessage::Id()) || (_postLookup == nullptr)) {
                         result = element;
                     } else {
                         IVirtualInput::KeyMessage& copy(static_cast<IVirtualInput::KeyMessage&>(*element));
@@ -631,10 +659,9 @@ namespace PluginHost {
             }
 
         private:
-            bool Subscribed(const uint32_t id) const {
-                uint8_t index (id == IVirtualInput::KeyMessage::Id()   ? IVirtualInput::INPUT_KEY   :
-                              (id == IVirtualInput::MouseMessage::Id() ? IVirtualInput::INPUT_MOUSE :
-                              (id == IVirtualInput::TouchMessage::Id() ? IVirtualInput::INPUT_TOUCH : 0)));
+            bool Subscribed(const uint32_t id) const
+            {
+                uint8_t index(id == IVirtualInput::KeyMessage::Id() ? IVirtualInput::INPUT_KEY : (id == IVirtualInput::MouseMessage::Id() ? IVirtualInput::INPUT_MOUSE : (id == IVirtualInput::TouchMessage::Id() ? IVirtualInput::INPUT_TOUCH : 0)));
 
                 return ((index & _mode) != 0);
             }
@@ -686,19 +713,104 @@ namespace PluginHost {
             IPCUserInput& _parent;
         };
 
+        class EXTERNAL Iterator {
+        public:
+            Iterator()
+                : _server(nullptr)
+                , _index(~0)
+                , _element()
+            {
+            }
+            explicit Iterator(VirtualInputChannelServer& server)
+                : _server(&server)
+                , _index(~0)
+                , _element()
+            {
+            }
+            Iterator(const Iterator& copy)
+                : _server(copy._server)
+                , _index(copy._index)
+                , _element(copy._element)
+            {
+            }
+            ~Iterator()
+            {
+            }
+
+            Iterator& operator=(const Iterator& rhs)
+            {
+                _server = rhs._server;
+                _index = rhs._index;
+                _element = rhs._element;
+
+                return (*this);
+            }
+
+        public:
+            bool IsValid() const
+            {
+                return (_element.IsValid());
+            }
+            void Reset()
+            {
+                _index = ~0;
+                if (_element.IsValid() == true) {
+                    _element.Release();
+                }
+            }
+            bool Next()
+            {
+                if (_server != nullptr) {
+                    if (_index == static_cast<uint32_t>(~0)) {
+                        _index = 0;
+                        _element = (*_server)[_index];
+                    } else if (_element.IsValid() == true) {
+                        _index++;
+                        _element = (*_server)[_index];
+                    }
+                }
+
+                return (IsValid());
+            }
+            string Name() const
+            {
+                ASSERT(_element.IsValid());
+                return (_element->Extension().Name());
+            }
+            bool Enabled() const
+            {
+                ASSERT(_element.IsValid());
+                return (_element->Extension().Enable());
+            }
+            void Enable(const bool enabled)
+            {
+                ASSERT(_element.IsValid());
+                return (_element->Extension().Enable(enabled));
+            }
+
+        public:
+            VirtualInputChannelServer* _server;
+            uint32_t _index;
+            Core::ProxyType<VirtualInputChannelServer::Client> _element;
+        };
+
     public:
         IPCUserInput(const Core::NodeId& sourceName);
-        virtual ~IPCUserInput();
+        ~IPCUserInput() override;
 
-        virtual uint32_t Open();
-        virtual uint32_t Close();
-        virtual void MapChanges(ChangeIterator& updated);
-        virtual void LookupChanges(const string&);
+        Iterator Inputs()
+        {
+            return (Iterator(_service));
+        }
+        uint32_t Open() override;
+        uint32_t Close() override;
+        void MapChanges(ChangeIterator& updated) override;
+        void LookupChanges(const string&) override;
 
     private:
-        virtual void Send(const IVirtualInput::KeyData& data) override;
-        virtual void Send(const IVirtualInput::MouseData& data) override;
-        virtual void Send(const IVirtualInput::TouchData& data) override;
+        void Send(const IVirtualInput::KeyData& data) override;
+        void Send(const IVirtualInput::MouseData& data) override;
+        void Send(const IVirtualInput::TouchData& data) override;
 
     private:
         VirtualInputChannelServer _service;
@@ -726,7 +838,7 @@ namespace PluginHost {
         void Initialize(const type t, const string& locator)
         {
             ASSERT(_keyHandler == nullptr);
-#if defined(__WIN32__) || defined(__APPLE__)
+#if defined(__WINDOWS__) || defined(__APPLE__)
             ASSERT(t == VIRTUAL)
             _keyHandler = new PluginHost::IPCUserInput(Core::NodeId(locator.c_str()));
             TRACE_L1("Creating a IPC Channel for key communication. %d", 0);

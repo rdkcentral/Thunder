@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
@@ -7,24 +26,28 @@ using namespace WPEFramework;
 using namespace WPEFramework::Core;
 
 class SynchronizeClass {
-    private:
-        string msg;
-    public:
-        SynchronizeClass()
-        {
-        }
-        ~SynchronizeClass()
-        {
-        }
-    public:
-        bool Copy(const string message)
-        {
-            bool result = false;
-            msg = message;
-            if (!msg.empty())
-                result = true;
-            return result;
-        }
+public:
+    SynchronizeClass()
+        : _msg("")
+    {
+    }
+
+    ~SynchronizeClass()
+    {
+    }
+
+public:
+    bool Copy(const string message)
+    {
+        bool result = false;
+        _msg = message;
+        if (!_msg.empty())
+            result = true;
+        return result;
+    }
+
+private:
+    string _msg;
 };
 
 TEST(test_synchronize, synchronize_test)

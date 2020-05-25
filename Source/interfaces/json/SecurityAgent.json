@@ -1,0 +1,79 @@
+{
+  "$schema": "interface.schema.json",
+  "jsonrpc": "2.0",
+  "info": {
+    "title": "Security Agent API",
+    "class": "SecurityAgent",
+    "description": "Security Agent JSON-RPC interface"
+  },
+  "common": {
+    "$ref": "common.json"
+  },
+  "methods": {
+    "createtoken": {
+      "summary": "Creates Token",
+      "description": "Create a signed JsonWeb token from provided payload.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Url of application origin",
+            "example": "https://test.comcast.com"
+          },
+          "user": {
+            "type": "string",
+            "description": "Username",
+            "example": "Test"
+          },
+          "hash": {
+            "type": "string",
+            "description": "Random hash",
+            "example": "1CLYex47SY"
+          }
+        }
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "description": "Signed JsonWeb token",
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICAgImpzb25ycGMiOiAiMi4wIiwgCiAgICAiaWQiOiAxMjM0NTY3ODkwLCAKICAgICJtZXRob2QiOiAiQ29udHJvbGxlci4xLmFjdGl2YXRlIiwgCiAgICAicGFyYW1zIjogewogICAgICAgICJjYWxsc2lnbiI6ICJTZWN1cml0eUFnZW50IgogICAgfQp9.lL40nTwRyBvMwiglZhl5_rB8ycY1uhAJRFx9pGATMRQ"
+          }
+        }
+      },
+      "errors": [
+        {
+          "description": "Token creation failed",
+          "$ref": "#/common/errors/general"
+        }
+      ]
+    },
+    "validate": {
+      "summary": "Validates Token",
+      "description": "Checks whether the token is valid and properly signed.",
+      "params": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "description": "Token that will be validated",
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ewogICAgImpzb25ycGMiOiAiMi4wIiwgCiAgICAiaWQiOiAxMjM0NTY3ODkwLCAKICAgICJtZXRob2QiOiAiQ29udHJvbGxlci4xLmFjdGl2YXRlIiwgCiAgICAicGFyYW1zIjogewogICAgICAgICJjYWxsc2lnbiI6ICJTZWN1cml0eUFnZW50IgogICAgfQp9.lL40nTwRyBvMwiglZhl5_rB8ycY1uhAJRFx9pGATMRQ"
+          }
+        }
+      },
+      "result": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "description": "Tells whether token is signature is correct",
+            "type": "boolean"
+          }
+        }
+      },
+      "errors": [
+      ]
+    }
+  }
+}

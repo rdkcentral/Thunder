@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
@@ -8,6 +27,8 @@ namespace Tests {
 
     class DataClass {
     public:
+        DataClass() = delete;
+
         DataClass(uint8_t value)
             : _value(value)
         {
@@ -31,11 +52,14 @@ namespace Tests {
     private:
         typedef Core::IteratorType<CONTAINER, ELEMENT> BaseClass;
     public:
+        IteratorClass() =delete;
+
         IteratorClass(CONTAINER& container)
             : BaseClass(container)
         {
             EXPECT_EQ(container, *(BaseClass::Container()));
         }
+
         ~IteratorClass()
         {
         }
@@ -46,12 +70,16 @@ namespace Tests {
     {
     private:
         typedef Core::IteratorMapType<CONTAINER, ELEMENT, KEY> BaseClass;
+
     public:
+        IteratorMapClass() = delete;
+
         IteratorMapClass(CONTAINER& container)
             : BaseClass(container)
         {
             EXPECT_EQ(container, *(BaseClass::Container()));
         }
+
         ~IteratorMapClass()
         {
         }
@@ -92,7 +120,7 @@ namespace Tests {
         DataIterator iterator(list);
         EXPECT_EQ(iterator.Count(), 3u);
 
-        for(uint8_t i = 0; i <= 4; i++) {
+        for (uint8_t i = 0; i <= 4; i++) {
             iterator.Reset(i);
             Validate<DataIterator>(iterator, i);
         }
@@ -113,7 +141,7 @@ namespace Tests {
         DataMapIterator iterator(map);
         EXPECT_EQ(iterator.Count(), 3u);
 
-        for(uint8_t i = 0; i <= 4; i++) {
+        for (uint8_t i = 0; i <= 4; i++) {
             iterator.Reset(i);
             ValidateMap<DataMapIterator>(iterator, i);
         }

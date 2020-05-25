@@ -6,12 +6,11 @@
 namespace WPEFramework {
 namespace Tests {
 
-    string g_fileName = "/tmp/doorbell01";
-
     TEST(Core_DoorBell, simpleSet)
     {
-        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator & testAdmin) {
-            Core::DoorBell doorBell(g_fileName.c_str());
+        std::string fileName {"/tmp/doorbell01"};
+        auto lambdaFunc = [fileName] (IPTestAdministrator & testAdmin) {
+            Core::DoorBell doorBell(fileName.c_str());
             if (doorBell.Wait(Core::infinite) == Core::ERROR_NONE) {
                 doorBell.Acknowledge();
                 testAdmin.Sync("First ring");
@@ -24,10 +23,14 @@ namespace Tests {
             doorBell.Relinquish();
         };
 
+        static std::function<void (IPTestAdministrator&)> lambdaVar = lambdaFunc;
+
+        IPTestAdministrator::OtherSideMain otherSide = [](IPTestAdministrator& testAdmin ) { lambdaVar(testAdmin); };
+
         IPTestAdministrator testAdmin(otherSide);
         {
-            Core::DoorBell doorBell(g_fileName.c_str());
-            ::SleepMs(1);
+            Core::DoorBell doorBell(fileName.c_str());
+            ::SleepMs(10);
             doorBell.Ring();
             testAdmin.Sync("First ring");
             doorBell.Ring();

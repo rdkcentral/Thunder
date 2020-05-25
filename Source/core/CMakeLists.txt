@@ -1,4 +1,22 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set(TARGET ${NAMESPACE}Core)
+include(CompileSettings)
 
 option(DEADLOCK_DETECTION 
         "Enable deadlock detection tooling." OFF)
@@ -11,7 +29,6 @@ option(BLUETOOTH
 
 find_package(Threads REQUIRED)
 
-include(CompileSettings)
 
 add_library(${TARGET} SHARED
 	DoorBell.cpp
@@ -66,6 +83,7 @@ set(PUBLIC_HEADERS
         IAction.h
         IIterator.h
         IObserver.h
+        IPCMessage.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h
@@ -155,6 +173,7 @@ target_link_libraries(${TARGET}
         PUBLIC
           CompileSettings::CompileSettings
         PRIVATE
+          CompileSettingsDebug::CompileSettingsDebug
           ${CMAKE_DL_LIBS}
 	  ${LIBEXECINFO_LIBRARY}
           LIBRT::LIBRT
@@ -184,19 +203,11 @@ if(LIBRT_FOUND)
             )
 endif()
 
-find_package(BCM_HOST)
-if(BCM_HOST_FOUND)
-    target_link_libraries(${TARGET}
-            PRIVATE
-              BCM_HOST::BCM_HOST
-            )
-endif()
-
 # ===========================================================================================
 # Install ARTIFACTS:
 # ===========================================================================================
 install(
-        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies
+        TARGETS CompileSettings ${TARGET}  EXPORT ${TARGET}Targets # for downstream dependencies
         ARCHIVE DESTINATION lib COMPONENT libs      # static lib
         LIBRARY DESTINATION lib COMPONENT libs      # shared lib
         RUNTIME DESTINATION bin COMPONENT libs      # binaries
@@ -215,3 +226,6 @@ InstallPackageConfig(
 
 InstallCMakeConfig(
         TARGETS ${TARGET})
+
+InstallCMakeConfig(
+        TARGETS CompileSettingsDebug)

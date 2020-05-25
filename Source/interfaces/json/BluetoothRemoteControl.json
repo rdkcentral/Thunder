@@ -153,42 +153,16 @@
         }
       ]
     },
-    "audioprofiles" : {
-      "summary": "Supported audio profiles",
-      "readonly": true,
-      "params": {
-        "description": "List of supported audio profiles",
-        "type": "array",
-        "items": {
-            "type": "string",
-            "example": "adpcm-hq",
-            "description": "Name of the audio profile"
-        }
-      },
-      "errors": [
-        {
-          "$ref": "#/common/errors/illegalstate",
-          "description": "No remote has been assigned"
-        },
-        {
-          "$ref": "#/common/errors/unavailable",
-          "description": "The unit does not support voice functionality"
-        }
-      ]
-    },
     "audioprofile" : {
       "summary": "Audio profile details",
       "readonly": true,
-      "index": {
-        "name": "Audio profile",
-        "example": "adpcm-hq"
-      },
       "params": {
         "type": "object",
         "properties": {
           "codec": {
             "type": "string",
-            "example": "ima-adpcm",
+            "enum" : [ "PCM", "ADPCM" ],
+            "example": "ADPCM",
             "description": "Name of the audio codec (*pcm* for uncompressed audio)"
           },
           "channels": {
@@ -208,16 +182,6 @@
             "size": 8,
             "example": 16,
             "description": "Sample resolution (in bits per sample)"
-          },
-          "be": {
-            "type": "boolean",
-            "example": true,
-            "description": "Denotes if samples byte order is big-endian (default: *false*)"
-          },
-          "unsigned": {
-            "type": "boolean",
-            "example": true,
-            "description": "Denotes if samples values are unsigned (default: *false*)"
           }
         },
         "required": [
@@ -248,7 +212,7 @@
         "properties": {
           "profile": {
             "type": "string",
-            "example": "pcm-hq",
+            "example": "pcm",
             "description": "Type of audio profile, marking start of transmission; empty in case of end of transmission"
           }
         },

@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "IUnknown.h"
 #include "Administrator.h"
 
@@ -34,15 +53,12 @@ namespace ProxyStub {
                 // Release
                 RPC::Data::Frame::Writer response(message->Response().Writer());
                 RPC::Data::Frame::Reader reader(message->Parameters().Reader());
-                uint32_t dropCount(reader.Number<uint32_t>());
-                uint32_t result = Core::ERROR_NONE;
-                uint32_t index = dropCount;
 
-                while (index-- != 0) { result = implementation->Release(); }
+                uint32_t result = implementation->Release();
                 
                 // This is an external referenced interface that we handed out, so it should
                 // be registered. Lets unregister this reference, it is dropped
-                RPC::Administrator::Instance().UnregisterInterface(channel, rawIdentifier, InterfaceId(), dropCount);
+                RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId());
                 response.Number<uint32_t>(result);
                 break;
             }
@@ -55,7 +71,10 @@ namespace ProxyStub {
                 void* newInterface = implementation->QueryInterface(newInterfaceId);
                 response.Number<void*>(newInterface);
 
-                RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                if (newInterface != nullptr) {
+                    RPC::Administrator::Instance().RegisterInterface(channel, newInterface, newInterfaceId);
+                }
+
                 break;
             }
             default: {

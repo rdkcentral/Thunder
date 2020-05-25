@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 #ifndef __SOCKETSERVER_H
 #define __SOCKETSERVER_H
 
@@ -156,17 +175,24 @@ namespace Core {
             uint32_t Submit(const uint32_t ID, PACKAGE package)
             {
                 uint32_t result = Core::ERROR_UNAVAILABLE;
+
                 _lock.Lock();
 
                 typename ClientMap::iterator index = _clients.find(ID);
 
-                if (index != _clients.end()) {
+                if (index == _clients.end()) {
+                    _lock.Unlock();
+                }
+                else {
                     // Oke connection still exists, send the message..
-                    index->second->Submit(package);
+                    Core::ProxyType<HANDLECLIENT> client (index->second);
+                    _lock.Unlock();
+
+                    client->Submit(package);
+                    client.Release();
+
                     result = Core::ERROR_NONE;
                 }
-
-                _lock.Unlock();
 
                 return (result);
             }
@@ -289,7 +315,7 @@ namespace Core {
         SocketServerType<CLIENT>& operator=(const SocketServerType<CLIENT>&) = delete;
 
     public:
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
         SocketServerType()
@@ -300,7 +326,7 @@ namespace Core {
             : _handler(listeningNode, this)
         {
         }
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #pragma warning(default : 4355)
 #endif
         ~SocketServerType()

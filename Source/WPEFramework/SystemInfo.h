@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef __CONTROLLER_SYSTEMINFO_H__
 #define __CONTROLLER_SYSTEMINFO_H__
 
@@ -60,6 +79,9 @@ namespace PluginHost {
         private:
             uint8_t* _identifier;
         };
+
+
+        typedef RPC::IteratorType<PluginHost::ISubSystem::IProvisioning> Provisioning;
 
         class Internet : public PluginHost::ISubSystem::IInternet {
         public:
@@ -429,6 +451,22 @@ namespace PluginHost {
                 break;
             }
             case PROVISIONING: {
+                PluginHost::ISubSystem::IProvisioning* info = (information != nullptr ? information->QueryInterface<PluginHost::ISubSystem::IProvisioning>() : nullptr);
+
+                _adminLock.Lock();
+
+                if (_provisioning != nullptr) {
+                    _provisioning->Release();
+                }
+
+                _provisioning = Core::Service<Provisioning>::Create<PluginHost::ISubSystem::IProvisioning>(info);
+
+                _adminLock.Unlock();
+
+                if (info != nullptr) {
+                    info->Release();
+                }
+
                 /* No information to set yet */
                 SYSLOG(Logging::Startup, (_T("EVENT: Provisioning")));
                 break;
@@ -577,7 +615,7 @@ namespace PluginHost {
                     break;
                 }
                 case PROVISIONING: {
-                    /* No information to get yet */
+                    result = _provisioning;
                     break;
                 }
                 case DECRYPTION: {
@@ -635,6 +673,7 @@ namespace PluginHost {
         Internet* _internet;
         Security* _security;
         Time* _time;
+        IProvisioning* _provisioning;
         uint32_t _flags;
     };
 }

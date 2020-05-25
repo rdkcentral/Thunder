@@ -89,22 +89,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Thunder\$(TargetName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Thunder\$(TargetName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Thunder\$(TargetName)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)..\artifacts\$(Configuration)\</OutDir>
-    <IntDir>$(OutDir)\$(MSBuildProjectName)\</IntDir>
+    <IntDir>$(OutDir)Thunder\$(TargetName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -126,7 +126,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace OCDM "$(ProjectDir)IOCDM.h"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -148,7 +148,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace OCDM "$(ProjectDir)IOCDM.h"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -170,7 +170,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace OCDM "$(ProjectDir)IOCDM.h"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>
@@ -196,7 +196,7 @@
       <AdditionalLibraryDirectories>$(OutDir)</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python  $(SolutionDir)..\Tools\ProxyStubGenerator\StubGenerator.py --namespace OCDM $(ProjectDir)IOCDM.h</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace OCDM "$(ProjectDir)IOCDM.h"</Command>
     </PreBuildEvent>
     <PreBuildEvent>
       <Message>ProxyStub</Message>

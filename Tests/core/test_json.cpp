@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include "../IPTestAdministrator.h"
 
 #include <gtest/gtest.h>
@@ -5,41 +24,46 @@
 
 using namespace WPEFramework;
 
-typedef enum {
+enum class CommandType {
     ENUM_1,
     ENUM_2,
     ENUM_3,
     ENUM_4
-} CommandType;
+};
 
 namespace WPEFramework {
-ENUM_CONVERSION_BEGIN(CommandType)
 
-    { ENUM_1, _TXT("enum_1") },
-    { ENUM_2, _TXT("enum_2") },
-    { ENUM_3, _TXT("enum_3") },
-    { ENUM_4, _TXT("enum_4") },
+    ENUM_CONVERSION_BEGIN(CommandType)
+        { CommandType::ENUM_1, _TXT("enum_1") },
+        { CommandType::ENUM_2, _TXT("enum_2") },
+        { CommandType::ENUM_3, _TXT("enum_3") },
+        { CommandType::ENUM_4, _TXT("enum_4") },
+    ENUM_CONVERSION_END(CommandType)
 
-ENUM_CONVERSION_END(CommandType)
 }
 
 class CommandParameters : public WPEFramework::Core::JSON::Container {
 
 public:
+    CommandParameters(const CommandParameters&) = delete;
+    CommandParameters& operator=(const CommandParameters&) = delete;
+
     CommandParameters()
+        : Core::JSON::Container()
+        , G(00)
+        , H(0)
+        , I()
+        , J()
     {
         Add(_T("g"), &G);
         Add(_T("h"), &H);
         Add(_T("i"), &I);
         Add(_T("j"), &J);
     }
+
     ~CommandParameters()
     {
     }
-
-private:
-    CommandParameters(const CommandParameters&) = delete;
-    CommandParameters& operator=(const CommandParameters&) = delete;
 
 public:
     WPEFramework::Core::JSON::OctSInt16 G;
@@ -49,12 +73,19 @@ public:
 };
 
 class CommandRequest : public WPEFramework::Core::JSON::Container {
-private:
+public:
     CommandRequest(const CommandRequest&) = delete;
     CommandRequest& operator=(const CommandRequest&) = delete;
 
 public:
     CommandRequest()
+        : Core::JSON::Container()
+        , A(0x0)
+        , B()
+        , C(0x0)
+        , D(false)
+        , E(00)
+        , F()
     {
         Add(_T("a"), &A);
         Add(_T("b"), &B);
@@ -63,6 +94,7 @@ public:
         Add(_T("e"), &E);
         Add(_T("f"), &F);
     }
+
     ~CommandRequest()
     {
     }
@@ -91,7 +123,7 @@ TEST(Core_JSON, simpleSet)
         command->E = 12;
         command->F.G = -12;
         command->F.H = -44;
-        command->F.I = ENUM_4;
+        command->F.I = CommandType::ENUM_4;
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(6, true));
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(14, true));
         command->F.J.Add(WPEFramework::Core::JSON::DecUInt16(22, true));
@@ -159,4 +191,3 @@ TEST(Core_JSON, simpleSet)
         }
     }
 }
-

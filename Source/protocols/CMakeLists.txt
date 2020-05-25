@@ -1,6 +1,26 @@
+# If not stated otherwise in this file or this component's license file the
+# following copyright and licenses apply:
+#
+# Copyright 2020 RDK Management
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 set(TARGET ${NAMESPACE}Protocols)
 
 find_package(ZLIB REQUIRED)
+
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/ITracing.h)
 
 # Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
 # new source file again. This is in case CMAKE forgets :-)
@@ -15,12 +35,15 @@ set(SOURCES_COM
         com/Messages.h
         com/Administrator.cpp
         com/Communicator.cpp
+        com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
+        com/ProxyStubs_Tracing.cpp
         com/IStringIterator.cpp
         com/IValueIterator.cpp
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
+        com/IRPCIterator.h
         )
 
 set(SOURCES_WEBSOCKETS
@@ -28,6 +51,7 @@ set(SOURCES_WEBSOCKETS
         websocket/JSONWebToken.cpp
         websocket/WebSerializer.cpp
         websocket/WebSocketLink.cpp
+        websocket/JSONRPCLink.cpp
         websocket/URL.h
         websocket/JSONWebToken.h
         websocket/JSONRPCLink.h
@@ -53,6 +77,7 @@ set(COM_INCLUDES
         ITracing.h
         IUnknown.h
         Messages.h
+        IRPCIterator.h
         IStringIterator.h
         IValueIterator.h
         )
@@ -83,11 +108,14 @@ add_library(${TARGET} SHARED
         URL.cpp
         JSONWebToken.cpp
         ITracing.cpp
+        ProxyStubs_Tracing.cpp
         IUnknown.cpp
         WebSerializer.cpp
         WebSocketLink.cpp
+        JSONRPCLink.cpp
         Administrator.cpp
         Communicator.cpp
+        ProxyStubs_Communicator.cpp
         IStringIterator.cpp
         IValueIterator.cpp
         )
@@ -95,6 +123,7 @@ add_library(${TARGET} SHARED
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB
+          CompileSettingsDebug::CompileSettingsDebug
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
           ${NAMESPACE}Tracing::${NAMESPACE}Tracing

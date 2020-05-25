@@ -1,3 +1,22 @@
+/*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #pragma once
 
 #include "Module.h"
@@ -211,11 +230,21 @@ namespace Bluetooth {
                 LinkKey();
             }
         }
-        LinkKey(const string& keyString) {
-            if (keyString.length() == (sizeof(_key) * 2)) {
-                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
-            } else {
-                LinkKey();
+        LinkKey(const Address& address, const uint8_t address_type, const string& keyString) {
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            _key.addr.type = address_type;
+
+            ASSERT (address_type != BDADDR_BREDR);
+
+            // The first two charaters are for the pin and the type, extract those...
+            _key.pin_len = keyString[0] - 'A';
+            _key.type    = keyString[1] - 'A';
+           
+            uint16_t  length = sizeof(_key.val);
+            Core::FromString(string(&(keyString.c_str()[2]), keyString.length() - 2), reinterpret_cast<uint8_t*>(_key.val), length, nullptr);
+            if (length != sizeof(_key.val)) {
+                // Seems the value is not properly restored, invalidate the object!!
+                _key.pin_len = 0xFF;
             }
         }
         LinkKey(const LinkKey& copy) {
@@ -250,9 +279,11 @@ namespace Bluetooth {
             return (sizeof(_key));
         }
         string ToString() const {
-            string hexKey;
-            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
-            return (hexKey);
+            string baseKey;
+            Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
+            baseKey = static_cast<const char>(_key.type + 'A') + baseKey;
+            baseKey = static_cast<const char>(_key.pin_len + 'A') + baseKey;
+            return (baseKey);
         }
 
     private:
@@ -284,11 +315,15 @@ namespace Bluetooth {
                 LongTermKey();
             }
         }
-        LongTermKey(const string& keyString) {
-            if (keyString.length() == (sizeof(_key) * 2)) {
-                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
-            } else {
-                LongTermKey();
+        LongTermKey(const Address& address, const uint8_t address_type, const string& keyString) {
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            _key.addr.type = address_type;
+
+            uint16_t  length = sizeof(_key) - sizeof(_key.addr);
+            Core::FromString(keyString, &(reinterpret_cast<uint8_t*>(&_key)[sizeof(_key.addr)]), length, nullptr);
+            if (length != (sizeof(_key) - sizeof(_key.addr))) {
+                // Seems the value is not properly restored, invalidate the object!!
+                _key.enc_size = 0;
             }
         }
         LongTermKey(const LongTermKey& copy) {
@@ -333,9 +368,9 @@ namespace Bluetooth {
             return (sizeof(_key));
         }
         string ToString() const {
-            string hexKey;
-            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
-            return (hexKey);
+            string baseKey;
+            Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
+            return (baseKey);
         }
 
     private:
@@ -360,11 +395,15 @@ namespace Bluetooth {
                 IdentityKey();
             }
         }
-        IdentityKey(const string& keyString) {
-            if (keyString.length() == (sizeof(_key) * 2)) {
-                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
-            } else {
-                IdentityKey();
+        IdentityKey(const Address& address, const uint8_t address_type, const string& keyString) {
+             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            _key.addr.type = address_type;
+
+            uint16_t  length = sizeof(_key) - sizeof(_key.addr);
+            Core::FromString(keyString, &(reinterpret_cast<uint8_t*>(&_key)[sizeof(_key.addr)]), length, nullptr);
+            if (length != (sizeof(_key) - sizeof(_key.addr))) {
+                // Seems the value is not properly restored, invalidate the object!!
+                _key.addr.type  = 0xFF;
             }
         }
         IdentityKey(const IdentityKey& copy) {
@@ -393,9 +432,9 @@ namespace Bluetooth {
             return (sizeof(_key));
         }
         string ToString() const {
-            string hexKey;
-            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
-            return (hexKey);
+            string baseKey;
+            Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
+            return (baseKey);
         }
 
     private:
@@ -421,11 +460,15 @@ namespace Bluetooth {
                 SignatureKey();
             }
         }
-        SignatureKey(const string& keyString) {
-            if (keyString.length() == (sizeof(_key) * 2)) {
-                Core::FromHexString(keyString, reinterpret_cast<uint8_t*>(&_key), sizeof(_key));
-            } else {
-                SignatureKey();
+        SignatureKey(const Address& address, const uint8_t address_type, const string& keyString) {
+            ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
+            _key.addr.type = address_type;
+
+            uint16_t  length = sizeof(_key) - sizeof(_key.addr);
+            Core::FromString(keyString, &(reinterpret_cast<uint8_t*>(&_key)[sizeof(_key.addr)]), length, nullptr);
+            if (length != (sizeof(_key) - sizeof(_key.addr))) {
+                // Seems the value is not properly restored, invalidate the object!!
+                _key.type = 0xFF;
             }
         }
         SignatureKey(const SignatureKey& copy) {
@@ -458,9 +501,9 @@ namespace Bluetooth {
             return (sizeof(_key));
         }
         string ToString() const {
-            string hexKey;
-            Core::ToHexString(reinterpret_cast<const uint8_t*>(&_key), sizeof(_key), hexKey);
-            return (hexKey);
+            string baseKey;
+            Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
+            return (baseKey);
         }
 
     private:
@@ -814,11 +857,8 @@ namespace Bluetooth {
                 }
                 void Updated(const Core::IOutbound& data, const uint32_t error_code) override {
                     //ASSERT(_cmd == data);
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                     _handler(_cmd, error_code);
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                     delete this;
-                    fprintf (stderr, "Just before with error: %d\n", error_code); fflush (stderr);
                 }
 
             private:
@@ -1089,6 +1129,7 @@ namespace Bluetooth {
         uint32_t LongTermKey(const LongTermKeys& keys);
         uint32_t IdentityKey(const IdentityKeys& keys);
         uint32_t Name(const string& shortName, const string& longName);
+        uint32_t PublicAddress(const Address& address);
 
         uint32_t AddDevice(const Address::type type, const Address& address, const autoconnmode value = REPORT);
         uint32_t RemoveDevice(const Address::type type, const Address& address);

@@ -1,3 +1,22 @@
+ /*
+ * If not stated otherwise in this file or this component's LICENSE file the
+ * following copyright and licenses apply:
+ *
+ * Copyright 2020 RDK Management
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 // NodeId.h: interface for the NodeId class.
 //
 //////////////////////////////////////////////////////////////////////
@@ -8,7 +27,7 @@
 #include "Module.h"
 #include "Portability.h"
 
-#ifdef __WIN32__
+#ifdef __WINDOWS__
 #include <Ws2ipdef.h>
 #include <winsock2.h>
 #pragma comment(lib, "wsock32.lib")
@@ -36,7 +55,7 @@ namespace WPEFramework {
 namespace Core {
     class EXTERNAL NodeId {
     private:
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         struct netlink_extended : public sockaddr_nl {
             uint32_t nl_destination;
         };
@@ -64,7 +83,7 @@ namespace Core {
         union SocketInfo {
             struct sockaddr_in IPV4Socket;
             struct sockaddr_in6 IPV6Socket;
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             struct domain_extended DomainSocket;
             struct netlink_extended NetlinkSocket;
 #endif
@@ -92,7 +111,7 @@ namespace Core {
         NodeId(const struct in_addr& rInfo);
         NodeId(const struct sockaddr_in6& rInfo);
         NodeId(const struct in6_addr& rInfo);
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
 #endif
@@ -111,7 +130,7 @@ namespace Core {
     public:
         inline uint32_t Extension() const
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
 
 #ifdef CORE_BLUETOOTH
             return (Type() == TYPE_BLUETOOTH ? m_structInfo.L2Socket.l2_type : (Type() == TYPE_NETLINK ? m_structInfo.NetlinkSocket.nl_destination : 0));
@@ -128,7 +147,7 @@ namespace Core {
         }
         inline uint32_t Rights() const
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             return (Type() == TYPE_DOMAIN ? m_structInfo.DomainSocket.un_access : 0);
 #else
             return (0);
@@ -161,7 +180,7 @@ namespace Core {
         }
         inline unsigned short Size() const
         {
-#ifndef __WIN32__
+#ifndef __WINDOWS__
             return (m_structInfo.IPV4Socket.sin_family == AF_INET ? sizeof(struct sockaddr_in) : (m_structInfo.IPV6Socket.sin6_family == AF_INET6 ? sizeof(struct sockaddr_in6) : (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK ? sizeof(struct sockaddr_nl) :
 
 #ifdef CORE_BLUETOOTH
@@ -216,7 +235,7 @@ namespace Core {
         NodeId& operator=(const struct sockaddr_in6& rInfo);
         NodeId& operator=(const union SocketInfo& rInfo);
 
-#ifndef __WIN32__
+#ifndef __WINDOWS__
         NodeId& operator=(const struct sockaddr_un& rInfo);
         NodeId& operator=(const struct sockaddr_nl& rInfo);
 #endif

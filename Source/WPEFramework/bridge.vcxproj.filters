@@ -13,15 +13,24 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Configurations">
+      <UniqueIdentifier>{ce4301bb-f73e-4be5-997d-4def3668a67e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ConfigBuildroot.json" />
-    <None Include="ExampleConfigAll.json" />
-    <None Include="ExampleConfigLinux.json" />
-    <None Include="ExampleConfigWindows.json" />
+    <None Include="ExampleConfigAll.json">
+      <Filter>Configurations</Filter>
+    </None>
+    <None Include="ExampleConfigLinux.json">
+      <Filter>Configurations</Filter>
+    </None>
+    <None Include="ExampleConfigWindows.json">
+      <Filter>Configurations</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Controller.cpp">

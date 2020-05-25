@@ -1,27 +1,26 @@
 {
-  "port": 80,
+  "port": 8080,
   "binding_": "0.0.0.0",
-  "interface": "WiFi",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "D:/Thunder/artifacts/Persistent",
-  "volatilepath": "D:/Thunder/artifacts/temp",
-  "datapath": "D:/Thunder/artifacts/Debug",
-  "systempath": "D:/Thunder/artifacts/Debug",
-  "proxystubpath": "D:/Thunder/artifacts/ProxyStubs/Debug",
-  "communicator": "127.0.0.1:7812",
+  "persistentpath": "W:/Persistent",
+  "volatilepath": "W:/temp",
+  "datapath": "W:/Debug/Plugins",
+  "systempath": "W:/Debug",
+  "proxystubpath": "W:/ProxyStubs/Debug",
+  "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
     {
       "module": "Plugin_OCDM",
-      "enabled": true
+      "enabled": false
     }
   ],
   "plugins": [
     {
       "callsign": "Controller",
       "configuration": {
-        "subsystems": [ "Decryption" ]
+        "subsystems": [  ]
       }
     },
     {
@@ -32,8 +31,8 @@
       "configuration": {
         "outofprocess": true,
         "url": "http://netflix.com/tv",
-        "sleep": "1",
-        "crash": true
+        "sleep": "10000",
+        "crash": false
       }
     },
     {
@@ -45,20 +44,21 @@
       ],
       "autostart": false,
       "configuration": {
-        "acl": "data.json"
+        "acl": "data.json",
+        "connector": "127.0.0.1:63000"
       }
     },
     {
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": false
+      "autostart": true
     },
     {
       "callsign": "OpenCDMi",
       "locator": "libOpenCDMi.so",
       "classname": "OCDM",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "connector": "127.0.0.1:7912",
         "root": {
@@ -70,7 +70,7 @@
       "callsign": "Monitor",
       "locator": "libMonitor.so",
       "classname": "Monitor",
-      "autostart": true,
+      "autostart": false,
       "configuration": {
         "observables": [
           {
@@ -140,7 +140,7 @@
       "configuration": {
         "interval": 30,
         "retries": 20,
-        "source": "jsonip.metrological.com:80"
+        "source": "http://jsonip.metrological.com/?maf=true"
       }
     },
     {
@@ -159,9 +159,9 @@
       }
     },
     {
-      "callsign": "VoiceControl",
-      "locator": "libvoicecontrol.so",
-      "classname": "VoiceControl",
+      "callsign": "Dictionary",
+      "locator": "libdictionary.so",
+      "classname": "Dictionary",
       "autostart": false,
       "configuration": {
       }
