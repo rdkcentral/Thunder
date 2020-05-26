@@ -33,7 +33,7 @@ namespace ProcessContainers {
         {
         }
 
-        virtual ~BaseAdministrator()
+        ~BaseAdministrator() override
         {
             if (_containers.size() > 0) {
                 TRACE_L1("There are still active containers when shutting down administrator!");

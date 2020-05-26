@@ -69,9 +69,7 @@ public:
         Add(_T("pid"), &Pid);
         Add(_T("status"), &Status);
     }
-    ~RunCStatus()
-    {
-    }
+    ~RunCStatus() override = default;
 
 public:
     Core::JSON::DecUInt32 Pid;
@@ -90,9 +88,7 @@ public:
     {
         Add(_T("id"), &Id);
     }
-    ~RunCListEntry()
-    {
-    }
+    ~RunCListEntry() override = default;
 
 public:
     Core::JSON::String Id;

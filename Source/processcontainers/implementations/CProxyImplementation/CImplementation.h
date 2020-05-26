@@ -29,7 +29,7 @@ namespace ProcessContainers {
     class CNetworkInterfaceIterator : public NetworkInterfaceIterator {
     public:
         CNetworkInterfaceIterator(const ProcessContainer* container);
-        ~CNetworkInterfaceIterator();
+        ~CNetworkInterfaceIterator() override;
 
         std::string Name() const override;
         uint32_t NumAddresses() const override;
@@ -49,7 +49,7 @@ namespace ProcessContainers {
         CContainer& operator=(const CContainer&) = delete;
 
     public:
-        virtual ~CContainer();
+        ~CContainer() override;
 
         // IContainerMethods
         const string Id() const override;
@@ -82,7 +82,7 @@ namespace ProcessContainers {
         CContainerAdministrator(const CContainerAdministrator&) = delete;
         CContainerAdministrator& operator=(const CContainerAdministrator&) = delete;
 
-        ~CContainerAdministrator();
+        ~CContainerAdministrator() override;
 
         IContainer* Container(const string& id,
             IStringIterator& searchpaths,

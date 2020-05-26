@@ -66,7 +66,7 @@ namespace ProcessContainers {
         RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
 
     public:
-        ~RunCContainerAdministrator();
+        ~RunCContainerAdministrator() override;
 
         IContainer* Container(const string& id,
             IStringIterator& searchpaths,

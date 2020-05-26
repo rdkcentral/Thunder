@@ -81,12 +81,12 @@ namespace ProcessContainers {
         CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
         CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
 
+        ~CRunContainerAdministrator() override;
+
         IContainer* Container(const string& id,
             IStringIterator& searchpaths,
             const string& logpath,
             const string& configuration) override; //searchpaths will be searched in order in which they are iterated
-
-        ~CRunContainerAdministrator();
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;

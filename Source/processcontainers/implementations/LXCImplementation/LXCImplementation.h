@@ -73,7 +73,7 @@ namespace ProcessContainers {
                 ConfigItem(const ConfigItem& rhs);
                 ConfigItem();
 
-                ~ConfigItem() = default;
+                ~ConfigItem() override = default;
 
                 Core::JSON::String Key;
                 Core::JSON::String Value;
@@ -84,7 +84,7 @@ namespace ProcessContainers {
             Config& operator=(const Config&) = delete;
 
             Config();
-            ~Config() = default;
+            ~Config() override = default;
 
             Core::JSON::String ConsoleLogging;
             Core::JSON::ArrayType<ConfigItem> ConfigItems;
@@ -147,7 +147,7 @@ namespace ProcessContainers {
     public:
         LXCContainerAdministrator(const LXCContainerAdministrator&) = delete;
         LXCContainerAdministrator& operator=(const LXCContainerAdministrator&) = delete;
-        virtual ~LXCContainerAdministrator();
+        ~LXCContainerAdministrator() override;
 
         ProcessContainers::IContainer* Container(const string& name, IStringIterator& searchpaths, const string& containerLogDir, const string& configuration) override;
 

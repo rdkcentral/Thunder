@@ -27,6 +27,8 @@ namespace ProcessContainers {
 
     class INetworkInterfaceIterator : public Core::IIterator, public Core::IReferenceCounted {
     public:
+        ~INetworkInterfaceIterator() override = default;
+
         // Return interface name (eg. veth0)
         virtual string Name() const = 0;
 
@@ -40,6 +42,8 @@ namespace ProcessContainers {
 
     class IMemoryInfo : public Core::IReferenceCounted {
     public:
+        ~IMemoryInfo() override = default;
+
         virtual uint64_t Allocated() const = 0; // in bytes, returns UINT64_MAX on error
         virtual uint64_t Resident() const = 0; // in bytes, returns UINT64_MAX on error
         virtual uint64_t Shared() const = 0; // in bytes, returns UINT64_MAX on error
@@ -47,6 +51,8 @@ namespace ProcessContainers {
 
     class IProcessorInfo : public Core::IReferenceCounted {
     public:
+        ~IProcessorInfo() override = default;
+
         // total usage of cpu, in nanoseconds. Returns UINT64_MAX on error
         virtual uint64_t TotalUsage() const = 0;
 
@@ -59,12 +65,16 @@ namespace ProcessContainers {
 
     class IContainerIterator : public Core::IIterator, public Core::IReferenceCounted {
     public:
+        ~IContainerIterator() override = default;
+
         // Return Id of container
         virtual const string& Id() const = 0;
     };
 
     class IContainer : public Core::IReferenceCounted {
     public:
+        ~IContainer() override = default;
+
         // Return the Name of the Container
         virtual const string& Id() const = 0;
 
