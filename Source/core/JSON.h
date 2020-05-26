@@ -1689,7 +1689,7 @@ namespace Core {
                         _unaccountedCount = 0;
                     } else {
                         result++;
-                        _scopeCount |= (QuoteFoundBit | 1);
+                        _scopeCount |= (QuoteFoundBit | (1 << MaxOpaqueObjectDepth<ScopeMask>()));
                         _unaccountedCount = 1;
                     }
                 }
@@ -1703,12 +1703,21 @@ namespace Core {
 
                     if (escapedSequence == false) {
                         // Do not interpret anything if it's quoted.
-                        if ((_scopeCount & (ScopeMask | QuoteFoundBit)) == (QuoteFoundBit | 1)) {
+                        if ((_scopeCount & QuoteFoundBit) != 0) {
                             if (current == '\"') {
-                                result++;
-                                finished = true;
+                                uint8_t depth = static_cast<uint8_t>((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
+                                ASSERT(depth > 0);
+                                if (depth == 1) {
+                                    result++;
+                                    finished = true;
+                                } else {
+                                    _scopeCount = ((_scopeCount ^ QuoteFoundBit) & ~DepthCountMask) | ((depth - 1) << MaxOpaqueObjectDepth<ScopeMask>());
+                                }                                
                             }
-                        } else {
+                        } else if (current == '\"') {
+                            _scopeCount = ((_scopeCount ^ QuoteFoundBit) & (~DepthCountMask)) | (((_scopeCount & DepthCountMask) + (1 << MaxOpaqueObjectDepth<ScopeMask>())) & DepthCountMask);
+                        } 
+                        else {
                             uint8_t depth = ((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
                             if ((current == '{') || (current == '[')) {
                                 if (depth + 1 > MaxOpaqueObjectDepth<ScopeMask>()) {
