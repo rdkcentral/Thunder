@@ -116,7 +116,7 @@ namespace ProcessContainers {
     {
         return _interfaces.at(_current).name;
     }
-    uint16_t LXCNetworkInterfaceIterator::NumIPs() const
+    uint16_t LXCNetworkInterfaceIterator::NumAddresses() const
     {
         return _interfaces.at(_current).numAddresses;
     }

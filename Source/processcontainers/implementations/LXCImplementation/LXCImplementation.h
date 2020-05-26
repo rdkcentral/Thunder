@@ -48,7 +48,7 @@ namespace ProcessContainers {
         uint32_t Count() const;
 
         string Name() const;
-        uint16_t NumIPs() const;
+        uint16_t NumAddresses() const;
         string Address(const uint16_t n = 0) const;
 
     private:

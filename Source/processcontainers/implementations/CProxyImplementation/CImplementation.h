@@ -32,7 +32,7 @@ namespace ProcessContainers {
         ~CNetworkInterfaceIterator();
 
         std::string Name() const override;
-        uint32_t NumIPs() const override;
+        uint32_t NumAddresses() const override;
 
         std::string IP(uint32_t id) const override;
 
@@ -91,7 +91,7 @@ namespace ProcessContainers {
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
-        ContainerIterator Containers() override;
+        ContainerIterator Containers() const override;
 
     protected:
         void RemoveContainer(IContainer*);

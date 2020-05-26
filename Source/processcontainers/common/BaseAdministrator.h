@@ -45,7 +45,7 @@ namespace ProcessContainers {
             }
         }
 
-        IContainerIterator* Containers() override
+        IContainerIterator* Containers() const override
         {
             std::vector<string> containers;
             containers.reserve(_containers.size());

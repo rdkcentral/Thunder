@@ -47,7 +47,7 @@ namespace ProcessContainers {
         return _networkStatus.interfaces[_current].interfaceName;
     }
 
-    uint32_t CNetworkInterfaceIterator::NumIPs() const
+    uint32_t CNetworkInterfaceIterator::NumAddresses() const
     {
         return _networkStatus.interfaces[_current].numIp;
     }

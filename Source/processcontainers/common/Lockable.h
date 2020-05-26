@@ -32,18 +32,18 @@ namespace ProcessContainers {
         {
         }
 
-        void InternalLock()
+        void InternalLock() const
         {
             _adminLock.Lock();
         }
 
-        void InternalUnlock()
+        void InternalUnlock() const
         {
             _adminLock.Unlock();
         }
 
     private:
-        Core::CriticalSection _adminLock;
+        mutable Core::CriticalSection _adminLock;
     };
 
 } // ProcessContainers

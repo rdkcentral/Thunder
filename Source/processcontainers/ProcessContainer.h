@@ -31,10 +31,10 @@ namespace ProcessContainers {
         virtual string Name() const = 0;
 
         // Return numver of ip addresses assigned to the interface
-        virtual uint16_t NumIPs() const = 0;
+        virtual uint16_t NumAddresses() const = 0;
 
         // Get n-th ip assigned to the container. Empty string
-        // is returned if n is larger than NumIPs()
+        // is returned if n is larger than NumAddresses()
         virtual string Address(const uint16_t n = 0) const = 0;
     };
 
@@ -115,7 +115,7 @@ namespace ProcessContainers {
         virtual void Logging(const string& globalLogPath, const string& loggingoptions) = 0;
 
         // Returns ids of all created containers
-        virtual IContainerIterator* Containers() = 0;
+        virtual IContainerIterator* Containers() const = 0;
 
         // Return a container by its ID. Returns nullptr if container is not found
         // It needs to be released.

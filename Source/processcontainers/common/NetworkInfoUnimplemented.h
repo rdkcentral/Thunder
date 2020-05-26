@@ -38,9 +38,9 @@ namespace ProcessContainers {
             return _empty;
         }
 
-        uint16_t NumIPs() const override
+        uint16_t NumAddresses() const override
         {
-            TRACE_L1("INetworkInterfaceIterator::NumIPs() not implemented");
+            TRACE_L1("INetworkInterfaceIterator::NumAddresses() not implemented");
             return 0;
         }
 
