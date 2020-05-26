@@ -49,7 +49,7 @@ target_link_libraries(${TARGET}
         ${EGL_LIBRARIES}
 )
 
-if(VC6)
+if(VIDEO_CORE STREQUAL "VC6")
     target_link_libraries(${TARGET}
         PRIVATE
             libdrm::libdrm
