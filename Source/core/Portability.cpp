@@ -45,8 +45,20 @@ extern "C" {
 #else
         return (InetPton(AF_INET, cp, inp));
 #endif
-}
+    }
 
+    void usleep(CONST uint32_t usec)
+    {
+        HANDLE timer;
+        LARGE_INTEGER ft;
+
+        ft.QuadPart = 0 - (10 * usec); // Convert to 100 nanosecond interval, negative value indicates relative time
+
+        timer = CreateWaitableTimer(NULL, TRUE, NULL);
+        SetWaitableTimer(timer, &ft, 0, NULL, NULL, 0);
+        WaitForSingleObject(timer, INFINITE);
+        CloseHandle(timer);
+    }
 }
 #endif
 

@@ -42,6 +42,7 @@ bool DHAuthenticatedDerive(DH* dh, const uint16_t secretSize, const uint8_t secr
                            const uint16_t saltSize, const uint8_t salt[], const uint16_t dataSize, const uint8_t data[],
                            uint8_t* encKeyOut[], uint8_t* hmacKeyOut[], uint8_t* wrapKeyOut[]);
 
+void Teardown();
 
 #ifdef __cplusplus
 }

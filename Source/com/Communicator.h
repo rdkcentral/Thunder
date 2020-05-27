@@ -997,7 +997,6 @@ namespace RPC {
                         Core::IUnknown* realIFbase = base->Parent();
                         ASSERT(realIFbase != nullptr);
                         _parent.Offer(realIFbase, info.InterfaceId());
-                        realIFbase->Release();
                     }
 
                 } else if (info.IsRevoke() == true) {
@@ -1009,7 +1008,6 @@ namespace RPC {
                     if (base != nullptr) {
                         Core::IUnknown* realIFbase = base->Parent();
                         _parent.Revoke(realIFbase, info.InterfaceId());
-                        realIFbase->Release();
                     }
 
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {

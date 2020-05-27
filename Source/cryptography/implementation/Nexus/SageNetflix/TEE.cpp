@@ -78,7 +78,19 @@ namespace Netflix {
                 }
 
 #ifdef __DEBUG__
-                for (uint8_t i = 0; i < 3; i++) {
+                // Add an extra wrapping key (for testing purpose only)
+                static const uint8_t testKey[16] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 };
+                TEE::keytype testKeyType;
+                if (ImportClearKey(testKey, sizeof(testKey), TEE::keyformat::RAW, 0xC, 0x40, _localIds[KDW_TEST - 1], testKeyType) != 0) {
+                    TRACE_L1(_T("Failed to install the test wrapping key!"));
+                } else {
+                    _localIds[KDW_TEST - 1] &= ~USER_KEY; // force it to be an internal key
+                }
+#endif // __DEBUG__
+
+#ifdef __DEBUG__
+                // Dump the private keys (for dev purpose only)
+                for (uint8_t i = 0; i < sizeof(_localIds)/sizeof(uint32_t); i++) {
                     TEE::keytype type;
                     bool exportable;
                     uint32_t algorithm;

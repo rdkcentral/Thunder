@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-    { PluginHost::InputHandler::DEVICE, _TXT("device") },
+            { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-namespace PluginHost
+        namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -125,9 +125,13 @@ namespace PluginHost
             return (result);
         }
         //! Allow a JSONRPC message to be checked before it is offered for processing.
-        virtual bool Allowed(const Core::JSONRPC::Message& message) const override
+        bool Allowed(const Core::JSONRPC::Message& message) const override
         {
             return ((_hasSecurity == false) || CheckMessage(message));
+        }
+        string Token(void) const override
+        {
+            return (EMPTY_STRING);
         }
 
         //  IUnknown methods
@@ -495,7 +499,7 @@ namespace PluginHost
 
             TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
-            State(DEACTIVATED);
+            State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
             _administrator.StateChange(this);
 
@@ -704,7 +708,10 @@ namespace PluginHost
         _services.Load();
 
         // Create input handle
-        _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
+        _inputHandler.Initialize(
+            configuration.Input.Type.Value(), 
+            configuration.Input.Locator.Value(), 
+            configuration.Input.OutputEnabled.Value());
 
         // Initialize static message.
         Service::Initialize();

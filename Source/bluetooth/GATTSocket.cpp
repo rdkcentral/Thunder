@@ -18,12 +18,11 @@
  */
 
 #include "GATTSocket.h"
+#include "UUID.h"
 
 namespace WPEFramework {
 
 namespace Bluetooth {
-
-/* static */ const uint8_t UUID::BASE[] = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
 {

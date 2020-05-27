@@ -17,10 +17,32 @@
  * limitations under the License.
  */
 
-#include "Test.h"
+#pragma once
 
-int __cnt = 0;
-int __pass = 0;
+#include "Module.h"
 
-int TotalTests = 0;
-int TotalTestsPassed = 0;
+namespace WPEFramework {
+namespace Exchange {
+
+    // This interface gives direct access to a time synchronize / update
+    struct IInputSwitch : virtual public Core::IUnknown {
+
+        enum { ID = ID_INPUT_SWITCH };
+
+        enum mode {
+            ENABLED,
+            DISABLED,
+            SLAVE
+        };
+
+        virtual ~IInputSwitch() {}
+
+        virtual RPC::IStringIterator* Consumers() const = 0;
+        virtual bool Consumer(const string& name) const = 0;
+        virtual uint32_t Consumer(const string& name, const mode value) = 0;
+
+        virtual uint32_t Select(const string& name) = 0;
+    };
+
+} // namespace Exchange
+} // namespace WPEFramework
