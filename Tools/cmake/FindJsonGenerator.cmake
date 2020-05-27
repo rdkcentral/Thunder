@@ -19,7 +19,7 @@ if(NOT PYTHON_EXECUTABLE)
     find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
-set(JSON_GENERATOR "@GENERATOR_INSTALL_PATH@/JsonGenerator/JsonGenerator.py")
+set(JSON_GENERATOR "./Tools/JsonGenerator/JsonGenerator.py")
 
 function(JsonGenerator)
     if (NOT JSON_GENERATOR)
