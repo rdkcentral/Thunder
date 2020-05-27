@@ -19,7 +19,7 @@ if(NOT PYTHON_EXECUTABLE)
     find_package(PythonInterp 3.5 REQUIRED QUIET)
 endif()
 
-set(PROXYSTUB_GENERATOR "@GENERATOR_INSTALL_PATH@/ProxyStubGenerator/StubGenerator.py")
+set(PROXYSTUB_GENERATOR "./Tools/ProxyStubGenerator/StubGenerator.py")
 
 function(ProxyStubGenerator)
     if (NOT PROXYSTUB_GENERATOR)
