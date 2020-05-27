@@ -26,20 +26,27 @@
 #include "processcontainers/common/Lockable.h"
 #include "processcontainers/common/NetworkInfoUnimplemented.h"
 
+extern "C" {
+#include <crun/container.h>
+#include <crun/error.h>
+#include <crun/status.h>
+#include <crun/utils.h>
+}
+
 namespace WPEFramework {
 namespace ProcessContainers {
-    using RunCContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
+    using CRunContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
-    class RunCContainer : public RunCContainerMixins {
+    class CRunContainer : public CRunContainerMixins {
     private:
-        friend class RunCContainerAdministrator;
+        friend class CRunContainerAdministrator;
 
-        RunCContainer(const string& name, const string& path, const string& logPath);
+        CRunContainer(const string& name, const string& path, const string& logPath);
+        CRunContainer(const CRunContainer&) = delete;
+        CRunContainer& operator=(const CRunContainer&) = delete;
 
     public:
-        RunCContainer(const RunCContainer&) = delete;
-        RunCContainer& operator=(const RunCContainer&) = delete;
-        ~RunCContainer() override;
+        ~CRunContainer() override;
 
         // IContainerMethods
         const string& Id() const override;
@@ -49,24 +56,32 @@ namespace ProcessContainers {
         bool Stop(const uint32_t timeout /*ms*/) override;
 
     private:
+        uint32_t ClearLeftovers();
+        void OverwriteContainerArgs(libcrun_container_t* container, const string& newComand, IStringIterator& newParameters);
+
         mutable uint32_t _refCount;
+        bool _created; // keeps track if container was created and needs deletion
         string _name;
-        string _path;
+        string _bundle;
+        string _configFile;
         string _logPath;
+        libcrun_container_t* _container;
+        libcrun_context_t _context;
         mutable Core::OptionalType<uint32_t> _pid;
+        libcrun_error_t _error;
     };
 
-    class RunCContainerAdministrator : public BaseAdministrator<RunCContainer, Lockable<IContainerAdministrator>> {
+    class CRunContainerAdministrator : public BaseAdministrator<CRunContainer, Lockable<IContainerAdministrator>> {
     private:
-        friend class RunCContainer;
-        friend class Core::SingletonType<RunCContainerAdministrator>;
+        friend class Core::SingletonType<CRunContainerAdministrator>;
 
-        RunCContainerAdministrator();
-        RunCContainerAdministrator(const RunCContainerAdministrator&) = delete;
-        RunCContainerAdministrator& operator=(const RunCContainerAdministrator&) = delete;
+        CRunContainerAdministrator();
 
     public:
-        ~RunCContainerAdministrator() override;
+        CRunContainerAdministrator(const CRunContainerAdministrator&) = delete;
+        CRunContainerAdministrator& operator=(const CRunContainerAdministrator&) = delete;
+
+        ~CRunContainerAdministrator() override;
 
         IContainer* Container(const string& id,
             IStringIterator& searchpaths,
@@ -75,10 +90,6 @@ namespace ProcessContainers {
 
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
-
-    protected:
-        void DestroyContainer(const string& name); // make sure that no leftovers from previous launch will cause crash
-        bool ContainerNameTaken(const string& name);
     };
 }
 }

@@ -18,31 +18,38 @@
  * limitations under the License.
  */
 
-#include "processcontainers/process_containers.h"
+#pragma once
+
 #include "processcontainers/ProcessContainer.h"
+#include "processcontainers/process_containers.h"
 
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    class CNetworkInterfaceIterator : public NetworkInterfaceIterator 
-    {
+    class CNetworkInterfaceIterator : public NetworkInterfaceIterator {
     public:
         CNetworkInterfaceIterator(const ProcessContainer* container);
-        ~CNetworkInterfaceIterator();
+        ~CNetworkInterfaceIterator() override;
 
         std::string Name() const override;
-        uint32_t NumIPs() const override;
+        uint32_t NumAddresses() const override;
 
         std::string IP(uint32_t id) const override;
+
     private:
         ProcessContainerNetworkStatus _networkStatus;
     };
-    
-    class CContainer : public IContainer 
-    {
-    public:
+
+    class CContainer : public IContainer {
+    private:
+        friend class CContainerAdministrator;
+
         CContainer(ProcessContainer* container);
-        virtual ~CContainer();
+        CContainer(const CContainer&) = delete;
+        CContainer& operator=(const CContainer&) = delete;
+
+    public:
+        ~CContainer() override;
 
         // IContainerMethods
         const string Id() const override;
@@ -64,30 +71,34 @@ namespace ProcessContainers {
         std::vector<string> _networkInterfaces;
     };
 
-    class CContainerAdministrator : public IContainerAdministrator 
-    {
+    class CContainerAdministrator : public IContainerAdministrator {
+    private:
         friend class CContainer;
-    public:
-        IContainer* Container(const string& id, 
-                                IStringIterator& searchpaths, 
-                                const string& logpath,
-                                const string& configuration) override; //searchpaths will be searched in order in which they are iterated
+        friend class Core::SingletonType<CContainerAdministrator>;
 
         CContainerAdministrator();
 
+    public:
+        CContainerAdministrator(const CContainerAdministrator&) = delete;
+        CContainerAdministrator& operator=(const CContainerAdministrator&) = delete;
+
+        ~CContainerAdministrator() override;
+
+        IContainer* Container(const string& id,
+            IStringIterator& searchpaths,
+            const string& logpath,
+            const string& configuration) override; //searchpaths will be searched in order in which they are iterated
+
         // IContainerAdministrator methods
         void Logging(const string& logDir, const string& loggingOptions) override;
-        ContainerIterator Containers() override;
+        ContainerIterator Containers() const override;
 
-        // Lifetime management
-        void AddRef() const override;
-        uint32_t Release() override;
     protected:
         void RemoveContainer(IContainer*);
 
     private:
         std::list<IContainer*> _containers;
-        mutable uint32_t _refCount;
+        Core::CriticalSection _adminLock;
     };
 }
 }
