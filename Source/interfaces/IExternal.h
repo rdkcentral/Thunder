@@ -145,8 +145,8 @@ namespace Exchange {
         virtual uint32_t Get(int32_t& value /* @out */) const = 0;
         virtual uint32_t Set(const int32_t value) = 0;
 
-        // Periodically we might like to be triggered, call this method at a set time.
-        virtual void Trigger() = 0;
+        // Periodically we might like to be evaluated, call this method at a set time.
+        virtual void Evaluate() = 0;
     };
 
 } } // Namespace Exchange
