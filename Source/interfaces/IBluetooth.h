@@ -96,7 +96,7 @@ namespace Exchange {
             virtual string Name() const = 0;
             virtual uint32_t Class() const = 0;
 
-            virtual uint32_t Pair(const pairingcapabilities capabilities) = 0;
+            virtual uint32_t Pair(const pairingcapabilities capabilities, const uint16_t timeout /* sec */) = 0;
             virtual uint32_t AbortPairing() = 0;
             virtual uint32_t Unpair() = 0;
 

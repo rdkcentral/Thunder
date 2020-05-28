@@ -58,6 +58,10 @@ namespace Netflix {
             KDE = 1,
             KDH = 2,
             KDW = 3,
+#ifdef __DEBUG__
+            KDW_TEST = 4,
+#endif
+            LOCAL_KEY_MAX
         };
 
         enum class hashtype : uint32_t {
@@ -140,7 +144,7 @@ namespace Netflix {
         }
 
     private:
-        uint32_t _localIds[3];
+        uint32_t _localIds[LOCAL_KEY_MAX - 1];
     };
 
 } // namespace Netflix

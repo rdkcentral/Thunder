@@ -209,11 +209,18 @@ static void TestAuthenticatedDerive(const uint16_t hostPskSize, const uint8_t ho
 
 TEST(NetflixSecurity, AuthenticatedDerive)
 {
+    // This test will attempt to exercise the authenticated DH exchange procedure using a substituted wrapping key.
+
+    uint32_t teePskKeyId = 4; // hardcoded!
     static const uint8_t psk[16]  = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 };
 
-    // Import the pre-shared key into vault
-    uint32_t teePskKeyId = vault->Import(sizeof(psk), psk);
+    if (vault->Size(teePskKeyId) == 0) {
+        // The vault does not include the test wrapping key, so try to install it now.
+        teePskKeyId = vault->Import(sizeof(psk), psk);
+    }
+
     EXPECT_NE(teePskKeyId, 0);
+    EXPECT_NE(vault->Size(teePskKeyId), 0);
 
     // Do the authentication twice to verify the wrap key too!
     uint32_t teeWrapKeyId = 0;
@@ -225,7 +232,7 @@ TEST(NetflixSecurity, AuthenticatedDerive)
         uint32_t teeWrapKeyId2 = 0;
         uint8_t* hostWrapKey2 = nullptr;
 
-        printf("\nAUTHENTICATION WITH WRAP KEY\n");
+        printf("\nAUTHENTICATION WITH DERIVED KEY\n");
         TestAuthenticatedDerive(sizeof(psk), hostWrapKey, teeWrapKeyId, &hostWrapKey2, teeWrapKeyId2);
         EXPECT_EQ(vault->Delete(teeWrapKeyId), true);
         EXPECT_EQ(vault->Delete(teeWrapKeyId2), true);
