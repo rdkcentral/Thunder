@@ -44,8 +44,6 @@ static string GetEndPoint()
         fflush(stdout);                                                                                                                     \
     } while (0)
 
-typedef std::map<displayinfo_updated_cb, void*> DisplayInfoCallbacks;
-
 namespace WPEFramework {
 
 class DisplayInfoAdministrator {
@@ -61,6 +59,8 @@ private:
 
     class DisplayInfo {
     private:
+        typedef std::map<displayinfo_updated_cb, void*> Callbacks;
+
         class Notification : public Exchange::IConnectionProperties::INotification {
         public:
             Notification() = delete;
@@ -145,7 +145,7 @@ private:
         {
             Trace("Display changed");
 
-            DisplayInfoCallbacks::iterator index(_callbacks.begin());
+            Callbacks::iterator index(_callbacks.begin());
 
             while (index != _callbacks.end()) {
                 index->first(reinterpret_cast<displayinfo_type*>(this), index->second);
@@ -154,7 +154,7 @@ private:
         }
         void Register(displayinfo_updated_cb callback, void* userdata)
         {
-            DisplayInfoCallbacks::iterator index(_callbacks.find(callback));
+            Callbacks::iterator index(_callbacks.find(callback));
 
             if (index == _callbacks.end()) {
 
@@ -167,7 +167,7 @@ private:
         }
         void Unregister(displayinfo_updated_cb callback)
         {
-            DisplayInfoCallbacks::iterator index(_callbacks.find(callback));
+            Callbacks::iterator index(_callbacks.find(callback));
 
             if (index != _callbacks.end()) {
                 Trace("Unregistering displayinfo_updated_cb=%p", callback);
@@ -222,7 +222,7 @@ private:
         const string _name;
         Exchange::IConnectionProperties* _displayConnection;
         Core::Sink<Notification> _notification;
-        DisplayInfoCallbacks _callbacks;
+        Callbacks _callbacks;
     };
 
 public:
