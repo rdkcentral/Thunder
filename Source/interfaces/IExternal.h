@@ -71,10 +71,11 @@ namespace Exchange {
         };
 
         enum identification {
-            ZWAVE = 0x10000000,
-            GPIO = 0x20000000,
-            I2C = 0x30000000,
-            ZIGBEE = 0x40000000
+            ZWAVE    = 0x10000000,
+            GPIO     = 0x20000000,
+            I2C      = 0x30000000,
+            ZIGBEE   = 0x40000000,
+            NRF24L01 = 0x50000000
         };
 
         //  Basic/specific and dimension together define the Type.
