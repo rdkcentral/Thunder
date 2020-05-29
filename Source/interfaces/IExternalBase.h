@@ -328,10 +328,10 @@ namespace Exchange {
             _id = id;
             _type = type;
         }
-        inline void Lock() {
+        inline void Lock() const {
             _adminLock.Lock();
         }
-        inline void Unlock() {
+        inline void Unlock() const {
             _adminLock.Unlock();
         }
 
