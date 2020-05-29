@@ -2807,6 +2807,8 @@ namespace Core {
                     _iterator.Reset();
                     stream[loaded++] = '[';
                     offset = (_iterator.Next() == false ? ~0 : PARSE);
+                } else if (offset == END_MARKER) {
+                    offset = ~0;
                 }
                 while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
                     if (offset >= PARSE) {
@@ -2818,9 +2820,13 @@ namespace Core {
                         offset = PARSE;
                     }
                 }
-                if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
-                    stream[loaded++] = ']';
-                    offset = 0;
+                if (offset == static_cast<uint16_t>(~0)) {
+                    if (loaded < maxLength) {
+                        stream[loaded++] = ']';
+                        offset = 0;
+                    } else {
+                        offset = END_MARKER;
+                    }
                 }
 
                 return (loaded);
@@ -3178,7 +3184,10 @@ namespace Core {
                         _current.json = &_fieldName;
                         offset = PARSE;
                     }
+                } else if (offset == END_MARKER) {
+                    offset = ~0;
                 }
+
                 while ((loaded < maxLength) && (offset != static_cast<uint16_t>(~0))) {
                     if (offset >= PARSE) {
                         offset -= PARSE;
@@ -3201,10 +3210,14 @@ namespace Core {
                         }
                     }
                 }
-                if ((offset == static_cast<uint16_t>(~0)) && (loaded < maxLength)) {
-                    stream[loaded++] = '}';
-                    offset = 0;
-                    _fieldName.Clear();
+                if (offset == static_cast<uint16_t>(~0)) {
+                    if (loaded < maxLength) {
+                        stream[loaded++] = '}';
+                        offset = 0;
+                        _fieldName.Clear();
+                    } else {
+                        offset = END_MARKER;
+                    }
                 }
 
                 return (loaded);
