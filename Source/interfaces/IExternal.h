@@ -46,7 +46,7 @@ namespace Exchange {
             enum { ID = ID_EXTERNAL_NOTIFICATION };
 
             // Push changes. If the Current value changes, the next method is called.
-            virtual void Update() = 0;
+            virtual void Update(const uint32_t id) = 0;
         };
 
         struct IFactory : virtual public Core::IUnknown {

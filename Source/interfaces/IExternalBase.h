@@ -195,7 +195,7 @@ namespace Exchange {
             if (index == _clients.end()) {
                 sink->AddRef();
                 _clients.push_back(sink);
-                sink->Update();
+                sink->Update(_id);
             }
 
             _adminLock.Unlock();
@@ -355,7 +355,7 @@ namespace Exchange {
                 client->AddRef();
                 position++;
                 RecursiveCall(position);
-                client->Update();
+                client->Update(_id);
                 client->Release();
             }
         }
