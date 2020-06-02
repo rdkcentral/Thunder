@@ -279,7 +279,7 @@ namespace Plugin {
             if (index.Current() == _T("Activate")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
-                    if (callSign == _pluginServer->ControllerName()) {
+                    if (callSign == _service->Callsign()) {
                         result->ErrorCode = Web::STATUS_FORBIDDEN;
                         result->Message = _T("The PluginHost Controller can not be activated.");
                     } else {
@@ -309,7 +309,7 @@ namespace Plugin {
             } else if (index.Current() == _T("Deactivate")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
-                    if (callSign == _pluginServer->ControllerName()) {
+                    if (callSign == _service->Callsign()) {
                         result->ErrorCode = Web::STATUS_FORBIDDEN;
                         result->Message = _T("The PluginHost Controller can not be deactivated.");
                     } else {

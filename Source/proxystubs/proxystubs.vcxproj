@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Module.cpp" />
+    <ClCompile Include="ProxyStubs_Plugin.cpp" />
     <ClCompile Include="ProxyStubs_Shell.cpp" />
     <ClCompile Include="ProxyStubs_StateControl.cpp" />
     <ClCompile Include="ProxyStubs_SubSystem.cpp" />
@@ -164,7 +165,7 @@
       <AdditionalLibraryDirectories>$(SolutionDir)..\artifacts\$(Configuration)\</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
+      <Command>python "$(SolutionDir)tools\ProxyStubGenerator\StubGenerator.py" --namespace "WPEFramework::PluginHost" --outdir "$(ProjectDir)." "$(ProjectDir)..\plugins\IShell.h" "$(ProjectDir)..\plugins\IPlugin.h" "$(ProjectDir)..\plugins\IStateControl.h"  "$(ProjectDir)..\plugins\ISubSystem.h"</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
