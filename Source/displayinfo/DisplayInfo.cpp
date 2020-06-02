@@ -271,7 +271,7 @@ private:
             }
         }
     }
-    
+
     void Unregister(DisplayInfo* client)
     {
         std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
@@ -326,6 +326,7 @@ public:
 
         if (index != _clients.end()) {
             client = (*index);
+            client->AddRef();
             Trace("Found existing connection %p to %s", client, displayName.c_str());
         } else {
             Trace("Creating new connection to %s", displayName.c_str());
