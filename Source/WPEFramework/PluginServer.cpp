@@ -725,7 +725,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
         admin.Logging(configuration.VolatilePath.Value(), configuration.ProcessContainers.Logging.Value());
-        admin.Release();
 #endif
     }
 

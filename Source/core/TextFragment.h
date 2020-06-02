@@ -613,7 +613,7 @@ namespace Core {
                 }
             }
             if (valid == false) {
-                _index = start;
+                _index = _source.Length() + 1;
             }
 
             return (valid);
