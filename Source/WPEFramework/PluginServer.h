@@ -642,6 +642,7 @@ namespace PluginHost {
         public:
             Service(const PluginHost::Config* server, const Plugin::Config* plugin, ServiceMap* administrator)
                 : PluginHost::Service(*server, *plugin)
+                , _pluginHandling()
                 , _handler(nullptr)
                 , _extended(nullptr)
                 , _webRequest(nullptr)
@@ -1116,13 +1117,15 @@ namespace PluginHost {
                         _webSecurity->AddRef();
                     }
 
-                    Lock();
+                    _pluginHandling.Lock();
                     _handler = newIF;
-                    Unlock();
+                    _pluginHandling.Unlock();
                 }
             }
             void ReleaseInterfaces()
             {
+                _pluginHandling.Lock();
+
                 ASSERT(State() != ACTIVATED);
                 ASSERT(_handler != nullptr);
 
@@ -1157,9 +1160,9 @@ namespace PluginHost {
                     _jsonrpc = nullptr;
                 }
 
-                Lock();
                 _handler = nullptr;
-                Unlock();
+
+                _pluginHandling.Unlock();
 
                 currentIF->Release();
 
@@ -1168,6 +1171,8 @@ namespace PluginHost {
             }
 
         private:
+            Core::CriticalSection _pluginHandling;
+
             // The handlers that implement the actual logic behind the service
             IPlugin* _handler;
             IPluginExtended* _extended;
@@ -1797,6 +1802,7 @@ namespace PluginHost {
 
                 ASSERT(std::find(_notifiers.begin(), _notifiers.end(), sink) == _notifiers.end());
 
+                sink->AddRef();
                 _notifiers.push_back(sink);
 
                 // Tell this "new" sink all our active/inactive plugins..
@@ -1826,6 +1832,7 @@ namespace PluginHost {
                 std::list<PluginHost::IPlugin::INotification*>::iterator index(std::find(_notifiers.begin(), _notifiers.end(), sink));
 
                 if (index != _notifiers.end()) {
+                    (*index)->Release();
                     _notifiers.erase(index);
                 }
 
@@ -1835,7 +1842,7 @@ namespace PluginHost {
             {
                 void* result = nullptr;
 
-                const string callsign(name.empty() == true ? _server.ControllerName() : name);
+                const string callsign(name.empty() == true ? _server.Controller()->Callsign() : name);
 
                 Core::ProxyType<Service> service;
 
@@ -1917,7 +1924,7 @@ namespace PluginHost {
 #ifdef RESTFULL_API
             inline void Notification(const string& message)
             {
-                _server._controller->Notification(message);
+                _server.Controller()->Notification(message);
             }
 #endif
             void GetMetaData(Core::JSON::ArrayType<MetaData::Service>& metaData) const
@@ -2944,16 +2951,6 @@ namespace PluginHost {
             return (_config);
         }
         void Notification(const ForwardMessage& message);
-        inline string ControllerName() const
-        {
-            return (_controller->Callsign());
-        }
-#ifdef RESTFULL_API
-        void Notify(const string& message)
-        {
-            _controller->Notification(message);
-        }
-#endif
         const Environment& EnvironmentConfig() const
         {
             return _environment;
@@ -2962,6 +2959,10 @@ namespace PluginHost {
         void Close();
 
     private:
+        inline Core::ProxyType<Service> Controller()
+        {
+            return (_controller);
+        }
         ISecurity* Officer(const string& token)
         {
             return (_services.Officer(token));

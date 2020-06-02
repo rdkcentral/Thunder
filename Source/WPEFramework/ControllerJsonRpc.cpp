@@ -84,7 +84,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        if (callsign != _pluginServer->ControllerName()) {
+        if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
@@ -122,7 +122,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        if (callsign != _pluginServer->ControllerName()) {
+        if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
