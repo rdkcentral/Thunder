@@ -228,24 +228,23 @@ private:
         Callbacks _callbacks;
     };
 
-public:
-    ~DisplayInfoAdministrator()
+private:
+    DisplayInfo* Get(displayinfo_type* instance)
     {
-        ASSERT(_clients.size() == 0);
+        ASSERT(instance != nullptr);
 
-        for (auto client : _clients) {
-            Trace("Closing %s", client->Name().c_str());
-            delete client;
+        DisplayInfo* result(nullptr);
+
+        std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), reinterpret_cast<DisplayInfo*>(instance)));
+
+        if (index != _clients.end()) {
+            result = (*index);
         }
 
-        if (_comChannel->IsOpen()) {
-            _comChannel->Close(RPC::CommunicationTimeOut);
-            Trace("Closed COM channel %d", _comChannel->ConnectionId());
-        }
+        ASSERT(result != nullptr)
+
+        return result;
     }
-
-    DisplayInfoAdministrator(const DisplayInfoAdministrator&) = delete;
-    DisplayInfoAdministrator& operator=(const DisplayInfoAdministrator&) = delete;
 
     void Register(DisplayInfo* client)
     {
@@ -272,6 +271,7 @@ public:
             }
         }
     }
+    
     void Unregister(DisplayInfo* client)
     {
         std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
@@ -294,6 +294,25 @@ public:
             }
         }
     }
+
+public:
+    ~DisplayInfoAdministrator()
+    {
+        ASSERT(_clients.size() == 0);
+
+        for (auto client : _clients) {
+            Trace("Closing %s", client->Name().c_str());
+            delete client;
+        }
+
+        if (_comChannel->IsOpen()) {
+            _comChannel->Close(RPC::CommunicationTimeOut);
+            Trace("Closed COM channel %d", _comChannel->ConnectionId());
+        }
+    }
+
+    DisplayInfoAdministrator(const DisplayInfoAdministrator&) = delete;
+    DisplayInfoAdministrator& operator=(const DisplayInfoAdministrator&) = delete;
 
     DisplayInfo* Get(const string& displayName)
     {
@@ -338,25 +357,7 @@ public:
         return element < instances.size();
     }
 
-private:
-    DisplayInfo* Get(displayinfo_type* instance)
-    {
-        ASSERT(instance != nullptr);
 
-        DisplayInfo* result(nullptr);
-
-        std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), reinterpret_cast<DisplayInfo*>(instance)));
-
-        if (index != _clients.end()) {
-            result = (*index);
-        }
-
-        ASSERT(result != nullptr)
-
-        return result;
-    }
-
-public:
     void Release(displayinfo_type* instance)
     {
         DisplayInfo* displayinfo = Get(instance);
