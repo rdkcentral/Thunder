@@ -211,7 +211,6 @@ private:
         {
             ASSERT(_displayConnection != nullptr);
             return _displayConnection->Type();
-            ;
         }
 
         Exchange::IConnectionProperties::HDCPProtectionType HDCPProtection() const
@@ -252,6 +251,8 @@ public:
     {
         std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
 
+        ASSERT(index == _clients.end());
+
         if (index == _clients.end()) {
             if (_clients.size() == 0) {
                 _comChannel->Open(RPC::CommunicationTimeOut);
@@ -274,6 +275,8 @@ public:
     void Unregister(DisplayInfo* client)
     {
         std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
+
+        ASSERT(index != _clients.end());
 
         if (index != _clients.end()) {
 
