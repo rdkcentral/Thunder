@@ -1651,7 +1651,9 @@ namespace Core {
 
     AdapterObserver::~AdapterObserver()
     {
+#if defined(__POSIX__)
         networkController.RemoveEventObserver(_callback);
+#endif
     }
 
 } // namespace WPEFramework
