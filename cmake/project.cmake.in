@@ -86,11 +86,18 @@ macro(write_config)
             include(${CMAKE_CURRENT_LIST_DIR}/${plugin}.config)
 
             list(LENGTH preconditions number_preconditions)
-
             if (number_preconditions GREATER 0)
                 map_append(${plugin_config} precondition ___array___)
                 foreach(entry ${preconditions})
                     map_append(${plugin_config} precondition ${entry})
+                endforeach()
+            endif()
+
+            list(LENGTH terminations number_terminations)
+            if (number_terminations GREATER 0)
+                map_append(${plugin_config} termination ___array___)
+                foreach(entry ${terminations})
+                    map_append(${plugin_config} termination ${entry})
                 endforeach()
             endif()
 

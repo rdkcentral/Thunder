@@ -98,6 +98,9 @@ namespace Core {
                     case Core::ERROR_UNKNOWN_KEY:
                         Code = -32601; // Method not found
                         break;
+                    case Core::ERROR_PRIVILIGED_REQUEST:
+                        Code = -32604; // Priviliged
+                        break;
                     default:
                         Code = static_cast<int32_t>(frameworkError);
                         break;

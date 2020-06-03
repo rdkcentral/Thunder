@@ -33,7 +33,7 @@ namespace Exchange {
         struct IWebPAClient : virtual public Core::IUnknown {
             enum { ID = ID_WEBPA_CLIENT };
             virtual uint32_t Configure(PluginHost::IShell*) = 0;
-            virtual void Launch() = 0;
+            virtual uint32_t Launch() = 0;
         };
 
         virtual IWebPAClient* Client(const string& name) = 0;

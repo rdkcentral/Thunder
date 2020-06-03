@@ -41,193 +41,110 @@ namespace Exchange {
     template <enum IExternal::identification IDENTIFIER>
     class ExternalBase : public IExternal {
     private:
-        ExternalBase(const ExternalBase<IDENTIFIER>&) = delete;
-        ExternalBase<IDENTIFIER>& operator=(const ExternalBase<IDENTIFIER>&) = delete;
-
-        class Job : public Core::IDispatch {
-        private:
+        class Job { 
+        public: 
             Job() = delete;
             Job(const Job&) = delete;
             Job& operator=(const Job&) = delete;
 
-        public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-            Job(ExternalBase* parent)
-                : _parent(*parent)
-                , _submitted(false)
-                , _job()
-            {
-                ASSERT(parent != nullptr);
-            }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            virtual ~Job()
+            Job(ExternalBase& parent)
+                : _parent(parent) 
             {
             }
+            ~Job() = default;
 
         public:
-            inline void Load()
+            void Dispatch()
             {
-                _job = Core::ProxyType<Core::IDispatch>(*this);
-                _job.AddRef();
-            }
-            void Submit()
-            {
-
-                _parent.Lock();
-                if (_submitted == false) {
-                    _submitted = true;
-                    _parent.Schedule(Core::Time(), _job);
-                }
-                _parent.Unlock();
-            }
-            void Dispose()
-            {
-                _parent.Lock();
-                if (_submitted == true) {
-                    _parent.Revoke(_job);
-                    _submitted = false;
-                }
-                _job.Release();
-                _parent.Unlock();
-            }
-            virtual void Dispatch()
-            {
-                _parent.Lock();
-                std::list<IExternal::INotification*>::iterator index(_parent._clients.begin());
-                _submitted = false;
-                _parent.RecursiveCall(index);
+                _parent.Notify();
             }
 
         private:
             ExternalBase& _parent;
-            bool _submitted;
-            Core::ProxyType<Core::IDispatch> _job;
         };
-        class Timed : public Core::IDispatch {
-        private:
+        class Timed {
+        public:
             Timed() = delete;
             Timed(const Timed&) = delete;
             Timed& operator=(const Timed&) = delete;
 
-        public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-            Timed(ExternalBase* parent)
-                : _parent(*parent)
+            Timed(ExternalBase& parent)
+                : _parent(parent)
                 , _nextTime(0)
                 , _periodicity(0)
-                , _job()
-            {
-                ASSERT(parent != nullptr);
-            }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-            virtual ~Timed()
             {
             }
+            ~Timed() = default;
 
         public:
-            inline void Load()
-            {
-                _job = Core::ProxyType<Core::IDispatch>(*this);
-                _job.AddRef();
-            }
+            // Return the periodicity in Seconds...
             inline uint16_t Period() const
             {
                 return (_periodicity / (1000 * Core::Time::TicksPerMillisecond));
             }
-            void Period(const uint16_t periodicity)
+            inline void Period(const uint16_t periodicity)
             {
+                _periodicity = 0;
 
-                _parent.Lock();
-                if (_job.IsValid()) {
+                // If we are going to change the periodicity, we need to remove 
+                // the current action, if ongoing, anyway..
+                // First attempt to remove the Job. Th job might currently be
+                // executing the S
+                _parent._timed.Revoke();
 
-                    _periodicity = 0;
-
-                    _parent.Revoke(_job);
-                } else if (periodicity != 0) {
-                    _job = Core::ProxyType<Core::IDispatch>(*this);
-                }
-
-                _parent.Unlock();
+                // It could be that we where waiting for the Job to complete
+                // in the previous Revoke. Than we assume thathe the job left
+                // the queue, hwever the job, reschedukes itself so for these
+                // rare cases, we need to revoke the job....again !!!
+                _parent._timed.Revoke();
 
                 if (periodicity != 0) {
-
-                    ASSERT(_job.IsValid() == true);
-                    _periodicity = periodicity * 1000 * Core::Time::TicksPerMillisecond;
+                    _periodicity = periodicity * (1000 * Core::Time::TicksPerMillisecond);
                     _nextTime = Core::Time::Now().Ticks();
-
-                    _parent.Schedule(Core::Time(), _job);
-                } else {
-                    _job.Release();
+                    _parent._timed.Submit();
                 }
             }
-            virtual void Dispatch()
+            void Dispatch()
             {
-                _parent.Trigger();
-
-                _parent.Lock();
                 if (_periodicity != 0) {
-
-                    Core::ProxyType<Core::IDispatch> job(*this);
-
+                    _parent.Evaluate();
                     _nextTime += _periodicity;
-                    _parent.Schedule(Core::Time(_nextTime), job);
+                    _parent._timed.Schedule(Core::Time(_nextTime));
                 }
-                _parent.Unlock();
             }
 
         private:
             ExternalBase& _parent;
             uint64_t _nextTime;
             uint32_t _periodicity;
-            Core::ProxyType<Core::IDispatch> _job;
         };
 
     public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-        inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals)
-            : _adminLock()
-            , _id(IDENTIFIER | (id & 0x0FFFFFFF))
-            , _type((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec)
-            , _condition(IExternal::constructing)
-            , _clients()
-            , _job(this)
-            , _timed(this)
-        {
-            _job.Load();
-            _timed.Load();
-        }
-        inline ExternalBase(const uint32_t id, const uint32_t type)
+        ExternalBase() = delete;
+        ExternalBase(const ExternalBase<IDENTIFIER>&) = delete;
+        ExternalBase<IDENTIFIER>& operator=(const ExternalBase<IDENTIFIER>&) = delete;
+
+        #ifdef __WINDOWS__
+        #pragma warning(disable : 4355)
+        #endif
+        ExternalBase(const uint32_t id, const uint32_t type)
             : _adminLock()
             , _id(IDENTIFIER | (id & 0x0FFFFFFF))
             , _type(type)
             , _condition(IExternal::constructing)
             , _clients()
-            , _job(this)
-            , _timed(this)
+            , _job(*this)
+            , _timed(*this)
         {
-            _job.Load();
-            _timed.Load();
         }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
-        virtual ~ExternalBase()
+        #ifdef __WINDOWS__
+        #pragma warning(default : 4355)
+        #endif
+        inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals)
+            : ExternalBase(id, ((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec))
         {
-            _job.Dispose();
-            _job.CompositRelease();
-            _timed.CompositRelease();
         }
+        ~ExternalBase() override = default;
 
     public:
         // ------------------------------------------------------------------------
@@ -256,37 +173,37 @@ namespace Exchange {
         // Define the polling time in Seconds. This value has a maximum of a 24 hour.
         inline uint16_t Period() const
         {
-            return (_timed.Period());
+            return (static_cast<Timed&>(_timed).Period());
         }
         inline void Period(const uint16_t value)
         {
-            _timed.Period(value);
+            _adminLock.Lock();
+            static_cast<Timed&>(_timed).Period(value);
+            _adminLock.Unlock();
         }
 
         // ------------------------------------------------------------------------
         // IExternal default interface implementation
         // ------------------------------------------------------------------------
         // Pushing notifications to interested sinks
-        virtual void Register(IExternal::INotification* sink) override
+        void Register(IExternal::INotification* sink) override
         {
-
-            Lock();
+            _adminLock.Lock();
 
             std::list<IExternal::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
 
             if (index == _clients.end()) {
                 sink->AddRef();
                 _clients.push_back(sink);
-                sink->Update();
+                sink->Update(_id);
             }
 
-            Unlock();
+            _adminLock.Unlock();
         }
-
-        virtual void Unregister(IExternal::INotification* sink) override
+        void Unregister(IExternal::INotification* sink) override
         {
 
-            Lock();
+            _adminLock.Lock();
 
             std::list<IExternal::INotification*>::iterator index = std::find(_clients.begin(), _clients.end(), sink);
 
@@ -295,27 +212,27 @@ namespace Exchange {
                 _clients.erase(index);
             }
 
-            Unlock();
+            _adminLock.Unlock();
         }
 
-        virtual condition Condition() const override
+        condition Condition() const override
         {
-            return (_condition.load());
+            return (_condition);
         }
 
         // Identification of this element.
-        virtual uint32_t Identifier() const override
+        uint32_t Identifier() const override
         {
             return (_id);
         }
 
         // Characteristics of this element
-        virtual uint32_t Type() const override
+        uint32_t Type() const override
         {
             return (_type);
         }
 
-        virtual int32_t Minimum() const override
+        int32_t Minimum() const override
         {
             int32_t result = 0;
 
@@ -338,8 +255,7 @@ namespace Exchange {
             }
             return (result);
         }
-
-        virtual int32_t Maximum() const override
+        int32_t Maximum() const override
         {
             int32_t result = 1;
             switch (Dimension()) {
@@ -366,48 +282,45 @@ namespace Exchange {
         }
         virtual void Activate()
         {
-            IExternal::condition expected = IExternal::constructing;
+            _adminLock.Lock();
 
-            if (_condition.compare_exchange_strong(expected, IExternal::activated) == true) {
-                _job.Submit();
+            if ((_condition == IExternal::deactivated) || (_condition == IExternal::constructing)) {
+                _condition = IExternal::activated;
+
+                if (_clients.size() > 0) {
+                    _job.Submit();
+                }
             }
-        }
-        virtual void Deactivate()
-        {
-            IExternal::condition expected = IExternal::activated;
 
-            if (_condition.compare_exchange_strong(expected, IExternal::deactivated) == true) {
-                _job.Submit();
-                _timed.Period(0);
-            } else {
-                expected = IExternal::constructing;
-                _condition.compare_exchange_strong(expected, IExternal::deactivated);
+            _adminLock.Unlock();
+        }
+        virtual void Deactivate() {
+            _adminLock.Lock();
+
+            if ( (_condition == IExternal::activated) || (_condition == IExternal::constructing) ) {
+
+                static_cast<Timed&>(_timed).Period(0);
+                _condition = IExternal::deactivated;
+
+                if (_clients.size() > 0) {
+                    _job.Submit();
+                }
             }
+
+            _adminLock.Unlock();
         }
 
-        virtual void Trigger() = 0;
+        virtual void Evaluate() = 0;
         virtual uint32_t Get(int32_t& value) const = 0;
         virtual uint32_t Set(const int32_t value) = 0;
-        virtual void Schedule(const Core::Time& time, const Core::ProxyType<Core::IDispatch>& job) = 0;
-        virtual void Revoke(const Core::ProxyType<Core::IDispatch>& job) = 0;
-
-        BEGIN_INTERFACE_MAP(ExternalBase)
-        INTERFACE_ENTRY(Exchange::IExternal)
-        END_INTERFACE_MAP
 
     protected:
         inline void Updated()
         {
-            Lock();
-            _job.Submit();
-            Unlock();
-        }
-        inline void Lock() const
-        {
             _adminLock.Lock();
-        }
-        inline void Unlock() const
-        {
+            if (_clients.size() > 0) {
+                _job.Submit();
+            }
             _adminLock.Unlock();
         }
         inline void ChangeTypeId(const uint32_t id, const uint32_t type)
@@ -415,18 +328,34 @@ namespace Exchange {
             _id = id;
             _type = type;
         }
+        inline void Lock() const {
+            _adminLock.Lock();
+        }
+        inline void Unlock() const {
+            _adminLock.Unlock();
+        }
+
+        BEGIN_INTERFACE_MAP(ExternalBase)
+            INTERFACE_ENTRY(Exchange::IExternal)
+        END_INTERFACE_MAP
 
     private:
+        void Notify()
+        {
+            _adminLock.Lock();
+            std::list<IExternal::INotification*>::iterator index(_clients.begin());
+            RecursiveCall(index);
+        }
         void RecursiveCall(std::list<IExternal::INotification*>::iterator& position)
         {
             if (position == _clients.end()) {
-                Unlock();
+                _adminLock.Unlock();
             } else {
                 IExternal::INotification* client(*position);
                 client->AddRef();
                 position++;
                 RecursiveCall(position);
-                client->Update();
+                client->Update(_id);
                 client->Release();
             }
         }
@@ -435,10 +364,10 @@ namespace Exchange {
         mutable Core::CriticalSection _adminLock;
         uint32_t _id;
         uint32_t _type;
-        std::atomic<condition> _condition;
+        condition _condition;
         std::list<IExternal::INotification*> _clients;
-        Core::ProxyObject<Job> _job;
-        Core::ProxyObject<Timed> _timed;
+        Core::WorkerPool::JobType<Job> _job;
+        Core::WorkerPool::JobType<Timed> _timed;
     };
 }
 

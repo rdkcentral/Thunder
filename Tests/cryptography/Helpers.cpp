@@ -26,9 +26,12 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "core/core.h"
+
 #include "Helpers.h"
 #include "Test.h"
 
+extern "C" {
 
 void DumpBuffer(const uint8_t buf[], const uint16_t size)
 {
@@ -83,7 +86,7 @@ uint8_t* DHDerive(DH* dh, const BIGNUM* peerPublicKey)
         printf("public key is invalid\n");
     } else {
         uint16_t secretSize = DH_size(dh);
-        secret = (uint8_t*)malloc(secretSize);
+        secret = (uint8_t*)::malloc(secretSize);
 
         secretSize = DH_compute_key(secret, peerPublicKey, dh);
         assert(secretSize == 128);
@@ -146,13 +149,13 @@ bool DHAuthenticatedDerive(DH* dh, const uint16_t secretSize, const uint8_t secr
     assert(hmacSize == SHA384_DIGEST_LENGTH);
 
     // Extract the encryption key from the caluclated HMAC
-    (*encKeyOut) = malloc(AES_KEY_SIZE);
+    (*encKeyOut) = (uint8_t*)::malloc(AES_KEY_SIZE);
     memcpy(*encKeyOut, hmac, AES_KEY_SIZE);
     printf("Prerequisite: derived encryption key:\n");
     DumpBuffer(*encKeyOut, AES_KEY_SIZE);
 
     // Extract the HMAC key from the calculated HMAC
-    (*hmacKeyOut) = malloc(SHA256_DIGEST_LENGTH);
+    (*hmacKeyOut) = (uint8_t*)::malloc(SHA256_DIGEST_LENGTH);
     memcpy(*hmacKeyOut, hmac + 16, SHA256_DIGEST_LENGTH);
     printf("Prerequisite: derived HMAC key\n");
     DumpBuffer(*hmacKeyOut, SHA256_DIGEST_LENGTH);
@@ -168,10 +171,17 @@ bool DHAuthenticatedDerive(DH* dh, const uint16_t secretSize, const uint8_t secr
     HMAC(EVP_sha256(), hmac2, hmac2Size, data, dataSize, wrappingKeyBuf, &wrappingKeyBufSize);
 
     // Extract the wrapping key from the calculated HMAC''
-    (*wrapKeyOut) = malloc(AES_KEY_SIZE);
+    (*wrapKeyOut) = (uint8_t*)::malloc(AES_KEY_SIZE);
     memcpy(*wrapKeyOut, wrappingKeyBuf, AES_KEY_SIZE);
     printf("Prerequisite: derived wrapping key:\n");
     DumpBuffer(*wrapKeyOut, AES_KEY_SIZE);
 
     return (true);
 }
+
+void Teardown()
+{
+    WPEFramework::Core::Singleton::Dispose();
+}
+
+} // extern "C"
