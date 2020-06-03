@@ -170,7 +170,7 @@ namespace Core {
 
     public:
         template <typename... Args>
-        Sink(Args... args)
+        Sink(Args&&... args)
             : ACTUALSINK(std::forward<Args>(args)...)
             , _referenceCount(0)
         {
