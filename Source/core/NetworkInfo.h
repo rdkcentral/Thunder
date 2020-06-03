@@ -282,24 +282,24 @@ namespace Core {
         uint16_t _index;
     };
 
-    struct INetworkNotification {
-        virtual ~INetworkNotification() {}
-
-        virtual void Event(const string& interface) = 0;
-    };
-
     class EXTERNAL AdapterObserver {
+    public:
+        struct INotification {
+            virtual ~INotification() {}
+
+            virtual void Event(const string&) = 0;
+        };
     private:
         AdapterObserver() = delete;
         AdapterObserver(const AdapterObserver&) = delete;
         AdapterObserver& operator=(const AdapterObserver&) = delete;
 
     public:
-        AdapterObserver(INetworkNotification* callback);
+        AdapterObserver(INotification* callback);
         ~AdapterObserver();
 
     private:
-        INetworkNotification* _callback;
+        INotification* _callback;
     };
 }
 }

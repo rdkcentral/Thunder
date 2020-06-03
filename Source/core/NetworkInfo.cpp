@@ -547,7 +547,7 @@ namespace Core {
             SocketIPNetworks& operator=(const SocketIPNetworks&) = delete;
         public:
             SocketIPNetworks()
-                :   SocketNetlink(NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK))
+                : SocketNetlink(NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK))
                 , _callbacks()
                 , _adminLock()
             {
@@ -555,14 +555,14 @@ namespace Core {
             ~SocketIPNetworks() = default;
 
             // Subscribe / unsubscribe to network events like interface UP/DOWN, IP change. MAC change etc...
-            void AddEventObserver(INetworkNotification* callback)
+            void AddEventObserver(AdapterObserver::INotification* callback)
             {
                 _adminLock.Lock();
                 _callbacks.push_back(callback);
                 _adminLock.Unlock();
             }
 
-            void RemoveEventObserver(INetworkNotification* callback)
+            void RemoveEventObserver(AdapterObserver::INotification* callback)
             {
                 _adminLock.Lock();
                 std::remove(_callbacks.begin(), _callbacks.end(), callback);
@@ -572,9 +572,8 @@ namespace Core {
             void Notify(string interface) 
             {
                 // TODO: Also pass event type
-
                 _adminLock.Lock();
-                for (INetworkNotification* callback : _callbacks) {
+                for (AdapterObserver::INotification* callback : _callbacks) {
                     callback->Event(interface);
                 }
                 _adminLock.Unlock();
@@ -583,7 +582,7 @@ namespace Core {
             uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t receivedSize) override;
 
         private:
-            std::vector<INetworkNotification*> _callbacks;
+            std::vector<AdapterObserver::INotification*> _callbacks;
             CriticalSection _adminLock;
     };
 
@@ -630,8 +629,6 @@ namespace Core {
             }
             virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-                uint16_t result = 0;
-
                 if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
                     const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
                     std::map<uint32_t, Network>::iterator index(_interfaces.find(iface->ifi_index));
@@ -1154,6 +1151,12 @@ namespace Core {
             std::list<IPNode> _ipv4Nodes;
             std::list<IPNode> _ipv6Nodes;
             ProxyType<SocketIPNetworks> _channel;
+
+#ifdef __DEBUG__
+            static constexpr uint32_t requestWaitTime = Core::infinite;
+#else
+            static constexpr uint32_t requestWaitTime = 2000;
+#endif
         };
 
     public:
@@ -1232,12 +1235,12 @@ namespace Core {
             }
         }
 
-        void AddEventObserver(INetworkNotification* callback)
+        void AddEventObserver(AdapterObserver::INotification* callback)
         {
             _channel->AddEventObserver(callback);
         }
 
-        void RemoveEventObserver(INetworkNotification* callback)
+        void RemoveEventObserver(AdapterObserver::INotification* callback)
         {
             _channel->RemoveEventObserver(callback);
         }
@@ -1252,40 +1255,21 @@ namespace Core {
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-#ifdef __DEBUG__
-    const uint32_t waitTime = Core::infinite;
-#else
-    const uint32_t waitTime = 2000;
-#endif
-
-        return (_channel->Exchange(modifier, modifier,  waitTime));
+        return (_channel->Exchange(modifier, modifier,  requestWaitTime));
     }
 
     uint32_t IPNetworks::Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-#ifdef __DEBUG__
-    const uint32_t waitTime = Core::infinite;
-#else
-    const uint32_t waitTime = 2000;
-#endif
-
-        return (_channel->Exchange(modifier, modifier, waitTime));
+        return (_channel->Exchange(modifier, modifier, requestWaitTime));
     }
 
     uint32_t IPNetworks::Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-#ifdef __DEBUG__
-    const uint32_t waitTime = Core::infinite;
-#else
-    const uint32_t waitTime = 2000;
-#endif
-
-
-        return (_channel->Exchange(modifier, modifier, waitTime));
+        return (_channel->Exchange(modifier, modifier, requestWaitTime));
     }
 
     static IPNetworks networkController;
@@ -1618,7 +1602,7 @@ namespace Core {
 
 #endif
 
-    AdapterObserver::AdapterObserver(INetworkNotification* callback)
+    AdapterObserver::AdapterObserver(AdapterObserver::INotification* callback)
 #ifdef __WINDOWS__
     {
 #else

@@ -436,6 +436,9 @@ namespace Core {
         typedef std::list<Message> PendingList;
 
     public:
+        // Usually netlink packets are limited to PAGE_SIZE length.
+        // It's most often the case that single netlink package in genreal should not be larger than 8k, even if page is larger
+        // https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/include/linux/netlink.h?h=linux-4.9.y#n112
         SocketNetlink(const Core::NodeId& destination)
             : SocketDatagram(false, destination, Core::NodeId(), 4096, 8192)
             , _adminLock()
