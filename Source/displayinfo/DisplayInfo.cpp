@@ -25,404 +25,329 @@
 #include <displayinfo.h>
 #include <interfaces/IDisplayInfo.h>
 
-static string GetEndPoint()
-{
-    TCHAR* value = ::getenv(_T("COMMUNICATOR_PATH"));
-
-    return (value == nullptr ?
-#ifdef __WINDOWS__
-                             _T("127.0.0.1:62000")
-#else
-                             _T("/tmp/communicator")
-#endif
-                             : value);
-}
-
-#ifdef __DEBUG__
+#ifndef __DEBUG__
 #define Trace(fmt, ...)                                                                                                                     \
     do {                                                                                                                                    \
         fprintf(stdout, "\033[1;32m[%s:%d](%s){%p}<%d>:" fmt "\n\033[0m", __FILE__, __LINE__, __FUNCTION__, this, getpid(), ##__VA_ARGS__); \
         fflush(stdout);                                                                                                                     \
     } while (0)
 #else
-#define Trace(fmt, ...)   
+#define Trace(fmt, ...)
 #endif
 
 namespace WPEFramework {
-
-class DisplayInfoAdministrator {
+class DisplayInfo : public Core::IReferenceCounted {
 private:
-    DisplayInfoAdministrator()
-        : _comChannel(Core::ProxyType<RPC::CommunicatorClient>::Create(
-            Core::NodeId(GetEndPoint().c_str())))
-    {
-        Trace("COM channel node %s, Build %s", GetEndPoint().c_str(), __TIMESTAMP__);
+    typedef std::map<displayinfo_updated_cb, void*> Callbacks;
 
-        ASSERT(_comChannel.IsValid());
-    }
-
-    class DisplayInfo {
-    private:
-        typedef std::map<displayinfo_updated_cb, void*> Callbacks;
-
-        class Notification : public Exchange::IConnectionProperties::INotification {
-        public:
-            Notification() = delete;
-            Notification(const Notification&) = delete;
-            Notification& operator=(const Notification&) = delete;
-
-            Notification(DisplayInfo* parent)
-                : _parent(*parent)
-            {
-            }
-
-            void Updated() override
-            {
-                Trace("Display changed");
-                _parent.Updated();
-            }
-
-            BEGIN_INTERFACE_MAP(Notification)
-            INTERFACE_ENTRY(Exchange::IConnectionProperties::INotification)
-            END_INTERFACE_MAP
-
-        private:
-            DisplayInfo& _parent;
-        };
-
+    class Notification : public Exchange::IConnectionProperties::INotification {
     public:
-        DisplayInfo() = delete;
-        DisplayInfo(const DisplayInfo&) = delete;
-        DisplayInfo& operator=(const DisplayInfo&) = delete;
+        Notification() = delete;
+        Notification(const Notification&) = delete;
+        Notification& operator=(const Notification&) = delete;
 
-        DisplayInfo(DisplayInfoAdministrator& parent, const std::string& displayName)
-            : _parent(parent)
-            , _refCount(1)
-            , _name(displayName)
-            , _displayConnection(nullptr)
-            , _notification(this)
-            , _callbacks()
+        Notification(DisplayInfo* parent)
+            : _parent(*parent)
         {
-            _parent.Register(this);
-            Trace("Created %s", _name.c_str());
         }
 
-        ~DisplayInfo()
+        void Updated() override
         {
-            _parent.Unregister(this);
-            Trace("Destroyed %s", _name.c_str());
+            _parent.Updated();
         }
 
-        void Initialize(Core::ProxyType<RPC::CommunicatorClient>& comChannel)
-        {
-            if (comChannel->IsOpen() == true) {
-                _displayConnection = comChannel->Aquire<Exchange::IConnectionProperties>(RPC::CommunicationTimeOut, _name.c_str(), ~0);
-            }
-
-            if (_displayConnection) {
-                _displayConnection->Register(&_notification);
-            }
-        }
-
-        void Deinitialize()
-        {
-            if (_displayConnection != nullptr) {
-                _displayConnection->Unregister(&_notification);
-                _displayConnection->Release();
-            }
-        }
-
-        void AddRef() const
-        {
-            Core::InterlockedIncrement(_refCount);
-        }
-        uint32_t Release() const
-        {
-            if (Core::InterlockedDecrement(_refCount) == 0) {
-                delete const_cast<DisplayInfo*>(this);
-            }
-
-            return (0);
-        }
-
-        void Updated()
-        {
-            Trace("Display changed");
-
-            Callbacks::iterator index(_callbacks.begin());
-
-            while (index != _callbacks.end()) {
-                index->first(reinterpret_cast<displayinfo_type*>(this), index->second);
-                index++;
-            }
-        }
-        void Register(displayinfo_updated_cb callback, void* userdata)
-        {
-            Callbacks::iterator index(_callbacks.find(callback));
-
-            if (index == _callbacks.end()) {
-
-                Trace("Registering displayinfo_updated_cb=%p", callback);
-
-                _callbacks.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(callback),
-                    std::forward_as_tuple(userdata));
-            }
-        }
-        void Unregister(displayinfo_updated_cb callback)
-        {
-            Callbacks::iterator index(_callbacks.find(callback));
-
-            if (index != _callbacks.end()) {
-                Trace("Unregistering displayinfo_updated_cb=%p", callback);
-
-                _callbacks.erase(index);
-            }
-        }
-
-        const string& Name() const { return _name; }
-        const bool IsValid() const { return _displayConnection != nullptr; }
-
-        bool IsAudioPassthrough() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->IsAudioPassthrough();
-        }
-
-        bool Connected() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->Connected();
-        }
-
-        uint32_t Width() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->Width();
-        }
-
-        uint32_t Height() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->Height();
-        }
-
-        Exchange::IConnectionProperties::HDRType HDR() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->Type();
-        }
-
-        Exchange::IConnectionProperties::HDCPProtectionType HDCPProtection() const
-        {
-            ASSERT(_displayConnection != nullptr);
-            return _displayConnection->HDCPProtection();
-        }
+        BEGIN_INTERFACE_MAP(Notification)
+        INTERFACE_ENTRY(Exchange::IConnectionProperties::INotification)
+        END_INTERFACE_MAP
 
     private:
-        DisplayInfoAdministrator& _parent;
-        mutable uint32_t _refCount;
-        const string _name;
-        Exchange::IConnectionProperties* _displayConnection;
-        Core::Sink<Notification> _notification;
-        Callbacks _callbacks;
+        DisplayInfo& _parent;
     };
 
-private:
-    DisplayInfo* Get(displayinfo_type* instance)
+    DisplayInfo(const string& displayName, Exchange::IConnectionProperties* interface)
+        : _refCount(1)
+        , _name(displayName)
+        , _displayConnection(interface)
+        , _notification(this)
+        , _callbacks()
     {
-        ASSERT(instance != nullptr);
-
-        DisplayInfo* result(nullptr);
-
-        std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), reinterpret_cast<DisplayInfo*>(instance)));
-
-        if (index != _clients.end()) {
-            result = (*index);
-        }
-
-        ASSERT(result != nullptr)
-
-        return result;
+        _displayConnection->Register(&_notification);
     }
 
-    void Register(DisplayInfo* client)
-    {
-        std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
+    class DisplayInfoAdministration : protected std::list<DisplayInfo*> {
+    public:
+        DisplayInfoAdministration(const DisplayInfoAdministration&) = delete;
+        DisplayInfoAdministration& operator=(const DisplayInfoAdministration&) = delete;
 
-        ASSERT(index == _clients.end());
-
-        if (index == _clients.end()) {
-            if (_clients.size() == 0) {
-                _comChannel->Open(RPC::CommunicationTimeOut);
-                Trace("Opened COM channel %d", _comChannel->ConnectionId());
-            }
-
-            client->Initialize(_comChannel);
-
-            if (client->IsValid() == true) {
-                Trace("Added client %p to registery[%d]", client, _clients.size());
-                _clients.push_back(client);
-            }
-
-            if (_clients.size() == 0) {
-                _comChannel->Close(RPC::CommunicationTimeOut);
-                Trace("Closed COM channel %d", _comChannel->ConnectionId());
-            }
+        DisplayInfoAdministration()
+            : _adminLock()
+            , _engine(Core::ProxyType<RPC::InvokeServerType<2, 0, 4>>::Create())
+        {
         }
-    }
 
-    void Unregister(DisplayInfo* client)
-    {
-        std::list<DisplayInfo*>::iterator index(std::find(_clients.begin(), _clients.end(), client));
+        ~DisplayInfoAdministration()
+        {
+            std::list<DisplayInfo*>::iterator index(std::list<DisplayInfo*>::begin());
 
-        ASSERT(index != _clients.end());
-
-        if (index != _clients.end()) {
-
-            _clients.erase(index);
-
-            if (client->IsValid() == true) {
-                (*index)->Deinitialize();
+            while (index != std::list<DisplayInfo*>::end()) {
+                Trace("Closing %s", (*index)->Name().c_str());
             }
 
-            Trace("Removed client %p from registery[%d]", (*index), _clients.size());
-
-            if (_clients.size() == 0) {
-                _comChannel->Close(RPC::CommunicationTimeOut);
-                Trace("Closed COM channel %d", _comChannel->ConnectionId());
-            }
+            ASSERT(std::list<DisplayInfo*>::size() == 0);
         }
+
+        DisplayInfo* Instance(const string& name)
+        {
+            DisplayInfo* result(nullptr);
+
+            _adminLock.Lock();
+
+            result = Find(name);
+
+            if (result == nullptr) {
+
+                Exchange::IConnectionProperties* displayInterface = GetInterface<Exchange::IConnectionProperties>(name);
+
+                if (displayInterface != nullptr) {
+                    result = new DisplayInfo(name, displayInterface);
+                    std::list<DisplayInfo*>::emplace_back(result);
+                }
+            }
+            _adminLock.Unlock();
+
+            return (result);
+        }
+
+        uint32_t Delete(const DisplayInfo* displayInfo, int& refCount)
+        {
+            uint32_t result(Core::ERROR_NONE);
+
+            _adminLock.Lock();
+
+            if (Core::InterlockedDecrement(refCount) == 0) {
+                std::list<DisplayInfo*>::iterator index(
+                    std::find(std::list<DisplayInfo*>::begin(), std::list<DisplayInfo*>::end(), displayInfo));
+
+                ASSERT(index != std::list<DisplayInfo*>::end());
+
+                if (index != std::list<DisplayInfo*>::end()) {
+                    std::list<DisplayInfo*>::erase(index);
+                }
+                delete const_cast<DisplayInfo*>(displayInfo);
+                result = Core::ERROR_DESTRUCTION_SUCCEEDED;
+            }
+
+            _adminLock.Unlock();
+
+            return result;
+        }
+
+        uint8_t Enumerate(std::vector<string>& instances)
+        {
+            class Notification : public PluginHost::IPlugin::INotification {
+            public:
+                Notification() = delete;
+                Notification(const Notification&) = delete;
+                Notification& operator=(const Notification&) = delete;
+
+                Notification(std::vector<string>* instances)
+                    : _instances(*instances)
+                {
+                }
+
+                void StateChange(PluginHost::IShell* plugin) override
+                {
+                    if (plugin->State() == PluginHost::IShell::ACTIVATED) {
+                        Exchange::IConnectionProperties* pluginPtr = plugin->QueryInterface<Exchange::IConnectionProperties>();
+
+                        if (pluginPtr != nullptr) {
+                            _instances.push_back(plugin->Callsign());
+                            pluginPtr->Release();
+                        }
+                    }
+                }
+
+                BEGIN_INTERFACE_MAP(Notification)
+                INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
+                END_INTERFACE_MAP
+
+            private:
+                std::vector<string>& _instances;
+            };
+
+            PluginHost::IShell* systemInterface = GetInterface<PluginHost::IShell>(string());
+
+            if (systemInterface != nullptr) {
+                Core::Sink<Notification> mySink(&instances);
+                systemInterface->Register(&mySink);
+                systemInterface->Unregister(&mySink);
+            }
+
+            return instances.size();
+        }
+
+    private:
+        DisplayInfo* Find(const string& name)
+        {
+            DisplayInfo* result(nullptr);
+
+            std::list<DisplayInfo*>::iterator index(std::list<DisplayInfo*>::begin());
+
+            while ((index != std::list<DisplayInfo*>::end()) && ((*index)->Name() != name)) {
+                index++;
+            }
+
+            if (index != std::list<DisplayInfo*>::end()) {
+                result = *index;
+                result->AddRef();
+            }
+
+            return result;
+        }
+
+        template <typename INTERFACE>
+        INTERFACE* GetInterface(const string& name)
+        {
+            const TCHAR* comPath = ::getenv(_T("COMMUNICATOR_PATH"));
+
+            if (comPath == nullptr) {
+#ifdef __WINDOWS__
+                comPath = _T("127.0.0.1:62000");
+#else
+                comPath = _T("/tmp/communicator");
+#endif
+            }
+
+            Core::ProxyType<RPC::CommunicatorClient> comChannel(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(comPath), _engine));
+
+            return comChannel->Open<INTERFACE>(name, ~0, RPC::CommunicationTimeOut);
+        }
+
+        Core::CriticalSection _adminLock;
+        Core::ProxyType<Core::IIPCServer> _engine;
+    };
+
+    ~DisplayInfo()
+    {
+        _displayConnection->Unregister(&_notification);
     }
 
 public:
-    ~DisplayInfoAdministrator()
+    DisplayInfo() = delete;
+    DisplayInfo(const DisplayInfo&) = delete;
+    DisplayInfo& operator=(const DisplayInfo&) = delete;
+
+    static bool Enumerate(const uint8_t index, const uint8_t length, char* buffer)
     {
-        ASSERT(_clients.size() == 0);
+        static std::vector<string> interfaces;
+        static Core::CriticalSection interfacesLock;
+        bool result(false);
 
-        for (auto client : _clients) {
-            Trace("Closing %s", client->Name().c_str());
-            delete client;
+        interfacesLock.Lock();
+
+        if (index == 0) {
+            interfaces.clear();
+            _administration.Enumerate(interfaces);
         }
 
-        if (_comChannel->IsOpen()) {
-            _comChannel->Close(RPC::CommunicationTimeOut);
-            Trace("Closed COM channel %d", _comChannel->ConnectionId());
+        if (index <= interfaces.size() - 1) {
+            if (length > 0) {
+                ASSERT(buffer != nullptr);
+                ::strncpy(buffer, interfaces[index].c_str(), length);
+            }
+
+            result = true;
         }
+
+        interfacesLock.Unlock();
+
+        return result;
+    }
+    static DisplayInfo* Instance(const string& displayName)
+    {
+        return _administration.Instance(displayName);
     }
 
-    DisplayInfoAdministrator(const DisplayInfoAdministrator&) = delete;
-    DisplayInfoAdministrator& operator=(const DisplayInfoAdministrator&) = delete;
-
-    DisplayInfo* Get(const string& displayName)
+    void AddRef() const
     {
-        DisplayInfo* client(nullptr);
+        Core::InterlockedIncrement(_refCount);
+    }
+    uint32_t Release() const
+    {
+        return _administration.Delete(this, _refCount);
+    }
 
-        std::list<DisplayInfo*>::iterator index(_clients.begin());
+    void Updated()
+    {
+        Callbacks::iterator index(_callbacks.begin());
 
-        while ((index != _clients.end()) && ((*index)->Name().c_str() != displayName)) {
+        while (index != _callbacks.end()) {
+            index->first(reinterpret_cast<displayinfo_type*>(this), index->second);
             index++;
         }
-
-        if (index != _clients.end()) {
-            client = (*index);
-            client->AddRef();
-            Trace("Found existing connection %p to %s", client, displayName.c_str());
-        } else {
-            Trace("Creating new connection to %s", displayName.c_str());
-
-            _comChannel->Open(RPC::CommunicationTimeOut);
-
-            client = new DisplayInfo(*this, displayName);
-        }
-
-        return client;
-    };
-
-    static DisplayInfoAdministrator& Instance()
-    {
-        static DisplayInfoAdministrator instance;
-        return instance;
     }
-
-    bool Enumerate(const uint8_t element, string& instance) const
+    void Register(displayinfo_updated_cb callback, void* userdata)
     {
-        // TODO: iterate over all active plugins to find all available Exchange::IConnectionProperties interfaces.
+        Callbacks::iterator index(_callbacks.find(callback));
 
-        std::vector<string> instances = {"DisplayInfo"} ;
-
-        if (element < instances.size()) {
-            instance = instances[element];
+        if (index == _callbacks.end()) {
+            _callbacks.emplace(std::piecewise_construct,
+                std::forward_as_tuple(callback),
+                std::forward_as_tuple(userdata));
         }
-
-        return element < instances.size();
     }
-
-
-    void Release(displayinfo_type* instance)
+    void Unregister(displayinfo_updated_cb callback)
     {
-        DisplayInfo* displayinfo = Get(instance);
-        if (displayinfo != nullptr) {
-            displayinfo->Release();
+        Callbacks::iterator index(_callbacks.find(callback));
+
+        if (index != _callbacks.end()) {
+            _callbacks.erase(index);
         }
     }
 
-    void Register(displayinfo_type* instance, displayinfo_updated_cb callback, void* userdata)
-    {
-        DisplayInfo* displayinfo = Get(instance);
-        if (displayinfo != nullptr) {
-            displayinfo->Register(callback, userdata);
-        }
-    }
+    const string& Name() const { return _name; }
 
-    void Unregister(displayinfo_type* instance, displayinfo_updated_cb callback)
+    bool IsAudioPassthrough() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        if (displayinfo != nullptr) {
-            displayinfo->Unregister(callback);
-        }
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->IsAudioPassthrough();
     }
-
-    bool IsAudioPassthrough(displayinfo_type* instance)
+    bool Connected() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->IsAudioPassthrough() : false;
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->Connected();
     }
-
-    bool Connected(displayinfo_type* instance)
+    uint32_t Width() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->Connected() : false;
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->Width();
     }
-
-    uint32_t Width(displayinfo_type* instance)
+    uint32_t Height() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->Width() : 0;
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->Height();
     }
-
-    uint32_t Height(displayinfo_type* instance)
+    Exchange::IConnectionProperties::HDRType HDR() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->Height() : 0;
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->Type();
     }
-
-    Exchange::IConnectionProperties::HDRType HDR(displayinfo_type* instance)
+    Exchange::IConnectionProperties::HDCPProtectionType HDCPProtection() const
     {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->HDR() : Exchange::IConnectionProperties::HDR_OFF;
-    }
-
-    Exchange::IConnectionProperties::HDCPProtectionType HDCPProtection(displayinfo_type* instance)
-    {
-        DisplayInfo* displayinfo = Get(instance);
-        return (displayinfo != nullptr) ? displayinfo->HDCPProtection() : Exchange::IConnectionProperties::HDCP_Unencrypted;
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->HDCPProtection();
     }
 
 private:
-    Core::ProxyType<RPC::CommunicatorClient> _comChannel;
-    std::list<DisplayInfo*> _clients;
+    mutable int _refCount;
+    const string _name;
+    Exchange::IConnectionProperties* _displayConnection;
+    Core::Sink<Notification> _notification;
+    Callbacks _callbacks;
+    static DisplayInfo::DisplayInfoAdministration _administration;
 };
+
+/* static */ DisplayInfo::DisplayInfoAdministration DisplayInfo::_administration;
 
 } // namespace WPEFramework
 
@@ -431,65 +356,55 @@ using namespace WPEFramework;
 extern "C" {
 bool displayinfo_enumerate(const uint8_t index, const uint8_t length, char* buffer)
 {
-    string temp;
-    bool result(false);
 
-    if (DisplayInfoAdministrator::Instance().Enumerate(index, temp) == true) {
-        if (length > 0) {
-            ASSERT(buffer != nullptr);
-            ::strncpy(buffer, temp.c_str(), length);
-        }
-        result = true;
-    }
-
-    return result;
+    return DisplayInfo::Enumerate(index, length, buffer);
 }
 
-struct displayinfo_type* displayinfo_instance(const char displayName[])
+struct displayinfo_type* displayinfo_instance(const char displayName[] = "DisplayInfo")
 {
-    return reinterpret_cast<displayinfo_type*>(DisplayInfoAdministrator::Instance().Get(string(displayName)));
+    return reinterpret_cast<displayinfo_type*>(DisplayInfo::Instance(string(displayName)));
 }
 
 void displayinfo_release(struct displayinfo_type* displayinfo)
 {
-    DisplayInfoAdministrator::Instance().Release(displayinfo);
+    reinterpret_cast<DisplayInfo*>(displayinfo)->Release();
 }
 
 void displayinfo_register(struct displayinfo_type* displayinfo, displayinfo_updated_cb callback, void* userdata)
 {
-    DisplayInfoAdministrator::Instance().Register(displayinfo, callback, userdata);
+    reinterpret_cast<DisplayInfo*>(displayinfo)->Register(callback, userdata);
 }
 
 void displayinfo_unregister(struct displayinfo_type* displayinfo, displayinfo_updated_cb callback)
 {
-    DisplayInfoAdministrator::Instance().Unregister(displayinfo, callback);
+    reinterpret_cast<DisplayInfo*>(displayinfo)->Unregister(callback);
 }
 
 bool displayinfo_is_audio_passthrough(struct displayinfo_type* displayinfo)
 {
-    return DisplayInfoAdministrator::Instance().IsAudioPassthrough(displayinfo);
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->IsAudioPassthrough();
 }
 
 bool displayinfo_connected(struct displayinfo_type* displayinfo)
 {
-    return DisplayInfoAdministrator::Instance().Connected(displayinfo);
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->Connected();
 }
 
 uint32_t displayinfo_width(struct displayinfo_type* displayinfo)
 {
-    return DisplayInfoAdministrator::Instance().Width(displayinfo);
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->Width();
 }
 
 uint32_t displayinfo_height(struct displayinfo_type* displayinfo)
 {
-    return DisplayInfoAdministrator::Instance().Height(displayinfo);
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->Height();
 }
 
 displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* displayinfo)
 {
     displayinfo_hdr_t result = DISPLAYINFO_HDR_UNKNOWN;
 
-    switch (DisplayInfoAdministrator::Instance().HDR(displayinfo)) {
+    switch (reinterpret_cast<DisplayInfo*>(displayinfo)->HDR()) {
     case Exchange::IConnectionProperties::HDR_OFF:
         result = DISPLAYINFO_HDR_OFF;
         break;
@@ -518,7 +433,7 @@ displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_typ
 
     displayinfo_hdcp_protection_t type = DISPLAYINFO_HDCP_UNKNOWN;
 
-    switch (DisplayInfoAdministrator::Instance().HDCPProtection(displayinfo)) {
+    switch (reinterpret_cast<DisplayInfo*>(displayinfo)->HDCPProtection()) {
     case Exchange::IConnectionProperties::HDCP_Unencrypted:
         type = DISPLAYINFO_HDCP_UNENCRYPTED;
         break;
