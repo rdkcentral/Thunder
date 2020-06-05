@@ -40,6 +40,8 @@ option(PROVISIONPROXY
         "Include the provisionproxy library." OFF)
 option(SECURITYAGENT
         "Include the securityagent library." OFF)
+option(DISPLAYINFO
+        "Include the displayinfo COMRPC abstraction library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
@@ -187,6 +189,10 @@ endif()
 
 if(GSTREAMERCLIENT)
     add_subdirectory(gstreamerclient)
+endif()
+
+if(DISPLAYINFO)
+    add_subdirectory(displayinfo)
 endif()
 
 if(PROCESS)

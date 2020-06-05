@@ -39,7 +39,8 @@ namespace Netflix {
 static constexpr uint32_t KPE_ID = 1;
 static constexpr uint32_t KPH_ID = 2;
 static constexpr uint32_t KPW_ID = 3;
-static constexpr uint32_t ESN_ID = 4;
+// static constexpr uint32_t KPW_TEST_ID = 4;
+static constexpr uint32_t ESN_ID = 16;
 
 static constexpr uint8_t MAX_ESN_SIZE = 64;
 
@@ -86,6 +87,8 @@ static constexpr uint8_t MAX_ESN_SIZE = 64;
                     uint32_t kdwId = vault.Import(16, kpw, false); // take the first 16 bytes only!
                     ASSERT(kdwId == Netflix::KPW_ID);
 
+                    // Let's (ab)use the vault to hold the ESN as well
+                    vault._lastHandle = Netflix::ESN_ID;
                     uint32_t esnId = vault.Import((decryptedSize - sizeof(NetflixData)), data->esn, true);
                     ASSERT(esnId == Netflix::ESN_ID);
 
