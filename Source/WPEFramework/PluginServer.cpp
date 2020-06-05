@@ -245,15 +245,13 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
 
         // First, move them all to deactivated except Controller
-        Core::ProxyType<Service> controller;
+        Core::ProxyType<Service> controller (_server.Controller());
         do {
             index--;
 
             ASSERT(index->second.IsValid());
 
-            if (index->first.c_str() == _server._controller->Callsign()) {
-                controller = index->second;
-            } else {
+            if (index->first.c_str() != controller->Callsign()) {
                 index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
             }
         } while (index != _services.begin());
@@ -295,14 +293,14 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             result = this;
         } else {
 
-            Lock();
+            _pluginHandling.Lock();
 
             if (_handler != nullptr) {
 
                 result = _handler->QueryInterface(id);
             }
 
-            Unlock();
+            _pluginHandling.Unlock();
         }
 
         return (result);
@@ -553,7 +551,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             serviceCall = true;
 
             if (identifier.length() <= (serviceHeader.length() + 1)) {
-                service = _server._controller;
+                service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
                 size_t length;
@@ -568,7 +566,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             serviceCall = false;
 
             if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
-                service = _server._controller;
+                service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
                 size_t length;
@@ -725,7 +723,6 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
         admin.Logging(configuration.VolatilePath.Value(), configuration.ProcessContainers.Logging.Value());
-        admin.Release();
 #endif
     }
 
@@ -742,11 +739,12 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
     void Server::Notification(const ForwardMessage& data)
     {
-        if ((_controller.IsValid() == false) || (_controller->ClassType<Plugin::Controller>() == nullptr)) {
+        Plugin::Controller* controller;
+        if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
             DumpCallStack();
         } else {
 
-            _controller->ClassType<Plugin::Controller>()->Notification(data);
+            controller->Notification(data);
 
 #ifdef RESTFULL_API
             string result;
@@ -779,8 +777,11 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         securityProvider->Release();
 
-        _controller->ClassType<Plugin::Controller>()->SetServer(this);
-        _controller->ClassType<Plugin::Controller>()->AddRef();
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+        
+        ASSERT(controller != nullptr);
+        
+        controller->SetServer(this);
 
         _dispatcher.Run();
         Dispatcher().Open(MAX_EXTERNAL_WAITS);
