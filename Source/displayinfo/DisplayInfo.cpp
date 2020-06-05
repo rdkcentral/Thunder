@@ -64,6 +64,9 @@ private:
         DisplayInfo& _parent;
     };
 
+    #ifdef __WINDOWS__
+    #pragma warning(disable : 4355)
+    #endif
     DisplayInfo(const string& displayName, Exchange::IConnectionProperties* interface)
         : _refCount(1)
         , _name(displayName)
@@ -73,6 +76,9 @@ private:
     {
         _displayConnection->Register(&_notification);
     }
+    #ifdef __WINDOWS__
+    #pragma warning(default : 4355)
+    #endif
 
     class DisplayInfoAdministration : protected std::list<DisplayInfo*> {
     public:
@@ -183,7 +189,7 @@ private:
                 systemInterface->Unregister(&mySink);
             }
 
-            return instances.size();
+            return static_cast<uint8_t>(instances.size());
         }
 
     private:
