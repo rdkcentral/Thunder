@@ -19,13 +19,33 @@
 
 #include "Module.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <EGL/egl.h>
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef VC6
 #include "ModeSet.h"
 #else
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <EGL/eglext.h>
 #include <bcm_host.h>
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 #include <algorithm>

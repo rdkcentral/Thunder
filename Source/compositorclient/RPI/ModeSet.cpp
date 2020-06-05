@@ -3,7 +3,13 @@
 #include <vector>
 #include <list>
 #include <string>
-#include <assert.h>
+#include <cassert>
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -12,6 +18,10 @@
 #include <xf86drm.h>
 #include <xf86drmMode.h>
 #include <gbm.h>
+
+#ifdef __cplusplus
+}
+#endif
 
 #define DRM_MAX_DEVICES 16
 
