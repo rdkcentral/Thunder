@@ -37,12 +37,12 @@ void printHelp(){
 int main(int argc, const char* argv[])
 {
     const string configuration = "{ \
-        frontends:1, \
-        decoders:1, \
-        standard: \"DVB\" \
-        annex: \"A\"\
-        scan:true \
-        modus: \"Terrestrial\" \
+        \"frontends\":1, \
+        \"decoders\":1, \
+        \"standard\":\"DVB\", \
+        \"annex\":\"None\", \
+        \"scan\":true, \
+        \"modus\":\"Terrestrial\" \
     }";
 
     const string information = "0";
@@ -71,6 +71,7 @@ int main(int argc, const char* argv[])
     std::list<streamInfo> streams;
 
     streams.emplace_back(482, Broadcast::QAM64, 8000000, Broadcast::FEC_1_2, Broadcast::Auto); // Digitenne Enschede
+    streams.emplace_back(642, Broadcast::QAM64, 8000000, Broadcast::FEC_1_2, Broadcast::Auto); // RTON Zorawina
     streams.emplace_back(706, Broadcast::QAM64, 8000000, Broadcast::FEC_1_2, Broadcast::Auto); // Digitenne Amersfoort
     streams.emplace_back(618, Broadcast::QAM64, 8000000, Broadcast::FEC_1_2, Broadcast::Auto); // Digitenne Amsterdam
     streams.emplace_back(474, Broadcast::QAM64, 8000000, Broadcast::FEC_1_2, Broadcast::Auto); // Digitenne Rotterdam
@@ -86,16 +87,18 @@ int main(int argc, const char* argv[])
 
         switch (keyPress) {
         case 'I': {
+            printf("%s:%d %s Initialize\n", __FILE__, __LINE__, __FUNCTION__);
             Broadcast::ITuner::Initialize(configuration);
         } break;
 
         case 'D': {
+            printf("%s:%d %s Deinitialize\n", __FILE__, __LINE__, __FUNCTION__);
             Broadcast::ITuner::Deinitialize();
         } break;
 
         case 'C': {
-            Broadcast::ITuner* newTuner = Broadcast::ITuner::Create(information);
             printf("%s:%d %s Create tuner\n", __FILE__, __LINE__, __FUNCTION__);
+            Broadcast::ITuner* newTuner = Broadcast::ITuner::Create(information);
 
             if (newTuner != nullptr) {
                 printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
@@ -121,7 +124,7 @@ int main(int argc, const char* argv[])
         } break;
 
         case 'T': {
-            printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
+            printf("%s:%d %s Tune\n", __FILE__, __LINE__, __FUNCTION__);
             if (*tuner != nullptr) {
                 printf("%s:%d %s\n", __FILE__, __LINE__, __FUNCTION__);
                 if (++stream == streams.end()) {
@@ -140,6 +143,9 @@ int main(int argc, const char* argv[])
         case '?': {
             printHelp();
         } break;
+
+        case '\n':
+            break;
 
         default: {
             printf("Not known. Press '?' for help.\n");

@@ -24,6 +24,11 @@
 
 #include <linux/dvb/frontend.h>
 #include <linux/dvb/dmx.h>
+#include <linux/dvb/version.h>
+
+#if (DVB_API_VERSION < 5)
+#error "Not supported DVB API version"
+#endif
 
 #define __DEBUG__
 
@@ -69,15 +74,6 @@ namespace Broadcast {
         { .from = Broadcast::FEC_7_8, .to = FEC_7_8 },
         { .from = Broadcast::FEC_8_9, .to = FEC_8_9 },
         { .from = Broadcast::FEC_9_10, .to = FEC_9_10 }
-    };
-    static constexpr conversion_entry _tableBandwidth[] = {
-        { .from = 0, .to = BANDWIDTH_AUTO },
-        { .from = 1712000, .to = BANDWIDTH_1_712_MHZ },
-        { .from = 5000000, .to = BANDWIDTH_5_MHZ },
-        { .from = 6000000, .to = BANDWIDTH_6_MHZ },
-        { .from = 7000000, .to = BANDWIDTH_7_MHZ },
-        { .from = 8000000, .to = BANDWIDTH_8_MHZ },
-        { .from = 10000000, .to = BANDWIDTH_10_MHZ }
     };
     static constexpr conversion_entry _tableModulation[] = {
         { .from = Broadcast::HORIZONTAL_QPSK, .to = QPSK },
@@ -603,7 +599,6 @@ static constexpr conversion_entry _tableRollOff[] = {
         virtual uint32_t Tune(const uint16_t frequency, const Modulation modulation, const uint32_t symbolRate, const uint16_t fec, const SpectralInversion inversion) override
         {
             uint8_t propertyCount;
-            
             struct dtv_property props[16];
             ::memset(&props, 0, sizeof(props));
 
@@ -616,7 +611,7 @@ static constexpr conversion_entry _tableRollOff[] = {
             propertyCount = 6;
 
             if (Tuner::Information::Instance().Modus() == ITuner::Terrestrial){
-                Property(props[6], DTV_BANDWIDTH_HZ, Convert(_tableBandwidth, symbolRate, BANDWIDTH_AUTO));
+                Property(props[6], DTV_BANDWIDTH_HZ, symbolRate);
                 Property(props[7], DTV_CODE_RATE_HP, Convert(_tableFEC, (fec & 0xFF), FEC_AUTO));
                 Property(props[8], DTV_CODE_RATE_LP, Convert(_tableFEC, ((fec >> 8) & 0xFF), FEC_AUTO));
                 Property(props[9], DTV_TRANSMISSION_MODE, _transmission);
@@ -633,7 +628,7 @@ static constexpr conversion_entry _tableRollOff[] = {
 
             _state = IDLE;
 
-            if (ioctl(_frontend, FE_SET_PROPERTY, &dtv_prop) == -1) {
+            if (ioctl(_frontend, FE_SET_PROPERTY, &dtv_prop) < 0) {
                 perror("ioctl");
             } else {
                 #ifdef __DEBUG__
@@ -727,52 +722,54 @@ static constexpr conversion_entry _tableRollOff[] = {
             unsigned int status;
 
             // IDLE = 0x01,
-            //   FE_NONE The frontend doesn’t have any kind of lock. That’s the initial frontend status
-            //   FE_HAS_SIGNAL Has found something above the noise level.
-            //   FE_HAS_CARRIER Has found a signal.
-            //   FE_HAS_VITERBI FEC inner coding (Viterbi, LDPC or other inner code). is stable.
-            //   FE_HAS_SYNC Synchronization bytes was found.
             //   FE_TIMEDOUT No lock within the last about 2 seconds.
-            //   FE_REINIT Frontend was reinitialized, application is recommended to reset DiSEqC, tone and parameters.
             // LOCKED = 0x02,
+            //   FE_HAS_CARRIER Has found a signal.
             //   FE_HAS_LOCK Digital TV were locked and everything is working.
+            //   FE_HAS_SIGNAL Has found something above the noise level.
+            //   FE_HAS_SYNC Synchronization bytes was found.
+            //   FE_HAS_VITERBI FEC inner coding (Viterbi, LDPC or other inner code). is stable.
+            //   FE_REINIT Frontend was reinitialized, application is recommended to reset DiSEqC, tone and parameters.
             // PREPARED = 0x04,
             // STREAMING = 0x08
-               
+
             if (::ioctl(_frontend, FE_READ_STATUS, &status) < 0) {
                 TRACE_L1("Status could not be read!. Error: %d", errno);
             }
             else {
+                TRACE_L1("FE_HAS_LOCK: %s", status & FE_HAS_LOCK ? _T("true") : _T("false"));
+                TRACE_L1("FE_TIMEDOUT: %s", status & FE_TIMEDOUT ? _T("true") : _T("false"));
+
                 if ((status & FE_HAS_LOCK) != 0) {
                     remove = true;
                     _state = ITuner::LOCKED;
-                    TRACE_L1 ("FE_HAS_LOCK:    true");
                 }
                 else if ((status & FE_TIMEDOUT) != 0) {
                     _state = ITuner::IDLE;
                     remove = true;
-                    TRACE_L1 ("FE_TIMEDOUT:    true");
                 }
-                else {
-                    #ifdef __DEBUG__
-                    uint16_t snr, signal;
-		    uint32_t ber, uncorrected_blocks;
 
-		    if (::ioctl(_frontend, FE_READ_SIGNAL_STRENGTH, &signal) < 0) {
+                #ifdef __DEBUG__
+                if ((status & FE_HAS_LOCK) != 0) {
+                    uint16_t snr, signal;
+                    uint32_t ber, uncorrected_blocks;
+
+                    TRACE_L1("Signal,SNR,BER,UNC,Status: %d,%d,%d,%d,%d", signal, snr, ber, uncorrected_blocks, status);
+
+                    if (::ioctl(_frontend, FE_READ_SIGNAL_STRENGTH, &signal) < 0) {
                         signal = ~0;
                     }
-		    if (::ioctl(_frontend, FE_READ_SNR, &snr) < 0) {
+                    if (::ioctl(_frontend, FE_READ_SNR, &snr) < 0) {
                         snr = ~0;
                     }
-		    if (::ioctl(_frontend, FE_READ_BER, &ber) < 0) {
+                    if (::ioctl(_frontend, FE_READ_BER, &ber) < 0) {
                         ber = ~0;
                     }
-		    if (::ioctl(_frontend, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks) < 0) {
+                    if (::ioctl(_frontend, FE_READ_UNCORRECTED_BLOCKS, &uncorrected_blocks) < 0) {
                         uncorrected_blocks = ~0;
                     }
-		    TRACE_L1("Signal,SNR,BER,UNC: %d,%d,%d,%d", signal, snr, ber, uncorrected_blocks);
+
                     unsigned int delta = _lastState ^ status;
-                    if (delta & FE_NONE)        TRACE_L1 ("FE_NONE:        %s", status & FE_NONE        ? _T("true") : _T("false"));
                     if (delta & FE_HAS_SIGNAL)  TRACE_L1 ("FE_HAS_SIGNAL:  %s", status & FE_HAS_SIGNAL  ? _T("true") : _T("false"));
                     if (delta & FE_HAS_CARRIER) TRACE_L1 ("FE_HAS_CARRIER: %s", status & FE_HAS_CARRIER ? _T("true") : _T("false"));
                     if (delta & FE_HAS_VITERBI) TRACE_L1 ("FE_HAS_VITERBI: %s", status & FE_HAS_VITERBI ? _T("true") : _T("false"));
@@ -781,8 +778,8 @@ static constexpr conversion_entry _tableRollOff[] = {
                     if (delta & FE_REINIT)      TRACE_L1 ("FE_REINIT:      %s", status & FE_REINIT      ? _T("true") : _T("false"));
                     if (delta & FE_HAS_LOCK)    TRACE_L1 ("FE_HAS_LOCK:    %s", status & FE_HAS_LOCK    ? _T("true") : _T("false"));
                     _lastState = status;
-                    #endif
                 }
+                #endif
             }
 
             return (remove);
