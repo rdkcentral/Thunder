@@ -163,7 +163,7 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
       }
     },

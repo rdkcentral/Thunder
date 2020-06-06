@@ -50,28 +50,7 @@ void ShowMenu()
 
 int main(int argc, char* argv[])
 {
-    Trace("%s test tool", argv[0]);
-
-    uint8_t displayCount = 0;
-
-    while (displayinfo_enumerate(displayCount, 0, NULL)) {
-        displayCount++;
-    }
-
-    Trace("Found %d instance%s", displayCount, displayCount == 1 ? "" : "s");
-
-    char instanceName[42];
-    if (displayinfo_enumerate(0, sizeof(instanceName), instanceName) == false) {
-        Trace("Exiting: requested instances not found.");
-        return -1;
-    }
-
-    struct displayinfo_type* display = displayinfo_instance(instanceName);
-
-    if (display == NULL) {
-        Trace("Exiting: getting interface for failed.");
-        return -2;
-    }
+    struct displayinfo_type* display = NULL;
 
     ShowMenu();
 
@@ -80,6 +59,15 @@ int main(int argc, char* argv[])
         character = toupper(getc(stdin));
 
         switch (character) {
+        case 'L': {
+            uint8_t displayCount = 0;
+
+            char instanceName[42];
+            while (displayinfo_enumerate(displayCount++, sizeof(instanceName), instanceName) != false) {
+                printf("DisplayName: %s\n", instanceName);
+            }
+            break;
+        }
         case 'C': {
             Trace("Display %s connected", displayinfo_connected(display) ? "is" : "not");
             break;
@@ -146,6 +134,15 @@ int main(int argc, char* argv[])
         case 'U': {
             displayinfo_unregister(display, displayinfo_updated);
             Trace("Display events disabled");
+            break;
+        }
+        case 'Z': {
+            display = displayinfo_instance("DisplayInfo");
+
+            if (display == NULL) {
+                Trace("Exiting: getting interface for failed.");
+            }
+
             break;
         }
         case '?': {
