@@ -368,7 +368,7 @@ namespace Core {
             }
             inline uint16_t Deserialize(const uint8_t buffer[], const uint16_t length)
             {
-                uint16_t result;
+                uint16_t result = 0;
 
                 Netlink::Frames frame(buffer, length);
                 if (frame.Next()) {

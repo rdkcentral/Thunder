@@ -25,6 +25,7 @@
 #include "Serialization.h"
 #include "Sync.h"
 #include "Trace.h"
+#include <functional>
 
 #if defined(__WINDOWS__)
 #include <WS2tcpip.h>
@@ -602,9 +603,10 @@ namespace Core {
             InterfacesFetchType& operator=(const InterfacesFetchType&) = delete;
 
         public:
-            InterfacesFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
+            InterfacesFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0, std::function<void()>&& callback = {})
                 : _interfaces(interfaces)
                 , _index(interfaceIndex)
+                , _callback(callback)
             {
             }
             virtual ~InterfacesFetchType()
@@ -640,6 +642,11 @@ namespace Core {
                     } else {
                         index->second.Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                     }
+                    
+                    if (_callback) {
+                        _callback();
+                    }
+
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
@@ -653,6 +660,7 @@ namespace Core {
         private:
             std::map<uint32_t, Network>& _interfaces;
             uint32_t _index;
+            std::function<void()> _callback;
         };
 
         template <const bool IPV6>
@@ -663,9 +671,10 @@ namespace Core {
             IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
 
         public:
-            IPAddressFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
+            IPAddressFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0, std::function<void()>&& callback={})
                 : _interfaces(interfaces)
                 , _index(interfaceIndex)
+                , _callback(callback)
             {
             }
             virtual ~IPAddressFetchType()
@@ -706,6 +715,10 @@ namespace Core {
                     } else {
                         TRACE_L1("Could not find this interface. Just came up ? [%d]", rtmp->ifa_index);
                     }
+
+                    if (_callback) {
+                        _callback();
+                    }
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
@@ -720,6 +733,7 @@ namespace Core {
         private:
             std::map<uint32_t, Network>& _interfaces;
             uint32_t _index;
+            std::function<void()> _callback;
         };
 
         template <const bool ADD>
@@ -730,9 +744,10 @@ namespace Core {
             IPAddressModifyType<ADD>& operator=(const IPAddressModifyType<ADD>&) = delete;
 
         public:
-            IPAddressModifyType(Network& targetInterface, const IPNode& address)
+            IPAddressModifyType(Network& targetInterface, const IPNode& address, std::function<void()>&& callback={})
                 : _interface(targetInterface)
                 , _node(address)
+                , _callback(callback)
             {
             }
             virtual ~IPAddressModifyType()
@@ -783,6 +798,10 @@ namespace Core {
 
                     _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
 
+                    if (_callback) {
+                        _callback();
+                    }
+
                     result = length;
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
@@ -798,6 +817,7 @@ namespace Core {
         private:
             Network& _interface;
             IPNode _node;
+            std::function<void()> _callback;
         };
 
         template <const bool ADD>
@@ -1235,6 +1255,36 @@ namespace Core {
             }
         }
 
+        inline void ReloadAsync(std::function<void()>&& callback)
+        {
+            if (IsValid() == true) {
+
+                _networks.clear();
+
+                InterfacesFetchType ifInfo(_networks, 0, std::bind([this](std::function<void()>& callback){
+                    IPAddressFetchType<false> ipv4(_networks, 0, std::bind([this](std::function<void()>& callback) {
+                        IPAddressFetchType<true> ipv6(_networks, 0, std::bind([this](std::function<void()>& callback) {
+                            // Fill in the channel for all networks.
+                            std::map<uint32_t, Network>::iterator index(_networks.begin());
+
+                            while (index != _networks.end()) {
+                                index->second.Info(_channel);
+                                index++;
+                            }
+
+                            callback();
+                        }, std::move(callback)));
+
+                        _channel->Exchange(ipv6, ipv6, 0);
+                    }, std::move(callback)));
+
+                    _channel->Exchange(ipv4, ipv4, 0);
+                }, std::move(callback)));
+
+                _channel->Exchange(ifInfo, ifInfo, 0);
+            }
+        }
+
         void AddEventObserver(AdapterObserver::INotification* callback)
         {
             _channel->AddEventObserver(callback);
@@ -1287,28 +1337,31 @@ namespace Core {
 
                 const IPNetworks::Network& network(networkController[ifi->ifi_index]);
                 if (network.IsValid() == false) {
+                    int index = ifi->ifi_index;
+                    networkController.ReloadAsync([this, index]() {
+                        const IPNetworks::Network& newNetwork(networkController[index]);
 
-                    AdapterIterator::Flush();
-                    const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-                    if (network.IsValid() == true) {
-                        interfaceName = network.Name();
-                    }
+                        if (newNetwork.IsValid() == true) {
+                            Notify(newNetwork.Name());
+                        }
+                    });
                 } else {
-                    interfaceName = network.Name();
+                    Notify(network.Name());
                 }
 
             } else if (frame.Type() == RTM_DELLINK) {
                 const IPNetworks::Network& network(networkController[ifi->ifi_index]);
 
                 if (network.IsValid() == true) {
+                    int index = ifi->ifi_index;
+                    networkController.ReloadAsync([this, index]() {
+                        const IPNetworks::Network& deletedNetwork(networkController[index]);
 
-                    interfaceName = network.Name();
-                    AdapterIterator::Flush();
+                        if (deletedNetwork.IsValid() == false) {
+                            Notify(deletedNetwork.Name());
+                        }
+                    });
                 }
-            }
-
-            if (interfaceName.empty() == false) {
-                Notify(interfaceName);
             } 
 
             result = frame.RawSize();
