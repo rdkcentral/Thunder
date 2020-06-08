@@ -45,6 +45,7 @@ class ModeSet
         }
         struct gbm_surface* CreateRenderTarget(const uint32_t width, const uint32_t height);
         void DestroyRenderTarget(struct gbm_surface* surface);
+        bool FlipRenderTarget(const struct gbm_surface* surface);
 
     private:
         bool Create();

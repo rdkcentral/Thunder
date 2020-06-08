@@ -32,6 +32,9 @@ extern "C"
 
 #ifdef VC6
 #include "ModeSet.h"
+
+#include <unordered_map>
+
 #else
 
 #ifdef __cplusplus
@@ -126,6 +129,20 @@ namespace {
 
 using namespace WPEFramework;
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+EGLSurface eglCreateWindowSurface(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint*);
+EGLBoolean eglDestroySurface(EGLDisplay, EGLSurface);
+EGLBoolean eglChooseConfig(EGLDisplay, const EGLint*, EGLConfig*, EGLint, EGLint*);
+EGLBoolean eglSwapBuffers(EGLDisplay, EGLSurface);
+
+#ifdef __cplusplus
+}
+#endif
+
 class Platform {
 private:
     Platform() : _platform()
@@ -195,10 +212,397 @@ public:
     {
         TRACE_L1(_T("Currently not supported"));
     }
- 
+    bool ScanOutSurface(const EGLSurface& surface)
+    {
+        bool ret = false;
+        // See the comment in eglSwapBuffers
+        _platform.FlipRenderTarget(reinterpret_cast<const struct gbm_surface*>(surface));
+
+        return ret;
+    }
+
 private:
+    friend EGLBoolean eglSwapBuffers(EGLDisplay, EGLSurface);
+    friend EGLSurface eglCreateWindowSurface(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint*);
+    friend EGLBoolean eglDestroySurface(EGLDisplay, EGLSurface);
+
     ModeSet _platform;
+    std::unordered_map<EGLSurface, EGLNativeWindowType> _map;
 };
+
+static const std::string& LibraryName()
+{
+    static std::string lib_name;
+
+    TRACE_L1(_T("Testing proper/expected/required symbol resolution for EGL API."));
+
+    if(lib_name.empty() == true) {
+
+        // Clear any existing error
+        // The returned string may be statically allocated!
+        dlerror();
+
+        const std::string& (*_LibraryName)() = nullptr;
+
+        _LibraryName = reinterpret_cast<const std::string& (*)()>(reinterpret_cast<uintptr_t>(dlsym(RTLD_DEFAULT, "LibraryName")));
+
+        // The returned string may be statically allocated!
+        /* const */ char* err = dlerror();
+
+        if(err == nullptr) {
+
+            if(_LibraryName != nullptr) {
+
+                Dl_info info;
+
+                if(dladdr(reinterpret_cast<void*>(_LibraryName), &info) != 0) {
+                    if(info.dli_fname != nullptr) {
+                        lib_name = info.dli_fname;
+                    }
+
+                    TRACE_L1(_T("Current library name equals %s"), lib_name.c_str());
+                }
+            }
+        }
+    }
+
+    return lib_name;
+}
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+__attribute__((visibility("default"))) EGLBoolean eglChooseConfig(EGLDisplay dpy, const EGLint* attrib_list, EGLConfig* configs, EGLint config_size, EGLint* num_config)
+{
+    static EGLBoolean (*_eglChooseConfig)(EGLDisplay, const EGLint*, EGLConfig*, EGLint, EGLint*) = nullptr;
+    static bool resolved = false;
+
+    if((resolved != true) && (_eglChooseConfig == nullptr)) {
+
+        bool available = false;
+
+        // Clear any existing error
+        // The returned string may be statically allocated!
+        dlerror();
+
+        _eglChooseConfig = reinterpret_cast<EGLBoolean (*)(EGLDisplay, const EGLint*, EGLConfig*, EGLint, EGLint*)>(reinterpret_cast<uintptr_t>(dlsym(RTLD_NEXT, "eglChooseConfig")));
+
+        /* const */ char* err = dlerror();
+
+        if(err == nullptr) {
+
+            if(_eglChooseConfig != nullptr) {
+
+                Dl_info info;
+
+                if(dladdr(reinterpret_cast<void*>(_eglChooseConfig), &info) !=0) {
+
+                    if(info.dli_fname != nullptr) {
+                        TRACE_L1(_T("eglChooseConfig found in %s"), info.dli_fname);
+
+                        const std::string& lib_name = LibraryName();
+
+                        available = (lib_name.compare(info.dli_fname) != 0);
+                    }
+                }
+            }
+        }
+
+        if(available != true) {
+            TRACE_L1(_T("Unexpected symbol resolution. Render support might have unexpected behavior."));
+        }
+        else {
+            resolved = true;
+        }
+    }
+
+    EGLBoolean ret = EGL_FALSE;
+
+    if((resolved != false) && (_eglChooseConfig != nullptr)) {
+        // Call the true eglChooseConfig with the added attribute
+
+        std::vector<EGLConfig> unfiltered_configs;
+
+        unfiltered_configs.assign(config_size, configs);
+
+        ret = EGL_FALSE;
+
+        if(unfiltered_configs.empty() != true) {
+            // No check on parameters!
+            ret = _eglChooseConfig(dpy, attrib_list, unfiltered_configs.data(), config_size, num_config);
+
+            if((ret != EGL_FALSE) && (num_config > 0)) {
+                unfiltered_configs.resize(*num_config);
+
+                *num_config = 0;
+
+                for(auto it = unfiltered_configs.begin(), end = unfiltered_configs.end(); it != end; it++) {
+
+                    EGLint value;
+
+                    ret = eglGetConfigAttrib(dpy, *it, EGL_NATIVE_VISUAL_ID, &value);
+
+                    if(ret != EGL_FALSE) {
+                        // Assert if this type is not in the set
+                        static_assert((ModeSet::SupportedBufferType() == DRM_FORMAT_ARGB8888) || (ModeSet::SupportedBufferType() == DRM_FORMAT_XRGB8888));
+
+                        // Both formats should be considered equivalent / interchangeable
+                        if((value == DRM_FORMAT_ARGB8888) || (value == DRM_FORMAT_XRGB8888)) {
+                            configs[*num_config] = *it;
+                            (*num_config)++;
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    return ret;
+}
+
+// Interposition function
+ __attribute__((visibility("default"))) EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
+{
+    static EGLBoolean (*_eglSwapBuffers)(EGLDisplay, EGLSurface) = nullptr;
+    static bool resolved = false;
+
+    if((resolved != true) && (_eglSwapBuffers == nullptr)) {
+
+        bool available = false;
+
+        // Clear any existing error
+        // The returned string may be statically allocated!
+        dlerror();
+
+        _eglSwapBuffers = reinterpret_cast<EGLBoolean (*)(EGLDisplay, EGLSurface)>(reinterpret_cast<uintptr_t>(dlsym(RTLD_NEXT, "eglSwapBuffers")));
+
+        /* const */ char* err = dlerror();
+
+        if(err == nullptr) {
+
+            if(_eglSwapBuffers != nullptr) {
+
+                Dl_info info;
+
+                if(0 != dladdr(reinterpret_cast<void*>(_eglSwapBuffers), &info)) {
+
+                    if(info.dli_fname != nullptr) {
+                        TRACE_L1(_T("eglSwapBuffers found in %s"), info.dli_fname);
+
+                        const std::string& lib_name = LibraryName();
+
+                        available = (lib_name.compare(info.dli_fname) != 0);
+                    }
+                }
+            }
+        }
+
+        if(available != true) {
+            TRACE_L1(_T("Unexpected symbol resolution. Render support might have unexpected behavior."));
+        }
+        else {
+            resolved = true;
+        }
+    }
+
+    EGLBoolean ret = EGL_FALSE;
+
+    if((resolved != false) && (_eglSwapBuffers != nullptr)) {
+        // Call the true eglSwapBuffers and do the update for libdrm
+
+        // No check on parameters!
+        ret = _eglSwapBuffers(dpy, surface);
+
+        if(ret != EGL_FALSE) {
+//           The author of the (original) Platform interface made the assumption that EGLSurface and the EGLNativeWindowType can be interchanged (via casts) and that it does not cause any (safety) issues, despite the implicit (and hidden) platform implementation details.
+//           EGLSurface is used throughout the member declarations. Hence the newly added ScanOutSurface() does not break with this 'tradition'.
+//
+//              Most of the details can be found in eglplatform.h
+//
+//              For GBM
+//                  typedef struct gbm_device* EGLNativeDisplay
+//                  typedef void* EGLNativeWindowType
+//
+//              But they might well be
+//
+//                  tyepdef int EGLNativeDisplay
+//                  typedef int EGLNativeWindowType
+//
+//              Whereas egl.h shows
+//                  typedef void* EGLSurface
+//
+//           For the VC6 platform the aforementioned basically reduces to the question: do *(struct gbm_surface*) and EGLSurface represent the same data given that different API is used to create related objects?
+//
+            // A hint if the map is really required
+            static_assert(!std::is_same<EGLSurface, EGLNativeWindowType>::value);
+            std::unordered_map<EGLSurface, EGLNativeWindowType>::iterator it = Platform::Instance()._map.find(surface);
+
+            if(it != Platform::Instance()._map.end()) {
+                TRACE_L1(_T("Successfully found association."));
+
+                // True EGLSurface
+//                ret = static_cast<EGLBoolean>(Platform::Instance().ScanOutSurface(it->first));
+
+                // EGLNativeWindowType casted to EGLSurface
+            static_assert((static_cast<EGLBoolean>(true) == EGL_TRUE) && (static_cast<EGLBoolean>(false) == EGL_FALSE));
+                ret = static_cast<EGLBoolean>(Platform::Instance().ScanOutSurface(reinterpret_cast<struct gbm_surface*>(it->second)));
+            }
+            else {
+                TRACE_L1(_T("Unable to find association. Rendering might have unexpected behavior."));
+            }
+        }
+    }
+
+    return ret;
+}
+
+// Interposition function
+// Tracking the single association between a native window and EGLSurface
+__attribute__((visibility("default"))) EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config, EGLNativeWindowType win, const EGLint* attrib_list)
+{
+    static EGLSurface (*_eglCreateWindowSurface)(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint*) = nullptr;
+    static bool resolved = false;
+
+    if((resolved != true) && (_eglCreateWindowSurface == nullptr)) {
+
+        bool available = false;
+
+        // Clear any existing error
+        // The returned string may be statically allocated!
+        dlerror();
+
+        _eglCreateWindowSurface = reinterpret_cast<EGLSurface (*)(EGLDisplay, EGLConfig, EGLNativeWindowType, const EGLint*)>(reinterpret_cast<uintptr_t>(dlsym(RTLD_NEXT, "eglCreateWindowSurface")));
+
+        /* const */ char* err = dlerror();
+
+        if(err == nullptr) {
+
+            if(_eglCreateWindowSurface != nullptr) {
+
+                Dl_info info;
+
+                if(dladdr(reinterpret_cast<void*>(_eglCreateWindowSurface), &info) !=0){
+
+                    if(info.dli_fname != nullptr) {
+                        TRACE_L1(_T("eglCreateWindowSurface found in %s"), info.dli_fname);
+
+                        const std::string& lib_name = LibraryName();
+
+                        available = (lib_name.compare(info.dli_fname) != 0);
+                    }
+                }
+            }
+        }
+
+        if(available != true) {
+            TRACE_L1(_T("Unexpected symbol resolution. Render support might have unexpected behavior."));
+        }
+        else {
+            resolved = true;
+        }
+    }
+
+    EGLSurface ret = EGL_NO_SURFACE;
+
+    if((resolved != false) && (_eglCreateWindowSurface != nullptr)) {
+        // Call the true eglCreateWindowSurface
+
+        // No check on parameters!
+        ret = _eglCreateWindowSurface(dpy, config, win, attrib_list);
+        if(ret != EGL_NO_SURFACE) {
+            // create a map between EGLSurface and win, aka native window (struct gbm_surface*)
+            std::pair<std::unordered_map<EGLSurface, EGLNativeWindowType>::iterator, bool> result = Platform::Instance()._map.insert(std::pair<EGLSurface, EGLNativeWindowType>(ret, win));
+
+            if(result.second != true) {
+                TRACE_L1(_T("Unable to associate EGLSurface and EGLNativeWindowType objects. Rendering may have unexpected side effects."));
+            }
+            else {
+                TRACE_L1(_T("Successfully added association."));
+            }
+        }
+    }
+
+    return ret;
+}
+
+// Interposition function
+// Remove the tracked single association between a native window and EGLSurface
+__attribute__((visibility("default"))) EGLBoolean eglDestroySurface(EGLDisplay dpy, EGLSurface surface)
+{
+    static EGLBoolean (*_eglDestroySurface)(EGLDisplay, EGLSurface) = nullptr;
+    static bool resolved = false;
+
+    if((resolved != true) && (_eglDestroySurface == nullptr)) {
+
+        bool available = false;
+
+        // Clear any existing error
+        // The returned string may be statically allocated!
+        dlerror();
+
+        _eglDestroySurface = reinterpret_cast<EGLBoolean (*)(EGLDisplay, EGLSurface)>(reinterpret_cast<uintptr_t>(dlsym(RTLD_NEXT, "eglDestroySurface")));
+
+        /* const */ char* err = dlerror();
+
+        if(err == nullptr) {
+
+            if(_eglDestroySurface != nullptr) {
+
+                Dl_info info;
+
+                if(0 != dladdr(reinterpret_cast<void*>(_eglDestroySurface), &info)) {
+
+                    if(info.dli_fname != nullptr) {
+                        TRACE_L1(_T("eglDestroySurface found in %s"), info.dli_fname);
+
+                        const std::string& lib_name = LibraryName();
+
+                        available = (lib_name.compare(info.dli_fname) != 0);
+                    }
+                }
+            }
+        }
+
+        if(available != true) {
+            TRACE_L1(_T("Unexpected symbol resolution. Render support might have unexpected behavior."));
+        }
+        else {
+            resolved = true;
+        }
+    }
+
+    EGLBoolean ret = EGL_FALSE;
+
+    if((resolved != false) && (_eglDestroySurface != nullptr)) {
+        // Call the true eglDestroySurface
+
+        // No check on parameters!
+        ret = _eglDestroySurface(dpy, surface);
+
+        if(ret != EGL_FALSE) {
+            // create a map between EGLSurface and win, aka native window (struct gbm_surface*)
+            size_t result = Platform::Instance()._map.erase(surface);
+
+            if(result == 0) {
+                // Unable to insert
+                TRACE_L1(_T("Unable to remove association between EGLSurface and EGLNativeWindowType objects. Rendering may have unexpected side effects."));
+                // Call eglDestroySurface and return EGL_FALSE?
+            }
+            else {
+                TRACE_L1(_T("Successfully removed association."));
+            }
+        }
+    }
+
+    return ret;
+}
+
+#ifdef __cplusplus
+}
+#endif
 
 #else
 

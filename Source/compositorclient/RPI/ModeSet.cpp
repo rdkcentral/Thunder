@@ -434,3 +434,127 @@ void ModeSet::DestroyRenderTarget(struct gbm_surface* surface)
     }
 }
 
+extern "C"
+{
+void page_flip_handler(int fd, unsigned int frame, unsigned int sec, unsigned int usec, void* data)
+{
+    bool *waiting_for_flip = reinterpret_cast<bool*>(data);
+    *waiting_for_flip = false;
+}
+}
+
+bool ModeSet::FlipRenderTarget(const gbm_surface* surface)
+{
+    bool flipped = false;
+
+    // Global scope to understand exit strategy of the waiting loop
+    bool waiting_for_flip = true;
+
+    int fd = FileDescriptor();
+
+    if((fd >= 0) && (surface != nullptr)) {
+
+        // Do not forget to release buffers, otherwise memory pressure will increase
+
+        // Buffer object representing our front buffer
+        struct gbm_bo* bo = gbm_surface_lock_front_buffer(const_cast<struct gbm_surface*>(surface));
+
+        if(bo != nullptr) {
+            // Use the created bo buffer as the internal target for rendering
+
+            uint32_t stride = gbm_bo_get_stride(bo);
+            uint32_t height = gbm_bo_get_height(bo);
+            uint32_t width = gbm_bo_get_width(bo);
+            uint32_t handle = gbm_bo_get_handle(bo).u32;
+
+            int32_t ret = -1; // anything != 0
+            uint32_t id = 0;
+
+            drmModeFBPtr fb_ptr = drmModeGetFB(fd, _fb);
+            if(nullptr != fb_ptr) {
+                // Try to extract bpp and stride from previous frame buffer so they match for the next frame
+
+                // Create an associated frame buffer (for each b0 buffer)
+                ret = drmModeAddFB(fd, width /* Should equal fb_ptr->width */, height /* Should equal fb_ptr->height */, fb_ptr->depth, fb_ptr->bpp, stride /* Should equal fb_ptr->pitch */, handle, &id);
+
+                drmModeFreeFB(fb_ptr);
+            }
+
+            if(ret == 0) {
+                // A new FB and a new bo exist; time to make something visible
+
+                ret = drmModePageFlip(fd, _crtc, id, DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
+
+                if(ret != 0) {
+                    // Error
+
+                    // Many causes, but the most obvious is a busy resource
+                    // There is nothing to be done about it; notify the user and just continue
+                }
+                else {
+                    // Use the magic constant here because the struct is versioned!
+                    drmEventContext context = { .version = 2, . vblank_handler = nullptr, .page_flip_handler = page_flip_handler };
+
+                    fd_set fds;
+
+                    // Wait up to max 1 second
+                    struct timespec timeout = { .tv_sec = 1, .tv_nsec = 0 };
+
+                    while(waiting_for_flip != false) {
+                        FD_ZERO(&fds);
+                        FD_SET(fd, &fds);
+
+                        // Race free
+                        ret = pselect(fd + 1, &fds, nullptr, nullptr, &timeout, nullptr);
+
+                        if(ret < 0) {
+                            // Error; break the loop
+                            break;
+                        }
+                        else {
+                            if(ret == 0) {
+                                // Timeout; retry
+// TODO: add another condition to break the loop after several retries
+                            }
+                            else { // ret > 0
+                                if(FD_ISSET(fd, &fds) != 0) {
+                                    // Node is readable
+                                    if(drmHandleEvent(fd, &context) != 0) {
+                                        // Error; break the loop
+
+                                        break;
+                                    }
+
+                                    // Flip probably occured already otherwise it loops again
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(nullptr != _buffer) {
+                    /* void */ gbm_surface_release_buffer(const_cast<struct gbm_surface*>(surface), _buffer);
+                }
+
+                // One FB should be released
+                /* int */ drmModeRmFB(fd, /* old id */ _fb);
+
+                // Unconditionally; there is nothing to be done if the system fails to remove the (frame) buffer
+                _fb = id;
+                _buffer = bo;
+            }
+            else {
+                // Release only bo and do not update FB
+                /* void */ gbm_surface_release_buffer(const_cast<struct gbm_surface*>(surface), bo);
+            }
+        }
+
+        // The surface must have at least one buffer left free for rendering otherwise something has not been properly released / removed
+        int count = gbm_surface_has_free_buffers(const_cast<struct gbm_surface*>(surface));
+
+        // The value of waiting_for_flip provides a hint on the exit strategy applied
+        flipped =  (waiting_for_flip != true) && (count > 0);
+    }
+
+    return flipped;
+}
