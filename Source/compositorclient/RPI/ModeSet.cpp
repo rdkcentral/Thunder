@@ -23,13 +23,22 @@ extern "C"
 }
 #endif
 
-#define DRM_MAX_DEVICES 16
+#include <limits>
+
+static constexpr uint8_t DrmMaxDevices()
+{
+    // Just an arbitrary choice
+    return 16;
+}
 
 static void GetNodes(uint32_t type, std::vector<std::string>& list)
 {
-    drmDevicePtr devices[DRM_MAX_DEVICES];
+    drmDevicePtr devices[DrmMaxDevices()];
 
-    int device_count = drmGetDevices2(0 /* flags */, &devices[0], DRM_MAX_DEVICES);
+    static_assert(sizeof(DrmMaxDevices()) <= sizeof(int));
+    static_assert(std::numeric_limits<decltype(DrmMaxDevices())>::max() <= std::numeric_limits<int>::max());
+
+    int device_count = drmGetDevices2(0 /* flags */, &devices[0], static_cast<int>(DrmMaxDevices()));
 
     if (device_count > 0)
     {
@@ -273,7 +282,7 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
                                   device, 
                                   pconnector->modes[modeIndex].hdisplay,
                                   pconnector->modes[modeIndex].vdisplay,
-                                  DRM_FORMAT_XRGB8888, 
+                                  ModeSet::SupportedBufferType(),
                                   GBM_BO_USE_SCANOUT /* presented on a screen */ | GBM_BO_USE_RENDERING /* used for rendering */);
 
             drmModeFreeConnector(pconnector);
@@ -287,7 +296,7 @@ static bool CreateBuffer(int fd, const uint32_t connector, gbm_device*& device, 
                                 fb_fd, 
                                 gbm_bo_get_width(bo), 
                                 gbm_bo_get_height(bo), 
-                                24, 32, 
+                                ModeSet::ColorDepth(), ModeSet::BPP(),
                                 gbm_bo_get_stride(bo), 
                                 gbm_bo_get_handle(bo).u32, &id);
 
@@ -392,7 +401,7 @@ struct gbm_surface* ModeSet::CreateRenderTarget(const uint32_t width, const uint
 
     if(nullptr != _device)
     {
-        result = gbm_surface_create(_device, width, height, DRM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT /* presented on a screen */ | GBM_BO_USE_RENDERING /* used for rendering */);
+        result = gbm_surface_create(_device, width, height, SupportedBufferType(), GBM_BO_USE_SCANOUT /* presented on a screen */ | GBM_BO_USE_RENDERING /* used for rendering */);
     }
 
     return result;
