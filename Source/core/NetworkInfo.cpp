@@ -540,51 +540,6 @@ namespace Core {
     }
 
 #elif defined(__POSIX__)
-    class SocketIPNetworks : public SocketNetlink {
-
-        private:
-            SocketIPNetworks(const SocketIPNetworks&) = delete;
-            SocketIPNetworks& operator=(const SocketIPNetworks&) = delete;
-        public:
-            SocketIPNetworks()
-                : SocketNetlink(NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK))
-                , _callbacks()
-                , _adminLock()
-            {
-            }
-            ~SocketIPNetworks() = default;
-
-            // Subscribe / unsubscribe to network events like interface UP/DOWN, IP change. MAC change etc...
-            void AddEventObserver(AdapterObserver::INotification* callback)
-            {
-                _adminLock.Lock();
-                _callbacks.push_back(callback);
-                _adminLock.Unlock();
-            }
-
-            void RemoveEventObserver(AdapterObserver::INotification* callback)
-            {
-                _adminLock.Lock();
-                std::remove(_callbacks.begin(), _callbacks.end(), callback);
-                _adminLock.Unlock();
-            }
-
-            void Notify(string interface) 
-            {
-                // TODO: Also pass event type
-                _adminLock.Lock();
-                for (AdapterObserver::INotification* callback : _callbacks) {
-                    callback->Event(interface);
-                }
-                _adminLock.Unlock();
-            }
-        public:
-            uint16_t Deserialize(const uint8_t dataFrame[], const uint16_t receivedSize) override;
-
-        private:
-            std::vector<AdapterObserver::INotification*> _callbacks;
-            CriticalSection _adminLock;
-    };
 
     class IPNetworks {
     public:
@@ -595,6 +550,77 @@ namespace Core {
         IPNetworks& operator=(const IPNetworks&) = delete;
 
     private:
+        class Channel {
+        private:
+            Channel(const Channel&) = delete;
+            Channel& operator=(const Channel&) = delete;
+
+        public:
+            Channel()
+                : _adminLock()
+            {
+                _fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+
+                if (_fd != -1) {
+                    sockaddr_nl netlinkSocket;
+
+                    // setup local address & bind using this address
+                    ::memset(&netlinkSocket, 0, sizeof(netlinkSocket));
+                    netlinkSocket.nl_family = AF_NETLINK;
+                    if (::bind(_fd, reinterpret_cast<struct sockaddr*>(&netlinkSocket), sizeof(netlinkSocket)) == -1) {
+                        close(_fd);
+                        _fd = -1;
+                    }
+                }
+            }
+            ~Channel()
+            {
+                if (_fd != -1) {
+                    close(_fd);
+                    _fd = -1;
+                }
+            }
+
+        public:
+            inline bool IsValid() const
+            {
+                return (_fd != -1);
+            }
+            uint32_t Exchange(const Netlink& outbound, Netlink& inbound)
+            {
+                uint8_t buffer[4 * 1024];
+                uint32_t result = ERROR_BAD_REQUEST;
+
+                _adminLock.Lock();
+
+                uint16_t length = outbound.Serialize(buffer, static_cast<uint16_t>(sizeof(buffer)));
+
+                if (send(_fd, buffer, length, 0) != -1) {
+
+                    result = ERROR_GENERAL;
+                    size_t amount;
+
+                    while ((result == ERROR_GENERAL) && ((amount = recv(_fd, buffer, sizeof(buffer), 0)) > 0)) {
+                        uint16_t handled = inbound.Deserialize(buffer, static_cast<uint16_t>(amount));
+
+                        if (handled == static_cast<uint16_t>(~0)) {
+                            result = ERROR_RPC_CALL_FAILED;
+                        } else if (handled == static_cast<uint16_t>(amount)) {
+                            result = ERROR_NONE;
+                        }
+                    }
+                }
+
+                _adminLock.Unlock();
+
+                return (result);
+            }
+
+        private:
+            CriticalSection _adminLock;
+            int _fd;
+        };
+
         class InterfacesFetchType : public Netlink {
         private:
             InterfacesFetchType() = delete;
@@ -629,6 +655,8 @@ namespace Core {
             }
             virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
+                uint16_t result = 0;
+
                 if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
                     const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
                     std::map<uint32_t, Network>::iterator index(_interfaces.find(iface->ifi_index));
@@ -637,6 +665,7 @@ namespace Core {
                         _interfaces.emplace(std::piecewise_construct,
                             std::forward_as_tuple(iface->ifi_index),
                             std::forward_as_tuple(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg)));
+                        result = length;
                     } else {
                         index->second.Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                     }
@@ -647,7 +676,7 @@ namespace Core {
                         TRACE_L1("Interfaces fetch request failed with code %d", error->error);
                     } 
                 } 
-                return (length);
+                return (result);
             }
 
         private:
@@ -773,6 +802,7 @@ namespace Core {
             }
             virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
+
                 uint16_t result = 0;
 
                 if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
@@ -792,7 +822,7 @@ namespace Core {
                     } 
                 }
 
-                return (length);
+                return (result);
             }
 
         private:
@@ -1139,7 +1169,7 @@ namespace Core {
 
         private:
             friend class IPNetworks;
-            inline void Info(const ProxyType<SocketIPNetworks>& channel)
+            inline void Info(const ProxyType<Channel>& channel)
             {
                 _channel = channel;
             }
@@ -1150,13 +1180,7 @@ namespace Core {
             string _name;
             std::list<IPNode> _ipv4Nodes;
             std::list<IPNode> _ipv6Nodes;
-            ProxyType<SocketIPNetworks> _channel;
-
-#ifdef __DEBUG__
-            static constexpr uint32_t requestWaitTime = Core::infinite;
-#else
-            static constexpr uint32_t requestWaitTime = 2000;
-#endif
+            ProxyType<Channel> _channel;
         };
 
     public:
@@ -1164,10 +1188,9 @@ namespace Core {
 
     public:
         IPNetworks()
-            : _channel(ProxyType<SocketIPNetworks>::Create())
+            : _channel(ProxyType<Channel>::Create())
             , _networks()
         {
-            _channel->Open(Core::infinite);
 
             ASSERT(IsValid());
 
@@ -1175,7 +1198,6 @@ namespace Core {
         }
         ~IPNetworks()
         {
-            _channel->Close(Core::infinite);
         }
 
     public:
@@ -1185,7 +1207,7 @@ namespace Core {
         }
         inline bool IsValid() const
         {
-            return ((_channel.IsValid()));
+            return ((_channel.IsValid()) && (_channel->IsValid() == true));
         }
         Network& operator[](const uint32_t networkId)
         {
@@ -1213,14 +1235,15 @@ namespace Core {
 
                 InterfacesFetchType ifInfo(_networks);
 
-                if (_channel->Exchange(ifInfo, ifInfo, Core::infinite) == ERROR_NONE) {
+                if (_channel->Exchange(ifInfo, ifInfo) == ERROR_NONE) {
+
                     IPAddressFetchType<false> ipv4(_networks);
 
-                    if (_channel->Exchange(ipv4, ipv4, Core::infinite) == ERROR_NONE) {
+                    if (_channel->Exchange(ipv4, ipv4) == ERROR_NONE) {
 
                         IPAddressFetchType<true> ipv6(_networks);
 
-                        if (_channel->Exchange(ipv6, ipv6, Core::infinite) == ERROR_NONE) {
+                        if (_channel->Exchange(ipv6, ipv6) == ERROR_NONE) {
 
                             // Fill in the channel for all networks.
                             std::map<uint32_t, Network>::iterator index(_networks.begin());
@@ -1235,89 +1258,34 @@ namespace Core {
             }
         }
 
-        void AddEventObserver(AdapterObserver::INotification* callback)
-        {
-            _channel->AddEventObserver(callback);
-        }
-
-        void RemoveEventObserver(AdapterObserver::INotification* callback)
-        {
-            _channel->RemoveEventObserver(callback);
-        }
     private:
-        ProxyType<SocketIPNetworks> _channel;
+        ProxyType<Channel> _channel;
         std::map<uint32_t, Network> _networks;
         Network _invalidNetwork;
     };
 
-    // TODO: Redesign in asynchronous way
     uint32_t IPNetworks::Network::Add(const IPNode& address)
     {
         IPAddressModifyType<true> modifier(*this, address);
 
-        return (_channel->Exchange(modifier, modifier,  requestWaitTime));
+        return (_channel->Exchange(modifier, modifier));
     }
 
     uint32_t IPNetworks::Network::Delete(const IPNode& address)
     {
         IPAddressModifyType<false> modifier(*this, address);
 
-        return (_channel->Exchange(modifier, modifier, requestWaitTime));
+        return (_channel->Exchange(modifier, modifier));
     }
 
     uint32_t IPNetworks::Network::Gateway(const IPNode& network, const NodeId& gateway)
     {
         IPRouteModifyType<true> modifier(*this, network, gateway);
 
-        return (_channel->Exchange(modifier, modifier, requestWaitTime));
+        return (_channel->Exchange(modifier, modifier));
     }
 
     static IPNetworks networkController;
-
-    uint16_t SocketIPNetworks::Deserialize(const uint8_t dataFrame[], const uint16_t receivedSize)
-    {
-        uint16_t result = 0;
-        Netlink::Frames frame(dataFrame, receivedSize);
-
-        if (frame.Next() == true) {
-            const struct ifinfomsg* ifi = frame.Payload<ifinfomsg>();
-            string interfaceName;
-
-            if (frame.Type() == RTM_NEWLINK) {
-
-                const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-                if (network.IsValid() == false) {
-
-                    AdapterIterator::Flush();
-                    const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-                    if (network.IsValid() == true) {
-                        interfaceName = network.Name();
-                    }
-                } else {
-                    interfaceName = network.Name();
-                }
-
-            } else if (frame.Type() == RTM_DELLINK) {
-                const IPNetworks::Network& network(networkController[ifi->ifi_index]);
-
-                if (network.IsValid() == true) {
-
-                    interfaceName = network.Name();
-                    AdapterIterator::Flush();
-                }
-            }
-
-            if (interfaceName.empty() == false) {
-                Notify(interfaceName);
-            } 
-
-            result = frame.RawSize();
-        } else {
-            TRACE_L1("Received corrupted netlink message!");
-        }
-        
-        return (result);
-    }
 
     IPV4AddressIterator::IPV4AddressIterator(const uint16_t adapter)
         : _adapter(0)
@@ -1554,8 +1522,6 @@ namespace Core {
 
             if (ioctl(sockfd, SIOCSIFBRDADDR, &ifr) >= 0) {
                 result = Core::ERROR_NONE;
-            } else {
-                TRACE_L1("Failed to set broadcast address");
             }
 
             ::close(sockfd);
@@ -1602,12 +1568,94 @@ namespace Core {
 
 #endif
 
-    AdapterObserver::AdapterObserver(AdapterObserver::INotification* callback)
+#ifndef __WINDOWS__
+    /* virtual */ uint16_t AdapterObserver::Observer::Message::Write(uint8_t stream[], const uint16_t length) const
+    {
+        return (0);
+    }
+    /* virtual */ uint16_t AdapterObserver::Observer::Message::Read(const uint8_t stream[], const uint16_t length)
+    {
+        uint16_t result = 0;
+        const struct ifinfomsg* ifi = reinterpret_cast<const struct ifinfomsg*>(stream);
+        string interfaceName;
+
+        if (Type() == RTM_NEWLINK) {
+            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+            if (network.IsValid() == false) {
+                AdapterIterator::Flush();
+                const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+                if (network.IsValid() == true) {
+                    interfaceName = network.Name();
+                }
+            } else {
+                interfaceName = network.Name();
+            }
+
+        } else if (Type() == RTM_DELLINK) {
+            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+
+            if (network.IsValid() == true) {
+
+                interfaceName = network.Name();
+                AdapterIterator::Flush();
+            }
+        }
+
+        if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
+            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+
+            if (network.IsValid()) {
+                networkController[ifi->ifi_index].Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi)), length - sizeof(struct ifinfomsg));
+            }
+        }
+
+        if (interfaceName.empty() == false) {
+            _callback->Event(interfaceName.c_str());
+            result = length;
+        }
+        return (result);
+    }
+
+    AdapterObserver::Observer::Observer(INotification* callback)
+        : SocketDatagram(
+              true,
+              NodeId(NETLINK_ROUTE, 0, RTMGRP_LINK),
+              NodeId(),
+              64,
+              4000)
+        , _parser(callback)
+    {
+    }
+
+    AdapterObserver::Observer::~Observer()
+    {
+        Close(Core::infinite);
+    }
+
+    // Methods to extract and insert data into the socket buffers
+    /* virtual */ uint16_t AdapterObserver::Observer::SendData(uint8_t* dataFrame, const uint16_t maxSendSize)
+    {
+        return (0);
+    }
+
+    /* virtual */ uint16_t AdapterObserver::Observer::ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
+    {
+
+        return (_parser.Deserialize(dataFrame, receivedSize));
+    }
+
+    // Signal a state change, Opened, Closed or Accepted
+    /* virtual */ void AdapterObserver::Observer::StateChange()
+    {
+    }
+
+#endif
+
+    AdapterObserver::AdapterObserver(INotification* callback)
 #ifdef __WINDOWS__
     {
 #else
-        : _callback(callback) 
-    {
+        : _link(callback){
 #endif
 
 #ifdef __WINDOWS__
@@ -1627,18 +1675,12 @@ namespace Core {
         //		. . .
         //	}
         //}
-#else
-        networkController.AddEventObserver(_callback);
-#endif
 
+#endif
     }
 
     AdapterObserver::~AdapterObserver()
     {
-#if defined(__POSIX__)
-        networkController.RemoveEventObserver(_callback);
-#endif
     }
-
-} // namespace WPEFramework
-} // namespace Core
+}
+}
