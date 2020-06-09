@@ -64,6 +64,9 @@ private:
         DisplayInfo& _parent;
     };
 
+    #ifdef __WINDOWS__
+    #pragma warning(disable : 4355)
+    #endif
     DisplayInfo(const string& displayName, Exchange::IConnectionProperties* interface)
         : _refCount(1)
         , _name(displayName)
@@ -73,6 +76,9 @@ private:
     {
         _displayConnection->Register(&_notification);
     }
+    #ifdef __WINDOWS__
+    #pragma warning(default : 4355)
+    #endif
 
     class DisplayInfoAdministration : protected std::list<DisplayInfo*> {
     public:
@@ -81,7 +87,7 @@ private:
 
         DisplayInfoAdministration()
             : _adminLock()
-            , _engine(Core::ProxyType<RPC::InvokeServerType<2, 0, 4>>::Create())
+            , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
         {
         }
 
@@ -144,46 +150,59 @@ private:
 
         uint8_t Enumerate(std::vector<string>& instances)
         {
-            class Notification : public PluginHost::IPlugin::INotification {
+            class Catalog : protected PluginHost::IPlugin::INotification {
             public:
-                Notification() = delete;
-                Notification(const Notification&) = delete;
-                Notification& operator=(const Notification&) = delete;
+                Catalog(const Catalog&) = delete;
+                Catalog& operator=(const Catalog&) = delete;
 
-                Notification(std::vector<string>* instances)
-                    : _instances(*instances)
+                Catalog() = default;
+                ~Catalog() override = default;
+
+                void Load(PluginHost::IShell* systemInterface, std::vector<string>& modules)
                 {
-                }
+                    ASSERT(_instances.size() == 0);
 
-                void StateChange(PluginHost::IShell* plugin) override
-                {
-                    if (plugin->State() == PluginHost::IShell::ACTIVATED) {
-                        Exchange::IConnectionProperties* pluginPtr = plugin->QueryInterface<Exchange::IConnectionProperties>();
+                    systemInterface->Register(this);
+                    systemInterface->Unregister(this);
+  
+                    while (_instances.size() > 0) {
 
-                        if (pluginPtr != nullptr) {
-                            _instances.push_back(plugin->Callsign());
-                            pluginPtr->Release();
+                        PluginHost::IShell* current = _instances.back();
+                        Exchange::IConnectionProperties* props = current->QueryInterface<Exchange::IConnectionProperties>();
+
+                        if (props != nullptr) {
+                            modules.push_back(current->Callsign());
+                            props->Release();
                         }
+                        current->Release();
+                        _instances.pop_back();
                     }
                 }
 
-                BEGIN_INTERFACE_MAP(Notification)
+            private:
+                void StateChange(PluginHost::IShell* plugin) override
+                {
+                    plugin->AddRef();
+                    _instances.push_back(plugin);
+                }
+
+                BEGIN_INTERFACE_MAP(Catalog)
                 INTERFACE_ENTRY(PluginHost::IPlugin::INotification)
                 END_INTERFACE_MAP
 
             private:
-                std::vector<string>& _instances;
+                std::vector<PluginHost::IShell*> _instances;
             };
 
             PluginHost::IShell* systemInterface = GetInterface<PluginHost::IShell>(string());
 
             if (systemInterface != nullptr) {
-                Core::Sink<Notification> mySink(&instances);
-                systemInterface->Register(&mySink);
-                systemInterface->Unregister(&mySink);
+                Core::Sink<Catalog> mySink;
+                mySink.Load(systemInterface, instances);
+                systemInterface->Release();
             }
 
-            return instances.size();
+            return static_cast<uint8_t>(instances.size());
         }
 
     private:
@@ -250,7 +269,7 @@ public:
             _administration.Enumerate(interfaces);
         }
 
-        if (index <= interfaces.size() - 1) {
+        if (index < interfaces.size()) {
             if (length > 0) {
                 ASSERT(buffer != nullptr);
                 ::strncpy(buffer, interfaces[index].c_str(), length);

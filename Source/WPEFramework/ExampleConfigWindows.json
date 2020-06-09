@@ -53,7 +53,7 @@
       "callsign": "JSONRPCPlugin",
       "locator": "libJSONRPCPlugin.so",
       "classname": "JSONRPCPlugin",
-      "autostart": true
+      "autostart": false
     },
     {
       "callsign": "OpenCDMi",
@@ -163,7 +163,7 @@
       "callsign": "Dictionary",
       "locator": "libdictionary.so",
       "classname": "Dictionary",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
       }
     },
@@ -171,7 +171,7 @@
       "callsign": "DIALServer",
       "locator": "libdialserver.so",
       "classname": "DIALServer",
-      "autostart": false,
+      "autostart": true,
       "configuration": {
         "browser": "WebKitBrowser",
         "name": "Metro DIAL server",

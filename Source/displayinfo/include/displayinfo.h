@@ -22,6 +22,18 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef _MSVC_LANG
+#undef EXTERNAL
+#ifdef DISPLAYINFO_EXPORTS
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#pragma comment(lib, "displayinfo.lib")
+#endif
+#else
+#define EXTERNAL
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +80,7 @@ typedef void (*displayinfo_updated_cb)(struct displayinfo_type* session, void* u
  * 
  * \return true if a instance was found for the index, false otherwise.
  **/
-bool displayinfo_enumerate(const uint8_t index, const uint8_t length, char* buffer);
+EXTERNAL bool displayinfo_enumerate(const uint8_t index, const uint8_t length, char* buffer);
 
 /**
  * \brief Get a \ref displayinfo_type instance that matches the a DisplayInfo implementation.
@@ -77,7 +89,7 @@ bool displayinfo_enumerate(const uint8_t index, const uint8_t length, char* buff
  * 
  * \return \ref displayinfo_type instance, NULL on error.
  **/
-struct displayinfo_type* displayinfo_instance(const char displayName[]);
+EXTERNAL struct displayinfo_type* displayinfo_instance(const char displayName[]);
 
 /**
  * \brief Release the \ref displayinfo_type instance.
@@ -85,7 +97,7 @@ struct displayinfo_type* displayinfo_instance(const char displayName[]);
  * \param instance Instance of \ref displayinfo_type.
  * 
  **/
-void displayinfo_release(struct displayinfo_type* instance);
+EXTERNAL void displayinfo_release(struct displayinfo_type* instance);
 
 /**
  * \brief Register for updates of the display output.
@@ -95,7 +107,7 @@ void displayinfo_release(struct displayinfo_type* instance);
  * \param userdata The user data to be passed back to the \ref displayinfo_updated_cb callback.
  * 
  **/
-void displayinfo_register(struct displayinfo_type* instance, displayinfo_updated_cb callback, void* userdata);
+EXTERNAL void displayinfo_register(struct displayinfo_type* instance, displayinfo_updated_cb callback, void* userdata);
 
 /**
  * \brief Unregister for updates of the display output.
@@ -104,7 +116,7 @@ void displayinfo_register(struct displayinfo_type* instance, displayinfo_updated
  * \param callback Callback that was used to \ref displayinfo_registet
  * 
  **/
-void displayinfo_unregister(struct displayinfo_type* instance, displayinfo_updated_cb callback);
+EXTERNAL void displayinfo_unregister(struct displayinfo_type* instance, displayinfo_updated_cb callback);
 
 /**
  * \brief Checks if a audio passthrough is enabled.
@@ -113,7 +125,7 @@ void displayinfo_unregister(struct displayinfo_type* instance, displayinfo_updat
  * 
  * \return true if audio passthrough is enabled, false otherwise.
  **/
-bool displayinfo_is_audio_passthrough(struct displayinfo_type* instance);
+EXTERNAL bool displayinfo_is_audio_passthrough(struct displayinfo_type* instance);
 
 /**
  * \brief Checks if a display is connected to the display output.
@@ -123,7 +135,7 @@ bool displayinfo_is_audio_passthrough(struct displayinfo_type* instance);
  * \return true a dispplay is connected, false otherwise.
  * 
  **/
-bool displayinfo_connected(struct displayinfo_type* instance);
+EXTERNAL bool displayinfo_connected(struct displayinfo_type* instance);
 
 /**
  * \brief Get the heigth of the connected display  
@@ -133,7 +145,7 @@ bool displayinfo_connected(struct displayinfo_type* instance);
  * \return The current heigth in pixels, 0 on error or invalid connection
  * 
  **/
-uint32_t displayinfo_width(struct displayinfo_type* instance);
+EXTERNAL uint32_t displayinfo_width(struct displayinfo_type* instance);
 
 /**
  * \brief Get the width of the connected display  
@@ -143,7 +155,7 @@ uint32_t displayinfo_width(struct displayinfo_type* instance);
  * \return The current width in pixels, 0 on error or invalid connection
  *
  **/
-uint32_t displayinfo_height(struct displayinfo_type* instance);
+EXTERNAL uint32_t displayinfo_height(struct displayinfo_type* instance);
 
 /**
  * \brief Get the current HDR system of the connected display  
@@ -153,7 +165,7 @@ uint32_t displayinfo_height(struct displayinfo_type* instance);
  * \return The current enabled HDR system, DISPLAYINFO_HDR_UNKNOWN on error or invalid connection
  * 
  **/
-displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* instance);
+EXTERNAL displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* instance);
 
 /**
  * \brief Get the current HDCP protection level of the connected display  
@@ -163,7 +175,7 @@ displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* instance);
  * \return The current enabled HDCP level, DISPLAYINFO_HDCP_UNKNOWN on error or invalid connection
  * 
  **/
-displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_type* instance);
+EXTERNAL displayinfo_hdcp_protection_t displayinfo_hdcp_protection(struct displayinfo_type* instance);
 
 #ifdef __cplusplus
 } // extern "C"
