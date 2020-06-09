@@ -49,25 +49,23 @@ namespace Exchange {
             virtual void Update(const uint32_t id) = 0;
         };
 
-        struct IFactory : virtual public Core::IUnknown {
-            virtual ~IFactory() {}
+        struct ICatalog : virtual public Core::IUnknown {
+            ~ICatalog() override = default;
 
-            enum { ID = ID_EXTERNAL_FACTORY };
+            enum { ID = ID_EXTERNAL_CATALOG };
 
-            struct IProduced : virtual public Core::IUnknown {
+            struct INotification : virtual public Core::IUnknown {
 
-                virtual ~IProduced () {}
+                ~INotification() override = default;
 
-                enum { ID = ID_EXTERNAL_FACTORY_NOTIFICATION };
+                enum { ID = ID_EXTERNAL_CATALOG_NOTIFICATION };
 
-                virtual void Activated(IExternal* source) = 0;
-                virtual void Deactivated(IExternal* source) = 0;
+                virtual void Update(IExternal* source) = 0;
             };
 
             // Pushing notifications to interested sinks
-            virtual void Register(IFactory::IProduced* sink) = 0;
-            virtual void Unregister(IFactory::IProduced* sink) = 0;
-            virtual IExternal* Resource(const uint32_t id) = 0;
+            virtual void Register(ICatalog::INotification* sink) = 0;
+            virtual void Unregister(ICatalog::INotification* sink) = 0;
         };
 
         enum identification {
