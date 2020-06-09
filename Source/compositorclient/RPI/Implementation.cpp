@@ -52,6 +52,7 @@ extern "C"
 #endif
 
 #include <algorithm>
+#include <type_traits>
 
 #include "../../core/core.h"
 #include "../../interfaces/IComposition.h"
@@ -190,7 +191,9 @@ public:
         // A Native surface that acts as a native window
         EGLSurface result = reinterpret_cast<EGLSurface>(_platform.CreateRenderTarget(width, height));
 
-        if (result != 0) {
+        static_assert(std::is_same<EGLSurface, void*>::value);
+
+        if (result == nullptr) {
             TRACE_L1(_T("The native window (handle) might be invalid / unsupported. Expect undefined behavior!"));
         }
 
