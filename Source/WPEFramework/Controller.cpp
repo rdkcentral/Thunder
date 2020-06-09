@@ -565,11 +565,15 @@ namespace Plugin {
                 // We can not delete the "." or  ".." entries....
                 if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
                     DeleteDirectory(dir.Current());
-                    file.Destroy();
                 }
             } else {
                 file.Destroy();
             }
+        }
+
+        Core::File currentDir(directory);
+        if (directory.back() != '/') {
+            currentDir.Destroy();
         }
     }
 }
