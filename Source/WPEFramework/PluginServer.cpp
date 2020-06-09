@@ -190,6 +190,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             value.sin_port = htons(configuration.Port.Value());
 
             result = value;
+            accessor = result;
 
             TRACE_L1("Invalid config information could not resolve to a proper IP set to: (%s:%d)", result.HostAddress().c_str(), result.PortNumber());
         } else {
