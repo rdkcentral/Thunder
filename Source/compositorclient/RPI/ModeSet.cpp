@@ -321,22 +321,39 @@ ModeSet::ModeSet()
     , _buffer(nullptr)
 {
     if (drmAvailable() > 0) {
+        if (Create() == false) {
+            // We are NOT initialized properly, destruct !!!
+            Destruct();
+        }
+    }
+}
 
-        int fd = FileDescriptor();
+bool ModeSet::Create()
+{
+    bool enabled = false;
 
-        if (fd != -1)
-        {
-            uint32_t id;
+    int fd = FileDescriptor();
 
-            if ( (FindProperDisplay(fd, _crtc, _encoder, _connector, _fb) == false) ||
-                 (CreateBuffer(fd, _connector, _device, _mode, id, _buffer) == false) ||
-                 (drmSetMaster(fd) != 0)  ) 
-            {
-                // We are NOT initialized properly, destruct !!!
-                Destruct();
+    if(fd >= 0) {
+
+        if ( (FindProperDisplay(fd, _crtc, _encoder, _connector, _fb) == false) ||
+/* TODO: Changes the original fb which might not be what is intended */
+             (CreateBuffer(fd, _connector, _device, _mode, _fb, _buffer) == false) ||
+             (drmSetMaster(fd) != 0) ) {
+        }
+        else {
+            drmModeConnectorPtr pconnector = drmModeGetConnector(fd, _connector);
+
+            if(pconnector != nullptr) {
+                /* At least one mode has to be set */
+                enabled = (0 == drmModeSetCrtc(fd, _crtc, _fb, 0, 0, &_connector, 1, &(pconnector->modes[_mode])));
+
+                drmModeFreeConnector(pconnector);
             }
         }
     }
+
+    return enabled;
 }
 
 ModeSet::~ModeSet()

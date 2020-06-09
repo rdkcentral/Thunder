@@ -47,7 +47,7 @@ class ModeSet
         void DestroyRenderTarget(struct gbm_surface* surface);
 
     private:
-        int  Open();
+        bool Create();
         void Destruct();
 
     private :
