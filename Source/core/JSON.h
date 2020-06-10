@@ -2460,11 +2460,12 @@ namespace Core {
                 UNDEFINED = 0x40
             };
 
-            static constexpr uint16_t BEGIN_MARKER = 5;
-            static constexpr uint16_t END_MARKER = 6;
-            static constexpr uint16_t SKIP_BEFORE = 7;
-            static constexpr uint16_t SKIP_AFTER = 8;
-            static constexpr uint16_t PARSE = 9;
+            static constexpr uint16_t FIND_MARKER = 0;
+            static constexpr uint16_t BEGIN_MARKER = 1;
+            static constexpr uint16_t END_MARKER = 2;
+            static constexpr uint16_t SKIP_BEFORE = 3;
+            static constexpr uint16_t SKIP_AFTER = 4;
+            static constexpr uint16_t PARSE = 5;
 
         public:
             template <typename ARRAYELEMENT>
@@ -2803,7 +2804,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
+                if (offset == FIND_MARKER) {
                     _iterator.Reset();
                     stream[loaded++] = '[';
                     offset = (_iterator.Next() == false ? ~0 : PARSE);
@@ -2814,7 +2815,7 @@ namespace Core {
                     if (offset >= PARSE) {
                         offset -= PARSE;
                         loaded += static_cast<const IElement&>(_iterator.Current()).Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset != 0 ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
+                        offset = (offset != FIND_MARKER ? offset + PARSE : (_iterator.Next() == true ? BEGIN_MARKER : ~0));
                     } else if (offset == BEGIN_MARKER) {
                         stream[loaded++] = ',';
                         offset = PARSE;
@@ -2823,7 +2824,7 @@ namespace Core {
                 if (offset == static_cast<uint16_t>(~0)) {
                     if (loaded < maxLength) {
                         stream[loaded++] = ']';
-                        offset = 0;
+                        offset = FIND_MARKER;
                     } else {
                         offset = END_MARKER;
                     }
@@ -2836,17 +2837,17 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
-                if (offset == 0) {
+                if (offset == FIND_MARKER) {
                     while ((loaded < maxLength) && ::isspace(stream[loaded])) {
                         loaded++;
                     }
                 }
 
                 if (loaded == maxLength) {
-                    offset = 0;
-                } else if (offset == 0) {
+                    offset = FIND_MARKER;
+                } else if (offset == FIND_MARKER) {
                     ValueValidity valid = stream[loaded] != '[' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = 0;
+                    offset = FIND_MARKER;
                     switch (valid) {
                     default:
                         // fall through
@@ -2865,7 +2866,7 @@ namespace Core {
                     }
                 }
 
-                while ((offset != 0) && (loaded < maxLength)) {
+                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER)) {
                         // Run till we find a character not a whitespace..
                         while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
@@ -2875,14 +2876,14 @@ namespace Core {
                         if (loaded < maxLength) {
                             switch (stream[loaded]) {
                             case ']':
-                                offset = 0;
+                                offset = FIND_MARKER;
                                 loaded++;
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element, \",\" found." };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                 } else {
                                     offset = SKIP_BEFORE;
                                 }
@@ -2891,7 +2892,7 @@ namespace Core {
                             default:
                                 if (offset == SKIP_AFTER) {
                                     error = Error{ "Unexpected character \"" + std::string(1, stream[loaded]) + "\". Expected either \",\" or \"]\"" };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                     ++loaded;
                                 } else {
                                     offset = PARSE;
@@ -2905,7 +2906,7 @@ namespace Core {
                     if (offset >= PARSE) {
                         offset = (offset - PARSE);
                         loaded += static_cast<IElement&>(_data.back()).Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
-                        offset = (offset == 0 ? SKIP_AFTER : offset + PARSE);
+                        offset = (offset == FIND_MARKER ? SKIP_AFTER : offset + PARSE);
                     }
 
                     if (error.IsSet() == true)
@@ -3014,13 +3015,14 @@ namespace Core {
                 UNDEFINED = 0x40
             };
 
-            static constexpr uint16_t BEGIN_MARKER = 5;
-            static constexpr uint16_t END_MARKER = 6;
-            static constexpr uint16_t SKIP_BEFORE = 7;
-            static constexpr uint16_t SKIP_BEFORE_VALUE = 8;
-            static constexpr uint16_t SKIP_AFTER = 9;
-            static constexpr uint16_t SKIP_AFTER_KEY = 10;
-            static constexpr uint16_t PARSE = 11;
+            static constexpr uint16_t FIND_MARKER = 0;
+            static constexpr uint16_t BEGIN_MARKER = 1;
+            static constexpr uint16_t END_MARKER = 2;
+            static constexpr uint16_t SKIP_BEFORE = 3;
+            static constexpr uint16_t SKIP_BEFORE_VALUE = 4;
+            static constexpr uint16_t SKIP_AFTER = 5;
+            static constexpr uint16_t SKIP_AFTER_KEY = 6;
+            static constexpr uint16_t PARSE = 7;
 
             typedef std::pair<const TCHAR*, IElement*> JSONLabelValue;
             typedef std::list<JSONLabelValue> JSONElementList;
@@ -3174,7 +3176,7 @@ namespace Core {
             {
                 uint16_t loaded = 0;
 
-                if (offset == 0) {
+                if (offset == FIND_MARKER) {
                     _iterator = _data.begin();
                     stream[loaded++] = '{';
 
@@ -3192,7 +3194,7 @@ namespace Core {
                     if (offset >= PARSE) {
                         offset -= PARSE;
                         loaded += _current.json->Serialize(&(stream[loaded]), maxLength - loaded, offset);
-                        offset = (offset == 0 ? BEGIN_MARKER : offset + PARSE);
+                        offset = (offset == FIND_MARKER ? BEGIN_MARKER : offset + PARSE);
                     } else if (offset == BEGIN_MARKER) {
                         if (_current.json == &_fieldName) {
                             stream[loaded++] = ':';
@@ -3213,7 +3215,7 @@ namespace Core {
                 if (offset == static_cast<uint16_t>(~0)) {
                     if (loaded < maxLength) {
                         stream[loaded++] = '}';
-                        offset = 0;
+                        offset = FIND_MARKER;
                         _fieldName.Clear();
                     } else {
                         offset = END_MARKER;
@@ -3227,17 +3229,17 @@ namespace Core {
             {
                 uint16_t loaded = 0;
                 // Run till we find opening bracket..
-                if (offset == 0) {
+                if (offset == FIND_MARKER) {
                     while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
                         loaded++;
                     }
                 }
 
                 if (loaded == maxLength) {
-                    offset = 0;
-                } else if (offset == 0) {
+                    offset = FIND_MARKER;
+                } else if (offset == FIND_MARKER) {
                     ValueValidity valid = stream[loaded] != '{' ? IsNullValue(stream, maxLength, offset, loaded) : ValueValidity::VALID;
-                    offset = 0;
+                    offset = FIND_MARKER;
                     switch (valid) {
                     default:
                         // fall through
@@ -3257,7 +3259,7 @@ namespace Core {
                     }
                 }
 
-                while ((offset != 0) && (loaded < maxLength)) {
+                while ((offset != FIND_MARKER) && (loaded < maxLength)) {
                     if ((offset == SKIP_BEFORE) || (offset == SKIP_AFTER) || offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                         // Run till we find a character not a whitespace..
                         while ((loaded < maxLength) && (::isspace(stream[loaded]))) {
@@ -3274,18 +3276,18 @@ namespace Core {
                                     _state = ERROR;
                                     error = Error{ "Expected value, \"}\" found." };
                                 }
-                                offset = 0;
+                                offset = FIND_MARKER;
                                 loaded++;
                                 break;
                             case ',':
                                 if (offset == SKIP_BEFORE) {
                                     _state = ERROR;
                                     error = Error{ "Expected new element \",\" found." };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                 } else if (offset == SKIP_BEFORE_VALUE || offset == SKIP_AFTER_KEY) {
                                     _state = ERROR;
                                     error = Error{ "Expected value, \",\" found." };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                 } else {
                                     offset = SKIP_BEFORE;
                                 }
@@ -3295,11 +3297,11 @@ namespace Core {
                                 if (offset == SKIP_BEFORE || offset == SKIP_BEFORE_VALUE) {
                                     _state = ERROR;
                                     error = Error{ "Expected " + std::string{ offset == SKIP_BEFORE_VALUE ? "value" : "new element" } + ", \":\" found." };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                 } else if (_fieldName.IsSet() == false) {
                                     _state = ERROR;
                                     error = Error{ "Expected \"}\" or \",\", \":\" found." };
-                                    offset = 0;
+                                    offset = FIND_MARKER;
                                 } else {
                                     offset = SKIP_BEFORE_VALUE;
                                 }
@@ -3317,7 +3319,7 @@ namespace Core {
                                     } else if (offset != SKIP_BEFORE_VALUE) {
                                         _state = ERROR;
                                         error = Error{ "Colon expected." };
-                                        offset = 0;
+                                        offset = FIND_MARKER;
                                         ++loaded;
                                         break;
                                     }
@@ -3332,7 +3334,7 @@ namespace Core {
                                     if (offset == SKIP_AFTER || offset == SKIP_AFTER_KEY) {
                                         _state = ERROR;
                                         error = Error{ "Expected either \",\" or \"}\", \"" + std::string(1, stream[loaded]) + "\" found." };
-                                        offset = 0;
+                                        offset = FIND_MARKER;
                                         ++loaded;
                                         break;
                                     }
@@ -3356,7 +3358,7 @@ namespace Core {
                         } else {
                             loaded += _current.json->Deserialize(&(stream[loaded]), maxLength - loaded, offset, error);
                         }
-                        offset = (offset == 0 ? skip : offset + PARSE);
+                        offset = (offset == FIND_MARKER ? skip : offset + PARSE);
                     }
 
                     if (error.IsSet() == true)
