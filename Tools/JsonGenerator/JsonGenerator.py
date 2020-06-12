@@ -1162,7 +1162,7 @@ def EmitEnumRegs(root, emit, header_file):
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
     # Enumeration conversion code
-    emit.Line("#include \"../definitions.h\"")
+    emit.Line("#include <interfaces/definitions.h>")
     emit.Line("#include <core/Enumerate.h>")
     emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line()
