@@ -28,6 +28,7 @@
 #include "IComposition.h"
 #include "IStream.h"
 #include "IVoiceHandler.h"
+#include "IPower.h"
 
 #undef EXTERNAL
 
