@@ -19,10 +19,10 @@ set(TARGET ${NAMESPACE}Protocols)
 
 find_package(ZLIB REQUIRED)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/ITracing.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/IStringIterator.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/../com/IValueIterator.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../com/Communicator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../com/ITracing.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../com/IStringIterator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/../com/IValueIterator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
 
 # Take care the sources are listed !!! TWICE !!! in this setup. raised a JIRA ticket to solve this for now, also scroll down and list the 
 # new source file again. This is in case CMAKE forgets :-)
@@ -37,11 +37,7 @@ set(SOURCES_COM
         com/Messages.h
         com/Administrator.cpp
         com/Communicator.cpp
-        com/ProxyStubs_Communicator.cpp
         com/ITracing.cpp
-        com/ProxyStubs_Tracing.cpp
-        com/ProxyStubs_StringIterator.cpp
-        com/ProxyStubs_ValueIterator.cpp
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
@@ -67,35 +63,41 @@ set(SOURCES_WEBSOCKETS
         websocket/WebTransform.h
         )
 
-foreach(file IN LISTS SOURCES_COM SOURCES_WEBSOCKETS)
-    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_SOURCE_DIR} COPYONLY)
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/com")
+foreach(file IN LISTS SOURCES_COM)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_BINARY_DIR}/com COPYONLY)
+endforeach()
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/websocket")
+foreach(file IN LISTS SOURCES_WEBSOCKETS)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_BINARY_DIR}/websocket COPYONLY)
 endforeach()
 
 set(COM_INCLUDES
-        Administrator.h
-        com.h
-        Communicator.h
-        Ids.h
-        ITracing.h
-        IUnknown.h
-        Messages.h
-        IRPCIterator.h
-        IStringIterator.h
-        IValueIterator.h
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Administrator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/com.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Communicator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Ids.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/ITracing.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/IUnknown.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Messages.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/IRPCIterator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/IStringIterator.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/IValueIterator.h"
         )
 
 set(PROTOCOLS_INCLUDES
-        URL.h
-        JSONWebToken.h
-        JSONRPCLink.h
-        WebLink.h
-        WebRequest.h
-        WebResponse.h
-        WebSerializer.h
-        websocket.h
-        WebSocketLink.h
-        WebTransfer.h
-        WebTransform.h
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/URL.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/JSONWebToken.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/JSONRPCLink.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebLink.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebRequest.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebResponse.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebSerializer.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/websocket.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebSocketLink.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebTransfer.h"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebTransform.h"
         )
 
 set(PUBLIC_HEADERS
@@ -107,20 +109,27 @@ set(PUBLIC_HEADERS
 # Construct a library object
 add_library(${TARGET} SHARED
         Module.cpp
-        URL.cpp
-        JSONWebToken.cpp
-        ITracing.cpp
-        ProxyStubs_Tracing.cpp
-        IUnknown.cpp
-        WebSerializer.cpp
-        WebSocketLink.cpp
-        JSONRPCLink.cpp
-        Administrator.cpp
-        Communicator.cpp
-        ProxyStubs_Communicator.cpp
-        ProxyStubs_StringIterator.cpp
-        ProxyStubs_ValueIterator.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/URL.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/JSONWebToken.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/ITracing.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Tracing.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/IUnknown.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebSerializer.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/WebSocketLink.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/websocket/JSONRPCLink.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Administrator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/com/Communicator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Communicator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_StringIterator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_ValueIterator.cpp"
         )
+
+target_include_directories(${TARGET} 
+        PRIVATE 
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/com>
+          $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/websocket>
+)
 
 target_link_libraries(${TARGET}
         PRIVATE
