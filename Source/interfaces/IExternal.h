@@ -60,7 +60,8 @@ namespace Exchange {
 
                 enum { ID = ID_EXTERNAL_CATALOG_NOTIFICATION };
 
-                virtual void Update(IExternal* source) = 0;
+                virtual void Activated(IExternal* source) = 0;
+                virtual void Deactivated(IExternal* source) = 0;
             };
 
             // Pushing notifications to interested sinks
