@@ -805,6 +805,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
+        destructor->AddRef();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();
