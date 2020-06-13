@@ -83,6 +83,15 @@ ENUM_CONVERSION_BEGIN(Exchange::IVoiceProducer::IProfile::codec)
     { Exchange::IVoiceProducer::IProfile::codec::ADPCM, _TXT(_T("adpcm")) },
 ENUM_CONVERSION_END(Exchange::IVoiceProducer::IProfile::codec)
 
+ENUM_CONVERSION_BEGIN(Exchange::IPower::PCState)
+    { Exchange::IPower::On, _TXT(_T("on")) },
+    { Exchange::IPower::ActiveStandby, _TXT(_T("active")) },
+    { Exchange::IPower::PassiveStandby, _TXT(_T("passive")) },
+    { Exchange::IPower::SuspendToRAM, _TXT(_T("suspended")) },
+    { Exchange::IPower::Hibernate, _TXT(_T("hibernate")) },
+    { Exchange::IPower::PowerOff, _TXT(_T("off")) }, 
+ENUM_CONVERSION_END(Exchange::IPower::PCState)
+
 namespace Exchange
 {
 

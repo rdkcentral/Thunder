@@ -210,6 +210,7 @@ typedef std::string string;
 #include <arpa/inet.h>
 #include <assert.h>
 #include <cxxabi.h>
+#include <cmath>
 #include <dirent.h>
 #include <dlfcn.h>
 #include <errno.h>
