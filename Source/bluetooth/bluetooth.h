@@ -25,6 +25,7 @@
 #include "SDPProfile.h"
 #include "AVDTPSocket.h"
 #include "AVDTPProfile.h"
+#include "RTPSocket.h"
 #include "Profile.h"
 
 #ifdef __WINDOWS__

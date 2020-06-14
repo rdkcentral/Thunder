@@ -505,7 +505,7 @@ namespace Bluetooth {
                 }
                 uint16_t Serialize(uint8_t stream[], const uint16_t length) const
                 {
-                    uint16_t result = std::min(_pdu.Length(), static_cast<uint32_t>(length));
+                    uint16_t result = std::min(static_cast<uint16_t>(_pdu.Length() - _offset), length);
                     if (result > 0) {
                         ::memcpy(stream, (_pdu.Data() + _offset), result);
                         _offset += result;
@@ -558,7 +558,7 @@ namespace Bluetooth {
 
             private:
                 PDU _pdu;
-                mutable uint32_t _offset;
+                mutable uint16_t _offset;
             }; // class Request
 
         public:

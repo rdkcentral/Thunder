@@ -41,6 +41,7 @@ set(PUBLIC_HEADERS
         SDPProfile.h
         AVDTPSocket.h
         AVDTPProfile.h
+        RTPSocket.h
         Profile.h
         UUID.h
         Record.h
