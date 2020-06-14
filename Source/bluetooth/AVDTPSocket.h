@@ -217,7 +217,7 @@ namespace Bluetooth {
                 }
                 uint16_t Serialize(uint8_t stream[], const uint16_t length) const
                 {
-                    uint16_t result = std::min(_signal.Length(), length);
+                    uint16_t result = std::min(static_cast<uint16_t>(_signal.Length() - _offset), length);
                     if (result > 0) {
                         ::memcpy(stream, (_signal.Data() + _offset), result);
                         _offset += result;
@@ -318,7 +318,7 @@ namespace Bluetooth {
                 }
 
             private:
-                mutable uint32_t _offset;
+                mutable uint16_t _offset;
                 uint8_t* _signalScratchPad;
                 Signal _signal;
                 uint8_t _label;
