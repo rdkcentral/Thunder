@@ -38,7 +38,6 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    template <enum IExternal::identification IDENTIFIER>
     class ExternalBase : public IExternal {
     private:
         class Job { 
@@ -121,15 +120,15 @@ namespace Exchange {
 
     public:
         ExternalBase() = delete;
-        ExternalBase(const ExternalBase<IDENTIFIER>&) = delete;
-        ExternalBase<IDENTIFIER>& operator=(const ExternalBase<IDENTIFIER>&) = delete;
+        ExternalBase(const ExternalBase&) = delete;
+        ExternalBase& operator=(const ExternalBase&) = delete;
 
         #ifdef __WINDOWS__
         #pragma warning(disable : 4355)
         #endif
         ExternalBase(const uint32_t id, const uint32_t type)
             : _adminLock()
-            , _id(IDENTIFIER | (id & 0x0FFFFFFF))
+            , _id(id & 0x00FFFFFF)
             , _type(type)
             , _condition(IExternal::constructing)
             , _clients()
@@ -173,7 +172,7 @@ namespace Exchange {
         // Define the polling time in Seconds. This value has a maximum of a 24 hour.
         inline uint16_t Period() const
         {
-            return (static_cast<Timed&>(_timed).Period());
+            return (static_cast<const Timed&>(_timed).Period());
         }
         inline void Period(const uint16_t value)
         {
@@ -225,13 +224,17 @@ namespace Exchange {
         {
             return (_id);
         }
+        void Module(const uint8_t module) override
+        {
+            ASSERT((module == 0) || ((_id & 0xFF000000) == 0));
+            _id = (_id & 0x00FFFFFF) | (module << 24);
+        }
 
         // Characteristics of this element
         uint32_t Type() const override
         {
             return (_type);
         }
-
         int32_t Minimum() const override
         {
             int32_t result = 0;
@@ -329,7 +332,7 @@ namespace Exchange {
         }
         inline void ChangeTypeId(const uint32_t id, const uint32_t type)
         {
-            _id = id;
+            _id = (id & 0x00FFFFFF);
             _type = type;
         }
         inline void Lock() const {
