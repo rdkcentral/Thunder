@@ -229,9 +229,9 @@ def GenerateStubs(output_file, source_file, defaults="", scan_only=False):
         emit.Line("//")
         emit.Line()
 
-        if os.path.isfile(os.path.join(os.path.dirname(output_file), interface_header_name)):
+        if os.path.isfile(os.path.join(os.path.dirname(source_file), interface_header_name)):
             emit.Line('#include "%s"' % interface_header_name)
-        if os.path.isfile(os.path.join(os.path.dirname(output_file), "Module.h")):
+        if os.path.isfile(os.path.join(os.path.dirname(source_file), "Module.h")):
             emit.Line('#include "Module.h"')
         emit.Line()
 

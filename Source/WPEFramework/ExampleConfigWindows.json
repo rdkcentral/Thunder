@@ -3,11 +3,11 @@
   "interface": "LAN",
   "idletime": 60,
   "ipv6": false,
-  "persistentpath": "C:/Projects/Thunder/artifacts/Persistent",
-  "volatilepath": "C:/Projects/Thunder/artifacts/temp",
-  "datapath": "C:/Projects/Thunder/artifacts/Debug/Plugins",
-  "systempath": "C:/Projects/Thunder/artifacts/Debug",
-  "proxystubpath": "C:/Projects/Thunder/artifacts/ProxyStubs/Debug",
+  "persistentpath": "C:/Projects/artifacts/Persistent",
+  "volatilepath": "C:/Projects/artifacts/temp",
+  "datapath": "C:/Projects/artifacts/Debug/Plugins",
+  "systempath": "C:/Projects/artifacts/Debug",
+  "proxystubpath": "C:/Projects/artifacts/ProxyStubs/Debug",
   "communicator": "127.0.0.1:62000",
   "redirect": "Service/Controller/UI",
   "tracing": [
@@ -16,235 +16,263 @@
       "enabled": true
     }
   ],
-  "plugins": [
-    {
-      "callsign": "Controller",
-      "configuration": {
-        "subsystems": []
-      }
-    },
-    {
-      "callsign": "OutOfProcessPlugin",
-      "locator": "libOutOfProcessPlugin.so",
-      "classname": "OutOfProcessPlugin",
-      "autostart": false,
-      "configuration": {
-        "outofprocess": true,
-        "url": "http://netflix.com/tv",
-        "sleep": "5",
-        "single": false,
-        "crash": true
-      }
-    },
-    {
-      "callsign": "SecurityAgent",
-      "locator": "libSecurityAgent.so",
-      "classname": "SecurityAgent",
-      "precondition": [
-        "Platform"
-      ],
-      "autostart": true,
-      "configuration": {
-        "acl": "data.json",
-        "connector": "127.0.0.1:63000"
-      }
-    },
-    {
-      "callsign": "JSONRPCPlugin",
-      "locator": "libJSONRPCPlugin.so",
-      "classname": "JSONRPCPlugin",
-      "autostart": false
-    },
-    {
-      "callsign": "OpenCDMi",
-      "locator": "libOpenCDMi.so",
-      "classname": "OCDM",
-      "autostart": false,
-      "configuration": {
-        "connector": "127.0.0.1:7912",
-        "root": {
-          "outofprocess": true
-        }
-      }
-    },
-    {
-      "callsign": "Monitor",
-      "locator": "libMonitor.so",
-      "classname": "Monitor",
-      "autostart": false,
-      "configuration": {
-        "observables": [
-          {
-            "callsign": "WebKitBrowser",
-            "memory": 5,
-            "memorylimit": 850000,
-            "operational": 1,
-            "restart": {
-              "memory": {
-                "window": 0,
-                "limit": 0
-              },
-              "operational": {
-                "window": 60,
-                "limit": 3
-              }
+    "plugins": [
+        {
+            "callsign": "Controller",
+            "configuration": {
+                "subsystems": []
             }
-          }
-        ]
-      }
-    },
-    {
-      "callsign": "WebServer",
-      "locator": "libWebServer.so",
-      "classname": "WebServer",
-      "autostart": false,
-      "configuration": {
+        },
+        {
+            "callsign": "Butler",
+            "locator": "libButler.so",
+            "classname": "Butler",
+            "autostart": true
+        },
+        {
+            "callsign": "IOControl",
+            "locator": "libIOControl.so",
+            "classname": "IOControl",
+            "autostart": true,
+            "configuration": {
+                "pins": [
+                    {
+                        "id": 14,
+                        "comment": "B6",
+                        "port": "\\\\.\\COM16",
+                        "mode": "Both"
+                    },
+                    {
+                        "id": 15,
+                        "comment": "B7",
+                        "port": "\\\\.\\COM16",
+                        "mode": "Output"
+                    }
+                ]
+            }
+        },
+        {
+            "callsign": "OutOfProcessPlugin",
+            "locator": "libOutOfProcessPlugin.so",
+            "classname": "OutOfProcessPlugin",
+            "autostart": false,
+            "configuration": {
+                "outofprocess": true,
+                "url": "http://netflix.com/tv",
+                "sleep": "5",
+                "single": false,
+                "crash": true
+            }
+        },
+        {
+            "callsign": "SecurityAgent",
+            "locator": "libSecurityAgent.so",
+            "classname": "SecurityAgent",
+            "precondition": [
+                "Platform"
+            ],
+            "autostart": true,
+            "configuration": {
+                "acl": "data.json",
+                "connector": "127.0.0.1:63000"
+            }
+        },
+        {
+            "callsign": "JSONRPCPlugin",
+            "locator": "libJSONRPCPlugin.so",
+            "classname": "JSONRPCPlugin",
+            "autostart": true
+        },
+        {
+            "callsign": "OpenCDMi",
+            "locator": "libOpenCDMi.so",
+            "classname": "OCDM",
+            "autostart": false,
+            "configuration": {
+                "connector": "127.0.0.1:7912",
+                "root": {
+                    "outofprocess": true
+                }
+            }
+        },
+        {
+            "callsign": "Monitor",
+            "locator": "libMonitor.so",
+            "classname": "Monitor",
+            "autostart": false,
+            "configuration": {
+                "observables": [
+                    {
+                        "callsign": "WebKitBrowser",
+                        "memory": 5,
+                        "memorylimit": 850000,
+                        "operational": 1,
+                        "restart": {
+                            "memory": {
+                                "window": 0,
+                                "limit": 0
+                            },
+                            "operational": {
+                                "window": 60,
+                                "limit": 3
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "callsign": "WebServer",
+            "locator": "libWebServer.so",
+            "classname": "WebServer",
+            "autostart": false,
+            "configuration": {
 
-        "root": {
-          "outofprocess": true
-        }
-      }
-    },
-    {
-      "callsign": "DeviceInfo",
-      "locator": "libdeviceinfo.so",
-      "classname": "DeviceInfo",
-      "autostart": true,
-      "configuration": {
-        "location": "external",
-        "identifier": "internal",
-        "time": "external"
-      }
-    },
-    {
-      "callsign": "TimeSync",
-      "locator": "libtimesync.so",
-      "classname": "TimeSync",
-      "autostart": false,
-      "configuration": {
-        "interval": 30,
-        "retries": 20,
-        "periodicity": 24,
-        "sources": [
-          "ntp://0.pool.ntp.org",
-          "ntp://1.pool.ntp.org",
-          "ntp://2.pool.ntp.org",
-          "ntp://3.pool.ntp.org"
-        ]
-      }
-    },
-    {
-      "callsign": "LocationSync",
-      "locator": "liblocationsync.so",
-      "classname": "LocationSync",
-      "autostart": false,
-      "configuration": {
-        "interval": 30,
-        "retries": 20,
-        "source": "http://jsonip.metrological.com/?maf=true"
-      }
-    },
-    {
-      "callsign": "BackOffice",
-      "locator": "libbackoffice.so",
-      "classname": "BackOffice",
-      "autostart": false,
-      "configuration": {
-        "server": "ws.metrological.com",
-        "port": 80,
-        "components": "",
-        "profiler": {
-          "testdata": "Hello world",
-          "moretest": 45
-        }
-      }
-    },
-    {
-      "callsign": "Dictionary",
-      "locator": "libdictionary.so",
-      "classname": "Dictionary",
-      "autostart": true,
-      "configuration": {
-      }
-    },
-    {
-      "callsign": "DIALServer",
-      "locator": "libdialserver.so",
-      "classname": "DIALServer",
-      "autostart": true,
-      "configuration": {
-        "browser": "WebKitBrowser",
-        "name": "Metro DIAL server",
-        "model": "MetroRefBoard",
-        "manufacturer": "BroadCOM",
-        "description": "Dial server running on Metro's reference hardware.",
-        "apps": [
-          {
-            "name": "YouTube",
-            "allowstop": true,
+                "root": {
+                    "outofprocess": true
+                }
+            }
+        },
+        {
+            "callsign": "DeviceInfo",
+            "locator": "libdeviceinfo.so",
+            "classname": "DeviceInfo",
+            "autostart": true,
+            "configuration": {
+                "location": "external",
+                "identifier": "internal",
+                "time": "external"
+            }
+        },
+        {
+            "callsign": "TimeSync",
+            "locator": "libtimesync.so",
+            "classname": "TimeSync",
+            "autostart": false,
+            "configuration": {
+                "interval": 30,
+                "retries": 20,
+                "periodicity": 24,
+                "sources": [
+                    "ntp://0.pool.ntp.org",
+                    "ntp://1.pool.ntp.org",
+                    "ntp://2.pool.ntp.org",
+                    "ntp://3.pool.ntp.org"
+                ]
+            }
+        },
+        {
+            "callsign": "LocationSync",
+            "locator": "liblocationsync.so",
+            "classname": "LocationSync",
+            "autostart": false,
+            "configuration": {
+                "interval": 30,
+                "retries": 20,
+                "source": "http://jsonip.metrological.com/?maf=true"
+            }
+        },
+        {
+            "callsign": "BackOffice",
+            "locator": "libbackoffice.so",
+            "classname": "BackOffice",
+            "autostart": false,
+            "configuration": {
+                "server": "ws.metrological.com",
+                "port": 80,
+                "components": "",
+                "profiler": {
+                    "testdata": "Hello world",
+                    "moretest": 45
+                }
+            }
+        },
+        {
+            "callsign": "Dictionary",
+            "locator": "libdictionary.so",
+            "classname": "Dictionary",
+            "autostart": false,
+            "configuration": {
+            }
+        },
+        {
+            "callsign": "DIALServer",
+            "locator": "libdialserver.so",
+            "classname": "DIALServer",
+            "autostart": false,
+            "configuration": {
+                "browser": "WebKitBrowser",
+                "name": "Metro DIAL server",
+                "model": "MetroRefBoard",
+                "manufacturer": "BroadCOM",
+                "description": "Dial server running on Metro's reference hardware.",
+                "apps": [
+                    {
+                        "name": "YouTube",
+                        "allowstop": true,
+                        "callsign": "WebKitBrowser",
+                        "url": "https://www.youtube.com/tv",
+                        "additionaldata": ""
+                    },
+                    {
+                        "name": "Netflix",
+                        "allowstop": false,
+                        "callsign": "Netflix",
+                        "url": "https://www.netflix.com",
+                        "additionaldata": ""
+                    }
+                ]
+            }
+        },
+        {
+            "callsign": "Tracing",
+            "locator": "libtracecontrol.so",
+            "classname": "TraceControl",
+            "autostart": true
+        },
+        {
+            "callsign": "RemoteControl",
+            "locator": "libremotecontrol.so",
+            "classname": "RemoteControl",
+            "autostart": true,
+            "configuration": {
+                "mapfile": "ir-remote.json"
+            }
+        },
+        {
+            "autostart": false,
             "callsign": "WebKitBrowser",
-            "url": "https://www.youtube.com/tv",
-            "additionaldata": ""
-          },
-          {
-            "name": "Netflix",
-            "allowstop": false,
+            "classname": "OutOfProcessTest",
+            "locator": "liboutofprocesstest.so",
+            "configuration": {
+                "outofprocess": true,
+                "url": "http://webkit.org/tveee",
+                "sleep": "720",
+                "compositor": "noaa",
+                "inspector": "0.0.0.0:9998"
+            }
+        },
+        {
+            "autostart": false,
             "callsign": "Netflix",
-            "url": "https://www.netflix.com",
-            "additionaldata": ""
-          }
-        ]
-      }
-    },
-    {
-      "callsign": "Tracing",
-      "locator": "libtracecontrol.so",
-      "classname": "TraceControl",
-      "autostart": true
-    },
-    {
-      "callsign": "RemoteControl",
-      "locator": "libremotecontrol.so",
-      "classname": "RemoteControl",
-      "autostart": true,
-      "configuration": {
-        "mapfile": "ir-remote.json"
-      }
-    },
-    {
-      "autostart": false,
-      "callsign": "WebKitBrowser",
-      "classname": "OutOfProcessTest",
-      "locator": "liboutofprocesstest.so",
-      "configuration": {
-        "outofprocess": true,
-        "url": "http://webkit.org/tveee",
-        "sleep": "720",
-        "compositor": "noaa",
-        "inspector": "0.0.0.0:9998"
-      }
-    },
-    {
-      "autostart": false,
-      "callsign": "Netflix",
-      "classname": "OutOfProcessTest",
-      "locator": "liboutofprocesstest.so",
-      "configuration": {
-        "outofprocess": true,
-        "url": "http://netflix.com/tv",
-        "sleep": "720"
-      }
-    },
-    {
-      "callsign": "YouTube",
-      "locator": "liboutofprocesstest.so",
-      "classname": "OutOfProcessTest",
-      "autostart": false,
-      "configuration": {
-        "outofprocess": false,
-        "url": "http://youtube.com/tv",
-        "sleep": "720"
-      }
-    }
-  ]
+            "classname": "OutOfProcessTest",
+            "locator": "liboutofprocesstest.so",
+            "configuration": {
+                "outofprocess": true,
+                "url": "http://netflix.com/tv",
+                "sleep": "720"
+            }
+        },
+        {
+            "callsign": "YouTube",
+            "locator": "liboutofprocesstest.so",
+            "classname": "OutOfProcessTest",
+            "autostart": false,
+            "configuration": {
+                "outofprocess": false,
+                "url": "http://youtube.com/tv",
+                "sleep": "720"
+            }
+        }
+    ]
 }

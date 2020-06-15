@@ -314,6 +314,10 @@ namespace Exchange {
         virtual uint32_t Get(int32_t& value) const = 0;
         virtual uint32_t Set(const int32_t value) = 0;
 
+        BEGIN_INTERFACE_MAP(ExternalBase)
+            INTERFACE_ENTRY(Exchange::IExternal)
+        END_INTERFACE_MAP
+
     protected:
         inline void Updated()
         {
@@ -334,10 +338,6 @@ namespace Exchange {
         inline void Unlock() const {
             _adminLock.Unlock();
         }
-
-        BEGIN_INTERFACE_MAP(ExternalBase)
-            INTERFACE_ENTRY(Exchange::IExternal)
-        END_INTERFACE_MAP
 
     private:
         void Notify()

@@ -81,6 +81,7 @@ function(ProxyStubGenerator)
     endif()
 
     if (Argument_OUTDIR)
+        file(MAKE_DIRECTORY "${Argument_OUTDIR}")
         list(APPEND _execute_command  "--outdir" "${Argument_OUTDIR}")
     endif()
 

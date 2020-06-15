@@ -179,6 +179,9 @@ namespace RPC {
 
             return (*_iterator);
         }
+        void Add(const typename INTERFACE::Element& element) {
+            _container.push_back(element);
+        }
 
         BEGIN_INTERFACE_MAP(IteratorType<INTERFACE>)
             INTERFACE_ENTRY(INTERFACE)
