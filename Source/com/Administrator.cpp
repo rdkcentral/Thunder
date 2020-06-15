@@ -34,12 +34,15 @@ namespace RPC {
 
     /* virtual */ Administrator::~Administrator()
     {
-        for (std::pair<uint32_t, IMetadata*> proxy : _proxy) {
-            delete proxy.second;
-        }
+        if (_proxy.size() > 0) {
 
-        for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
-            delete stub.second;
+            TRACE_L1("Removing Administrator with live proxies:")
+
+            for (auto& proxy : _proxy) {
+                TRACE_L1("\tLive proxy id = %d", proxy.first);
+            }
+
+            ASSERT(false);
         }
     }
 
