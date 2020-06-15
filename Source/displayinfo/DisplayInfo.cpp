@@ -193,9 +193,7 @@ private:
             private:
                 std::vector<PluginHost::IShell*> _instances;
             };
-
             PluginHost::IShell* systemInterface = GetInterface<PluginHost::IShell>(string());
-
             if (systemInterface != nullptr) {
                 Core::Sink<Catalog> mySink;
                 mySink.Load(systemInterface, instances);
@@ -258,6 +256,7 @@ public:
 
     static bool Enumerate(const uint8_t index, const uint8_t length, char* buffer)
     {
+
         static std::vector<string> interfaces;
         static Core::CriticalSection interfacesLock;
         bool result(false);
@@ -346,6 +345,11 @@ public:
         ASSERT(_displayConnection != nullptr);
         return _displayConnection->Height();
     }
+    uint32_t VerticalFreq() const
+    {
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->VerticalFreq();
+    }
     Exchange::IConnectionProperties::HDRType HDR() const
     {
         ASSERT(_displayConnection != nullptr);
@@ -399,6 +403,12 @@ void displayinfo_unregister(struct displayinfo_type* displayinfo, displayinfo_up
     reinterpret_cast<DisplayInfo*>(displayinfo)->Unregister(callback);
 }
 
+void displayinfo_name(struct displayinfo_type* displayinfo, char buffer[], const uint8_t length)
+{
+    string name = reinterpret_cast<DisplayInfo*>(displayinfo)->Name();
+    strncpy(buffer, name.c_str(), length);
+}
+
 bool displayinfo_is_audio_passthrough(struct displayinfo_type* displayinfo)
 {
     return reinterpret_cast<DisplayInfo*>(displayinfo)->IsAudioPassthrough();
@@ -417,6 +427,11 @@ uint32_t displayinfo_width(struct displayinfo_type* displayinfo)
 uint32_t displayinfo_height(struct displayinfo_type* displayinfo)
 {
     return reinterpret_cast<DisplayInfo*>(displayinfo)->Height();
+}
+
+uint32_t displayinfo_vertical_frequency(struct displayinfo_type* displayinfo)
+{
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->VerticalFreq();
 }
 
 displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* displayinfo)

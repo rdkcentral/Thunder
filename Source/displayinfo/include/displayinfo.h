@@ -119,6 +119,16 @@ EXTERNAL void displayinfo_register(struct displayinfo_type* instance, displayinf
 EXTERNAL void displayinfo_unregister(struct displayinfo_type* instance, displayinfo_updated_cb callback);
 
 /**
+ * \brief Returns name of display output.
+ *
+ * \param instance Instance of \ref displayinfo_type.
+ * \param buffer Buffer that will contain instance name.
+ * \param length Size of \ref buffer.
+ *
+ **/
+void displayinfo_name(struct displayinfo_type* instance, char buffer[], const uint8_t length);
+
+/**
  * \brief Checks if a audio passthrough is enabled.
  * 
  * \param instance Instance of \ref displayinfo_type.
@@ -156,6 +166,26 @@ EXTERNAL uint32_t displayinfo_width(struct displayinfo_type* instance);
  *
  **/
 EXTERNAL uint32_t displayinfo_height(struct displayinfo_type* instance);
+
+/**
+ * \brief Get the width of the connected display  
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * 
+ * \return The current width in pixels, 0 on error or invalid connection
+ *
+ **/
+uint32_t displayinfo_height(struct displayinfo_type* instance);
+
+/**
+ * \brief Get the vertical refresh rate ("v-sync")  
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * 
+ * \return The vertical refresh rate
+ *
+ **/
+uint32_t displayinfo_vertical_frequency(struct displayinfo_type* instance);
 
 /**
  * \brief Get the current HDR system of the connected display  
