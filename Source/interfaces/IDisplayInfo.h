@@ -67,6 +67,7 @@ namespace Exchange {
         virtual bool Connected() const = 0;
         virtual uint32_t Width() const = 0;
         virtual uint32_t Height() const = 0;
+        virtual uint32_t VerticalFreq() const = 0;
         virtual HDRType Type() const = 0;
         virtual HDCPProtectionType HDCPProtection() const = 0;
     };
