@@ -76,6 +76,18 @@ namespace Core {
         }
     }
 
+    bool DataElementFile::Load() {
+        bool available = (m_File.IsOpen() == true);
+        if (available == false) {
+            m_File.Open((m_Flags & File::USER_WRITE) == 0);
+            if (m_File.IsOpen() == true) {
+                available = true;
+                OpenMemoryMappedFile(static_cast<uint32_t>(m_File.Size()));
+            }
+        }
+        return (available);
+    }
+
 #ifdef __WINDOWS__
     void DataElementFile::OpenMemoryMappedFile(uint32_t requiredSize)
     {

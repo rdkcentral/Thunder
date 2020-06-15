@@ -655,7 +655,6 @@ namespace Core {
             }
             virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-
                 uint16_t result = 0;
 
                 if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
@@ -670,7 +669,13 @@ namespace Core {
                     } else {
                         index->second.Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                     }
-                }
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("Interfaces fetch request failed with code %d", error->error);
+                    } 
+                } 
                 return (result);
             }
 
@@ -730,7 +735,14 @@ namespace Core {
                     } else {
                         TRACE_L1("Could not find this interface. Just came up ? [%d]", rtmp->ifa_index);
                     }
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPAddressFetchType request failed with code %d", error->error);
+                    } 
                 }
+
                 return (result);
             }
 
@@ -802,6 +814,12 @@ namespace Core {
                     _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
 
                     result = length;
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPAddressModify request failed with code %d", error->error);
+                    } 
                 }
 
                 return (result);
@@ -911,7 +929,14 @@ namespace Core {
                     _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
 
                     result = length;
+                } else if (Type() == NLMSG_ERROR) {
+                    const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
+
+                    if (error->error != 0) {
+                        TRACE_L1("IPRouteModifyType request failed with code %d", error->error);
+                    } 
                 }
+
                 return (result);
             }
 
@@ -988,7 +1013,7 @@ namespace Core {
 
                 uint16_t rtattrlen = length;
 
-                for (; RTA_OK(rtatp, length); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+                for (; (rtattrlen <= length) && RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
                     /* Here we hit the fist chunk of the message. Time to validate the    *
              * the type. For more info on the different types see man(7) rtnetlink*
@@ -1071,7 +1096,7 @@ namespace Core {
 
                 uint16_t rtattrlen = length;
 
-                for (; RTA_OK(rtatp, length); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
+                for (; RTA_OK(rtatp, rtattrlen); rtatp = RTA_NEXT(rtatp, rtattrlen)) {
 
                     /* Here we hit the fist chunk of the message. Time to validate the    *
              * the type. For more info on the different types see man(7) rtnetlink*
@@ -1565,6 +1590,7 @@ namespace Core {
             } else {
                 interfaceName = network.Name();
             }
+
         } else if (Type() == RTM_DELLINK) {
             const IPNetworks::Network& network(networkController[ifi->ifi_index]);
 
@@ -1572,6 +1598,14 @@ namespace Core {
 
                 interfaceName = network.Name();
                 AdapterIterator::Flush();
+            }
+        }
+
+        if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
+            const IPNetworks::Network& network(networkController[ifi->ifi_index]);
+
+            if (network.IsValid()) {
+                networkController[ifi->ifi_index].Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(ifi)), length - sizeof(struct ifinfomsg));
             }
         }
 

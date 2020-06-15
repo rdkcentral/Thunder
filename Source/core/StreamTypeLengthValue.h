@@ -106,14 +106,6 @@ namespace Exchange {
                     }
                 }
                 return (result);
-
-                uint16_t copyLength = (_length - _offset > length ? length : _length - _offset);
-                if (copyLength > 0) {
-                    ::memcpy(stream, &(_value[_offset]), copyLength);
-                    _offset += copyLength;
-                }
-
-                return (copyLength);
             }
 
         protected:

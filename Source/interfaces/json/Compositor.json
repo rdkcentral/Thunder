@@ -41,19 +41,6 @@
         }
       ]
     },
-    "clients": {
-      "summary": "List of compositor clients",
-      "description": "Use this property to retrieve the information of actual running clients.",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "description": "Client name",
-          "example": "Netflix"
-        }
-      }
-    },
     "zorder": {
       "summary": "List of compositor clients sorted by z-order",
       "description": "Use this property to retrieve the list of all clients in z-order. Each client has an z-order-value that determines its position with respect to the screen. The ordering is that the top position is closest to the screen, the next z-order-value first behind the top, and so on.",
@@ -222,9 +209,9 @@
         }
       ]
     },
-    "kill": {
-      "summary": "Kills a client",
-      "description": "Use this method to kill a client. Whenever a client is killed, the execution of the client is stopped and all its resources are released.",
+    "select": {
+      "summary": "Directs the input to the given client, disabling all the others",
+      "description": "Use this method to direct all inputs to this client. The client that is receiving the inputs prior to this call will nolonger receive it anymore after this call.",
       "params": {
         "type": "object",
         "properties": {

@@ -232,6 +232,20 @@ class JsonNumber(JsonType):
 class JsonInteger(JsonNumber):
     pass      # Identical as Number
 
+class JsonFloat(JsonType):
+    def CppClass(self):
+        return TypePrefix("Float")
+
+    def CppStdClass(self):
+            return "float"
+
+class JsonDouble(JsonType):
+    def CppClass(self):
+        return TypePrefix("Double")
+
+    def CppStdClass(self):
+            return "double"
+
 
 class JsonString(JsonType):
     def CppClass(self):
@@ -623,6 +637,10 @@ def JsonItem(name, parent, schema, origName=None, included=None):
             return JsonInteger(name, parent, schema)
         elif schema["type"] == "number":
             return JsonNumber(name, parent, schema)
+        elif schema["type"] == "float":
+            return JsonFloat(name, parent, schema)
+        elif schema["type"] == "double":
+            return JsonDouble(name, parent, schema)
         else:
             raise JsonParseError("unsupported JSON type: %s" % schema["type"])
     else:
@@ -738,7 +756,7 @@ def LoadInterface(file):
                     return "integer", 8 if cppType.size == "char" else 16 if cppType.size == "short" else \
                         32 if cppType.size == "int" or cppType.size == "long" else 64 if cppType.size == "long long" else 32, cppType.signed
                 elif isinstance(cppType, ProxyStubGenerator.CppParser.Float):
-                    return "number", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
+                    return "float", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
                 elif isinstance(cppType, ProxyStubGenerator.CppParser.Void):
                     return "null", None, None
                 elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
@@ -1305,8 +1323,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
                         for p in response.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
                                 emit.Line("response.%s = %s;" % (p.CppName(), p.JsonName()))
+                    elif isinstance(response, JsonEnum):
+                        emit.Line("response = static_cast<%s>(%s);" %(response.CppClass(), response.JsonName()))
                     else:
-                        emit.Line("%s = %s;" % ("response", response.JsonName()))
+                        emit.Line("response = %s;" % (response.JsonName()))
                     emit.Unindent()
                     emit.Line("}")
 
@@ -2005,6 +2025,8 @@ def CreateDocument(schema, path):
                 jsonData += '"%s"' % (default)
             elif objType in ["integer", "number"]:
                 jsonData += '%s' % (default if default else 0)
+            elif objType in ["float", "double"]:
+                jsonData += '%s' % (default if default else 0.0)
             elif objType == "boolean":
                 jsonData += '%s' % str(default if default else False).lower()
             elif objType == "null":

@@ -130,8 +130,8 @@ namespace Core {
     }
 
     SharedBuffer::SharedBuffer(const TCHAR name[])
-        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE)
-        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE)
+        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
+        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str())

@@ -117,7 +117,7 @@ namespace Core {
 #endif
 #ifdef CORE_BLUETOOTH
         NodeId(const uint16_t device, const uint16_t channel);
-        NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t psm, const uint16_t cid);
+        NodeId(const bdaddr_t& address, const uint8_t addressType, const uint16_t cid, const uint16_t psm);
 #endif
         NodeId(const TCHAR strHostName[], const enumType defaultType = TYPE_UNSPECIFIED);
         NodeId(const TCHAR strHostName[], const uint16_t nPortNumber, const enumType defaultType = TYPE_UNSPECIFIED);

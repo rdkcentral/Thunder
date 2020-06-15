@@ -24,64 +24,152 @@
 #include <cryptalgo/cryptalgo.h>
 
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 
 #include "Vault.h"
+#include "Derive.h"
 
 
 namespace Implementation {
 
-const uint32_t encryptionKeyId = 1;
-const uint32_t encryptionIVId = 2;
+static constexpr uint8_t IV_SIZE = 16;
 
-/* static */ Vault& Vault::Instance()
+namespace Netflix {
+
+static constexpr uint32_t KPE_ID = 1;
+static constexpr uint32_t KPH_ID = 2;
+static constexpr uint32_t KPW_ID = 3;
+// static constexpr uint32_t KPW_TEST_ID = 4;
+static constexpr uint32_t ESN_ID = 16;
+
+static constexpr uint8_t MAX_ESN_SIZE = 64;
+
+} // namespace Netflix
+
+
+/* static */ Vault& Vault::NetflixInstance()
 {
-    static Vault instance;
+    static const uint8_t key[] = { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 };
+
+    auto ctor = [](Vault& vault) {
+        std::string path;
+        WPEFramework::Core::SystemInfo::GetEnvironment(_T("NETFLIX_VAULT"), path);
+        WPEFramework::Core::File file(path.c_str(), true);
+
+        if (file.Open(true) == true) {
+            struct NetflixData {
+                uint8_t salt[16];
+                uint8_t kpe[16];
+                uint8_t kph[32];
+                uint8_t esn[0];
+            } __attribute__((packed));
+
+            uint64_t fileSize = file.Size();
+
+            if ((fileSize > (IV_SIZE + sizeof(NetflixData))) && (fileSize <= (IV_SIZE + sizeof(NetflixData) + Netflix::MAX_ESN_SIZE))) {
+                uint8_t input[fileSize];
+                uint8_t output[fileSize - IV_SIZE];
+                uint16_t inSize = file.Read(input, fileSize);
+                uint16_t decryptedSize = vault.Cipher(false, inSize, input, sizeof(output), output);
+
+                if (decryptedSize >= sizeof(NetflixData)) {
+                    NetflixData *data = reinterpret_cast<NetflixData*>(output);
+
+                    uint32_t kpeId = vault.Import(sizeof(NetflixData::kpe), data->kpe, false);
+                    ASSERT(kpeId == Netflix::KPE_ID);
+
+                    uint32_t kphId = vault.Import(sizeof(NetflixData::kph), data->kph, false);
+                    ASSERT(kphId == Netflix::KPH_ID);
+
+                    uint8_t kpw[32];
+                    // kpe and kph are already concatenated in the correct order
+                    Netflix::DeriveWrappingKey(data->kpe, (sizeof(data->kpe) + sizeof(data->kph)), sizeof(kpw), kpw);
+                    uint32_t kdwId = vault.Import(16, kpw, false); // take the first 16 bytes only!
+                    ASSERT(kdwId == Netflix::KPW_ID);
+
+                    // Let's (ab)use the vault to hold the ESN as well
+                    vault._lastHandle = Netflix::ESN_ID;
+                    uint32_t esnId = vault.Import((decryptedSize - sizeof(NetflixData)), data->esn, true);
+                    ASSERT(esnId == Netflix::ESN_ID);
+
+                    TRACE_L1(_T("Imported pre-shared keys and ESN into the Netflix vault"));
+                }
+            }
+
+            file.Close();
+        }
+    };
+
+    auto dtor = [](Vault& vault) {
+        vault.Delete(Netflix::ESN_ID);
+        vault.Delete(Netflix::KPW_ID);
+        vault.Delete(Netflix::KPH_ID);
+        vault.Delete(Netflix::KPE_ID);
+    };
+
+    static Vault instance(string(reinterpret_cast<const char*>(key), sizeof(key)), ctor, dtor);
     return (instance);
 }
 
-Vault::Vault()
+Vault::Vault(const string key, const Callback& ctor, const Callback& dtor)
     : _lock()
     , _items()
-    , _lastHandle(0x80000000)
+    , _lastHandle(0)
+    , _vaultKey(key)
+    , _dtor(dtor)
 {
-    typedef uint8_t pkey[16];
-
-    // ideally these should be derived from device ID
-    static const pkey privateKeys[] = {
-        { 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11 },
-        { 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22 },
-    };
-
-    _lock.Lock();
-    for (uint8_t i = 0; i < (sizeof(privateKeys) / sizeof(pkey)); i++) {
-        _items.emplace(std::piecewise_construct,
-                    std::forward_as_tuple(i + 1),
-                    std::forward_as_tuple(false, sizeof(privateKeys[i]), privateKeys[i]));
+    if (ctor != nullptr) {
+        ctor(*this);
     }
-    _lock.Unlock();
+
+    _lastHandle = 0x80000000;
+}
+
+Vault::~Vault()
+{
+    if (_dtor != nullptr) {
+        _dtor(*this);
+    }
 }
 
 uint16_t Vault::Cipher(bool encrypt, const uint16_t inSize, const uint8_t input[], const uint16_t maxOutSize, uint8_t output[]) const
 {
     uint16_t totalLen = 0;
 
-    ASSERT(maxOutSize >= inSize);
+    ASSERT(maxOutSize >= (inSize + (encrypt? IV_SIZE : -IV_SIZE)));
 
-    if (maxOutSize >= inSize) {
-        auto keyIt = _items.find(encryptionKeyId);
-        ASSERT(keyIt != _items.end());
-        auto ivIt = _items.find(encryptionIVId);
-        ASSERT(ivIt != _items.end());
+    if (maxOutSize >= (inSize + (encrypt? IV_SIZE : -IV_SIZE))) {
+        uint8_t newIv[IV_SIZE];
+        const uint8_t* iv = nullptr;
+        const uint8_t* inputBuffer = nullptr;
+        uint16_t inputSize = 0;
+        uint8_t* outputBuffer = nullptr;
+
+        if (encrypt) {
+            RAND_bytes(newIv, sizeof(newIv));
+            iv = newIv;
+            inputBuffer = input;
+            inputSize = inSize;
+            outputBuffer = output + IV_SIZE;
+            ::memcpy(output, iv, IV_SIZE);
+            totalLen += IV_SIZE;
+        } else {
+            iv = input;
+            inputBuffer = (input + IV_SIZE);
+            inputSize = (inSize - IV_SIZE);
+            outputBuffer = output;
+        }
+
+        int outLen = 0;
 
         EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
         ASSERT(ctx != nullptr);
 
-        int outLen = 0;
         // AES-CTR ensures same buffer size after encryption
-        EVP_CipherInit_ex(ctx, EVP_aes_128_ctr(), nullptr, (*keyIt).second.Buffer(), (*ivIt).second.Buffer(), encrypt);
-        EVP_CipherUpdate(ctx, output, &outLen, input, inSize);
+        EVP_CipherInit_ex(ctx, EVP_aes_128_ctr(), nullptr, reinterpret_cast<const unsigned char*>(_vaultKey.data()), iv, encrypt);
+        EVP_CipherUpdate(ctx, outputBuffer, &outLen, inputBuffer, inputSize);
         totalLen += outLen;
-        EVP_EncryptFinal_ex(ctx, output + totalLen, &outLen);
+        EVP_EncryptFinal_ex(ctx, (outputBuffer + outLen), &outLen);
         totalLen += outLen;
 
         EVP_CIPHER_CTX_cleanup(ctx);
@@ -99,7 +187,7 @@ uint16_t Vault::Size(const uint32_t id, bool allowSealed) const
     auto it = _items.find(id);
     if (it != _items.end()) {
         if ((allowSealed == true) || (*it).second.IsExportable() == true) {
-            size = (*it).second.Size();
+            size = ((*it).second.Size() - IV_SIZE);
             TRACE_L2(_T("Blob id 0x%08x size: %i"), id, size);
         } else {
             TRACE_L2(_T("Blob id 0x%08x is sealed"), id);
@@ -131,7 +219,7 @@ uint32_t Vault::Import(const uint16_t size, const uint8_t blob[], bool exportabl
 
             _lastHandle = id;
 
-            TRACE_L2(_T("Added a %s data blob of size %i as id 0x%08x"), (exportable? "clear": "sealed"), len, id);
+            TRACE_L2(_T("Added a %s data blob of size %i as id 0x%08x"), (exportable? "clear": "sealed"), (len - IV_SIZE), id);
         }
         _lock.Unlock();
     }
@@ -223,16 +311,18 @@ bool Vault::Delete(const uint32_t id)
 
 extern "C" {
 
+// Vault
+
 VaultImplementation* vault_instance(const cryptographyvault id)
 {
     Implementation::Vault* vault = nullptr;
 
     switch(id) {
-        case CRYPTOGRAPHY_VAULT_PLATFORM:
         case CRYPTOGRAPHY_VAULT_NETFLIX:
-            vault = &Implementation::Vault::Instance();
+            vault = &Implementation::Vault::NetflixInstance();
+            break;
         default:
-            TRACE_L1(_T("Vault not supported: %i", static_cast<uint32_t>(id)));
+            TRACE_L1(_T("Vault not supported: %d"), static_cast<uint32_t>(id));
             break;
     }
 
@@ -281,24 +371,31 @@ bool vault_delete(VaultImplementation* vault, const uint32_t id)
     return (vaultImpl->Delete(id));
 }
 
+
+// Netflix Security
+
 uint16_t netflix_security_esn(const uint16_t max_length, uint8_t data[])
 {
-    return (0);
+    if (data == nullptr) {
+        return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::ESN_ID));
+    } else {
+        return (Implementation::Vault::NetflixInstance().Export(Implementation::Netflix::ESN_ID, max_length, data));
+    }
 }
 
 uint32_t netflix_security_encryption_key(void)
 {
-    return (0);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPE_ID) != 0? Implementation::Netflix::KPE_ID : 0);
 }
 
 uint32_t netflix_security_hmac_key(void)
 {
-    return (0);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPH_ID) != 0? Implementation::Netflix::KPH_ID : 0);
 }
 
 uint32_t netflix_security_wrapping_key(void)
 {
-    return (0);
+    return (Implementation::Vault::NetflixInstance().Size(Implementation::Netflix::KPW_ID) != 0? Implementation::Netflix::KPW_ID : 0);
 }
 
 } // extern "C"

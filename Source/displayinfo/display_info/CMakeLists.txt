@@ -1,4 +1,4 @@
-# If not stated otherwise in this file or this component's license file the
+# If not stated otherwise in this file or this component's LICENSE file the
 # following copyright and licenses apply:
 #
 # Copyright 2020 RDK Management
@@ -15,16 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(GTest REQUIRED)
+add_executable(display_info main.c)
 
-include_directories(${GTEST_INCLUDE_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../Source)
+target_include_directories(display_info 
+    PRIVATE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+        $<INSTALL_INTERFACE:include/displayinfo> 
+)
 
-set(CMAKE_CXX_STANDARD 11)
+target_link_libraries(display_info
+    PRIVATE
+        displayinfo)
 
-enable_testing()
-
-add_subdirectory(core)
-add_subdirectory(tests)
-add_subdirectory(cryptography)
-
+install(TARGETS display_info 
+    DESTINATION bin)

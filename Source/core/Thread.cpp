@@ -122,7 +122,9 @@ namespace Core {
     ::ThreadId Thread::ThreadId()
     {
 #ifdef __WINDOWS__
+        #pragma warning (disable:4312)
         return (reinterpret_cast<::ThreadId>(::GetCurrentThreadId()));
+        #pragma warning (default:4312)
 #else
         return static_cast<::ThreadId>(pthread_self());
 #endif
@@ -171,12 +173,11 @@ namespace Core {
 
                     // Change the state, we are done with it.
                     adminLock.Lock();
-
-                    if (stateObject == DEACTIVATE) {
-                        cClassPointer->State(BLOCKED);
-                    }
                 }
 
+                if (stateObject == DEACTIVATE) {
+                    cClassPointer->State(BLOCKED);
+                }
                 // O.K. before we wait for a new state unlock the current stuff.
                 adminLock.Unlock();
 

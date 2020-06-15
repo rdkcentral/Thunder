@@ -46,35 +46,35 @@ namespace Exchange {
             enum { ID = ID_EXTERNAL_NOTIFICATION };
 
             // Push changes. If the Current value changes, the next method is called.
-            virtual void Update() = 0;
+            virtual void Update(const uint32_t id) = 0;
         };
 
-        struct IFactory : virtual public Core::IUnknown {
-            virtual ~IFactory() {}
+        struct ICatalog : virtual public Core::IUnknown {
+            ~ICatalog() override = default;
 
-            enum { ID = ID_EXTERNAL_FACTORY };
+            enum { ID = ID_EXTERNAL_CATALOG };
 
-            struct IProduced : virtual public Core::IUnknown {
+            struct INotification : virtual public Core::IUnknown {
 
-                virtual ~IProduced () {}
+                ~INotification() override = default;
 
-                enum { ID = ID_EXTERNAL_FACTORY_NOTIFICATION };
+                enum { ID = ID_EXTERNAL_CATALOG_NOTIFICATION };
 
                 virtual void Activated(IExternal* source) = 0;
                 virtual void Deactivated(IExternal* source) = 0;
             };
 
             // Pushing notifications to interested sinks
-            virtual void Register(IFactory::IProduced* sink) = 0;
-            virtual void Unregister(IFactory::IProduced* sink) = 0;
-            virtual IExternal* Resource(const uint32_t id) = 0;
+            virtual void Register(ICatalog::INotification* sink) = 0;
+            virtual void Unregister(ICatalog::INotification* sink) = 0;
         };
 
         enum identification {
-            ZWAVE = 0x10000000,
-            GPIO = 0x20000000,
-            I2C = 0x30000000,
-            ZIGBEE = 0x40000000
+            ZWAVE    = 0x10000000,
+            GPIO     = 0x20000000,
+            I2C      = 0x30000000,
+            ZIGBEE   = 0x40000000,
+            NRF24L01 = 0x50000000
         };
 
         //  Basic/specific and dimension together define the Type.
@@ -145,8 +145,8 @@ namespace Exchange {
         virtual uint32_t Get(int32_t& value /* @out */) const = 0;
         virtual uint32_t Set(const int32_t value) = 0;
 
-        // Periodically we might like to be triggered, call this method at a set time.
-        virtual void Trigger() = 0;
+        // Periodically we might like to be evaluated, call this method at a set time.
+        virtual void Evaluate() = 0;
     };
 
 } } // Namespace Exchange

@@ -34,11 +34,9 @@
 #include <implementation/cipher_implementation.h>
 #include <implementation/diffiehellman_implementation.h>
 
-
 #include "Test.h"
 #include "Helpers.h"
 
-#include <openssl/hmac.h>
 
 struct VaultImplementation* vault = NULL;
 
@@ -717,6 +715,8 @@ int main(void)
 
     printf("TOTAL: %i tests; %i PASSED, %i FAILED\n", TotalTests, TotalTestsPassed, (TotalTests - TotalTestsPassed));
 
-    return (0);
+    Teardown();
+
+    return (TotalTests - TotalTestsPassed);
 }
 

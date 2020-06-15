@@ -131,7 +131,7 @@ namespace Plugin {
         } else if (request.Verb == Web::Request::HTTP_PUT) {
             Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
-            // Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
+            // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
             index.Next();
 
             if ( (index.Next() == true) && (index.Current() == _T("Configuration")) ) {
@@ -149,30 +149,14 @@ namespace Plugin {
         Core::ProxyType<Web::Response> result;
         Core::TextSegmentIterator index(Core::TextFragment(request.Path, _skipURL, static_cast<uint32_t>(request.Path.length()) - _skipURL), false, '/');
 
-        // Always skip the first one, it is an empty part because we start with a '/' if tehre are more parameters.
+        // Always skip the first one, it is an empty part because we start with a '/' if there are more parameters.
         index.Next();
 
         // For now, whatever the URL, we will just, on a get, drop all info we have
         if (request.Verb == Web::Request::HTTP_POST) {
             result = PluginHost::IFactories::Instance().Response();
             result->ErrorCode = Web::STATUS_BAD_REQUEST;
-            result->Message = _T("Request has no JSONRPC body!");
-
-            if (request.HasBody() == true) {
-                Core::ProxyType<Web::TextBody> response(jsonBodyTextFactory.Element());
-                Core::ProxyType<Core::JSONRPC::Message> answer = Invoke(~0, *request.Body<Core::JSONRPC::Message>());
-                answer->ToString(*response);
-                if (response->empty() == false) {
-                    result->Body(response);
-                }
-                if (answer->Error.IsSet() == false) {
-                    result->ErrorCode = Web::STATUS_OK;
-                    result->Message = _T("JSONRPC executed succesfully");
-                } else {
-                    result->ErrorCode = Web::STATUS_ACCEPTED;
-                    result->Message = _T("Failure on JSONRPC: ") + Core::NumberType<uint32_t>(answer->Error.Code).Text();
-                }
-            }
+            result->Message = _T("There are no POST handlers!");
         } else if (request.Verb == Web::Request::HTTP_GET) {
             result = GetMethod(index);
         } else if (request.Verb == Web::Request::HTTP_PUT) {
@@ -295,7 +279,7 @@ namespace Plugin {
             if (index.Current() == _T("Activate")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
-                    if (callSign == _pluginServer->ControllerName()) {
+                    if (callSign == _service->Callsign()) {
                         result->ErrorCode = Web::STATUS_FORBIDDEN;
                         result->Message = _T("The PluginHost Controller can not be activated.");
                     } else {
@@ -325,7 +309,7 @@ namespace Plugin {
             } else if (index.Current() == _T("Deactivate")) {
                 if (index.Next()) {
                     const string callSign(index.Current().Text());
-                    if (callSign == _pluginServer->ControllerName()) {
+                    if (callSign == _service->Callsign()) {
                         result->ErrorCode = Web::STATUS_FORBIDDEN;
                         result->Message = _T("The PluginHost Controller can not be deactivated.");
                     } else {
@@ -402,20 +386,10 @@ namespace Plugin {
         // All delete commands require an additional parameter, so go look for it.
         if (index.Next() == true) {
             if (index.Current() == _T("Persistent")) {
-                // move over the persistent keyword.
-                index.Next();
-
                 string remainder;
 
-                while (index.Next() == true) {
-                    string element(index.Current().Text());
-
-                    // Check that we are not moving back up the directory chain. Remove all double dots..
-                    if ((element.length() > 2) || ((element.length() > 1) && (element[1] != '.')) || ((element.length() > 0) && (element[0] != '.'))) {
-                        if (remainder.empty() == false)
-                            remainder += '/';
-                        remainder += element;
-                    }
+                if (index.Next() == true) {
+                    remainder = index.Remainder().Text();
                 }
 
                 DeleteDirectory(_service->PersistentPath() + remainder);
@@ -516,7 +490,7 @@ namespace Plugin {
             Notify("subsystemchange", responseJsonRpc);
         }
     }
-    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const uint32_t channelId, const Core::JSONRPC::Message& inbound)
+    /* virtual */ Core::ProxyType<Core::JSONRPC::Message> Controller::Invoke(const string& token, const uint32_t channelId, const Core::JSONRPC::Message& inbound)
     {
         uint32_t result = Core::ERROR_BAD_REQUEST;
         bool asyncCall = false;
@@ -524,7 +498,7 @@ namespace Plugin {
         Core::ProxyType<Core::JSONRPC::Message> response;
 
         if (callsign.empty() || (callsign == PluginHost::JSONRPC::Callsign())) {
-            response = PluginHost::JSONRPC::Invoke(channelId, inbound);
+            response = PluginHost::JSONRPC::Invoke(token, channelId, inbound);
 		} else {
 			Core::ProxyType<PluginHost::Server::Service> service;
 
@@ -532,22 +506,15 @@ namespace Plugin {
 
             if (result == Core::ERROR_NONE) {
                 ASSERT(service.IsValid());
-                PluginHost::IDispatcher* plugin = service->Dispatcher();
 
-                if (plugin == nullptr) {
-                    result = Core::ERROR_BAD_REQUEST;
-                } else if (service->State() != PluginHost::IShell::ACTIVATED) {
-                    result = Core::ERROR_UNAVAILABLE;
-                } else {
-                    Core::JSONRPC::Message forwarder;
+                Core::JSONRPC::Message forwarder;
 
-                    forwarder.Id = inbound.Id;
-                    forwarder.Parameters = inbound.Parameters;
+                forwarder.Id = inbound.Id;
+                forwarder.Parameters = inbound.Parameters;
                     
-                    forwarder.Designator = inbound.VersionedFullMethod();
-                    response = plugin->Invoke(channelId, forwarder);
-                    asyncCall = (response.IsValid() == false);
-                }
+                forwarder.Designator = inbound.VersionedFullMethod();
+                response = service->Invoke(token, channelId, forwarder);
+                asyncCall = (response.IsValid() == false);
             }
 		}
 
@@ -577,21 +544,29 @@ namespace Plugin {
 
     void Controller::DeleteDirectory(const string& directory)
     {
-        Core::Directory dir(directory.c_str());
+        // Allow only if the path does not contain ".." entries
+        if (directory.find("..") == string::npos) {
 
-        while (dir.Next() == true) {
-            Core::File file(dir.Current());
+            Core::Directory dir(directory.c_str());
 
-            if (file.IsDirectory() == true) {
-                string name(file.FileName());
+            while (dir.Next() == true) {
+                Core::File file(dir.Current());
 
-                // We can not delete the "." or  ".." entries....
-                if ((name.length() > 2) || ((name.length() > 1) && (name[1] != '.')) || ((name.length() > 0) && (name[0] != '.'))) {
-                    DeleteDirectory(dir.Current());
+                if (file.IsDirectory() == true) {
+                    string name(file.FileName());
+
+                    // We can not delete the "." or  ".." entries....
+                    if (((name.length() > 0) && (name[0] != '.'))) {
+                        DeleteDirectory(dir.Current());
+                    }
+                } else {
                     file.Destroy();
                 }
-            } else {
-                file.Destroy();
+            }
+
+            Core::File currentDir(directory);
+            if (directory.back() != '/') {
+                currentDir.Destroy();
             }
         }
     }
