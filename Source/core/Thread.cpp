@@ -173,12 +173,11 @@ namespace Core {
 
                     // Change the state, we are done with it.
                     adminLock.Lock();
-
-                    if (stateObject == DEACTIVATE) {
-                        cClassPointer->State(BLOCKED);
-                    }
                 }
 
+                if (stateObject == DEACTIVATE) {
+                    cClassPointer->State(BLOCKED);
+                }
                 // O.K. before we wait for a new state unlock the current stuff.
                 adminLock.Unlock();
 

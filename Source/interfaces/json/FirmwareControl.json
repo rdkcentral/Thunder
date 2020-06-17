@@ -19,6 +19,7 @@
         "downloadstarted",
         "downloadaborted",
         "downloadcompleted",
+        "installinitiated",
         "installnotstarted",
         "installaborted",
         "installstarted",

@@ -40,8 +40,8 @@ namespace Exchange {
         virtual void Register(IInputPin::INotification* sink) = 0;
         virtual void Unregister(IInputPin::INotification* sink) = 0;
 
-        virtual uint32_t AddMarker(const IInputPin::INotification* sink, const uint32_t marker) = 0;
-        virtual uint32_t RemoveMarker(const IInputPin::INotification* sink, const uint32_t marker) = 0;
+        virtual void AddMarker(const uint32_t marker) = 0;
+        virtual void RemoveMarker(const uint32_t marker) = 0;
     };
 }
 }

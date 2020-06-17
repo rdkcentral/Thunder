@@ -190,6 +190,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             value.sin_port = htons(configuration.Port.Value());
 
             result = value;
+            accessor = result;
 
             TRACE_L1("Invalid config information could not resolve to a proper IP set to: (%s:%d)", result.HostAddress().c_str(), result.PortNumber());
         } else {
@@ -804,6 +805,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
+        destructor->AddRef();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();
