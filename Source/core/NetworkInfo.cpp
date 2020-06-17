@@ -1568,6 +1568,22 @@ namespace Core {
 
 #endif
 
+    bool AdapterIterator::HasMAC() 
+    {
+        bool result = false;
+        uint8_t mac[6];
+        MACAddress(mac, sizeof(mac));
+
+        for (int i = 0; i < 6; i++) {
+            if (mac[i] != 0) {
+                result = true;
+                break;
+            }
+        }
+
+        return result;
+    }
+
 #ifndef __WINDOWS__
     /* virtual */ uint16_t AdapterObserver::Observer::Message::Write(uint8_t stream[], const uint16_t length) const
     {
@@ -1640,7 +1656,6 @@ namespace Core {
 
     /* virtual */ uint16_t AdapterObserver::Observer::ReceiveData(uint8_t* dataFrame, const uint16_t receivedSize)
     {
-
         return (_parser.Deserialize(dataFrame, receivedSize));
     }
 
