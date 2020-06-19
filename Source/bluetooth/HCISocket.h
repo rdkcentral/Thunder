@@ -832,7 +832,7 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_INQUIRY_CANCEL), Void, uint8_t>
                 InquiryCancel;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_CREATE_CONN), create_conn_cp, evt_conn_complete, EVT_CONN_COMPLETE>
                 Connect;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
