@@ -270,7 +270,7 @@ namespace Core {
         uint16_t Count() const;
         string Name() const;
 
-        bool HasMAC();
+        bool HasMAC() const;
 
         string MACAddress(const char delimiter) const;
         void MACAddress(uint8_t buffer[], const uint8_t length) const;

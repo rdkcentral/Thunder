@@ -1568,20 +1568,17 @@ namespace Core {
 
 #endif
 
-    bool AdapterIterator::HasMAC() 
+    bool AdapterIterator::HasMAC() const
     {
-        bool result = false;
+        uint8_t index = 0;
         uint8_t mac[6];
         MACAddress(mac, sizeof(mac));
 
-        for (int i = 0; i < 6; i++) {
-            if (mac[i] != 0) {
-                result = true;
-                break;
-            }
+        while ((index < sizeof(mac)) && (mac[index] == 0)) {
+            index++;
         }
 
-        return result;
+        return (index < sizeof(mac));
     }
 
 #ifndef __WINDOWS__
