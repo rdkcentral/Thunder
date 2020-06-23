@@ -29,10 +29,10 @@
 
 #ifdef __WINDOWS__
 #define TRACE_PROCESS_ID ::GetCurrentProcessId()
-#define ASSERT_LOGGER(message, ...) fprintf(stderr, message, ##__VA_ARGS__);
+#define ASSERT_LOGGER(message, ...) fprintf(stderr, message, ##__VA_ARGS__)
 #else
 #define TRACE_PROCESS_ID ::getpid()
-#define ASSERT_LOGGER(message, ...) ::fprintf(stderr, message, ##__VA_ARGS__);
+#define ASSERT_LOGGER(message, ...) ::fprintf(stderr, message, ##__VA_ARGS__)
 #endif
 
 #ifndef _TRACE_LEVEL
@@ -92,23 +92,23 @@
 
 #ifdef __DEBUG__
 
-#define ASSERT(x)                                                                                           \
-    {                                                                                                       \
-        if (!(x)) {                                                                                         \
-            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n", TRACE_PROCESS_ID, __FILE__, __LINE__) \
-            DumpCallStack();                                                                                \
-            abort();                                                                                        \
-        }                                                                                                   \
-    }
+#define ASSERT(expr)                                                                                            \
+    do {                                                                                                        \
+        if (!(expr)) {                                                                                          \
+            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr); \
+            DumpCallStack();                                                                                    \
+            abort();                                                                                            \
+        }                                                                                                       \
+    } while(0)
 
-#define ASSERT_VERBOSE(x, y, ...)                                                                                                           \
-    {                                                                                                                                       \
-        if (!(x)) {                                                                                                                         \
-            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (" #x ")\n         " #y "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, ##__VA_ARGS__) \
-            DumpCallStack();                                                                                                                \
-            abort();                                                                                                                      \
-        }                                                                                                                                   \
-    }
+#define ASSERT_VERBOSE(expr, format, ...)                                                                                                            \
+    do {                                                                                                                                             \
+        if (!(expr)) {                                                                                                                               \
+            ASSERT_LOGGER("===== $$ [%d]: ASSERT [%s:%d] (%s)\n         " #format "\n", TRACE_PROCESS_ID, __FILE__, __LINE__, #expr, ##__VA_ARGS__); \
+            DumpCallStack();                                                                                                                         \
+            abort();                                                                                                                                 \
+        }                                                                                                                                            \
+    } while(0)
 
 #define VERIFY(x, y) assert(x == y)
 #else
