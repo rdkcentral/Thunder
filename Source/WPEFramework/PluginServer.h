@@ -2094,7 +2094,7 @@ namespace PluginHost {
                     , _server(server)
                     , _service()
                 {
-                    ASSERT(server != nullptr)
+                    ASSERT(server != nullptr);
                 }
                 ~Job() override
                 {
