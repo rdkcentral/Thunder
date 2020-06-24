@@ -313,15 +313,9 @@ namespace Bluetooth {
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             _key.addr.type = address_type;
 
-            ASSERT(address_type == BDADDR_BREDR);
-
-            // The first two charaters are for the pin and the type, extract those...
-            _key.pin_len = keyString[0] - 'A';
-            _key.type    = keyString[1] - 'A';
-
-            uint16_t  length = sizeof(_key.val);
-            Core::FromString(string(&(keyString.c_str()[2]), keyString.length() - 2), reinterpret_cast<uint8_t*>(_key.val), length, nullptr);
-            if (length != sizeof(_key.val)) {
+            uint16_t length = sizeof(_key) - sizeof(_key.addr);
+            Core::FromString(keyString, &(reinterpret_cast<uint8_t*>(&_key)[sizeof(_key.addr)]), length, nullptr);
+            if (length != (sizeof(_key) - sizeof(_key.addr))) {
                 // Seems the value is not properly restored, invalidate the object!!
                 _key.pin_len = 0xFF;
             }
@@ -334,7 +328,7 @@ namespace Bluetooth {
 
     public:
         bool IsValid() const {
-            return ((Pin() <= 16) && (Type() <= 8) && (LocatorType() == Bluetooth::Address::BREDR_ADDRESS));
+            return ((PinLength() <= 16) && (Type() <= 8) && (LocatorType() == Bluetooth::Address::BREDR_ADDRESS));
         }
         Address Locator() const {
             return (_key.addr.bdaddr);
@@ -342,7 +336,7 @@ namespace Bluetooth {
         uint8_t LocatorType() const {
             return (_key.addr.type);
         }
-        uint8_t Pin() const {
+        uint8_t PinLength() const {
             return(_key.pin_len);
         }
         uint8_t Type() const {
@@ -360,8 +354,6 @@ namespace Bluetooth {
         string ToString() const {
             string baseKey;
             Core::ToString(&(reinterpret_cast<const uint8_t*>(&_key)[sizeof(_key.addr)]), sizeof(_key) - sizeof(_key.addr), false, baseKey);
-            baseKey = static_cast<const char>(_key.type + 'A') + baseKey;
-            baseKey = static_cast<const char>(_key.pin_len + 'A') + baseKey;
             return (baseKey);
         }
 
@@ -498,7 +490,7 @@ namespace Bluetooth {
         Address Locator() const {
             return (_key.addr.bdaddr);
         }
-        Address LocatorType() const {
+        uint8_t LocatorType() const {
             return (_key.addr.type);
         }
         const uint8_t* Value() const {
