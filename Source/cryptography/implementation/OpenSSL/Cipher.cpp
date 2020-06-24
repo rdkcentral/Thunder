@@ -64,7 +64,7 @@ public:
         ASSERT(cipher != nullptr);
         ASSERT(keyId != 0);
         ASSERT(keyLength != 0);
-        ASSERT(ivLength != 0)
+        ASSERT(ivLength != 0);
 
         _context = EVP_CIPHER_CTX_new();
         ASSERT(_context != nullptr);
