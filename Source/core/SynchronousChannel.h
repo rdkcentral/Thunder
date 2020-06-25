@@ -112,7 +112,7 @@ namespace Core {
             {
                 uint16_t result = _message.Serialize(dataFrame, maxSendSize);
 
-                if (result < maxSendSize) {
+                if (result == 0) {
                     _state = (_response == nullptr ? COMPLETE : INBOUND);
                 }
                 return (result);

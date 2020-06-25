@@ -1689,7 +1689,7 @@ namespace Core {
                         _unaccountedCount = 0;
                     } else {
                         result++;
-                        _scopeCount |= (QuoteFoundBit | (1 << MaxOpaqueObjectDepth<ScopeMask>()));
+                        _scopeCount |= QuoteFoundBit;
                         _unaccountedCount = 1;
                     }
                 }
@@ -1706,8 +1706,7 @@ namespace Core {
                         if ((_scopeCount & QuoteFoundBit) != 0) {
                             if (current == '\"') {
                                 uint8_t depth = static_cast<uint8_t>((_scopeCount & DepthCountMask) >> MaxOpaqueObjectDepth<ScopeMask>());
-                                ASSERT(depth > 0);
-                                if (depth == 1) {
+                                if (depth == 0) {
                                     result++;
                                     finished = true;
                                 } else {
@@ -1756,9 +1755,10 @@ namespace Core {
                         }
                     }
 
-                    EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
                     if (finished == false) {
-                        if ((escapedSequence == true)) {
+                        EscapeSequenceAction escapeHandling = EscapeSequenceAction::NOTHING;
+
+                        if ((escapedSequence == true) && ((_scopeCount & DepthCountMask) == 0)) {
                             if (!IsValidEscapeSequence(current)) {
                                 finished = true;
                                 error = Error{ "Invalid escape sequence \"\\" + std::string(1, current) + "\"." };
