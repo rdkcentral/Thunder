@@ -22,6 +22,8 @@
 
 #include <map>
 #include <vector>
+#include <cstring>
+#include <string>
 
 #include "Enumerate.h"
 #include "FileSystem.h"
@@ -818,7 +820,6 @@ namespace Core {
                 if ((BASETYPE == BASE_DECIMAL) && (loaded < maxLength)) {
                     offset = 0;
                 }
-
                 return (loaded);
             }
 
@@ -1039,6 +1040,43 @@ namespace Core {
             }
 
         private:
+
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            {
+                uint16_t loaded = 0;
+                static char result[100];
+                if (offset == 0)
+                {
+                    int dVal, dec, i;
+
+                    //dVal = _value + 0.005; // TODO In order to avoid the rounding of value, added 0.005. Eg.269.9999834 being printed as 269.99 instead of 270.00
+                    dVal = _value;
+                    //dec = (int)((_value + 0.005) * 100) % 100;
+                    dec = (int)((_value) * 100) % 100; //TODO
+
+                    memset(result, 0, 100);
+                    result[0] = (dec % 10) + '0';
+                    result[1] = (dec / 10) + '0';
+                    result[2] = '.';
+
+                    i = 3;
+                    while (dVal > 0)
+                    {
+                        result[i] = (dVal % 10) + '0';
+                        dVal /= 10;
+                        i++;
+                    }
+                }
+
+                char res[50];
+                auto num = std::snprintf(res,maxLength,"%g",_value);
+                int index = (num-(offset+1));
+                stream[loaded++] = result[index];
+                offset += loaded;
+
+                return loaded;
+            }
+
             // IElement iface:
             // If this should be serialized/deserialized, it is indicated by a MinSize > 0)
             uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const override
@@ -1047,21 +1085,35 @@ namespace Core {
 
                 ASSERT(maxLength > 0);
 
-                if ((_set & UNDEFINED) != 0 || 
-                    std::isinf(_value) ||
-                    std::isnan(_value)) 
-                {
-                    auto len = strlen(IElement::NullTag);
-                    while(loaded < len)
+                char res[50];
+                auto num = std::snprintf(res,maxLength,"%g",_value);
+
+                while ((offset < num) && (loaded < maxLength)) {
+                    if ((_set & UNDEFINED) != 0 ||
+                        std::isinf(_value) ||
+                        std::isnan(_value))
                     {
-                        stream[loaded] = IElement::NullTag[loaded];
-                        loaded++;
+                        auto len = strlen(IElement::NullTag);
+                        while(loaded < len)
+                        {
+                            stream[loaded] = IElement::NullTag[loaded];
+                            loaded++;
+                        }
+                        stream[loaded++] = IElement::NullTag[offset++];
+                        if (loaded == 4) {
+                            offset = 0;
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
+                            loaded += Convert(&(stream[loaded]), maxLength, offset);
+                        }
                     }
                 }
-                else
-                {
-                    auto num = std::snprintf(stream,maxLength,"%g",_value);
-                    loaded = num > 0 ? num : 0;
+                if (offset == num){
+                   offset = 0;
                 }
                 
                 return loaded;
@@ -1198,6 +1250,7 @@ namespace Core {
                 }
                 return loaded;
             }
+
 
         private:
             uint16_t _set;
