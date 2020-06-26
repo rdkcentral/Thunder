@@ -818,6 +818,7 @@ namespace Core {
                 if ((BASETYPE == BASE_DECIMAL) && (loaded < maxLength)) {
                     offset = 0;
                 }
+
                 return (loaded);
             }
 
@@ -1039,30 +1040,30 @@ namespace Core {
 
         private:
 
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, int& num) const
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, uint16_t& num) const
             {
                 uint16_t loaded = 0;
                 static char result[100];
                 if (offset == 0)
                 {
-                    int dVal, dec, i;
+                    int dVal, dec;
+                    int i = 0;
 
                     dVal = _value;
                     dec = (int)((_value) * 100) % 100;
 
                     memset(result, 0, 100);
-                    result[0] = (dec % 10) + '0';
-                    result[1] = (dec / 10) + '0';
-                    result[2] = '.';
+                    result[i++] = (dec % 10) + '0';
+                    result[i++] = (dec / 10) + '0';
+                    result[i++] = '.';
 
-                    i = 3;
                     while (dVal > 0)
                     {
                         result[i] = (dVal % 10) + '0';
                         dVal /= 10;
                         i++;
                     }
-                    //if (num != strlen(result)-1)
+
                     if (num != strlen(result))
                         num = strlen(result);
                 }
@@ -1083,7 +1084,7 @@ namespace Core {
                 ASSERT(maxLength > 0);
 
                 char res[50];
-                static int num = std::snprintf(res,maxLength,"%g",_value);
+                static uint16_t num = std::snprintf(res,maxLength,"%g",_value);
 
                 while ((offset < num) && (loaded < maxLength)) {
                     if ((_set & UNDEFINED) != 0 ||
@@ -1096,23 +1097,22 @@ namespace Core {
                             stream[loaded] = IElement::NullTag[loaded];
                             loaded++;
                         }
-                        stream[loaded++] = IElement::NullTag[offset++];
-                        if (loaded == 4) {
-                            offset = 0;
-                            break;
-                        }
                     }
-                    else
+                    else if (((_set & UNDEFINED) == 0) && (loaded < maxLength))
                     {
-                        if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
                             loaded += Convert(&(stream[loaded]), maxLength, offset, num);
-                        }
+                    }
+                    else //TODO Need to cross check with proper use case.
+                    {
+                        auto num = std::snprintf(stream,maxLength,"%g",_value);
+                        loaded = num > 0 ? num : 0;
                     }
                 }
+
                 if (offset == num){
                    offset = 0;
                 }
-                
+
                 return loaded;
             }
             
@@ -1247,7 +1247,6 @@ namespace Core {
                 }
                 return loaded;
             }
-
 
         private:
             uint16_t _set;
