@@ -363,6 +363,7 @@ namespace Web {
         }
 
         virtual bool Setup(const Core::URL& remote) = 0;
+        virtual void Started(const uint32_t size) = 0;
         virtual void Transfered(const uint32_t result, const FILEBODY& file) = 0;
 
     private:
@@ -392,6 +393,7 @@ namespace Web {
         inline void LinkBody(Core::ProxyType<Web::Response>& element)
         {
             element->Body(_fileBody);
+            Started(element->ContentLength.Value());
         }
 
     private:
