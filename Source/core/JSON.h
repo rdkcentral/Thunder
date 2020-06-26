@@ -22,8 +22,6 @@
 
 #include <map>
 #include <vector>
-#include <cstring>
-#include <string>
 
 #include "Enumerate.h"
 #include "FileSystem.h"
@@ -1041,7 +1039,7 @@ namespace Core {
 
         private:
 
-            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset) const
+            uint16_t Convert(char stream[], const uint16_t maxLength, uint16_t& offset, int& num) const
             {
                 uint16_t loaded = 0;
                 static char result[100];
@@ -1049,10 +1047,8 @@ namespace Core {
                 {
                     int dVal, dec, i;
 
-                    //dVal = _value + 0.005; // TODO In order to avoid the rounding of value, added 0.005. Eg.269.9999834 being printed as 269.99 instead of 270.00
                     dVal = _value;
-                    //dec = (int)((_value + 0.005) * 100) % 100;
-                    dec = (int)((_value) * 100) % 100; //TODO
+                    dec = (int)((_value) * 100) % 100;
 
                     memset(result, 0, 100);
                     result[0] = (dec % 10) + '0';
@@ -1066,10 +1062,11 @@ namespace Core {
                         dVal /= 10;
                         i++;
                     }
+                    //if (num != strlen(result)-1)
+                    if (num != strlen(result))
+                        num = strlen(result);
                 }
 
-                char res[50];
-                auto num = std::snprintf(res,maxLength,"%g",_value);
                 int index = (num-(offset+1));
                 stream[loaded++] = result[index];
                 offset += loaded;
@@ -1086,7 +1083,7 @@ namespace Core {
                 ASSERT(maxLength > 0);
 
                 char res[50];
-                auto num = std::snprintf(res,maxLength,"%g",_value);
+                static int num = std::snprintf(res,maxLength,"%g",_value);
 
                 while ((offset < num) && (loaded < maxLength)) {
                     if ((_set & UNDEFINED) != 0 ||
@@ -1108,7 +1105,7 @@ namespace Core {
                     else
                     {
                         if (((_set & UNDEFINED) == 0) && (loaded < maxLength)) {
-                            loaded += Convert(&(stream[loaded]), maxLength, offset);
+                            loaded += Convert(&(stream[loaded]), maxLength, offset, num);
                         }
                     }
                 }
