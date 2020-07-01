@@ -81,7 +81,7 @@ EXTERNAL void ForceLinkingOfOpenCDM();
 }
 
 #else
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
 
 #ifdef __cplusplus
@@ -372,7 +372,7 @@ EXTERNAL OpenCDMError opencdm_session_update(struct OpenCDMSession* session,
  * \param session \ref OpenCDMSession instance.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 
 /**
  * Retrieves DRM session specific metadata of a session.
@@ -396,7 +396,7 @@ EXTERNAL OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* sess
  * \param session \ref OpenCDMSession instance.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session);
 
 /**
  * Gets Session ID for a session.
