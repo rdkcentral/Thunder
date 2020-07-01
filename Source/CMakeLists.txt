@@ -77,7 +77,7 @@ option(STUB_HARDWARE
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
 option(HIDE_NON_EXTERNAL_SYMBOLS 
-        "Export all symbols" OFF)
+        "Hide all non EXTERNAL tagged symbols" OFF)
 
 #
 # Build type specific options
