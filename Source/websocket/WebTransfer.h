@@ -192,8 +192,8 @@ namespace Web {
                     if (Setup(destination) == true) {
                         result = Core::ERROR_NONE;
 
-                        // See if we can create a file to store the download in
-                        *(Core::ProxyType<FILEBODY>(_fileBody)) = source;
+                        // See if we can create a file to store the upload in
+                        static_cast<FILEBODY&>(_fileBody) = source;
 
                         _state = TRANSFER_UPLOAD;
                         _request.Verb = Web::Request::HTTP_PUT;
@@ -233,7 +233,7 @@ namespace Web {
                         result = Core::ERROR_NONE;
 
                         // See if we can create a file to store the download in
-                        *(Core::ProxyType<FILEBODY>(_fileBody)) = destination;
+                        static_cast<FILEBODY&>(_fileBody) = destination;
                         _fileBody.Position(false, 0);
 
                         _state = TRANSFER_DOWNLOAD;
@@ -295,7 +295,10 @@ namespace Web {
             }
 
             _state = TRANSFER_IDLE;
-            Transfered(errorCode, *(Core::ProxyType<FILEBODY>(_fileBody)));
+
+            Core::ProxyType<FILEBODY> fileBody(_fileBody);
+            Transfered(errorCode, *(fileBody));
+
             _adminLock.Unlock();
         }
         // Notification of a Partial Request received, time to attach a body..
