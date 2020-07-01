@@ -299,8 +299,6 @@ namespace Web {
         {
             return (_channel.HasActivity());
         }
-
-    protected:
         inline LINK& Link()
         {
             return (_channel.Link());

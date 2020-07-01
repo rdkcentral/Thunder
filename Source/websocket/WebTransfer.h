@@ -167,7 +167,7 @@ namespace Web {
         #pragma warning(default : 4355)
         #endif
 
-        ~ClientTransferType() override
+        virtual ~ClientTransferType()
         {
             _request.CompositRelease();
             _fileBody.CompositRelease();
@@ -193,7 +193,7 @@ namespace Web {
                         result = Core::ERROR_NONE;
 
                         // See if we can create a file to store the download in
-                        _fileBody = source;
+                        *(Core::ProxyType<FILEBODY>(_fileBody)) = source;
 
                         _state = TRANSFER_UPLOAD;
                         _request.Verb = Web::Request::HTTP_PUT;
@@ -205,7 +205,7 @@ namespace Web {
                         _CalculateHash<LINK, FILEBODY>(_request);
 
                         // Prepare the request for processing
-                        result = _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
                     }
                 }
             }
@@ -233,7 +233,7 @@ namespace Web {
                         result = Core::ERROR_NONE;
 
                         // See if we can create a file to store the download in
-                        _fileBody = destination;
+                        *(Core::ProxyType<FILEBODY>(_fileBody)) = destination;
                         _fileBody.Position(false, 0);
 
                         _state = TRANSFER_DOWNLOAD;
@@ -242,7 +242,7 @@ namespace Web {
                         _request.Host = source.Host().Value();
 
                         // Prepare the request for processing
-                        result = _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
                     }
                 }
             }
@@ -252,7 +252,7 @@ namespace Web {
             return (result);
         }
         inline uint32_t FileSize() const {
-            return (_fileBody.Size());
+            return (_fileBody.Core::File::Size());
         }
         inline uint32_t Transferred () const {
             return (_fileBody.Position());
@@ -295,7 +295,7 @@ namespace Web {
             }
 
             _state = TRANSFER_IDLE;
-            Transfered(errorCode, *_fileBody);
+            Transfered(errorCode, *(Core::ProxyType<FILEBODY>(_fileBody)));
             _adminLock.Unlock();
         }
         // Notification of a Partial Request received, time to attach a body..
@@ -309,7 +309,7 @@ namespace Web {
                 _fileBody.Position(false, 0);
             }
 
-            element->Body(_fileBody);
+            element->Body(Core::ProxyType<FILEBODY>(_fileBody));
         }
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
         inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
@@ -318,7 +318,7 @@ namespace Web {
             uint8_t   buffer[64];
             typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
             uint32_t  pos  = _fileBody.Position();
-            uint32_t  size = _fileBody.Size() - pos;
+            uint32_t  size = _fileBody.Core::File::Size() - pos;
 
             hash.Reset();
 
