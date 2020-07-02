@@ -271,7 +271,6 @@ namespace Plugin {
         Core::ProxyType<Web::Response> PutMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         Core::ProxyType<Web::Response> DeleteMethod(Core::TextSegmentIterator& index, const Web::Request& request);
         void StateChange(PluginHost::IShell* plugin);
-        void DeleteDirectory(const string& directory);
 
         void RegisterAll();
         void UnregisterAll();
