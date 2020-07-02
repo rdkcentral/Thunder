@@ -27,21 +27,18 @@
 #include "../core/core.h"
 #include "../cryptalgo/cryptalgo.h"
 
-#ifdef __WINDOWS__
-#include "./windows/include/zlib.h"
-#else
-#include "zlib.h"
-#endif
+#include <zlib.h>
+
+#undef EXTERNAL
 
 #ifdef __WINDOWS__
-#undef EXTERNAL
 #ifdef WEBSOCKET_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 #endif // __MODULE_WEBSOCKET_H

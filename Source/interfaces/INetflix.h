@@ -43,6 +43,7 @@ namespace Exchange {
 
             // Signal changes on the subscribed namespace..
             virtual void StateChange(const INetflix::state state) = 0;
+            virtual void Exit(const uint32_t exitCode) = 0;
         };
 
         virtual ~INetflix() {}

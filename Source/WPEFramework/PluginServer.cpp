@@ -38,16 +38,16 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     { Core::ProcessInfo::ROUNDROBIN, _TXT("RoundRobin") },
     { Core::ProcessInfo::OTHER, _TXT("Other") },
 
-ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
+    ENUM_CONVERSION_END(Core::ProcessInfo::scheduler)
 
-ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
+        ENUM_CONVERSION_BEGIN(PluginHost::InputHandler::type)
 
-    { PluginHost::InputHandler::DEVICE, _TXT("device") },
+            { PluginHost::InputHandler::DEVICE, _TXT("device") },
     { PluginHost::InputHandler::VIRTUAL, _TXT("virtual") },
 
-ENUM_CONVERSION_END(PluginHost::InputHandler::type)
+    ENUM_CONVERSION_END(PluginHost::InputHandler::type)
 
-namespace PluginHost
+        namespace PluginHost
 {
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_missingCallsign(Core::ProxyType<Web::Response>::Create());
     /* static */ Core::ProxyType<Web::Response> Server::Channel::_incorrectVersion(Core::ProxyType<Web::Response>::Create());
@@ -125,9 +125,13 @@ namespace PluginHost
             return (result);
         }
         //! Allow a JSONRPC message to be checked before it is offered for processing.
-        virtual bool Allowed(const Core::JSONRPC::Message& message) const override
+        bool Allowed(const Core::JSONRPC::Message& message) const override
         {
             return ((_hasSecurity == false) || CheckMessage(message));
+        }
+        string Token(void) const override
+        {
+            return (EMPTY_STRING);
         }
 
         //  IUnknown methods
@@ -186,6 +190,7 @@ namespace PluginHost
             value.sin_port = htons(configuration.Port.Value());
 
             result = value;
+            accessor = result;
 
             TRACE_L1("Invalid config information could not resolve to a proper IP set to: (%s:%d)", result.HostAddress().c_str(), result.PortNumber());
         } else {
@@ -241,15 +246,13 @@ namespace PluginHost
         TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
 
         // First, move them all to deactivated except Controller
-        Core::ProxyType<Service> controller;
+        Core::ProxyType<Service> controller (_server.Controller());
         do {
             index--;
 
             ASSERT(index->second.IsValid());
 
-            if (index->first.c_str() == _server._controller->Callsign()) {
-                controller = index->second;
-            } else {
+            if (index->first.c_str() != controller->Callsign()) {
                 index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
             }
         } while (index != _services.begin());
@@ -291,14 +294,14 @@ namespace PluginHost
             result = this;
         } else {
 
-            Lock();
+            _pluginHandling.Lock();
 
             if (_handler != nullptr) {
 
                 result = _handler->QueryInterface(id);
             }
 
-            Unlock();
+            _pluginHandling.Unlock();
         }
 
         return (result);
@@ -495,7 +498,7 @@ namespace PluginHost
 
             TRACE(Activity, (Trace::Format(_T("Deactivate plugin [%s]:[%s]"), className.c_str(), callSign.c_str())));
 
-            State(DEACTIVATED);
+            State(why == CONDITIONS? PRECONDITION : DEACTIVATED);
 
             _administrator.StateChange(this);
 
@@ -549,7 +552,7 @@ namespace PluginHost
             serviceCall = true;
 
             if (identifier.length() <= (serviceHeader.length() + 1)) {
-                service = _server._controller;
+                service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
                 size_t length;
@@ -564,7 +567,7 @@ namespace PluginHost
             serviceCall = false;
 
             if (identifier.length() <= (JSONRPCHeader.length() + 1)) {
-                service = _server._controller;
+                service = _server.Controller();
                 result = Core::ERROR_NONE;
             } else {
                 size_t length;
@@ -704,7 +707,10 @@ namespace PluginHost
         _services.Load();
 
         // Create input handle
-        _inputHandler.Initialize(configuration.Input.Type.Value(), configuration.Input.Locator.Value());
+        _inputHandler.Initialize(
+            configuration.Input.Type.Value(), 
+            configuration.Input.Locator.Value(), 
+            configuration.Input.OutputEnabled.Value());
 
         // Initialize static message.
         Service::Initialize();
@@ -718,7 +724,6 @@ namespace PluginHost
         // turn on ProcessContainer logging
         ProcessContainers::IContainerAdministrator& admin = ProcessContainers::IContainerAdministrator::Instance();
         admin.Logging(configuration.VolatilePath.Value(), configuration.ProcessContainers.Logging.Value());
-        admin.Release();
 #endif
     }
 
@@ -735,11 +740,12 @@ namespace PluginHost
 
     void Server::Notification(const ForwardMessage& data)
     {
-        if ((_controller.IsValid() == false) || (_controller->ClassType<Plugin::Controller>() == nullptr)) {
+        Plugin::Controller* controller;
+        if ((_controller.IsValid() == false) || ((controller = (_controller->ClassType<Plugin::Controller>())) == nullptr)) {
             DumpCallStack();
         } else {
 
-            _controller->ClassType<Plugin::Controller>()->Notification(data);
+            controller->Notification(data);
 
 #ifdef RESTFULL_API
             string result;
@@ -772,8 +778,11 @@ namespace PluginHost
 
         securityProvider->Release();
 
-        _controller->ClassType<Plugin::Controller>()->SetServer(this);
-        _controller->ClassType<Plugin::Controller>()->AddRef();
+        Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
+        
+        ASSERT(controller != nullptr);
+        
+        controller->SetServer(this);
 
         _dispatcher.Run();
         Dispatcher().Open(MAX_EXTERNAL_WAITS);
@@ -796,6 +805,7 @@ namespace PluginHost
     void Server::Close()
     {
         Plugin::Controller* destructor(_controller->ClassType<Plugin::Controller>());
+        destructor->AddRef();
         _connections.Close(Core::infinite);
         destructor->Stopped();
         _services.Destroy();

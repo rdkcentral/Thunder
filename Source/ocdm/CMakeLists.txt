@@ -19,12 +19,12 @@ set(TARGET ocdm)
 
 option(CDMI_ADAPTER_IMPLEMENTATION "Defines which implementation is used." "None")
 
-ProxyStubGenerator(NAMESPACE "OCDM" INPUT ${CMAKE_CURRENT_SOURCE_DIR})
+ProxyStubGenerator(NAMESPACE "OCDM" INPUT "${CMAKE_CURRENT_SOURCE_DIR}" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
 
 add_library(${TARGET} SHARED
         open_cdm.cpp
         open_cdm_ext.cpp
-        ProxyStubs_OCDM.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_OCDM.cpp"
         )
 
 set(PUBLIC_HEADERS
@@ -85,16 +85,18 @@ target_include_directories( ${TARGET}
 
 if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp")
     find_package(NEXUS REQUIRED)
-
     target_link_libraries(${TARGET}
             PRIVATE
-            -lnexus
+            NEXUS::NEXUS
             -lbrcmsvpmeta
             )
+endif()
 
-    target_include_directories( ${TARGET}
+if (${CDMI_ADAPTER_IMPLEMENTATION} STREQUAL "broadcom-svp-secbuf")
+    target_link_libraries(${TARGET}
             PRIVATE
-            ${LIBNEXUS_INCLUDE}
+            -lb_secbuf
+            -lgstsvpext
             )
 endif()
 

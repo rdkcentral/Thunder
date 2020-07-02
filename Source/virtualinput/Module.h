@@ -26,8 +26,9 @@
 
 #include "../core/core.h"
 
-#ifdef _MSVC_LANG
 #undef EXTERNAL
+
+#ifdef _MSVC_LANG
 #undef INPUT_MOUSE
 #ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
@@ -36,7 +37,7 @@
 #pragma comment(lib, "virtualinput.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
 
 #endif // __MODULE_VIRTUALINPUT_H

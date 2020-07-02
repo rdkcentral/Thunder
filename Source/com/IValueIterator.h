@@ -23,6 +23,8 @@
 
 // ---- Include local include files ----
 #include "Module.h"
+#include "IUnknown.h"
+// @stubgen:include "IRPCIterator.h"
 #include "IRPCIterator.h"
 
 namespace WPEFramework {

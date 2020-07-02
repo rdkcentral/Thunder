@@ -28,6 +28,10 @@
 #include "HashStream.h"
 #include "Random.h"
 
+#if defined(SECURESOCKETS_ENABLED) || defined(__WINDOWS__)
+#include "SecureSocketPort.h"
+#endif
+
 #ifdef __WINDOWS__
 #pragma comment(lib, "cryptalgo.lib")
 #endif

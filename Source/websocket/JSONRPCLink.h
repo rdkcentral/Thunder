@@ -131,8 +131,8 @@ namespace JSONRPC {
                 typedef Core::StreamJSONType<Web::WebSocketClientType<Core::SocketStream>, FactoryImpl&, INTERFACE> BaseClass;
     
             public:
-                ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign)
-                    : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), "", "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
+                ChannelImpl(CommunicationChannel* parent, const Core::NodeId& remoteNode, const string& callsign, const string& query)
+                    : BaseClass(5, FactoryImpl::Instance(), callsign, _T("JSON"), query, "", false, false, false, remoteNode.AnyInterface(), remoteNode, 256, 256)
                     , _parent(*parent)
                 {
                 }
@@ -201,8 +201,8 @@ namespace JSONRPC {
                 ChannelProxy& operator=(const ChannelProxy&) = delete;
                 ChannelProxy() = delete;
     
-                ChannelProxy(const Core::NodeId& remoteNode, const string& callsign)
-                    : Core::ProxyObject<CommunicationChannel>(remoteNode, callsign)
+                ChannelProxy(const Core::NodeId& remoteNode, const string& callsign, const string& query)
+                    : Core::ProxyObject<CommunicationChannel>(remoteNode, callsign, query)
                 {
                 }
     
@@ -230,9 +230,9 @@ namespace JSONRPC {
                     }
     
                 public:
-                    static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign)
+                    static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
                     {
-                        return (Instance().InstanceImpl(remoteNode, callsign));
+                        return (Instance().InstanceImpl(remoteNode, callsign, query));
                     }
                     static uint32_t Release(ChannelProxy* object)
                     {
@@ -240,7 +240,7 @@ namespace JSONRPC {
                     }
     
                 private:
-                    Core::ProxyType<CommunicationChannel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign)
+                    Core::ProxyType<CommunicationChannel> InstanceImpl(const Core::NodeId& remoteNode, const string& callsign,  const string& query)
                     {
                         Core::ProxyType<CommunicationChannel> result;
     
@@ -252,7 +252,7 @@ namespace JSONRPC {
                         if (index != _callsignMap.end()) {
                             result = Core::ProxyType<CommunicationChannel>(*(index->second));
                         } else {
-                            ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign);
+                            ChannelProxy* entry = new (0) ChannelProxy(remoteNode, callsign, query);
                             _callsignMap[searchLine] = entry;
                             result = Core::ProxyType<CommunicationChannel>(*entry);
                         }
@@ -277,7 +277,7 @@ namespace JSONRPC {
     
                             typename CallsignMap::iterator index(_callsignMap.begin());
     
-                            while ((index != _callsignMap.end()) && (&(*object) == index->second)) {
+                            while ((index != _callsignMap.end()) && (&(*object) != index->second)) {
                                 index++;
                             }
     
@@ -303,9 +303,9 @@ namespace JSONRPC {
                     CommunicationChannel::Close();
                 }
     
-                static Core::ProxyType< CommunicationChannel > Instance(const Core::NodeId& remoteNode, const string& callsign)
+                static Core::ProxyType< CommunicationChannel > Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
                 {
-                    return (Administrator::Instance(remoteNode, callsign));
+                    return (Administrator::Instance(remoteNode, callsign, query));
                 }
     
             public:
@@ -329,8 +329,8 @@ namespace JSONRPC {
             };
     
         protected:
-            CommunicationChannel(const Core::NodeId& remoteNode, const string& callsign)
-                : _channel(this, remoteNode, callsign)
+            CommunicationChannel(const Core::NodeId& remoteNode, const string& callsign, const string& query)
+                : _channel(this, remoteNode, callsign, query)
                 , _sequence(0)
             {
             }
@@ -339,9 +339,9 @@ namespace JSONRPC {
             virtual ~CommunicationChannel()
             {
             }
-            static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign)
+            static Core::ProxyType<CommunicationChannel> Instance(const Core::NodeId& remoteNode, const string& callsign, const string& query)
             {
-                return (ChannelProxy::Instance(remoteNode, callsign));
+                return (ChannelProxy::Instance(remoteNode, callsign, query));
             }
     
         public:
@@ -574,10 +574,10 @@ namespace JSONRPC {
         typedef std::function<uint32_t(const string&, const string& parameters, string& result)> InvokeFunction;
 
 	protected:
-        LinkType(const string& callsign, const string connectingCallsign, const TCHAR* localCallsign)
+        LinkType(const string& callsign, const string connectingCallsign, const TCHAR* localCallsign, const string& query)
             : _adminLock()
             , _connectId(RemoteNodeId())
-            , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign))
+            , _channel(CommunicationChannel::Instance(_connectId, string("/jsonrpc/") + connectingCallsign, query))
             , _handler([&](const uint32_t, const string&, const string&) {}, { DetermineVersion(callsign + '.') })
             , _callsign(callsign.empty() ? string() : Core::JSONRPC::Message::Callsign(callsign + '.'))
             , _localSpace()
@@ -596,13 +596,13 @@ namespace JSONRPC {
         }
 
     public:
-        LinkType(const string& callsign, const bool directed = false)
-            : LinkType(callsign, (directed ? callsign : string()), nullptr)
+        LinkType(const string& callsign, const bool directed = false, const string& query = "")
+            : LinkType(callsign, (directed ? callsign : string()), nullptr, query)
         {
             _channel->Register(*this);
         }
-        LinkType(const string& callsign, const TCHAR localCallsign[], const bool directed = false)
-            : LinkType(callsign, (directed ? callsign : string()), localCallsign)
+        LinkType(const string& callsign, const TCHAR localCallsign[], const bool directed = false, const string& query = "")
+            : LinkType(callsign, (directed ? callsign : string()), localCallsign, query)
         {
             _channel->Register(*this);
         }
@@ -1280,8 +1280,8 @@ namespace JSONRPC {
             Connection& operator=(const Connection&) = delete;
 
             // TODO: Constructos of the Client with version are bogus. Clean i tup
-            Connection(SmartLinkType<INTERFACE>& parent, const string& callsign, const TCHAR* localCallsign)
-                    : Client(callsign, string(), localCallsign)
+            Connection(SmartLinkType<INTERFACE>& parent, const string& callsign, const TCHAR* localCallsign, const string& query)
+                    : Client(callsign, string(), localCallsign, query)
                     , _monitor(string(), false)
                     , _parent(parent)
                     , _state(UNKNOWN)
@@ -1388,8 +1388,8 @@ namespace JSONRPC {
         #ifdef __WINDOWS__
         #pragma warning(disable : 4355)
         #endif
-        SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign)
-                : _connection(*this, remoteCallsign, localCallsign)
+        SmartLinkType(const string& remoteCallsign, const TCHAR* localCallsign, const string& query = "")
+                : _connection(*this, remoteCallsign, localCallsign, query)
                 , _callsign(remoteCallsign)
         {
         }

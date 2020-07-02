@@ -20,23 +20,26 @@ set(TargetDefinitions ${NAMESPACE}Definitions)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
 file(GLOB PUBLIC_HEADERS I*.h)
-file(GLOB JSON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/json/*.json)
+file(GLOB JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/json/*.json")
 
 list(APPEND PUBLIC_HEADERS Module.h)
 list(APPEND PUBLIC_HEADERS definitions.h)
 
-ProxyStubGenerator(INPUT ${CMAKE_CURRENT_SOURCE_DIR})
-JsonGenerator(CODE INPUT ${JSON_FILE})
-JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/I*.h OUTPUT json)
+ProxyStubGenerator(INPUT "${CMAKE_CURRENT_SOURCE_DIR}" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+JsonGenerator(CODE INPUT ${JSON_FILE} OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
+JsonGenerator(CODE INPUT "${CMAKE_CURRENT_SOURCE_DIR}/I*.h" OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
-file(GLOB PROXY_STUB_SOURCES ProxyStubs*.cpp)
+file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs*.cpp")
 add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
 
-file(GLOB JSON_DATA_HEADERS json/JsonData*.h)
-file(GLOB JSON_ENUM_SOURCES json/JsonEnum*.cpp)
-file(GLOB JSON_LINK_HEADERS json/J*.h)
+target_include_directories(${TargetMarshalling} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+
+file(GLOB JSON_DATA_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonData*.h")
+file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonEnum*.cpp")
+file(GLOB JSON_LINK_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/J*.h")
 
 add_library(${TargetDefinitions} SHARED
+        Module.cpp
         Definitions.cpp
         ${JSON_ENUM_SOURCES}
         )

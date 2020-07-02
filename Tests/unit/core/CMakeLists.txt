@@ -25,6 +25,7 @@ add_executable(${TEST_RUNNER_NAME}
    test_dataelement.cpp
    test_doorbell.cpp
    #test_event.cpp
+   test_ipcclient.cpp
    test_hex2strserialization.cpp
    test_enumerate.cpp
    #test_filesystem.cpp

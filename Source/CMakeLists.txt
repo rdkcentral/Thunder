@@ -22,6 +22,8 @@ option(CORE
         "Include the core library." ON)
 option(CRYPTALGO
         "Include the encyption algorithm library." ON)
+option(CRYPTOGRAPHY
+        "Include the cryptography library." OFF)
 option(BLUETOOTH
         "Include the bluetooth library." OFF)
 option(BROADCAST
@@ -38,6 +40,8 @@ option(PROVISIONPROXY
         "Include the provisionproxy library." OFF)
 option(SECURITYAGENT
         "Include the securityagent library." OFF)
+option(DISPLAYINFO
+        "Include the displayinfo COMRPC abstraction library." OFF)
 option(COM
         "Include the COM library." OFF)
 option(PROTOCOLS
@@ -68,6 +72,8 @@ option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
+option(HIDE_NON_EXTERNAL_SYMBOLS 
+        "Hide all non EXTERNAL tagged symbols" OFF)
 
 #
 # Build type specific options
@@ -88,6 +94,11 @@ elseif("${BUILD_TYPE}" STREQUAL "Production")
     set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
 else()
     message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+endif()
+
+if (HIDE_NON_EXTERNAL_SYMBOLS)
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 endif()
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL
@@ -135,6 +146,10 @@ if(BLUETOOTH)
     add_subdirectory(bluetooth)
 endif()
 
+if(CRYPTOGRAPHY)
+    add_subdirectory(cryptography)
+endif()
+
 if(PROFILER)
     message(FATAL_ERROR "PROFILER option does not exist?")
     set(PROFILER_INCLUDE_DIR "${ROOT}/Source/profiler")
@@ -171,6 +186,10 @@ endif()
 
 if(GSTREAMERCLIENT)
     add_subdirectory(gstreamerclient)
+endif()
+
+if(DISPLAYINFO)
+    add_subdirectory(displayinfo)
 endif()
 
 if(PROCESS)

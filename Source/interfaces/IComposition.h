@@ -65,11 +65,11 @@ namespace Exchange {
             virtual ~IClient() {}
 
             virtual string Name() const = 0;
-            virtual void Kill() = 0;
             virtual void Opacity(const uint32_t value) = 0;
             virtual uint32_t Geometry(const Rectangle& rectangle) = 0;
             virtual Rectangle Geometry() const = 0; 
             virtual uint32_t ZOrder(const uint16_t index) = 0;
+            virtual uint32_t ZOrder() const = 0;
         };
 
         struct INotification : virtual public Core::IUnknown {
@@ -89,7 +89,7 @@ namespace Exchange {
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         // Set and get output resolution
-        virtual void Resolution(const ScreenResolution) = 0;
+        virtual uint32_t Resolution(const ScreenResolution) = 0;
         virtual ScreenResolution Resolution() const = 0;
     };
 }

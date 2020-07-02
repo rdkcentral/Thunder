@@ -589,8 +589,6 @@ namespace RPC {
 
                 string volatilecallsignpath(baseConfig.VolatilePath() + instance.Callsign() + _T('/'));
                 _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
-
-                admin.Release();
             }
 
             ~ContainerRemoteProcess()
@@ -673,6 +671,39 @@ namespace RPC {
         private:
             RemoteConnectionMap(const RemoteConnectionMap&) = delete;
             RemoteConnectionMap& operator=(const RemoteConnectionMap&) = delete;
+
+            class Info {
+            public:
+                Info () = delete;
+                Info (const Info&) = delete;
+                Info (Core::Event& event, const uint32_t id) 
+                    : _event(event) 
+                    , _id(id)
+                    , _interface(nullptr) {
+                }
+                ~Info() {
+                }
+
+            public:
+                inline void Implementation(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& implementation) {
+
+                    ASSERT (_interface == nullptr);
+
+                    // Get the interface pointer that was stored during the triggering of the event...
+                    // It is reference counted so it has to be dereferenced by the caller.
+                    RPC::Administrator::Instance().ProxyInstance(channel, implementation, true, _id, _interface);
+
+                    _event.SetEvent();
+                }
+                inline void* Interface() {
+                    return (_interface);
+                }
+
+            private:
+                Core::Event& _event;
+                uint32_t _id;
+                void* _interface;
+            };
 
         public:
             RemoteConnectionMap(Communicator& parent)
@@ -768,7 +799,7 @@ namespace RPC {
                     _connections.insert(std::pair<uint32_t, RemoteConnection*>(result->Id(), result));
                     auto locator = _announcements.emplace(std::piecewise_construct,
                         std::forward_as_tuple(result->Id()),
-                        std::forward_as_tuple(std::pair<Core::Event&, void*>(trigger, nullptr)));
+                        std::forward_as_tuple(trigger, instance.Interface()));
 
                     _adminLock.Unlock();
 
@@ -778,28 +809,20 @@ namespace RPC {
                     // wait for the announce message to be exchanged
                     if (trigger.Lock(waitTime) == Core::ERROR_NONE) {
 
-                        uint32_t interfaceId = instance.Interface();
+                        interfaceReturned = locator.first->second.Interface();
 
-                        _adminLock.Lock();
-
-                        // Get the interface pointer that was stored during the triggering of the event...
-                        // It is reference counted so it has to be dereferenced by the caller.
-                        ProxyStub::UnknownProxy* proxyStub = RPC::Administrator::Instance().ProxyInstance(result->Channel(), locator.first->second.second, interfaceId, true, interfaceId, false);
-
-                        if (proxyStub != nullptr) {
-                            interfaceReturned = proxyStub->QueryInterface(interfaceId);
-
-                            ASSERT(interfaceReturned != nullptr);
+                        if (interfaceReturned != nullptr) {
 
                             id = result->Id();
                         }
 
                     } else {
-                        _adminLock.Lock();
 
                         // Seems we could not start the application. Cleanout
                         result->Terminate();
                     }
+
+                    _adminLock.Lock();
 
                     // Kill the Event registration. We are no longer interested in what will be hapening..
                     _announcements.erase(locator.first);
@@ -927,14 +950,10 @@ namespace RPC {
             }
             void Request(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
-
-                ASSERT(result != nullptr);
-
                 std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(info.ExchangeId()));
 
                 ASSERT(index != _connections.end());
-                ASSERT(index->second->IsOperational() == false)
+                ASSERT(index->second->IsOperational() == false);
 
                 // This is when we requested this interface/object to be created, there must be already an
                 // administration, it is just not complete.... yet!!!!
@@ -946,8 +965,12 @@ namespace RPC {
                 auto processConnection = _announcements.find(index->second->Id());
 
                 if (processConnection != _announcements.end()) {
-                    processConnection->second.second = result;
-                    processConnection->second.first.SetEvent();
+
+                    Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+
+                    ASSERT(info.Implementation());
+
+                    processConnection->second.Implementation(baseChannel, info.Implementation());
                 } else {
                     // No one picks it up, release it..
                     // TODO: Release an object that will never be used...
@@ -956,40 +979,43 @@ namespace RPC {
 
             void* Handle(Core::ProxyType<Core::IPCChannelType<Core::SocketPort, ChannelLink>>& channel, const Data::Init& info)
             {
-                void* result = info.Implementation();
+                Core::ProxyType<Core::IPCChannel> baseChannel(channel);
+
+                instance_id implementation = info.Implementation();
+                void* realIF = nullptr;
+                void* result = nullptr;
+
+                ASSERT(baseChannel.IsValid() == true);
 
                 if (info.IsOffer() == true) {
 
-                    ASSERT(result != nullptr);
+                    ASSERT(implementation);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyInstance<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId(), true);
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyInstance(baseChannel, implementation, true, info.InterfaceId(), realIF);
 
-                    if (baseIUnknown != nullptr) {
-                        _parent.Offer(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        ASSERT(realIFbase != nullptr);
+                        _parent.Offer(realIFbase, info.InterfaceId());
                     }
-                    result = nullptr;
 
                 } else if (info.IsRevoke() == true) {
 
-                    ASSERT(result != nullptr);
+                    ASSERT(implementation);
 
-                    Core::IUnknown* baseIUnknown = Administrator::Instance().ProxyFind<Core::IUnknown>(Core::ProxyType<Core::IPCChannel>(channel), result, info.InterfaceId());
-                    if (baseIUnknown != nullptr) {
-                        _parent.Revoke(baseIUnknown, info.InterfaceId());
-                        baseIUnknown->Release();
+                    ProxyStub::UnknownProxy* base = Administrator::Instance().ProxyFind(baseChannel, implementation, info.InterfaceId(), realIF);
+
+                    if (base != nullptr) {
+                        Core::IUnknown* realIFbase = base->Parent();
+                        _parent.Revoke(realIFbase, info.InterfaceId());
                     }
-                    result = nullptr;
 
                 } else if (info.InterfaceId() != static_cast<uint32_t>(~0)) {
-
-                    ASSERT(result == nullptr);
 
                     // See if we have something we can return right away, if it has been requested..
                     result = _parent.Aquire(info.ClassName(), info.InterfaceId(), info.VersionId());
 
                     if (result != nullptr) {
-                        Core::ProxyType<Core::IPCChannel> baseChannel(channel);
                         Administrator::Instance().RegisterInterface(baseChannel, result, info.InterfaceId());
                     }
                 }
@@ -999,7 +1025,7 @@ namespace RPC {
 
         private:
             mutable Core::CriticalSection _adminLock;
-            std::map<uint32_t, std::pair<Core::Event&, void*>> _announcements;
+            std::map<uint32_t, Info> _announcements;
             std::map<uint32_t, RemoteConnection*> _connections;
             std::list<RPC::IRemoteConnection::INotification*> _observers;
             Communicator& _parent;
@@ -1095,7 +1121,7 @@ namespace RPC {
                     string jsonDefaultCategories(Trace::TraceUnit::Instance().Defaults());
                     void* result = _parent.Announce(proxyChannel, message->Parameters());
 
-                    message->Response().Set(result, proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
+                    message->Response().Set(instance_cast<void*>(result), proxyChannel->Extension().Id(), _parent.ProxyStubPath(), jsonDefaultCategories);
 
                     // We are done, report completion
                     channel.ReportResponse(data);
@@ -1311,7 +1337,8 @@ namespace RPC {
                 const string className(message->Parameters().ClassName());
                 const uint32_t interfaceId(message->Parameters().InterfaceId());
                 const uint32_t versionId(message->Parameters().VersionId());
-                void* implementation = _parent.Aquire(className, interfaceId, versionId);
+
+                instance_id implementation = instance_cast<void*>(_parent.Aquire(className, interfaceId, versionId));
                 message->Response().Implementation(implementation);
 
                 channel.ReportResponse(data);
@@ -1397,16 +1424,16 @@ namespace RPC {
                 if (BaseClass::Invoke(_announceMessage, waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
-                    void* implementation(_announceMessage->Response().Implementation());
+                    instance_id implementation(_announceMessage->Response().Implementation());
 
-                    if (implementation != nullptr) {
+                    if (implementation) {
                         Core::ProxyType<Core::IPCChannel> baseChannel(*this);
 
                         ASSERT(baseChannel.IsValid() == true);
 
-                        result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+                        Administrator::Instance().ProxyInstance(baseChannel, implementation, true, result);
                     }
                 }
             }
@@ -1420,7 +1447,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::OFFER);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::OFFER);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1428,7 +1455,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
 
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
@@ -1444,7 +1471,7 @@ namespace RPC {
 
             if (BaseClass::IsOpen() == true) {
 
-                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, offer, Data::Init::REVOKE);
+                _announceMessage->Parameters().Set(Core::ProcessInfo().Id(), INTERFACE::ID, instance_cast<void*>(offer), Data::Init::REVOKE);
 
                 BaseClass::Invoke(_announceMessage, waitTime);
 
@@ -1452,7 +1479,7 @@ namespace RPC {
                 if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
                     ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-                    ASSERT(_announceMessage->Parameters().Implementation() != nullptr);
+                    ASSERT(_announceMessage->Parameters().Implementation() != 0);
                 } else {
                     result = Core::ERROR_BAD_REQUEST;
                 }
@@ -1488,19 +1515,19 @@ namespace RPC {
             INTERFACE* result = nullptr;
 
             ASSERT(_announceMessage->Parameters().InterfaceId() == INTERFACE::ID);
-            ASSERT(_announceMessage->Parameters().Implementation() == nullptr);
+            ASSERT(_announceMessage->Parameters().Implementation() == 0);
 
             // Lock event until Dispatch() sets it.
             if (_announceEvent.Lock(waitTime) == Core::ERROR_NONE) {
 
-                void* implementation(_announceMessage->Response().Implementation());
+                instance_id implementation(_announceMessage->Response().Implementation());
 
-                if (implementation != nullptr) {
+                if (implementation) {
                     Core::ProxyType<Core::IPCChannel> baseChannel(*this);
 
                     ASSERT(baseChannel.IsValid() == true);
 
-                    result = Administrator::Instance().ProxyInstance<INTERFACE>(baseChannel, implementation, INTERFACE::ID, true);
+                    Administrator::Instance().ProxyInstance(baseChannel, implementation, true, result);
                 }
             }
 

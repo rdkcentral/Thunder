@@ -28,6 +28,7 @@
 #include "IComposition.h"
 #include "IStream.h"
 #include "IVoiceHandler.h"
+#include "IPower.h"
 
 #undef EXTERNAL
 
@@ -39,7 +40,7 @@
 #pragma comment(lib, "definitions.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 namespace WPEFramework {

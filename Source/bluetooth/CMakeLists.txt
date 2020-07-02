@@ -25,6 +25,7 @@ add_library(${TARGET} SHARED
         HCISocket.cpp
         GATTSocket.cpp
         Profile.cpp
+        UUID.cpp
         Definitions.cpp
         Module.cpp)
 
@@ -33,6 +34,7 @@ set(PUBLIC_HEADERS
         HCISocket.h
         GATTSocket.h
         Profile.h
+        UUID.h
         Module.h
         bluetooth.h
         )

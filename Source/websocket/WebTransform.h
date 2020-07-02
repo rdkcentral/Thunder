@@ -25,9 +25,9 @@
 namespace WPEFramework {
 namespace Web {
     class NoTransform {
-    private:
-        NoTransform(const NoTransform&);
-        NoTransform& operator=(const NoTransform&);
+    public:
+        NoTransform(const NoTransform&) = delete;
+        NoTransform& operator=(const NoTransform&) = delete;
 
     public:
         inline NoTransform()

@@ -18,12 +18,11 @@
  */
 
 #include "GATTSocket.h"
+#include "UUID.h"
 
 namespace WPEFramework {
 
 namespace Bluetooth {
-
-/* static */ const uint8_t UUID::BASE[] = { 0xFB, 0x34, 0x9B, 0x5F, 0x80, 0x00, 0x00, 0x80, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
 {
@@ -263,7 +262,6 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
              break;
         }
         case ATT_OP_WRITE_RESP: {
-            // TRACE_L1(_T("We have written: %d"),length);
             _error = Core::ERROR_NONE;
             _response.Type(stream[0]);
             break;
@@ -272,6 +270,7 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
             _response.Add(_frame.Handle(), length - 1, &(stream[1]));
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
+                _frame.Reload();
             }
             else {
                 _error = Core::ERROR_NONE;
@@ -286,9 +285,9 @@ uint16_t Attribute::Deserialize(const uint16_t size, const uint8_t stream[])
             } else {
                 _response.Extend(length - 1, &(stream[1]));
             }
-            TRACE_L1(_T("Received a blob of length %d"), length);
             if (length == _mtu) {
                 _id = _frame.ReadBlob(_frame.Handle(), _response.Offset());
+                _frame.Reload();
             } else {
                 _error = Core::ERROR_NONE;
             }

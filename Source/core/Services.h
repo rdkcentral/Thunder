@@ -123,7 +123,7 @@ namespace Core {
 
     protected:
         template<typename... Args>
-        Service(Args... args)
+        Service(Args&&... args)
             : ProxyService<ACTUALSERVICE>(std::forward<Args>(args)...)
         {
             ServiceAdministrator::Instance().AddRef();
@@ -131,7 +131,7 @@ namespace Core {
 
     public:
         template <typename INTERFACE, typename... Args>
-        static INTERFACE* Create(Args... args)
+        static INTERFACE* Create(Args&&... args)
         {
             ACTUALSERVICE* object = new (0) Service<ACTUALSERVICE>(std::forward<Args>(args)...);
 
@@ -170,7 +170,7 @@ namespace Core {
 
     public:
         template <typename... Args>
-        Sink(Args... args)
+        Sink(Args&&... args)
             : ACTUALSINK(std::forward<Args>(args)...)
             , _referenceCount(0)
         {
