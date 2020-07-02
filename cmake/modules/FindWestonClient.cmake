@@ -31,27 +31,24 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_WESTON weston)
+pkg_check_modules(PC_WESTON libweston-desktop-8)
 
-find_library(WESTON_CLIENT_LIB NAMES weston-desktop-5 weston-desktop-6
+find_library(WESTON_CLIENT_LIB NAMES weston-desktop-8
         HINTS ${PC_WESTON_LIBDIR} ${PC_WESTON_LIBRARY_DIRS}
 )
 
-set (WESTON_CLIENT_LIBRARIES ${PC_WESTON_LIBRARIES})
-
 if(PC_WESTON_FOUND AND NOT TARGET WestonClient::WestonClient)
-    set(WESTON_CLIENT_LIB_CLIENT_LINK_LIBRARIES "${WESTON_CLIENT_LIB}")
     add_library(WestonClient::WestonClient UNKNOWN IMPORTED)
     set_target_properties(WestonClient::WestonClient PROPERTIES
             IMPORTED_LINK_INTERFACE_LANGUAGES "C"
             IMPORTED_LOCATION "${WESTON_CLIENT_LIB}"
             INTERFACE_INCLUDE_DIRECTORIES ""
-            INTERFACE_COMPILE_OPTIONS "${WESTON_CLIENT_CFLAGS_OTHER}"
-            INTERFACE_LINK_LIBRARIES "${WESTON_CLIENT_LIB_CLIENT_LINK_LIBRARIES}"
+            INTERFACE_COMPILE_OPTIONS "${PC_WESTON_DEFINITIONS}"
+            INTERFACE_LINK_LIBRARIES "${PC_WESTON_LIBRARIES}"
             )
 endif()
 
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(PC_WESTON DEFAULT_MSG PC_WESTON_FOUND)
 
-mark_as_advanced(WESTON_CLIENT_LIBRARIES)
+mark_as_advanced(PC_WESTON_LIBRARIES)
