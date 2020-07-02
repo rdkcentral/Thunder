@@ -31,7 +31,7 @@
 #pragma comment(lib, "displayinfo.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
 
 #ifdef __cplusplus

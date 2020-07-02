@@ -25,13 +25,14 @@
 
 #include "../core/core.h"
 
-#ifdef __WINDOWS__
 #undef EXTERNAL
+
+#ifdef __WINDOWS__
 #ifdef CONTAINERS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
