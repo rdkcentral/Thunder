@@ -100,8 +100,12 @@ namespace Web {
             }
             void Close() {
                 BaseClass::Close(Core::infinite);
-                ASSERT (_request.IsValid() == false);
-                ASSERT (_response.IsValid() == false);
+                if (_request.IsValid() == true) {
+                    _request.Release();
+                }
+                if (_response.IsValid() == true) {
+                    _response.Release();
+                }
             }
 
         private:
@@ -139,13 +143,7 @@ namespace Web {
                 } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true)) {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
-                }
-                if (_request.IsValid() == true) {
-                    _request.Release();
-                }
-                if (_response.IsValid() == true) {
-                    _response.Release();
-                }
+               }
             }
 
         private:
@@ -307,8 +305,7 @@ namespace Web {
 
             _state = TRANSFER_IDLE;
 
-            Core::ProxyType<FILEBODY> fileBody(_fileBody);
-            Transfered(errorCode, *(fileBody));
+            Transfered(errorCode, (static_cast<FILEBODY&>(_fileBody)));
 
             _adminLock.Unlock();
         }
@@ -324,6 +321,7 @@ namespace Web {
             }
 
             element->Body(Core::ProxyType<FILEBODY>(_fileBody));
+            _fileBody.Release();
         }
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
         inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
