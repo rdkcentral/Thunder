@@ -80,7 +80,6 @@ namespace Web {
             }
             ~Channel() override
             {
-                BaseClass::Close(Core::infinite);
             }
 
         public:
@@ -98,6 +97,11 @@ namespace Web {
                     result = BaseClass::Open(0);
                 }
                 return result;
+            }
+            void Close() {
+                BaseClass::Close(Core::infinite);
+                ASSERT (_request.IsValid() == false);
+                ASSERT (_response.IsValid() == false);
             }
 
         private:
@@ -136,6 +140,12 @@ namespace Web {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
                 }
+                if (_request.IsValid() == true) {
+                    _request.Release();
+                }
+                if (_response.IsValid() == true) {
+                    _response.Release();
+                }
             }
 
         private:
@@ -169,6 +179,7 @@ namespace Web {
 
         virtual ~ClientTransferType()
         {
+            _channel.Close();
             _request.CompositRelease();
             _fileBody.CompositRelease();
         }
