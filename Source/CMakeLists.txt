@@ -76,6 +76,8 @@ option(STUB_HARDWARE
         "Use hardware stubs for unittests)." OFF)
 option(BUILD_TYPE
         "How do you want to build it, Production, Release or Debug" Production)
+option(HIDE_NON_EXTERNAL_SYMBOLS 
+        "Hide all non EXTERNAL tagged symbols" OFF)
 
 #
 # Build type specific options
@@ -96,6 +98,11 @@ elseif("${BUILD_TYPE}" STREQUAL "Production")
     set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build." FORCE)
 else()
     message(FATAL_ERROR "Invalid BUILD_TYPE: '${BUILD_TYPE}'")
+endif()
+
+if (HIDE_NON_EXTERNAL_SYMBOLS)
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 endif()
 
 set(EXTERN_EVENTS ${EXTERN_EVENTS} CACHE INTERNAL

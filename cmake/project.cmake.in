@@ -36,6 +36,12 @@ endif()
 
 set(NAMESPACE "@NAMESPACE@")
 
+option(EXPORT_SYMBOLS "Export to all symbols" OFF)
+
+if (NOT EXPORT_SYMBOLS)
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+    set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
+endif()
 
 set(MODULE_BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
 

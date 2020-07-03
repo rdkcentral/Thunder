@@ -42,6 +42,8 @@ add_library(${TARGET} SHARED
         Module.cpp
         )
 
+target_compile_definitions(${TARGET} PRIVATE PROXYSTUBS_EXPORTS)
+
 target_include_directories(${TARGET}
          PRIVATE 
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
