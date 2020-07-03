@@ -65,9 +65,7 @@ namespace Exchange {
 
         virtual ~IAVSClient(){};
 
-        virtual bool Initialize(PluginHost::IShell* service, const std::string& alexaClientConfig,
-            const std::string& smartScreenConfig, const std::string& pathToInputFolder, const std::string& audioSource,
-            const bool enableKWD, const std::string& logLevel) = 0;
+        virtual bool Initialize(PluginHost::IShell* service, const string& configuration) = 0;
         virtual bool Deinitialize() = 0;
         virtual IAVSController* Controller() = 0;
         virtual void StateChange(PluginHost::IShell* audioSource) = 0;
