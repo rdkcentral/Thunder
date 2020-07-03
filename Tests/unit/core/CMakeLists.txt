@@ -21,11 +21,11 @@ add_executable(${TEST_RUNNER_NAME}
    ../IPTestAdministrator.cpp
    #test_cyclicbuffer.cpp
    test_databuffer.cpp
-   test_dataelementfile.cpp
+   #test_dataelementfile.cpp
    test_dataelement.cpp
    test_doorbell.cpp
    #test_event.cpp
-   test_ipcclient.cpp
+   #test_ipcclient.cpp
    test_hex2strserialization.cpp
    test_enumerate.cpp
    #test_filesystem.cpp
@@ -68,7 +68,7 @@ add_executable(${TEST_RUNNER_NAME}
    #test_thread.cpp
    test_time.cpp
    test_timer.cpp
-   test_tracing.cpp
+   #test_tracing.cpp
    test_tristate.cpp
    #test_valuerecorder.cpp
    test_weblinkjson.cpp
