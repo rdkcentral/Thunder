@@ -145,6 +145,26 @@ namespace Exchange {
 
         // Periodically we might like to be evaluated, call this method at a set time.
         virtual void Evaluate() = 0;
+
+        // ------------------------------------------------------------------------
+        // Convenience methods to extract interesting information from the type
+        // ------------------------------------------------------------------------
+        inline basic Basic() const
+        {
+            return (static_cast<basic>((Type() >> 12) & 0xF));
+        }
+        inline dimension Dimension() const
+        {
+            return (static_cast<dimension>((Type() >> 19) & 0x1FFF));
+        }
+        inline specific Specific() const
+        {
+            return (static_cast<specific>(Type() & 0xFFF));
+        }
+        inline uint8_t Decimals() const
+        {
+            return ((Type() >> 16) & 0x07);
+        }
     };
 
 } } // Namespace Exchange

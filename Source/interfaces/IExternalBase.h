@@ -147,26 +147,6 @@ namespace Exchange {
 
     public:
         // ------------------------------------------------------------------------
-        // Convenience methods to extract interesting information from the type
-        // ------------------------------------------------------------------------
-        inline basic Basic() const
-        {
-            return (static_cast<basic>((_type >> 12) & 0xF));
-        }
-        inline dimension Dimension() const
-        {
-            return (static_cast<dimension>((_type >> 19) & 0x1FFF));
-        }
-        inline specific Specific() const
-        {
-            return (static_cast<specific>(_type & 0xFFF));
-        }
-        inline uint8_t Decimals() const
-        {
-            return ((_type >> 16) & 0x07);
-        }
-
-        // ------------------------------------------------------------------------
         // Polling interface methods
         // ------------------------------------------------------------------------
         // Define the polling time in Seconds. This value has a maximum of a 24 hour.
