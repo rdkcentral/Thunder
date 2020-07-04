@@ -26,7 +26,7 @@
 
 namespace OCDM {
 
-typedef enum {
+typedef enum : uint32_t {
     OCDM_SUCCESS = 0,
     OCDM_S_FALSE = 1,
     OCDM_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
@@ -43,7 +43,7 @@ typedef enum {
 // ISession defines the interface towards a DRM context that can decrypt data
 // using a given key.
 struct ISession : virtual public WPEFramework::Core::IUnknown {
-    enum KeyStatus {
+    enum KeyStatus : uint32_t {
         Usable = 0,
         Expired,
         Released,

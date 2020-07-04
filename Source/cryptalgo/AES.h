@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Crypto {
 
-    enum aesType {
+    enum aesType : uint8_t {
         AES_ECB,
         AES_CBC,
         AES_CFB8,
@@ -34,7 +34,7 @@ namespace Crypto {
         AES_OFB
     };
 
-    enum bitLength {
+    enum bitLength : uint16_t {
         BITLENGTH_128 = 128,
         BITLENGTH_192 = 192,
         BITLENGTH_256 = 256

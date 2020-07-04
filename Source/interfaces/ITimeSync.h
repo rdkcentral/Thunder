@@ -28,7 +28,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface gives direct access to a time synchronize / update
-    struct ITimeSync : virtual public Core::IUnknown {
+    struct EXTERNAL ITimeSync : virtual public Core::IUnknown {
         enum { ID = ID_TIMESYNC };
 
         struct INotification : virtual public Core::IUnknown {
