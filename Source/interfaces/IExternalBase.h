@@ -147,6 +147,26 @@ namespace Exchange {
 
     public:
         // ------------------------------------------------------------------------
+        // Convenience methods to extract interesting information from the type
+        // ------------------------------------------------------------------------
+        inline basic Basic() const
+        {
+            return (IExternal::Basic(_type));
+        }
+        inline dimension Dimension() const
+        {
+            return (IExternal::Dimension(_type));
+        }
+        inline specific Specific() const
+        {
+            return (IExternal::Specific(_type));
+        }
+        inline uint8_t Decimals() const
+        {
+            return (IExternal::Decimals(_type));
+        }
+
+        // ------------------------------------------------------------------------
         // Polling interface methods
         // ------------------------------------------------------------------------
         // Define the polling time in Seconds. This value has a maximum of a 24 hour.
@@ -215,6 +235,7 @@ namespace Exchange {
         {
             return (_type);
         }
+
         int32_t Minimum() const override
         {
             int32_t result = 0;

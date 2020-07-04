@@ -112,9 +112,9 @@ namespace Exchange {
         };
 
         enum condition : uint8_t {
-            constructing = 0x0000,
-            activated = 0x0001,
-            deactivated = 0x0002
+            constructing = 0x00,
+            activated    = 0x01,
+            deactivated  = 0x02
         };
 
         // Pushing notifications to interested sinks
@@ -147,23 +147,23 @@ namespace Exchange {
         virtual void Evaluate() = 0;
 
         // ------------------------------------------------------------------------
-        // Convenience methods to extract interesting information from the type
+        // Convenience methods to extract interesting information from the Type()
         // ------------------------------------------------------------------------
-        inline basic Basic() const
+        static basic Basic(const uint32_t instanceType)
         {
-            return (static_cast<basic>((Type() >> 12) & 0xF));
+            return (static_cast<basic>((instanceType >> 12) & 0xF));
         }
-        inline dimension Dimension() const
+        static dimension Dimension(const uint32_t instanceType)
         {
-            return (static_cast<dimension>((Type() >> 19) & 0x1FFF));
+            return (static_cast<dimension>((instanceType >> 19) & 0x1FFF));
         }
-        inline specific Specific() const
+        static specific Specific(const uint32_t instanceType)
         {
-            return (static_cast<specific>(Type() & 0xFFF));
+            return (static_cast<specific>(instanceType & 0xFFF));
         }
-        inline uint8_t Decimals() const
+        static uint8_t Decimals(const uint32_t instanceType)
         {
-            return ((Type() >> 16) & 0x07);
+            return ((instanceType >> 16) & 0x07);
         }
     };
 
