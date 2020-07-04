@@ -165,6 +165,9 @@ namespace Exchange {
         {
             return ((instanceType >> 16) & 0x07);
         }
+        static uint32_t Type(const basic base, const specific spec, const dimension dim, const uint8_t decimals) {
+            return ((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec);
+        }
     };
 
 } } // Namespace Exchange

@@ -140,7 +140,7 @@ namespace Exchange {
         #pragma warning(default : 4355)
         #endif
         inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals)
-            : ExternalBase(id, ((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec))
+            : ExternalBase(id, IExternal::Type(base, spec, dim, decimals))
         {
         }
         ~ExternalBase() override = default;
