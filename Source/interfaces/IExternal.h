@@ -131,7 +131,7 @@ namespace Exchange {
         // it means that the module is not assigned. Any other number indicates that the 
         // IExternal is allocated to a module and should not be overwritten with an other
         // number than 0.
-        virtual void Module(const uint8_t module) = 0;
+        virtual uint32_t Module(const uint8_t module) = 0;
 
         // Characteristics of this element
         virtual uint32_t Type() const = 0;
