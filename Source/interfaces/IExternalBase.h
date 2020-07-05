@@ -224,10 +224,11 @@ namespace Exchange {
         {
             return (_id);
         }
-        void Module(const uint8_t module) override
+        uint32_t Module(const uint8_t module) override
         {
-            ASSERT((module == 0) || ((_id & 0xFF000000) == 0));
+            ASSERT((module == 0) ^ ((_id & 0xFF000000) == 0));
             _id = (_id & 0x00FFFFFF) | (module << 24);
+            return (_id);
         }
 
         // Characteristics of this element
