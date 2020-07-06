@@ -21,9 +21,14 @@
             "example": "YouTube"
           },
           "parameters": {
-            "description": "Additional application-specific parameters",
+            "description": "URL and DIAL parameters to pass to the application",
             "type": "string",
-            "example": "watch?v=zpp045FBbQY"
+            "example": "youtube.com/tv"
+          },
+          "payload": {
+            "description": "Additional application-specific payload data to pass to the application",
+            "type": "string",
+            "example": "v=zpp045FBbQY"
           }
         },
         "required": [
@@ -42,9 +47,12 @@
             "example": "YouTube"
           },
           "parameters": {
-            "description": "Additional application-specific parameters",
-            "type": "string",
-            "example": ""
+            "description": "URL and DIAL parameters to pass to the application",
+            "type": "string"
+          },
+          "payload": {
+            "description": "Additional application-specific payload data to pass to the application",
+            "type": "string"
           }
         },
         "required": [
