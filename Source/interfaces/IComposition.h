@@ -34,7 +34,7 @@ namespace Exchange {
         static constexpr uint32_t maxZOrder = 255;
         static constexpr uint32_t minZOrder = 0;
 
-        enum ScreenResolution {
+        enum ScreenResolution : uint8_t {
             ScreenResolution_Unknown = 0,
             ScreenResolution_480i = 1,
             ScreenResolution_480p = 2,

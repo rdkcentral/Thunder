@@ -140,7 +140,7 @@ namespace Exchange {
         #pragma warning(default : 4355)
         #endif
         inline ExternalBase(const uint32_t id, const basic base, const specific spec, const dimension dim, const uint8_t decimals)
-            : ExternalBase(id, ((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec))
+            : ExternalBase(id, IExternal::Type(base, spec, dim, decimals))
         {
         }
         ~ExternalBase() override = default;
@@ -151,19 +151,19 @@ namespace Exchange {
         // ------------------------------------------------------------------------
         inline basic Basic() const
         {
-            return (static_cast<basic>((_type >> 12) & 0xF));
+            return (IExternal::Basic(_type));
         }
         inline dimension Dimension() const
         {
-            return (static_cast<dimension>((_type >> 19) & 0x1FFF));
+            return (IExternal::Dimension(_type));
         }
         inline specific Specific() const
         {
-            return (static_cast<specific>(_type & 0xFFF));
+            return (IExternal::Specific(_type));
         }
         inline uint8_t Decimals() const
         {
-            return ((_type >> 16) & 0x07);
+            return (IExternal::Decimals(_type));
         }
 
         // ------------------------------------------------------------------------
@@ -224,10 +224,11 @@ namespace Exchange {
         {
             return (_id);
         }
-        void Module(const uint8_t module) override
+        uint32_t Module(const uint8_t module) override
         {
-            ASSERT((module == 0) || ((_id & 0xFF000000) == 0));
+            ASSERT((module == 0) ^ ((_id & 0xFF000000) == 0));
             _id = (_id & 0x00FFFFFF) | (module << 24);
+            return (_id);
         }
 
         // Characteristics of this element
@@ -235,6 +236,7 @@ namespace Exchange {
         {
             return (_type);
         }
+
         int32_t Minimum() const override
         {
             int32_t result = 0;

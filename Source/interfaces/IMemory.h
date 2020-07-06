@@ -29,7 +29,7 @@ namespace Exchange {
 
     // This interface allows for retrieval of memory usage specific to the implementor
     // of the interface
-    struct IMemory : virtual public Core::IUnknown {
+    struct EXTERNAL IMemory : virtual public Core::IUnknown {
         enum { ID = ID_MEMORY };
         virtual ~IMemory() {}
 

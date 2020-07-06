@@ -112,9 +112,9 @@ namespace Exchange {
         };
 
         enum condition : uint8_t {
-            constructing = 0x0000,
-            activated = 0x0001,
-            deactivated = 0x0002
+            constructing = 0x00,
+            activated    = 0x01,
+            deactivated  = 0x02
         };
 
         // Pushing notifications to interested sinks
@@ -131,7 +131,7 @@ namespace Exchange {
         // it means that the module is not assigned. Any other number indicates that the 
         // IExternal is allocated to a module and should not be overwritten with an other
         // number than 0.
-        virtual void Module(const uint8_t module) = 0;
+        virtual uint32_t Module(const uint8_t module) = 0;
 
         // Characteristics of this element
         virtual uint32_t Type() const = 0;
@@ -145,6 +145,29 @@ namespace Exchange {
 
         // Periodically we might like to be evaluated, call this method at a set time.
         virtual void Evaluate() = 0;
+
+        // ------------------------------------------------------------------------
+        // Convenience methods to extract interesting information from the Type()
+        // ------------------------------------------------------------------------
+        static basic Basic(const uint32_t instanceType)
+        {
+            return (static_cast<basic>((instanceType >> 12) & 0xF));
+        }
+        static dimension Dimension(const uint32_t instanceType)
+        {
+            return (static_cast<dimension>((instanceType >> 19) & 0x1FFF));
+        }
+        static specific Specific(const uint32_t instanceType)
+        {
+            return (static_cast<specific>(instanceType & 0xFFF));
+        }
+        static uint8_t Decimals(const uint32_t instanceType)
+        {
+            return ((instanceType >> 16) & 0x07);
+        }
+        static uint32_t Type(const basic base, const specific spec, const dimension dim, const uint8_t decimals) {
+            return ((dim << 19) | ((decimals & 0x07) << 16) | (base << 12) | spec);
+        }
     };
 
 } } // Namespace Exchange
