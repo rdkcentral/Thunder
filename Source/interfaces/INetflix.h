@@ -30,7 +30,7 @@ namespace Exchange {
 
         enum { ID = ID_NETFLIX };
 
-        enum state {
+        enum state : uint16_t {
             PLAYING = 0x0001,
             STOPPED = 0x0002,
             SUSPENDING = 0x0004

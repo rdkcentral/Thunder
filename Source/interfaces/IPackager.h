@@ -27,7 +27,7 @@ namespace Exchange {
     struct IPackager : virtual public Core::IUnknown {
         enum { ID = ID_PACKAGER };
 
-        enum state {
+        enum state : uint8_t {
             IDLE,
             DOWNLOADING,
             DOWNLOADED,
