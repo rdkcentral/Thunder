@@ -28,15 +28,16 @@
 #include "../tracing/tracing.h"
 #include "Ids.h"
 
-#ifdef __WINDOWS__
 #undef EXTERNAL
+
+#ifdef __WINDOWS__
 #ifdef COM_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
 #define EXTERNAL EXTERNAL_IMPORT
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 #endif // __MODULE_COM_H__

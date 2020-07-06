@@ -42,7 +42,7 @@
 #define EXTERNAL EXTERNAL_IMPORT
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 #endif // __MODULE_BLUETOOTH_H

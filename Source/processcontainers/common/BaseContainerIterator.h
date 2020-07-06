@@ -79,7 +79,7 @@ namespace ProcessContainers {
 
         const string& Id() const override
         {
-            ASSERT(IsValid() == true)
+            ASSERT(IsValid() == true);
 
             return _ids[_current];
         }

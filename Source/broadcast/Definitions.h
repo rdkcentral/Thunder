@@ -226,7 +226,7 @@ namespace Broadcast {
         Hierarchy4,
     };
 
-    struct ITuner {
+    struct EXTERNAL ITuner {
 
         struct INotification {
             virtual ~INotification() {}

@@ -29,4 +29,4 @@
 #include <climits>
 
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_IMPORT

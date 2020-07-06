@@ -35,15 +35,23 @@ namespace WPEFramework {
 namespace Crypto {
     template <typename HASHALGORITHM>
     class HMACType {
-    private:
-        HMACType();
-        HMACType(const HMACType&);
-        HMACType& operator=(const HMACType&);
+    public:
+        HMACType(const HMACType&) = delete;
+        HMACType& operator=(const HMACType&) = delete;
+
+        HMACType() : _algorithm() {
+            Key(EMPTY_STRING);
+        }
+        HMACType(const string& key) : _algorithm() {
+            Key(key);
+        }
+       ~HMACType() = default;
 
     public:
-        HMACType(const string& key)
-            : _algorithm()
-        {
+        static const EnumHashType Type = HASHALGORITHM::Type;
+        static const uint8_t Length = HASHALGORITHM::Length;
+
+        void Key(const string& key) {
             uint8_t keyLength;
             const uint8_t* encryptionKey;
             HASHALGORITHM hashKey;
@@ -72,16 +80,8 @@ namespace Crypto {
             }
 
             // Reset the algorithm. We start from scratch..
-            _algorithm.Input(_innerKeyPad, sizeof(_innerKeyPad));
-            _computed = false;
+            Reset();
         }
-        ~HMACType()
-        {
-        }
-
-    public:
-        static const EnumHashType Type = HASHALGORITHM::Type;
-        static const uint8_t Length = HASHALGORITHM::Length;
         inline static uint8_t BlockLength()
         {
             return (sizeof(_innerKeyPad));

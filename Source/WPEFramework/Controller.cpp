@@ -392,7 +392,7 @@ namespace Plugin {
                     remainder = index.Remainder().Text();
                 }
 
-                DeleteDirectory(_service->PersistentPath() + remainder);
+                Core::Directory((_service->PersistentPath() + remainder).c_str()).Destroy(true);
 
                 result->Message = "OK";
             }
@@ -516,7 +516,7 @@ namespace Plugin {
                 response = service->Invoke(token, channelId, forwarder);
                 asyncCall = (response.IsValid() == false);
             }
-		}
+        }
 
         if ((inbound.Id.Value() != static_cast<uint32_t>(~0)) && (response.IsValid() == false) && (asyncCall == false)) {
             response = Message();
@@ -540,35 +540,6 @@ namespace Plugin {
         }
 
         return (response);
-    }
-
-    void Controller::DeleteDirectory(const string& directory)
-    {
-        // Allow only if the path does not contain ".." entries
-        if (directory.find("..") == string::npos) {
-
-            Core::Directory dir(directory.c_str());
-
-            while (dir.Next() == true) {
-                Core::File file(dir.Current());
-
-                if (file.IsDirectory() == true) {
-                    string name(file.FileName());
-
-                    // We can not delete the "." or  ".." entries....
-                    if (((name.length() > 0) && (name[0] != '.'))) {
-                        DeleteDirectory(dir.Current());
-                    }
-                } else {
-                    file.Destroy();
-                }
-            }
-
-            Core::File currentDir(directory);
-            if (directory.back() != '/') {
-                currentDir.Destroy();
-            }
-        }
     }
 }
 }

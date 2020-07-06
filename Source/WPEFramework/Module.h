@@ -31,7 +31,7 @@
 #include "../websocket/websocket.h"
 
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 
 #ifndef TREE_REFERENCE
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only

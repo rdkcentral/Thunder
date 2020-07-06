@@ -21,8 +21,9 @@
 
 #include <stdbool.h>
 
-#ifdef _MSVC_LANG
 #undef EXTERNAL
+
+#ifdef _MSVC_LANG
 #ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
@@ -31,7 +32,7 @@
 #endif
 #else
 #ifndef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
 #endif
 

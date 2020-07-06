@@ -38,7 +38,7 @@ namespace Core {
 
     namespace JSON {
 
-        struct Error {
+        struct EXTERNAL Error {
             explicit Error(string&& message)
                 : _message(std::move(message))
                 , _context()

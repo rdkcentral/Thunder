@@ -28,7 +28,7 @@
 #pragma comment(lib, "securityagent.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
 
 #include "SecurityToken.h"

@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,24 +16,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-#ifndef __MODULE_CORE_H
-#define __MODULE_CORE_H
 
-#ifndef MODULE_NAME
-#define MODULE_NAME Core
-#endif
+#pragma once
 
-#undef EXTERNAL
+#include "Module.h"
 
-#ifdef _WINDOWS
-#ifdef CORE_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
+namespace WPEFramework {
+namespace Exchange {
 
-#endif // __MODULE_CORE_H
+    namespace Dolby {
+
+        struct IOutput : virtual public Core::IUnknown {
+
+            enum { ID = ID_DOLBY_OUTPUT };
+
+            ~IOutput() override = default;
+
+            enum Type : uint8_t {
+                DIGITAL_PCM = 0,
+                DIGITAL_PASS_THROUGH = 3,
+                ATMOS_PASS_THROUGH = 4,
+                AUTO = 5
+            };
+
+            virtual void Mode(const Dolby::IOutput::Type value) = 0;
+            
+            virtual Dolby::IOutput::Type Mode() const = 0;
+        };
+    }
+}
+}

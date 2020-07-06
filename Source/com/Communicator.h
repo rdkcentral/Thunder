@@ -953,7 +953,7 @@ namespace RPC {
                 std::map<uint32_t, Communicator::RemoteConnection*>::iterator index(_connections.find(info.ExchangeId()));
 
                 ASSERT(index != _connections.end());
-                ASSERT(index->second->IsOperational() == false)
+                ASSERT(index->second->IsOperational() == false);
 
                 // This is when we requested this interface/object to be created, there must be already an
                 // administration, it is just not complete.... yet!!!!
