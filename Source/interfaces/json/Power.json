@@ -83,11 +83,7 @@
           "$ref": "#/common/errors/illegalstate"
         },
         {
-          "description": "Power state is invalid",
-          "$ref": "#/common/errors/unavailable"
-        },
-        {
-          "description": "Bad JSON param data format",
+          "description": "Invalid Power state or Bad JSON param data format",
           "$ref": "#/common/errors/badrequest"
         }
       ]
