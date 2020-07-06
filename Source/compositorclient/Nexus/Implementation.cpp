@@ -247,6 +247,7 @@ namespace Nexus {
             for (auto surface : _surfaces) {
                 delete surface;
             }
+
             NXPL_UnregisterNexusDisplayPlatform(_nxplHandle);
 #ifdef BACKEND_BCM_NEXUS_NXCLIENT   
             NxClient_Uninit();
@@ -262,38 +263,50 @@ namespace Nexus {
 
     public:
         // Lifetime management
-        virtual void AddRef() const override
+        void AddRef() const override
         {
-            }
-        virtual uint32_t Release() const override
+        }
+
+        uint32_t Release() const override
         {               
             // Display can not be destructed, so who cares :-)
+
+            // We should take care of a possible blocked read() call in Process().
+            Message msg({0, KEY_DESTRUCT});
+            write(g_pipefd[1], &msg, sizeof(msg));
+
             return (0);
         }
 
         // Methods
-        virtual EGLNativeDisplayType Native() const override
+        EGLNativeDisplayType Native() const override
         {
             return (static_cast<EGLNativeDisplayType>(EGL_DEFAULT_DISPLAY));
         }
-        virtual const std::string& Name() const override
+        
+        const std::string& Name() const override
         {
             return (_displayName);
         }
-        virtual int Process(const uint32_t data) override
+
+        int Process(const uint32_t data) override
         {
+            
             Message message;
             if ((data != 0) && (g_pipefd[0] != -1) && (read(g_pipefd[0], &message, sizeof(message)) > 0)) {
+                
+                if(message.type != KEY_DESTRUCT){
+                 
+                    std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
 
-                std::list<SurfaceImplementation*>::iterator index(_surfaces.begin());
-
-                while (index != _surfaces.end()) {
-                    // RELEASED  = 0,
-                    // PRESSED   = 1,
-                    // REPEAT    = 2,
-
-                    (*index)->SendKey(message.code, ((message.type == KEY_RELEASED) ? IDisplay::IKeyboard::released : ((message.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed)), time(nullptr));
-                    index++;
+                    while (index != _surfaces.end()) {
+                        // RELEASED  = 0,
+                        // PRESSED   = 1,
+                        // REPEAT    = 2,
+                        (*index)->SendKey(message.code, ((message.type == KEY_RELEASED) ? IDisplay::IKeyboard::released : ((message.type == KEY_REPEAT)? IDisplay::IKeyboard::repeated : IDisplay::IKeyboard::pressed)), time(nullptr));
+                        index++;
+                    }
+                    
                 }
             }
 
@@ -332,6 +345,7 @@ namespace Nexus {
         void* _virtualkeyboard;
         std::list<SurfaceImplementation*> _surfaces;
         uint32_t _nexusClientId;
+
     };
 
 } // Nexus
