@@ -29,7 +29,7 @@ namespace Exchange {
 
         enum { ID = ID_DSGCC_CLIENT };
 
-        enum state {
+        enum state : uint8_t {
             Unknown = 0,
             Ready   = 1,
             Changed = 2,
