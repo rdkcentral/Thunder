@@ -53,6 +53,7 @@ namespace Core {
 #else
             if (pthread_mutex_lock(&m_syncMutex) != 0) {
                 TRACE_L1("Probably creating a deadlock situation. <%d>", 0);
+                ASSERT(false);
             }
 #endif
 #endif
@@ -67,6 +68,7 @@ namespace Core {
 #ifdef __POSIX__
             if (pthread_mutex_unlock(&m_syncMutex) != 0) {
                 TRACE_L1("Probably does the calling thread not own this CCriticalSection. <%d>", 0);
+                ASSERT(false);
             }
 #endif
 
@@ -78,6 +80,7 @@ namespace Core {
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncMutex;
+        pthread_mutexattr_t structAttributes;
 #endif
 #ifdef __WINDOWS__
         CRITICAL_SECTION m_syncMutex;
@@ -126,7 +129,9 @@ namespace Core {
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncAdminLock;
+        pthread_mutexattr_t m_attr;
         pthread_cond_t m_syncCondition;
+        pthread_condattr_t c_attr;
         volatile bool m_blLocked;
 #endif
 
@@ -159,6 +164,7 @@ namespace Core {
     protected: // Members
 #ifdef __POSIX__
         pthread_mutex_t m_syncAdminLock;
+        pthread_mutexattr_t m_attr;
         BinairySemaphore m_syncMinLimit;
         BinairySemaphore m_syncMaxLimit;
         unsigned int m_nCounter;
@@ -203,7 +209,9 @@ namespace Core {
 #ifdef __POSIX__
         volatile bool m_blCondition;
         pthread_mutex_t m_syncAdminLock;
+        pthread_mutexattr_t m_attr;
         pthread_cond_t m_syncCondition;
+        pthread_condattr_t c_attr;
 #endif
 
 #ifdef __WINDOWS__

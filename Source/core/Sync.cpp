@@ -141,13 +141,11 @@ namespace Core {
     {
         TRACE_L5("Constructor CriticalSection <%p>", (this));
 
-        pthread_mutexattr_t structAttributes;
-
         // Create a recursive mutex for this process (no named version, use semaphore)
         if (pthread_mutexattr_init(&structAttributes) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
-        } else if (pthread_mutexattr_settype(&structAttributes, PTHREAD_MUTEX_RECURSIVE) != 0) {
+        } else if (pthread_mutexattr_settype(&structAttributes, /*PTHREAD_MUTEX_NORMAL, PTHREAD_MUTEX_ERROR*/ PTHREAD_MUTEX_RECURSIVE) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         } else if (pthread_mutex_init(&m_syncMutex, &structAttributes) != 0) {
@@ -167,58 +165,64 @@ namespace Core {
         const int nTimeSecs = 5;
         timespec structTime;
 
-        clock_gettime(CLOCK_REALTIME, &structTime);
-        structTime.tv_sec += nTimeSecs;
+        if (clock_gettime(CLOCK_REALTIME, &structTime) != 0) {
+            ASSERT(false);
+        }
+        else {
+            structTime.tv_sec += nTimeSecs;
 
+            // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
+            int result = pthread_mutex_timedlock(&m_syncMutex, &structTime);
+            if (result != 0) {
+                void* addresses[_AllocatedStackEntries];
 
-        // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
-        int result = pthread_mutex_timedlock(&m_syncMutex, &structTime);
-        if (result != 0) {
-            void* addresses[_AllocatedStackEntries];
-
-            int addressCount = backtrace(addresses, _AllocatedStackEntries);
-
-            // Remove top two frames because we are not interested in Lock+TryLock.
-            addressCount = StripStackTop(addresses, addressCount, 2);
-
-            // Lock mutex guarding stderr so no other critical section can dump its deadlock info
-            _StdErrDumpMutex.Lock();
-
-            TRACE_L1("Issue on process: <%d>", Core::ProcessInfo().Id());
-            TRACE_L1("Probably creating a deadlock situation. <%d>", result);
-
-            fprintf(stderr, "Failing lock:\n");
-            backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
-
-            // Only print last entry, use debugger to read all entries to find unmatched lock
-            int stackArrayIndex = m_syncMutex.__data.__count - 1;
-            ASSERT(stackArrayIndex >= 0);
-
-            fprintf(stderr, "\nLocked location:\n");
-            backtrace_symbols_fd(_LockingStack[stackArrayIndex], _UsedStackEntries[stackArrayIndex], fileno(stderr));
-
-            fprintf(stderr, "\nCurrent stack of locking thread:\n");
-            addressCount = ::GetCallStack(_LockingThread, addresses, _AllocatedStackEntries);
-            backtrace_symbols_fd(addresses, _AllocatedStackEntries, fileno(stderr));
-
-            _StdErrDumpMutex.Unlock();
-
-            if (result == ETIMEDOUT && ((result = pthread_mutex_lock(&m_syncMutex)) != 0)) {
-                TRACE_L1("After detection, continued to wait. Wait failed with error: <%d>", result);
-            }
-        } else {
-            _LockingThread = pthread_self();
-
-            int stackArrayIndex = m_syncMutex.__data.__count - 1;
-            if (stackArrayIndex < _AllocatedStacks) {
-                _UsedStackEntries[stackArrayIndex] = backtrace(_LockingStack[stackArrayIndex], _AllocatedStackEntries);
+                int addressCount = backtrace(addresses, _AllocatedStackEntries);
 
                 // Remove top two frames because we are not interested in Lock+TryLock.
-                _UsedStackEntries[stackArrayIndex] = StripStackTop(_LockingStack[stackArrayIndex], _UsedStackEntries[0], 2);
+                addressCount = StripStackTop(addresses, addressCount, 2);
+
+                // Lock mutex guarding stderr so no other critical section can dump its deadlock info
+                _StdErrDumpMutex.Lock();
+
+                TRACE_L1("Issue on process: <%d>", Core::ProcessInfo().Id());
+                TRACE_L1("Probably creating a deadlock situation. <%d>", result);
+
+                fprintf(stderr, "Failing lock:\n");
+                backtrace_symbols_fd(addresses, addressCount, fileno(stderr));
+
+                // Only print last entry, use debugger to read all entries to find unmatched lock
+                int stackArrayIndex = m_syncMutex.__data.__count - 1;
+                ASSERT(stackArrayIndex >= 0);
+
+                fprintf(stderr, "\nLocked location:\n");
+                backtrace_symbols_fd(_LockingStack[stackArrayIndex], _UsedStackEntries[stackArrayIndex], fileno(stderr));
+
+                fprintf(stderr, "\nCurrent stack of locking thread:\n");
+                addressCount = ::GetCallStack(_LockingThread, addresses, _AllocatedStackEntries);
+                backtrace_symbols_fd(addresses, _AllocatedStackEntries, fileno(stderr));
+
+                _StdErrDumpMutex.Unlock();
+
+                if (pthread_mutex_unlock(&m_syncMutex) != 0) {
+                    TRACE_L1("Unlock failed with error: <%d>", result);
+                }
+            } else {
+                if (result == ETIMEDOUT) {
+                    TRACE_L1("Wait failed with error: <%d>", result);
+                }
+
+                _LockingThread = pthread_self();
+
+                int stackArrayIndex = m_syncMutex.__data.__count - 1;
+                if (stackArrayIndex < _AllocatedStacks) {
+                    _UsedStackEntries[stackArrayIndex] = backtrace(_LockingStack[stackArrayIndex], _AllocatedStackEntries);
+
+                    // Remove top two frames because we are not interested in Lock+TryLock.
+                    _UsedStackEntries[stackArrayIndex] = StripStackTop(_LockingStack[stackArrayIndex], _UsedStackEntries[0], 2);
+                }
             }
         }
     }
-
     int CriticalSection::StripStackTop(void** stack, int stackEntries, int stripped)
     {
         int newEntryCount = stackEntries - stripped;
@@ -245,6 +249,9 @@ namespace Core {
 #ifdef __POSIX__
         if (pthread_mutex_destroy(&m_syncMutex) != 0) {
             TRACE_L1("Probably trying to delete a used CriticalSection <%d>.", 0);
+        }
+        if (pthread_mutexattr_destroy(&structAttributes) != 0) {
+            ASSERT(false);
         }
 #endif
 #ifdef __WINDOWS__
@@ -276,24 +283,30 @@ namespace Core {
 #ifdef __POSIX__
         m_blLocked = (nInitialCount == 0);
 
-        pthread_condattr_t attr;
-
-        if (0 != pthread_condattr_init(&attr)) {
+        if (0 != pthread_condattr_init(&c_attr)) {
             ASSERT(false);
         }
 
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
+        if (0 != pthread_condattr_setclock(&c_attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
 
-        if (pthread_mutex_init(&m_syncAdminLock, nullptr) != 0) {
+        if (pthread_mutexattr_init(&m_attr) != 0) {
+            ASSERT(false);
+        }
+
+        if (pthread_mutexattr_settype(&m_attr, /*PTHREAD_MUTEX_NORMAL*/ PTHREAD_MUTEX_ERRORCHECK) != 0) {
+            ASSERT(false);
+        }
+
+        if (pthread_mutex_init(&m_syncAdminLock, &m_attr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
 
-        if (pthread_cond_init(&m_syncCondition, &attr) != 0) {
+        if (pthread_cond_init(&m_syncCondition, &c_attr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
@@ -314,23 +327,30 @@ namespace Core {
         TRACE_L5("Constructor BinairySemaphore <%p>", (this));
 
 #ifdef __POSIX__
-        pthread_condattr_t attr;
-
-        if (0 != pthread_condattr_init(&attr)) {
+        if (0 != pthread_condattr_init(&c_attr)) {
             ASSERT(false);
         }
 
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
+        if (0 != pthread_condattr_setclock(&c_attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
+
+        if (pthread_mutexattr_init(&m_attr) != 0) {
+            ASSERT(false);
+        }
+
+        if (pthread_mutexattr_settype(&m_attr, /*PTHREAD_MUTEX_NORMAL*/ PTHREAD_MUTEX_ERRORCHECK) != 0) {
+            ASSERT(false);
+        }
+
         if (pthread_mutex_init(&m_syncAdminLock, nullptr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
 
-        if (pthread_cond_init(&m_syncCondition, &attr) != 0) {
+        if (pthread_cond_init(&m_syncCondition, &c_attr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
@@ -348,9 +368,27 @@ namespace Core {
         TRACE_L5("Destructor BinairySemaphore <%p>", (this));
 
 #ifdef __POSIX__
+        ASSERT(m_blLocked != false);
+
+        if(m_blLocked != false) {
+            // There appears to be a lock present
+            TRACE_L1("Locked BinairySemaphore <%p> detected at destruction", (this));
+            Unlock();
+        }
+
         // If we really create it, we really have to destroy it.
-        pthread_mutex_destroy(&m_syncAdminLock);
-        pthread_cond_destroy(&m_syncCondition);
+        if (pthread_mutex_destroy(&m_syncAdminLock) !=0 ) {
+            ASSERT(false);
+        }
+        if (pthread_cond_destroy(&m_syncCondition) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_mutexattr_destroy(&m_attr) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_condattr_destroy(&c_attr) != 0) {
+            ASSERT(false);
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -372,33 +410,37 @@ namespace Core {
         int nResult = Core::ERROR_NONE;
 
         // See if we can check the state.
-        pthread_mutex_lock(&m_syncAdminLock);
+        if (pthread_mutex_lock(&m_syncAdminLock) !=0) {
+            nResult = Core::ERROR_GENERAL;
+            ASSERT(false);
+        }
+        else {
+            // We are not busy Setting the flag, so we can check it.
+            if (m_blLocked != false) { // The lock has already been taken so wait for it to be released
+                do {
+                    // Oops it seems that we are not allowed to pass.
+                    nResult = (pthread_cond_wait(&m_syncCondition, &m_syncAdminLock) == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
 
-        // We are not busy Setting the flag, so we can check it.
-        if (m_blLocked != false) {
-            do {
-                // Oops it seems that we are not allowed to pass.
-                nResult = pthread_cond_wait(&m_syncCondition, &m_syncAdminLock);
+                    // For some reason the documentation says that we have to double check on
+                    // the condition variable to see if we are allowed to fall through, so we
+                    // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
+                } while ((m_blLocked != false) && (nResult == Core::ERROR_NONE));
 
-                if (nResult != 0) {
-                    // Something went wrong, so assume...
-                    TRACE_L5("Error waiting for event <%d>.", nResult);
-                    nResult = Core::ERROR_GENERAL;
+                if (nResult == Core::ERROR_NONE) {
+                    // Seems like we have the token, So the object is locked now.
+                    m_blLocked = true;
                 }
+            }
+            else {
+                // No lock has yet been taken, take it
+                m_blLocked = true;
+            }
 
-                // For some reason the documentation says that we have to double check on
-                // the condition variable to see if we are allowed to fall through, so we
-                // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
-            } while ((m_blLocked == true) && (nResult == Core::ERROR_NONE));
+            // Done with the internals of the binairy semphore, everyone can access it again.
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0){
+                ASSERT(false);
+            }
         }
-
-        if (nResult == Core::ERROR_NONE) {
-            // Seems like we have the token, So the object is locked now.
-            m_blLocked = true;
-        }
-
-        // Done with the internals of the binairy semphore, everyone can access it again.
-        pthread_mutex_unlock(&m_syncAdminLock);
 
         // Wait forever so...
         return (nResult);
@@ -412,51 +454,60 @@ namespace Core {
         return (::WaitForSingleObjectEx(m_syncMutex, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #else
         uint32_t nResult = Core::ERROR_NONE;
+
         if (nTime == Core::infinite) {
-            return (Lock());
+            nResult = (Lock());
         } else {
-
             // See if we can check the state.
-            pthread_mutex_lock(&m_syncAdminLock);
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                nResult = Core::ERROR_GENERAL;
+                ASSERT(false);
+            }
+            else {
+                // We are not busy Setting the flag, so we can check it.
+                if (m_blLocked != true) { // The lock has already been taken so wait for it to be released
+                    struct timespec structTime;
 
-            // We are not busy Setting the flag, so we can check it.
-            if (m_blLocked == true) {
-                struct timespec structTime;
-
-#ifdef __LINUX__
-                clock_gettime(CLOCK_MONOTONIC, &structTime);
-                structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-                structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-                structTime.tv_nsec = structTime.tv_nsec % 1000000000;
-#endif
-
-                do {
-                    // Oops it seems that we are not allowed to pass.
-                    nResult = pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime);
-
-                    if (nResult == ETIMEDOUT) {
-                        // Som/ething went wrong, so assume...
-                        TRACE_L5("Timed out waiting for event <%d>.", nTime);
-                        nResult = Core::ERROR_TIMEDOUT;
-                    } else if (nResult != 0) {
-                        // Something went wrong, so assume...
-                        TRACE_L5("Waiting on semaphore failed. Error code <%d>", nResult);
+                    if(clock_gettime(CLOCK_MONOTONIC, &structTime) != 0) {
+                        // Error
                         nResult = Core::ERROR_GENERAL;
                     }
+                    else {
+                        structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+                        structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+                        structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
-                    // For some reason the documentation says that we have to double check on
-                    // the condition variable to see if we are allowed to fall through, so we
-                    // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
-                } while ((m_blLocked == true) && (nResult == Core::ERROR_NONE));
+                        do {
+                            // Oops it seems that we are not allowed to pass.
+                            nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
+
+                            // For some reason the documentation says that we have to double check on
+                            // the condition variable to see if we are allowed to fall through, so we
+                            // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
+                        } while ((m_blLocked != true) && (nResult == Core::ERROR_NONE));
+                    }
+
+                    if (nResult == Core::ERROR_TIMEDOUT) {
+                        // Som/ething went wrong, so assume...
+                        TRACE_L5("Timed out waiting for event <%d>.", nTime);
+                    }
+
+                    if (nResult == Core::ERROR_NONE) {
+                        // Seems like we have the token, So the object is locked now.
+                        m_blLocked = true;
+                    }
+                }
+                else {
+                    // No lock has yet been taken, take it
+                    m_blLocked = true;
+                }
+
+                // Done with the internals of the binairy semphore, everyone can access it again.
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                    nResult = Core::ERROR_GENERAL;
+                    ASSERT(false);
+                }
             }
-
-            if (nResult == Core::ERROR_NONE) {
-                // Seems like we have the token, So the object is locked now.
-                m_blLocked = true;
-            }
-
-            // Done with the internals of the binairy semphore, everyone can access it again.
-            pthread_mutex_unlock(&m_syncAdminLock);
         }
 
         // Timed out or did we get the token ?
@@ -470,18 +521,27 @@ namespace Core {
 
 #ifdef __POSIX__
         // See if we can get access to the data members of this object.
-        pthread_mutex_lock(&m_syncAdminLock);
+        if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+            ASSERT(false);
+        }
+        else {
+            ASSERT(m_blLocked != false);
 
-        // Yep, that's it we are no longer locked. Signal the change.
-        m_blLocked = false;
+            // Yep, that's it we are no longer locked. Signal the change.
+            m_blLocked = false;
 
-        // O.K. that is arranged, Now we should at least signal the first
-        // waiting process that is waiting for this condition to occur.
-        pthread_cond_signal(&m_syncCondition);
+            // O.K. that is arranged, Now we should at least signal the first
+            // waiting process that is waiting for this condition to occur.
+            if (pthread_cond_signal(&m_syncCondition) != 0) {
+                ASSERT(false);
+            }
 
-        // Now that we are done with the variablegive other threads access
-        // to the object again.
-        pthread_mutex_unlock(&m_syncAdminLock);
+            // Now that we are done with the variablegive other threads access
+            // to the object again.
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
+            }
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -513,7 +573,16 @@ namespace Core {
 
 #ifdef __POSIX__
 
-        if (pthread_mutex_init(&m_syncAdminLock, nullptr) != 0) {
+        if (pthread_mutexattr_init(&m_attr) != 0) {
+            ASSERT(false);
+        }
+
+        if(pthread_mutexattr_settype(&m_attr, /*PTHREAD_MUTEX_NORMAL, PTHREAD_MUTEX_RECURSIVE*/ PTHREAD_MUTEX_ERRORCHECK) != 0) {
+            ASSERT(false);
+        }
+
+        // Defaults with no error check performed
+        if (pthread_mutex_init(&m_syncAdminLock, &m_attr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
@@ -521,13 +590,17 @@ namespace Core {
         // Well that is it, see if one of the Limit locks should be taken ?
         if (m_nCounter == 0) {
             // This should be possible since we created them Not Locked.
-            m_syncMinLimit.Lock();
+            if(m_syncMinLimit.Lock() != Core::ERROR_NONE) {
+                ASSERT(false);
+            }
         }
 
         // Or maybe we are at the upper limit ?
         if (m_nCounter == m_nMaxCount) {
             // This should be possible since we created them Not Locked.
-            m_syncMaxLimit.Lock();
+            if(m_syncMaxLimit.Lock() != Core::ERROR_NONE) {
+                ASSERT(false);
+            }
         }
 #endif
 
@@ -544,7 +617,12 @@ namespace Core {
 
 #ifdef __POSIX__
         // O.K. Destroy all the semaphores used by this class.
-        pthread_mutex_destroy(&m_syncAdminLock);
+        if (pthread_mutex_destroy(&m_syncAdminLock) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_mutexattr_destroy(&m_attr) != 0) {
+            ASSERT(false);
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -570,29 +648,34 @@ namespace Core {
             // If we have this semaphore, no Other lock can take place
             // now make sure that the counter is handled atomic. Get the
             // administration lock (unlock can still access it).
-            pthread_mutex_lock(&m_syncAdminLock);
-
-            // Now we are in the clear, Lock cannot access this (blocked
-            // on MinLimit) and unlock cannot access the counter (blocked on
-            // m_syncAdminLock). Work the Semaphore counter. It's safe.
-
-            // If we leave the absolute max position, make sure we release
-            // the MaxLimit synchronisation.
-            if (m_nCounter == m_nMaxCount) {
-                m_syncMaxLimit.Unlock();
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
             }
+            else {
+                // Now we are in the clear, Lock cannot access this (blocked
+                // on MinLimit) and unlock cannot access the counter (blocked on
+                // m_syncAdminLock). Work the Semaphore counter. It's safe.
 
-            // Now update the counter.
-            m_nCounter--;
+                // If we leave the absolute max position, make sure we release
+                // the MaxLimit synchronisation.
+                if (m_nCounter == m_nMaxCount) {
+                    m_syncMaxLimit.Unlock();
+                }
 
-            // See if the counter can still be decreased.
-            if (m_nCounter != 0) {
-                m_syncMinLimit.Unlock();
+                // Now update the counter.
+                m_nCounter--;
+
+                // See if the counter can still be decreased.
+                if (m_nCounter != 0) {
+                    m_syncMinLimit.Unlock();
+                }
+
+                // Now we are completely done with the counter and it's logic. Free all
+                // waiting threads for this resource.
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0){
+                    ASSERT(false);
+                }
             }
-
-            // Now we are completely done with the counter and it's logic. Free all
-            // waiting threads for this resource.
-            pthread_mutex_unlock(&m_syncAdminLock);
         }
 
         return (nResult);
@@ -613,29 +696,34 @@ namespace Core {
             // If we have this semaphore, no Other lock can take place
             // now make sure that the counter is handled atomic. Get the
             // administration lock (unlock can still access it).
-            pthread_mutex_lock(&m_syncAdminLock);
-
-            // Now we are in the clear, Lock cannot access this (blocked
-            // on MinLimit) and unlock cannot access the counter (blocked on
-            // m_syncAdminLock). Work the Semaphore counter. It's safe.
-
-            // If we leave the absolute max position, make sure we release
-            // the MaxLimit synchronisation.
-            if (m_nCounter == m_nMaxCount) {
-                m_syncMaxLimit.Unlock();
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
             }
+            else {
+                // Now we are in the clear, Lock cannot access this (blocked
+                // on MinLimit) and unlock cannot access the counter (blocked on
+                // m_syncAdminLock). Work the Semaphore counter. It's safe.
 
-            // Now update the counter.
-            m_nCounter--;
+                // If we leave the absolute max position, make sure we release
+                // the MaxLimit synchronisation.
+                if (m_nCounter == m_nMaxCount) {
+                    m_syncMaxLimit.Unlock();
+                }
 
-            // See if the counter can still be decreased.
-            if (m_nCounter != 0) {
-                m_syncMinLimit.Unlock();
+                // Now update the counter.
+                m_nCounter--;
+
+                // See if the counter can still be decreased.
+                if (m_nCounter != 0) {
+                    m_syncMinLimit.Unlock();
+                }
+
+                // Now we are completely done with the counter and it's logic. Free all
+                // waiting threads for this resource.
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                    ASSERT(false);
+                }
             }
-
-            // Now we are completely done with the counter and it's logic. Free all
-            // waiting threads for this resource.
-            pthread_mutex_unlock(&m_syncAdminLock);
         }
 
         return (nResult);
@@ -656,44 +744,54 @@ namespace Core {
             // If we have this semaphore, no Other lock can take place
             // now make sure that the counter is handled atomic. Get the
             // administration lock (unlock can still access it).
-            pthread_mutex_lock(&m_syncAdminLock);
-
-            // Now we are in the clear, Unlock cannot access this (blocked on
-            // MaxLimit) and Lock cannot access the counter (blocked on
-            // m_syncAdminLock). Work the Semaphore counter. It's safe.
-
-            // If we leave the absolute min position (0), make sure we signal
-            // the Lock proCess, give the MinLimit synchronisation free.
-            if (m_nCounter == 0) {
-                m_syncMinLimit.Unlock();
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
             }
+            else {
+                // Now we are in the clear, Unlock cannot access this (blocked on
+                // MaxLimit) and Lock cannot access the counter (blocked on
+                // m_syncAdminLock). Work the Semaphore counter. It's safe.
 
-            // See if the given count
-            m_nCounter += nCount;
+                // If we leave the absolute min position (0), make sure we signal
+                // the Lock proCess, give the MinLimit synchronisation free.
+                if (m_nCounter == 0) {
+                    m_syncMinLimit.Unlock();
+                }
 
-            // See if we reached or overshot the max ?
-            if (m_nCounter > m_nMaxCount) {
-                // Release the Admin Semephore so the Lock on the max limit
-                //  can proceed.
-                pthread_mutex_unlock(&m_syncAdminLock);
+                // See if the given count
+                m_nCounter += nCount;
 
-                // Seems like we added more than allowed, so wait till the Max
-                // mutex get's unlocked by the Lock process.
-                m_syncMaxLimit.Lock(Core::infinite);
+                // See if we reached or overshot the max ?
+                if (m_nCounter > m_nMaxCount) {
+                    // Release the Admin Semephore so the Lock on the max limit
+                    //  can proceed.
+                    if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                        ASSERT(false);
+                    }
+                    else {
+                        // Seems like we added more than allowed, so wait till the Max
+                        // mutex get's unlocked by the Lock process.
+                        m_syncMaxLimit.Lock(Core::infinite);
 
-                // Before we continue processing, Get the administrative lock
-                // again.
-                pthread_mutex_lock(&m_syncAdminLock);
+                        // Before we continue processing, Get the administrative lock
+                        // again.
+                        if (pthread_mutex_lock(&m_syncAdminLock) !=0) {
+                            ASSERT(false);
+                        }
+                    }
+                }
+
+                // See if we are still allowed to increase the counter.
+                if (m_nCounter != m_nMaxCount) {
+                    m_syncMaxLimit.Unlock();
+                }
+
+                // Now we are completely done with the counter and it's logic. Free all
+                // waiting threads for this resource.
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                    ASSERT(false);
+                }
             }
-
-            // See if we are still allowed to increase the counter.
-            if (m_nCounter != m_nMaxCount) {
-                m_syncMaxLimit.Unlock();
-            }
-
-            // Now we are completely done with the counter and it's logic. Free all
-            // waiting threads for this resource.
-            pthread_mutex_unlock(&m_syncAdminLock);
         }
 #endif
 
@@ -724,29 +822,37 @@ namespace Core {
             // If we have this semaphore, no Other lock can take place
             // now make sure that the counter is handled atomic. Get the
             // administration lock (unlock can still access it).
-            pthread_mutex_lock(&m_syncAdminLock);
-
-            // Now we are in the clear, Unlock cannot access this (blocked on
-            // MaxLimit) and Lock cannot access the counter (blocked on
-            // m_syncAdminLock). Work the Semaphore counter. It's safe.
-
-            // If we leave the absolute min position (0), make sure we signal
-            // the Lock process, give the MinLimit synchronisation free.
-            if (m_nCounter == 0) {
-                m_syncMinLimit.Unlock();
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
             }
+            else {
+                // Now we are in the clear, Unlock cannot access this (blocked on
+                // MaxLimit) and Lock cannot access the counter (blocked on
+                // m_syncAdminLock). Work the Semaphore counter. It's safe.
 
-            // Now update the counter.
-            m_nCounter++;
+                // If we leave the absolute min position (0), make sure we signal
+                // the Lock process, give the MinLimit synchronisation free.
+                if (m_nCounter == 0) {
+                    m_syncMinLimit.Unlock();
+                }
 
-            // See if we are still allowed to increase the counter.
-            if (m_nCounter != m_nMaxCount) {
-                m_syncMaxLimit.Unlock();
+                // Now update the counter.
+                m_nCounter++;
+
+                // See if we are still allowed to increase the counter.
+                if (m_nCounter != m_nMaxCount) {
+                    m_syncMaxLimit.Unlock();
+                }
+
+                // Now we are completely done with the counter and it's logic. Free all
+                // waiting threads for this resource.
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                    ASSERT(false);
+                }
             }
-
-            // Now we are completely done with the counter and it's logic. Free all
-            // waiting threads for this resource.
-            pthread_mutex_unlock(&m_syncAdminLock);
+        }
+        else {
+            TRACE_L5("Timed out waiting for TryUnlockt <%d>!", nResult);
         }
 #endif
 
@@ -783,23 +889,30 @@ namespace Core {
         TRACE_L5("Constructor Event <%p>", (this));
 
 #ifdef __POSIX__
-        pthread_condattr_t attr;
 
-        if (0 != pthread_condattr_init(&attr)) {
+        if (0 != pthread_condattr_init(&c_attr)) {
             ASSERT(false);
         }
 #ifndef __APPLE__
-        if (0 != pthread_condattr_setclock(&attr, CLOCK_MONOTONIC)) {
+        if (0 != pthread_condattr_setclock(&c_attr, CLOCK_MONOTONIC)) {
             ASSERT(false);
         }
 #endif
+
+        if (pthread_mutexattr_init(&m_attr) != 0) {
+            ASSERT(false);
+        }
+
+        if (pthread_mutexattr_settype(&m_attr, /*PTHREAD_MUTEX_NORMAL*/ PTHREAD_MUTEX_ERRORCHECK) != 0) {
+            ASSERT(false);
+        }
 
         if (pthread_mutex_init(&m_syncAdminLock, nullptr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
 
-        if (pthread_cond_init(&m_syncCondition, &attr) != 0) {
+        if (pthread_cond_init(&m_syncCondition, &c_attr) != 0) {
             // That will be the day, if this fails...
             ASSERT(false);
         }
@@ -818,9 +931,28 @@ namespace Core {
 #ifdef __POSIX__
         TRACE_L5("Destructor Event <%p>", (this));
 
+        ASSERT(m_blCondition != true);
+
+        if(m_blCondition != true) {
+            // Unlock all blocked threads
+            if (pthread_cond_broadcast(&m_syncCondition) != 0) {
+                ASSERT(false);
+            }
+        }
+
         // If we really create it, we really have to destroy it.
-        pthread_mutex_destroy(&m_syncAdminLock);
-        pthread_cond_destroy(&m_syncCondition);
+        if (pthread_mutex_destroy(&m_syncAdminLock) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_cond_destroy(&m_syncCondition) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_mutexattr_destroy(&m_attr) != 0) {
+            ASSERT(false);
+        }
+        if (pthread_condattr_destroy(&c_attr) != 0) {
+            ASSERT(false);
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -840,28 +972,26 @@ namespace Core {
 #else
         int nResult = Core::ERROR_NONE;
         // See if we can check the state.
-        pthread_mutex_lock(&m_syncAdminLock);
-
-        // We are not busy Setting the flag, so we can check it.
-        if (m_blCondition == false) {
-            do {
+        if (pthread_mutex_lock(&m_syncAdminLock) !=0 ) {
+            nResult = Core::ERROR_GENERAL;
+            ASSERT(false);
+        }
+        else {
+            // We are not busy Setting the flag, so we can check it.
+            if (m_blCondition != true) { // The event has not yet arrived / occured
                 // Oops it seems that we are not allowed to pass.
                 nResult = (pthread_cond_wait(&m_syncCondition, &m_syncAdminLock) == 0 ? Core::ERROR_NONE : Core::ERROR_GENERAL);
+            }
+            else {
+                nResult = Core::ERROR_GENERAL;
+            }
 
-                // For some reason the documentation says that we have to double check on
-                // the condition variable to see if we are allowed to fall through, so we
-                // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
-            } while ((m_blCondition == false) && (nResult == Core::ERROR_NONE));
-
-            if (nResult != 0) {
-                // Something went wrong, so assume...
-                TRACE_L5("Error waiting for event <%d>.", nResult);
+            // Seems that the event is triggered, lets continue. but
+            // do not forget to give back the flag..
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
             }
         }
-
-        // Seems that the event is triggered, lets continue. but
-        // do not forget to give back the flag..
-        pthread_mutex_unlock(&m_syncAdminLock);
 
         // Wait forever so...
         return (nResult);
@@ -886,44 +1016,52 @@ namespace Core {
 #ifdef __WINDOWS__
         return (::WaitForSingleObjectEx(m_syncEvent, nTime, FALSE) == WAIT_OBJECT_0 ? Core::ERROR_NONE : Core::ERROR_TIMEDOUT);
 #else
+        int nResult = Core::ERROR_NONE;
+
         if (nTime == Core::infinite) {
-            return (Lock());
+            nResult = (Lock());
         } else {
-            int nResult = Core::ERROR_NONE;
-
             // See if we can check the state.
-            pthread_mutex_lock(&m_syncAdminLock);
+            if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+                nResult = Core::ERROR_GENERAL;
+                ASSERT(false);
+            }
+            else {
+                // We are not busy Setting the flag, so we can check it.
+                if (m_blCondition != true) { // The event has not yet arrived / occured
+                    struct timespec structTime;
 
-            // We are not busy Setting the flag, so we can check it.
-            if (m_blCondition == false) {
-                struct timespec structTime;
+                    if(clock_gettime(CLOCK_MONOTONIC, &structTime) != 0) {
+                        // Error
+                        nResult = Core::ERROR_GENERAL;
+                    }
+                    else {
+                        structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
+                        structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
+                        structTime.tv_nsec = structTime.tv_nsec % 1000000000;
 
-                clock_gettime(CLOCK_MONOTONIC, &structTime);
-                structTime.tv_nsec += ((nTime % 1000) * 1000 * 1000); /* remainder, milliseconds to nanoseconds */
-                structTime.tv_sec += (nTime / 1000) + (structTime.tv_nsec / 1000000000); /* milliseconds to seconds */
-                structTime.tv_nsec = structTime.tv_nsec % 1000000000;
+                        nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
+                    }
 
-                do {
-                    // Oops it seems that we are not allowed to pass.
-                    nResult = (pthread_cond_timedwait(&m_syncCondition, &m_syncAdminLock, &structTime) != 0 ? Core::ERROR_TIMEDOUT : Core::ERROR_NONE);
+                    if (nResult == Core::ERROR_TIMEDOUT) {
+                        // Something went wrong, so assume...
+                        TRACE_L5("Timed out waiting for event <%d>!", nResult);
+                    }
+                }
+                else {
+                    nResult = Core::ERROR_GENERAL;
+                }
 
-                    // For some reason the documentation says that we have to double check on
-                    // the condition variable to see if we are allowed to fall through, so we
-                    // do (Guide to DEC threads, March 1996 ,page pthread-56, paragraph 4)
-                } while ((m_blCondition == false) && (nResult == Core::ERROR_NONE));
-
-                if (nResult != 0) {
-                    // Something went wrong, so assume...
-                    TRACE_L5("Timed out waiting for event <%d>!", nResult);
+                // Seems that the event is triggered, lets continue. but
+                // do not forget to give back the flag..
+                if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                    nResult = Core::ERROR_GENERAL;
+                    ASSERT(false);
                 }
             }
-
-            // Seems that the event is triggered, lets continue. but
-            // do not forget to give back the flag..
-            pthread_mutex_unlock(&m_syncAdminLock);
-
-            return (nResult);
         }
+
+        return (nResult);
 #endif
     }
 
@@ -934,18 +1072,25 @@ namespace Core {
 
 #ifdef __POSIX__
         // See if we can get access to the data members of this object.
-        pthread_mutex_lock(&m_syncAdminLock);
+        if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+            nResult = Core::ERROR_GENERAL;
+            ASSERT(false);
+        }
+        else {
+            // O.K. that is arranged, Now we should at least signal the first
+            // waiting process that is waiting for this condition to occur.
+            if (pthread_cond_signal(&m_syncCondition) != 0) {
+                nResult = Core::ERROR_GENERAL;
+                ASSERT(false);
+            }
 
-        // Yep, that's it we are no longer locked. Signal the change.
-        m_blCondition = true;
-
-        // O.K. that is arranged, Now we should at least signal the first
-        // waiting process that is waiting for this condition to occur.
-        pthread_cond_signal(&m_syncCondition);
-
-        // Now that we are done with the variablegive other threads access
-        // to the object again.
-        pthread_mutex_unlock(&m_syncAdminLock);
+            // Now that we are done with the variablegive other threads access
+            // to the object again.
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                nResult = Core::ERROR_GENERAL;
+                ASSERT(false);
+            }
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -964,14 +1109,21 @@ namespace Core {
     {
 #ifdef __POSIX__
         // See if we can check the state.
-        pthread_mutex_lock(&m_syncAdminLock);
+        if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+            ASSERT(false);
+        }
+        else {
+            ASSERT(m_blCondition != false);
 
-        // We are the onlyones who can access the data, time to update it.
-        m_blCondition = false;
+            // We are the onlyones who can access the data, time to update it.
+            m_blCondition = false;
 
-        // Done changing the data, free other threads so the can use this
-        // object again
-        pthread_mutex_unlock(&m_syncAdminLock);
+            // Done changing the data, free other threads so the can use this
+            // object again
+            if( pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
+            }
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -984,32 +1136,33 @@ namespace Core {
     {
 #ifdef __POSIX__
         // See if we can get access to the data members of this object.
-        pthread_mutex_lock(&m_syncAdminLock);
-
-        // Yep, that's it we are signalled, Broadcast the change.
-        m_blCondition = true;
-
-        // O.K. that is arranged, Now we should at least signal waiting
-        // process that the event has occured.
-        pthread_cond_broadcast(&m_syncCondition);
-
-        // All waiting threads are now in the running mode again. See
-        // if the event should be cleared manually again.
-        if (m_blManualReset == false) {
-            // Make sure all threads are in running mode, place our request
-            // for sync at the end of the FIFO-queue for syncConditionMutex.
-            pthread_mutex_unlock(&m_syncAdminLock);
-            ::SleepMs(0);
-            pthread_mutex_lock(&m_syncAdminLock);
-
-            // They all had a change to continue so, now it is over, we can
-            // not wait forever......
-            m_blCondition = false;
+        if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+            ASSERT(false);
         }
+        else {
+            ASSERT(m_blCondition != true);
 
-        // Now that we are done with the variablegive other threads access
-        // to the object again.
-        pthread_mutex_unlock(&m_syncAdminLock);
+            // Yep, that's it we are signalled, Broadcast the change.
+            m_blCondition = true;
+
+            // O.K. that is arranged, Now we should at least signal waiting
+            // process that the event has occured.
+            if (pthread_cond_broadcast(&m_syncCondition) != 0) {
+                ASSERT(false);
+            }
+
+            // All waiting threads are now in the running mode again. See
+            // if the event should be cleared manually again.
+            if (m_blManualReset == false) {
+                m_blCondition = false;
+            }
+
+            // Now that we are done with the variablegive other threads access
+            // to the object again.
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
+            }
+        }
 #endif
 
 #ifdef __WINDOWS__
@@ -1022,28 +1175,28 @@ namespace Core {
     {
 #ifdef __POSIX__
         // See if we can get access to the data members of this object.
-        pthread_mutex_lock(&m_syncAdminLock);
+        if (pthread_mutex_lock(&m_syncAdminLock) != 0) {
+            ASSERT(false);
+        }
+        else {
+            ASSERT(m_blCondition != true);
 
-        // Yep, that's it we are signalled, Broadcast the change.
-        m_blCondition = true;
+            // Yep, that's it we are signalled, Broadcast the change.
+            m_blCondition = true;
 
-        // O.K. that is arranged, Now we should at least signal waiting
-        // process that the event has occured.
-        pthread_cond_broadcast(&m_syncCondition);
+            // O.K. that is arranged, Now we should at least signal waiting
+            // process that the event has occured.
+            if (pthread_cond_broadcast(&m_syncCondition) != 0) {
+                ASSERT(false);
+            }
 
-        // Make sure all threads are in running mode, place our request
-        // for sync at the end of the FIFO-queue for syncConditionMutex.
-        pthread_mutex_unlock(&m_syncAdminLock);
-        ::SleepMs(0);
-        pthread_mutex_lock(&m_syncAdminLock);
+            m_blCondition = false;
 
-        // They all had a change to continue so, now it is over, we can
-        // not wait forever......
-        m_blCondition = false;
-
-        // Now that we are done with the variablegive other threads access
-        // to the object again.
-        pthread_mutex_unlock(&m_syncAdminLock);
+            // to the object again.
+            if (pthread_mutex_unlock(&m_syncAdminLock) != 0) {
+                ASSERT(false);
+            }
+        }
 #endif
 
 #ifdef __WINDOWS__
