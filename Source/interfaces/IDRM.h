@@ -442,11 +442,7 @@ public:
 
     virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
-        if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
-           OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
-        } else {
-           Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
-        }
+        Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
     }
     virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell)
     {
@@ -454,27 +450,6 @@ public:
     }
 
 private:
-    template <typename T>
-    struct HasOnSystemConfigurationAvailable {
-        template <typename U, void (U::*)(const std::string&)>
-        struct SFINAE {
-        };
-        template <typename U>
-        static uint8_t Test(SFINAE<U, &U::OnSystemConfigurationAvailable>*);
-        template <typename U>
-        static uint32_t Test(...);
-        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
-    };
-
-    void OnSystemConfig(const std::string& configline, std::true_type)
-    {
-        _instance.OnSystemConfigurationAvailable(configline);
-    }
-
-    void OnSystemConfig(const std::string&, std::false_type)
-    {
-    }
-
     template <typename T>
     struct HasOnShellAndSystemInitialize {
         template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
