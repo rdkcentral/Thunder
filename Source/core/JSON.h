@@ -258,21 +258,21 @@ namespace Core {
             virtual void Clear() = 0;
             virtual bool IsSet() const = 0;
             virtual bool IsNull() const = 0;
-            virtual uint16_t Serialize(char Stream[], const uint16_t MaxLength, uint16_t& offset) const = 0;
-            uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset)
+            virtual uint16_t Serialize(char stream[], const uint16_t maxLength, uint16_t& offset) const = 0;
+            uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset)
             {
                 Core::OptionalType<Error> error;
-                uint16_t loaded = Deserialize(Stream, MaxLength, offset, error);
+                uint16_t loaded = Deserialize(stream, maxLength, offset, error);
 
                 if (error.IsSet() == true) {
                     Clear();
-                    error.Value().Context(Stream, MaxLength, loaded);
+                    error.Value().Context(stream, maxLength, loaded);
                     TRACE_L1("Parsing failed: %s", ErrorDisplayMessage(error.Value()).c_str());
                 }
 
                 return loaded;
             }
-            virtual uint16_t Deserialize(const char Stream[], const uint16_t MaxLength, uint16_t& offset, Core::OptionalType<Error>& error) = 0;
+            virtual uint16_t Deserialize(const char stream[], const uint16_t maxLength, uint16_t& offset, Core::OptionalType<Error>& error) = 0;
         };
 
         struct EXTERNAL IMessagePack {
@@ -1093,6 +1093,8 @@ namespace Core {
                     str += stream[loaded++];
 
                 }
+
+                loaded++;
 
                 if(str == IElement::NullTag)
                 {
