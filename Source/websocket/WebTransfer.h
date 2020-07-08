@@ -336,7 +336,7 @@ namespace Web {
 
             // Read all Data to calculate the HASH/HMAC
             while (size > 0) {
-                uint16_t chunk = std::min(sizeof(buffer), size);
+                uint16_t chunk = std::min(static_cast<uint32_t>(sizeof(buffer)), size);
                 _fileBody.Serialize(buffer, chunk);
                 hash.Input(buffer, chunk);
                 size -= chunk;
@@ -502,7 +502,7 @@ namespace Web {
             uint8_t   buffer[64];
             typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
             uint32_t  pos  = _fileBody.Position();
-            uint32_t  size = _fileBody.Size() - pos;
+            std::size_t  size = _fileBody.Size() - pos;
 
             hash.Reset();
 
