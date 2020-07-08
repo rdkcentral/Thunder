@@ -598,7 +598,7 @@ namespace Bluetooth {
 
     public:
 
-        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = ~0>
+        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = static_cast<uint8_t>(~0)>
         class CommandType : public Core::IOutbound, public Core::IInbound {
         private:
             CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& operator=(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
