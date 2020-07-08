@@ -29,7 +29,7 @@ namespace Exchange {
 
         enum { ID = ID_INPUT_SWITCH };
 
-        enum mode {
+        enum mode : uint8_t {
             ENABLED,
             DISABLED,
             SLAVE
