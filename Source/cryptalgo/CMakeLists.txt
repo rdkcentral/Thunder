@@ -43,6 +43,8 @@ target_link_libraries(${TARGET}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+target_compile_definitions(${TARGET} PRIVATE CRYPTALGO_EXPORTS)
+
 if(SECURE_SOCKET)
     find_package(OpenSSL REQUIRED)
 

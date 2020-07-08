@@ -38,7 +38,7 @@ namespace Exchange {
 
         virtual ~IConnectionProperties() { }
 
-        enum HDRType {
+        enum HDRType : uint8_t {
             HDR_OFF,
             HDR_10,
             HDR_10PLUS,
@@ -46,7 +46,7 @@ namespace Exchange {
             HDR_TECHNICOLOR
         };
 
-        enum HDCPProtectionType {
+        enum HDCPProtectionType : uint8_t {
             HDCP_Unencrypted,
             HDCP_1X,
             HDCP_2X

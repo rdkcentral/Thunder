@@ -695,6 +695,44 @@ namespace Core {
             return (*this);
         }
 
+        bool Destroy (const bool safePathOnly) {
+
+            bool result = false;
+
+            // Allow only if the path does not contain ".." entries
+            if ((safePathOnly == false) || (_name.find("..") == string::npos)) {
+
+                Reset();
+
+                while (Next() == true) {
+                    Core::File file(Current());
+
+                    if (file.IsDirectory() == true) {
+                        string name(file.FileName());
+
+                        // We can not delete the "." or  ".." entries....
+                        if ( (name.length() > 2) || 
+                             ((name.length() == 1) && (name[0] != '.')) ||
+                             ((name.length() == 2) && !((name[0] == '.') && (name[1] == '.'))) ) {
+                            Directory deleteIt(Current().c_str());
+                            deleteIt.Destroy(false);
+                        }
+                    } else {
+                        file.Destroy();
+                    }
+                }
+
+                if (_name.back() != '/') {
+                    Core::File(_name).Destroy();
+                }
+
+                result = true;
+            }
+
+            return (result);
+        }
+
+
     private:
         string _name;
         string _filter;

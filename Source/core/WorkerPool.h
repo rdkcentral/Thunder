@@ -92,7 +92,7 @@ namespace Core {
         virtual const Metadata& Snapshot() const = 0;
     };
 
-    class WorkerPool : public IWorkerPool {
+    class EXTERNAL WorkerPool : public IWorkerPool {
     private:
         class Timer {
         public:

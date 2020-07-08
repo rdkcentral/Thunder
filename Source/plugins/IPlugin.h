@@ -25,16 +25,16 @@
 namespace WPEFramework {
 
 namespace Web {
-    class EXTERNAL Request;
+    class Request;
 
-    class EXTERNAL Response;
+    class Response;
 }
 
 namespace PluginHost {
 
-    struct EXTERNAL IShell;
+    struct IShell;
 
-    class EXTERNAL Channel;
+    class Channel;
 
     struct IPlugin
         : public virtual Core::IUnknown {

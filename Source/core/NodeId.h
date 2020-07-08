@@ -37,6 +37,9 @@
 #include <linux/netlink.h>
 #include <netinet/in.h>
 #include <sys/un.h>
+#include <netpacket/packet.h>
+#include <net/ethernet.h>
+#include <net/if.h>
 #endif
 
 #ifdef CORE_BLUETOOTH
@@ -77,6 +80,7 @@ namespace Core {
             TYPE_DOMAIN = AF_UNIX,
             TYPE_NETLINK = AF_NETLINK,
             TYPE_BLUETOOTH = AF_BLUETOOTH,
+            TYPE_PACKET = AF_PACKET,
             TYPE_EMPTY = 0xFF
         };
 
@@ -86,6 +90,7 @@ namespace Core {
 #ifndef __WINDOWS__
             struct domain_extended DomainSocket;
             struct netlink_extended NetlinkSocket;
+            struct sockaddr_ll RawSocket;
 #endif
 #ifdef CORE_BLUETOOTH
             struct sockaddr_hci BTSocket;
@@ -114,6 +119,7 @@ namespace Core {
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
+        NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress);
 #endif
 #ifdef CORE_BLUETOOTH
         NodeId(const uint16_t device, const uint16_t channel);
@@ -154,7 +160,7 @@ namespace Core {
 #endif
         }
 
-        NodeId::enumType Type() const
+NodeId::enumType Type() const
         {
             return (static_cast<NodeId::enumType>(m_structInfo.IPV4Socket.sin_family));
         }
@@ -233,11 +239,12 @@ namespace Core {
         NodeId& operator=(const NodeId& rInfo);
         NodeId& operator=(const struct sockaddr_in& rInfo);
         NodeId& operator=(const struct sockaddr_in6& rInfo);
-        NodeId& operator=(const union SocketInfo& rInfo);
+        NodeId& operator=(const union SocketInfo& rInfo); 
 
 #ifndef __WINDOWS__
         NodeId& operator=(const struct sockaddr_un& rInfo);
         NodeId& operator=(const struct sockaddr_nl& rInfo);
+        NodeId& operator=(const struct sockaddr_ll& rInfo);
 #endif
 #ifdef CORE_BLUETOOTH
         NodeId& operator=(const struct sockaddr_hci& rInfo);

@@ -32,6 +32,6 @@
 #include "Ids.h"
 
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 
 #endif // __MODULE_INTERFACES_PROXYSTUB_H

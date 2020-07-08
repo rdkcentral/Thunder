@@ -190,7 +190,7 @@ namespace Plugin {
             if (path.find("..") == string::npos) {
                 ASSERT(_service != nullptr);
 
-                DeleteDirectory(_service->PersistentPath() +  path);
+                Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true);
                 result = Core::ERROR_NONE; // FIXME: return the real deletion result instead
             }
             else {
