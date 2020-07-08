@@ -128,6 +128,7 @@
 #include <array>
 
 #define AF_NETLINK 16
+#define AF_PACKET  17
 
 inline void SleepS(unsigned int a_Time)
 {

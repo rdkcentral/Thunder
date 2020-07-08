@@ -1430,6 +1430,7 @@ namespace Core {
             explicit String(const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
             }
@@ -1437,6 +1438,7 @@ namespace Core {
             explicit String(const string& Value, const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value.c_str(), _default);
@@ -1445,6 +1447,7 @@ namespace Core {
             explicit String(const char Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value, _default);
@@ -1454,6 +1457,7 @@ namespace Core {
             explicit String(const wchar_t Value[], const bool quoted = true)
                 : _default()
                 , _scopeCount(quoted ? QuotedSerializeBit : None)
+                , _unaccountedCount(0)
                 , _value()
             {
                 Core::ToString(Value, _default);
@@ -1463,6 +1467,7 @@ namespace Core {
             String(const String& copy)
                 : _default(copy._default)
                 , _scopeCount(copy._scopeCount & (QuotedSerializeBit | SetBit))
+                , _unaccountedCount(0)
                 , _value(copy._value)
             {
             }
@@ -2674,13 +2679,17 @@ namespace Core {
 
         public:
             ArrayType()
-                : _data()
+                : _state(0)
+                , _count(0)
+                , _data()
                 , _iterator(_data)
             {
             }
 
             ArrayType(const ArrayType<ELEMENT>& copy)
-                : _data(copy._data)
+                : _state(copy._state)
+                , _count(copy._count)
+                , _data(copy._data)
                 , _iterator(_data)
             {
             }

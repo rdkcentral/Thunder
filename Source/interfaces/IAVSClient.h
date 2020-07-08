@@ -33,7 +33,7 @@ namespace Exchange {
             enum { ID = ID_AVSCONTROLLER_NOTIFICATION };
             virtual ~INotification(){}
 
-            enum dialoguestate {
+            enum dialoguestate : uint8_t {
                 IDLE,
                 LISTENING,
                 EXPECTING,
