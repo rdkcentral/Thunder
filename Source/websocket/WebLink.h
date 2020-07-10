@@ -123,6 +123,9 @@ namespace Web {
             }
             virtual ~DeserializerImpl()
             {
+                if (_current.IsValid()) {
+                    _current.Release();
+                }
             }
 
         public:
