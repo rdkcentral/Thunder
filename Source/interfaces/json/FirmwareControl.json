@@ -36,6 +36,7 @@
         "generic",
         "invalidparameters",
         "invalidstate",
+        "invalidsize",
         "operationotsupported",
         "incorrecthash",
         "unauthenticated",
@@ -130,6 +131,10 @@
         {
           "description": "Invalid state of device",
           "$ref": "#/common/errors/illegalstate"
+        },
+        {
+          "description": "Invalid size of file",
+          "$ref": "#/common/errors/invalidsize"
         },
         {
           "description": "Incorrect hash given",

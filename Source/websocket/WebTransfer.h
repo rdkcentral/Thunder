@@ -24,6 +24,7 @@
 #include "URL.h"
 #include "WebLink.h"
 #include "WebSerializer.h"
+#include <inttypes.h>
 
 namespace WPEFramework {
 namespace Web {
@@ -167,6 +168,7 @@ namespace Web {
             , _request()
             , _fileBody()
             , _channel(*this, std::forward<Args>(args)...)
+            , _contentSize(0)
         {
             _fileBody.AddRef();
             _request.AddRef();
@@ -244,6 +246,7 @@ namespace Web {
                         // See if we can create a file to store the download in
                         static_cast<FILEBODY&>(_fileBody) = destination;
                         _fileBody.Position(false, 0);
+                        _contentSize = 0;
 
                         _state = TRANSFER_DOWNLOAD;
                         _request.Verb = Web::Request::HTTP_GET;
@@ -263,7 +266,11 @@ namespace Web {
         inline uint32_t FileSize() const {
             return (_fileBody.Core::File::Size());
         }
+        inline uint32_t ContentSize() const {
+            return (_contentSize);
+        }
         inline uint32_t Transferred () const {
+            FileSize();
             return (_fileBody.Position());
         }
 
@@ -288,16 +295,18 @@ namespace Web {
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
             uint32_t errorCode = Core::ERROR_NONE;
-
             // We are done, change state
             _adminLock.Lock();
+            _fileBody.LoadFileInfo();
             if (response.IsValid() == true) {
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
+                } else if ((_state == TRANSFER_DOWNLOAD) && (FileSize() != ContentSize())) {
+                    errorCode = Core::ERROR_INVALID_SIZE;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
                           ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
-                }
+               }
                 response.Release();
             } else {
                 errorCode = Core::ERROR_UNAVAILABLE;
@@ -316,7 +325,7 @@ namespace Web {
             if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
 
                 // Now we have a content length that we are going to receive, time to set it...
-                _fileBody.SetSize(element->ContentLength.Value());
+                _contentSize = element->ContentLength.Value();
                 _fileBody.Position(false, 0);
             }
 
@@ -374,6 +383,7 @@ namespace Web {
         Core::ProxyObject<Web::Request> _request;
         Core::ProxyObject<FILEBODY> _fileBody;
         Channel _channel;
+        uint32_t _contentSize;
     };
 
     template <typename LINK, typename FILEBODY>

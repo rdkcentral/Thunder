@@ -170,6 +170,10 @@
     "unauthenticated": {
       "code": 42,
       "message": "ERROR_UNAUTHENTICATED"
+    },
+    "invalidsize": {
+      "code": 43,
+      "message": "ERROR_INVALID_SIZE"
     }
   },
   "results": {
