@@ -166,6 +166,10 @@
     "invaliddesignator": {
       "code": 41,
       "message": "ERROR_INVALID_DESIGNATOR"
+    },
+    "unauthenticated": {
+      "code": 42,
+      "message": "ERROR_UNAUTHENTICATED"
     }
   },
   "results": {

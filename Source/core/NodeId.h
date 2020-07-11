@@ -38,10 +38,9 @@
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <netpacket/packet.h>
-#endif
-
 #include <net/ethernet.h>
 #include <net/if.h>
+#endif
 
 #ifdef CORE_BLUETOOTH
 #include <../include/bluetooth/bluetooth.h>

@@ -101,7 +101,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -124,7 +124,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -145,7 +145,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     }
@@ -173,7 +173,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -205,7 +205,7 @@
       "errors": [
         {
           "description": "Client(s) not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -231,7 +231,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     }

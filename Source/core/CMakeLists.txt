@@ -150,6 +150,8 @@ if(DISABLE_TRACING)
     message(STATUS "Force trace level to 0")
 endif()
 
+target_compile_definitions(${TARGET} PRIVATE CORE_EXPORTS)
+
 if(BUILD_TESTS)
     target_compile_definitions(${TARGET} PRIVATE BUILD_TESTS)
 endif()

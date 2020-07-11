@@ -89,10 +89,12 @@
             "Unknown",
             "Unsecure",
             "WPA",
+            "WPA2",
+            "WPA_WPA2",
             "Enterprise"
           ],
-          "example": "WPA",
-          "description": "Level of security"
+          "example": "WPA_WPA2",
+          "description": "Type of protection. WPA_WPA2 means both WPA and WPA2 types are allowed"
         },
         "hidden": {
           "type": "boolean",

@@ -51,7 +51,7 @@ namespace PluginHost {
         }
 
         // State of the IPlugin interface associated with this shell.
-        enum state {
+        enum state : uint8_t {
             DEACTIVATED,
             DEACTIVATION,
             ACTIVATED,
@@ -60,7 +60,7 @@ namespace PluginHost {
             DESTROYED
         };
 
-        enum reason {
+        enum reason : uint8_t {
             REQUESTED,
             AUTOMATIC,
             FAILURE,

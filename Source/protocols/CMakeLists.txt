@@ -131,6 +131,9 @@ target_include_directories(${TARGET}
           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/websocket>
 )
 
+target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)
+target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
+
 target_link_libraries(${TARGET}
         PRIVATE
           ZLIB::ZLIB

@@ -63,6 +63,26 @@
 #define B4000000 4000000
 #endif
 
+#if defined WIN32 || defined _WINDOWS || defined __CYGWIN__
+    #ifdef __GNUC__
+        #define EXTERNAL_IMPORT __attribute__ ((dllimport))
+        #define EXTERNAL_EXPORT __attribute__ ((dllexport))
+    #else
+        #define EXTERNAL_IMPORT __declspec(dllimport) 
+        #define EXTERNAL_EXPORT __declspec(dllexport)
+    #endif
+    #define EXTERNAL_HIDDEN
+#else
+  #if __GNUC__ >= 4 && !defined(__mips__)
+    #define EXTERNAL_IMPORT __attribute__ ((visibility ("hidden")))
+    #define EXTERNAL_EXPORT __attribute__ ((visibility ("default")))
+  #else
+    #define EXTERNAL_EXPORT
+    #define EXTERNAL_IMPORT
+  #endif
+  #define EXTERNAL_HIDDEN EXTERNAL_IMPORT
+#endif
+
 #if defined WIN32 || defined _WINDOWS
 
 // W3 -- warning C4290: C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
@@ -108,6 +128,7 @@
 #include <array>
 
 #define AF_NETLINK 16
+#define AF_PACKET  17
 
 inline void SleepS(unsigned int a_Time)
 {
@@ -125,10 +146,6 @@ typedef std::wstring string;
 #ifndef _UNICODE
 typedef std::string string;
 #endif
-
-#define EXTERNAL_HIDDEN
-#define EXTERNAL_EXPORT __declspec(dllexport)
-#define EXTERNAL_IMPORT __declspec(dllimport)
 
 #define CBR_110 110
 #define CBR_300 300
@@ -333,8 +350,8 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void SleepMs(unsigned int a_Time);
-inline void SleepS(unsigned int a_Time)
+extern void EXTERNAL_EXPORT SleepMs(unsigned int a_Time);
+inline void EXTERNAL_EXPORT SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }
@@ -461,11 +478,6 @@ typedef enum {
 #define TCHAR char
 #endif
 
-#if !defined(__mips__)
-#define EXTERNAL_HIDDEN __attribute__((visibility("hidden")))
-#else
-#define EXTERNAL_HIDDEN
-#endif
 
 #endif // __LINUX__
 
@@ -673,7 +685,8 @@ namespace Core {
         ERROR_CODE(ERROR_INVALID_SIGNATURE, 38) \
         ERROR_CODE(ERROR_READ_ERROR, 39) \
         ERROR_CODE(ERROR_WRITE_ERROR, 40) \
-        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41)
+        ERROR_CODE(ERROR_INVALID_DESIGNATOR, 41) \
+        ERROR_CODE(ERROR_UNAUTHENTICATED, 42)
 
     #define ERROR_CODE(CODE, VALUE) CODE = VALUE,
 

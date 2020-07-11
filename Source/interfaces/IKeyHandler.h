@@ -29,7 +29,7 @@ namespace Exchange {
     struct IPointerProducer;
     struct ITouchProducer;
 
-    enum ProducerEvents {
+    enum ProducerEvents : uint8_t {
         PairingStarted = 1,
         PairingSuccess,
         PairingFailed,
@@ -77,7 +77,7 @@ namespace Exchange {
 
         virtual ~ITouchHandler(){};
 
-        enum class touchstate {
+        enum class touchstate : uint8_t {
             TOUCH_MOTION,
             TOUCH_RELEASED,
             TOUCH_PRESSED

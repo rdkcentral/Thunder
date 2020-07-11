@@ -28,6 +28,6 @@
 #include <tracing/tracing.h>
 
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 
 #endif // __MODULE_COMPOSITION_CLIENT_H

@@ -33,7 +33,7 @@ namespace Core {
 
     namespace JSONRPC {
 
-        class Message : public Core::JSON::Container {
+        class EXTERNAL Message : public Core::JSON::Container {
         private:
             Message(const Message&) = delete;
             Message& operator=(const Message&) = delete;
