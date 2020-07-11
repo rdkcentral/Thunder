@@ -47,28 +47,28 @@ typedef struct {
 } GstreamerClientCallbacks;
 
 /**/
-int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks* callbacks);
+ EXTERNAL DEPRECATED int gstreamer_client_sink_link (SinkType type, GstElement *pipeline, GstElement * srcElement, GstPad *srcPad, GstreamerClientCallbacks* callbacks);
 
 /**/
-int gstreamer_client_sink_unlink (SinkType type, GstElement *pipeline);
+ EXTERNAL DEPRECATED int gstreamer_client_sink_unlink (SinkType type, GstElement *pipeline);
 
 /**/
-unsigned long gtsreamer_client_sink_frames_rendered (GstElement *pipeline);
+ EXTERNAL DEPRECATED unsigned long gtsreamer_client_sink_frames_rendered (GstElement *pipeline);
 
 /**/
-unsigned long gtsreamer_client_sink_frames_dropped (GstElement *pipeline);
+ EXTERNAL DEPRECATED unsigned long gtsreamer_client_sink_frames_dropped (GstElement *pipeline);
 
-int gstreamer_client_post_eos (GstElement * element);
+ EXTERNAL DEPRECATED int gstreamer_client_post_eos (GstElement * element);
 
-int gstreamer_client_can_report_stale_pts ();
+ EXTERNAL DEPRECATED int gstreamer_client_can_report_stale_pts ();
 
-int gstreamer_client_set_volume(GstElement *pipeline, double volume);
+ EXTERNAL DEPRECATED int gstreamer_client_set_volume(GstElement *pipeline, double volume);
 
-int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height);
+ EXTERNAL DEPRECATED int gstreamer_client_get_resolution(GstElement *pipeline, uint32_t * width, uint32_t * height);
 
-GstClockTime gstreamer_client_get_current_position(GstElement *pipeline);
+ EXTERNAL DEPRECATED GstClockTime gstreamer_client_get_current_position(GstElement *pipeline);
 
-int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+ EXTERNAL DEPRECATED int gstreamer_client_move_video_rectangle(GstElement *pipeline, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 
 #ifdef __cplusplus
 }

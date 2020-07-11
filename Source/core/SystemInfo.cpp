@@ -245,7 +245,7 @@ namespace Core {
             // First line of /proc/stat contains the overall CPU information
             uint64_t CpuFields[4];
 
-            int numFields = fscanf(input, _T("cpu %llu %llu %llu %llu"),
+            int numFields = fscanf(input, _T("cpu %" PRIu64 " %" PRIu64 " %" PRIu64 " %" PRIu64),
                 &CpuFields[0], &CpuFields[1],
                 &CpuFields[2], &CpuFields[3]);
 

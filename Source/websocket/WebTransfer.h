@@ -71,66 +71,15 @@ namespace Web {
             typedef ClientTransferType<LINK, FILEBODY> ThisClass;
 
         public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-            template <typename Arg1>
-            Channel(ThisClass& parent, Arg1 arg1)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1)
+            template <typename... Args>
+            Channel(ThisClass& parent, Args&&... args)
+                : BaseClass(ELEMENTFACTORY_QUEUESIZE, std::forward<Args>(args)...)
                 , _parent(parent)
                 , _request()
             {
             }
-            template <typename Arg1, typename Arg2>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2)
-                , _parent(parent)
-                , _request()
+            ~Channel() override
             {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2, arg3)
-                , _parent(parent)
-                , _request()
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2, arg3, arg4)
-                , _parent(parent)
-                , _request()
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2, arg3, arg4, arg5)
-                , _parent(parent)
-                , _request()
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2, arg3, arg4, arg5, arg6)
-                , _parent(parent)
-                , _request()
-            {
-            }
-            template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
-            Channel(ThisClass& parent, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
-                : BaseClass(ELEMENTFACTORY_QUEUESIZE, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-                , _parent(parent)
-                , _request()
-            {
-            }
-
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
-            virtual ~Channel()
-            {
-                BaseClass::Close(Core::infinite);
             }
 
         public:
@@ -149,16 +98,25 @@ namespace Web {
                 }
                 return result;
             }
+            void Close() {
+                BaseClass::Close(Core::infinite);
+                if (_request.IsValid() == true) {
+                    _request.Release();
+                }
+                if (_response.IsValid() == true) {
+                    _response.Release();
+                }
+            }
 
         private:
             // Notification of a Partial Request received, time to attach a body..
-            virtual void LinkBody(Core::ProxyType<Web::Response>& element)
+            void LinkBody(Core::ProxyType<Web::Response>& element) override
             {
                 _parent.LinkBody(element);
             }
 
             // Notification of a Request received.
-            virtual void Received(Core::ProxyType<Web::Response>& response)
+            void Received(Core::ProxyType<Web::Response>& response) override
             {
                 // Right we got what we wanted, process it..
                 _response = response;
@@ -167,7 +125,7 @@ namespace Web {
             }
 
             // Notification of a Response send.
-            virtual void Send(const Core::ProxyType<Web::Request>& request)
+            void Send(const Core::ProxyType<Web::Request>& request) override
             {
                 ASSERT(_request->IsValid() != false);
                 ASSERT(_request == request);
@@ -176,7 +134,7 @@ namespace Web {
             }
 
             // Notification of a channel state change..
-            virtual void StateChange()
+            void StateChange() override
             {
                 if (BaseClass::IsOpen() == true) {
                     ASSERT(_request->IsValid() == true);
@@ -185,7 +143,7 @@ namespace Web {
                 } else if ((_response.IsValid() == true) || (BaseClass::IsClosed() == true)) {
                     // Close the link and thus the transfer..
                     _parent.EndTransfer(_response);
-                }
+               }
             }
 
         private:
@@ -194,96 +152,37 @@ namespace Web {
             Core::ProxyType<Web::Response> _response;
         };
 
-    private:
+    public:
         ClientTransferType() = delete;
         ClientTransferType(const ClientTransferType<LINK, FILEBODY>& copy) = delete;
         ClientTransferType<LINK, FILEBODY>& operator=(const ClientTransferType<LINK, FILEBODY>& RHS) = delete;
 
-    public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-        template <typename Arg1>
-        ClientTransferType(Arg1 arg1)
+        #ifdef __WINDOWS__
+        #pragma warning(disable: 4355)
+        #endif
+        template <typename... Args>
+        ClientTransferType(Args&&... args)
             : _adminLock()
             , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1)
+            , _request()
+            , _fileBody()
+            , _channel(*this, std::forward<Args>(args)...)
         {
+            _fileBody.AddRef();
+            _request.AddRef();
         }
-        template <typename Arg1, typename Arg2>
-        ClientTransferType(Arg1 arg1, Arg2 arg2)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3>
-        ClientTransferType(Arg1 arg1, Arg2 arg2, Arg3 arg3)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2, arg3)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-        ClientTransferType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2, arg3, arg4)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-        ClientTransferType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2, arg3, arg4, arg5)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
-        ClientTransferType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6)
-        {
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
-        ClientTransferType(Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
-            : _adminLock()
-            , _state(TRANSFER_IDLE)
-            , _request(Core::ProxyType<Web::Request>::Create())
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _channel(*this, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-        {
-        }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
+        #ifdef __WINDOWS__
+        #pragma warning(default : 4355)
+        #endif
 
         virtual ~ClientTransferType()
         {
-            _request->Clear();
+            _channel.Close();
+            _request.CompositRelease();
+            _fileBody.CompositRelease();
         }
 
     public:
-        inline LINK& Link()
-        {
-            return (_channel.Link());
-        }
-        inline const LINK& Link() const
-        {
-            return (_channel.Link());
-        }
         uint32_t Upload(const Core::URL& destination, const Core::File& source)
         {
             uint32_t result = Core::ERROR_INPROGRESS;
@@ -302,20 +201,20 @@ namespace Web {
                     if (Setup(destination) == true) {
                         result = Core::ERROR_NONE;
 
-                        // See if we can create a file to store the download in
-                        static_cast<FILEBODY&>(*_fileBody) = source;
+                        // See if we can create a file to store the upload in
+                        static_cast<FILEBODY&>(_fileBody) = source;
 
                         _state = TRANSFER_UPLOAD;
-                        _request->Verb = Web::Request::HTTP_PUT;
-                        _request->Path = '/' + destination.Path().Value();
-                        _request->Host = destination.Host().Value();
-                        _request->Body(_fileBody);
+                        _request.Verb = Web::Request::HTTP_PUT;
+                        _request.Path = '/' + destination.Path().Value();
+                        _request.Host = destination.Host().Value();
+                        _request.Body(_fileBody);
 
                         // Maybe we need to add a hash value...
-                        _SerializedHashValue<LINK, FILEBODY>();
+                        _CalculateHash<LINK, FILEBODY>(_request);
 
                         // Prepare the request for processing
-                        result = _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
                     }
                 }
             }
@@ -324,7 +223,6 @@ namespace Web {
 
             return (result);
         }
-
         uint32_t Download(const Core::URL& source, Core::File& destination)
         {
             uint32_t result = Core::ERROR_INPROGRESS;
@@ -344,15 +242,16 @@ namespace Web {
                         result = Core::ERROR_NONE;
 
                         // See if we can create a file to store the download in
-                        static_cast<FILEBODY&>(*_fileBody) = destination;
+                        static_cast<FILEBODY&>(_fileBody) = destination;
+                        _fileBody.Position(false, 0);
 
                         _state = TRANSFER_DOWNLOAD;
-                        _request->Verb = Web::Request::HTTP_GET;
-                        _request->Path = '/' + source.Path().Value();
-                        _request->Host = source.Host().Value();
+                        _request.Verb = Web::Request::HTTP_GET;
+                        _request.Path = '/' + source.Path().Value();
+                        _request.Host = source.Host().Value();
 
                         // Prepare the request for processing
-                        result = _channel.StartTransfer(_request);
+                        result = _channel.StartTransfer(Core::ProxyType<Web::Request>(_request));
                     }
                 }
             }
@@ -361,11 +260,31 @@ namespace Web {
 
             return (result);
         }
+        inline uint32_t FileSize() const {
+            return (_fileBody.Core::File::Size());
+        }
+        inline uint32_t Transferred () const {
+            return (_fileBody.Position());
+        }
 
         virtual bool Setup(const Core::URL& remote) = 0;
         virtual void Transfered(const uint32_t result, const FILEBODY& file) = 0;
 
+    protected:
+        inline LINK& Link()
+        {
+            return (_channel.Link());
+        }
+        inline const LINK& Link() const
+        {
+            return (_channel.Link());
+        }
+ 
     private:
+        HAS_MEMBER(Hash, hasHash);
+
+        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
+
         inline void EndTransfer(const Core::ProxyType<Web::Response>& response)
         {
             uint32_t errorCode = Core::ERROR_NONE;
@@ -375,7 +294,8 @@ namespace Web {
             if (response.IsValid() == true) {
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
-                } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || ((_state == TRANSFER_DOWNLOAD) && (_DeserializedHashValue<LINK, FILEBODY>(response->ContentSignature) == false))) {
+                } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
+                          ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
                 }
                 response.Release();
@@ -384,47 +304,66 @@ namespace Web {
             }
 
             _state = TRANSFER_IDLE;
-            Transfered(errorCode, *_fileBody);
+
+            Transfered(errorCode, (static_cast<FILEBODY&>(_fileBody)));
+
             _adminLock.Unlock();
         }
-
         // Notification of a Partial Request received, time to attach a body..
         inline void LinkBody(Core::ProxyType<Web::Response>& element)
         {
-            element->Body(_fileBody);
+            // oke, now we should now all sizes... for Downloading and receving...
+            if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
+
+                // Now we have a content length that we are going to receive, time to set it...
+                _fileBody.SetSize(element->ContentLength.Value());
+                _fileBody.Position(false, 0);
+            }
+
+            element->Body(Core::ProxyType<FILEBODY>(_fileBody));
+            _fileBody.Release();
         }
-
-    private:
-        HAS_MEMBER(SerializedHashValue, hasSerializedHashValue);
-        HAS_MEMBER(DeserializedHashValue, hasDeserializedHashValue);
-
-        typedef hasSerializedHashValue<FILEBODY, const uint8_t* (FILEBODY::*)() const> TraitSerializedHashValue;
-        typedef hasDeserializedHashValue<FILEBODY, const uint8_t* (FILEBODY::*)() const> TraitDeserializedHashValue;
-
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, void>::type
-        _SerializedHashValue()
+        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        _CalculateHash(Web::Request& request)
         {
-            _request->ContentSignature = Signature(_fileBody->HashType(), _fileBody->SerializedHashValue());
+            uint8_t   buffer[64];
+            typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
+            uint32_t  pos  = _fileBody.Position();
+            uint32_t  size = _fileBody.Core::File::Size() - pos;
+
+            hash.Reset();
+
+            // Read all Data to calculate the HASH/HMAC
+            while (size > 0) {
+                uint16_t chunk = std::min(static_cast<uint32_t>(sizeof(buffer)), size);
+                _fileBody.Serialize(buffer, chunk);
+                hash.Input(buffer, chunk);
+                size -= chunk;
+            }
+
+            _fileBody.Position(pos);
+
+            request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, void>::type
-        _SerializedHashValue()
+        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        _CalculateHash()
         {
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, bool>::type
-        _DeserializedHashValue(const Core::OptionalType<Signature>& signature)
+        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
-            return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody->HashType(), _fileBody->DeserializedHashValue()) == true));
+            return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, bool>::type
-        _DeserializedHashValue(const Core::OptionalType<Signature>&)
+        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
         }
@@ -432,8 +371,8 @@ namespace Web {
     private:
         Core::CriticalSection _adminLock;
         enumTransferState _state;
-        Core::ProxyType<Web::Request> _request;
-        Core::ProxyType<FILEBODY> _fileBody;
+        Core::ProxyObject<Web::Request> _request;
+        Core::ProxyObject<FILEBODY> _fileBody;
         Channel _channel;
     };
 
@@ -443,18 +382,14 @@ namespace Web {
         typedef WebLinkType<LINK, Web::Request, Web::Response, SingleElementFactoryType<Web::Request>> BaseClass;
         typedef ServerTransferType<LINK, FILEBODY> ThisClass;
 
-    private:
+    public:
         ServerTransferType() = delete;
         ServerTransferType(const ServerTransferType<LINK, FILEBODY>& copy) = delete;
         ServerTransferType<LINK, FILEBODY>& operator=(const ServerTransferType<LINK, FILEBODY>& RHS) = delete;
 
-    public:
-#ifdef __WINDOWS__
-#pragma warning(disable : 4355)
-#endif
-        template <typename Arg1>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1)
-            : BaseClass(1, arg1)
+        template <typename... Args>
+        ServerTransferType(const string& pathPrefix, Args&&... args)
+            : BaseClass(1, std::forward<Args>(args)...)
             , _pathPrefix(pathPrefix)
             , _fileBody(Core::ProxyType<FILEBODY>::Create())
             , _response(Core::ProxyType<Web::Response>::Create())
@@ -462,141 +397,7 @@ namespace Web {
             // Path should be a directory. End with a slash !!!
             ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
         }
-        template <typename Arg1, typename Arg2>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2)
-            : BaseClass(1, arg1, arg2)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-            : BaseClass(1, arg1, arg2, arg3)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-            : BaseClass(1, arg1, arg2, arg3, arg4)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5, arg6)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
-        ServerTransferType(const string& pathPrefix, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create())
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1)
-            : BaseClass(1, arg1)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2)
-            : BaseClass(1, arg1, arg2)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2, Arg3 arg3)
-            : BaseClass(1, arg1, arg2, arg3)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4)
-            : BaseClass(1, arg1, arg2, arg3, arg4)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5, arg6)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-        template <typename Arg1, typename Arg2, typename Arg3, typename Arg4, typename Arg5, typename Arg6, typename Arg7>
-        ServerTransferType(const string& pathPrefix, const string& hashKey, Arg1 arg1, Arg2 arg2, Arg3 arg3, Arg4 arg4, Arg5 arg5, Arg6 arg6, Arg7 arg7)
-            : BaseClass(1, arg1, arg2, arg3, arg4, arg5, arg6, arg7)
-            , _pathPrefix(pathPrefix)
-            , _fileBody(Core::ProxyType<FILEBODY>::Create(hashKey))
-            , _response(Core::ProxyType<Web::Response>::Create())
-        {
-            // Path should be a directory. End with a slash !!!
-            ASSERT(_pathPrefix.empty() || (_pathPrefix[_pathPrefix.length() - 1] == '/'));
-        }
-#ifdef __WINDOWS__
-#pragma warning(default : 4355)
-#endif
-
-        virtual ~ServerTransferType()
+        ~ServerTransferType() override
         {
             BaseClass::Close(Core::infinite);
         }
@@ -605,7 +406,7 @@ namespace Web {
 
     private:
         // Notification of a Partial Request received, time to attach a body..
-        virtual void LinkBody(Core::ProxyType<Web::Request>& element)
+        void LinkBody(Core::ProxyType<Web::Request>& element) override
         {
             if (element->Verb == Web::Request::HTTP_PUT) {
                 static_cast<FILEBODY&>(*_fileBody) = _pathPrefix + element->Path;
@@ -618,7 +419,7 @@ namespace Web {
         }
 
         // Notification of a Request received.
-        virtual void Received(Core::ProxyType<Web::Request>& element)
+        void Received(Core::ProxyType<Web::Request>& element) override
         {
             // Right we got what we wanted, process it..
             if (element->Verb == Web::Request::HTTP_PUT) {
@@ -627,7 +428,7 @@ namespace Web {
                     _response->Message = _T("File: ") + element->Path + _T(" could not be stored server side.");
                 } else {
                     // See if the keys we received correspond.
-                    if (_DeserializedHashValue<LINK, FILEBODY>(element->ContentSignature) == true) {
+                    if (_ValidateHash<LINK, FILEBODY>(element->ContentSignature) == true) {
                         string message = Authorize(*element);
 
                         if (message.empty() == true) {
@@ -650,15 +451,15 @@ namespace Web {
                         _fileBody->Close();
                     }
                 }
-            } else {
+            } else if (element->Verb == Web::Request::HTTP_GET) {
                 static_cast<FILEBODY&>(*_fileBody) = (_pathPrefix + element->Path);
 
                 if (_fileBody->Exists() == true) {
                     string message = Authorize(*element);
 
                     if (message.empty() == true) {
+                        _CalculateHash<LINK, FILEBODY>(*_response);
                         _response->Body(_fileBody);
-                        _SerializedHashValue<LINK, FILEBODY>();
                     } else {
                         // Somehow we are not Authorzed. Kill it....
                         _response->ErrorCode = Web::STATUS_UNAUTHORIZED;
@@ -669,11 +470,15 @@ namespace Web {
                     _response->Message = _T("File: ") + element->Path + _T(" was not found server side.");
                 }
             }
+            else {
+                _response->ErrorCode = Web::STATUS_BAD_REQUEST;
+                _response->Message = _T("Unknown command received.");
+            }
             BaseClass::Submit(_response);
         }
 
         // Notification of a Response send.
-        virtual void Send(const Core::ProxyType<Web::Response>& response)
+        void Send(const Core::ProxyType<Web::Response>& response) override
         {
             // If we send the message, we are done.
             response.Release();
@@ -681,41 +486,56 @@ namespace Web {
         }
 
         // Notification of a channel state change..
-        virtual void StateChange()
+        void StateChange() override
         {
         }
 
     private:
-        HAS_MEMBER(SerializedHashValue, hasSerializedHashValue);
-        HAS_MEMBER(DeserializedHashValue, hasDeserializedHashValue);
+        HAS_MEMBER(Hash, hasHash);
 
-        typedef hasSerializedHashValue<FILEBODY, const uint8_t* (FILEBODY::*)() const> TraitSerializedHashValue;
-        typedef hasDeserializedHashValue<FILEBODY, const uint8_t* (FILEBODY::*)() const> TraitDeserializedHashValue;
+        typedef hasHash<FILEBODY, typename FILEBODY::HashType& (FILEBODY::*)() const> TraitHasHash;
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ServerTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, void>::type
-        _SerializedHashValue()
+        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        _CalculateHash(Web::Response& request)
         {
-            _response->ContentSignature = Signature(_fileBody->HashType(), _fileBody->SerializedHashValue());
+            uint8_t   buffer[64];
+            typename ACTUALFILEBODY::HashType& hash = _fileBody.Hash();
+            uint32_t  pos  = _fileBody.Position();
+            std::size_t  size = _fileBody.Size() - pos;
+
+            hash.Reset();
+
+            // Read all Data to calculate the HASH/HMAC
+            while (size > 0) {
+                uint16_t chunk = std::min(sizeof(buffer), size);
+                _fileBody.Serialize(buffer, chunk);
+                hash.Input(buffer, chunk);
+                size -= chunk;
+            }
+
+            _fileBody.Position(pos);
+
+            request.ContentSignature = Signature(hash.HashType(), hash.Result());
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ServerTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, void>::type
-        _SerializedHashValue()
+        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, void>::type
+        _CalculateHash()
         {
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<ServerTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, bool>::type
-        _DeserializedHashValue(const Core::OptionalType<Signature>& signature)
+        inline typename Core::TypeTraits::enable_if<ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             // See if this is a valid. frame
-            return ((signature.IsSet() == true) && (signature.Value().Equal(_fileBody->HashType(), _fileBody->DeserializedHashValue()) == true));
+            return ((signature.IsSet() == false) || (signature.Value().Equal(_fileBody.HashType(), _fileBody.Hash().Result()) == true));
         }
 
         template <typename ACTUALLINK, typename ACTUALFILEBODY>
-        inline typename Core::TypeTraits::enable_if<!ServerTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitSerializedHashValue::value, bool>::type
-        _DeserializedHashValue(const Core::OptionalType<Signature>&)
+        inline typename Core::TypeTraits::enable_if<!ClientTransferType<ACTUALLINK, ACTUALFILEBODY>::TraitHasHash::value, bool>::type
+        _ValidateHash(const Core::OptionalType<Signature>& signature) const
         {
             return (true);
         }

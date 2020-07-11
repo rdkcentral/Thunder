@@ -40,7 +40,7 @@
 #pragma comment(lib, "definitions.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 namespace WPEFramework {
