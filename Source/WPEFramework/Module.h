@@ -32,3 +32,6 @@
 #ifndef TREE_REFERENCE
 #define TREE_REFERENCE engineering_build_for_debug_purpose_only
 #endif
+
+#undef EXTERNAL
+#define EXTERNAL
