@@ -63,7 +63,7 @@
 #define B4000000 4000000
 #endif
 
-#if defined WIN32 || defined _WINDOWS || defined __CYGWIN__
+#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__)
     #ifdef __GNUC__
         #define EXTERNAL        __attribute__ ((dllimport))
         #define EXTERNAL_EXPORT __attribute__ ((dllexport))
@@ -71,6 +71,12 @@
         #define EXTERNAL        __declspec(dllimport) 
         #define EXTERNAL_EXPORT __declspec(dllexport)
     #endif
+
+    #if defined(CORE_EXPORTS)
+    #undef EXTERNAL
+    #define EXTERNAL EXTERNAL_EXPORT
+    #endif
+
     #define EXTERNAL_HIDDEN
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
@@ -197,6 +203,7 @@ typedef std::string string;
 #define KEY_RIGHTALT VK_RMENU
 #define KEY_LEFTCTRL VK_LCONTROL
 #define KEY_RIGHTCTRL VK_RCONTROL
+#undef INPUT_MOUSE
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -499,8 +506,6 @@ typedef HANDLE ThreadId;
 
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
-
-#include "Module.h"
 
 extern "C" {
 

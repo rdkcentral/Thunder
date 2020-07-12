@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "virtualinput.h"
 #include "IVirtualInput.h"
+#include "virtualinput.h"
 
 namespace WPEFramework {
 namespace VirtualInput{

@@ -24,7 +24,6 @@
 #include "SocketPort.h"
 #include "Sync.h"
 
-
 namespace WPEFramework {
 namespace Core {
 

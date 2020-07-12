@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -16,12 +16,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME Core
+#define MODULE_NAME SecurityAgent
 #endif
 
-#include "Portability.h"
+#include <core/core.h>
 
+#if defined(__WINDOWS__) && defined(SECURITYAGENT_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif

@@ -14,15 +14,18 @@
     <ClInclude Include="IPCSecurityToken.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SecurityToken.h">
+    <ClInclude Include="securityagent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="securityagent.h">
+    <ClInclude Include="Module.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ipclink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Module.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
