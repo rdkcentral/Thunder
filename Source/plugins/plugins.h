@@ -21,7 +21,7 @@
 #define __PLUGIN_FRAMEWORK_SUPPORT_H
 
 #include "Module.h"
-
+#include "Config.h"
 #include "Channel.h"
 #include "Configuration.h"
 #include "IPlugin.h"

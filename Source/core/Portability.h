@@ -65,22 +65,21 @@
 
 #if defined WIN32 || defined _WINDOWS || defined __CYGWIN__
     #ifdef __GNUC__
-        #define EXTERNAL_IMPORT __attribute__ ((dllimport))
+        #define EXTERNAL        __attribute__ ((dllimport))
         #define EXTERNAL_EXPORT __attribute__ ((dllexport))
     #else
-        #define EXTERNAL_IMPORT __declspec(dllimport) 
+        #define EXTERNAL        __declspec(dllimport) 
         #define EXTERNAL_EXPORT __declspec(dllexport)
     #endif
     #define EXTERNAL_HIDDEN
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
-    #define EXTERNAL_IMPORT __attribute__ ((visibility ("hidden")))
-    #define EXTERNAL_EXPORT __attribute__ ((visibility ("default")))
+    #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
+    #define EXTERNAL        __attribute__ ((visibility ("default")))
   #else
-    #define EXTERNAL_EXPORT
-    #define EXTERNAL_IMPORT
+    #define EXTERNAL
+    #define EXTERNAL_HIDDEN
   #endif
-  #define EXTERNAL_HIDDEN EXTERNAL_IMPORT
 #endif
 
 #if defined WIN32 || defined _WINDOWS
@@ -350,8 +349,8 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL_EXPORT SleepMs(unsigned int a_Time);
-inline void EXTERNAL_EXPORT SleepS(unsigned int a_Time)
+extern void EXTERNAL SleepMs(unsigned int a_Time);
+inline void EXTERNAL SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }

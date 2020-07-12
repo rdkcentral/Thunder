@@ -30,4 +30,6 @@
 
 #define RUNTIME_STATISTICS 0
 
+#define RESTFULL_API 1
+
 #endif

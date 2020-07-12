@@ -62,6 +62,7 @@
     <ClInclude Include="Ids.h" />
     <ClInclude Include="IDsgccClient.h" />
     <ClInclude Include="IExternal.h" />
+    <ClInclude Include="IExternalBase.h" />
     <ClInclude Include="IGuide.h" />
     <ClInclude Include="IInputSwitch.h" />
     <ClInclude Include="IIPNetwork.h" />
