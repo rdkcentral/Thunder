@@ -165,17 +165,17 @@
           "error": {
             "$ref": "#/definitions/error"
           },
-          "percentage": {
+          "progress": {
             "type": "number",
-            "descrption": "Percentage of upgrade",
-            "size": 8,
+            "descrption": "Progress of upgrade (number of bytes transferred during download or percentage of completion during install",
+            "size": 32,
             "example": 89
           }
         },
         "required": [
           "status",
           "error",
-          "percentage"
+          "progress"
         ]
       }
     }
