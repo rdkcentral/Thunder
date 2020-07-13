@@ -36,6 +36,10 @@
           "description": "Unknown resolution"
         },
         {
+          "$ref": "#/common/errors/unavailable",
+          "description": "Set resolution is not supported or failed"
+        },
+        {
           "$ref": "#/common/errors/general",
           "description": "Failed to set resolution"
         }

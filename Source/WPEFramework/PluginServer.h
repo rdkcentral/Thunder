@@ -51,7 +51,7 @@ namespace Plugin {
 }
 
 namespace PluginHost {
-    class EXTERNAL Server {
+    class Server {
     private:
         Server() = delete;
         Server(const Server&) = delete;
@@ -337,7 +337,7 @@ namespace PluginHost {
         };
 
     private:
-        class EXTERNAL WorkerPoolImplementation : public Core::WorkerPool {
+        class WorkerPoolImplementation : public Core::WorkerPool {
         public:
             WorkerPoolImplementation() = delete;
             WorkerPoolImplementation(const WorkerPoolImplementation&) = delete;
@@ -352,7 +352,7 @@ namespace PluginHost {
             }
         };
 
-        class EXTERNAL FactoriesImplementation : public IFactories {
+        class FactoriesImplementation : public IFactories {
         private:
             FactoriesImplementation(const FactoriesImplementation&) = delete;
             FactoriesImplementation& operator=(const FactoriesImplementation&) = delete;
@@ -398,7 +398,7 @@ namespace PluginHost {
         friend class Plugin::Controller;
 
         // Trace class for internal information of the PluginHost
-        class EXTERNAL Activity {
+        class Activity {
         private:
             // -------------------------------------------------------------------
             // This object should not be copied or assigned. Prevent the copy
@@ -439,7 +439,7 @@ namespace PluginHost {
         private:
             std::string _text;
         };
-        class EXTERNAL WebFlow {
+        class WebFlow {
         private:
             // -------------------------------------------------------------------
             // This object should not be copied or assigned. Prevent the copy
@@ -489,7 +489,7 @@ namespace PluginHost {
         private:
             std::string _text;
         };
-        class EXTERNAL SocketFlow {
+        class SocketFlow {
         private:
             // -------------------------------------------------------------------
             // This object should not be copied or assigned. Prevent the copy
@@ -529,7 +529,7 @@ namespace PluginHost {
         private:
             std::string _text;
         };
-        class EXTERNAL TextFlow {
+        class TextFlow {
         private:
             // -------------------------------------------------------------------
             // This object should not be copied or assigned. Prevent the copy
@@ -564,7 +564,7 @@ namespace PluginHost {
             std::string _text;
         };
 
-        class EXTERNAL Service : public PluginHost::Service {
+        class Service : public PluginHost::Service {
         private:
             Service() = delete;
             Service(const Service&) = delete;
@@ -1193,7 +1193,7 @@ namespace PluginHost {
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;
         };
-        class EXTERNAL ServiceMap : public PluginHost::IShell::ICOMLink {
+        class ServiceMap : public PluginHost::IShell::ICOMLink {
         public:
             typedef Core::IteratorMapType<std::map<const string, Core::ProxyType<Service>>, Core::ProxyType<Service>, const string&> Iterator;
             typedef std::map<const string, IRemoteInstantiation*> RemoteInstantiators;
@@ -1205,7 +1205,7 @@ namespace PluginHost {
 
             class CommunicatorServer : public RPC::Communicator {
             private:
-                class EXTERNAL RemoteHost : public RPC::Communicator::RemoteConnection {
+                class RemoteHost : public RPC::Communicator::RemoteConnection {
                 private:
                     friend class Core::Service<RemoteHost>;
 
@@ -2081,9 +2081,9 @@ namespace PluginHost {
         // Links. A Channel is identified by an ID, this way, whenever a link dies
         // (is closed) during the service process, the ChannelMap will
         // not find it and just "flush" the presented work.
-        class EXTERNAL Channel : public PluginHost::Channel {
+        class Channel : public PluginHost::Channel {
         private:
-            class EXTERNAL Job : public Core::IDispatch {
+            class Job : public Core::IDispatch {
             public:
                 Job() = delete;
                 Job(const Job&) = delete;
@@ -2157,7 +2157,7 @@ namespace PluginHost {
                 Server* _server;
                 Core::ProxyType<Service> _service;
             };
-            class EXTERNAL WebRequestJob : public Job {
+            class WebRequestJob : public Job {
             public:
                 WebRequestJob() = delete;
                 WebRequestJob(const WebRequestJob&) = delete;
@@ -2259,7 +2259,7 @@ namespace PluginHost {
 
                 static Core::ProxyType<Web::Response> _missingResponse;
             };
-            class EXTERNAL JSONElementJob : public Job {
+            class JSONElementJob : public Job {
             public:
                 JSONElementJob() = delete;
                 JSONElementJob(const JSONElementJob&) = delete;
@@ -2320,7 +2320,7 @@ namespace PluginHost {
                 string _token;
                 bool _jsonrpc;
             };
-            class EXTERNAL TextJob : public Job {
+            class TextJob : public Job {
             public:
                 TextJob() = delete;
                 TextJob(const TextJob&) = delete;
@@ -2780,7 +2780,7 @@ namespace PluginHost {
             // whatever reason, we will report back that the request is unauthorized.
             static Core::ProxyType<Web::Response> _unauthorizedRequest;
         };
-        class EXTERNAL ChannelMap : public Core::SocketServerType<Channel> {
+        class ChannelMap : public Core::SocketServerType<Channel> {
         private:
             typedef Core::SocketServerType<Channel> BaseClass;
 

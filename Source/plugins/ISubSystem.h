@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
 #ifndef __ISYSTEMINFO_H
 #define __ISYSTEMINFO_H
+
+#include <com/com.h>
 
 namespace WPEFramework {
 namespace PluginHost {

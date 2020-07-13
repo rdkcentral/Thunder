@@ -1,0 +1,878 @@
+{
+   "$schema": "interface.schema.json",
+   "jsonrpc": "2.0",
+   "info":
+   {
+      "title": "DTV API",
+      "class": "DTV",
+      "description": "DTV JSON-RPC interface"
+   },
+   "common":
+   {
+      "$ref": "common.json"
+   },
+   "definitions":
+   {
+      "countrycode":
+      {
+         "type": "number",
+         "description": "3-character ISO code for the country",
+         "size": 32,
+         "example": 6775410
+      },
+      "countryconfig":
+      {
+         "type": "object",
+         "properties":
+         {
+            "name":
+            {
+               "type": "string",
+               "description": "Name of the country as a UTF-8 string",
+               "example": "UK"
+            },
+            "code":
+            {
+               "$ref": "#/definitions/countrycode"
+            }
+         },
+         "required":
+         [
+            "name",
+            "code"
+         ]
+      },
+      "tunertype":
+      {
+         "type": "string",
+         "enum":
+         [
+            "none",
+            "dvbs",
+            "dvbt",
+            "dvbc"
+         ],
+         "enumvalues":
+         [
+            0,
+            1,
+            2,
+            4
+         ]
+      },
+      "lnbtype":
+      {
+         "type": "string",
+         "enum":
+         [
+            "single",
+            "universal",
+            "unicable"
+         ]
+      },
+      "lnbpower":
+      {
+         "type": "string",
+         "enum":
+         [
+            "off",
+            "on",
+            "auto"
+         ]
+      },
+      "diseqc_cswitch":
+      {
+         "type": "string",
+         "enum":
+         [
+            "off",
+            "a",
+            "b",
+            "c",
+            "d"
+         ]
+      },
+      "diseqc_tone":
+      {
+         "type": "string",
+         "enum":
+         [
+            "off",
+            "a",
+            "b"
+         ]
+      },
+      "lnbsettings":
+      {
+         "type": "object",
+         "properties":
+         {
+            "name":
+            {
+               "type": "string",
+               "example": "Universal"
+            },
+            "type":
+            {
+               "$ref": "#/definitions/lnbtype",
+               "example": "universal"
+            },
+            "power":
+            {
+               "$ref": "#/definitions/lnbpower",
+               "example": "auto"
+            },
+            "diseqc_tone":
+            {
+               "$ref": "#/definitions/diseqc_tone",
+               "example": "off"
+            },
+            "diseqc_cswitch":
+            {
+               "$ref": "#/definitions/diseqc_cswitch",
+               "example": "off"
+            },
+            "is22k":
+            {
+               "type": "boolean"
+            },
+            "is12v":
+            {
+               "type": "boolean"
+            },
+            "ispulseposition":
+            {
+               "type": "boolean"
+            },
+            "isdiseqcposition":
+            {
+               "type": "boolean"
+            },
+            "issmatv":
+            {
+               "type": "boolean"
+            },
+            "diseqcrepeats":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 8
+            },
+            "u_switch":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 8
+            },
+            "unicablechannel":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 8
+            },
+            "unicableinterface":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 32
+            }
+         },
+         "required":
+         [
+            "name",
+            "type",
+            "power",
+            "diseqc_tone",
+            "diseqc_cswitch",
+            "is22k",
+            "is12v",
+            "ispulseposition",
+            "isdiseqcposition",
+            "issmatv",
+            "diseqcrepeats",
+            "u_switch",
+            "unicablechannel",
+            "unicableinterface"
+         ]
+      },
+      "satellitesettings":
+      {
+         "type": "object",
+         "properties":
+         {
+            "name":
+            {
+               "type": "string",
+               "example": "Astra 28.2E"
+            },
+            "longitude":
+            {
+               "description": "Longitudinal location of the satellite in 1/10ths of a degree, with an east coordinate given as a positive value and a west coordinate as negative. Astra 28.2E would be defined as 282 and Eutelsat 5.0W would be -50.",
+               "type": "number",
+               "signed": true,
+               "size": 16,
+               "example": 282
+            },
+            "lnb":
+            {
+               "type": "string",
+               "summary": "Name of the LNB settings to be used when tuning to this satellite",
+               "example": "Universal"
+            }
+         },
+         "required":
+         [
+            "name",
+            "longitude",
+            "lnb"
+         ]
+      },
+      "polarity":
+      {
+         "type": "string",
+         "enum":
+         [
+            "horizontal",
+            "vertical",
+            "left",
+            "right"
+         ]
+      },
+      "fec":
+      {
+         "summary": "Forward error correction setting",
+         "type": "string",
+         "enum":
+         [
+            "fecauto",
+            "fec1_2",
+            "fec2_3",
+            "fec3_4",
+            "fec5_6",
+            "fec7_8",
+            "fec1_4",
+            "fec1_3",
+            "fec2_5",
+            "fec8_9",
+            "fec9_10"
+         ]
+      },
+      "dvbsmodulation":
+      {
+         "type": "string",
+         "enum":
+         [
+            "auto",
+            "qpsk",
+            "8psk",
+            "16qam"
+         ]
+      },
+      "searchtype":
+      {
+         "type": "string",
+         "enum":
+         [
+            "frequency",
+            "network"
+         ]
+      },
+      "dvbstuningparams":
+      {
+         "type": "object",
+         "properties":
+         {
+            "satellite":
+            {
+               "type": "string"
+            },
+            "frequency":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 32,
+               "example": 10714
+            },
+            "polarity":
+            {
+               "$ref": "#/definitions/polarity",
+               "example": "horizontal"
+            },
+            "symbolrate":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 16,
+               "example": 22000
+            },
+            "fec":
+            {
+               "$ref": "#/definitions/fec",
+               "example": "fec5_6"
+            },
+            "modulation":
+            {
+               "$ref": "#/definitions/dvbsmodulation",
+               "example": "qpsk"
+            },
+            "dvbs2":
+            {
+               "type": "boolean"
+            }
+         },
+         "required":
+         [
+            "satellite",
+            "frequency",
+            "polarity",
+            "symbolrate",
+            "fec",
+            "modulation",
+            "dvbs2"
+         ]
+      },
+      "dvbcmodulation":
+      {
+         "type": "string",
+         "enum":
+         [
+            "auto",
+            "64qam",
+            "128qam",
+            "256qam"
+         ]
+      },
+      "dvbctuningparams":
+      {
+         "type": "object",
+         "properties":
+         {
+            "frequency":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 32,
+               "example": 474000000
+            },
+            "symbolrate":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 16,
+               "example": 6900
+            },
+            "modulation":
+            {
+               "$ref": "#/definitions/dvbcmodulation",
+               "example": "128qam"
+            }
+         },
+         "required":
+         [
+            "frequency",
+            "symbolrate",
+            "modulation"
+         ]
+      },
+      "dvburistring":
+      {
+         "type": "string",
+         "summary": "DVB triplet of the form a.b.c, where 'a' is the original network ID, 'b' is the transport ID and 'c' is the service ID, in decimal",
+         "example": "2.2041.9212"
+      },
+      "service":
+      {
+         "type": "object",
+         "properties":
+         {
+            "shortname":
+            {
+               "type": "string",
+               "summary": "Service name as given by the service descriptor in the SDT",
+               "example": "Channel 4"
+            },
+            "dvburi":
+            {
+               "$ref": "#/definitions/dvburistring"
+            },
+            "lcn":
+            {
+               "type": "number",
+               "size": 16,
+               "summary": "Logical channel number",
+               "example": 1001
+            }
+         },
+         "required":
+         [
+            "shortname",
+            "dvburi",
+            "lcn"
+         ]
+      },
+      "eitevent":
+      {
+         "summary": "EIT event information",
+         "type": "object",
+         "properties":
+         {
+            "name":
+            {
+               "type": "string",
+               "summary": "Name of the DVB event as defined in the short event descriptor",
+               "example": "Channel 4 News"
+            },
+            "starttime":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 32,
+               "summary": "UTC start time of the event in seconds",
+               "example": 1587562065
+            },
+            "duration":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 32,
+               "summary": "Duration of the event in seconds",
+               "example": 1800
+            },
+            "eventid":
+            {
+               "type": "number",
+               "signed": false,
+               "size": 16,
+               "summary": "ID of the event from the event information table",
+               "example": 3012
+            },
+            "shortdescription":
+            {
+               "type": "string",
+               "summary": "Event description from the EIT short event descriptor",
+               "example": "The current national and world news"
+            }
+         },
+         "required":
+         [
+            "name",
+            "starttime",
+            "duration",
+            "eventid",
+            "shortdescription"
+         ]
+      },
+      "eventtype":
+      {
+         "summary": "Event type that's sent as an asynchronous notification",
+         "type": "string",
+         "enum":
+         [
+            "ServiceSearchStatus"
+         ]
+      }
+   },
+   "properties":
+   {
+      "numberOfCountries":
+      {
+         "summary": "Number of country configurations available",
+         "readonly": true,
+         "params":
+         {
+            "type": "number",
+            "signed": false,
+            "size": 8,
+            "example": 5
+         }
+      },
+      "countryList":
+      {
+         "summary": "Returns an array containing the name and 3 character ISO country code for all the available country configurations",
+         "readonly": true,
+         "params":
+         {
+            "type": "array",
+            "description": "List of available country configurations",
+            "items":
+            {
+               "$ref": "#/definitions/countryconfig"
+            }
+         }
+      },
+      "country":
+      {
+         "summary": "Get and set the configured country using the ISO 3-character country code",
+         "params":
+         {
+            "$ref": "#/definitions/countrycode"
+         }
+      },
+      "lnbList":
+      {
+         "summary": "Returns the array of LNBs defined in the database",
+         "readonly": true,
+         "params":
+         {
+            "type": "array",
+            "items":
+            {
+               "$ref": "#/definitions/lnbsettings"
+            }
+         }
+      },
+      "satelliteList":
+      {
+         "summary": "Returns the array of satellites defined in the database",
+         "readonly": true,
+         "params":
+         {
+            "type": "array",
+            "items":
+            {
+               "$ref": "#/definitions/satellitesettings"
+            }
+         }
+      },
+      "numberOfServices":
+      {
+         "summary": "Returns the total number of services in the service database",
+         "readonly": true,
+         "params":
+         {
+            "type": "number",
+            "signed": false,
+            "size": 16,
+            "example": 145
+         }
+      },
+      "serviceList":
+      {
+         "summary": "Returns the list of services for the given type of tuner, or all services if no tuner is defined",
+         "readonly": true,
+         "index":
+         {
+            "name": "Optional tuner type",
+            "example": "dvbs"
+         },
+         "params":
+         {
+            "type": "array",
+            "items":
+            {
+               "$ref": "#/definitions/service"
+            }
+         }
+      },
+      "nowNextEvents":
+      {
+         "summary": "Get the now and next events (EITp/f) for the given service",
+         "readonly": true,
+         "index":
+         {
+            "name": "Service URI string",
+            "example": "9018.4161.1001"
+         },
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "now":
+               {
+                  "$ref": "#/definitions/eitevent"
+               },
+               "next":
+               {
+                  "$ref": "#/definitions/eitevent"
+               }
+            }
+         }
+      },
+      "scheduleEvents":
+      {
+         "summary": "Get the schedule events (EITsched) for the given service",
+         "readonly": true,
+         "index":
+         {
+            "name": "Service URI string, with optional start and end times as number of seconds UTC",
+            "example": "9018.4161.1001:12345000,12346000"
+         },
+         "params":
+         {
+            "type": "array",
+            "items":
+            {
+               "$ref": "#/definitions/eitevent"
+            }
+         }
+      },
+      "status":
+      {
+         "summary": "Returns information related to the play handle defined by the index",
+         "readonly": true,
+         "index":
+         {
+            "name": "Play handle",
+            "example": "0"
+         },
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "tuner":
+               {
+                  "type": "number",
+                  "signed": false,
+                  "size": 8,
+                  "summary": "The tuner id used by the play handle",
+                  "example": 0
+               },
+               "demux":
+               {
+                  "type": "number",
+                  "signed": false,
+                  "size": 8,
+                  "summary": "The demux id used by the play handle",
+                  "example": 0
+               },
+               "pmtpid":
+               {
+                  "type": "number",
+                  "signed": false,
+                  "size": 16,
+                  "summary": "The PMT PID of the service being played",
+                  "example": 1100
+               },
+               "dvburi":
+               {
+                  "$ref": "#/definitions/dvburistring"
+               },
+               "lcn":
+               {
+                  "type": "number",
+                  "signed": false,
+                  "size": 16,
+                  "summary": "LCN of the service being played",
+                  "example": 1001
+               }
+            },
+            "required":
+            [
+               "tuner",
+               "demux",
+               "pmtpid",
+               "dvburi",
+               "lcn"
+            ]
+         }
+      }
+   },
+   "methods":
+   {
+      "addLnb":
+      {
+         "summary": "Add a new LNB to the database",
+         "params":
+         {
+            "$ref": "#/definitions/lnbsettings"
+         },
+         "result":
+         {
+            "type": "boolean",
+            "summary": "true if the LNB is added, false otherwise",
+            "example": true
+         }
+      },
+      "addSatellite":
+      {
+         "summary": "Add a new satellite to the database",
+         "params":
+         {
+            "$ref": "#/definitions/satellitesettings"
+         },
+         "result":
+         {
+            "type": "boolean",
+            "summary": "true if the satellite is added, false otherwise",
+            "example": true
+         }
+      },
+      "startServiceSearch":
+      {
+         "summary": "Starts a service search",
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "tunertype":
+               {
+                  "$ref": "#/definitions/tunertype",
+                  "example": "dvbs"
+               },
+               "searchtype":
+               {
+                  "$ref": "#/definitions/searchtype",
+                  "example": "network"
+               },
+               "retune":
+               {
+                  "type": "boolean",
+                  "summary": "true if current services are to be replaced in the database, false if the scan is to update the existing services"
+               },
+               "usetuningparams":
+               {
+                  "type": "boolean",
+                  "summary": "Set to true if the optional tuning parameters are defined",
+                  "example": true
+               },
+               "dvbstuningparams":
+               {
+                  "$ref": "#/definitions/dvbstuningparams"
+               },
+               "dvbctuningparams":
+               {
+                  "$ref": "#/definitions/dvbctuningparams"
+               }
+            },
+            "required":
+            [
+               "tunertype",
+               "searchtype",
+               "retune",
+               "usetuningparams"
+            ]
+         },
+         "result":
+         {
+            "type": "boolean",
+            "summary": "true if the search is started, false otherwise",
+            "example": true
+         },
+         "events": ["searchstatus"]
+      },
+      "finishServiceSearch":
+      {
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "tunertype":
+               {
+                  "$ref": "#/definitions/tunertype",
+                  "example": "dvbs"
+               },
+               "savechanges":
+               {
+                  "type": "boolean",
+                  "summary": "true if the services found during the search should be saved",
+                  "example": true
+               }
+            },
+            "required":
+            [
+               "tunertype",
+               "savechanges"
+            ]
+         },
+         "result":
+         {
+            "type": "boolean",
+            "summary": "false if the tunertype isn't valid, true otherwise",
+            "example": true
+         }
+      },
+      "startPlaying":
+      {
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "dvburi":
+               {
+                  "$ref": "#/definitions/dvburistring"
+               },
+               "lcn":
+               {
+                  "type": "number",
+                  "signed": false,
+                  "size": 16,
+                  "summary": "LCN of the service to be tuned to"
+               }
+            }
+         },
+         "result":
+         {
+            "type": "number",
+            "summary": "The play handle assigned to play the given service. Will be -1 if the service can't be played",
+            "example": 0
+         }
+      },
+      "stopPlaying":
+      {
+         "params":
+         {
+            "type": "number",
+            "summary": "The play handle returned by startPlaying",
+            "example": 0
+         },
+         "result":
+         {
+            "$ref": "#/common/results/void"
+         }
+      }
+   },
+   "events":
+   {
+      "searchstatus":
+      {
+         "summary": "Used to notify about events during the course of a service search",
+         "params":
+         {
+            "type": "object",
+            "properties":
+            {
+               "handle":
+               {
+                  "type": "number",
+                  "size": 32,
+                  "unsigned": true,
+                  "summary": "The handle assigned for the search and to which this information is relevant",
+                  "example": 0
+               },
+               "eventtype":
+               {
+                  "$ref": "#/definitions/eventtype",
+                  "example": "ServiceSearchStatus"
+               },
+               "finished":
+               {
+                  "type": "boolean",
+                  "summary": "true if the service search has finished, false otherwise",
+                  "example": false
+               },
+               "progress":
+               {
+                  "type": "number",
+                  "size": 8,
+                  "unsigned": true,
+                  "summary": "Progress of the search expressed as a percentage",
+                  "example": 65
+               }
+            },
+            "required":
+            [
+               "handle",
+               "eventtype",
+               "finished",
+               "progress"
+            ]
+         }
+      }
+   }
+}
+

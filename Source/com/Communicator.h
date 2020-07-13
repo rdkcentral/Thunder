@@ -20,10 +20,11 @@
 #ifndef __COM_PROCESSLAUNCH_H
 #define __COM_PROCESSLAUNCH_H
 
+#include "Module.h"
+#include "Ids.h"
 #include "Administrator.h"
 #include "ITracing.h"
 #include "IUnknown.h"
-#include "Module.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"

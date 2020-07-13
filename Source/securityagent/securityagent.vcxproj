@@ -103,7 +103,7 @@
       <PreprocessorDefinitions>SECURITYAGENT_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINDOWS;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -123,7 +123,7 @@
       <PreprocessorDefinitions>SECURITYAGENT_EXPORTS;_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +145,7 @@
       <PreprocessorDefinitions>SECURITYAGENT_EXPORTS;_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -169,7 +169,7 @@
       <PreprocessorDefinitions>SECURITYAGENT_EXPORTS;_CRT_SECURE_NO_WARNINGS;_WINDOWS;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -185,11 +185,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="IPCSecurityToken.h" />
+    <ClInclude Include="Module.h" />
     <ClInclude Include="securityagent.h" />
-    <ClInclude Include="SecurityToken.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ipclink.cpp" />
+    <ClCompile Include="Module.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
