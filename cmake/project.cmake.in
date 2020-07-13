@@ -36,9 +36,13 @@ endif()
 
 set(NAMESPACE "@NAMESPACE@")
 
-option(EXPORT_SYMBOLS "Export to all symbols" OFF)
+option(HIDE_NON_EXTERNAL_SYMBOLS "Export all symbols that have been marked EXTERNAL" OFF)
 
-if (NOT EXPORT_SYMBOLS)
+if (NOT HIDE_NON_EXTERNAL_SYMBOLS)
+    set(HIDE_NON_EXTERNAL_SYMBOLS @HIDE_NON_EXTERNAL_SYMBOLS@)
+endif()
+
+if (HIDE_NON_EXTERNAL_SYMBOLS)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
     set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 endif()
