@@ -17,6 +17,7 @@
  * limitations under the License.
  */
  
+#include "Module.h"
 #include "open_cdm_ext.h"
 
 #include "open_cdm_impl.h"

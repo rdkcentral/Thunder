@@ -52,7 +52,6 @@
     <CustomBuild Include="json\Browser.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
-    <CustomBuild Include="json\IOConnector.json" />
     <CustomBuild Include="json\DHCPServer.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
@@ -63,6 +62,9 @@
       <Filter>Contracts</Filter>
     </CustomBuild>
     <CustomBuild Include="json\SecurityAgent.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
+    <CustomBuild Include="json\IOConnector.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -89,9 +91,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="json\Butler.json">
-      <Filter>Contracts</Filter>
-    </None>
-    <None Include="json\IOControl.json">
       <Filter>Contracts</Filter>
     </None>
   </ItemGroup>

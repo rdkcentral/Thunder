@@ -20,9 +20,10 @@
 #ifndef __COM_IUNKNOWN_H
 #define __COM_IUNKNOWN_H
 
+#include "Module.h"
+#include "Ids.h"
 #include "Administrator.h"
 #include "Messages.h"
-#include "Module.h"
 
 namespace WPEFramework {
 

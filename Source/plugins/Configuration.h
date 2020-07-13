@@ -20,11 +20,11 @@
 #ifndef __WEBBRIDGESUPPORT_CONFIGURATION_H
 #define __WEBBRIDGESUPPORT_CONFIGURATION_H
 
+#include "Module.h"
 #include "Config.h"
 #include "IPlugin.h"
 #include "IShell.h"
 #include "ISubSystem.h"
-#include "Module.h"
 
 namespace WPEFramework {
 namespace Plugin {

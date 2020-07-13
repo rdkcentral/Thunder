@@ -22,9 +22,8 @@
 #ifndef __VIRTUAL_INPUT__
 #define __VIRTUAL_INPUT__
 
-#include "../virtualinput/IVirtualInput.h"
-
 #include "Module.h"
+#include "../virtualinput/IVirtualInput.h"
 
 namespace WPEFramework {
 namespace PluginHost {

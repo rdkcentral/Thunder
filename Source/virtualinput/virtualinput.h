@@ -21,19 +21,20 @@
 
 #include <stdbool.h>
 
-#undef EXTERNAL
-
+#ifndef EXTERNAL
 #ifdef _MSVC_LANG
 #ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
 #define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "virtualinput.lib")
 #endif
 #else
-#ifndef EXTERNAL
 #define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
+#endif
+
+#if defined(_WINDOWS) && !defined(VIRTUALINPUT_EXPORTS)
+#pragma comment(lib, "virtualinput.lib")
 #endif
 
 #ifdef __cplusplus

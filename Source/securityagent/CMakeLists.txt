@@ -20,11 +20,12 @@ set(TARGET securityagent)
 # Construct a library object
 add_library(${TARGET} STATIC
         ipclink.cpp
+        Module.cpp
         )
 
 set(PUBLIC_HEADERS
         securityagent.h
-        SecurityToken.h
+        Module.h
         IPCSecurityToken.h
         )
 

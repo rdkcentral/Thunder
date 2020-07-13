@@ -20,13 +20,13 @@
 #ifndef __WEBBRIDGESUPPORT_SERVICE__
 #define __WEBBRIDGESUPPORT_SERVICE__
 
+#include "Module.h"
 #include "Channel.h"
 #include "Configuration.h"
-#include "IPlugin.h"
-#include "IShell.h"
 #include "MetaData.h"
 #include "System.h"
-#include "Module.h"
+#include "IPlugin.h"
+#include "IShell.h"
 
 namespace WPEFramework {
 namespace PluginHost {

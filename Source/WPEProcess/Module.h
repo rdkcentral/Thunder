@@ -17,19 +17,12 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_PROCESS_H
-#define __MODULE_PROCESS_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Process
 #endif
 
-#include "../com/com.h"
-#include "../core/core.h"
-#include "../plugins/plugins.h"
-
-#ifdef EXTERNAL
-#undef EXTERNAL
-#endif
-
-#endif // __MODULE_PROCESS_H
+#include <core/core.h>
+#include <com/com.h>
+#include <plugins/plugins.h>
