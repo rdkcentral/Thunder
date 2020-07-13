@@ -65,6 +65,16 @@
       "params": {
         "$ref": "#/definitions/status"
       }
+    },
+    "downloadsize": {
+      "readonly": true,
+      "summary": "Max free space available to download image",
+      "params": {
+        "description": "available free space in bytes",
+        "type": "number",
+        "size": 64,
+        "example": 315576
+      }
     }
   },
   "methods": {
