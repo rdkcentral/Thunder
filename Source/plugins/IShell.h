@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-#include "Module.h"
-
 #ifndef __ISHELL_H
 #define __ISHELL_H
 
 #include "IPlugin.h"
 #include "ISubSystem.h"
+
+#include <com/com.h>
 
 namespace WPEFramework {
 namespace PluginHost {

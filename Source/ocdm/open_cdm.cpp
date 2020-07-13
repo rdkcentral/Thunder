@@ -15,10 +15,10 @@
  * limitations under the License.
  */
 
+#include "Module.h"
 #include "open_cdm.h"
 #include "DataExchange.h"
 #include "IOCDM.h"
-#include "Module.h"
 #include "open_cdm_impl.h"
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)

@@ -20,8 +20,8 @@
 #ifndef __WEBBRIDGESUPPORT_METADATA_H
 #define __WEBBRIDGESUPPORT_METADATA_H
 
-#include "Configuration.h"
 #include "Module.h"
+#include "Configuration.h"
 
 namespace WPEFramework {
 namespace PluginHost {

@@ -21,8 +21,7 @@
 #define __IOPENCDMI_H
 
 #include "Module.h"
-#include <com/com.h>
-#include <core/core.h>
+#include "DataExchange.h"
 
 namespace OCDM {
 

@@ -30,17 +30,13 @@
 #include "IVoiceHandler.h"
 #include "IPower.h"
 
+#if defined(__WINDOWS__) 
+#if defined(DEFINITIONS_EXPORTS)
 #undef EXTERNAL
-
-#ifdef __WINDOWS__
-#ifdef DEFINITIONS_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
 #else
-#define EXTERNAL EXTERNAL_IMPORT
 #pragma comment(lib, "definitions.lib")
 #endif
-#else
-#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 namespace WPEFramework {

@@ -26,6 +26,7 @@
     <ClCompile Include="virtualinput.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="IVirtualInput.h" />
     <ClInclude Include="Module.h" />
     <ClInclude Include="virtualinput.h" />
   </ItemGroup>
@@ -111,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;VIRTUALINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -129,7 +130,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;VIRTUALINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,7 +146,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;VIRTUALINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -163,7 +164,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;VIRTUALINPUT_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)/..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
