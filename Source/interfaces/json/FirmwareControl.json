@@ -168,7 +168,7 @@
           },
           "progress": {
             "type": "number",
-            "descrption": "Progress of upgrade (number of bytes transferred during download or percentage of completion during install",
+            "description": "Progress of upgrade (number of bytes transferred during download or percentage of completion during install",
             "size": 32,
             "example": 89
           }

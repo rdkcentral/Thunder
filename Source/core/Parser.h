@@ -124,6 +124,7 @@ namespace Core {
                         if (_byteCounter == 0) {
                             _state &= (~EXTERNALPASS);
                             _parent.EndOfPassThrough();
+                        }
                     } else {
                         _parent.EndOfPassThrough();
                         _state = PARSESTOP;
