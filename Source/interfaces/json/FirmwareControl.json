@@ -36,6 +36,7 @@
         "generic",
         "invalidparameters",
         "invalidstate",
+        "noenoughspace",
         "operationotsupported",
         "incorrecthash",
         "unauthenticated",

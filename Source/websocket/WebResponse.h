@@ -263,7 +263,7 @@ namespace Web {
         private:
             friend class Core::ParserType<Core::TerminatorCarriageReturnLineFeed, Deserializer>;
 
-            void Parse(const uint8_t stream[], const uint16_t maxLength);
+            uint16_t Parse(const uint8_t stream[], const uint16_t maxLength);
             void Parse(const string& buffer);
             void EndOfLine();
             void EndOfPassThrough();
@@ -389,7 +389,7 @@ namespace Web {
         void Clear()
         {
             _marshalMode = MARSHAL_RAW;
-            ErrorCode = Web::STATUS_OK;
+            ErrorCode = static_cast<uint16_t>(~0);;
             Message.clear();
             MajorVersion = Web::MajorVersion;
             MinorVersion = Web::MinorVersion;
