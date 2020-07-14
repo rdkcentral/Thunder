@@ -31,7 +31,6 @@ namespace Exchange {
     struct IBrowser : virtual public Core::IUnknown {
         enum { ID = ID_BROWSER };
 
-/*
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_BROWSER_NOTIFICATION };
 
@@ -43,12 +42,11 @@ namespace Exchange {
             virtual void Hidden(const bool hidden) = 0;
             virtual void Closure() = 0;
         };
-*/
 
         virtual ~IBrowser() {}
 
-//        virtual void Register(IBrowser::INotification* sink) = 0;
-//        virtual void Unregister(IBrowser::INotification* sink) = 0;
+        virtual void Register(IBrowser::INotification* sink) = 0;
+        virtual void Unregister(IBrowser::INotification* sink) = 0;
 
         // Change the currently displayed URL by the browser.
         virtual void SetURL(const string& URL) = 0;
@@ -75,11 +73,9 @@ namespace Exchange {
             EXCLUSIVELY_FROM_MAIN_DOCUMENT_DOMAIN = 3
         };
 
-        /* @event */
-//        using INotification = IBrowser::INotification;
-
         virtual ~IWebBrowser() { }
-        
+
+        /* @event */
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_WEBKITBROWSER_NOTIFICATION };
 
