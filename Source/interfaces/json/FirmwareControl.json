@@ -80,7 +80,7 @@
   },
   "methods": {
     "upgrade": {
-      "summary": "Upgrade the device to the given firmware",
+      "summary": "Upgrade the device to the given firmware. (Note: Ensure size of firmware image should be < 500MB)",
       "events": "upgradeprogress",
       "params": {
         "type": "object",
