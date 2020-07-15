@@ -324,7 +324,6 @@ namespace Web {
             if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
 
                 // Now we have a content length that we are going to receive, time to set it...
-                _fileBody.SetSize(element->ContentLength.Value());
                 _fileBody.Position(false, 0);
             }
 
