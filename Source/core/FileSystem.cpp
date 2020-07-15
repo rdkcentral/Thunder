@@ -270,5 +270,39 @@ namespace Core {
         }
         return true;
     }
+
+    void Partition::LoadPartitionInfo()
+    {
+#ifdef __POSIX__
+        StatFS statFSData;
+
+        if (statvfs (_path.c_str(), &statFSData) == 0) {
+            uint64_t blockSize = (statFSData.f_frsize != 0) ? statFSData.f_frsize: statFSData.f_bsize;
+            _free = statFSData.f_bavail * blockSize;
+            _size = statFSData.f_blocks * blockSize;
+        }
+        // Add logic to get partition name
+#endif
+
+#ifdef __WINDOWS__
+        string dirName = _path;
+        File path(_path);
+        if (path.IsDirectory() != true) {
+            size_t position = str.find_last_of(ch);
+            if (position) {
+                dirName = s.substr(0, position);
+            }
+        }
+        if (dirName.empty() != true) {
+            // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexa
+            // BOOL GetDiskFreeSpaceExA(
+            //    LPCSTR          lpDirectoryName,
+            //    PULARGE_INTEGER lpFreeBytesAvailableToCaller,
+            //    PULARGE_INTEGER lpTotalNumberOfBytes,
+            //    PULARGE_INTEGER lpTotalNumberOfFreeBytes
+            // );
+        }
+#endif
+    }
 }
 } // namespace Core

@@ -26,9 +26,6 @@
 #ifdef __POSIX__
 #include <sys/statvfs.h>
 #define INVALID_HANDLE_VALUE -1
-#endif
-
-#ifdef __POSIX__
 #if defined(_LARGEFILE64_SOURCE) && defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
 #define LSEEK lseek64
 #else
@@ -771,42 +768,19 @@ namespace Core {
     public:
         Partition() = delete;
         Partition(const Partition& copy) = delete;
-        explicit Partition(const TCHAR fileName[])
+        explicit Partition(const TCHAR path[])
             : _size(0)
             , _free(0)
+            , _path(path)
         {
-#ifdef __POSIX__
-              StatFS statfsbuf;
-
-              if (statvfs (fileName, &statfsbuf) == 0) {
-                  uint64_t blockSize = (statfsbuf.f_frsize != 0) ? statfsbuf.f_frsize: statfsbuf.f_bsize;
-                  _free = statfsbuf.f_bavail * blockSize;
-                  _size = statfsbuf.f_blocks * blockSize;
-              }
-              // Add logic to get partition name
-#endif
-
-#ifdef __WINDOWS__
-              string dirName = filenName;
-              File path(filenName);
-              if (path.IsDirectory() != true) {
-                  size_t position = str.find_last_of(ch);
-                  if (position) {
-                      dirName = s.substr(0, position);
-                  }
-              }
-              if (dirName.empty() != true) {
-                  // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexa
-                  // BOOL GetDiskFreeSpaceExA(
-                  //    LPCSTR          lpDirectoryName,
-                  //    PULARGE_INTEGER lpFreeBytesAvailableToCaller,
-                  //    PULARGE_INTEGER lpTotalNumberOfBytes,
-                  //    PULARGE_INTEGER lpTotalNumberOfFreeBytes
-                  // );
-              }
-#endif
+            LoadPartitionInfo();
         }
-        ~Partition() { }
+        ~Partition()
+        {
+        }
+
+    private:
+        void LoadPartitionInfo();
 
     public:
         uint64_t Size() const
@@ -831,6 +805,7 @@ namespace Core {
         uint64_t _free;
 
         string _name;
+        string _path;
     };
 }
 } // namespace Core
