@@ -389,7 +389,7 @@ namespace Web {
         void Clear()
         {
             _marshalMode = MARSHAL_RAW;
-            ErrorCode = static_cast<uint16_t>(~0);;
+            ErrorCode = Web::STATUS_OK;
             Message.clear();
             MajorVersion = Web::MajorVersion;
             MinorVersion = Web::MinorVersion;

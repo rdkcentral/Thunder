@@ -128,10 +128,13 @@ namespace Web {
         }
         uint16_t Deserialize(const uint8_t stream[], const uint16_t maxLength) override
         {
-            TextBody::Deserialize(stream, maxLength);
+            uint16_t deserialized = TextBody::Deserialize(stream, maxLength);
 
             // Also pass it through our hashing algorithm.
-            return _hash.Input(stream, maxLength);
+            if (deserialized) {
+                _hash.Input(stream, maxLength);
+            }
+            return deserialized;
         }
 
     private:
