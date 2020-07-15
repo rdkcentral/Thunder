@@ -28,6 +28,14 @@
 #define INVALID_HANDLE_VALUE -1
 #endif
 
+#ifdef __POSIX__
+#if defined(_LARGEFILE64_SOURCE) && defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+#define LSEEK lseek64
+#else
+#define LSEEK lseek
+#endif
+#endif
+
 namespace WPEFramework {
 namespace Core {
     class EXTERNAL File {
@@ -312,10 +320,11 @@ namespace Core {
             return (Create((USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE), exclusive));
         }
 
-        bool Create(const uint32_t mode, const bool exclusive = false)
+        bool Create(const uint32_t mode, const bool exclusive = false, bool large = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
+            int fileType = large? O_LARGEFILE: 0;
+            _handle = open(_name.c_str(), fileType | O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -324,10 +333,11 @@ namespace Core {
             return (IsOpen());
         }
 
-        bool Open() const
+        bool Open(bool large = false) const
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDONLY);
+            int fileType = large? O_LARGEFILE: 0;
+            _handle = open(_name.c_str(), fileType | O_RDONLY);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -335,10 +345,11 @@ namespace Core {
             const_cast<File*>(this)->LoadFileInfo();
             return (IsOpen());
         }
-        bool Open(bool readOnly)
+        bool Open(bool readOnly, bool large = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
+            int fileType = large? O_LARGEFILE: 0;
+            _handle = open(_name.c_str(), (readOnly ? fileType | O_RDONLY : O_RDWR));
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -346,10 +357,11 @@ namespace Core {
             LoadFileInfo();
             return (IsOpen());
         }
-        bool Append()
+        bool Append(bool large = false)
         {
 #ifdef __POSIX__
-            _handle = open(_name.c_str(), O_RDWR | O_APPEND);
+            int fileType = large? O_LARGEFILE: 0;
+            _handle = open(_name.c_str(), fileType | O_RDWR | O_APPEND);
 
             if ((_handle == -1) && (errno == ENOENT)) {
                 return (Create());
@@ -433,7 +445,7 @@ namespace Core {
             DWORD writtenBytes;
 
             ::WriteFile(_handle, buffer, size, &writtenBytes, nullptr);
-            return static_cast<uint32_t>(writtenBytes);
+            return static_cast<uint64_t>(writtenBytes);
 #endif
         }
         uint32_t Read(uint8_t buffer[], uint32_t size) const
@@ -442,28 +454,28 @@ namespace Core {
             ASSERT(IsOpen());
 
 #ifdef __POSIX__
-            int value = read(_handle, buffer, size);
+            int64_t value = read(_handle, buffer, size);
 
             if (value == -1) {
                 return (0);
             } else {
-                return (static_cast<uint32_t>(value));
+                return (static_cast<uint64_t>(value));
             }
 #endif
 #ifdef __WINDOWS__
             DWORD readBytes = 0;
             ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
-            return static_cast<uint32_t>(readBytes);
+            return static_cast<uint64_t>(readBytes);
 #endif
         }
 
-        bool Position(const bool relative, int32_t offset)
+        bool Position(const bool relative, int64_t offset)
         {
             // Only call these methods if the file is open.
             ASSERT(IsOpen());
 
 #ifdef __POSIX__
-            return (lseek(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
+            return (LSEEK(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
 #endif
 #ifdef __WINDOWS__
             return (::SetFilePointer(_handle, offset, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)) != INVALID_SET_FILE_POINTER);
@@ -471,12 +483,12 @@ namespace Core {
         }
         int32_t Position() const
         {
-            int32_t result = 0;
+            int64_t result = 0;
 
             // If the file is not open, we are at the beginning :-)
             if (IsOpen()) {
 #ifdef __POSIX__
-                result = lseek(_handle, 0, SEEK_CUR);
+                result = LSEEK(_handle, 0, SEEK_CUR);
                 ASSERT(result >= 0);
 
                 if (result == -1) {
@@ -490,7 +502,7 @@ namespace Core {
                 if (newPos != INVALID_SET_FILE_POINTER) {
                     ASSERT(newPos >= 0);
 
-                    result = (static_cast<int32_t>(newPos));
+                    result = (static_cast<int64_t>(newPos));
                 }
 #endif
             }

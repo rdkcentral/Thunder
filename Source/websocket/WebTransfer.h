@@ -261,11 +261,15 @@ namespace Web {
 
             return (result);
         }
-        inline uint32_t FileSize() const {
+        inline uint64_t FileSize() const {
             return (_fileBody.Core::File::Size());
         }
-        inline uint32_t Transferred () const {
+        inline uint64_t Transferred () const {
             return (_fileBody.Position());
+        }
+        inline void Close()
+        {
+            _channel.Close();
         }
 
         virtual bool Setup(const Core::URL& remote) = 0;
