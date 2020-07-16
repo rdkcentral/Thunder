@@ -764,6 +764,17 @@ namespace Core {
 #ifdef __POSIX__
         typedef struct statvfs StatFS;
 #endif
+#ifdef __LINUX__
+#define PARTITION_BUFFER_SIZE 1024
+
+        static constexpr const TCHAR LineSeparator = _T('\n');
+        static constexpr const TCHAR WordSeparator = _T(' ');
+        static constexpr const TCHAR PathSeparator = _T('/');
+
+        static constexpr const TCHAR* MountKey = _T("mounted on ");
+        static constexpr const TCHAR* DeviceKey = _T("device ");
+        static constexpr const TCHAR* MountStatsFileName = _T("/proc/self/mountstats");
+#endif
 
     public:
         Partition() = delete;
@@ -781,6 +792,8 @@ namespace Core {
 
     private:
         void LoadPartitionInfo();
+        string RemoveRepeatedPathSeparator(const string& path);
+        bool ReadPartitionName(const string& fileName, string& device);
 
     public:
         uint64_t Size() const
