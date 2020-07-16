@@ -145,6 +145,8 @@ int main(int argc, char *argv[]) {
             index++;
         }
     }
+
+    WPEFramework::Core::Singleton::Dispose();
   
     return 0;
 }
