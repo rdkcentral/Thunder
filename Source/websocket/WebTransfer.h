@@ -297,6 +297,7 @@ namespace Web {
             // We are done, change state
             _adminLock.Lock();
             if (response.IsValid() == true) {
+                _fileBody.Core::File::LoadFileInfo();
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
                 } else if (((response->ErrorCode == STATUS_OK) && (_state == TRANSFER_DOWNLOAD)) &&
