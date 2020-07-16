@@ -44,8 +44,6 @@ set(PLATFORM "PC_UNIX" CACHE STRING
         "Defines on what platform the application will run")
 
 option(INSTALL_LOCALLY "Install this project locally" OFF)
-option(BUILD_TESTS "Build framework tests (requires gtest)" OFF)
-option(BUILD_CRYPTOGRAPHY_TESTS "Build cryptography tests" OFF)
 
 set(NAMESPACE ${PROJECT_NAME} CACHE STRING "Namespace of the project")
 
@@ -83,11 +81,4 @@ if(APPLE)
 endif()
 
 add_subdirectory(Source)
-
-if (BUILD_TESTS)
-    add_subdirectory(Tests/unit)
-endif()
-
-if (BUILD_CRYPTOGRAPHY_TESTS)
-    add_subdirectory(Tests/cryptography)
-endif()
+add_subdirectory(Tests)
