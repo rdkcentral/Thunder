@@ -972,7 +972,7 @@ namespace Bluetooth {
     public:
         class EXTERNAL Info {
         public:
-		    class EXTRNAL Properties {
+		    class EXTERNAL Properties {
 		    public:
 			Properties() : _value(0) {}
 			Properties(const uint32_t value) : _value(value) {}
