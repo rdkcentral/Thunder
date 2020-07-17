@@ -1,10 +1,6 @@
-# - Try to find Weston library.
+# - Try to find Weston.
 # Once done this will define
 #  WESTON_FOUND - System has weston
-#  WESTON_INCLUDE_DIRS - The weston include directories
-#  WESTON_LIBRARIES    - The libraries needed to use weston
-#
-#  WESTON::WESTON, the weston compositor
 #
 # Copyright (C) 2015 Metrological.
 # Copyright (C) 2019 Linaro.
@@ -31,24 +27,5 @@
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 find_package(PkgConfig)
-pkg_check_modules(PC_WESTON libweston-desktop-8)
+pkg_check_modules(PC_WESTON weston>=6)
 
-find_library(WESTON_CLIENT_LIB NAMES weston-desktop-8
-        HINTS ${PC_WESTON_LIBDIR} ${PC_WESTON_LIBRARY_DIRS}
-)
-
-if(PC_WESTON_FOUND AND NOT TARGET WestonClient::WestonClient)
-    add_library(WestonClient::WestonClient UNKNOWN IMPORTED)
-    set_target_properties(WestonClient::WestonClient PROPERTIES
-            IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-            IMPORTED_LOCATION "${WESTON_CLIENT_LIB}"
-            INTERFACE_INCLUDE_DIRECTORIES ""
-            INTERFACE_COMPILE_OPTIONS "${PC_WESTON_DEFINITIONS}"
-            INTERFACE_LINK_LIBRARIES "${PC_WESTON_LIBRARIES}"
-            )
-endif()
-
-include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(PC_WESTON DEFAULT_MSG PC_WESTON_FOUND)
-
-mark_as_advanced(PC_WESTON_LIBRARIES)
