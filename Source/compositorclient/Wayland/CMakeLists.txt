@@ -44,7 +44,6 @@ target_link_libraries(${TARGET}
         WaylandEGL::WaylandEGL
         ${EGL_LIBRARIES}
         ${NAMESPACE}Core::${NAMESPACE}Core
-        ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client::${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client
         WaylandClient::WaylandClient)
 
 set_target_properties(${TARGET} PROPERTIES
@@ -53,6 +52,12 @@ set_target_properties(${TARGET} PROPERTIES
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
 )
+
+if ("${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}" STREQUAL "Westeros")
+    target_link_libraries(${TARGET}
+        PRIVATE
+            ${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client::${PLUGIN_COMPOSITOR_SUB_IMPLEMENTATION}Client)
+endif ()
 
 if (NXCLIENT_FOUND)
     target_link_libraries(${TARGET}
