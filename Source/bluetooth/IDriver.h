@@ -19,7 +19,8 @@
 
 #pragma once
 
-#ifndef EXTERNAL
+#undef EXTERNAL
+
 #ifdef _MSVC_LANG
 #ifdef BLUETOOTH_EXPORTS
 #define EXTERNAL __declspec(dllexport)
@@ -28,7 +29,6 @@
 #endif
 #else
 #define EXTERNAL __attribute__ ((visibility ("default")))
-#endif
 #endif
 
 #ifdef __cplusplus
