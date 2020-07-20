@@ -205,6 +205,10 @@
           "$ref": "#/common/errors/unknownkey"
         },
         {
+          "description": "Returned when connection fails if there is no associated bssid to connect and not defined as AccessPoint. Rescan and try to connect",
+          "$ref": "#/common/errors/badrequest"
+        },
+        {
           "description": "Returned when connection attempt fails for other reasons",
           "$ref": "#/common/errors/asyncaborted"
         }
@@ -289,7 +293,7 @@
       ]
     },
     "config": {
-      "summary": "Single WiFi conifguration",
+      "summary": "Single WiFi configuration",
       "params": {
         "$ref": "#/definitions/config"
       },
@@ -336,10 +340,10 @@
       }
     },
     "networkchange": {
-      "summary": "Signals that a network property has changed (e.g. frequency)"
+      "summary": "Signals that a network property has changed. e.g. frequency"
     },
     "connectionchange": {
-      "summary": "Notifies about connection state change (i.e. connected/disconnected)",
+      "summary": "Notifies about connection state change. i.e. connected/disconnected",
       "params": {
         "type": "string",
         "description": "SSID of the connected network in case of connect or empty in case of disconnect",

@@ -514,7 +514,7 @@ namespace Core {
 #endif
 
         if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
-            TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
+            TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
         } else if (SetNonBlocking(l_Result) == false) {
 #ifdef __WINDOWS__
             ::closesocket(l_Result);
@@ -530,7 +530,9 @@ namespace Core {
             int optval = 1;
             socklen_t optionLength = sizeof(int);
 
-            ::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
+            if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
+                TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
+            }
         }
 #ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
@@ -539,11 +541,10 @@ namespace Core {
                 int report = __ERRORRESULT__;
 
                 if (report != 2) {
-
                     ::close(l_Result);
                     l_Result = INVALID_SOCKET;
 
-                    TRACE_L1("Error on unlinking domain socket. Error %d", report);
+                    TRACE_L1("Error on unlinking domain socket. Error %d: %s", report, strerror(report));
                 }
             }
         }
@@ -582,7 +583,7 @@ namespace Core {
                             BufferAlignment(l_Result);
                             return (l_Result);
                         } else {
-                            TRACE_L1("Error on port socket CHMOD. Error %d", __ERRORRESULT__);
+                            TRACE_L1("Error on port socket CHMOD. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                         }
                     } else
 #endif
@@ -591,7 +592,7 @@ namespace Core {
                         return (l_Result);
                     }
                 } else {
-                    TRACE_L1("Error on port socket BIND. Error %d", __ERRORRESULT__);
+                    TRACE_L1("Error on port socket BIND. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
             } else {
                 BufferAlignment(l_Result);
@@ -848,7 +849,7 @@ namespace Core {
                     if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
                         m_State |= SocketPort::WRITE;
                     } else {
-                        printf("Write exception. %d\n", l_Result);
+                        printf("Write exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));
                         m_State |= SocketPort::EXCEPTION;
                         StateChange();
                     }
