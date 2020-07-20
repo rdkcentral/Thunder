@@ -317,11 +317,10 @@ namespace Core {
             return (Create((USER_READ|USER_WRITE|USER_EXECUTE|GROUP_READ|GROUP_EXECUTE), exclusive));
         }
 
-        bool Create(const uint32_t mode, const bool exclusive = false, bool large = false)
+        bool Create(const uint32_t mode, const bool exclusive = false)
         {
 #ifdef __POSIX__
-            int fileType = large? O_LARGEFILE: 0;
-            _handle = open(_name.c_str(), fileType | O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
+            _handle = open(_name.c_str(), O_RDWR | O_CREAT | O_TRUNC | (exclusive ? O_EXCL : 0), mode);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (GENERIC_READ | GENERIC_WRITE), (exclusive ? 0 : (FILE_SHARE_READ | FILE_SHARE_WRITE)), nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -330,11 +329,10 @@ namespace Core {
             return (IsOpen());
         }
 
-        bool Open(bool large = false) const
+        bool Open() const
         {
 #ifdef __POSIX__
-            int fileType = large? O_LARGEFILE: 0;
-            _handle = open(_name.c_str(), fileType | O_RDONLY);
+            _handle = open(_name.c_str(), O_RDONLY);
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), GENERIC_READ, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -342,11 +340,10 @@ namespace Core {
             const_cast<File*>(this)->LoadFileInfo();
             return (IsOpen());
         }
-        bool Open(bool readOnly, bool large = false)
+        bool Open(bool readOnly)
         {
 #ifdef __POSIX__
-            int fileType = large? O_LARGEFILE: 0;
-            _handle = open(_name.c_str(), (readOnly ? fileType | O_RDONLY : O_RDWR));
+            _handle = open(_name.c_str(), (readOnly ? O_RDONLY : O_RDWR));
 #endif
 #ifdef __WINDOWS__
             _handle = ::CreateFile(_name.c_str(), (readOnly ? GENERIC_READ : GENERIC_READ | GENERIC_WRITE), FILE_SHARE_READ | (readOnly ? 0 : FILE_SHARE_WRITE), nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -354,11 +351,10 @@ namespace Core {
             LoadFileInfo();
             return (IsOpen());
         }
-        bool Append(bool large = false)
+        bool Append()
         {
 #ifdef __POSIX__
-            int fileType = large? O_LARGEFILE: 0;
-            _handle = open(_name.c_str(), fileType | O_RDWR | O_APPEND);
+            _handle = open(_name.c_str(), O_RDWR | O_APPEND);
 
             if ((_handle == -1) && (errno == ENOENT)) {
                 return (Create());
@@ -442,7 +438,7 @@ namespace Core {
             DWORD writtenBytes;
 
             ::WriteFile(_handle, buffer, size, &writtenBytes, nullptr);
-            return static_cast<uint64_t>(writtenBytes);
+            return static_cast<uint32_t>(writtenBytes);
 #endif
         }
         uint32_t Read(uint8_t buffer[], uint32_t size) const
@@ -451,18 +447,18 @@ namespace Core {
             ASSERT(IsOpen());
 
 #ifdef __POSIX__
-            int64_t value = read(_handle, buffer, size);
+            int value = read(_handle, buffer, size);
 
             if (value == -1) {
                 return (0);
             } else {
-                return (static_cast<uint64_t>(value));
+                return (static_cast<uint32_t>(value));
             }
 #endif
 #ifdef __WINDOWS__
             DWORD readBytes = 0;
             ::ReadFile(_handle, buffer, size, &readBytes, nullptr);
-            return static_cast<uint64_t>(readBytes);
+            return static_cast<uint32_t>(readBytes);
 #endif
         }
 
