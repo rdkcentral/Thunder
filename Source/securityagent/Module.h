@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -20,14 +20,12 @@
 #pragma once
 
 #ifndef MODULE_NAME
-#define MODULE_NAME WebSocket
+#define MODULE_NAME SecurityAgent
 #endif
 
 #include <core/core.h>
-#include <cryptalgo/cryptalgo.h>
-#include <zlib.h>
 
-#if defined(__WINDOWS__) && defined(WEBSOCKET_EXPORTS)
+#if defined(__WINDOWS__) && defined(SECURITYAGENT_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
 #endif

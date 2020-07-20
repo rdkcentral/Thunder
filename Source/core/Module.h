@@ -17,23 +17,11 @@
  * limitations under the License.
  */
  
-#ifndef __MODULE_CORE_H
-#define __MODULE_CORE_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Core
 #endif
 
-#undef EXTERNAL
+#include "Portability.h"
 
-#ifdef _WINDOWS
-#ifdef CORE_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
-#define EXTERNAL EXTERNAL_EXPORT
-#endif
-
-#endif // __MODULE_CORE_H

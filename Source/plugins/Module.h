@@ -17,31 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_PLUGINS_H
-#define __MODULE_PLUGINS_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Plugins
 #endif
 
-#include "../core/core.h"
-#include "../com/com.h"
-#include "../cryptalgo/cryptalgo.h"
-#include "../tracing/tracing.h"
-#include "../websocket/websocket.h"
+#include <core/core.h>
+#include <com/com.h>
+#include <cryptalgo/cryptalgo.h>
+#include <tracing/tracing.h>
+#include <websocket/websocket.h>
 
-#define RESTFULL_API 1
-
+#if defined(__WINDOWS__) && defined(PLUGINS_EXPORTS)
 #undef EXTERNAL
-
-#ifdef __WINDOWS__
-#ifdef PLUGINS_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
 #define EXTERNAL EXTERNAL_EXPORT
 #endif
 
-#endif // __MODULE_PLUGINS_H

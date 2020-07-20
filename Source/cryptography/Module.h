@@ -26,7 +26,7 @@
 #include <core/core.h>
 #include <tracing/tracing.h>
 
-#include <climits>
-
+#if defined(__WINDOWS__) && defined(CRYPTOGRAPHY_EXPORTS)
 #undef EXTERNAL
-#define EXTERNAL EXTERNAL_IMPORT
+#define EXTERNAL EXTERNAL_EXPORT
+#endif

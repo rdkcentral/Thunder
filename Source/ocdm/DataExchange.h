@@ -21,7 +21,7 @@
 #define __DATAEXCHANGE_H
 
 // ---- Include local include files ----
-#include <core/core.h>
+#include "Module.h"
 
 // ---- Referenced classes and types ----
 

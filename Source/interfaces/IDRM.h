@@ -26,6 +26,8 @@
 #include <typeinfo>
 #include <vector>
 
+#include <core/core.h>
+
 #ifdef __GNUC__
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
@@ -503,7 +505,7 @@ private:
 extern "C" {
 #endif
 
-CDMi::ISystemFactory* GetSystemFactory();
+EXTERNAL CDMi::ISystemFactory* GetSystemFactory();
 
 #ifdef __cplusplus
 }

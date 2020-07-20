@@ -19,10 +19,10 @@
 
 #pragma once
 
-#include "IShell.h"
-#include "IPlugin.h"
 #include "Module.h"
 #include "System.h"
+#include "IShell.h"
+#include "IPlugin.h"
 
 namespace WPEFramework {
 

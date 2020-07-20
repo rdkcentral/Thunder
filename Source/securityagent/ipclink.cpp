@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#include "securityagent.h"
 #include "IPCSecurityToken.h"
+#include "securityagent.h"
 
 using namespace WPEFramework;
 

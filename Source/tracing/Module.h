@@ -17,25 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_TRACING_H
-#define __MODULE_TRACING_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Tracing
 #endif
 
-#include "../core/core.h"
+#include <core/core.h>
 
+#if defined(__WINDOWS__) && defined(TRACING_EXPORTS)
 #undef EXTERNAL
-
-#ifdef __WINDOWS__
-#ifdef TRACING_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
 #define EXTERNAL EXTERNAL_EXPORT
 #endif
 
-#endif // __MODULE_TRACING_H
