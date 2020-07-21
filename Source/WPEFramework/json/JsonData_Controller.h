@@ -52,6 +52,23 @@ namespace JsonData {
             Core::JSON::String Callsign; // Plugin callsign
         }; // class ActivateParamsInfo
 
+        class CloneParamsInfo : public Core::JSON::Container {
+        public:
+            CloneParamsInfo()
+                : Core::JSON::Container()
+            {
+                Add(_T("callsign"), &Callsign);
+                Add(_T("newcallsign"), &NewCallsign);
+            }
+
+            CloneParamsInfo(const CloneParamsInfo&) = delete;
+            CloneParamsInfo& operator=(const CloneParamsInfo&) = delete;
+
+        public:
+            Core::JSON::String Callsign; // Base Plugin callsign
+            Core::JSON::String NewCallsign; // New Plugin callsign
+        }; // class CloneParamsInfo
+
         // Method params/result classes
         //
 
