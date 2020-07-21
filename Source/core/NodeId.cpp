@@ -154,6 +154,13 @@ namespace Core {
 
         m_hostName = NetlinkName(m_structInfo);
     }
+
+    NodeId::NodeId(const struct sockaddr_ll& rInfo)
+    {
+        memcpy(&(m_structInfo.RawSocket), &rInfo, sizeof(sockaddr_ll));
+        
+        m_hostName = RawName(m_structInfo);
+    }
     
     NodeId::NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress)
     {

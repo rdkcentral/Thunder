@@ -1899,6 +1899,35 @@ namespace PluginHost {
 
                 return (newService);
             }
+
+            inline uint32_t Clone(const Core::ProxyType<Service>& original, const string& newCallsign, Core::ProxyType<Service>& newService)
+            {
+                uint32_t result = Core::ERROR_GENERAL;
+
+                ASSERT(original.IsValid());
+
+                _adminLock.Lock();
+                if (_services.find(newCallsign) == _services.end()) {
+                    // Copy original configuration
+                    Plugin::Config newConfiguration = original->PluginHost::Service::Configuration();
+                    newConfiguration.Callsign = newCallsign;
+
+                    newService = Core::ProxyType<Service>::Create(&_webbridgeConfig, &newConfiguration, this);
+
+                    if (newService.IsValid() == true) {
+                        // Fire up the interface. Let it handle the messages.
+                        _services.insert(std::pair<const string, Core::ProxyType<Service>>(newConfiguration.Callsign.Value(), newService));
+
+                        newService->Evaluate();
+
+                        result = Core::ERROR_NONE;
+                    }
+                }
+                _adminLock.Unlock();
+
+                return (result);
+            }
+
             inline void Destroy(const string& callSign)
             {
                 _adminLock.Lock();

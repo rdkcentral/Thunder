@@ -19,6 +19,8 @@ get_filename_component(TARGET ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 
 set(THREADPOOL_COUNT 4 CACHE STRING "The number of threads in the thread pool")
 
+# JsonGenerator(CODE INPUT ${CMAKE_CURRENT_SOURCE_DIR}/json/Controller.json OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
+
 add_executable(${TARGET}
         Controller.cpp
         ControllerJsonRpc.cpp
@@ -53,6 +55,8 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Plugins::${NAMESPACE}Plugins
           ${NAMESPACE}COMProcess::${NAMESPACE}COMProcess  # For COM executable define
         )
+
+# target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
         
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}
