@@ -209,6 +209,14 @@
           "$ref": "#/common/errors/badrequest"
         },
         {
+          "description": "Returned when connection is attempted with wrong password",
+          "$ref": "#/common/errors/invalidsigature"
+        },
+        {
+          "description": "Returned when connection already exists",
+          "$ref": "#/common/errors/alreadyconnected"
+        },
+        {
           "description": "Returned when connection attempt fails for other reasons",
           "$ref": "#/common/errors/asyncaborted"
         }
