@@ -474,7 +474,7 @@ namespace Core {
             return (::SetFilePointer(_handle, offset, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)) != INVALID_SET_FILE_POINTER);
 #endif
         }
-        int32_t Position() const
+        int64_t Position() const
         {
             int64_t result = 0;
 
