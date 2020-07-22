@@ -34,7 +34,7 @@
 namespace WPEFramework {
 namespace Compositor {
 
-    struct IDisplay {
+    struct EXTERNAL IDisplay {
         struct IKeyboard {
             virtual ~IKeyboard() {}
 
