@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IStream : virtual public Core::IUnknown {
+    struct EXTERNAL IStream : virtual public Core::IUnknown {
         enum { ID = ID_STREAM };
 
         enum class state : uint8_t {
@@ -58,11 +58,11 @@ namespace Exchange {
             Unknown
         };
 
-        struct IElement : virtual public Core::IUnknown {
+        struct EXTERNAL IElement : virtual public Core::IUnknown {
 
             enum { ID = ID_STREAM_ELEMENT};
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_ELEMENT_ITERATOR };
 
                 virtual ~IIterator() {}
@@ -87,10 +87,10 @@ namespace Exchange {
             virtual type Type() const = 0;
         };
 
-        struct IControl : virtual public Core::IUnknown {
+        struct EXTERNAL IControl : virtual public Core::IUnknown {
             enum { ID = ID_STREAM_CONTROL };
 
-            struct IGeometry : virtual public Core::IUnknown {
+            struct EXTERNAL IGeometry : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_CONTROL_GEOMETRY };
 
                 virtual ~IGeometry() {}
@@ -102,7 +102,7 @@ namespace Exchange {
                 virtual uint32_t Height() const = 0;
             };
 
-            struct ICallback : virtual public Core::IUnknown {
+            struct EXTERNAL ICallback : virtual public Core::IUnknown {
                 enum { ID = ID_STREAM_CONTROL_CALLBACK };
 
                 virtual ~ICallback() {}
@@ -124,7 +124,7 @@ namespace Exchange {
             virtual void Callback(IControl::ICallback* callback) = 0;
         };
 
-        struct ICallback : virtual public Core::IUnknown {
+        struct EXTERNAL ICallback : virtual public Core::IUnknown {
             enum { ID = ID_STREAM_CALLBACK };
 
             virtual ~ICallback() {}
@@ -148,7 +148,7 @@ namespace Exchange {
         virtual IElement::IIterator* Elements() = 0;
     };
 
-    struct IPlayer : virtual public Core::IUnknown {
+    struct EXTERNAL IPlayer : virtual public Core::IUnknown {
         enum { ID = ID_PLAYER };
 
         virtual ~IPlayer() {}

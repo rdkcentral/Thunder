@@ -31,7 +31,7 @@ namespace Exchange {
     struct EXTERNAL ITimeSync : virtual public Core::IUnknown {
         enum { ID = ID_TIMESYNC };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_TIMESYNC_NOTIFICATION };
 
             virtual ~INotification() {}

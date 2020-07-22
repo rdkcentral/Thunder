@@ -26,7 +26,7 @@ namespace Exchange {
 
     // This interface gives direct access to a Browser to change
     // Browser specific properties like displayed URL.
-    struct IPerformance : virtual public Core::IUnknown {
+    struct EXTERNAL IPerformance : virtual public Core::IUnknown {
 
         enum { ID = ID_PERFORMANCE };
 
