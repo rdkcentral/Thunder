@@ -30,24 +30,24 @@ namespace Exchange {
 struct IRoomAdministrator : virtual public Core::IUnknown {
     enum { ID = ID_ROOMADMINISTRATOR };
 
-    struct INotification : virtual public Core::IUnknown {
+    struct EXTERNAL INotification : virtual public Core::IUnknown {
         enum { ID = ID_ROOMADMINISTRATOR_NOTIFICATION };
 
         virtual void Created(const string& id) = 0;
         virtual void Destroyed(const string& id) = 0;
     };
 
-    struct IRoom : virtual public Core::IUnknown {
+    struct EXTERNAL IRoom : virtual public Core::IUnknown {
         enum { ID = ID_ROOMADMINISTRATOR_ROOM };
 
-        struct ICallback : virtual public Core::IUnknown {
+        struct EXTERNAL ICallback : virtual public Core::IUnknown {
            enum { ID = ID_ROOMADMINISTRATOR_ROOM_CALLBACK };
 
            virtual void Joined(const string& userId) = 0;
            virtual void Left(const string& userId) = 0;
         };
 
-        struct IMsgNotification : virtual public Core::IUnknown {
+        struct EXTERNAL IMsgNotification : virtual public Core::IUnknown {
            enum { ID = ID_ROOMADMINISTRATOR_ROOM_MSGNOTIFICATION };
 
            virtual void Message(const string& message, const string& userId) = 0;

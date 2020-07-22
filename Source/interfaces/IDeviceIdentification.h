@@ -24,7 +24,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IDeviceProperties : virtual public Core::IUnknown {
+    struct EXTERNAL IDeviceProperties : virtual public Core::IUnknown {
         enum { ID = ID_DEVICE_PROPERTIES };
 
         virtual ~IDeviceProperties() { }

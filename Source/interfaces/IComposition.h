@@ -25,7 +25,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IComposition : virtual public Core::IUnknown {
+    struct EXTERNAL IComposition : virtual public Core::IUnknown {
         enum { ID = ID_COMPOSITION };
 
         static constexpr uint32_t maxOpacity = 255;
@@ -58,7 +58,7 @@ namespace Exchange {
             uint32_t height;
         };
 
-        struct IClient : virtual public Core::IUnknown {
+        struct EXTERNAL IClient : virtual public Core::IUnknown {
 
             enum { ID = ID_COMPOSITION_CLIENT };
 
@@ -72,7 +72,7 @@ namespace Exchange {
             virtual uint32_t ZOrder() const = 0;
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_COMPOSITION_NOTIFICATION };
 
             virtual ~INotification() {}

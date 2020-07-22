@@ -24,7 +24,7 @@
 
 namespace WPEFramework {
 namespace Exchange {
-    struct IRtspClient : virtual public Core::IUnknown {
+    struct EXTERNAL IRtspClient : virtual public Core::IUnknown {
 
         enum { ID = ID_RTSPCLIENT };
 

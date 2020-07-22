@@ -29,19 +29,19 @@ namespace Exchange {
 
     // This interface gives the possibility to create/defines commmands to be executed by
     // the CommanderPlugin
-    struct ICommand {
+    struct EXTERNAL ICommand {
 
         enum { ID = ID_COMMAND };
 
         virtual ~ICommand() {}
 
-        struct IFactory {
+        struct EXTERNAL IFactory {
             virtual ~IFactory() {}
 
             virtual Core::ProxyType<ICommand> Create(const string& label, const string& configuration) = 0;
         };
 
-        struct IRegistration {
+        struct EXTERNAL IRegistration {
             enum { ID = ID_COMMAND_REGISTRATION };
 
             virtual ~IRegistration() {}

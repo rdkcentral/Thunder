@@ -28,10 +28,10 @@ namespace Exchange {
     // This interface gives direct access to a Browser to change
     // Browser specific properties like displayed URL.
 
-    struct IBrowser : virtual public Core::IUnknown {
+    struct EXTERNAL IBrowser : virtual public Core::IUnknown {
         enum { ID = ID_BROWSER };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_BROWSER_NOTIFICATION };
 
             virtual ~INotification() {}
@@ -58,7 +58,7 @@ namespace Exchange {
     };
 
     /* @json */
-    struct IWebBrowser : virtual public Core::IUnknown {
+    struct EXTERNAL IWebBrowser : virtual public Core::IUnknown {
         enum { ID = ID_WEB_BROWSER };
 
         /* @event */
