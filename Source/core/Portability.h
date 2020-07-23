@@ -272,7 +272,7 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
-extern "C" void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
 #else
 #include <linux/input.h>
@@ -438,7 +438,7 @@ struct TemplateIntToType {
 
 extern "C" {
 
-extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
+extern EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 
 #if defined(__LINUX__)
 uint64_t htonll(const uint64_t& value);

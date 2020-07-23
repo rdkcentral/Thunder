@@ -26,7 +26,7 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class Attribute {
+    class EXTERNAL Attribute {
     public:
         enum type {
             NIL = 0x00,
@@ -109,7 +109,7 @@ namespace Bluetooth {
         uint8_t* _buffer;
     };
 
-    class GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL GATTSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
         static constexpr uint8_t LE_ATT_CID = 4;
 
@@ -233,7 +233,7 @@ namespace Bluetooth {
     public:
         static constexpr uint32_t CommunicationTimeOut = 2000; /* 2 seconds. */
 
-        class Command : public Core::IOutbound, public Core::IInbound {
+        class EXTERNAL Command : public Core::IOutbound, public Core::IInbound {
         private:
             Command(const Command&) = delete;
             Command& operator=(const Command&) = delete;
@@ -415,7 +415,7 @@ namespace Bluetooth {
             };
 
         public:
-            class Response {
+            class EXTERNAL Response {
             private:
                 Response(const Response&) = delete;
                 Response& operator=(const Response&) = delete;
