@@ -27,6 +27,18 @@
 #include <EGL/eglext.h>
 #include <string>
 
+#ifndef EXTERNAL
+#ifdef _MSVC_LANG
+#ifdef DISPLAYINFO_EXPORTS
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#endif
+#else
+#define EXTERNAL __attribute__ ((visibility ("default")))
+#endif
+#endif
+
 #if __cplusplus <= 199711L
 #define nullptr NULL
 #endif
