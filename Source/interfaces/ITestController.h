@@ -24,15 +24,15 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct ITestController : virtual public Core::IUnknown {
+    struct EXTERNAL ITestController : virtual public Core::IUnknown {
 
         enum { ID = ID_TESTCONTROLLER };
 
-        struct ITest : virtual public Core::IUnknown {
+        struct EXTERNAL ITest : virtual public Core::IUnknown {
 
             enum { ID = ID_TESTCONTROLLER_TEST };
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_TESTCONTROLLER_TEST_ITERATOR };
 
@@ -49,11 +49,11 @@ namespace Exchange {
             virtual string Name() const = 0;
         };
 
-        struct ICategory : virtual public Core::IUnknown {
+        struct EXTERNAL ICategory : virtual public Core::IUnknown {
 
             enum { ID = ID_TESTCONTROLLER_CATEGORY };
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_TESTCONTROLLER_CATEGORY_ITERATOR };
 

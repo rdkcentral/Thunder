@@ -34,12 +34,12 @@
 
 namespace WPEFramework {
 namespace Exchange {
-    struct IExternal : virtual public Core::IUnknown {
+    struct EXTERNAL IExternal : virtual public Core::IUnknown {
         virtual ~IExternal() {}
 
         enum { ID = ID_EXTERNAL };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
 
             virtual ~INotification() {}
 
@@ -49,12 +49,12 @@ namespace Exchange {
             virtual void Update(const uint32_t id) = 0;
         };
 
-        struct ICatalog : virtual public Core::IUnknown {
+        struct EXTERNAL ICatalog : virtual public Core::IUnknown {
             ~ICatalog() override = default;
 
             enum { ID = ID_EXTERNAL_CATALOG };
 
-            struct INotification : virtual public Core::IUnknown {
+            struct EXTERNAL INotification : virtual public Core::IUnknown {
 
                 ~INotification() override = default;
 

@@ -25,7 +25,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This is an example to show the workings and how to develope a COMRPC/JSONRPC method/interface
-    struct IMath : virtual public Core::IUnknown {
+    struct EXTERNAL IMath : virtual public Core::IUnknown {
 
         enum { ID = ID_MATH };
 

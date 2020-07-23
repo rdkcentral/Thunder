@@ -26,7 +26,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct ISecureShellServer : virtual public Core::IUnknown {
+    struct EXTERNAL ISecureShellServer : virtual public Core::IUnknown {
         enum { ID = ID_SECURESHELLSERVER };
 
 	virtual ~ISecureShellServer() {}
@@ -35,7 +35,7 @@ namespace Exchange {
 
             enum { ID = ID_SECURESHELLSERVER_CLIENT};
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_SECURESHELLSERVER_CLIENT_ITERATOR };
 

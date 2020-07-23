@@ -26,7 +26,7 @@ namespace Exchange {
 
     namespace Dolby {
 
-        struct IOutput : virtual public Core::IUnknown {
+        struct EXTERNAL IOutput : virtual public Core::IUnknown {
 
             enum { ID = ID_DOLBY_OUTPUT };
 

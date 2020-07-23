@@ -86,12 +86,12 @@ namespace Core {
                     _mySequence = header->nlmsg_seq;
 
                     _isMultimessage = header->nlmsg_flags & NLM_F_MULTI;
-                    
-                    Read(
-                        reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
-                        header->nlmsg_len - sizeof(header)
-                    );
                 }
+                    
+                Read(
+                    reinterpret_cast<const uint8_t *>(NLMSG_DATA(header)), 
+                    header->nlmsg_len - sizeof(header)
+                    );
             }
 
             header = NLMSG_NEXT(header, dataLeft);

@@ -27,7 +27,7 @@ namespace WPEFramework {
 
 namespace Exchange {
 
-    struct IBluetooth : virtual public Core::IUnknown {
+    struct EXTERNAL IBluetooth : virtual public Core::IUnknown {
 
         enum { ID = ID_BLUETOOTH };
 
@@ -41,11 +41,11 @@ namespace Exchange {
             KEYBOARD_DISPLAY,
         };
 
-        struct IDevice : virtual public Core::IUnknown {
+        struct EXTERNAL IDevice : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_DEVICE };
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_DEVICE_ITERATOR };
 
@@ -57,7 +57,7 @@ namespace Exchange {
                 virtual IDevice* Current() = 0;
             };
 
-            struct ICallback : virtual public Core::IUnknown {
+            struct EXTERNAL ICallback : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_CALLBACK };
 
@@ -66,7 +66,7 @@ namespace Exchange {
                 virtual void Updated() = 0;
             };
 
-            struct ISecurityCallback : virtual public Core::IUnknown {
+            struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_SECURITYCALLBACK };
 
@@ -110,11 +110,11 @@ namespace Exchange {
             virtual uint32_t Callback(ISecurityCallback* callback) = 0;
         };
 
-        struct IClassic : virtual public Core::IUnknown {
+        struct EXTERNAL IClassic : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_CLASSIC };
 
-            struct ISecurityCallback : virtual public Core::IUnknown {
+            struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_CLASSIC_SECURITYCALLBACK };
 
@@ -128,14 +128,14 @@ namespace Exchange {
             virtual uint32_t Callback(ISecurityCallback* callback) = 0;
         };
 
-        struct ILowEnergy : virtual public Core::IUnknown {
+        struct EXTERNAL ILowEnergy : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_LOWENERGY };
 
             virtual bool IsUUIDSupported(const string& uuid) const = 0;
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_NOTIFICATION };
 
