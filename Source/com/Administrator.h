@@ -358,14 +358,14 @@ namespace RPC {
             }
 
             if (message->Label() == AnnounceMessage::Id()) {
-	            _handler->Procedure(source, message);
-	    } else {
-
+                ASSERT(_handler != nullptr);
+                _handler->Procedure(source, message);
+            } else {
                 Core::ProxyType<Job> job(Job::Instance());
 
                 job->Set(source, message, _handler);
                 _threadPoolEngine.Submit(Core::ProxyType<Core::IDispatch>(job), Core::infinite);
-            }        
+            }
         }
 
     private:
