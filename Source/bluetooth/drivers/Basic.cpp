@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "../IDriver.h"
+#include <IDriver.h>
 
 #ifdef __cplusplus
 extern "C" {

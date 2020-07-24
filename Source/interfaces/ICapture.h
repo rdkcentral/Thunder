@@ -27,10 +27,10 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct ICapture : virtual public Core::IUnknown {
+    struct EXTERNAL ICapture : virtual public Core::IUnknown {
         enum { ID = ID_CAPTURE };
 
-        struct IStore {
+        struct EXTERNAL IStore {
 
             virtual ~IStore(){};
 

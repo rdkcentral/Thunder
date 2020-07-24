@@ -24,7 +24,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IGraphicsProperties : virtual public Core::IUnknown {
+    struct EXTERNAL IGraphicsProperties : virtual public Core::IUnknown {
         enum { ID = ID_GRAPHICS_PROPERTIES };
 
         virtual ~IGraphicsProperties() {}
@@ -33,7 +33,7 @@ namespace Exchange {
         virtual uint64_t FreeGpuRam() const = 0;
     };
 
-    struct IConnectionProperties : virtual public Core::IUnknown {
+    struct EXTERNAL IConnectionProperties : virtual public Core::IUnknown {
         enum { ID = ID_CONNECTION_PROPERTIES };
 
         virtual ~IConnectionProperties() { }
@@ -52,7 +52,7 @@ namespace Exchange {
             HDCP_2X
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_CONNECTION_PROPERTIES_NOTIFICATION };
 
             virtual ~INotification() {}

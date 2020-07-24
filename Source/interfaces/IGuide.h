@@ -26,10 +26,10 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface gives direct access to a SIControl to change
-    struct IGuide : virtual public Core::IUnknown {
+    struct EXTERNAL IGuide : virtual public Core::IUnknown {
         enum { ID = ID_GUIDE };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_GUIDE_NOTIFICATION };
 
             virtual ~INotification() {}

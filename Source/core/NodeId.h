@@ -194,7 +194,7 @@ namespace Core {
                    (m_structInfo.FamilyType == AF_NETLINK ? sizeof(struct sockaddr_nl) :
                    (m_structInfo.FamilyType == AF_PACKET ? sizeof(struct sockaddr_ll) :
 #ifdef CORE_BLUETOOTH
-                   (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un)))));
+                   (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un))))));
 #else
                     sizeof(struct sockaddr_un)))));
 #endif

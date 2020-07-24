@@ -25,12 +25,12 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IRemoteControl : virtual public Core::IUnknown {
+    struct EXTERNAL IRemoteControl : virtual public Core::IUnknown {
         enum { ID = ID_REMOTECONTROL };
 
         virtual ~IRemoteControl(){};
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_REMOTECONTROL_NOTIFICATION };
 
             virtual ~INotification(){};
