@@ -24,6 +24,7 @@ file(GLOB JSON_FILE "${CMAKE_CURRENT_SOURCE_DIR}/json/*.json")
 
 list(APPEND PUBLIC_HEADERS Module.h)
 list(APPEND PUBLIC_HEADERS definitions.h)
+list(APPEND PUBLIC_HEADERS JMath.h)
 
 ProxyStubGenerator(INPUT "${CMAKE_CURRENT_SOURCE_DIR}" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
 JsonGenerator(CODE INPUT ${JSON_FILE} OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
