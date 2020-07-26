@@ -6,7 +6,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IResourceMonitor : virtual public Core::IUnknown {
+    struct EXTERNAL IResourceMonitor : virtual public Core::IUnknown {
 
         enum { ID = ID_RESOURCEMONITOR };
 

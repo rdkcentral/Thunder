@@ -25,7 +25,7 @@ namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class UUID {
+    class EXTERNAL UUID {
     private:
         static const uint8_t BASE[];
 

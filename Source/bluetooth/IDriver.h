@@ -19,12 +19,24 @@
 
 #pragma once
 
+#ifndef EXTERNAL
+#ifdef _MSVC_LANG
+#ifdef BLUETOOTH_EXPORTS
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#endif
+#else
+#define EXTERNAL __attribute__ ((visibility ("default")))
+#endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-const char* construct_bluetooth_driver(const char* config);
-void destruct_bluetooth_driver();
+EXTERNAL const char* construct_bluetooth_driver(const char* config);
+EXTERNAL void destruct_bluetooth_driver();
 
 #ifdef __cplusplus
 }
