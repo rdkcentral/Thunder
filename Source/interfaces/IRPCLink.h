@@ -26,10 +26,10 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface show the use case of communicating transparently over process boundaries
-    struct IRPCLink : virtual public Core::IUnknown {
+    struct EXTERNAL IRPCLink : virtual public Core::IUnknown {
         enum { ID = ID_RPCLINK };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_RPCLINK_NOTIFICATION };
 
             virtual ~INotification() {}

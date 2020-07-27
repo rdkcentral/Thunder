@@ -24,18 +24,18 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct ITestUtility : virtual public Core::IUnknown {
+    struct EXTERNAL ITestUtility : virtual public Core::IUnknown {
         enum { ID = ID_TESTUTILITY };
 
         virtual ~ITestUtility(){};
 
-        struct ICommand : virtual public Core::IUnknown {
+        struct EXTERNAL ICommand : virtual public Core::IUnknown {
 
             enum { ID = ID_TESTUTILITY_COMMAND };
 
             virtual ~ICommand(){};
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_TESTUTILITY_ITERATOR };
 

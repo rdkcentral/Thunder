@@ -18,7 +18,8 @@
  */
 
 #include "SerialDriver.h"
-#include "../HCISocket.h"
+#include <HCISocket.h>
+#include <IDriver.h>
 
 namespace WPEFramework {
 

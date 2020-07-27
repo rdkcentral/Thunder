@@ -31,7 +31,7 @@ namespace PluginHost {
 namespace Exchange {
 
     // This interface gives direct access to a WebDriver instance
-    struct IWebDriver : virtual public Core::IUnknown {
+    struct EXTERNAL IWebDriver : virtual public Core::IUnknown {
 
         enum { ID = ID_WEBDRIVER };
 

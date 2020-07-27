@@ -28,11 +28,11 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface gives direct access to a switchboard
-    struct ISwitchBoard : virtual public Core::IUnknown {
+    struct EXTERNAL ISwitchBoard : virtual public Core::IUnknown {
 
         enum { ID = ID_SWITCHBOARD };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_SWITCHBOARD_NOTIFICATION };
 
             virtual ~INotification() {}

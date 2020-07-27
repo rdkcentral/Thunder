@@ -24,10 +24,10 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IInputPin : virtual public Core::IUnknown {
+    struct EXTERNAL IInputPin : virtual public Core::IUnknown {
         enum { ID = ID_INPUT_PIN };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_INPUT_PIN_NOTIFICATION };
 
             virtual ~INotification() { }
