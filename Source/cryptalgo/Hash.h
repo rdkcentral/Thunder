@@ -57,14 +57,16 @@
 */
 
 /* The SHA-256 algorith is updated to handle upto 32 bit size data
- * Reference: https://review.haiku-os.org/c/haiku/+/439/3/src/kits/crypto/hash/sha256/sha256.c
+ * Reference: https://github.com/B-Con/crypto-algorithms
  *
  * Author:
  * Brad Conte (brad AT bradconte.com)
  *
- * Licensed under MIT License
+ * This code is released into the public domain free of any restrictions.
+ * The author requests acknowledgement if the code is used, but does not require it.
+ * This code is provided free of any liability and without any quality claims by the author.
  *
-*/
+ */
 #ifndef __HASH_H
 #define __HASH_H
 
