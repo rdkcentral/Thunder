@@ -94,7 +94,7 @@
             "Enterprise"
           ],
           "example": "WPA_WPA2",
-          "description": "Type of protection. WPA_WPA2 means both WPA and WPA2 types are allowed"
+          "description": "Type of protection. WPA_WPA2 means WPA, WPA2 and mixed types are allowed"
         },
         "hidden": {
           "type": "boolean",

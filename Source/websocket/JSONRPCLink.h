@@ -583,12 +583,18 @@ namespace JSONRPC {
             , _localSpace()
             , _pendingQueue()
             , _scheduledTime(0)
+            , _versionstring()
         {
             if (localCallsign == nullptr) {
 	        static uint32_t sequence;
                 _localSpace = string("temporary") + Core::NumberType<uint32_t>(Core::InterlockedIncrement(sequence)).Text();
             } else {
                 _localSpace = localCallsign;
+            }
+
+            uint8_t version = Core::JSONRPC::Message::Version(callsign + '.');
+            if( version != static_cast<uint8_t>(~0) ) {
+                _versionstring = '.' + Core::NumberType<uint8_t>(version).Text();
             }
         }
         void Announce() {
@@ -1023,7 +1029,7 @@ namespace JSONRPC {
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
-                    message->Designator = _callsign + '.' + method;
+                    message->Designator = _callsign + _versionstring + '.' + method;
                 } else {
                     message->Designator = method;
                 }
@@ -1081,7 +1087,7 @@ namespace JSONRPC {
                 uint32_t id = _channel->Sequence();
                 message->Id = id;
                 if (_callsign.empty() == false) {
-                    message->Designator = _callsign + '.' + method;
+                    message->Designator = _callsign + _versionstring + '.' + method;
                 } else {
                     message->Designator = method;
                 }
@@ -1206,6 +1212,7 @@ namespace JSONRPC {
         string _localSpace;
         PendingMap _pendingQueue;
         uint64_t _scheduledTime;
+        string _versionstring;
     };
 
     // This is for backward compatibility. Please use the template and not the typedef below!!!
