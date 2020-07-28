@@ -479,7 +479,7 @@ namespace Core {
 
                 _responses.Unlock();
 
-                result == _reevaluate.Lock(allowedTime);
+                result = _reevaluate.Lock(allowedTime);
 
                 _waitCount--;
 

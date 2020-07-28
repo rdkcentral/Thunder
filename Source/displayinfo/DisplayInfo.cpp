@@ -76,6 +76,7 @@ private:
     {
         _displayConnection->Register(&_notification);
     }
+
     #ifdef __WINDOWS__
     #pragma warning(default : 4355)
     #endif
@@ -87,9 +88,14 @@ private:
 
         DisplayInfoAdministration()
             : _adminLock()
-            , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create())
+            , _engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 8>>::Create())
+            , _comChannel(Core::ProxyType<RPC::CommunicatorClient>::Create(Connector(),Core::ProxyType<Core::IIPCServer>(_engine)))
         {
+            ASSERT(_engine != nullptr);
+            ASSERT(_comChannel != nullptr);
+            _engine->Announcements(_comChannel->Announcement());
         }
+
 
         ~DisplayInfoAdministration()
         {
@@ -111,8 +117,7 @@ private:
             result = Find(name);
 
             if (result == nullptr) {
-
-                Exchange::IConnectionProperties* displayInterface = GetInterface<Exchange::IConnectionProperties>(name);
+                Exchange::IConnectionProperties* displayInterface = _comChannel->Open<Exchange::IConnectionProperties>(name);
 
                 if (displayInterface != nullptr) {
                     result = new DisplayInfo(name, displayInterface);
@@ -122,6 +127,21 @@ private:
             _adminLock.Unlock();
 
             return (result);
+        }
+
+        static Core::NodeId Connector() {
+            const TCHAR* comPath = ::getenv(_T("COMMUNICATOR_PATH"));
+
+            if (comPath == nullptr) {
+#ifdef __WINDOWS__
+                comPath = _T("127.0.0.1:62000");
+#else
+                comPath = _T("/tmp/communicator");
+#endif
+            }
+
+            return Core::NodeId(comPath);
+
         }
 
         uint32_t Delete(const DisplayInfo* displayInfo, int& refCount)
@@ -148,7 +168,7 @@ private:
             return result;
         }
 
-        uint8_t Enumerate(std::vector<string>& instances)
+        static uint8_t Enumerate(std::vector<string>& instances)
         {
             class Catalog : protected PluginHost::IPlugin::INotification {
             public:
@@ -193,14 +213,23 @@ private:
             private:
                 std::vector<PluginHost::IShell*> _instances;
             };
-            PluginHost::IShell* systemInterface = GetInterface<PluginHost::IShell>(string());
+
+            Core::ProxyType<RPC::InvokeServerType<1, 0, 4>> engine(Core::ProxyType<RPC::InvokeServerType<1, 0, 4>>::Create());
+            ASSERT(engine != nullptr);
+            Core::ProxyType<RPC::CommunicatorClient> comChannel(
+                    Core::ProxyType<RPC::CommunicatorClient>::Create(DisplayInfoAdministration::Connector(),
+                    Core::ProxyType<Core::IIPCServer>(engine)));
+            ASSERT(comChannel != nullptr);
+            engine->Announcements(comChannel->Announcement());
+
+            PluginHost::IShell* systemInterface = comChannel->Open<PluginHost::IShell>(string());
             if (systemInterface != nullptr) {
                 Core::Sink<Catalog> mySink;
                 mySink.Load(systemInterface, instances);
                 systemInterface->Release();
             }
 
-            return static_cast<uint8_t>(instances.size());
+            return instances.size();
         }
 
     private:
@@ -222,26 +251,9 @@ private:
             return result;
         }
 
-        template <typename INTERFACE>
-        INTERFACE* GetInterface(const string& name)
-        {
-            const TCHAR* comPath = ::getenv(_T("COMMUNICATOR_PATH"));
-
-            if (comPath == nullptr) {
-#ifdef __WINDOWS__
-                comPath = _T("127.0.0.1:62000");
-#else
-                comPath = _T("/tmp/communicator");
-#endif
-            }
-
-            Core::ProxyType<RPC::CommunicatorClient> comChannel(Core::ProxyType<RPC::CommunicatorClient>::Create(Core::NodeId(comPath), _engine));
-
-            return comChannel->Open<INTERFACE>(name, ~0, RPC::CommunicationTimeOut);
-        }
-
         Core::CriticalSection _adminLock;
-        Core::ProxyType<Core::IIPCServer> _engine;
+        Core::ProxyType<RPC::InvokeServerType<1, 0, 8>> _engine;
+        Core::ProxyType<RPC::CommunicatorClient> _comChannel;
     };
 
     ~DisplayInfo()
@@ -265,7 +277,7 @@ public:
 
         if (index == 0) {
             interfaces.clear();
-            _administration.Enumerate(interfaces);
+            DisplayInfoAdministration::Enumerate(interfaces);
         }
 
         if (index < interfaces.size()) {
