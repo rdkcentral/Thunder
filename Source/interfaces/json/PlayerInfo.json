@@ -88,8 +88,8 @@
       "type":"string",
       "enum":[
         "DIGITAL_PCM",
-        "DIGITAL_PASS_THROUGH",
-        "ATMOS_PASS_THROUGH",
+        "DIGITAL_PLUS",
+        "DIGITAL_AC3",
         "AUTO"
       ],
       "enumvalues":[
