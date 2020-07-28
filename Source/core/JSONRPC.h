@@ -308,7 +308,7 @@ namespace Core {
             private:
                 Entry() = delete;
                 Entry& operator=(const Entry&) = delete;
-
+                
                 union Functions {
                     Functions(const Functions& function, const bool async)
                     {
@@ -326,6 +326,23 @@ namespace Core {
                         : _invoke(function)
                     {
                     }
+                    void Assign(const CallbackFunction& function, bool callbackactive) {
+                        if( callbackactive ) {
+                            _callback = function;
+                        } else {
+                            _invoke.~InvokeFunction();
+                            new (&_callback) auto(function);
+                        }
+                    }
+                    void Assign(const InvokeFunction& function, bool callbackactive) {
+                        if( callbackactive ) {
+                            _callback.~CallbackFunction();
+                            new (&_invoke) auto(function);
+                        } else {
+                            _invoke = function;
+                        }
+                    }
+
                     ~Functions()
                     {
                     }
@@ -349,6 +366,16 @@ namespace Core {
                     : _asynchronous(copy._asynchronous)
                     , _info(copy._info, copy._asynchronous)
                 {
+                }
+                Entry& operator=(const CallbackFunction& callback) {
+                    _info.Assign(callback, _asynchronous);
+                    _asynchronous = true;
+                    return *this;
+                }
+                Entry& operator=(const InvokeFunction& invokefunction) {
+                    _info.Assign(invokefunction, _asynchronous);
+                    _asynchronous = false;
+                    return *this;
                 }
                 ~Entry()
                 {
@@ -618,19 +645,26 @@ namespace Core {
             {
                 // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
-
-                _handlers.emplace(std::piecewise_construct,
-                    std::make_tuple(methodName),
-                    std::make_tuple(lambda));
+                auto retval = _handlers.emplace(std::piecewise_construct,
+                                    std::make_tuple(methodName),
+                                    std::make_tuple(lambda));
+                    
+                if ( retval.second == false ) {
+                    retval.first->second = lambda;
+                }
             }
             void Register(const string& methodName, const CallbackFunction& lambda)
             {
-                // Due to versioning, we do allow to overwrite methods that have been registsred.
+                // Due to versioning, we do allow to overwrite methods that have been registered.
                 // These are typically methods that are different from the preferred interface..
 
-                _handlers.emplace(std::piecewise_construct,
-                    std::make_tuple(methodName),
-                    std::make_tuple(lambda));
+                auto retval = _handlers.emplace(std::piecewise_construct,
+                                    std::make_tuple(methodName),
+                                    std::make_tuple(lambda));
+
+                if ( retval.second == false ) {
+                    retval.first->second = lambda;
+                }
             }
             void Unregister(const string& methodName)
             {
