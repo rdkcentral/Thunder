@@ -20,7 +20,7 @@ This is a non-buildable target used to set the overall mendatory settings for th
 compiler for all sources of the Framework and its Plugins
 #]]
 option(POSITION_INDEPENDENT_CODE "Create position independent code on all targets including static libs" ON)
-option(EXCEPTIONS_DISABLE "Disable exception handling" ON)
+option(EXCEPTIONS_ENABLE "Enable exception handling" OFF)
 
 add_library(CompileSettings INTERFACE)
 add_library(CompileSettings::CompileSettings ALIAS CompileSettings)
@@ -41,10 +41,13 @@ if (SYSTEM_PREFIX)
     message(STATUS "System prefix is set to: ${SYSTEM_PREFIX}")
 endif()
 
-if(EXCEPTIONS_DISABLE)
+if(EXCEPTIONS_ENABLE)
+    target_compile_options(CompileSettings INTERFACE -fexceptions)
+    message(STATUS "Exception handling is enabled")
+else()
     target_compile_options(CompileSettings INTERFACE -fno-exceptions)
     message(STATUS "Exception handling is disabled")
-endif ()
+endif()
 
 if(NOT BUILD_TYPE)
     set(BUILD_TYPE Production)
