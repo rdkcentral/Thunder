@@ -36,6 +36,7 @@ add_library(${TARGET} SHARED
         DataElement.cpp
         DataElementFile.cpp
         FileSystem.cpp
+        IPPacket.cpp
         ISO639.cpp
         JSON.cpp
         JSONRPC.cpp
@@ -84,6 +85,7 @@ set(PUBLIC_HEADERS
         IIterator.h
         IObserver.h
         IPCMessage.h
+        IPPacket.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h
