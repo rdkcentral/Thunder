@@ -206,11 +206,11 @@
         },
         {
           "description": "Returned when connection fails if there is no associated bssid to connect and not defined as AccessPoint. Rescan and try to connect",
-          "$ref": "#/common/errors/badrequest"
+          "$ref": "#/common/errors/unavailable"
         },
         {
           "description": "Returned when connection is attempted with wrong password",
-          "$ref": "#/common/errors/invalidsigature"
+          "$ref": "#/common/errors/invalidsignature"
         },
         {
           "description": "Returned when connection already exists",
