@@ -1,3 +1,4 @@
+
  /*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
@@ -81,6 +82,11 @@ namespace Core {
             return PacketLength() - TotalHeaderLength();
         }
 
+        inline uint16_t TotalBufferSize() const 
+        {
+            return _bufferSize;
+        }
+
         inline uint16_t PacketLength() const 
         {
             return ntohs(IPHeader()->tot_len);
@@ -88,10 +94,10 @@ namespace Core {
 
         virtual void PayloadSet(const uint16_t payloadSize);
         virtual uint8_t* Payload() const;
+        virtual bool IsIncomingMessage() const;
     private:
         void RecalcIpHeaderChecksum();
 
-    protected:
         uint8_t* _buffer;
         const uint16_t _bufferSize;
     };

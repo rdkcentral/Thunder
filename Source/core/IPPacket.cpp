@@ -53,6 +53,11 @@ namespace Core {
         return _buffer + sizeof(iphdr);
     }
 
+    bool IPPacket::IsIncomingMessage() const 
+    {
+        return (TotalBufferSize() > TotalHeaderLength());
+    }
+
     void IPPacket::RecalcIpHeaderChecksum() 
     {
         // src: https://gist.github.com/david-hoze/0c7021434796997a4ca42d7731a7073a
@@ -104,5 +109,6 @@ namespace Core {
     {
         return IPPacket::Payload() + sizeof(udphdr);
     }
+
 }
 } // namespace Solution::Core
