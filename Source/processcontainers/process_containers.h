@@ -23,7 +23,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
 
 #ifdef __cplusplus
 

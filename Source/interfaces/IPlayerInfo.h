@@ -24,11 +24,11 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IPlayerProperties : virtual public Core::IUnknown {
+    struct EXTERNAL IPlayerProperties : virtual public Core::IUnknown {
         enum { ID = ID_PLAYER_PROPERTIES };
         virtual ~IPlayerProperties() {}
 
-        struct IAudioIterator : virtual public Core::IUnknown {
+        struct EXTERNAL IAudioIterator : virtual public Core::IUnknown {
             enum { ID = ID_PLAYER_PROPERTIES_AUDIO };
             virtual ~IAudioIterator() {}
 
@@ -53,7 +53,7 @@ namespace Exchange {
             virtual AudioCodec Codec() const = 0;
         };
 
-        struct IVideoIterator : virtual public Core::IUnknown {
+        struct EXTERNAL IVideoIterator : virtual public Core::IUnknown {
             enum { ID = ID_PLAYER_PROPERTIES_VIDEO };
             virtual ~IVideoIterator() {}
 

@@ -34,6 +34,13 @@ namespace RPC {
 
     /* virtual */ Administrator::~Administrator()
     {
+        for (std::pair<uint32_t, IMetadata*> proxy : _proxy) {
+            delete proxy.second;
+        }
+
+        for (std::pair<uint32_t, ProxyStub::UnknownStub*> stub : _stubs) {
+            delete stub.second;
+        }
     }
 
     /* static */ Administrator& Administrator::Instance()
@@ -55,7 +62,7 @@ namespace RPC {
 
             if (implementation != nullptr) {
                 implementation->AddRef();
-                RegisterInterface(channel, implementation, interfaceId);
+                RegisterUnknownInterface(channel, implementation, interfaceId);
             }
         } else {
             // Oops this is an unknown interface, Do not think this could happen.
@@ -130,9 +137,9 @@ namespace RPC {
             TRACE_L1("Unknown interface. %d", interfaceId);
         }
     }
-    void* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const uint32_t interfaceId)
+    ProxyStub::UnknownProxy* Administrator::ProxyFind(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const uint32_t id, void*& interface)
     {
-        void* result = nullptr;
+        ProxyStub::UnknownProxy* result = nullptr;
 
         _adminLock.Lock();
 
@@ -144,7 +151,10 @@ namespace RPC {
                 entry++;
             }
             if (entry != index->second.end()) {
-                result = (*entry)->QueryInterface(interfaceId);
+                interface = (*entry)->QueryInterface(id);
+                if (interface != nullptr) {
+                    result = (*entry);
+                }
             }
         }
 
@@ -153,13 +163,13 @@ namespace RPC {
         return (result);
     }
 
-    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool outbound, const uint32_t interfaceId, const bool piggyBack)
+    ProxyStub::UnknownProxy* Administrator::ProxyInstance(const Core::ProxyType<Core::IPCChannel>& channel, const instance_id& impl, const bool outbound, const uint32_t id, void*& interface)
     {
         ProxyStub::UnknownProxy* result = nullptr;
 
-        ASSERT(piggyBack == !outbound);
+        interface = nullptr;
 
-        if (impl != nullptr) {
+        if (impl) {
 
             _adminLock.Lock();
 
@@ -171,44 +181,43 @@ namespace RPC {
                     entry++;
                 }
                 if (entry != index->second.end()) {
-                    result = (*entry);
+                    interface = (*entry)->Aquire(outbound, id);
+
+                    ASSERT(interface != nullptr);
+
+                    if (interface != nullptr) {
+                        result = (*entry);
+                    }
                 }
             }
 
             if (result == nullptr) {
-                std::map<uint32_t, IMetadata*>::iterator index(_proxy.find(id));
+                std::map<uint32_t, IMetadata*>::iterator factory(_proxy.find(id));
 
-                if (index != _proxy.end()) {
+                if (factory != _proxy.end()) {
 
-                    result = index->second->CreateProxy(channel, impl, outbound);
+                    result = factory->second->CreateProxy(channel, impl, outbound);
 
                     ASSERT(result != nullptr);
 
                     // Register it as it is remotely registered :-)
                     _channelProxyMap[channel.operator->()].push_back(result);
 
+                    // This will increment the reference count to 1.
+                    interface = result->QueryInterface(id);
+
                 } else {
                     TRACE_L1("Failed to find a Proxy for %d.", id);
                 }
             }
-
+		
             _adminLock.Unlock();
         }
 
         return (result);
     }
 
-    void* Administrator::ProxyInstanceQuery(const Core::ProxyType<Core::IPCChannel>& channel, void* impl, const uint32_t id, const bool refCounted, const uint32_t interfaceId, const bool piggyBack)
-    {
-        void* result = nullptr;
-        ProxyStub::UnknownProxy* proxyStub = ProxyInstance(channel, impl, id, refCounted, interfaceId, piggyBack);
-        if (proxyStub != nullptr) {
-            result = proxyStub->QueryInterface(interfaceId);
-        }
-        return (result);
-    }
-
-    void Administrator::RegisterInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
+    void Administrator::RegisterUnknownInterface(Core::ProxyType<Core::IPCChannel>& channel, Core::IUnknown* reference, const uint32_t id)
     {
         ReferenceMap::iterator index = _channelReferenceMap.find(channel.operator->());
 
@@ -231,7 +240,7 @@ namespace RPC {
                 index->second.emplace_back(id, reference);
             }
             else {
-                printf("====> According to Bartjes law, this should not happen !\n");
+                TRACE_L1("====> According to Bartjens law, this should not happen !");
             }
         }
     }

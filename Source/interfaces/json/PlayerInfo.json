@@ -82,12 +82,27 @@
             "$ref": "#/definitions/videocodecs"
           }
         }
-      },
-      "required": [
-        "audio",
-        "video"
+      }
+    },
+    "dolby":{
+      "type":"string",
+      "enum":[
+        "DIGITAL_PCM",
+        "DIGITAL_PLUS",
+        "DIGITAL_AC3",
+        "AUTO"
+      ],
+      "enumvalues":[
+        0,
+        3,
+        4,
+        5
       ]
-    }
+    },
+    "required": [
+      "audio",
+      "video"
+    ]
   },
   "properties": {
     "playerinfo": {
@@ -95,6 +110,13 @@
       "readonly": true,
       "params": {
           "$ref": "#/definitions/codecs"
+      }
+    },
+    "dolbymode": {
+      "summary" : "Dolby output mode",
+      "readonly": false,
+      "params": {
+        "$ref": "#/definitions/dolby"
       }
     }
   }

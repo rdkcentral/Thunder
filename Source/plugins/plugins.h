@@ -21,7 +21,7 @@
 #define __PLUGIN_FRAMEWORK_SUPPORT_H
 
 #include "Module.h"
-
+#include "Config.h"
 #include "Channel.h"
 #include "Configuration.h"
 #include "IPlugin.h"
@@ -31,6 +31,7 @@
 #include "JSONRPC.h"
 #include "Request.h"
 #include "Service.h"
+#include "System.h"
 #include "VirtualInput.h"
 
 #ifdef __WINDOWS__

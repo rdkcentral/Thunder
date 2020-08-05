@@ -36,23 +36,14 @@
           "description": "Unknown resolution"
         },
         {
+          "$ref": "#/common/errors/unavailable",
+          "description": "Set resolution is not supported or failed"
+        },
+        {
           "$ref": "#/common/errors/general",
           "description": "Failed to set resolution"
         }
       ]
-    },
-    "clients": {
-      "summary": "List of compositor clients",
-      "description": "Use this property to retrieve the information of actual running clients.",
-      "readonly": true,
-      "params": {
-        "type": "array",
-        "items": {
-          "type": "string",
-          "description": "Client name",
-          "example": "Netflix"
-        }
-      }
     },
     "zorder": {
       "summary": "List of compositor clients sorted by z-order",
@@ -114,7 +105,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -137,7 +128,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -158,7 +149,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     }
@@ -186,7 +177,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
@@ -218,13 +209,13 @@
       "errors": [
         {
           "description": "Client(s) not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     },
-    "kill": {
-      "summary": "Kills a client",
-      "description": "Use this method to kill a client. Whenever a client is killed, the execution of the client is stopped and all its resources are released.",
+    "select": {
+      "summary": "Directs the input to the given client, disabling all the others",
+      "description": "Use this method to direct all inputs to this client. The client that is receiving the inputs prior to this call will nolonger receive it anymore after this call.",
       "params": {
         "type": "object",
         "properties": {
@@ -244,7 +235,7 @@
       "errors": [
         {
           "description": "Client not found",
-          "$ref": "#/common/errors/firstresourcenotfound"
+          "$ref": "#/common/errors/unavailable"
         }
       ]
     }

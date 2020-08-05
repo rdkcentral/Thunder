@@ -35,7 +35,11 @@ namespace WPEFramework {
   }
 
   namespace PluginHost {
-   class IShell;
+    class IShell;
+    class ISubSystem;
+    class IPlugin {
+      class INotification;
+    };
   }
 
   namespace RPC {

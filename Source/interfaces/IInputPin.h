@@ -24,26 +24,24 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IInputPin : virtual public Core::IUnknown {
+    struct EXTERNAL IInputPin : virtual public Core::IUnknown {
         enum { ID = ID_INPUT_PIN };
 
-        struct INotification : virtual public Core::IUnknown {
-            enum {
-                ID = ID_INPUT_PIN_NOTIFICATION
-            };
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+            enum { ID = ID_INPUT_PIN_NOTIFICATION };
 
-            virtual ~INotification()
-            {
-            }
+            virtual ~INotification() { }
 
             virtual void Marker(const uint32_t marker) = 0;
         };
 
+        virtual ~IInputPin() { }
+
         virtual void Register(IInputPin::INotification* sink) = 0;
         virtual void Unregister(IInputPin::INotification* sink) = 0;
 
-        virtual uint32_t AddMarker(const IInputPin::INotification* sink, const uint32_t marker) = 0;
-        virtual uint32_t RemoveMarker(const IInputPin::INotification* sink, const uint32_t marker) = 0;
+        virtual void AddMarker(const uint32_t marker) = 0;
+        virtual void RemoveMarker(const uint32_t marker) = 0;
     };
 }
 }

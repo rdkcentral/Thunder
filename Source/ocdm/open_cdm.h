@@ -57,6 +57,43 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <stdio.h>
+#include <list>
+
+#ifndef EXTERNAL
+#ifdef _MSVC_LANG
+#ifdef OCDM_EXPORTS
+#define EXTERNAL __declspec(dllexport)
+#else
+#define EXTERNAL __declspec(dllimport)
+#endif
+#else
+#define EXTERNAL __attribute__ ((visibility ("default")))
+#endif
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(_WINDOWS) 
+    #if !defined(OCDM_EXPORTS)
+    #pragma comment(lib, "ocdm.lib")
+    #endif
+
+    /**
+     * Sometimes the compiler would like to be smart, if we do not reference
+     * anything here
+     * and you enable the rightflags, the linker drops the dependency. Than
+     * Proxy/Stubs do
+     * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
+     */
+    EXTERNAL void ForceLinkingOfOpenCDM();
+#endif
+
+#define SESSION_ID_LEN 16
+#define MAX_NUM_SECURE_STOPS 8
+
 /**
  * Represents an OCDM system
  */
@@ -81,45 +118,13 @@ typedef enum {
     Expired,
     Released,
     OutputRestricted,
+    OutputRestrictedHDCP22,
     OutputDownscaled,
     StatusPending,
-    InternalError
+    InternalError,
+    HWError
 } KeyStatus;
-
-#ifdef _MSVC_LANG
-#undef EXTERNAL
-#ifdef OCDM_EXPORTS
-#define EXTERNAL __declspec(dllexport)
-#else
-#define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "ocdm.lib")
-#endif
-/**
- * Sometimes the compiler would like to be smart, if we do not reference
- * anything here
- * and you enable the rightflags, the linker drops the dependency. Than
- * Proxy/Stubs do
- * not get loaded, so lets make the instantiation of the ProxyStubs explicit !!!
- */
-extern "C" {
-EXTERNAL void ForceLinkingOfOpenCDM();
-}
-#else
-#define EXTERNAL
-#endif
-
-#ifdef __cplusplus
-
-#include <list>
-#include <string>
-
-#define SESSION_ID_LEN 16
-#define MAX_NUM_SECURE_STOPS 8
-
-extern "C" {
-
-#endif
-
+  
 /**
  * OpenCDM error code. Zero always means success.
  */
@@ -370,7 +375,7 @@ EXTERNAL OpenCDMError opencdm_session_update(struct OpenCDMSession* session,
  * \param session \ref OpenCDMSession instance.
  * \return Zero on success, non-zero on error.
  */
-OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
+EXTERNAL OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 
 /**
  * Retrieves DRM session specific metadata of a session.
@@ -388,6 +393,13 @@ OpenCDMError opencdm_session_remove(struct OpenCDMSession* session);
 EXTERNAL OpenCDMError opencdm_session_metadata(const struct OpenCDMSession* session, 
     char metadata[], 
     uint16_t* metadataSize);
+
+/**
+ * Let CDM know playback stopped and reset output protection
+ * \param session \ref OpenCDMSession instance.
+ * \return Zero on success, non-zero on error.
+ */
+EXTERNAL OpenCDMError opencdm_session_resetoutputprotection(struct OpenCDMSession* session);
 
 /**
  * Gets Session ID for a session.

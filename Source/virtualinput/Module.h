@@ -17,26 +17,15 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_VIRTUALINPUT_H
-#define __MODULE_VIRTUALINPUT_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME VirtualInput
 #endif
 
-#include "../core/core.h"
+#include <core/core.h>
 
-#ifdef _MSVC_LANG
+#if defined(__WINDOWS__) && defined(VIRTUALINPUT_EXPORTS)
 #undef EXTERNAL
-#undef INPUT_MOUSE
-#ifdef VIRTUALINPUT_EXPORTS
-#define EXTERNAL __declspec(dllexport)
-#else
-#define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "virtualinput.lib")
+#define EXTERNAL EXTERNAL_EXPORT
 #endif
-#else
-#define EXTERNAL
-#endif
-
-#endif // __MODULE_VIRTUALINPUT_H

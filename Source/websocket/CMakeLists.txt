@@ -52,6 +52,8 @@ target_link_libraries(${TARGET}
           ${NAMESPACE}Cryptalgo::${NAMESPACE}Cryptalgo
         )
 
+target_compile_definitions(${TARGET} PRIVATE WEBSOCKET_EXPORTS)
+
 set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
@@ -80,5 +82,11 @@ install(
 
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/jsonrpc)")
 install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink websocket.h ${CMAKE_SYSROOT}${CMAKE_INSTALL_PREFIX}/include/${NAMESPACE}/websocket/jsonrpc.h)")
+
+
+InstallPackageConfig(
+        TARGETS ${TARGET} 
+        DESCRIPTION "library containing HTTP protocol (RFC2616), WebSocket (RFC6455) and JSONRPC functionality.")
+
 
 InstallCMakeConfig(TARGETS ${TARGET})

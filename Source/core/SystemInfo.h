@@ -24,6 +24,8 @@
 #include "Portability.h"
 #include "Time.h"
 
+#include <sstream>
+
 #ifdef __LINUX__
 #include <time.h>
 #endif
@@ -77,6 +79,16 @@ namespace Core {
             return m_totalram;
         }
 
+        inline uint32_t GetPageSize() const
+        {
+           return m_pageSize;
+        }
+
+        inline uint32_t GetPhysicalPageCount() const
+        {
+           return static_cast<uint32_t>(m_totalram / m_pageSize);
+        }
+
         inline uint32_t GetUpTime()
         {
             UpdateRealtimeInfo();
@@ -93,6 +105,79 @@ namespace Core {
         {
             UpdateCpuStats();
             return m_cpuload;
+        }
+
+        inline uint64_t GetJiffies() const
+        {
+            UpdateCpuStats();
+            return m_jiffies;
+        }
+
+        class EXTERNAL MemorySnapshot {
+        public:
+            MemorySnapshot(const MemorySnapshot& copy) = default;
+            MemorySnapshot& operator=(const MemorySnapshot& copy) = default;
+            ~MemorySnapshot() = default;
+
+        private:
+            MemorySnapshot();
+
+            friend class SystemInfo;
+        public:
+            inline string AsJSON() const {
+                std::ostringstream output;
+                output << "{\n";
+                output << "\"total:\"" << Total() << ",\n";
+                output << "\"free:\"" << Free() << ",\n";
+                output << "\"avialble:\"" << Available() << ",\n";
+                output << "\"cached:\"" << Cached() << ",\n";
+                output << "\"swaptotal:\"" << SwapTotal() << ",\n";
+                output << "\"swapfree:\"" << SwapFree() << ",\n";
+                output << "\"swapcached:\"" << SwapCached() << '\n';
+                output << "}\n";
+                return output.str();
+            }
+
+            inline uint64_t Total() const {
+                return _total;
+            }
+
+            inline uint64_t Free() const {
+                return _free;
+            }
+
+            inline uint64_t Available() const {
+                return _available;
+            }
+
+            inline uint64_t Cached() const {
+                return _cached;
+            }
+
+            inline uint64_t SwapTotal() const {
+                return _swapTotal;
+            }
+
+            inline uint64_t SwapFree() const {
+                return _swapFree;
+            }
+
+            inline uint64_t SwapCached() const {
+                return _swapCached;
+            }
+
+        private:
+            uint64_t _total{0};
+            uint64_t _free{0};
+            uint64_t _available{0};
+            uint64_t _cached{0};
+            uint64_t _swapTotal{0};
+            uint64_t _swapFree{0};
+            uint64_t _swapCached{0};
+        };
+
+        inline MemorySnapshot TakeMemorySnapshot() const {
+            return MemorySnapshot();
         }
 
         /*
@@ -224,9 +309,11 @@ namespace Core {
         const string m_HostName;
 
         uint64_t m_totalram;
+        uint32_t m_pageSize;
         mutable uint32_t m_uptime;
         mutable uint64_t m_freeram;
         mutable uint64_t m_cpuload;
+        mutable uint64_t m_jiffies;
         mutable time_t m_lastUpdateCpuStats;
 
         void UpdateCpuStats() const;
@@ -248,17 +335,17 @@ namespace Core {
 
 #define MODULE_BUILDREF MODULE_NAME##Version
 
-#define MODULE_NAME_DECLARATION(buildref)                                                                     \
-    extern "C" {                                                                                              \
-    namespace WPEFramework {                                                                                  \
-        namespace Core {                                                                                      \
-            namespace System {                                                                                \
-                const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
-                const char* ModuleName() { return (MODULE_NAME); }                                            \
-                const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
-            }                                                                                                 \
-        }                                                                                                     \
-    }                                                                                                         \
+#define MODULE_NAME_DECLARATION(buildref)                                                                              \
+    extern "C" {                                                                                                       \
+    namespace WPEFramework {                                                                                           \
+        namespace Core {                                                                                               \
+            namespace System {                                                                                         \
+                EXTERNAL const char* MODULE_NAME = SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(MODULE_NAME);              \
+                EXTERNAL const char* ModuleName() { return (MODULE_NAME); }                                            \
+                EXTERNAL const char* ModuleBuildRef() { return (SOLUTIONS_GENERICS_SYSTEM_PREPROCESSOR_2(buildref)); } \
+            }                                                                                                          \
+        }                                                                                                              \
+    }                                                                                                                  \
     } // extern "C" Core::System
 
 #endif // __SYSTEMINFO_H

@@ -36,7 +36,13 @@
           "visible",
           "hidden"
         ]
-      }
+      },
+      "errors": [
+        {
+          "description": "Returned when the operation is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
     },
     "fps": {
       "summary": "Current number of frames per second the browser is rendering",
@@ -45,6 +51,31 @@
         "type": "number",
         "example": 30
       }
+    }
+  },
+  "methods": {
+     "delete": {
+      "summary": "Removes contents of a directory from the persistent storage",
+      "description": "Use this method to recursively delete contents of a directory",
+      "params": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Path to directory (within the persistent storage) to delete contents of",
+            "example": ".cache/wpe/disk-cache"
+          }
+        }
+      },
+      "result": {
+        "$ref": "#/common/results/void"
+      },
+      "errors": [
+        {
+          "description": "The given path was incorrect",
+          "$ref": "#/common/errors/unknownkey"
+        }
+      ]
     }
   },
   "events": {

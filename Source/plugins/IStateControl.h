@@ -21,7 +21,8 @@
 #define __ISTATECONTROL_H
 
 #include "IShell.h"
-#include "Module.h"
+
+#include <com/com.h>
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -34,12 +35,12 @@ namespace PluginHost {
             ID = RPC::ID_STATECONTROL
         };
 
-        enum command {
+        enum command : uint16_t {
             SUSPEND = 0x0001,
             RESUME = 0x0002
         };
 
-        enum state {
+        enum state : uint16_t {
             UNINITIALIZED = 0x0000,
             SUSPENDED = 0x0001,
             RESUMED = 0x0002,

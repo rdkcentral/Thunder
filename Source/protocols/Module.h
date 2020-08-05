@@ -17,22 +17,13 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_PROTOCOLS_H__
-#define __MODULE_PROTOCOLS_H__
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Protocols
 #endif
 
-#include "../com/Ids.h"
-#include "../core/core.h"
-#include "../cryptalgo/cryptalgo.h"
-#include "../tracing/tracing.h"
-
-#ifdef __WINDOWS__
-#include "../websocket/windows/include/zlib.h"
-#else
-#include "zlib.h"
-#endif
-
-#endif // __MODULE_PROTOCOLS_H__
+#include <core/core.h>
+#include <cryptalgo/cryptalgo.h>
+#include <tracing/tracing.h>
+#include <zlib.h>

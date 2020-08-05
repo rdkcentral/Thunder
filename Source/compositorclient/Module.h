@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_COMPOSITION_CLIENT_H
-#define __MODULE_COMPOSITION_CLIENT_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Composition_Client
@@ -27,7 +26,8 @@
 #include <core/core.h>
 #include <tracing/tracing.h>
 
+#if defined(__WINDOWS__) && defined(COMPOSITORCLIENT_EXPORTS)
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
 
-#endif // __MODULE_COMPOSITION_CLIENT_H

@@ -1,4 +1,4 @@
- /*
+/*
  * If not stated otherwise in this file or this component's LICENSE file the
  * following copyright and licenses apply:
  *
@@ -26,64 +26,75 @@ namespace Core {
     CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t mode, const uint32_t bufferSize, const bool overwrite)
         : _buffer(
               fileName,
-              (bufferSize > 0 ? (mode | File::CREATE) : (mode & ~File::CREATE) ),
+              (bufferSize == 0 ? (mode & (~File::CREATE)) : (mode | File::CREATE)),
               (bufferSize == 0 ? 0 : (bufferSize + sizeof(const control))))
         , _realBuffer(&(_buffer.Buffer()[sizeof(struct control)]))
         , _alert(false)
-        , _administration(_buffer.IsValid() ? reinterpret_cast<struct control*>(_buffer.Buffer()) : nullptr)
+        , _administration(nullptr)
     {
-        if (_buffer.IsValid() != true) {
-            TRACE_L1("Could not open a CyclicBuffer: %s", fileName.c_str());
-		} else {
 #ifdef __WINDOWS__
-            string strippedName(Core::File::PathName(fileName) + Core::File::FileName(fileName));
-            _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
-            _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
-            _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
-#else
-
+        string strippedName(Core::File::PathName(_buffer.Name()) + Core::File::FileName(_buffer.Name()));
+        _mutex = CreateSemaphore(nullptr, 1, 1, (strippedName + ".mutex").c_str());
+        _signal = CreateSemaphore(nullptr, 0, 0x7FFFFFFF, (strippedName + ".signal").c_str());
+        _event = CreateEvent(nullptr, FALSE, FALSE, (strippedName + ".event").c_str());
 #endif
-            if (bufferSize != 0) {
+
+        if (_buffer.IsValid() == true) {
+            _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
+            _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
+        }
+
+        if (bufferSize != 0) {
+
+            ASSERT (_buffer.IsValid() == true);
 
 #ifndef __WINDOWS__
-                (_administration)->_signal = PTHREAD_COND_INITIALIZER;
-                (_administration)->_mutex = PTHREAD_MUTEX_INITIALIZER;
+            _administration->_signal = PTHREAD_COND_INITIALIZER;
+            _administration->_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-                _administration->_head.store(0);
-                _administration->_tail.store(0);
-                _administration->_agents.store(0);
-                _administration->_state.store(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0));
-                _administration->_lockPID = 0;
-                _administration->_size = bufferSize;
+            std::atomic_init(&(_administration->_head), static_cast<uint32_t>(0));
+            std::atomic_init(&(_administration->_tail), static_cast<uint32_t>(0));
+            std::atomic_init(&(_administration->_agents), static_cast<uint32_t>(0));
+            std::atomic_init(&(_administration->_state), static_cast<uint16_t>(state::UNLOCKED /* state::EMPTY */ | (overwrite ? state::OVERWRITE : 0)));
+            _administration->_lockPID = 0;
+            _administration->_size = static_cast<uint32_t>(_buffer.Size() - sizeof(struct control));
 
-                _administration->_reserved = 0;
-                _administration->_reservedWritten = 0;
-                _administration->_reservedPID = 0;
+            _administration->_reserved = 0;
+            _administration->_reservedWritten = 0;
+#ifndef __WINDOWS__
+            std::atomic_init(&(_administration->_reservedPID), static_cast<pid_t>(0));
+#else
+            std::atomic_init(&(_administration->_reservedPID), static_cast<DWORD>(0));
+#endif
 
-                _administration->_tailIndexMask = 1;
-                _administration->_roundCountModulo = 1L << 31;
-                while (_administration->_tailIndexMask < bufferSize) {
-                    _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
-                    _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
-                }
+
+
+            _administration->_tailIndexMask = 1;
+            _administration->_roundCountModulo = 1L << 31;
+            while (_administration->_tailIndexMask < _administration->_size) {
+                _administration->_tailIndexMask = (_administration->_tailIndexMask << 1) + 1;
+                _administration->_roundCountModulo = _administration->_roundCountModulo >> 1;
             }
-
-            _maxSize = _administration->_size;
         }
-    }
-
-    CyclicBuffer::CyclicBuffer(const string& fileName, const uint32_t bufferSize, const bool overwrite)
-        : CyclicBuffer( fileName, 
-                        File::USER_WRITE|File::USER_READ|File::USER_EXECUTE|File::GROUP_READ|File::GROUP_WRITE|File::SHAREABLE,
-                        bufferSize,
-                        overwrite
-                        ) 
-    {
     }
 
     CyclicBuffer::~CyclicBuffer()
     {
+    }
+
+    bool CyclicBuffer::Validate() {
+        bool loaded = (_administration != nullptr);
+
+        if (loaded == false)  {
+            loaded = _buffer.Load();
+            if (loaded == true) {
+                _realBuffer = (&(_buffer.Buffer()[sizeof(struct control)]));
+                _administration = reinterpret_cast<struct control*>(_buffer.Buffer());
+            }
+        }
+
+        return (loaded);
     }
 
     void CyclicBuffer::AdminLock()
@@ -199,7 +210,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Read(uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length <= _maxSize);
+        ASSERT(length <= _administration->_size);
+        ASSERT(IsValid() == true);
 
         bool foundData = false;
 
@@ -226,15 +238,15 @@ namespace Core {
             foundData = true;
 
             uint32_t roundCount = oldTail / (1 + _administration->_tailIndexMask);
-            if ((offset + result) < _maxSize) {
+            if ((offset + result) < _administration->_size) {
                 memcpy(buffer, _realBuffer + offset, result);
 
                 uint32_t newTail = offset + result + roundCount * (1 + _administration->_tailIndexMask);
-                if (!std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail)) {
+                if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
                     foundData = false;
                 }
             } else {
-                uint32_t part1(_maxSize - offset);
+                uint32_t part1(_administration->_size - offset);
                 uint32_t part2(result - part1);
 
                 memcpy(buffer, _realBuffer + offset, part1);
@@ -243,7 +255,7 @@ namespace Core {
                 // Add one round, but prevent overflow.
                 roundCount = (roundCount + 1) % _administration->_roundCountModulo;
                 uint32_t newTail = part2 + roundCount * (1 + _administration->_tailIndexMask);
-                if (!std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail)) {
+                if (!_administration->_tail.compare_exchange_weak(oldTail, newTail)) {
                     foundData = false;
                 }
             }
@@ -254,7 +266,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Write(const uint8_t buffer[], const uint32_t length)
     {
-        ASSERT(length < _maxSize);
+        ASSERT(length < _administration->_size);
+        ASSERT(IsValid() == true);
 
         uint32_t head = _administration->_head;
         bool startingEmpty = (Used() == 0);
@@ -275,7 +288,7 @@ namespace Core {
             ASSERT(newReservedWritten <= _administration->_reserved);
 
             // Set up everything for actual write operation.
-            writeStart = (head + _administration->_reservedWritten) % _maxSize;
+            writeStart = (head + _administration->_reservedWritten) % _administration->_size;
 
             // Update amount written.
             _administration->_reservedWritten = newReservedWritten;
@@ -299,13 +312,13 @@ namespace Core {
         }
 
         // Perform actual copy.
-        uint32_t writeEnd = (writeStart + length) % _maxSize;
+        uint32_t writeEnd = (writeStart + length) % _administration->_size;
         if (writeEnd >= writeStart) {
             // Easy case: one pass.
             memcpy(_realBuffer + writeStart, buffer, length);
         } else {
             // Copying beyond end of buffer, do in two passes.
-            uint32_t firstLength = _maxSize - writeStart;
+            uint32_t firstLength = _administration->_size - writeStart;
             uint32_t secondLength = length - firstLength;
 
             memcpy(_realBuffer + writeStart, buffer, firstLength);
@@ -332,10 +345,8 @@ namespace Core {
     void CyclicBuffer::AssureFreeSpace(uint32_t required)
     {
         uint32_t oldTail = _administration->_tail;
-        uint32_t head = _administration->_head;
-
         uint32_t tail = oldTail & _administration->_tailIndexMask;
-        uint32_t free = Free(head, tail);
+        uint32_t free = Free(_administration->_head, tail);
 
         while (free <= required) {
             uint32_t remaining = required - free;
@@ -343,17 +354,17 @@ namespace Core {
             uint32_t offset = GetOverwriteSize(cursor);
             ASSERT((offset + free) >= required);
 
-            uint32_t newTail = (cursor.GetCompleteTail(offset) + 1); // Differentiate between full and empty buffer.
+            uint32_t newTail = cursor.GetCompleteTail(offset);
 
-            if (!std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail)) {
+            if (std::atomic_compare_exchange_weak(&(_administration->_tail), &oldTail, newTail) == false) {
+                oldTail = _administration->_tail;
                 tail = oldTail & _administration->_tailIndexMask;
-                free = Free(head, tail);
+                free = Free(_administration->_head, tail);
             } else {
-                ASSERT(Free(head, newTail & _administration->_tailIndexMask) >= required);
+                free = Free(_administration->_head, newTail & _administration->_tailIndexMask);
+                ASSERT(Free() >= required);
             }
         }
-
-        ASSERT(Free() >= required);
     }
 
     uint32_t CyclicBuffer::Reserve(const uint32_t length)
@@ -376,9 +387,9 @@ namespace Core {
             return Core::ERROR_ILLEGAL_STATE;
 
         uint32_t actualLength = length;
-        if (length >= _maxSize) {
-            // Maximum write size is _maxSize-1, to differentiate from empty situation.
-            actualLength = _maxSize - 1;
+        if (length >= _administration->_size) {
+            // Maximum write size is _administration->_size-1, to differentiate from empty situation.
+            actualLength = _administration->_size - 1;
         }
 
         AssureFreeSpace(actualLength);
@@ -464,7 +475,8 @@ namespace Core {
 
     uint32_t CyclicBuffer::Peek(uint8_t buffer[], const uint32_t length) const
     {
-        ASSERT(length <= _maxSize);
+        ASSERT(length <= _administration->_size);
+        ASSERT(IsValid() == true);
 
         bool foundData = false;
 
@@ -486,12 +498,12 @@ namespace Core {
 
             uint32_t readEnd = tail + result;
 
-            if (readEnd < _maxSize) {
+            if (readEnd < _administration->_size) {
                 // Can be done in one pass.
                 memcpy(buffer, _realBuffer + tail, result);
             } else {
                 // Needs to be done in two passes.
-                uint32_t firstLength = _maxSize - tail;
+                uint32_t firstLength = _administration->_size - tail;
                 uint32_t secondLength = length - firstLength;
 
                 memcpy(buffer, _realBuffer + tail, firstLength);

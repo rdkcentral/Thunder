@@ -21,12 +21,11 @@
 #define __IOPENCDMI_H
 
 #include "Module.h"
-#include <com/com.h>
-#include <core/core.h>
+#include "DataExchange.h"
 
 namespace OCDM {
 
-typedef enum {
+typedef enum : uint32_t {
     OCDM_SUCCESS = 0,
     OCDM_S_FALSE = 1,
     OCDM_KEYSYSTEM_NOT_SUPPORTED = 0x80000002,
@@ -43,14 +42,16 @@ typedef enum {
 // ISession defines the interface towards a DRM context that can decrypt data
 // using a given key.
 struct ISession : virtual public WPEFramework::Core::IUnknown {
-    enum KeyStatus {
+    enum KeyStatus : uint32_t {
         Usable = 0,
         Expired,
         Released,
         OutputRestricted,
+        OutputRestrictedHDCP22,
         OutputDownscaled,
         StatusPending,
-        InternalError
+        InternalError,
+        HWError
     };
 
     // ICallback defines the callback interface to receive
@@ -99,6 +100,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     virtual KeyStatus Status() const = 0;
     virtual KeyStatus Status(const uint8_t keyID[] /* @length:keyIDLength */, const uint8_t keyIDLength) const = 0;
 
+    // Lazy Create the decryption buffer
+    virtual OCDM_RESULT CreateSessionBuffer(string& bufferID /* @out */ ) = 0;
+
     // Report the name to be used for the Shared Memory for exchanging the
     // Encrypted fragements.
     virtual std::string BufferId() const = 0;
@@ -109,6 +113,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
 
     // We are completely done with the session, it can be closed.
     virtual void Close() = 0;
+
+    // Let the CDM know playback has stopped in order to disable output protection
+    virtual void ResetOutputProtection() = 0;
 
     // During instantiation a callback is set, here we can decouple.
     virtual void Revoke(OCDM::ISession::ICallback* callback) = 0;

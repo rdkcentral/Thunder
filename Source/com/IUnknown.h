@@ -20,9 +20,10 @@
 #ifndef __COM_IUNKNOWN_H
 #define __COM_IUNKNOWN_H
 
+#include "Module.h"
+#include "Ids.h"
 #include "Administrator.h"
 #include "Messages.h"
-#include "Module.h"
 
 namespace WPEFramework {
 
@@ -132,16 +133,15 @@ namespace ProxyStub {
 
     private:
         enum mode : uint8_t {
-            INBOUND  = 0x00,
-            OUTBOUND = 0x01,
-            PENDING  = 0x80
+            CACHING_ADDREF   = 0x01,
+            CACHING_RELEASE  = 0x02
         };
 
     public:
-        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
+        UnknownProxy(const Core::ProxyType<Core::IPCChannel>& channel, const RPC::instance_id& implementation, const uint32_t interfaceId, const bool outbound, Core::IUnknown& parent)
             : _adminLock()
             , _refCount(0)
-            , _mode(outbound ? OUTBOUND : INBOUND|PENDING)
+            , _mode(outbound ? 0 : CACHING_ADDREF)
             , _interfaceId(interfaceId)
             , _implementation(implementation)
             , _parent(parent)
@@ -156,6 +156,23 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // Proxy/Stub (both) environment calls
         // -------------------------------------------------------------------------------------------------------------------------------
+        void* Aquire(const bool outbound, const uint32_t id) {
+
+            void* result = nullptr;
+
+            _adminLock.Lock();
+
+            if (_refCount > 0) {
+                if (outbound == false) {
+                    _mode |= CACHING_RELEASE;
+                }
+                // This will increment the refcount of this PS, on behalf of the user.
+                result = _parent.QueryInterface(id);
+            }
+            _adminLock.Unlock();
+
+            return(result);
+        }
         void AddRef() const {
             _adminLock.Lock();
             _refCount++;
@@ -166,16 +183,18 @@ namespace ProxyStub {
 
             _adminLock.Lock();
             _refCount--;
-            _adminLock.Unlock();
 
-            if (_refCount == 0) {
+            if (_refCount != 0) {
+                _adminLock.Unlock();
+            }
+            else {
 
-                if ( (_mode & OUTBOUND) != 0) {
+                if ( (_mode & (CACHING_RELEASE|CACHING_ADDREF)) == 0) {
+
                     // We have reached "0", signal the other side..
                     Core::ProxyType<RPC::InvokeMessage> message(RPC::Administrator::Instance().Message());
 
                     message->Parameters().Set(_implementation, _interfaceId, 1);
-                    message->Parameters().Writer().Number<uint32_t>(1);
 
                     // Just try the destruction for few Seconds...
                     result = Invoke(message, RPC::CommunicationTimeOut);
@@ -187,6 +206,8 @@ namespace ProxyStub {
                         result = message->Response().Reader().Number<uint32_t>();
                     }
                 }
+
+                _adminLock.Unlock();
 
                 // Remove our selves from the Administration, we are done..
                 RPC::Administrator::Instance().UnregisterProxy(*this);
@@ -205,9 +226,9 @@ namespace ProxyStub {
             parameters.Number<uint32_t>(id);
             if (Invoke(message, RPC::CommunicationTimeOut) == Core::ERROR_NONE) {
                 RPC::Data::Frame::Reader response(message->Response().Reader());
+                RPC::instance_id impl = response.Number<RPC::instance_id>();
                 // From what is returned, we need to create a proxy
-                ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_channel,response.Number<void*>(),id,true,id,false);
-                result = (instance != nullptr ? instance->_parent.QueryInterface(id) : nullptr);
+                RPC::Administrator::Instance().ProxyInstance(_channel, impl, true, id, result);
             }
             return (result);
         }
@@ -219,11 +240,11 @@ namespace ProxyStub {
         {
             return (_channel);
         }
-        inline uint32_t InterfaceId() 
+        inline uint32_t InterfaceId() const
         {
             return (_interfaceId);
         }
-        inline void* Implementation() 
+        inline const RPC::instance_id& Implementation() const
         {
             return (_implementation);
         }
@@ -252,17 +273,11 @@ namespace ProxyStub {
 
             return (result);
         }
-        inline void* Interface(void* implementation, const uint32_t id) const
-        {
-            ProxyStub::UnknownProxy* instance = RPC::Administrator::Instance().ProxyInstance(_channel,implementation,id,true,id,false);
-
-            return (instance != nullptr ? instance->QueryInterface(id) : nullptr);
-        }
         inline void Complete(RPC::Data::Frame::Reader& reader) const
         {
             while (reader.HasData() == true) {
-                ASSERT(reader.Length() >= (sizeof(void*)));  // IMPLEMENTATION SIZE !!!!
-                void* impl = reader.Number<void*>();
+                ASSERT(reader.Length() >= (sizeof(RPC::instance_id)));  // IMPLEMENTATION SIZE !!!!
+                void* impl = reinterpret_cast<void*>(reader.Number<RPC::instance_id>());
                 uint32_t id = reader.Number<uint32_t>();
 
                 if ((id & 0x80000000) == 0) {
@@ -281,7 +296,7 @@ namespace ProxyStub {
         // -------------------------------------------------------------------------------------------------------------------------------
         // This method should only be called from the administrator from stub implementation methods
         // It should be called through the Administrator::Release(ProxyStub*, Message::Response) !!
-	// Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
+	    // Concurrent access trhough this code is prevented by the CriticalSection in the Administrator
         template <typename ACTUAL_INTERFACE>
         inline ACTUAL_INTERFACE* QueryInterface() const
         {
@@ -295,24 +310,34 @@ namespace ProxyStub {
         }
         inline void Complete(RPC::Data::Output& response) 
         {
+            uint32_t result = Release();
+
             _adminLock.Lock();
 
-	        if ((_mode & PENDING) != 0) {
+            if ((_mode & CACHING_ADDREF) != 0) {
 
                 // We completed the first cycle. Clear Pending, if it was active..
-                _mode ^= PENDING;
+                _mode ^= CACHING_ADDREF;
 
-                if (_refCount == 2) {
+                if (_refCount == 1) {
                     response.AddImplementation(_implementation, _interfaceId);
                 }
             }
-            else if (_refCount == 1) {
-                response.AddImplementation(_implementation, _interfaceId | 0x80000000); 
+            else if ((_mode & CACHING_RELEASE) != 0)  {
+
+                // We completed the current cycle. Clear the CACHING_RELEASE, if it was active..
+                _mode ^= CACHING_RELEASE;
+
+                if (_refCount == 0) {
+                    response.AddImplementation(_implementation, _interfaceId | 0x80000000);
+                }
             }
 
             _adminLock.Unlock();
 
-            _parent.Release();
+            if (result != Core::ERROR_NONE) {
+                delete &_parent;
+            }
         }
 
     private:
@@ -320,7 +345,7 @@ namespace ProxyStub {
         mutable uint32_t _refCount;
         uint8_t _mode;
         const uint32_t _interfaceId;
-        void* _implementation;
+        RPC::instance_id _implementation;
         Core::IUnknown& _parent;
         mutable Core::ProxyType<Core::IPCChannel> _channel;
     };
@@ -339,7 +364,7 @@ namespace ProxyStub {
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-        UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, void* implementation, const bool outbound)
+        UnknownProxyType(const Core::ProxyType<Core::IPCChannel>& channel, const RPC::instance_id& implementation, const bool outbound)
             : _unknown(channel, implementation, INTERFACE::ID, outbound, *this)
         {
         }
@@ -367,9 +392,11 @@ namespace ProxyStub {
         {
             return (_unknown.Invoke(message, waitTime));
         }
-        inline void* Interface(void* implementation, const uint32_t interfaceId) const
+        inline void* Interface(const RPC::instance_id& implementation, const uint32_t id) const
         {
-            return (_unknown.Interface(implementation, interfaceId));
+            void* result = nullptr;
+            RPC::Administrator::Instance().ProxyInstance(_unknown.Channel(),implementation,true,id,result);
+            return (result);
         }
         inline void Complete(RPC::Data::Frame::Reader& reader) const
         {

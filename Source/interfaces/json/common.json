@@ -151,7 +151,7 @@
       "code": 37,
       "message": "ERROR_NEGATIVE_ACKNOWLEDGE"
     },
-    "invalidsigature": {
+    "invalidsignature": {
       "code": 38,
       "message": "ERROR_INVALID_SIGNATURE"
     },
@@ -166,6 +166,10 @@
     "invaliddesignator": {
       "code": 41,
       "message": "ERROR_INVALID_DESIGNATOR"
+    },
+    "unauthenticated": {
+      "code": 42,
+      "message": "ERROR_UNAUTHENTICATED"
     }
   },
   "results": {

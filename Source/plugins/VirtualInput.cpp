@@ -200,7 +200,10 @@ namespace PluginHost
         , _modifiers(0)
         , _defaultMap(nullptr)
         , _notifierMap()
-        , _pressedCode(0)
+        , _postLookupParent()
+        , _postLookupTable()
+        , _keyTable()
+        , _pressedCode(~0)
         , _repeatCounter(0)
         , _repeatLimit(0)
     {
@@ -359,8 +362,7 @@ namespace PluginHost
         }
 
         if (conversionTable != nullptr) {
-            uint32_t sendCode = 0;
-            uint16_t sendModifiers = 0;
+            uint32_t sendCode = ~0;
 
             result = Core::ERROR_NONE;
 
@@ -371,54 +373,23 @@ namespace PluginHost
                 if (conversionTable->PassThrough() == false) {
                     result = Core::ERROR_UNKNOWN_KEY;
                 } else {
-                    result = Core::ERROR_UNKNOWN_KEY;
                     sendCode = code;
-                    sendModifiers = 0;
                 }
             } else {
-                sendCode = element->Code;
-                sendModifiers = element->Modifiers;
+                sendCode = element->Code | (element->Modifiers << 16);
             }
 
-            if ((!pressed) && (_pressedCode != code))
+            if ((pressed == false) && (_pressedCode != sendCode)) {
                 result = Core::ERROR_ALREADY_RELEASED;
-
-            if ((result == Core::ERROR_NONE) || (result == Core::ERROR_UNKNOWN_KEY)) {
-                if (pressed) {
-                    if (_pressedCode)
-                        KeyEvent(false, _pressedCode, _keyTable);
-                    TRACE_L1("Ingested keyCode: %d pressed", sendCode);
-                    _repeatCounter = _repeatLimit;
-                    _repeatKey.Arm(sendCode);
-                    _pressedCode = code;
-
-                    if (sendModifiers != 0) {
-                        ModifierKey(IVirtualInput::KeyData::PRESSED, sendModifiers);
-                    }
-                } else {
-                    if (_pressedCode == code) {
-                        TRACE_L1("Ingested keyCode: %d Released", sendCode);
-                        _repeatKey.Reset();
-                        _pressedCode = 0;
-                    }
+            }
+            else if (sendCode != static_cast<uint32_t>(~0)) {
+                if ( (pressed == true) && (_pressedCode != static_cast<uint32_t>(~0)) ) {
+                    DispatchRegisteredKey(IVirtualInput::KeyData::RELEASED, _pressedCode);
                 }
 
-                IVirtualInput::KeyData event;
-                event.Action =  (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED);
-                event.Code = sendCode;
-                Send(event);
                 DispatchRegisteredKey(
-                    (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED),
-                    sendCode | (sendModifiers << 16));
-
-                if (pressed == false) {
-                    if (sendModifiers != 0) {
-                        ModifierKey(IVirtualInput::KeyData::RELEASED, sendModifiers);
-                    }
-                }
-
-                event.Action = IVirtualInput::KeyData::COMPLETED;
-                Send(event);
+                        (pressed ? IVirtualInput::KeyData::PRESSED : IVirtualInput::KeyData::RELEASED),
+                         sendCode);
             }
         }
 
@@ -427,15 +398,15 @@ namespace PluginHost
         return (result);
     }
 
-    void VirtualInput::RepeatKey(const uint32_t code)
+    void VirtualInput::RepeatKey(const uint16_t code)
     {
         IVirtualInput::KeyData event;
         event.Action = IVirtualInput::KeyData::REPEAT;
         event.Code = code;
         Send(event);
-        _repeatCounter--;
-        if (!_repeatCounter)
-            KeyEvent(false, _pressedCode, _keyTable);
+        if (--_repeatCounter == 0) {
+            DispatchRegisteredKey(IVirtualInput::KeyData::RELEASED, _pressedCode);
+        }
     }
 
     bool VirtualInput::SendModifier(const IVirtualInput::KeyData::type type, const enumModifier mode)
@@ -506,9 +477,52 @@ namespace PluginHost
         }
     }
 
-    void VirtualInput::DispatchRegisteredKey(const IVirtualInput::KeyData::type type, uint32_t code)
+    void VirtualInput::DispatchRegisteredKey(const IVirtualInput::KeyData::type type, const uint32_t code)
     {
-        _lock.Lock();
+        uint32_t sendCode = code;
+
+        // Check in the Parent Table if we really need to dispatch this..
+        if ( (type == IVirtualInput::KeyData::PRESSED) && (_postLookupParent.size() > 0) ) {
+            PostLookupEntries::iterator index (_postLookupParent.find(sendCode));
+            if (index != _postLookupParent.end()) {
+                sendCode = index->second;
+            }
+        }
+
+        if (sendCode != static_cast<uint32_t>(~0)) {
+            if (type == IVirtualInput::KeyData::PRESSED) {
+                TRACE_L1("Pressed: keyCode: %d, sending: %d", code, sendCode);
+                _repeatCounter = _repeatLimit;
+                _repeatKey.Arm(sendCode);
+                _pressedCode = code;
+
+                uint16_t modifiers = static_cast<uint16_t>((sendCode >> 16) & 0xFFFF);
+
+                if (modifiers != 0) {
+                    ModifierKey(IVirtualInput::KeyData::PRESSED, modifiers);
+                }
+            } else {
+                ASSERT (_pressedCode == code);
+                sendCode = _repeatKey.Reset();
+                _pressedCode = ~0;
+                TRACE_L1("Released: keyCode: %d, sending: %d", code, sendCode);
+            }
+
+            IVirtualInput::KeyData event;
+            event.Action = type;
+            event.Code = (sendCode & 0xFFFF);
+            Send(event);
+
+            if (type == IVirtualInput::KeyData::RELEASED) {
+                uint16_t modifiers = static_cast<uint16_t>((sendCode >> 16) & 0xFFFF);
+                if (modifiers != 0) {
+                    ModifierKey(IVirtualInput::KeyData::RELEASED, modifiers);
+                }
+            }
+
+            event.Action = IVirtualInput::KeyData::COMPLETED;
+            Send(event);
+        }
 
         for (INotifier* element : _notifierList) {
             element->Dispatch(type, code);
@@ -522,17 +536,18 @@ namespace PluginHost
                 element->Dispatch(type, code);
             }
         }
-
-        _lock.Unlock();
     }
 
 #if !defined(__WINDOWS__) && !defined(__APPLE__)
 
-    LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName)
+    static const string ConsumerName (_T("LinuxKeyboard"));
+
+    LinuxKeyboardInput::LinuxKeyboardInput(const string& source, const string& inputName, const bool defaultEnabled)
         : VirtualInput()
         , _eventDescriptor(-1)
         , _source(source)
         , _deviceKeys()
+        , _enabled(defaultEnabled)
     {
         memset(&_uidev, 0, sizeof(_uidev));
 
@@ -547,6 +562,23 @@ namespace PluginHost
     {
         ClearKeyMap();
         Close();
+    }
+
+    /* virtual */ VirtualInput::Iterator LinuxKeyboardInput::Consumers() const
+    {
+        return (VirtualInput::Iterator(ConsumerName));
+    }
+
+    /* virtual */ bool LinuxKeyboardInput::Consumer(const string& name) const 
+    {
+        return (name == ConsumerName ? _enabled : false);
+    }
+
+    /* virtual */ void LinuxKeyboardInput::Consumer(const string& name, const bool enabled)
+    {
+        if (name == ConsumerName) {
+            _enabled = enabled;
+        }
     }
 
     /* virtual */ uint32_t LinuxKeyboardInput::Open()
@@ -588,7 +620,7 @@ namespace PluginHost
         return (Core::ERROR_NONE);
     }
 
-    /* virtual */ void LinuxKeyboardInput::LookupChanges(const string&)
+    /* virtual */ void LinuxKeyboardInput::LookupChanges(const string& source)
     {
     }
 
@@ -622,7 +654,8 @@ namespace PluginHost
 
     /* virtual */ void LinuxKeyboardInput::Send(const IVirtualInput::KeyData& data)
     {
-        if (_eventDescriptor > 0) {
+        if ((_enabled == true) && (_eventDescriptor > 0)) {
+
             struct input_event ev;
 
             memset(&ev, 0, sizeof(ev));
@@ -690,8 +723,9 @@ namespace PluginHost
 #ifdef __WINDOWS__
 #pragma warning(disable : 4355)
 #endif
-    IPCUserInput::IPCUserInput(const Core::NodeId& sourceName)
+    IPCUserInput::IPCUserInput(const Core::NodeId& sourceName, const bool defaultEnabled)
         : _service(*this, sourceName)
+        , _defaultEnabled(defaultEnabled)
     {
         TRACE_L1("Constructing IPCUserInput for %s on %s", sourceName.HostAddress().c_str(), sourceName.HostName().c_str());
     }
@@ -702,6 +736,50 @@ namespace PluginHost
     /* virtual */ IPCUserInput::~IPCUserInput()
     {
         ClearKeyMap();
+    }
+
+    /* virtual */ VirtualInput::Iterator IPCUserInput::Consumers() const
+    {
+        uint16_t index = 0;
+        std::list<string> container;
+        Core::ProxyType<const VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+                
+            if (client.IsValid() == true) {
+                container.push_back(client->Extension().Name());
+            }
+        } while (client.IsValid() == true);
+            
+        return (VirtualInput::Iterator(std::move(container)));
+    }
+
+    /* virtual */ bool IPCUserInput::Consumer(const string& name) const {
+        uint16_t index = 0;
+        Core::ProxyType<const VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+
+        return (client.IsValid() ? client->Extension().Enable() : false); 
+    }
+
+    /* virtual */ void IPCUserInput::Consumer(const string& name, const bool enabled) {
+        uint16_t index = 0;
+        Core::ProxyType<VirtualInputChannelServer::Client> client;
+            
+        do {
+            client = _service[index];
+            index++;
+        } while ( (client.IsValid() == true) && (client->Extension().Name() != name) );
+
+        if (client.IsValid() == true) {
+            client->Extension().Enable(enabled);
+        }
     }
 
     /* virtual */ uint32_t IPCUserInput::Open()

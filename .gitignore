@@ -15,7 +15,6 @@ uninstall.cmake
 /cppcheck_report.txt
 /cppcheck_log.txt
 clion-environment/
-Source/Config.json
 /clion-environment/WPEFrameworkPlugins/RemoteControl/RemoteControl.json
 /clion-environment/WPEFrameworkPlugins/Commander/Commander.json
 /clion-environment/WPEFrameworkPlugins/DeviceInfo/DeviceInfo.json
@@ -29,7 +28,6 @@ Source/Config.json
 workspace/
 /.vs
 /artifacts/Debug
-/Source/protocols
 *.user
 /artifacts/Release
 *.pyc

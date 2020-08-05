@@ -41,14 +41,13 @@ namespace WPEFramework {
 namespace Core {
     // The datapackage is the abstract of a package that needs to be send over the line.
     class EXTERNAL DataElementFile : public DataElement {
-    private:
+    public:
         DataElementFile() = delete;
         DataElementFile(const DataElementFile&) = delete;
         DataElementFile& operator=(const DataElementFile&) = delete;
 
-    public:
-        DataElementFile(File& fileName, const uint32_t type = File::USER_READ);
-        DataElementFile(const string& fileName, const uint32_t type = File::USER_READ, const uint32_t requiredSize = 0);
+        DataElementFile(File& fileName, const uint32_t type);
+        DataElementFile(const string& fileName, const uint32_t mode, const uint32_t requiredSize = 0);
         virtual ~DataElementFile();
 
     public:
@@ -72,6 +71,7 @@ namespace Core {
         {
             m_File.LoadFileInfo();
         }
+        bool Load();
         void Sync();
 
     protected:

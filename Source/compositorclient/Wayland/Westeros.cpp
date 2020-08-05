@@ -564,7 +564,13 @@ namespace Wayland {
 
     void Display::SurfaceImplementation::ZOrder(const uint32_t order)
     {
-        wl_simple_shell_set_zorder(_display->_simpleShell, _id, order);
+        // Max layers supported by Westeros have a limitation with 255, hence the ZOrder fraction
+        // difference calculation is limiting with std::numeric_limits<uint8_t>::max()
+        ASSERT (order <= std::numeric_limits<uint8_t>::max());
+
+        double fractionalOrder = 1.0 - (static_cast<double>(order) / static_cast<double>(std::numeric_limits<uint8_t>::max()));
+
+        wl_simple_shell_set_zorder(_display->_simpleShell, _id, wl_fixed_from_double(fractionalOrder));
         wl_display_flush(_display->_display);
         Redraw();
     }
@@ -572,13 +578,6 @@ namespace Wayland {
     void Display::SurfaceImplementation::BringToFront()
     {
         wl_shell_surface_set_toplevel(_shellSurface);
-        wl_display_flush(_display->_display);
-        Redraw();
-    }
-
-    void Display::SurfaceImplementation::SetTop()
-    {
-        wl_simple_shell_set_zorder(_display->_simpleShell, _id, 0);
         wl_display_flush(_display->_display);
         Redraw();
     }
@@ -1012,6 +1011,7 @@ namespace Wayland {
 
         // Wait till we are fully registered.
         _waylandSurfaces.insert(std::pair<struct wl_surface*, SurfaceImplementation*>(surface->_surface, surface));
+        surface->AddRef();
 
         result = surface;
 

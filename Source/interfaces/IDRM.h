@@ -26,6 +26,8 @@
 #include <typeinfo>
 #include <vector>
 
+#include <core/core.h>
+
 #ifdef __GNUC__
 #define WARN_UNUSED_RESULT __attribute__((warn_unused_result))
 #else
@@ -289,6 +291,8 @@ public:
         const uint32_t f_cbClearContentOpaque,
         uint8_t* f_pbClearContentOpaque)
         = 0;
+
+    virtual CDMi_RESULT ResetOutputProtection() {return CDMi_SUCCESS;}
 };
 
 // IMediaKeySession defines the MediaKeySession interface.
@@ -440,11 +444,7 @@ public:
 
     virtual void Initialize(const WPEFramework::PluginHost::IShell * shell, const std::string& configline)
     {
-        if (HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has == true) {
-           OnSystemConfig(configline, std::integral_constant<bool, HasOnSystemConfigurationAvailable<IMPLEMENTATION>::Has>());
-        } else {
-           Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
-        }
+        Initialize(shell, configline, std::integral_constant<bool, HasOnShellAndSystemInitialize<IMPLEMENTATION>::Has>());
     }
     virtual void Deinitialize(const WPEFramework::PluginHost::IShell * shell)
     {
@@ -452,27 +452,6 @@ public:
     }
 
 private:
-    template <typename T>
-    struct HasOnSystemConfigurationAvailable {
-        template <typename U, void (U::*)(const std::string&)>
-        struct SFINAE {
-        };
-        template <typename U>
-        static uint8_t Test(SFINAE<U, &U::OnSystemConfigurationAvailable>*);
-        template <typename U>
-        static uint32_t Test(...);
-        static const bool Has = sizeof(Test<T>(0)) == sizeof(uint8_t);
-    };
-
-    void OnSystemConfig(const std::string& configline, std::true_type)
-    {
-        _instance.OnSystemConfigurationAvailable(configline);
-    }
-
-    void OnSystemConfig(const std::string&, std::false_type)
-    {
-    }
-
     template <typename T>
     struct HasOnShellAndSystemInitialize {
         template <typename U, void (U::*)(const WPEFramework::PluginHost::IShell *, const std::string&)>
@@ -526,7 +505,7 @@ private:
 extern "C" {
 #endif
 
-CDMi::ISystemFactory* GetSystemFactory();
+EXTERNAL CDMi::ISystemFactory* GetSystemFactory();
 
 #ifdef __cplusplus
 }

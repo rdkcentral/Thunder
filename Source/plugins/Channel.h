@@ -175,13 +175,15 @@ namespace PluginHost {
         };
 
     public:
-        enum ChannelState {
+        enum ChannelState : uint16_t {
             CLOSED = 0x01,
             WEB = 0x02,
             JSON = 0x04,
             RAW = 0x08,
             TEXT = 0x10,
-            JSONRPC = 0x20
+            JSONRPC = 0x20,
+            PINGED = 0x4000,
+            NOTIFIED = 0x8000
         };
 
     public:
@@ -194,22 +196,26 @@ namespace PluginHost {
     public:
         inline bool HasActivity() const
         {
-            bool forcedActivity((_state & 0x4000) == 0x4000);
+            Lock();
+
             bool result(BaseClass::HasActivity());
 
-            if ((forcedActivity == true) || ((result == false) && (IsWebSocket() == true))) {
-                Lock();
-
-                if (forcedActivity == true) {
-                    _state &= (~0x4000);
-                } else {
-                    // We can try to fire a ping/pong
-                    _state |= 0x4000;
-                    const_cast<BaseClass*>(static_cast<const BaseClass*>(this))->Ping();
-                    result = true;
-                }
-
+            // Check if we had a forced activity, if so than the result = the result no second chance;
+            if ((_state & PINGED) == PINGED) {
+                // Let clear it, if the activity succeeed, we are good to go, if not, too bad :-)
+                _state &= (~PINGED);
                 Unlock();
+            } 
+            else if ((result == true) || (IsWebSocket() == false)) {
+                Unlock();
+            } 
+            else {
+                // We are a websiocket and had no activity, time to send a ping..
+                _state |= PINGED;
+                Unlock();
+
+                const_cast<BaseClass*>(static_cast<const BaseClass*>(this))->Ping();
+                result = true;
             }
 
             return (result);
@@ -228,7 +234,7 @@ namespace PluginHost {
         }
         inline bool IsNotified() const
         {
-            return ((_state & 0x8000) != 0);
+            return ((_state & NOTIFIED) != 0);
         }
         inline void Submit(const string& text)
         {
@@ -293,7 +299,7 @@ namespace PluginHost {
         inline void State(const ChannelState state, const bool notification)
         {
             Binary(state == RAW);
-            _state = state | (notification ? 0x8000 : 0x0000);
+            _state = state | (notification ? NOTIFIED : 0x0000);
         }
         inline uint16_t Serialize(uint8_t* dataFrame, const uint16_t maxSendSize)
         {
@@ -446,7 +452,7 @@ namespace PluginHost {
         mutable Core::CriticalSection _adminLock;
         uint32_t _ID;
         uint32_t _nameOffset;
-        mutable uint32_t _state;
+        mutable uint16_t _state;
         SerializerImpl _serializer;
         DeserializerImpl _deserializer;
         string _text;

@@ -168,12 +168,14 @@ namespace Core {
             : _type(0)
             , _flags(0)
             , _mySequence(~0)
+            , _isMultimessage(false)
         {
         }
         Netlink(const Netlink& copy)
             : _type(copy._type)
             , _flags(copy._flags)
             , _mySequence(copy._mySequence)
+            , _isMultimessage(false)
         {
         }
         virtual ~Netlink()
@@ -212,6 +214,7 @@ namespace Core {
         mutable uint32_t _type;
         mutable uint32_t _flags;
         mutable uint32_t _mySequence;
+        mutable bool _isMultimessage;
         static uint32_t _sequenceId;
     };
 
@@ -253,7 +256,7 @@ namespace Core {
         virtual uint16_t Write(uint8_t stream[], const uint16_t length) const
         {
 
-            static_assert(NLMSG_ALIGNTO == 4, "Assuming the message element are 32 bites aligbned!!");
+            static_assert(NLMSG_ALIGNTO == 4, "Assuming the message element are 32 bits aligned!!");
 
             uint32_t value = IDX;
             memcpy(&(stream[0]), &value, 4);
@@ -302,7 +305,7 @@ namespace Core {
         uint32_t _ack;
     };
 
-    class SocketNetlink : public Core::SocketDatagram {
+    class EXTERNAL SocketNetlink : public Core::SocketDatagram {
     private:
         SocketNetlink(const SocketNetlink&) = delete;
         SocketNetlink& operator=(const SocketNetlink&) = delete;
@@ -420,8 +423,8 @@ namespace Core {
         uint32_t _bufferAfter;
         PendingList _pending;
     };
-}
-} // namespace WPEFramework::Core
+} // namespace Core
+} // namespace WPEFramework
 
 #endif // __WINDOWS__
 

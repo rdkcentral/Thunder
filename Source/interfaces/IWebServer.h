@@ -27,7 +27,7 @@ namespace Exchange {
 
     // This interface gives direct access to a WebServer to change
     // Server specific properties like .....
-    struct IWebServer : virtual public Core::IUnknown {
+    struct EXTERNAL IWebServer : virtual public Core::IUnknown {
 
         enum { ID = ID_WEBSERVER };
 

@@ -20,12 +20,13 @@
 #pragma once
 
 #include "Module.h"
+#include "UUID.h"
 
 namespace WPEFramework {
 
 namespace Bluetooth {
 
-    class Address {
+    class EXTERNAL Address {
     public:
         Address()
             : _length(0)
@@ -58,11 +59,11 @@ namespace Bluetooth {
         {
         }
 
-        enum type : uint8_t { 
-            BREDR_ADDRESS = 0x00, 
-            LE_PUBLIC_ADDRESS = 0x01, 
-            LE_RANDOM_ADDRESS = 0x02 
-        }; 
+        enum type : uint8_t {
+            BREDR_ADDRESS = 0x00,
+            LE_PUBLIC_ADDRESS = 0x01,
+            LE_RANDOM_ADDRESS = 0x02
+        };
 
     public:
         Address& operator=(const Address& rhs)
@@ -148,6 +149,76 @@ namespace Bluetooth {
         uint8_t _length;
     };
 
+    class EXTERNAL EIR {
+        static constexpr uint8_t EIR_UUID16_SOME = 0x02;
+        static constexpr uint8_t EIR_UUID16_ALL = 0x03;
+        static constexpr uint8_t EIR_UUID32_SOME = 0x04;
+        static constexpr uint8_t EIR_UUID32_ALL = 0x05;
+        static constexpr uint8_t EIR_UUID128_SOME = 0x06;
+        static constexpr uint8_t EIR_UUID128_ALL = 0x07;
+        static constexpr uint8_t EIR_NAME_SHORT = 0x08;
+        static constexpr uint8_t EIR_NAME_COMPLETE = 0x09;
+        static constexpr uint8_t EIR_CLASS_OF_DEV = 0x0D;
+
+    public:
+        EIR()
+            : _shortName()
+            , _completeName()
+            , _class(0)
+            , _UUIDs()
+        {
+        }
+        explicit EIR(const string& name, const uint32_t deviceClass = 0)
+            : _shortName(name)
+            , _completeName(name)
+            , _class(deviceClass)
+            , _UUIDs()
+        {
+        }
+        EIR(const uint8_t buffer[], const uint16_t bufferLength)
+            : EIR()
+        {
+            Ingest(buffer, bufferLength);
+        }
+        EIR(const EIR&) = default;
+        EIR& operator =(const EIR&) = default;
+        ~EIR() = default;
+
+    public:
+        uint32_t Class() const
+        {
+            return _class;
+        }
+        const string& ShortName() const
+        {
+            if (_shortName.empty() == true) {
+                return (_completeName);
+            } else {
+                return (_shortName);
+            }
+        }
+        const string& CompleteName() const
+        {
+            if (_completeName.empty() == true) {
+                return (_shortName);
+            } else {
+                return (_completeName);
+            }
+        }
+        const std::list<UUID>& UUIDs() const
+        {
+            return (_UUIDs);
+        }
+
+        void Ingest(const uint8_t buffer[], const uint16_t bufferLength);
+
+    private:
+        string _shortName;
+        string _completeName;
+        uint32_t _class;
+        std::list<UUID> _UUIDs;
+    };
+
     template<typename KEYTYPE>
     class KeyListType {
     public:
@@ -210,7 +281,7 @@ namespace Bluetooth {
         std::list<KEYTYPE> _list;
     };
 
-    class LinkKey {
+    class EXTERNAL LinkKey {
     public:
         LinkKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -234,12 +305,12 @@ namespace Bluetooth {
             ::memcpy(&(_key.addr.bdaddr), address.Data(), sizeof(_key.addr.bdaddr));
             _key.addr.type = address_type;
 
-            ASSERT (address_type != BDADDR_BREDR);
+            ASSERT(address_type == BDADDR_BREDR);
 
             // The first two charaters are for the pin and the type, extract those...
             _key.pin_len = keyString[0] - 'A';
             _key.type    = keyString[1] - 'A';
-           
+
             uint16_t  length = sizeof(_key.val);
             Core::FromString(string(&(keyString.c_str()[2]), keyString.length() - 2), reinterpret_cast<uint8_t*>(_key.val), length, nullptr);
             if (length != sizeof(_key.val)) {
@@ -290,7 +361,7 @@ namespace Bluetooth {
         struct mgmt_link_key_info _key;
     };
 
-    class LongTermKey {
+    class EXTERNAL LongTermKey {
     public:
         LongTermKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -377,7 +448,7 @@ namespace Bluetooth {
         struct mgmt_ltk_info _key;
     };
 
-    class IdentityKey {
+    class EXTERNAL IdentityKey {
     public:
         IdentityKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -441,7 +512,7 @@ namespace Bluetooth {
         struct mgmt_irk_info _key;
     };
 
-    class SignatureKey {
+    class EXTERNAL SignatureKey {
     public:
         SignatureKey() {
             ::memset(&_key, 0, sizeof(_key));
@@ -516,20 +587,18 @@ namespace Bluetooth {
     typedef KeyListType<SignatureKey> SignatureKeys;
 
 
-    class HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL HCISocket : public Core::SynchronousChannelType<Core::SocketPort> {
     private:
         static constexpr int      SCAN_TIMEOUT = 1000;
         static constexpr uint8_t  SCAN_TYPE = 0x01;
         static constexpr uint8_t  SCAN_FILTER_POLICY = 0x00;
         static constexpr uint8_t  SCAN_FILTER_DUPLICATES = 0x01;
-        static constexpr uint8_t  EIR_NAME_SHORT = 0x08;
-        static constexpr uint8_t  EIR_NAME_COMPLETE = 0x09;
         static constexpr uint32_t MAX_ACTION_TIMEOUT = 2000; /* 2 Seconds for commands to complete ? */
         static constexpr uint16_t ACTION_MASK = 0x3FFF;
 
     public:
 
-        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = ~0>
+        template<const uint16_t OPCODE, typename OUTBOUND, typename INBOUND, const uint8_t RESPONSECODE = static_cast<uint8_t>(~0)>
         class CommandType : public Core::IOutbound, public Core::IInbound {
         private:
             CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& operator=(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>&) = delete;
@@ -546,11 +615,15 @@ namespace Bluetooth {
                 _buffer[1] = (OPCODE & 0xFF);
                 _buffer[2] = ((OPCODE >> 8) & 0xFF);
                 _buffer[3] = static_cast<uint8_t>(sizeof(OUTBOUND));
+
+                ::memset(&_response, 0, sizeof(_response));
             }
-            CommandType(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& copy) 
+            CommandType(const CommandType<OPCODE, OUTBOUND, INBOUND, RESPONSECODE>& copy)
                 : _offset(copy._offset)
-                , _error(~0) {
-                ::memcpy (_buffer, copy._buffer, sizeof(_buffer));
+                , _error(~0)
+            {
+                ::memcpy(_buffer, copy._buffer, sizeof(_buffer));
+                ::memcpy(&_response, &copy._response, sizeof(_response));
             }
             virtual ~CommandType()
             {
@@ -561,7 +634,7 @@ namespace Bluetooth {
             {
                 ::memset(&(_buffer[4]), 0, sizeof(_buffer) - 4);
             }
-            inline uint32_t Error() const
+            inline uint32_t Result() const
             {
                 return (_error);
             }
@@ -577,8 +650,8 @@ namespace Bluetooth {
                     ::memcpy(stream, &(_buffer[_offset]), result);
                     _offset += result;
 
-                    // printf ("SEND: ");
-                    // for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    //printf("SEND: "); for (uint16_t loop = 0; loop < result; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    //printf(_T("HCI command: %X:%03X\n"), cmd_opcode_ogf(OPCODE), cmd_opcode_ocf(OPCODE));
                 }
                 return (result);
             }
@@ -604,55 +677,59 @@ namespace Bluetooth {
                     const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&(stream[1 + HCI_EVENT_HDR_SIZE]));
                     uint16_t len = (length - (1 + HCI_EVENT_HDR_SIZE));
 
-                    // printf ("RECEIVE: ");
-                    // for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
+                    //printf("RECEIVE: "); for (uint16_t loop = 0; loop < length; loop++) { printf("%02X:", stream[loop]); } printf("\n");
 
                     if (hdr->evt == EVT_CMD_STATUS) {
                         const evt_cmd_status* cs = reinterpret_cast<const evt_cmd_status*>(ptr);
-                        if (htobs(cs->opcode) == OPCODE) {
+                        if (btohs(cs->opcode) == OPCODE) {
+                            //printf(_T("HCI command status: %X:%03X Status=%d\n"),
+                            //          cmd_opcode_ogf(cs->opcode), cmd_opcode_ocf(cs->opcode), cs->status);
+
                             if (cs->status == 0) {
-                                // See if we are waiting for an LE subevent...
+                                // See if we are waiting for an event...
                                 if (RESPONSECODE == static_cast<uint8_t>(~0)) {
-                                    _error = Core::ERROR_NONE;
+                                    _error = 0;
                                 }
+                            } else {
+                                _error = cs->status;
                             }
-                            else {
-                                _error =  Core::ERROR_GENERAL;
-                                printf(_T(">>EVT_CMD_STATUS: %X-%03X Error: %d\n"), (cs->opcode >> 10) & 0xF, (cs->opcode & 0x3FF), cs->status);
-                            }
+
                             result = length;
                         }
                     } else if (hdr->evt == EVT_CMD_COMPLETE) {
                         const evt_cmd_complete* cc = reinterpret_cast<const evt_cmd_complete*>(ptr);
-                        if (htobs(cc->opcode) == OPCODE) {
+                        if (btohs(cc->opcode) == OPCODE) {
+                            //printf(_T("HCI command complete: %X:%03X %s\n"),
+                            //          cmd_opcode_ogf(cc->opcode), cmd_opcode_ocf(cc->opcode), len <= EVT_CMD_COMPLETE_SIZE? "FAILURE" : "");
+
                             if (len <= EVT_CMD_COMPLETE_SIZE) {
-                                _error = Core::ERROR_GENERAL;
-                                printf(_T(">>EVT_CMD_COMPLETED: %X-%03X Error: %d\n"), (cc->opcode >> 10) & 0xF, (cc->opcode & 0x3FF), _error);
+                                _error = ~0;
                             } else {
-                                // See if we are waiting for an LE subevent...
+                                // See if we are waiting for an event...
                                 if (RESPONSECODE == static_cast<uint8_t>(~0)) {
-                                    _error = Core::ERROR_NONE;
-                                    uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
-                                    ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
+                                    _error = 0;
+                                    uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_response)), static_cast<uint16_t>(len - EVT_CMD_COMPLETE_SIZE));
+                                    ::memcpy(&_response, &(ptr[EVT_CMD_COMPLETE_SIZE]), toCopy);
                                 }
                             }
                             result = length;
                         }
-                    } else if ((hdr->evt == EVT_LE_META_EVENT) && (((OPCODE >> 10) & 0x3F) == OGF_LE_CTL)) {
+                    } else if ((hdr->evt == EVT_LE_META_EVENT) && (cmd_opcode_ogf(OPCODE) == OGF_LE_CTL)) {
                         const evt_le_meta_event* eventMetaData = reinterpret_cast<const evt_le_meta_event*>(ptr);
-
                         if (eventMetaData->subevent == RESPONSECODE) {
-                            uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(INBOUND)), static_cast<uint16_t>(len - EVT_LE_META_EVENT_SIZE));
-                            ::memcpy(reinterpret_cast<uint8_t*>(&_response), &(ptr[EVT_LE_META_EVENT_SIZE]), toCopy);
-
-                            _error = Core::ERROR_NONE;
+                            uint16_t toCopy = std::min(static_cast<uint16_t>(sizeof(_response)), static_cast<uint16_t>(len - EVT_LE_META_EVENT_SIZE));
+                            ::memcpy(&_response, &(ptr[EVT_LE_META_EVENT_SIZE]), toCopy);
+                            _error = 0;
                             result = length;
                         }
+                    } else if (hdr->evt == RESPONSECODE) {
+                        ::memcpy(&_response, ptr, std::min(static_cast<uint16_t>(sizeof(_response)), len));
+                        _error = 0;
+                        result = length;
                     }
                 }
                 return (result);
             }
-
 
         private:
             mutable uint16_t _offset;
@@ -662,7 +739,7 @@ namespace Bluetooth {
         };
 
     public:
-        class FeatureIterator {
+        class EXTERNAL FeatureIterator {
         public:
             FeatureIterator()
                 : _index(-1)
@@ -745,6 +822,12 @@ namespace Bluetooth {
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_AUTH_REQUESTED), auth_requested_cp, evt_auth_complete>
                 Authenticate;
 
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_REPLY), user_confirm_reply_cp, Core::Void>
+                UserConfirmReply;
+
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_USER_CONFIRM_NEG_REPLY), user_confirm_reply_cp, Core::Void>
+                UserConfirmNegReply;
+
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_DISCONNECT), disconnect_cp, evt_disconn_complete>
                 Disconnect;
 
@@ -752,12 +835,12 @@ namespace Bluetooth {
                 ConnectLE;
 
             typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_SET_CONN_ENCRYPT), set_conn_encrypt_cp, evt_encrypt_change, EVT_ENCRYPT_CHANGE>
-                Encrypt; 
+                Encrypt;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_START_ENCRYPTION), le_start_encryption_cp, uint8_t>
                 EncryptLE;
 
-            typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, evt_remote_name_req_complete>
+            typedef CommandType<cmd_opcode_pack(OGF_LINK_CTL, OCF_REMOTE_NAME_REQ), remote_name_req_cp, Core::Void>
                 RemoteName;
 
             typedef CommandType<cmd_opcode_pack(OGF_LE_CTL, OCF_LE_SET_SCAN_PARAMETERS), le_set_scan_parameters_cp, uint8_t>
@@ -834,17 +917,17 @@ namespace Bluetooth {
         void Scan(const uint16_t scanTime, const uint32_t type, const uint8_t flags);
         void Scan(const uint16_t scanTime, const bool limited, const bool passive);
         void Abort();
-        uint8_t Name(const le_advertising_info& info, string& name) const;
+
         uint32_t ReadStoredLinkKeys(const Address adr, const bool all, LinkKeys& keys);
 
         template<typename COMMAND>
         void Execute(const uint32_t waitTime, const COMMAND& cmd, std::function<void(COMMAND&, const uint32_t error)> handler)
         {
-            class Handler : public Core::IOutbound::ICallback {
+            class EXTERNAL Handler : public Core::IOutbound::ICallback {
             public:
                 Handler() = delete;
                 Handler(const Handler&) = delete;
-                Handler(const COMMAND& cmd, const std::function<void(COMMAND&, const uint32_t error)> handler) 
+                Handler(const COMMAND& cmd, const std::function<void(COMMAND&, const uint32_t error)> handler)
                     : _cmd(cmd)
                     , _handler(handler){
                 }
@@ -873,7 +956,7 @@ namespace Bluetooth {
     protected:
         virtual void Update(const le_advertising_info& eventData);
         virtual void Update(const hci_event_hdr& eventData);
-        virtual void Discovered(const bool lowEnergy, const Bluetooth::Address& address, const string& name);
+        virtual void Discovered(const bool lowEnergy, const Bluetooth::Address& address, const Bluetooth::EIR& info);
 
     private:
         virtual void StateChange() override;
@@ -885,105 +968,105 @@ namespace Bluetooth {
         struct hci_filter _filter;
     };
 
-    class ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
+    class EXTERNAL ManagementSocket : public Core::SynchronousChannelType<Core::SocketPort> {
     public:
-        class Info {
+        class EXTERNAL Info {
         public:
-            class Properties {
-            public:
-                Properties() : _value(0) {}
-                Properties(const uint32_t value) : _value(value) {}
-                Properties(const Properties& copy) : _value(copy._value) {}
-                ~Properties() {}
+		    class EXTERNAL Properties {
+		    public:
+			Properties() : _value(0) {}
+			Properties(const uint32_t value) : _value(value) {}
+			Properties(const Properties& copy) : _value(copy._value) {}
+			~Properties() {}
 
-                Properties& operator= (const Properties& rhs) {
-                    _value = rhs._value;
-                    return (*this);
-                }
+			Properties& operator= (const Properties& rhs) {
+			    _value = rhs._value;
+			    return (*this);
+			}
 
-            public:
-                bool IsPowered() const {
-                    return ((_value & MGMT_SETTING_POWERED) != 0);
-                }
-		bool IsConnectable() const {
-                    return ((_value & MGMT_SETTING_CONNECTABLE) != 0);
-                }
-		bool IsFastConnectable() const {
-                    return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
-                }
-		bool IsDiscoverable() const {
-                    return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
-                }
-		bool IsBondable() const {
-                    return ((_value & MGMT_SETTING_BONDABLE) != 0);
-                }
-		bool HasLinkLevelSecurity() const {
-                    return ((_value & MGMT_SETTING_LINK_SECURITY) != 0);
-                }
-		bool HasSecureSimplePairing() const {
-                    return ((_value & MGMT_SETTING_SSP) != 0);
-                }
-		bool HasBasicEnhancedRate() const {
-                    return ((_value & MGMT_SETTING_BREDR) != 0);
-                }
-		bool HasHighSpeed() const {
-                    return ((_value & MGMT_SETTING_HS) != 0);
-                }
-		bool HasLowEnergy() const {
-                    return ((_value & MGMT_SETTING_LE) != 0);
-                }
-		bool IsAdvertising() const {
-                    return ((_value & MGMT_SETTING_ADVERTISING) != 0);
-                }
-		bool HasSecureConnections() const {
-                    return ((_value & MGMT_SETTING_SECURE_CONN) != 0);
-                }
-		bool HasDebugKeys() const {
-                    return ((_value & MGMT_SETTING_DEBUG_KEYS) != 0);
-                }
-		bool HasPrivacy() const {
-                    return ((_value & MGMT_SETTING_PRIVACY) != 0);
-                }
-		bool HasConfiguration() const {
-                    return ((_value & MGMT_SETTING_CONFIGURATION) != 0);
-                }
-		bool HasStaticAddress() const {
-                    return ((_value & MGMT_SETTING_STATIC_ADDRESS) != 0);
-                }
+		    public:
+			bool IsPowered() const {
+			    return ((_value & MGMT_SETTING_POWERED) != 0);
+			}
+			bool IsConnectable() const {
+			    return ((_value & MGMT_SETTING_CONNECTABLE) != 0);
+			}
+			bool IsFastConnectable() const {
+			    return ((_value & MGMT_SETTING_FAST_CONNECTABLE) != 0);
+			}
+			bool IsDiscoverable() const {
+			    return ((_value & MGMT_SETTING_DISCOVERABLE) != 0);
+			}
+			bool IsBondable() const {
+			    return ((_value & MGMT_SETTING_BONDABLE) != 0);
+			}
+			bool HasLinkLevelSecurity() const {
+			    return ((_value & MGMT_SETTING_LINK_SECURITY) != 0);
+			}
+			bool HasSecureSimplePairing() const {
+			    return ((_value & MGMT_SETTING_SSP) != 0);
+			}
+			bool HasBasicEnhancedRate() const {
+			    return ((_value & MGMT_SETTING_BREDR) != 0);
+			}
+			bool HasHighSpeed() const {
+			    return ((_value & MGMT_SETTING_HS) != 0);
+			}
+			bool HasLowEnergy() const {
+			    return ((_value & MGMT_SETTING_LE) != 0);
+			}
+			bool IsAdvertising() const {
+			    return ((_value & MGMT_SETTING_ADVERTISING) != 0);
+			}
+			bool HasSecureConnections() const {
+			    return ((_value & MGMT_SETTING_SECURE_CONN) != 0);
+			}
+			bool HasDebugKeys() const {
+			    return ((_value & MGMT_SETTING_DEBUG_KEYS) != 0);
+			}
+			bool HasPrivacy() const {
+			    return ((_value & MGMT_SETTING_PRIVACY) != 0);
+			}
+			bool HasConfiguration() const {
+			    return ((_value & MGMT_SETTING_CONFIGURATION) != 0);
+			}
+			bool HasStaticAddress() const {
+			    return ((_value & MGMT_SETTING_STATIC_ADDRESS) != 0);
+			}
 
-            private:
-                uint32_t _value;
-            };
-        public:
-            Info() 
-                : _address()
-                , _version(0)
-                , _manufacturer(0)
-                , _supported(0)
-                , _settings(0)
-                , _deviceClass(0)
-                , _name()
-                , _shortName()
-            {
-            }
-            Info(const Info& copy) 
-                : _address(copy._address)
-                , _version(copy._version)
-                , _manufacturer(copy._manufacturer)
-                , _supported(copy._supported)
-                , _settings(copy._settings)
-                , _deviceClass(copy._deviceClass)
-                , _name(copy._name)
-                , _shortName(copy._shortName)
-            {
-            }
-            Info(const mgmt_rp_read_info& copy) 
-                : _address(copy.bdaddr)
-                , _version(copy.version)
-                , _manufacturer(copy.manufacturer)
-                , _supported(copy.supported_settings)
-                , _settings(copy.current_settings)
-                , _deviceClass((copy.dev_class[0] << 16) | (copy.dev_class[1] << 8) | copy.dev_class[2])
+		    private:
+			uint32_t _value;
+		    };
+		public:
+		    Info()
+			: _address()
+			, _version(0)
+			, _manufacturer(0)
+			, _supported(0)
+			, _settings(0)
+			, _deviceClass(0)
+			, _name()
+			, _shortName()
+		    {
+		    }
+		    Info(const Info& copy)
+			: _address(copy._address)
+			, _version(copy._version)
+			, _manufacturer(copy._manufacturer)
+			, _supported(copy._supported)
+			, _settings(copy._settings)
+			, _deviceClass(copy._deviceClass)
+			, _name(copy._name)
+			, _shortName(copy._shortName)
+		    {
+		    }
+		    Info(const mgmt_rp_read_info& copy)
+			: _address(copy.bdaddr)
+			, _version(copy.version)
+			, _manufacturer(copy.manufacturer)
+			, _supported(copy.supported_settings)
+			, _settings(copy.current_settings)
+			, _deviceClass((copy.dev_class[2] << 16) | (copy.dev_class[1] << 8) | copy.dev_class[0])
                 , _name(Core::ToString(reinterpret_cast<const char*>(copy.name)))
                 , _shortName(Core::ToString(reinterpret_cast<const char*>(copy.short_name)))
             {
@@ -1017,7 +1100,7 @@ namespace Bluetooth {
             const string& Name() const {
                 return (_name);
             }
- 
+
         private:
             Bluetooth::Address _address;
             uint8_t _version;
@@ -1063,13 +1146,13 @@ namespace Bluetooth {
     public:
         static void Devices(std::list<uint16_t>& list);
 
-        void DeviceId (const uint16_t deviceId) 
+        void DeviceId (const uint16_t deviceId)
         {
             ASSERT((_deviceId == static_cast<uint16_t>(~0)) ^ (deviceId == static_cast<uint16_t>(~0)));
 
             _deviceId = deviceId;
         }
-        uint16_t DeviceId() const 
+        uint16_t DeviceId() const
         {
             return (_deviceId);
         }
@@ -1122,6 +1205,7 @@ namespace Bluetooth {
         uint32_t LowEnergy(bool enabled);
         uint32_t SecureLink(bool enabled);
         uint32_t SecureConnection(bool enabled);
+        uint32_t DeviceClass(const uint8_t major, const uint8_t minor);
         uint32_t Block(const Address::type type, const Address& address);
         uint32_t Unblock(const Address::type type, const Address& address);
         uint32_t Privacy(const uint8_t mode, const uint8_t identity[16]);
@@ -1137,6 +1221,9 @@ namespace Bluetooth {
         uint32_t Pair(const Address& remote, const Address::type type, const capabilities cap = NO_INPUT_NO_OUTPUT);
         uint32_t Unpair(const Address& remote, const Address::type type);
         uint32_t PairAbort(const Address& remote, const Address::type type);
+        uint32_t UserPINCodeReply(const Address& remote, const Address::type type, const string& pinCode);
+        uint32_t UserPasskeyReply(const Address& remote, const Address::type type, const uint32_t passkey);
+        uint32_t UserPasskeyConfirmReply(const Address& remote, const Address::type type, const bool confirm);
 
         uint32_t Notifications(const bool enabled);
 

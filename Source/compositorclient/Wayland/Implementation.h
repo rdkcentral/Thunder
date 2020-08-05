@@ -217,7 +217,6 @@ namespace Wayland {
             void Opacity(const uint32_t opacity);
             void ZOrder(const uint32_t order);
             void BringToFront();
-            void SetTop();
 
         private:
             inline const bool UpScale() const
@@ -433,12 +432,6 @@ namespace Wayland {
                 assert(IsValid() == true);
                 return (_implementation->ZOrder(order));
             }
-            inline void SetTop()
-            {
-                assert(IsValid() == true);
-                return (_implementation->SetTop());
-            }
-
             inline const bool UpScale()
             {
                 assert(IsValid() == true);

@@ -25,11 +25,11 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IDsgccClient : virtual public Core::IUnknown {
+    struct EXTERNAL IDsgccClient : virtual public Core::IUnknown {
 
         enum { ID = ID_DSGCC_CLIENT };
 
-        enum state {
+        enum state : uint8_t {
             Unknown = 0,
             Ready   = 1,
             Changed = 2,
@@ -38,7 +38,7 @@ namespace Exchange {
 
         virtual ~IDsgccClient() {}
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_DSGCC_CLIENT_NOTIFICATION };
 
             virtual ~INotification() {}

@@ -21,18 +21,20 @@
 
 #include <stdbool.h>
 
+#ifndef EXTERNAL
 #ifdef _MSVC_LANG
-#undef EXTERNAL
 #ifdef VIRTUALINPUT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
 #define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "virtualinput.lib")
 #endif
 #else
-#ifndef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
 #endif
+#endif
+
+#if defined(_WINDOWS) && !defined(VIRTUALINPUT_EXPORTS)
+#pragma comment(lib, "virtualinput.lib")
 #endif
 
 #ifdef __cplusplus
@@ -45,7 +47,8 @@ enum keyactiontype {
     KEY_RELEASED = 0,
     KEY_PRESSED = 1,
     KEY_REPEAT = 2,
-    KEY_COMPLETED = 3
+    KEY_COMPLETED = 3,
+    KEY_DESTRUCT = ~0
 };
 
 typedef void (*FNKeyEvent)(enum keyactiontype type, unsigned int code);

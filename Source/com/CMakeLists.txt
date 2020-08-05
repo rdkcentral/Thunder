@@ -17,17 +17,19 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/Communicator.h)
-ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT ${CMAKE_CURRENT_SOURCE_DIR}/ITracing.h)
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/Communicator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ITracing.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IStringIterator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/IValueIterator.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
 
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
-        ProxyStubs_Communicator.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Communicator.cpp"
         ITracing.cpp
-        ProxyStubs_Tracing.cpp
-        IStringIterator.cpp
-        IValueIterator.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Tracing.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_StringIterator.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_ValueIterator.cpp"
         IUnknown.cpp
         Module.cpp
         )
@@ -54,6 +56,10 @@ target_link_libraries(${TARGET}
         PRIVATE
           CompileSettingsDebug::CompileSettingsDebug
         )
+
+target_include_directories(${TARGET} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+
+target_compile_definitions(${TARGET} PRIVATE COM_EXPORTS)
 
 if(PROCESSCONTAINERS)
     target_link_libraries(${TARGET}

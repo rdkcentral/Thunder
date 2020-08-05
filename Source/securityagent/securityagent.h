@@ -19,16 +19,43 @@
 
 #pragma once
 
+#ifndef EXTERNAL
 #ifdef _MSVC_LANG
-#undef EXTERNAL
 #ifdef SECURITYAGENT_EXPORTS
 #define EXTERNAL __declspec(dllexport)
 #else
 #define EXTERNAL __declspec(dllimport)
-#pragma comment(lib, "securityagent.lib")
 #endif
 #else
-#define EXTERNAL
+#define EXTERNAL __attribute__ ((visibility ("default")))
+#endif
 #endif
 
-#include "SecurityToken.h"
+#if defined(_WINDOWS) && !defined(SECURITYAGENT_EXPORTS)
+#pragma comment(lib, "securityagent.lib")
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+	/*
+	 * GetToken - function to obtain a token from the SecurityAgent
+	 *
+	 * Parameters
+	 *  maxLength   - holds the maximum uint8_t length of the buffer
+	 *  inLength    - holds the length of the current that needs to be tokenized.
+	 *  Id          - Buffer holds the data to tokenize on its way in, and returns in the same buffer the token.
+	 *
+	 * Return value
+	 *  < 0 - failure, absolute value returned is the length required to store the token
+	 *  > 0 - success, char length of the returned token
+	 *
+	 * Post-condition; return value 0 should not occur
+	 *
+	 */
+	int EXTERNAL GetToken(unsigned short maxLength, unsigned short inLength, unsigned char buffer[]);
+
+#ifdef __cplusplus
+}
+#endif

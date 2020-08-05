@@ -225,15 +225,12 @@ namespace Core {
         inline void Align()
         {
             if (m_Buffer != nullptr) {
-                size_t size(static_cast<size_t>(m_MaxSize));
-                void* newPointer = m_Buffer;
-                if (std::align(sizeof(TYPE), sizeof(TYPE), newPointer, size)) {
-                    uint8_t adjust(static_cast<uint8_t>(m_MaxSize - size));
-                    m_Buffer = reinterpret_cast<uint8_t*>(newPointer);
-                    m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
-                    m_MaxSize -= adjust;
-                    TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
-                }
+                uint8_t* newPointer = reinterpret_cast<uint8_t*>(Alignment(sizeof(TYPE), m_Buffer));
+                uint8_t adjust(static_cast<uint8_t>(newPointer - m_Buffer));
+                m_Buffer = newPointer;
+                m_Size = (adjust < m_Size ? (m_Size - adjust) : 0);
+                m_MaxSize = (adjust < m_MaxSize ? (m_MaxSize - adjust) : 0);
+                TRACE_L1("Aligning the memory buffer by %d bytes to %p !!!\n\n", adjust, m_Buffer);
             }
         }
         inline uint64_t AllocatedSize() const
@@ -343,7 +340,7 @@ namespace Core {
                     copied = true;
                 }
             } else {
-                ::memcpy(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
+                ::memmove(&(m_Buffer[offset]), RHS.m_Buffer, static_cast<size_t>(RHS.m_Size));
 
                 if (m_Size < (offset + RHS.m_Size)) {
                     m_Size = offset + RHS.m_Size;

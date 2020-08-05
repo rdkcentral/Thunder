@@ -51,6 +51,10 @@ namespace Core {
 
         return (_T("Netlink:") + Core::NumberType<uint32_t>(input.NetlinkSocket.nl_destination).Text() + ':' + Core::NumberType<pid_t>(input.NetlinkSocket.nl_pid).Text() + ':' + Core::NumberType<pid_t>(input.NetlinkSocket.nl_groups).Text());
     }
+    static string RawName(const NodeId::SocketInfo& input)
+    {
+        return (_T("Rawlink:") + Core::NumberType<int32_t>(input.RawSocket.sll_family).Text() + ':' + Core::NumberType<uint16_t>(input.RawSocket.sll_protocol).Text() + ':' + Core::NumberType<uint16_t>(input.RawSocket.sll_hatype).Text());
+    }
 #endif
 
 #ifdef CORE_BLUETOOTH
@@ -149,6 +153,30 @@ namespace Core {
         m_structInfo.NetlinkSocket.nl_destination = destination;
 
         m_hostName = NetlinkName(m_structInfo);
+    }
+
+    NodeId::NodeId(const struct sockaddr_ll& rInfo)
+    {
+        memcpy(&(m_structInfo.RawSocket), &rInfo, sizeof(sockaddr_ll));
+        
+        m_hostName = RawName(m_structInfo);
+    }
+    
+    NodeId::NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress)
+    {
+        ASSERT(interfaceIndex > 0);
+
+        m_structInfo.RawSocket.sll_family = AF_PACKET;
+        m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
+        m_structInfo.RawSocket.sll_protocol = htons(protocolFilter);
+        
+        if(hardwareAddressLength > 0){
+            ASSERT(hardwareAddressLength == ETH_ALEN);
+            m_structInfo.RawSocket.sll_halen = ETH_ALEN;
+            memcpy(m_structInfo.RawSocket.sll_addr, hardwareAddress, (hardwareAddressLength <= ETH_ALEN) ? hardwareAddressLength : ETH_ALEN);
+        }
+    
+        m_hostName = RawName(m_structInfo);
     }
 #endif
 
@@ -383,6 +411,18 @@ namespace Core {
 
         m_structInfo.NetlinkSocket.nl_destination = 0;
         m_hostName = NetlinkName(m_structInfo);
+
+        // Give back our-selves.
+        return (*this);
+    }
+
+    NodeId&
+    NodeId::operator=(const struct sockaddr_ll& rInfo)
+    {
+        // Copy the struct info
+        memcpy(&m_structInfo.RawSocket, &rInfo, sizeof(struct sockaddr_ll));
+
+        m_hostName = RawName(m_structInfo);
 
         // Give back our-selves.
         return (*this);

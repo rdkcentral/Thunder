@@ -46,6 +46,7 @@ namespace Plugin {
         Property<Core::JSON::ArrayType<PluginHost::MetaData::Bridge>>(_T("discoveryresults"), &Controller::get_discoveryresults, nullptr, this);
         Property<Core::JSON::String>(_T("environment"), &Controller::get_environment, nullptr, this);
         Property<Core::JSON::String>(_T("configuration"), &Controller::get_configuration, &Controller::set_configuration, this);
+        Register<CloneParamsInfo,Core::JSON::String>(_T("clone"), &Controller::endpoint_clone, this);
     }
 
     void Controller::UnregisterAll()
@@ -63,6 +64,7 @@ namespace Plugin {
         Unregister(_T("processinfo"));
         Unregister(_T("links"));
         Unregister(_T("status"));
+        Unregister(_T("clone"));
     }
 
     // API implementation
@@ -84,7 +86,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        if (callsign != _pluginServer->ControllerName()) {
+        if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
@@ -122,7 +124,7 @@ namespace Plugin {
 
         ASSERT(_pluginServer != nullptr);
 
-        if (callsign != _pluginServer->ControllerName()) {
+        if (callsign != Callsign()) {
             Core::ProxyType<PluginHost::Server::Service> service;
 
             if (_pluginServer->Services().FromIdentifier(callsign, service) == Core::ERROR_NONE) {
@@ -190,7 +192,7 @@ namespace Plugin {
             if (path.find("..") == string::npos) {
                 ASSERT(_service != nullptr);
 
-                DeleteDirectory(_service->PersistentPath() +  path);
+                Core::Directory((_service->PersistentPath() +  path).c_str()).Destroy(true);
                 result = Core::ERROR_NONE; // FIXME: return the real deletion result instead
             }
             else {
@@ -213,6 +215,46 @@ namespace Plugin {
 
         if ((result != Core::ERROR_NONE) && (result != Core::ERROR_UNAVAILABLE) && (result != Core::ERROR_PRIVILIGED_REQUEST) && (result != Core::ERROR_GENERAL)) {
             result = Core::ERROR_GENERAL;
+        }
+
+        return result;
+    }
+
+
+    // Method: clone - Clone a plugin
+    // Return codes:
+    //  - ERROR_NONE: Success
+    //  - ERROR_UNKNOWN_KEY: The original plugin does not exist
+    //  - ERROR_PRIVILEGED_REQUEST: Cloning of the plugin is not allowed (e.g. Controller)
+    //  - ERROR_UNAVAILABLE: Failed to clone plugin configuration
+    uint32_t Controller::endpoint_clone(const CloneParamsInfo& params, Core::JSON::String& response)
+    {
+        uint32_t result = Core::ERROR_NONE;
+        const string& baseCallsign = params.Callsign.Value();
+        const string& newCallsign = params.NewCallsign.Value();
+        const string controllerName = _pluginServer->Controller()->Callsign();
+
+        ASSERT(_pluginServer != nullptr);
+
+        if ((baseCallsign.empty() == false) && (baseCallsign.empty() == false) && (baseCallsign != controllerName) && (newCallsign != controllerName)) {
+            Core::ProxyType<PluginHost::Server::Service> baseService, newService;
+
+            if (_pluginServer->Services().FromIdentifier(baseCallsign, baseService) != Core::ERROR_NONE) {
+                result = Core::ERROR_UNKNOWN_KEY;
+            }
+            else if (_pluginServer->Services().FromIdentifier(newCallsign, newService) != Core::ERROR_NONE) {
+                result = _pluginServer->Services().Clone(baseService, newCallsign, newService);
+            }
+            else if (baseService->ClassName() != newService->ClassName()) {
+                result = Core::ERROR_GENERAL;
+            }
+
+            if (result == Core::ERROR_NONE) {
+                response = newService->Callsign();
+            }
+        }
+        else {
+            result = Core::ERROR_PRIVILIGED_REQUEST;
         }
 
         return result;

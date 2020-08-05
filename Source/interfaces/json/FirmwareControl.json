@@ -19,6 +19,7 @@
         "downloadstarted",
         "downloadaborted",
         "downloadcompleted",
+        "installinitiated",
         "installnotstarted",
         "installaborted",
         "installstarted",
@@ -37,6 +38,7 @@
         "invalidstate",
         "operationotsupported",
         "incorrecthash",
+        "unauthenticated",
         "unavailable",
         "timedout",
         "unkown"
@@ -86,7 +88,7 @@
             "$ref": "#/definitions/type"
           },
           "progressinterval": {
-            "description": "number of seconds between progress update events (5 secoonds, 10 seconds etc). 0 means invoking callback only once to report final upgrade result",
+            "description": "number of seconds between progress update events (5 seconds, 10 seconds etc). 0 means invoking callback only once to report final upgrade result",
             "type": "number",
             "size": 16,
             "example": "10"
@@ -132,6 +134,10 @@
         {
           "description": "Incorrect hash given",
           "$ref": "#/common/errors/incorrecthash"
+        },
+        {
+          "description": "Authentication failure",
+          "$ref": "#/common/errors/unauthenticated"
         }
       ]
     }
@@ -152,7 +158,7 @@
           "percentage": {
             "type": "number",
             "descrption": "Percentage of upgrade",
-            "size": 16,
+            "size": 8,
             "example": 89
           }
         },

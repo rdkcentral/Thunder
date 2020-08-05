@@ -110,21 +110,28 @@ namespace Core {
 
         // MF2018 please note: sem_timedwait is not compatible with CLOCK_MONOTONIC.
         //                     When used with CLOCK_REALTIME do not use this when the system time can make large jumps (so when Time subsystem is not yet up)
-
-        if (sem_timedwait(_semaphore, &structTime) == 0) {
-            result = Core::ERROR_NONE;
-        } else if ((errno == EINTR) || (errno == ETIMEDOUT)) {
-            result = Core::ERROR_TIMEDOUT;
-        } else {
-            ASSERT(false);
-        }
+        do {
+            if (sem_timedwait(_semaphore, &structTime) == 0) {
+                result = Core::ERROR_NONE;
+            }
+            else if ( errno == EINTR ) {
+                continue;
+            }
+            else if ( errno == ETIMEDOUT ) {
+                result = Core::ERROR_TIMEDOUT;
+            }
+            else {
+                ASSERT(false);
+            }
+            break;
+        } while (true);
 #endif
         return (result);
     }
 
     SharedBuffer::SharedBuffer(const TCHAR name[])
-        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE)
-        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE)
+        : DataElementFile(name, File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
+        , _administrationBuffer((string(name) + ".admin"), File::USER_READ | File::USER_WRITE | File::SHAREABLE, 0)
         , _administration(reinterpret_cast<Administration*>(PointerAlign(_administrationBuffer.Buffer())))
 #ifdef __WINDOWS__
         , _producer((string(name) + ".producer").c_str())

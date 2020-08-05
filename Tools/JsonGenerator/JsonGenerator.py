@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pard
 import ProxyStubGenerator.CppParser
 import ProxyStubGenerator.Interface
 
-VERSION = "1.5"
+VERSION = "1.5.1"
 DEFAULT_DEFINITIONS_FILE = "../ProxyStubGenerator/default.h"
 INTERFACE_NAMESPACE = "::WPEFramework::Exchange"
 
@@ -101,7 +101,7 @@ class JsonParseError(RuntimeError):
 
 class CppParseError(RuntimeError):
     def __init__(self, obj, msg):
-        msg = "%s(%s): %s (see '%s %s')" % (obj.parser_file, obj.parser_line, msg, str(obj.type), obj.name)
+        msg = "%s(%s): %s (see '%s')" % (obj.parser_file, obj.parser_line, msg, obj.Proto())
         super(CppParseError, self).__init__(msg)
 
 
@@ -232,6 +232,20 @@ class JsonNumber(JsonType):
 class JsonInteger(JsonNumber):
     pass      # Identical as Number
 
+class JsonFloat(JsonType):
+    def CppClass(self):
+        return TypePrefix("Float")
+
+    def CppStdClass(self):
+            return "float"
+
+class JsonDouble(JsonType):
+    def CppClass(self):
+        return TypePrefix("Double")
+
+    def CppStdClass(self):
+            return "double"
+
 
 class JsonString(JsonType):
     def CppClass(self):
@@ -243,11 +257,16 @@ class JsonString(JsonType):
 
 class JsonEnum(JsonType):
     def __init__(self, name, parent, schema, enumType, included=None):
+        self.cpptype = "undefined"
         JsonType.__init__(self, name, parent, schema, included)
         if enumType != "string":
             raise JsonParseError("Only strings are supported in enums")
         self.type = enumType
-        self.enumName = MakeEnum(self.name.capitalize())
+        if "typename" in schema:
+            self.cpptype = schema["typename"]
+            self.enumName = MakeEnum(self.cpptype.split("::")[-1].capitalize())
+        else:
+            self.enumName = MakeEnum(self.name.capitalize())
         self.enumerators = schema["enum"]
         self.values = schema["enumvalues"] if "enumvalues" in schema else []
         if self.values and (len(self.enumerators) != len(self.values)):
@@ -283,7 +302,7 @@ class JsonEnum(JsonType):
             elif isinstance(self.parent, JsonProperty):
                 classname = MakeEnum(self.parent.name.capitalize())
             else:
-                classname = MakeEnum(self.CppName())
+                classname = self.enumName
             return classname
 
     def CppEnumerators(self):
@@ -305,7 +324,7 @@ class JsonEnum(JsonType):
         return len(self.refs)
 
     def CppStdClass(self):
-        return self.CppClass()
+        return self.cpptype
 
     def IsStronglyTyped(self):
         return self.strongly_typed
@@ -618,6 +637,10 @@ def JsonItem(name, parent, schema, origName=None, included=None):
             return JsonInteger(name, parent, schema)
         elif schema["type"] == "number":
             return JsonNumber(name, parent, schema)
+        elif schema["type"] == "float":
+            return JsonFloat(name, parent, schema)
+        elif schema["type"] == "double":
+            return JsonDouble(name, parent, schema)
         else:
             raise JsonParseError("unsupported JSON type: %s" % schema["type"])
     else:
@@ -706,6 +729,8 @@ def LoadInterface(file):
         schema["$schema"] = "interface.json.schema"
         schema["jsonrpc"] = "2.0"
         schema["dorpc"] = True
+        schema["interfaceonly"] = True
+        schema["configuration"] = { "nodefault" : True }
 
         info = dict()
         info["class"] = face.obj.name[1:] if face.obj.name[0] == "I" else face.obj.name
@@ -731,9 +756,16 @@ def LoadInterface(file):
                     return "integer", 8 if cppType.size == "char" else 16 if cppType.size == "short" else \
                         32 if cppType.size == "int" or cppType.size == "long" else 64 if cppType.size == "long long" else 32, cppType.signed
                 elif isinstance(cppType, ProxyStubGenerator.CppParser.Float):
-                    return "number", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
+                    return "float", 32 if CppType.type == "float" else 64 if CppType.type == "double" else 128, None
                 elif isinstance(cppType, ProxyStubGenerator.CppParser.Void):
                     return "null", None, None
+                elif isinstance(cppType, ProxyStubGenerator.CppParser.Enum):
+                    if len(cppType.items) > 1:
+                        enumValues = [e.autoValue for e in cppType.items]
+                        for i, e in enumerate(cppType.items, 0):
+                            if enumValues[i - 1] != enumValues[i]:
+                                raise CppParseError(var, "enumerator values in an enum must all be explicit or all be implied")
+                    return "string", [e.name for e in cppType.items], [e.value for e in cppType.items] if not cppType.items[0].autoValue else None
                 else:
                     raise CppParseError(var, "unable to convert C++ type to JSON type")
 
@@ -741,11 +773,18 @@ def LoadInterface(file):
                 jsonType, size, signed = ConvertType(var)
                 properties = {"type": jsonType}
                 if size:
-                    properties["size"] = size
+                    if isinstance(size, list):
+                        properties["enum"] = size
+                        properties["typename"] = var.type.Type().full_name.replace(INTERFACE_NAMESPACE+"::","")
+                        properties["enumtyped"] = var.type.Type().scoped
+                        if isinstance(signed, list):
+                            properties["enumvalues"] = signed
+                    else:
+                        properties["size"] = size
                 if signed:
                     properties["signed"] = signed
                 if var.meta.brief:
-                    egidx = var.meta.brief.index("(e.g.") if "(e.g" in var.meta.brief else None
+                    egidx = var.meta.brief.index("(e.g.") if "(e.g." in var.meta.brief else None
                     properties["description"] = var.meta.brief[0:egidx].strip()
                     if egidx and ")" in var.meta.brief[egidx + 1:]:
                         properties["example"] = var.meta.brief[egidx + 5:var.meta.brief.index(")")].strip()
@@ -776,8 +815,11 @@ def LoadInterface(file):
                 required = []
                 for var in vars:
                     if var.meta.input or not var.meta.output:
-                        if (var.type.IsReference() or var.type.IsPointer) and not var.type.IsConst():
-                            raise CppParseError(var, "non-const pointer/reference parameter requires in/out tag")
+                        if not var.type.IsConst():
+                            if (var.type.IsReference() or var.type.IsPointer()) and not var.type.IsConst():
+                                raise CppParseError(var, "non-const pointer/reference parameters require @in/@out tag")
+                            else:
+                                trace.Warn("non-const parameter assumed to be input (forgot 'const'?)")
                         var_name = var.name.lower()
                         properties[var_name] = ConvertParameter(var)
                         required.append(var_name)
@@ -803,8 +845,7 @@ def LoadInterface(file):
                 for var in vars:
                     if var.meta.output:
                         if var.type.IsValue():
-                            raise CppParseError(var,
-                                                "parameter marked with @out tag must be either reference or pointer")
+                            raise CppParseError(var, "parameter marked with @out tag must be either a reference or a pointer")
                         var_name = var.name.lower()
                         properties[var_name] = ConvertParameter(var)
                         required.append(var_name)
@@ -864,13 +905,16 @@ def LoadInterface(file):
                 else:
                     raise CppParseError(method, "property method must have one parameter")
 
-            elif "pure-virtual" in method.specifiers and not event_params:
-                obj = OrderedDict()
-                params = BuildParameters(method.vars)
-                if "properties" in params and params["properties"]:
-                    obj["params"] = params
-                obj["result"] = BuildResult(method.vars)
-                methods[method_name] = obj
+            elif method.IsPureVirtual() and not event_params:
+                if isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Void) or (isinstance(method.retval.type.Type(), ProxyStubGenerator.CppParser.Integer) and method.retval.type.Type().size == "long"):
+                    obj = OrderedDict()
+                    params = BuildParameters(method.vars)
+                    if "properties" in params and params["properties"]:
+                        obj["params"] = params
+                    obj["result"] = BuildResult(method.vars)
+                    methods[method_name] = obj
+                else:
+                    raise CppParseError(method, "method return type must be uint32_t (error code) or void (i.e. pass other return values by reference)")
 
             if obj:
                 if method.retval.meta.brief:
@@ -889,9 +933,13 @@ def LoadInterface(file):
 
         for f in event_interfaces:
             for method in f.obj.methods:
-                if "pure-virtual" in method.specifiers:
+                if method.IsPureVirtual() and method.omit == False:
                     obj = OrderedDict()
                     params = BuildParameters(method.vars)
+                    if method.retval.meta.brief:
+                        obj["summary"] = method.retval.meta.brief
+                    if method.retval.meta.details:
+                        obj["description"] = method.retval.meta.details
                     if "properties" in params and params["properties"]:
                         obj["params"] = params
                     events[method.name] = obj
@@ -1114,7 +1162,7 @@ def EmitEnumRegs(root, emit, header_file):
         emit.Line("ENUM_CONVERSION_END(%s);" % fullname)
 
     # Enumeration conversion code
-    emit.Line("#include \"../definitions.h\"")
+    emit.Line("#include <interfaces/definitions.h>")
     emit.Line("#include <core/Enumerate.h>")
     emit.Line("#include \"%s_%s.h\"" % (DATA_NAMESPACE, header_file))
     emit.Line()
@@ -1142,7 +1190,7 @@ def EmitEvent(emit, root, event, static=False):
     params = event.Properties()[0].CppType()
     par = "const string& id, " if event.HasSendif() else ""
     par = par + ", ".join(
-        map(lambda x: "const " + GetNamespace(root, x, False) + x.CppStdClass() + "& " + x.JsonName(),
+        map(lambda x: "const " + x.CppStdClass() + "& " + x.JsonName(),
             event.Properties()[0].Properties()))
     if not static:
         line = "void %s::%s(%s)" % (root.JsonName(), event.MethodName(), par)
@@ -1156,7 +1204,10 @@ def EmitEvent(emit, root, event, static=False):
     if params != "void":
         emit.Line("%s params;" % params)
         for p in event.Properties()[0].Properties():
-            emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
+            if isinstance(p, JsonEnum):
+                emit.Line("params.%s = static_cast<%s>(%s);" % (p.CppName(), GetNamespace(root, p, False) + p.CppClass(), p.JsonName()))
+            else:
+                emit.Line("params.%s = %s;" % (p.CppName(), p.JsonName()))
         emit.Line()
     if event.HasSendif():
         emit.Line('Notify(_T("%s")%s, [&](const string& designator) -> bool {' %
@@ -1247,7 +1298,7 @@ def EmitRpcCode(root, emit, header_file, source_file):
                     line = "errorCode = destination->%s(" % m.TrueName()
                 if params.CppType() != "void":
                     line = "errorCode = destination->%s(" % m.TrueName()
-                    if isinstance(response, JsonObject):
+                    if isinstance(params, JsonObject):
                         for p in params.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
                                 line = line + "params.%s.Value(), " % p.CppName()
@@ -1272,8 +1323,10 @@ def EmitRpcCode(root, emit, header_file, source_file):
                         for p in response.Properties():
                             if not isinstance(p, (JsonObject, JsonArray)):
                                 emit.Line("response.%s = %s;" % (p.CppName(), p.JsonName()))
+                    elif isinstance(response, JsonEnum):
+                        emit.Line("response = static_cast<%s>(%s);" %(response.CppClass(), response.JsonName()))
                     else:
-                        emit.Line("%s = %s;" % ("response", response.JsonName()))
+                        emit.Line("response = %s;" % (response.JsonName()))
                     emit.Unindent()
                     emit.Line("}")
 
@@ -1972,6 +2025,8 @@ def CreateDocument(schema, path):
                 jsonData += '"%s"' % (default)
             elif objType in ["integer", "number"]:
                 jsonData += '%s' % (default if default else 0)
+            elif objType in ["float", "double"]:
+                jsonData += '%s' % (default if default else 0.0)
             elif objType == "boolean":
                 jsonData += '%s' % str(default if default else False).lower()
             elif objType == "null":
@@ -2164,13 +2219,18 @@ def CreateDocument(schema, path):
         else:
             raise RuntimeError("missing class in info or interface/info")
 
-        MdParagraph("%s plugin for Thunder framework." % plugin_class)
+        noun = "plugin"
+        if "interfaceonly" in schema and schema["interfaceonly"]:
+            noun = "interface"
+
+        MdParagraph("%s %s for Thunder framework." % (plugin_class, noun))
 
         MdHeader("Table of Contents", 3)
         MdBody("- " + link("head.Introduction"))
         if "description" in info:
             MdBody("- " + link("head.Description"))
-        MdBody("- " + link("head.Configuration"))
+        if noun == "plugin":
+            MdBody("- " + link("head.Configuration"))
         if method_count:
             MdBody("- " + link("head.Methods"))
         if property_count:
@@ -2203,8 +2263,8 @@ def CreateDocument(schema, path):
             elif event_count:
                 extra = " and notifications sent"
             MdParagraph(
-                "This document describes purpose and functionality of the %s plugin. It includes detailed specification of its configuration%s."
-                % (plugin_class, extra))
+                "This document describes purpose and functionality of the %s %s. It includes detailed specification of its configuration%s."
+                % (plugin_class, noun, extra))
 
         MdHeader("Case Sensitivity", 2)
         MdParagraph((
@@ -2234,48 +2294,50 @@ def CreateDocument(schema, path):
         if "description" in info:
             MdHeader("Description")
             MdParagraph(" ".join(info["description"]) if isinstance(info["description"], list) else info["description"])
-            MdParagraph(("The plugin is designed to be loaded and executed within the Thunder framework. "
-                         "For more information about the framework refer to [[Thunder](#ref.Thunder)]."))
+            if noun == "plugin":
+                MdParagraph(("The plugin is designed to be loaded and executed within the Thunder framework. "
+                            "For more information about the framework refer to [[Thunder](#ref.Thunder)]."))
 
-        MdHeader("Configuration")
-        commonConfig = OrderedDict()
-        if "configuration" in schema and "nodefault" in schema["configuration"] and schema["configuration"][
-                "nodefault"] and "properties" not in schema["configuration"]:
-            MdParagraph("The plugin does not take any configuration.")
-        else:
-            MdParagraph("The table below lists configuration options of the plugin.")
-            if "configuration" not in schema or ("nodefault" not in schema["configuration"]
-                                                 or not schema["configuration"]["nodefault"]):
-                if "callsign" in info:
-                    commonConfig["callsign"] = {
-                        "type": "string",
-                        "description": 'Plugin instance name (default: *%s*)' % info["callsign"]
-                    }
-                if plugin_class:
-                    commonConfig["classname"] = {"type": "string", "description": 'Class name: *%s*' % plugin_class}
-                if "locator" in info:
-                    commonConfig["locator"] = {"type": "string", "description": 'Library name: *%s*' % info["locator"]}
-                commonConfig["autostart"] = {
-                    "type": "boolean",
-                    "description": "Determines if the plugin is to be started automatically along with the framework"
-                }
-
-            required = []
-            if "configuration" in schema:
-                commonConfig2 = OrderedDict(
-                    list(commonConfig.items()) + list(schema["configuration"]["properties"].items()))
-                required = schema["configuration"]["required"] if "required" in schema["configuration"] else []
+        if noun == "plugin":
+            MdHeader("Configuration")
+            commonConfig = OrderedDict()
+            if "configuration" in schema and "nodefault" in schema["configuration"] and schema["configuration"][
+                    "nodefault"] and "properties" not in schema["configuration"]:
+                MdParagraph("The plugin does not take any configuration.")
             else:
-                commonConfig2 = commonConfig
+                MdParagraph("The table below lists configuration options of the plugin.")
+                if "configuration" not in schema or ("nodefault" not in schema["configuration"]
+                                                    or not schema["configuration"]["nodefault"]):
+                    if "callsign" in info:
+                        commonConfig["callsign"] = {
+                            "type": "string",
+                            "description": 'Plugin instance name (default: *%s*)' % info["callsign"]
+                        }
+                    if plugin_class:
+                        commonConfig["classname"] = {"type": "string", "description": 'Class name: *%s*' % plugin_class}
+                    if "locator" in info:
+                        commonConfig["locator"] = {"type": "string", "description": 'Library name: *%s*' % info["locator"]}
+                    commonConfig["autostart"] = {
+                        "type": "boolean",
+                        "description": "Determines if the plugin is to be started automatically along with the framework"
+                    }
 
-            totalConfig = OrderedDict()
-            totalConfig["type"] = "object"
-            totalConfig["properties"] = commonConfig2
-            if "configuration" not in schema or ("nodefault" not in schema["configuration"]
-                                                 or not schema["configuration"]["nodefault"]):
-                totalConfig["required"] = ["callsign", "classname", "locator", "autostart"] + required
+                required = []
+                if "configuration" in schema:
+                    commonConfig2 = OrderedDict(
+                        list(commonConfig.items()) + list(schema["configuration"]["properties"].items()))
+                    required = schema["configuration"]["required"] if "required" in schema["configuration"] else []
+                else:
+                    commonConfig2 = commonConfig
 
-            ParamTable("", totalConfig)
+                totalConfig = OrderedDict()
+                totalConfig["type"] = "object"
+                totalConfig["properties"] = commonConfig2
+                if "configuration" not in schema or ("nodefault" not in schema["configuration"]
+                                                    or not schema["configuration"]["nodefault"]):
+                    totalConfig["required"] = ["callsign", "classname", "locator", "autostart"] + required
+
+                ParamTable("", totalConfig)
 
         def SectionDump(section_name, section, header, description=None, description2=None, event=False, prop=False):
             skip_list = []
@@ -2314,7 +2376,7 @@ def CreateDocument(schema, path):
             if description:
                 MdParagraph(description)
 
-            MdParagraph("The following %s are provided by the %s plugin:" % (section, plugin_class))
+            MdParagraph("The following %s are provided by the %s %s:" % (section, plugin_class, noun))
             InterfaceDump(interface, section, header)
             if "include" in interface:
                 for _, s in interface["include"].items():
@@ -2354,7 +2416,7 @@ def CreateDocument(schema, path):
             SectionDump("Notifications",
                         "events",
                         "event",
-                        ("Notifications are autonomous events, triggered by the internals of the plugin, "
+                        ("Notifications are autonomous events, triggered by the internals of the implementation, "
                          "and broadcasted via JSON-RPC to all registered observers."
                          "Refer to [[Thunder](#ref.Thunder)] for information on how to register for a notification."),
                         event=True)
@@ -2502,7 +2564,7 @@ if __name__ == "__main__":
     DEFAULT_INT_SIZE = args.def_int_size
     DUMP_JSON = args.dump_json
     DEFAULT_DEFINITIONS_FILE = args.extra_include
-    INTERFACE_NAMESPACE = args.if_namespace
+    INTERFACE_NAMESPACE = "::" + args.if_namespace if args.if_namespace.find("::") != 0 else args.if_namespace
     if args.if_path and args.if_path != ".":
         IF_PATH = args.if_path
     IF_PATH = posixpath.normpath(IF_PATH) + os.sep

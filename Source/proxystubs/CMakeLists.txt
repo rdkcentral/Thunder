@@ -18,10 +18,37 @@
 set(TARGET ${NAMESPACE}ProxyStubs)
 string(TOLOWER ${NAMESPACE} NAMESPACE_LIB)
 
+set(PLUGIN_INCLUDES
+        plugins/IPlugin.h
+        plugins/IShell.h
+        plugins/IStateControl.h
+        plugins/ISubSystem.h
+        )
+
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/include")
+foreach(file IN LISTS PLUGIN_INCLUDES)
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/../${file}" ${CMAKE_CURRENT_BINARY_DIR}/include COPYONLY)
+endforeach()
+
+foreach(file IN LISTS PLUGIN_INCLUDES)
+        ProxyStubGenerator(NAMESPACE "WPEFramework::PluginHost" INPUT "${CMAKE_CURRENT_BINARY_DIR}/include" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+endforeach()
+
 add_library(${TARGET} SHARED
-        PluginInterface.cpp
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Shell.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_Plugin.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_StateControl.cpp"
+        "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs_SubSystem.cpp"
         Module.cpp
         )
+
+target_compile_definitions(${TARGET} PRIVATE PROXYSTUBS_EXPORTS)
+
+target_include_directories(${TARGET}
+         PRIVATE 
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+           $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+)
 
 if (PROTOCOLS)
     target_link_libraries(${TARGET}

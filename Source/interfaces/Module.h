@@ -17,21 +17,22 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_INTERFACES_PROXYSTUBS_H
-#define __MODULE_INTERFACES_PROXYSTUBS_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Interfaces
 #endif
 
-#include "../core/core.h"
-#include "../com/com.h"
-#include "../plugins/IPlugin.h"
-#include "../plugins/IShell.h"
-#include "../plugins/ISubSystem.h"
+#include <core/core.h>
+#include <com/com.h>
+#include <plugins/IPlugin.h>
+#include <plugins/IShell.h>
+#include <plugins/IStateControl.h>
+#include <plugins/ISubSystem.h>
 #include "Ids.h"
 
+#if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
 #undef EXTERNAL
-#define EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
 
-#endif // __MODULE_INTERFACES_PROXYSTUB_H

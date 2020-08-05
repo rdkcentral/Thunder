@@ -219,6 +219,7 @@ namespace Core {
         string ToRFC1123(const bool localTime) const;
         string ToISO8601() const;
         string ToISO8601(const bool localTime) const;
+        string ToTimeOnly(const bool localTime) const;
 
         static Time Now();
         inline static bool FromString(const string& buffer, const bool localTime, Time& element)

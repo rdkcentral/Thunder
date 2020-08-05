@@ -25,10 +25,10 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IPower : virtual public Core::IUnknown {
+    struct EXTERNAL IPower : virtual public Core::IUnknown {
         enum { ID = ID_POWER };
 
-        enum PCState {
+        enum PCState : uint8_t {
             On = 1, // S0.
             ActiveStandby = 2, // S1.
             PassiveStandby = 3, // S2.
@@ -37,22 +37,10 @@ namespace Exchange {
             PowerOff = 6, // S5.
         };
 
-        enum PCStatus {
-            PCSuccess = 1,
-            PCFailure = 2,
-            PCSameMode = 3,
-            PCInvalidState = 4,
-            PCNotSupportedState = 5
-        };
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
+            enum { ID = ID_POWER_NOTIFICATION };
 
-        struct INotification : virtual public Core::IUnknown {
-            enum {
-                ID = ID_POWER_NOTIFICATION
-            };
-
-            virtual ~INotification()
-            {
-            }
+            virtual ~INotification() {}
 
             virtual void StateChange(const PCState) = 0;
         };
@@ -61,9 +49,8 @@ namespace Exchange {
         virtual void Unregister(IPower::INotification* sink) = 0;
 
         virtual PCState GetState() const = 0;
-        virtual PCStatus SetState(const PCState, const uint32_t) = 0;
+        virtual uint32_t SetState(const PCState, const uint32_t) = 0;
         virtual void PowerKey() = 0;
-        virtual void Configure(const string& settings) = 0;
     };
 }
 }

@@ -25,7 +25,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IComposition : virtual public Core::IUnknown {
+    struct EXTERNAL IComposition : virtual public Core::IUnknown {
         enum { ID = ID_COMPOSITION };
 
         static constexpr uint32_t maxOpacity = 255;
@@ -34,7 +34,7 @@ namespace Exchange {
         static constexpr uint32_t maxZOrder = 255;
         static constexpr uint32_t minZOrder = 0;
 
-        enum ScreenResolution {
+        enum ScreenResolution : uint8_t {
             ScreenResolution_Unknown = 0,
             ScreenResolution_480i = 1,
             ScreenResolution_480p = 2,
@@ -58,21 +58,21 @@ namespace Exchange {
             uint32_t height;
         };
 
-        struct IClient : virtual public Core::IUnknown {
+        struct EXTERNAL IClient : virtual public Core::IUnknown {
 
             enum { ID = ID_COMPOSITION_CLIENT };
 
             virtual ~IClient() {}
 
             virtual string Name() const = 0;
-            virtual void Kill() = 0;
             virtual void Opacity(const uint32_t value) = 0;
             virtual uint32_t Geometry(const Rectangle& rectangle) = 0;
             virtual Rectangle Geometry() const = 0; 
             virtual uint32_t ZOrder(const uint16_t index) = 0;
+            virtual uint32_t ZOrder() const = 0;
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_COMPOSITION_NOTIFICATION };
 
             virtual ~INotification() {}
@@ -89,7 +89,7 @@ namespace Exchange {
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
         // Set and get output resolution
-        virtual void Resolution(const ScreenResolution) = 0;
+        virtual uint32_t Resolution(const ScreenResolution) = 0;
         virtual ScreenResolution Resolution() const = 0;
     };
 }

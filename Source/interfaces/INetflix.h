@@ -26,23 +26,24 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface gives direct access to a Netflix instance
-    struct INetflix : virtual public Core::IUnknown {
+    struct EXTERNAL INetflix : virtual public Core::IUnknown {
 
         enum { ID = ID_NETFLIX };
 
-        enum state {
+        enum state : uint16_t {
             PLAYING = 0x0001,
             STOPPED = 0x0002,
             SUSPENDING = 0x0004
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_NETFLIX_NOTIFICATION };
 
             virtual ~INotification() {}
 
             // Signal changes on the subscribed namespace..
             virtual void StateChange(const INetflix::state state) = 0;
+            virtual void Exit(const uint32_t exitCode) = 0;
         };
 
         virtual ~INetflix() {}

@@ -15,20 +15,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TARGET  ${NAMESPACE}ProcessContainers)
+set(TARGET ${NAMESPACE}ProcessContainers)
 
 # Backend options
 option(PROCESSCONTAINERS_LXC
         "Use LXC backend." OFF)
 option(PROCESSCONTAINERS_RUNC
         "Use RunC backend." OFF)
+option(PROCESSCONTAINERS_CRUN
+        "Use CRun backend." OFF)
 option(PROCESSCONTAINERS_CLIB
         "Use c-library nackend." OFF)
 
 
 # Construct a library object
 add_library(${TARGET} SHARED
-        ProcessContainer.cpp
         Module.cpp
         )
 
@@ -36,7 +37,11 @@ add_library(${TARGET} SHARED
 if (PROCESSCONTAINERS_LXC)
         target_sources(${TARGET} PRIVATE implementations/LXCImplementation/LXCImplementation.cpp)
 elseif(PROCESSCONTAINERS_RUNC)
-        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
+        target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp
+        )
+elseif(PROCESSCONTAINERS_CRUN)
+        target_sources(${TARGET} PRIVATE implementations/CRunImplementation/CRunImplementation.cpp
+        )
 elseif(PROCESSCONTAINERS_CLIB)
         target_sources(${TARGET} PRIVATE implementations/RunCImplementation/RunCImplementation.cpp)
 endif()
@@ -55,7 +60,7 @@ set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         FRAMEWORK FALSE
-        PUBLIC_HEADER "${PUBLIC_HEADERS}" # specify the public headers
+        PUBLIC_HEADER "${PUBLIC_HEADERS}"
         VERSION ${VERSION}
         SOVERSION ${VERSION_MAJOR}
         )
@@ -67,18 +72,31 @@ target_include_directories( ${TARGET}
           $<INSTALL_INTERFACE:include>
         )
 
-find_package(LXC REQUIRED)
+if (PROCESSCONTAINERS_LXC)
+        find_package(LXC REQUIRED)
+        target_link_libraries(${TARGET}
+                PRIVATE
+                LXC::LXC
+                CompileSettingsDebug::CompileSettingsDebug
+                )
 
-target_link_libraries(${TARGET}
-        PRIVATE
-        LXC::LXC
-        CompileSettingsDebug::CompileSettingsDebug
-        )
+        target_include_directories( ${TARGET}
+                PRIVATE
+                LXC::LXC
+                )
+elseif (PROCESSCONTAINERS_CRUN)
+        find_package(LibCRUN REQUIRED)
 
-target_include_directories( ${TARGET}
-        PRIVATE
-        LXC::LXC
+        target_link_libraries(${TARGET}
+                PRIVATE
+                libcrun::libcrun
+                )
+
+        target_include_directories( ${TARGET}
+                PRIVATE
+                libcrun::libcrun
         )
+endif()
 
 install(
         TARGETS ${TARGET}  EXPORT ${TARGET}Targets  # for downstream dependencies

@@ -17,25 +17,17 @@
  * limitations under the License.
  */
  
-#ifndef __MODULE_OCDMINTERFACE_H
-#define __MODULE_OCDMINTERFACE_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME OpenCDM
 #endif
 
-#include "../core/core.h"
-#include "../com/com.h"
+#include <core/core.h>
+#include <com/com.h>
 
-#ifdef __WINDOWS__
+#if defined(__WINDOWS__) && defined(OCDM_EXPORTS)
 #undef EXTERNAL
-#ifdef OCDM_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
-#define EXTERNAL
 #endif
 
-#endif // __MODULE_OCDMINTERFACE_H

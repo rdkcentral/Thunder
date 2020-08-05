@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IAVNClient.h" />
+    <ClInclude Include="IAVSClient.h" />
     <ClInclude Include="IBluetooth.h" />
     <ClInclude Include="IBrowser.h" />
     <ClInclude Include="ICapture.h" />
@@ -56,11 +57,14 @@
     <ClInclude Include="IComposition.h" />
     <ClInclude Include="IContentDecryption.h" />
     <ClInclude Include="IDictionary.h" />
+    <ClInclude Include="IDisplayInfo.h" />
     <ClInclude Include="IDRM.h" />
     <ClInclude Include="Ids.h" />
     <ClInclude Include="IDsgccClient.h" />
     <ClInclude Include="IExternal.h" />
+    <ClInclude Include="IExternalBase.h" />
     <ClInclude Include="IGuide.h" />
+    <ClInclude Include="IInputSwitch.h" />
     <ClInclude Include="IIPNetwork.h" />
     <ClInclude Include="IKeyHandler.h" />
     <ClInclude Include="IMemory.h" />
@@ -72,6 +76,7 @@
     <ClInclude Include="IProvisioning.h" />
     <ClInclude Include="IRPCLink.h" />
     <ClInclude Include="IRtspClient.h" />
+    <ClInclude Include="IStream.h" />
     <ClInclude Include="IStreaming.h" />
     <ClInclude Include="ISwitchBoard.h" />
     <ClInclude Include="ISystemCommands.h" />
@@ -176,6 +181,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -207,6 +213,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -236,6 +243,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -267,6 +275,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;NDEBUG;INTERFACES_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..;$(SolutionDir)thirdparty/windows/include;$(SolutionDir)thirdparty/windows/include/zlib</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

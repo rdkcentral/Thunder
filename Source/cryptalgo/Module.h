@@ -17,25 +17,16 @@
  * limitations under the License.
  */
  
-#ifndef __MODULE_CRYPTALGO_H
-#define __MODULE_CRYPTALGO_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME Crypto
 #endif
 
-#include "../core/core.h"
+#include <core/core.h>
 
+#if defined(__WINDOWS__) && defined(CRYPTALGO_EXPORTS)
 #undef EXTERNAL
-
-#ifdef __WINDOWS__
-#ifdef CRYPTALGO_EXPORTS
 #define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
-#define EXTERNAL
 #endif
 
-#endif // __MODULE_CRYPTALGO_H

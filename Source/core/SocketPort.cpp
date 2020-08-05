@@ -484,8 +484,11 @@ namespace Core {
         }
 
         if ((receiveBuffer != 0) || (sendBuffer != 0)) {
-            uint8_t* allocatedMemory = static_cast<uint8_t*>(::malloc(sendBuffer + receiveBuffer));
+            uint8_t* allocatedMemory = static_cast<uint8_t*>(::calloc(sendBuffer + receiveBuffer, 1));
             if (sendBuffer != 0) {
+                if (m_SendBuffer != nullptr) {
+                    free(m_SendBuffer);
+                }
                 m_SendBuffer = allocatedMemory;
             }
             if (receiveBuffer != 0) {
@@ -511,7 +514,7 @@ namespace Core {
 #endif
 
         if ((l_Result = ::socket(localNode.Type(), SocketMode(), localNode.Extension())) == INVALID_SOCKET) {
-            TRACE_L1("Error on creating socket SOCKET. Error %d", __ERRORRESULT__);
+            TRACE_L1("Error on creating socket SOCKET. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
         } else if (SetNonBlocking(l_Result) == false) {
 #ifdef __WINDOWS__
             ::closesocket(l_Result);
@@ -527,7 +530,9 @@ namespace Core {
             int optval = 1;
             socklen_t optionLength = sizeof(int);
 
-            ::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength);
+            if (::setsockopt(l_Result, SOL_SOCKET, SO_REUSEADDR, (const char*)&optval, optionLength) < 0) {
+                TRACE_L1("Error on setting SO_REUSEADDR option. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
+            }
         }
 #ifndef __WINDOWS__
         else if ((localNode.Type() == NodeId::TYPE_DOMAIN) && (m_SocketType == SocketPort::LISTEN)) {
@@ -536,11 +541,10 @@ namespace Core {
                 int report = __ERRORRESULT__;
 
                 if (report != 2) {
-
                     ::close(l_Result);
                     l_Result = INVALID_SOCKET;
 
-                    TRACE_L1("Error on unlinking domain socket. Error %d", report);
+                    TRACE_L1("Error on unlinking domain socket. Error %d: %s", report, strerror(report));
                 }
             }
         }
@@ -579,7 +583,7 @@ namespace Core {
                             BufferAlignment(l_Result);
                             return (l_Result);
                         } else {
-                            TRACE_L1("Error on port socket CHMOD. Error %d", __ERRORRESULT__);
+                            TRACE_L1("Error on port socket CHMOD. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                         }
                     } else
 #endif
@@ -588,7 +592,7 @@ namespace Core {
                         return (l_Result);
                     }
                 } else {
-                    TRACE_L1("Error on port socket BIND. Error %d", __ERRORRESULT__);
+                    TRACE_L1("Error on port socket BIND. Error %d: %s", __ERRORRESULT__, strerror(__ERRORRESULT__));
                 }
             } else {
                 BufferAlignment(l_Result);
@@ -794,6 +798,14 @@ namespace Core {
         }
     }
 
+    /* virtual */ int32_t SocketPort::Read(uint8_t buffer[], const uint16_t length) const {
+        return (::recv(m_Socket, reinterpret_cast<char*>(buffer), length, 0));
+    }
+
+    /* virtual */ int32_t SocketPort::Write(const uint8_t buffer[], const uint16_t length) {
+        return (::send(m_Socket, reinterpret_cast<const char*>(buffer), length, 0));
+    }
+
     void SocketPort::Write()
     {
         bool dataLeftToSend = true;
@@ -820,15 +832,13 @@ namespace Core {
                     ASSERT(m_RemoteNode.IsValid() == true);
 
                     sendSize = ::sendto(m_Socket,
-                        reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
+                        reinterpret_cast<const char*>(&(m_SendBuffer[m_SendOffset])),
                         m_SendBytes - m_SendOffset, 0,
                         static_cast<const NodeId&>(m_RemoteNode),
                         m_RemoteNode.Size());
 
                 } else {
-                    sendSize = ::send(m_Socket,
-                        reinterpret_cast<const char*>(&m_SendBuffer[m_SendOffset]),
-                        m_SendBytes - m_SendOffset, 0);
+                    sendSize = Write(&(m_SendBuffer[m_SendOffset]), m_SendBytes - m_SendOffset);
                 }
 
                 if (sendSize >= 0) {
@@ -839,7 +849,7 @@ namespace Core {
                     if ((l_Result == __ERROR_WOULDBLOCK__) || (l_Result == __ERROR_AGAIN__) || (l_Result == __ERROR_INPROGRESS__)) {
                         m_State |= SocketPort::WRITE;
                     } else {
-                        printf("Write exception. %d\n", l_Result);
+                        printf("Write exception %d: %s\n", l_Result, strerror(__ERRORRESULT__));
                         m_State |= SocketPort::EXCEPTION;
                         StateChange();
                     }
@@ -875,9 +885,7 @@ namespace Core {
 
                 m_ReceivedNode = l_Remote;
             } else {
-                l_Size = ::recv(m_Socket,
-                    reinterpret_cast<char*>(&m_ReceiveBuffer[m_ReadBytes]),
-                    m_ReceiveBufferSize - m_ReadBytes, 0);
+                l_Size = Read(&(m_ReceiveBuffer[m_ReadBytes]), m_ReceiveBufferSize - m_ReadBytes);
             }
 
             if (l_Size == 0) {

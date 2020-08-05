@@ -27,18 +27,25 @@ namespace WPEFramework {
 
 namespace Exchange {
 
-    // This interface gives direct access to a Bluetooth server instance, running as a plugin in the framework.
-    struct IBluetooth : virtual public Core::IUnknown {
+    struct EXTERNAL IBluetooth : virtual public Core::IUnknown {
 
         enum { ID = ID_BLUETOOTH };
 
         virtual ~IBluetooth() {}
 
-        struct IDevice : virtual public Core::IUnknown {
+        enum pairingcapabilities : uint8_t {
+            DISPLAY_ONLY,
+            DISPLAY_YES_NO,
+            KEYBOARD_ONLY,
+            NO_INPUT_NO_OUTPUT,
+            KEYBOARD_DISPLAY,
+        };
+
+        struct EXTERNAL IDevice : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_DEVICE };
 
-            struct IIterator : virtual public Core::IUnknown {
+            struct EXTERNAL IIterator : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_DEVICE_ITERATOR };
 
@@ -50,46 +57,85 @@ namespace Exchange {
                 virtual IDevice* Current() = 0;
             };
 
-            struct ICallback : virtual public Core::IUnknown {
+            struct EXTERNAL ICallback : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_CALLBACK };
 
-                virtual ~ICallback () {}
+                virtual ~ICallback() {}
 
-                virtual void Updated () = 0;
+                virtual void Updated() = 0;
+            };
+
+            struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
+
+                enum { ID = ID_BLUETOOTH_SECURITYCALLBACK };
+
+                virtual ~ISecurityCallback() {}
+
+                virtual void PasskeyRequest() = 0;
+                virtual void PasskeyConfirmRequest(const uint32_t passkey);
             };
 
             enum type : uint8_t {
                 ADDRESS_BREDR,
                 ADDRESS_LE_PUBLIC,
                 ADDRESS_LE_RANDOM
-            };
 
-            enum capabilities : uint8_t {
-                DISPLAY_ONLY = 0x00,
-                DISPLAY_YES_NO = 0x01,
-                KEYBOARD_ONLY = 0x02,
-                NO_INPUT_NO_OUTPUT = 0x03,
-                KEYBOARD_DISPLAY = 0x04,
             };
 
             virtual ~IDevice() {}
 
-            virtual type Type () const = 0;
+            virtual type Type() const = 0;
+
             virtual bool IsValid() const = 0;
             virtual bool IsBonded() const = 0;
             virtual bool IsConnected() const = 0;
+
             virtual string LocalId() const = 0;
             virtual string RemoteId() const = 0;
             virtual string Name() const = 0;
-            virtual uint32_t Pair(const capabilities) = 0;
+            virtual uint32_t Class() const = 0;
+
+            virtual uint32_t Pair(const pairingcapabilities capabilities, const uint16_t timeout /* sec */) = 0;
+            virtual uint32_t AbortPairing() = 0;
             virtual uint32_t Unpair() = 0;
+
+            virtual void Passkey(const uint32_t passkey) = 0;
+            virtual void ConfirmPasskey(const bool confirm) = 0;
+
             virtual uint32_t Connect() = 0;
-            virtual uint32_t Disconnect(const uint16_t reason) = 0;
+            virtual uint32_t Disconnect() = 0;
+
             virtual uint32_t Callback(ICallback* callback) = 0;
+            virtual uint32_t Callback(ISecurityCallback* callback) = 0;
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL IClassic : virtual public Core::IUnknown {
+
+            enum { ID = ID_BLUETOOTH_CLASSIC };
+
+            struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
+
+                enum { ID = ID_BLUETOOTH_CLASSIC_SECURITYCALLBACK };
+
+                virtual ~ISecurityCallback() {}
+
+                virtual void PINCodeRequest() = 0;
+            };
+
+            virtual void PINCode(const string& pinCode) = 0;
+
+            virtual uint32_t Callback(ISecurityCallback* callback) = 0;
+        };
+
+        struct EXTERNAL ILowEnergy : virtual public Core::IUnknown {
+
+            enum { ID = ID_BLUETOOTH_LOWENERGY };
+
+            virtual bool IsUUIDSupported(const string& uuid) const = 0;
+        };
+
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
 
             enum { ID = ID_BLUETOOTH_NOTIFICATION };
 
@@ -98,13 +144,15 @@ namespace Exchange {
             virtual void Update(IDevice* device);
         };
 
-        virtual bool IsScanning() const = 0;
         virtual uint32_t Register(INotification* notification) = 0;
         virtual uint32_t Unregister(INotification* notification) = 0;
 
+        virtual bool IsScanning() const = 0;
         virtual bool Scan(const bool enable) = 0;
-        virtual IDevice* Device(const string&) = 0;
+
+        virtual IDevice* Device(const string& address) = 0;
         virtual IDevice::IIterator* Devices() = 0;
     };
 }
+
 }

@@ -24,7 +24,6 @@
 #include "SocketPort.h"
 #include "Sync.h"
 
-
 namespace WPEFramework {
 namespace Core {
 
@@ -96,6 +95,7 @@ namespace Core {
         void Ring()
         {
             _connectPoint.Ring();
+            _signal.SetEvent();
         }
         void Acknowledge()
         {
@@ -103,7 +103,6 @@ namespace Core {
         }
         uint32_t Wait(const uint32_t waitTime) const
         {
-
             uint32_t result = ERROR_UNAVAILABLE;
 
             if (_connectPoint.Bind() == true) {
@@ -112,9 +111,9 @@ namespace Core {
 
             return (result);
         }
-		void Relinquish() {
+        void Relinquish() {
             _connectPoint.Unbind();
-		}
+        }
 
     private:
         void Ringing()
