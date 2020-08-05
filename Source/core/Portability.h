@@ -596,9 +596,8 @@ namespace Core {
 
     class Void {
     public:
-        inline Void() {}
-        template <typename ARG1>
-        inline Void(ARG1) {}
+        template <typename... Args>
+        inline Void(Args&&...) {}
         inline Void(const Void&) {}
         inline ~Void() {}
 

@@ -94,7 +94,7 @@
             "Enterprise"
           ],
           "example": "WPA_WPA2",
-          "description": "Type of protection. WPA_WPA2 means both WPA and WPA2 types are allowed"
+          "description": "Type of protection. WPA_WPA2 means WPA, WPA2 and mixed types are allowed"
         },
         "hidden": {
           "type": "boolean",
@@ -206,7 +206,15 @@
         },
         {
           "description": "Returned when connection fails if there is no associated bssid to connect and not defined as AccessPoint. Rescan and try to connect",
-          "$ref": "#/common/errors/badrequest"
+          "$ref": "#/common/errors/unavailable"
+        },
+        {
+          "description": "Returned when connection is attempted with wrong password",
+          "$ref": "#/common/errors/invalidsignature"
+        },
+        {
+          "description": "Returned when connection already exists",
+          "$ref": "#/common/errors/alreadyconnected"
         },
         {
           "description": "Returned when connection attempt fails for other reasons",

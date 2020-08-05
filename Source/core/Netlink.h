@@ -305,7 +305,7 @@ namespace Core {
         uint32_t _ack;
     };
 
-    class SocketNetlink : public Core::SocketDatagram {
+    class EXTERNAL SocketNetlink : public Core::SocketDatagram {
     private:
         SocketNetlink(const SocketNetlink&) = delete;
         SocketNetlink& operator=(const SocketNetlink&) = delete;
