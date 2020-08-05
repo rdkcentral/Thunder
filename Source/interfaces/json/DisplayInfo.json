@@ -47,6 +47,11 @@
             "size": 32,
             "example": 720
           },
+          "atmossupported": {
+            "description": "Dolby ATMOS support of the connected HDMI display",
+            "type": "boolean",
+            "example": false
+          },
           "hdcpprotection": {
             "description": "HDCP Protection",
             "type": "string",
@@ -67,6 +72,7 @@
           "connected",
           "width",
           "height",
+          "atmossupported",
           "hdcpprotection",
           "hdrtype"
         ]

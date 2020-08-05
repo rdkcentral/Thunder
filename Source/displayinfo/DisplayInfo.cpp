@@ -362,6 +362,11 @@ public:
         ASSERT(_displayConnection != nullptr);
         return _displayConnection->VerticalFreq();
     }
+    bool IsAtmosSupported() const
+    {
+        ASSERT(_displayConnection != nullptr);
+        return _displayConnection->IsAtmosSupported();
+    }
     Exchange::IConnectionProperties::HDRType HDR() const
     {
         ASSERT(_displayConnection != nullptr);
@@ -444,6 +449,11 @@ uint32_t displayinfo_height(struct displayinfo_type* displayinfo)
 uint32_t displayinfo_vertical_frequency(struct displayinfo_type* displayinfo)
 {
     return reinterpret_cast<DisplayInfo*>(displayinfo)->VerticalFreq();
+}
+
+bool displayinfo_is_atmos_supported(struct displayinfo_type* displayinfo)
+{
+    return reinterpret_cast<DisplayInfo*>(displayinfo)->IsAtmosSupported();
 }
 
 displayinfo_hdr_t displayinfo_hdr(struct displayinfo_type* displayinfo)

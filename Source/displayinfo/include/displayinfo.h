@@ -178,6 +178,15 @@ EXTERNAL uint32_t displayinfo_height(struct displayinfo_type* instance);
 EXTERNAL uint32_t displayinfo_vertical_frequency(struct displayinfo_type* instance);
 
 /**
+ * \brief Checks if Dolby ATMOS is enabled.
+ * 
+ * \param instance Instance of \ref displayinfo_type.
+ * 
+ * \return true if Dolby ATMOS is enabled, false otherwise.
+ **/
+EXTERNAL bool displayinfo_is_atmos_supported(struct displayinfo_type* instance);
+
+/**
  * \brief Get the current HDR system of the connected display  
  * 
  * \param instance Instance of \ref displayinfo_type.
