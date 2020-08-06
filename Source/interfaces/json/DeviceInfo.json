@@ -6,7 +6,40 @@
     "class": "DeviceInfo",
     "description": "DeviceInfo JSON-RPC interface"
   },
+  "definitions": {
+    "cpuloadavgs": {
+      "description": "cpu 1min, 5min,15min load avg",
+      "type": "object",
+      "properties": {
+        "avg1min": {
+          "type": "number",
+          "size": 64,
+          "example": 789132680,
+          "description": "1min cpuload average"
+        },
+        "avg5min": {
+          "type": "number",
+          "size": 64,
+          "example": 789132680,
+          "description": "5min cpuload average"
+        },
+        "avg15min": {
+           "type": "number",
+           "size": 64,
+           "example": 789132680,
+           "description": "15min cpuload average"
+        }
+      },
+      "required": [
+        "avg1min",
+        "avg5min",
+        "avg15min"
+      ]
+  
+    }
+  },
   "properties": {
+
     "systeminfo": {
       "summary": "System general information",
       "readonly": true,
@@ -36,6 +69,18 @@
             "type": "number",
             "size": 64
           },
+          "totalswap": {
+            "description": "Total swap space (in bytes)",
+            "example": 789132680,
+            "type": "number",
+            "size": 64
+          },
+          "freeswap": {
+            "description": "swap space still available (in bytes)",
+            "example": 789132680,
+            "type": "number",
+            "size": 64
+          },
           "devicename": {
             "description": "Host name",
             "example": "buildroot",
@@ -45,6 +90,10 @@
             "description": "Current CPU load (percentage)",
             "example": "2",
             "type": "string"
+          },
+          "cpuloadavg": {
+            "description": "CPU load average",
+            "$ref": "#/definitions/cpuloadavgs"
           },
           "serialnumber": {
             "description": "Device serial number",
@@ -62,8 +111,11 @@
           "uptime",
           "totalram",
           "freeram",
+          "totalswap",
+          "freeswap",
           "devicename",
           "cpuload",
+          "cpuloadavg",
           "serialnumber",
           "time"
         ]
