@@ -172,8 +172,14 @@ namespace Core {
         result[1] = hex_chars[object[0] & 0xF];
 
         for (uint16_t i = 0, j = index; i < length; i++) {
-            result[j++] = hex_chars[object[i] >> 4];
-            result[j++] = hex_chars[object[i] & 0xF];
+            if ((object[i] == '\\') && ((i + 3) < length) && (object[i + 1] == 'x')) {
+                result[j++] = object[i + 2];
+                result[j++] = object[i + 3];
+                i += 3;
+            } else {
+                result[j++] = hex_chars[object[i] >> 4];
+                result[j++] = hex_chars[object[i] & 0xF];
+            }
         }
     }
 
