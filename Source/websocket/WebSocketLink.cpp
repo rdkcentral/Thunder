@@ -175,7 +175,7 @@ namespace Web {
                         receivedSize = _pendingReceiveBytes;
                     }
 
-                    while (_pendingReceiveBytes != 0) {
+                    for (uint16_t tmp = receivedSize; _pendingReceiveBytes != 0 && tmp != 0; --tmp) {
                         *source = (*source ^ _scrambleKey[(_progressInfo & 0x3)]);
                         source++;
                         _progressInfo = ((_progressInfo + 1) & 0x03) | (_progressInfo & 0xFC);
