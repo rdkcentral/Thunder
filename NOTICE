@@ -83,3 +83,6 @@ Licensed under the BSD-2 license
 Copyright (C) 2014 Igalia S.L.
 Licensed under the BSD-2 license
 
+Hash.cpp includes sha256 code from Brad Conte (brad AT bradconte.com)
+This code is released into the public domain free of any restrictions.
+
