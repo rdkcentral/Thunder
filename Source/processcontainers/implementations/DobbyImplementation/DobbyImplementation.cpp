@@ -42,7 +42,7 @@ namespace ProcessContainers {
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
-            Core::File configFile(path + "/Container/dobbyspec.json");
+            Core::File configFile(path + "/Container" + CONTAINER_NAME);
             TRACE_L1("searching %s container at %s", id.c_str(), configFile.Name().c_str());
             if (configFile.Exists()) {
                 TRACE_L1("Found %s container!", id.c_str());
@@ -109,7 +109,7 @@ namespace ProcessContainers {
                     if (!stoppedSuccessfully) {
                         TRACE_L1("Failed to destroy container, internal Dobby error. id: %s descriptor: %d", name.c_str(), c.first);
                     }
-                    
+
                     break;
                 }
             }
@@ -119,7 +119,7 @@ namespace ProcessContainers {
     bool DobbyContainerAdministrator::ContainerNameTaken(const string& name)
     {
         bool result = false;
-        
+
         // Get the running containers from Dobby
         std::list<std::pair<int32_t, std::string>> runningContainers;
         runningContainers = mDobbyProxy->listContainers();
@@ -172,10 +172,8 @@ namespace ProcessContainers {
     {
         uint32_t returnedPid = 0;
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
-        
+
         if (_pid.IsSet() == false) {
-            
-            
             std::string containerInfoString = admin.mDobbyProxy->getContainerInfo(_descriptor);
 
             if (containerInfoString.empty())
@@ -190,13 +188,21 @@ namespace ProcessContainers {
                 }
 
                 JsonArray pids = containerInfoJson["pids"].Array();
-                
+
                 if(pids.Length() > 0) {
                     // first PID is the DobbyInit process which launches the container
                     returnedPid = pids[0].Number();
                     TRACE_L1("%s container PID is: %d", _name.c_str(), returnedPid);
+
+                    // remember PID so it doesn't need to be read again
+                    _pid = returnedPid;
                 }
             }
+        }
+        else
+        {
+            // Value was already read before, use this value
+            returnedPid = _pid;
         }
         return returnedPid;
     }
@@ -205,7 +211,6 @@ namespace ProcessContainers {
     {
         bool result = false;
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
-        
 
         // We got a state back successfully, work out what that means in English
         switch (static_cast<IDobbyProxyEvents::ContainerState>(admin.mDobbyProxy->getContainerState(_descriptor)))
@@ -244,18 +249,18 @@ namespace ProcessContainers {
         std::list<int> emptyList;
 
         // construct the full command to run with all the arguments
-        std::string fullCommand = "/usr/local/bin/" + command;        
+        std::string fullCommand = "/usr/bin/" + command;
         while (parameters.Next()) {
             fullCommand += " " + parameters.Current();
         }
 
         // Read the dobby spec json file
-        std::string path = _path + "/dobbyspec.json";
+        std::string path = _path + CONTAINER_NAME;
         std::ifstream file(path, std::ifstream::binary);
         if(!file)
         {
             TRACE_L1("coult not open spec file! %s", path.c_str());
-            return result;   
+            return result;
         }
 
         file.seekg(0, std::ifstream::end);
@@ -264,12 +269,12 @@ namespace ProcessContainers {
 
         char* buffer = new char[length];
         file.read(buffer, length);
-        
+
         std::string specString(buffer, length);
         delete [] buffer;
 
         _descriptor = admin.mDobbyProxy->startContainerFromSpec(_name, specString, emptyList, fullCommand);
-        
+
         // startContainer returns -1 on failure
         if (_descriptor <= 0)
         {
@@ -284,6 +289,7 @@ namespace ProcessContainers {
 
     bool DobbyContainer::Stop(const uint32_t timeout /*ms*/)
     {
+        // TODO: add timeout support
         bool result = false;
         auto& admin = static_cast<DobbyContainerAdministrator&>(DobbyContainerAdministrator::Instance());
 

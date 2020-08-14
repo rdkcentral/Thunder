@@ -31,6 +31,9 @@
 
 namespace WPEFramework {
 namespace ProcessContainers {
+
+    const string CONTAINER_NAME = "/dobbyspec.json";
+
     using DobbyContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
     class DobbyContainer : public DobbyContainerMixins {
@@ -68,7 +71,7 @@ namespace ProcessContainers {
         DobbyContainerAdministrator();
         DobbyContainerAdministrator(const DobbyContainerAdministrator&) = delete;
         DobbyContainerAdministrator& operator=(const DobbyContainerAdministrator&) = delete;
-        
+
 
         std::shared_ptr<AI_IPC::IIpcService> mIpcService; // Ipc Service instance
         std::shared_ptr<IDobbyProxy> mDobbyProxy; // DobbyProxy instance
