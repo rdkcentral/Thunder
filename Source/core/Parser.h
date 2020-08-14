@@ -49,7 +49,8 @@ namespace Core {
             EXTERNALPASS = 0x020,
             UPPERCASE = 0x040,
             LOWERCASE = 0x080,
-            SPLITCHAR = 0x100
+            SPLITCHAR = 0x100,
+            PARSESTOP = 0x200
         };
 
         ParserType(HANDLER& parent)
@@ -110,19 +111,29 @@ namespace Core {
 
             while (current < maxLength) {
                 // Pass through if requested..
+
                 while (((_state & EXTERNALPASS) != 0) && (current < maxLength)) {
                     uint16_t passOn = (static_cast<uint32_t>(maxLength - current) > _byteCounter ? static_cast<uint16_t>(_byteCounter) : (maxLength - current));
 
-                    _parent.Parse(&stream[current], passOn);
+                    if (_parent.Parse(&stream[current], passOn)) {
 
-                    // It might be chunked passthrough
-                    _byteCounter -= passOn;
-                    current += passOn;
+                        // It might be chunked passthrough
+                        _byteCounter -= passOn;
+                        current += passOn;
 
-                    if (_byteCounter == 0) {
-                        _state &= (~EXTERNALPASS);
+                        if (_byteCounter == 0) {
+                            _state &= (~EXTERNALPASS);
+                            _parent.EndOfPassThrough();
+                        }
+                    } else {
                         _parent.EndOfPassThrough();
+                        _state = PARSESTOP;
+                        break;
                     }
+                }
+
+                if ((_state & PARSESTOP) != 0) {
+                    break;
                 }
 
                 // Skip a line if required...

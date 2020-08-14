@@ -1278,10 +1278,11 @@ namespace Web
         return (current);
     }
 
-    void Request::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
+    uint16_t Request::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
     {
         ASSERT(_current != nullptr);
 
+        uint16_t parsed = 0;
         if (_current->_body.IsValid()) {
 
             // Depending on the ContentEncoding, we need to prepare the data..
@@ -1304,13 +1305,15 @@ namespace Web
                         _zlibResult = ret;
                     }
 
-                    _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
+                    parsed = _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                 } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
             } else if (_zlibResult == static_cast<uint32_t>(~0)) {
-                _current->_body->Deserialize(stream, maxLength);
+                parsed = _current->_body->Deserialize(stream, maxLength);
             }
         }
+
+        return parsed;
     }
 
     void Request::Deserializer::Parse(const string& buffer)
@@ -1662,10 +1665,11 @@ namespace Web
         }
     }
 
-    void Response::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
+    uint16_t Response::Deserializer::Parse(const uint8_t stream[], const uint16_t maxLength)
     {
         ASSERT(_current != nullptr);
 
+        uint16_t parsed = 0;
         if (_current->_body.IsValid()) {
 
             // Depending on the ContentEncoding, we need to prepare the data..
@@ -1688,13 +1692,15 @@ namespace Web
                         _zlibResult = ret;
                     }
 
-                    _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
+                    parsed = _current->_body->Deserialize(out, static_cast<uint16_t>(sizeof(out) - _zlib.avail_out));
 
                 } while ((_zlib.avail_out == 0) && (_zlibResult == Z_OK));
             } else if (_zlibResult == static_cast<uint32_t>(~0)) {
-                _current->_body->Deserialize(stream, maxLength);
+                parsed = _current->_body->Deserialize(stream, maxLength);
             }
         }
+
+        return parsed;
     }
 
     void Response::Deserializer::Parse(const string& buffer)
