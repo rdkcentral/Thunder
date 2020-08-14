@@ -225,6 +225,7 @@ namespace PluginHost {
         // This method will return a nullptr if it is NOT in the main process.
         /* @stubgen:stub */
         virtual ICOMLink* COMLink() = 0;
+        virtual void SetSubsystem(ISubSystem::subsystem ss, Core::IUnknown* info) {}
 
         inline void Register(RPC::IRemoteConnection::INotification* sink)
         {

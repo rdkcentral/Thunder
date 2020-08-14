@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef __ISYSTEMINFO_H
-#define __ISYSTEMINFO_H
+#ifndef __ISUBSYSTEM_H
+#define __ISUBSYSTEM_H
 
 #include <com/com.h>
 
@@ -198,9 +198,11 @@ namespace PluginHost {
         virtual string BuildTreeHash() const = 0;
 
         // Events setter and getters.
+        virtual void Set(const subsystem type, Core::IUnknown* information, string plugin) = 0;
         virtual void Set(const subsystem type, Core::IUnknown* information) = 0;
         virtual const Core::IUnknown* Get(const subsystem type) const = 0;
         virtual bool IsActive(const subsystem type) const = 0;
+        virtual uint32_t SubSystems(const string &callsign) const { return 0;}
 
         template <typename REQUESTEDINTERFACE>
         const REQUESTEDINTERFACE* Get() const
@@ -229,4 +231,4 @@ namespace Core {
 
 } // namespace WPEFramework
 
-#endif // __ISYSTEMINFO_H
+#endif // __ISUBSYSTEM_H

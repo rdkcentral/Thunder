@@ -270,10 +270,29 @@ namespace PluginHost {
         // Software information
         virtual string BuildTreeHash() const override;
 
+
         // Event methods
-        virtual void Set(const subsystem type, Core::IUnknown* information) override
+        void Set(const subsystem type, Core::IUnknown* information) override
+        {
+            Set(type, information, string(""));
+        }
+
+        void Set(const subsystem type, Core::IUnknown* information, string callsign) override
         {
             bool sendUpdate(type < NEGATIVE_START ? IsActive(type) == false : IsActive(static_cast<subsystem>(type - NEGATIVE_START)) == true);
+
+            if (type < END_LIST) {
+                if (!callsign.empty()) {
+                    TRACE_L1("Adding '%s' provider of %x", callsign.c_str(), type);
+                    _provider[type] = callsign;
+                }
+            } else {
+                subsystem ss = static_cast<PluginHost::ISubSystem::subsystem>(uint32_t(type) - uint32_t(NEGATIVE_START));
+                if (ss >= 0 && ss < END_LIST) {
+                    _provider[ss] = "";
+                    TRACE_L1("Removing '%s' provider of %x", callsign.c_str(), ss);
+                }
+            }
 
             switch (type) {
             case PLATFORM: {
@@ -653,6 +672,16 @@ namespace PluginHost {
         {
             return (_flags);
         }
+        uint32_t SubSystems(const string &callsign) const override
+        {
+            uint32_t result = 0;
+            for (int i = 0; i < (int) END_LIST; ++i) {
+                if (_provider[i].compare(callsign) == 0)
+                    result |= (1<<i);
+            }
+
+            return result;
+        }
 
         BEGIN_INTERFACE_MAP(SystemInfo)
         INTERFACE_ENTRY(PluginHost::ISubSystem)
@@ -676,6 +705,7 @@ namespace PluginHost {
         Time* _time;
         IProvisioning* _provisioning;
         uint32_t _flags;
+        string _provider[END_LIST];
     };
 }
 } // namespace PluginHost

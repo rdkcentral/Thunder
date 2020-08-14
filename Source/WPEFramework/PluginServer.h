@@ -633,6 +633,10 @@ namespace PluginHost {
                 {
                     return ((currentSet & _events) ^ _value);
                 }
+                inline uint32_t Value()
+                {
+                    return _value;
+                }
 
             private:
                 uint32_t _events;
@@ -1022,6 +1026,7 @@ namespace PluginHost {
             }
             virtual uint32_t Submit(const uint32_t id, const Core::ProxyType<Core::JSON::IElement>& response) override;
             virtual ISubSystem* SubSystems() override;
+
             virtual void Notify(const string& message) override;
             virtual void* QueryInterface(const uint32_t id) override;
             virtual void* QueryInterfaceByCallsign(const uint32_t id, const string& name) override;
@@ -1043,6 +1048,20 @@ namespace PluginHost {
             {
 
                 return (number.length() > 0) && (std::all_of(number.begin(), number.end(), [](TCHAR item) { return std::isdigit(item); })) && (Service::IsSupported(static_cast<uint8_t>(atoi(number.c_str()))));
+            }
+            inline uint32_t Preconditions() { return _precondition.Value(); }
+            void SetSubsystem(ISubSystem::subsystem type, Core::IUnknown* info)
+            {
+                PluginHost::ISubSystem* subSystem = SubSystems();
+
+                ASSERT(subSystem != nullptr);
+
+                ISubSystem::subsystem ss = static_cast<ISubSystem::subsystem>(type);
+                if (subSystem->IsActive(ss) == false) {
+                    subSystem->Set(ss, info, Callsign());
+                } else {
+                    SYSLOG(Logging::Startup, (_T("Subsystem %x is already Active"), type));   // XXX: Enum type
+                }
             }
 
         private:
@@ -1188,7 +1207,6 @@ namespace PluginHost {
             Condition _precondition;
             Condition _termination;
             uint32_t _activity;
-
             ServiceMap& _administrator;
             static Core::ProxyType<Web::Response> _unavailableHandler;
             static Core::ProxyType<Web::Response> _missingHandler;

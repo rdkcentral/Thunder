@@ -27,6 +27,7 @@
 #include "System.h"
 #include "IPlugin.h"
 #include "IShell.h"
+#include "ISubSystem.h"
 
 namespace WPEFramework {
 namespace PluginHost {
@@ -352,6 +353,8 @@ namespace PluginHost {
         // These are Blocking calls!!!!!
         virtual uint32_t Activate(const PluginHost::IShell::reason) = 0;
         virtual uint32_t Deactivate(const PluginHost::IShell::reason) = 0;
+        virtual void SetSubsystem(ISubSystem::subsystem ss, Core::IUnknown* info) {}
+
 
         inline uint32_t ConfigLine(const string& newConfiguration)
         {

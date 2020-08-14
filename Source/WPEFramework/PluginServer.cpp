@@ -240,22 +240,62 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
     void Server::ServiceMap::Destroy()
     {
         _adminLock.Lock();
+        const uint8_t maxPass = 5;
 
         std::map<const string, Core::ProxyType<Service>>::iterator index(_services.end());
 
-        TRACE_L1("Deactivating %d plugins.", static_cast<uint32_t>(_services.size()));
-
         // First, move them all to deactivated except Controller
         Core::ProxyType<Service> controller (_server.Controller());
-        do {
-            index--;
 
-            ASSERT(index->second.IsValid());
+        for (int pass = 0; pass < maxPass; ++pass) {
+            int count = 0;
+            do {
+                index--;
+                Core::ProxyType<Service> service (index->second);
 
-            if (index->first.c_str() != controller->Callsign()) {
-                index->second->Deactivate(PluginHost::IShell::SHUTDOWN);
-            }
-        } while (index != _services.begin());
+                ASSERT(index->second.IsValid());
+
+                if ((index->first.c_str() != controller->Callsign()) && service->IsActive()) {
+
+                    PluginHost::ISubSystem* interface(SubSystemsInterface());
+                    uint32_t subSystems = interface->SubSystems(service->Callsign());
+
+                    if (pass == 0) {
+                        // 1st pass: deactive plugins with no subsystem
+                        if (subSystems == 0) {
+                            service->Deactivate(PluginHost::IShell::SHUTDOWN);
+                            ++count;
+                        }
+                    } else if (pass == maxPass-1) {
+                        // Last pass deactivate rest
+                        service->Deactivate(PluginHost::IShell::SHUTDOWN);
+                        ++count;
+                    } else {
+                        // Service provided by a plugin is not a precondition (i.e. not in use)
+                        bool inuse = false;
+                        std::map<const string, Core::ProxyType<Service>>::iterator index2(_services.begin());
+                        while (index2 != _services.end() && !inuse) {
+                            Core::ProxyType<Service> service2 (index2->second);
+                            if ((index2->first.c_str() != controller->Callsign()) &&  (service->Callsign() != service2->Callsign()) && service2->IsActive()) {
+                                inuse = (subSystems & service2->Preconditions());
+                                if (inuse) {
+                                    TRACE_L1("Inuse %s Subsystems=%x %s.Preconditions=%x",
+                                        index->first.c_str(), subSystems, service2->Callsign().c_str(), service2->Preconditions() );
+                                }
+                            }
+                            ++index2;
+                        }
+                        if (!inuse) {
+                            service->Deactivate(PluginHost::IShell::SHUTDOWN);
+                            ++count;
+                        }
+                    }
+                }
+            } while (index != _services.begin());
+
+            TRACE_L1("Pass %d Deactivated %d plugins.", pass, count);
+            index = _services.end();
+        }
 
         TRACE_L1("Destructing %d plugins.", static_cast<uint32_t>(_services.size()));
         // Now deactivate controller plugin, once other plugins are deactivated
@@ -471,6 +511,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
             _reason = why;
 
             if (currentState == IShell::ACTIVATED) {
+
                 State(DEACTIVATION);
                 _administrator.StateChange(this);
 
@@ -708,8 +749,8 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
         // Create input handle
         _inputHandler.Initialize(
-            configuration.Input.Type.Value(), 
-            configuration.Input.Locator.Value(), 
+            configuration.Input.Type.Value(),
+            configuration.Input.Locator.Value(),
             configuration.Input.OutputEnabled.Value());
 
         // Initialize static message.
@@ -779,9 +820,9 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
         securityProvider->Release();
 
         Plugin::Controller* controller = _controller->ClassType<Plugin::Controller>();
-        
+
         ASSERT(controller != nullptr);
-        
+
         controller->SetServer(this);
 
         _dispatcher.Run();
