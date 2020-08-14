@@ -42,7 +42,7 @@ namespace ProcessContainers {
         while (searchpaths.Next()) {
             auto path = searchpaths.Current();
 
-            Core::File configFile(path + "/Container" + CONTAINER_NAME);
+            Core::File configFile(path + "/Container" + CONFIG_NAME);
             TRACE_L1("searching %s container at %s", id.c_str(), configFile.Name().c_str());
             if (configFile.Exists()) {
                 TRACE_L1("Found %s container!", id.c_str());
@@ -254,26 +254,8 @@ namespace ProcessContainers {
             fullCommand += " " + parameters.Current();
         }
 
-        // Read the dobby spec json file
-        std::string path = _path + CONTAINER_NAME;
-        std::ifstream file(path, std::ifstream::binary);
-        if(!file)
-        {
-            TRACE_L1("coult not open spec file! %s", path.c_str());
-            return result;
-        }
+        _descriptor = admin.mDobbyProxy->startContainerFromBundle(_name, _path, emptyList, fullCommand);
 
-        file.seekg(0, std::ifstream::end);
-        ssize_t length = file.tellg();
-        file.seekg(0, std::ifstream::beg);
-
-        char* buffer = new char[length];
-        file.read(buffer, length);
-
-        std::string specString(buffer, length);
-        delete [] buffer;
-
-        _descriptor = admin.mDobbyProxy->startContainerFromSpec(_name, specString, emptyList, fullCommand);
 
         // startContainer returns -1 on failure
         if (_descriptor <= 0)

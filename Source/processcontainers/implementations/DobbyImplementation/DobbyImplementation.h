@@ -32,7 +32,7 @@
 namespace WPEFramework {
 namespace ProcessContainers {
 
-    const string CONTAINER_NAME = "/dobbyspec.json";
+    const string CONFIG_NAME = "/config.json";
 
     using DobbyContainerMixins = CGroupContainerInfo<NetworkInfoUnimplemented<BaseRefCount<Lockable<IContainer>>>>;
 
