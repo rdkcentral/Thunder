@@ -24,7 +24,13 @@
 #include "Time.h"
 
 #ifdef __POSIX__
+#include <sys/statvfs.h>
 #define INVALID_HANDLE_VALUE -1
+#if defined(_LARGEFILE64_SOURCE) && defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+#define LSEEK lseek64
+#else
+#define LSEEK lseek
+#endif
 #endif
 
 namespace WPEFramework {
@@ -456,26 +462,26 @@ namespace Core {
 #endif
         }
 
-        bool Position(const bool relative, int32_t offset)
+        bool Position(const bool relative, int64_t offset)
         {
             // Only call these methods if the file is open.
             ASSERT(IsOpen());
 
 #ifdef __POSIX__
-            return (lseek(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
+            return (LSEEK(_handle, offset, (relative ? SEEK_CUR : SEEK_SET)) != -1);
 #endif
 #ifdef __WINDOWS__
             return (::SetFilePointer(_handle, offset, nullptr, (relative ? FILE_CURRENT : FILE_BEGIN)) != INVALID_SET_FILE_POINTER);
 #endif
         }
-        int32_t Position() const
+        int64_t Position() const
         {
-            int32_t result = 0;
+            int64_t result = 0;
 
             // If the file is not open, we are at the beginning :-)
             if (IsOpen()) {
 #ifdef __POSIX__
-                result = lseek(_handle, 0, SEEK_CUR);
+                result = LSEEK(_handle, 0, SEEK_CUR);
                 ASSERT(result >= 0);
 
                 if (result == -1) {
@@ -489,7 +495,7 @@ namespace Core {
                 if (newPos != INVALID_SET_FILE_POINTER) {
                     ASSERT(newPos >= 0);
 
-                    result = (static_cast<int32_t>(newPos));
+                    result = (static_cast<int64_t>(newPos));
                 }
 #endif
             }
@@ -747,6 +753,68 @@ namespace Core {
         WIN32_FIND_DATA _data;
         bool noMoreFiles;
 #endif
+    };
+
+    class EXTERNAL Partition {
+    private:
+#ifdef __POSIX__
+        typedef struct statvfs StatFS;
+#endif
+#ifdef __LINUX__
+#define PARTITION_BUFFER_SIZE 1024
+
+        static constexpr const TCHAR LineSeparator = _T('\n');
+        static constexpr const TCHAR WordSeparator = _T(' ');
+        static constexpr const TCHAR PathSeparator = _T('/');
+
+        static constexpr const TCHAR* MountKey = _T("mounted on ");
+        static constexpr const TCHAR* DeviceKey = _T("device ");
+        static constexpr const TCHAR* MountStatsFileName = _T("/proc/self/mountstats");
+#endif
+
+    public:
+        Partition() = delete;
+        Partition(const Partition& copy) = delete;
+        explicit Partition(const TCHAR path[])
+            : _size(0)
+            , _free(0)
+            , _path(path)
+        {
+            LoadPartitionInfo();
+        }
+        ~Partition()
+        {
+        }
+
+    private:
+        void LoadPartitionInfo();
+        string RemoveRepeatedPathSeparator(const string& path);
+        bool ReadPartitionName(const string& fileName, string& device);
+
+    public:
+        uint64_t Size() const
+        {
+            return _size;
+        }
+        uint64_t Free() const
+        {
+            return _free;
+        }
+        bool IsValid() const
+        {
+            return (_size != 0);
+        }
+        string Name() const
+        {
+            return _name;
+        }
+
+    private:
+        uint64_t _size;
+        uint64_t _free;
+
+        string _name;
+        string _path;
     };
 }
 } // namespace Core

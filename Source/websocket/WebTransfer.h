@@ -100,6 +100,7 @@ namespace Web {
             }
             void Close() {
                 BaseClass::Close(Core::infinite);
+                BaseClass::Flush();
                 if (_request.IsValid() == true) {
                     _request.Release();
                 }
@@ -260,11 +261,15 @@ namespace Web {
 
             return (result);
         }
-        inline uint32_t FileSize() const {
+        inline uint64_t FileSize() const {
             return (_fileBody.Core::File::Size());
         }
-        inline uint32_t Transferred () const {
+        inline uint64_t Transferred () const {
             return (_fileBody.Position());
+        }
+        inline void Close()
+        {
+            _channel.Close();
         }
 
         virtual bool Setup(const Core::URL& remote) = 0;
@@ -292,8 +297,12 @@ namespace Web {
             // We are done, change state
             _adminLock.Lock();
             if (response.IsValid() == true) {
+                _fileBody.Core::File::LoadFileInfo();
                 if (response->ErrorCode == Web::STATUS_NOT_FOUND) {
                     errorCode = Core::ERROR_UNAVAILABLE;
+                } else if (((response->ErrorCode == STATUS_OK) && (_state == TRANSFER_DOWNLOAD)) &&
+                           (((Transferred() == 0) && (FileSize() == 0)) || (FileSize() < Transferred()))) {
+                    errorCode = Core::ERROR_WRITE_ERROR;
                 } else if ((response->ErrorCode == Web::STATUS_UNAUTHORIZED) || 
                           ((_state == TRANSFER_DOWNLOAD) && (_ValidateHash<LINK, FILEBODY>(response->ContentSignature) == false))) {
                     errorCode = Core::ERROR_INCORRECT_HASH;
@@ -316,7 +325,6 @@ namespace Web {
             if ( (_state == TRANSFER_DOWNLOAD) && (element->ContentLength.IsSet() == true)) {
 
                 // Now we have a content length that we are going to receive, time to set it...
-                _fileBody.SetSize(element->ContentLength.Value());
                 _fileBody.Position(false, 0);
             }
 
