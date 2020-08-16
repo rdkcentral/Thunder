@@ -24,6 +24,7 @@
 
 #include "Module.h"
 #include "Portability.h"
+#include "Process.h"
 
 namespace WPEFramework {
 namespace Core {
@@ -215,11 +216,10 @@ namespace Core {
             std::vector<string> _options;
         };
 
-    private:
+    public:
         Process(const Process&) = delete;
         Process& operator=(const Process&) = delete;
 
-    public:
         Process(const bool capture)
             : _argc(0)
             , _parameters(nullptr)
@@ -255,7 +255,7 @@ namespace Core {
         }
 
     public:
-        inline uint32_t Id() const
+        inline process_t Id() const
         {
 #ifdef __WINDOWS__
             return (_info.dwProcessId);
@@ -595,7 +595,8 @@ namespace Core {
             return (_exitCode);
         }
 
-        Process(uint32_t pid)
+        /*
+        Process(process_t pid)
             : _argc(0)
             , _parameters(nullptr)
             , _exitCode(static_cast<uint32_t>(~0))
@@ -614,6 +615,7 @@ namespace Core {
             ::memset(&_info, 0, sizeof(_info));
 #endif
         }
+        */
 
     private:
         uint16_t _argc;
@@ -628,7 +630,7 @@ namespace Core {
         int _stdin;
         int _stdout;
         int _stderr;
-        uint32_t _PID;
+        process_t _PID;
 #endif
     };
 }
