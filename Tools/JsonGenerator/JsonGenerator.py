@@ -2240,7 +2240,7 @@ def CreateDocument(schema, path):
         MdBr()
 
         def mergedict(d1, d2, prop):
-            return {**(d1[prop] if prop in d1 else dict()), **(d2[prop] if prop in d2 else dict())}
+            return dict((d1[prop] if prop in d1 else dict()).items() + (d2[prop] if prop in d2 else dict()).items())
 
         MdHeader("Introduction")
         MdHeader("Scope", 2)

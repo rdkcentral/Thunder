@@ -56,6 +56,17 @@
 * See md5.c for more information.
 */
 
+/* The SHA-256 algorith is updated to handle upto 32 bit size data
+ * Reference: https://github.com/B-Con/crypto-algorithms
+ *
+ * Author:
+ * Brad Conte (brad AT bradconte.com)
+ *
+ * This code is released into the public domain free of any restrictions.
+ * The author requests acknowledgement if the code is used, but does not require it.
+ * This code is provided free of any liability and without any quality claims by the author.
+ *
+ */
 #ifndef __HASH_H
 #define __HASH_H
 
@@ -269,10 +280,11 @@ namespace Crypto {
     class EXTERNAL SHA256 {
     public:
         typedef struct {
-            uint32_t tot_len;
+            uint64_t tot_len;
             uint32_t len;
-            uint8_t block[2 * (512 / 8)];
             uint32_t h[8];
+            uint8_t block[2 * (512 / 8)];
+            uint8_t hash[HASH_SHA256];
         } Context;
 
     private:
@@ -305,7 +317,7 @@ namespace Crypto {
                 CloseContext();
             }
 
-            return &_context.block[0];
+            return &_context.hash[0];
         }
 
         /*
