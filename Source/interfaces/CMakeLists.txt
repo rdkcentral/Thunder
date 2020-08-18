@@ -112,13 +112,8 @@ install(
 )
 
 install(
-        FILES ${JSON_DATA_HEADERS}
-        DESTINATION include/${NAMESPACE}/interfaces/json
-)
-
-install(
         FILES ${JSON_LINK_HEADERS}
-        DESTINATION include/${NAMESPACE}/interfaces
+        DESTINATION include/${NAMESPACE}/interfaces/json
 )
 
 InstallPackageConfig(
