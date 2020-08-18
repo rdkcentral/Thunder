@@ -240,7 +240,7 @@ namespace RPC {
                 index->second.emplace_back(id, reference);
             }
             else {
-                printf("====> According to Bartjes law, this should not happen !\n");
+                TRACE_L1("====> According to Bartjens law, this should not happen !");
             }
         }
     }

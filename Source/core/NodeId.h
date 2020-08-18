@@ -85,6 +85,7 @@ namespace Core {
         };
 
         union SocketInfo {
+            sa_family_t FamilyType;
             struct sockaddr_in IPV4Socket;
             struct sockaddr_in6 IPV6Socket;
 #ifndef __WINDOWS__
@@ -119,6 +120,7 @@ namespace Core {
 #ifndef __WINDOWS__
         NodeId(const struct sockaddr_un& rInfo, const uint16_t access = ~0);
         NodeId(const uint32_t destination, const pid_t pid, const uint32_t groups);
+        NodeId(const struct sockaddr_ll& rInfo);
         NodeId(const int32_t interfaceIndex, const uint16_t protocolFilter, const uint16_t hardwareAddressLength, const uint8_t* hardwareAddress);
 #endif
 #ifdef CORE_BLUETOOTH
@@ -160,9 +162,9 @@ namespace Core {
 #endif
         }
 
-NodeId::enumType Type() const
+        NodeId::enumType Type() const
         {
-            return (static_cast<NodeId::enumType>(m_structInfo.IPV4Socket.sin_family));
+            return (static_cast<NodeId::enumType>(m_structInfo.FamilyType));
         }
         inline uint16_t PortNumber() const
         {
@@ -187,12 +189,14 @@ NodeId::enumType Type() const
         inline unsigned short Size() const
         {
 #ifndef __WINDOWS__
-            return (m_structInfo.IPV4Socket.sin_family == AF_INET ? sizeof(struct sockaddr_in) : (m_structInfo.IPV6Socket.sin6_family == AF_INET6 ? sizeof(struct sockaddr_in6) : (m_structInfo.NetlinkSocket.nl_family == AF_NETLINK ? sizeof(struct sockaddr_nl) :
-
+            return (m_structInfo.FamilyType == AF_INET ? sizeof(struct sockaddr_in) : 
+                   (m_structInfo.FamilyType == AF_INET6 ? sizeof(struct sockaddr_in6) : 
+                   (m_structInfo.FamilyType == AF_NETLINK ? sizeof(struct sockaddr_nl) :
+                   (m_structInfo.FamilyType == AF_PACKET ? sizeof(struct sockaddr_ll) :
 #ifdef CORE_BLUETOOTH
-                                                                                                                                                                                                                                      (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un)))));
+                   (m_structInfo.BTSocket.hci_family == AF_BLUETOOTH ? (m_structInfo.L2Socket.l2_type == BTPROTO_HCI ? sizeof(struct sockaddr_hci) : sizeof(struct sockaddr_l2)) : sizeof(struct sockaddr_un))))));
 #else
-                                                                                                                                                                                                                                      sizeof(struct sockaddr_un))));
+                    sizeof(struct sockaddr_un)))));
 #endif
 
 #else
@@ -207,7 +211,7 @@ NodeId::enumType Type() const
         }
         inline operator const struct sockaddr*() const
         {
-            return (reinterpret_cast<const struct sockaddr*>(&(m_structInfo.IPV4Socket)));
+            return (reinterpret_cast<const struct sockaddr*>(&(m_structInfo)));
         }
         inline operator const union SocketInfo&() const
         {
@@ -261,7 +265,7 @@ NodeId::enumType Type() const
         friend class IPNode;
         inline operator struct sockaddr*()
         {
-            return (reinterpret_cast<struct sockaddr*>(&(m_structInfo.IPV4Socket)));
+            return (reinterpret_cast<struct sockaddr*>(&(m_structInfo)));
         }
 
         mutable string m_hostName;

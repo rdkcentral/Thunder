@@ -36,7 +36,13 @@
           "visible",
           "hidden"
         ]
-      }
+      },
+      "errors": [
+        {
+          "description": "Returned when the operation is unavailable",
+          "$ref": "#/common/errors/unavailable"
+        }
+      ]
     },
     "fps": {
       "summary": "Current number of frames per second the browser is rendering",

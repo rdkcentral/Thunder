@@ -26,7 +26,7 @@ namespace Exchange {
 
     namespace Dolby {
 
-        struct IOutput : virtual public Core::IUnknown {
+        struct EXTERNAL IOutput : virtual public Core::IUnknown {
 
             enum { ID = ID_DOLBY_OUTPUT };
 
@@ -34,14 +34,13 @@ namespace Exchange {
 
             enum Type : uint8_t {
                 DIGITAL_PCM = 0,
-                DIGITAL_PASS_THROUGH = 3,
-                ATMOS_PASS_THROUGH = 4,
+                DIGITAL_PLUS = 3,
+                DIGITAL_AC3 = 4,
                 AUTO = 5
             };
-
-            virtual void Mode(const Dolby::IOutput::Type value) = 0;
             
-            virtual Dolby::IOutput::Type Mode() const = 0;
+            virtual uint32_t Mode(const Dolby::IOutput::Type& mode) = 0;
+            virtual uint32_t Mode(Dolby::IOutput::Type& mode /* @out */) const = 0;
         };
     }
 }

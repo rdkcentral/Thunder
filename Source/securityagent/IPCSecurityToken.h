@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <core/core.h>
+#include "Module.h"
 
 using namespace WPEFramework;
 

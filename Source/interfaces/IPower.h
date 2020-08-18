@@ -25,7 +25,7 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IPower : virtual public Core::IUnknown {
+    struct EXTERNAL IPower : virtual public Core::IUnknown {
         enum { ID = ID_POWER };
 
         enum PCState : uint8_t {
@@ -37,7 +37,7 @@ namespace Exchange {
             PowerOff = 6, // S5.
         };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_POWER_NOTIFICATION };
 
             virtual ~INotification() {}

@@ -25,11 +25,11 @@ namespace WPEFramework {
 namespace Exchange {
 
     // @json
-    struct IVolumeControl : virtual public Core::IUnknown {
+    struct EXTERNAL IVolumeControl : virtual public Core::IUnknown {
         enum { ID = ID_VOLUMECONTROL };
 
         // @event
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_VOLUMECONTROL_NOTIFICATION };
 
             virtual ~INotification() {}

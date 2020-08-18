@@ -27,7 +27,7 @@ namespace WPEFramework {
 namespace Exchange {
 
     // This interface gives direct access to a OpenCDMi server instance, running as a plugin in the framework.
-    struct IContentDecryption : virtual public Core::IUnknown {
+    struct EXTERNAL IContentDecryption : virtual public Core::IUnknown {
 
         enum { ID = ID_CONTENTDECRYPTION };
 

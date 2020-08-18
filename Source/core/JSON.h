@@ -516,7 +516,7 @@ namespace Core {
 
             inline operator TYPE() const
             {
-                return _value;
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -1010,7 +1010,7 @@ namespace Core {
 
             inline operator TYPE() const
             {
-                return _value;
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -1266,7 +1266,7 @@ namespace Core {
 
             inline operator bool() const
             {
-                return (_value & ValueBit);
+                return Value();
             }
 
             void Null(const bool enabled)
@@ -2338,7 +2338,7 @@ namespace Core {
 
             inline operator const ENUMERATE() const
             {
-                return _value;
+                return Value();
             }
 
             const TCHAR* Data() const

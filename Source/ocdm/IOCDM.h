@@ -21,8 +21,7 @@
 #define __IOPENCDMI_H
 
 #include "Module.h"
-#include <com/com.h>
-#include <core/core.h>
+#include "DataExchange.h"
 
 namespace OCDM {
 
@@ -100,6 +99,9 @@ struct ISession : virtual public WPEFramework::Core::IUnknown {
     // Report the current status of the Session with respect to the KeyExchange.
     virtual KeyStatus Status() const = 0;
     virtual KeyStatus Status(const uint8_t keyID[] /* @length:keyIDLength */, const uint8_t keyIDLength) const = 0;
+
+    // Lazy Create the decryption buffer
+    virtual OCDM_RESULT CreateSessionBuffer(string& bufferID /* @out */ ) = 0;
 
     // Report the name to be used for the Shared Memory for exchanging the
     // Encrypted fragements.

@@ -17,27 +17,18 @@
  * limitations under the License.
  */
 
-#ifndef __MODULE_PROXYSTUBS_H
-#define __MODULE_PROXYSTUBS_H
+#pragma once
 
 #ifndef MODULE_NAME
 #define MODULE_NAME ProxyStubs
 #endif
 
-#include "../core/core.h"
-#include "../com/com.h"
-#include "../plugins/plugins.h"
+#include <core/core.h>
+#include <com/com.h>
+#include <plugins/plugins.h>
 
+#if defined(__WINDOWS__) && defined(PROXYSTUBS_EXPORTS)
 #undef EXTERNAL
-
-#ifdef __WINDOWS__
-#ifdef PROXYSTUBS_EXPORTS
-#define EXTERNAL EXTERNAL_EXPORT
-#else
-#define EXTERNAL EXTERNAL_IMPORT
-#endif
-#else
 #define EXTERNAL EXTERNAL_EXPORT
 #endif
 
-#endif // __MODULE_PROXYSTUB_H

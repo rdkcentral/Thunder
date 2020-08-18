@@ -275,6 +275,11 @@ namespace Web {
         {
             return (_channel.Close(waitTime));
         }
+        inline void Flush()
+        {
+            _serializerImpl.Flush();
+            _deserialiserImpl.Flush();
+        }
         inline bool IsOpen() const
         {
             return (_channel.IsOpen());

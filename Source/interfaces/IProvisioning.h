@@ -25,10 +25,10 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IProvisioning : virtual public Core::IUnknown {
+    struct EXTERNAL IProvisioning : virtual public Core::IUnknown {
         enum { ID = ID_PROVISIONING };
 
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_PROVISIONING_NOTIFICATION };
 
             virtual ~INotification() {}

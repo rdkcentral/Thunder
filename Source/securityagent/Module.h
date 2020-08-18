@@ -19,31 +19,13 @@
 
 #pragma once
 
-#include <nexus_config.h>
-#include <bstd.h>
-#include <berr.h>
-#include <bkni.h>
+#ifndef MODULE_NAME
+#define MODULE_NAME SecurityAgent
+#endif
 
+#include <core/core.h>
 
-namespace Implementation {
-
-class Nexus {
-private:
-    Nexus();
-    ~Nexus();
-
-public:
-    Nexus(const Nexus&) = delete;
-    Nexus& operator=(const Nexus&) = delete;
-
-    static bool Initialized()
-    {
-        static Nexus instance;
-        return (instance._initialized);
-    }
-
-private:
-    bool _initialized;
-}; // class Nexus
-
-} // namespace Implementation
+#if defined(__WINDOWS__) && defined(SECURITYAGENT_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif

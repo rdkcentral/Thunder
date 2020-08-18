@@ -63,24 +63,29 @@
 #define B4000000 4000000
 #endif
 
-#if defined WIN32 || defined _WINDOWS || defined __CYGWIN__
+#if defined(WIN32) || defined(_WINDOWS) || defined (__CYGWIN__)
     #ifdef __GNUC__
-        #define EXTERNAL_IMPORT __attribute__ ((dllimport))
+        #define EXTERNAL        __attribute__ ((dllimport))
         #define EXTERNAL_EXPORT __attribute__ ((dllexport))
     #else
-        #define EXTERNAL_IMPORT __declspec(dllimport) 
+        #define EXTERNAL        __declspec(dllimport) 
         #define EXTERNAL_EXPORT __declspec(dllexport)
     #endif
+
+    #if defined(CORE_EXPORTS)
+    #undef EXTERNAL
+    #define EXTERNAL EXTERNAL_EXPORT
+    #endif
+
     #define EXTERNAL_HIDDEN
 #else
   #if __GNUC__ >= 4 && !defined(__mips__)
-    #define EXTERNAL_IMPORT __attribute__ ((visibility ("hidden")))
-    #define EXTERNAL_EXPORT __attribute__ ((visibility ("default")))
+    #define EXTERNAL_HIDDEN __attribute__ ((visibility ("hidden")))
+    #define EXTERNAL        __attribute__ ((visibility ("default")))
   #else
-    #define EXTERNAL_EXPORT
-    #define EXTERNAL_IMPORT
+    #define EXTERNAL
+    #define EXTERNAL_HIDDEN
   #endif
-  #define EXTERNAL_HIDDEN EXTERNAL_IMPORT
 #endif
 
 #if defined WIN32 || defined _WINDOWS
@@ -198,6 +203,7 @@ typedef std::string string;
 #define KEY_RIGHTALT VK_RMENU
 #define KEY_LEFTCTRL VK_LCONTROL
 #define KEY_RIGHTCTRL VK_RCONTROL
+#undef INPUT_MOUSE
 
 // This is an HTTP keyword (VERB) Let's undefine it from windows headers..
 #define _CRT_SECURE_NO_WARNINGS 1
@@ -266,7 +272,7 @@ typedef std::string string;
 #define KEY_RIGHTALT 5
 #define KEY_LEFTCTRL 6
 #define KEY_RIGHTCTRL 7
-extern "C" void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
+extern "C" EXTERNAL void* mremap(void* old_address, size_t old_size, size_t new_size, int flags);
 int clock_gettime(int, struct timespec*);
 #else
 #include <linux/input.h>
@@ -350,8 +356,8 @@ int clock_gettime(int, struct timespec*);
 
 #define ALLOCA alloca
 
-extern void EXTERNAL_EXPORT SleepMs(unsigned int a_Time);
-inline void EXTERNAL_EXPORT SleepS(unsigned int a_Time)
+extern void EXTERNAL SleepMs(unsigned int a_Time);
+inline void EXTERNAL SleepS(unsigned int a_Time)
 {
     ::SleepMs(a_Time * 1000);
 }
@@ -432,7 +438,7 @@ struct TemplateIntToType {
 
 extern "C" {
 
-extern void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
+extern EXTERNAL void* memrcpy(void* _Dst, const void* _Src, size_t _MaxCount);
 
 #if defined(__LINUX__)
 uint64_t htonll(const uint64_t& value);
@@ -500,8 +506,6 @@ typedef HANDLE ThreadId;
 
 #define QUOTE(str) #str
 #define EXPAND_AND_QUOTE(str) QUOTE(str)
-
-#include "Module.h"
 
 extern "C" {
 
@@ -592,9 +596,8 @@ namespace Core {
 
     class Void {
     public:
-        inline Void() {}
-        template <typename ARG1>
-        inline Void(ARG1) {}
+        template <typename... Args>
+        inline Void(Args&&...) {}
         inline Void(const Void&) {}
         inline ~Void() {}
 

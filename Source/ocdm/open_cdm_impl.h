@@ -24,6 +24,8 @@
 #include "Module.h"
 #include "open_cdm.h"
 
+#include <atomic>
+
 using namespace WPEFramework;
 
 extern Core::CriticalSection _systemLock;
@@ -526,6 +528,9 @@ public:
         if (_session != nullptr) {
             Session(nullptr);
         }
+        if (_decryptSession != nullptr) {
+            DecryptSession(nullptr);
+        }
 
         system->Release();
         TRACE_L1("Destructed the Session Client side: %p", this);
@@ -554,7 +559,7 @@ public:
     {
         static string EmptyString;
 
-        return (_decryptSession != nullptr ? _decryptSession->Name() : EmptyString);
+        return (_decryptSession != nullptr ? (*_decryptSession).Name() : EmptyString);
     }
     inline bool IsValid() const { return (_session != nullptr); }
     inline OCDM::ISession::KeyStatus Status(const uint8_t keyIDLength, const uint8_t keyId[]) const
@@ -611,8 +616,17 @@ public:
         uint32_t initWithLast15)
     {
         uint32_t result = OpenCDMError::ERROR_INVALID_DECRYPT_BUFFER;
-        if (_decryptSession != nullptr) {
-            result = _decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData,
+
+        // lazy create decryptbuffer
+        if(_decryptSession == nullptr) {
+            DecryptSession(_session);
+        }
+
+        // prevent unnecesary double atomic access
+        DataExchange* decryptSession = _decryptSession;
+
+        if (decryptSession != nullptr) {
+            result = decryptSession->Decrypt(encryptedData, encryptedDataLength, ivData,
                 ivDataLength, keyId, keyIdLength,
                 initWithLast15);
             if(result)
@@ -692,12 +706,8 @@ protected:
         if (session == nullptr) {
 
             ASSERT (_session != nullptr);
-            ASSERT (_decryptSession != nullptr);
 
             _session->Release();
-
-            delete _decryptSession;
-            _decryptSession = nullptr;
 
             if (_sessionExt != nullptr) {
                 _sessionExt->Release();
@@ -709,11 +719,32 @@ protected:
 
         if (session != nullptr) {
 
-            ASSERT (_decryptSession == nullptr);
-
             _session->AddRef();
-            _decryptSession = new DataExchange(_session->BufferId());
             _sessionExt = _session->QueryInterface<OCDM::ISessionExt>();
+        }
+    }
+    void DecryptSession(OCDM::ISession* session)
+    {
+        if (session == nullptr) {
+            delete _decryptSession;
+            _decryptSession = nullptr;
+        } else {
+            std::string bufferid;
+            uint32_t result = _session->CreateSessionBuffer(bufferid);
+
+            if( result == 0 ) {
+                ASSERT (_decryptSession == nullptr);
+                _decryptSession = new DataExchange(bufferid); 
+            }
+            else if ( result == 1 ) {
+                while( _decryptSession == nullptr ) {
+                    SleepMs(0);
+                }
+            }
+            else {
+                ASSERT (_decryptSession == nullptr);
+                TRACE_L1("DecryptSession could not be created!");
+            }
         }
     }
    // Event fired when a key message is successfully created.
@@ -768,7 +799,7 @@ protected:
 
 private:
     std::string _sessionId;
-    DataExchange* _decryptSession;
+    std::atomic<DataExchange*> _decryptSession;
     OCDM::ISession* _session;
     OCDM::ISessionExt* _sessionExt;
     uint32_t _refCount;

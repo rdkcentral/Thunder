@@ -24,12 +24,12 @@ namespace WPEFramework {
 namespace Exchange {
 
     //@json
-    struct IAVSController : virtual public Core::IUnknown {
+    struct EXTERNAL IAVSController : virtual public Core::IUnknown {
         enum { ID = ID_AVSCONTROLLER };
         virtual ~IAVSController(){}
 
         //@event
-        struct INotification : virtual public Core::IUnknown {
+        struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_AVSCONTROLLER_NOTIFICATION };
             virtual ~INotification(){}
 
@@ -60,7 +60,7 @@ namespace Exchange {
         virtual uint32_t Record(const bool start) = 0;
     };
 
-    struct IAVSClient : virtual public Core::IUnknown {
+    struct EXTERNAL IAVSClient : virtual public Core::IUnknown {
         enum { ID = ID_AVSCLIENT };
 
         virtual ~IAVSClient(){};

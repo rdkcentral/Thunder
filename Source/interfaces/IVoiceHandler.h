@@ -24,18 +24,18 @@
 namespace WPEFramework {
 namespace Exchange {
 
-    struct IVoiceHandler;
+    struct EXTERNAL IVoiceHandler;
 
     /*
      * Interface responsible for producing audio data
      * The data that is produced must be signed big endian
      */
-    struct IVoiceProducer : virtual public Core::IUnknown {
+    struct EXTERNAL IVoiceProducer : virtual public Core::IUnknown {
         enum { ID = ID_VOICEPRODUCER };
 
         virtual ~IVoiceProducer(){};
 
-        struct IProfile : virtual public Core::IUnknown {
+        struct EXTERNAL IProfile : virtual public Core::IUnknown {
             enum { ID = ID_VOICEPRODUCER_PROFILE };
             virtual ~IProfile(){};
 
@@ -58,7 +58,7 @@ namespace Exchange {
         virtual void Configure(const string& settings) = 0;
     };
 
-    struct IVoiceHandler : virtual public Core::IUnknown {
+    struct EXTERNAL IVoiceHandler : virtual public Core::IUnknown {
         enum { ID = ID_VOICEHANDLER };
 
         virtual ~IVoiceHandler(){};
