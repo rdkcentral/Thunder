@@ -535,7 +535,7 @@ int main(int argc, char** argv)
         }
     } else {
         #ifdef USE_BREAKPAD
-        google_breakpad::MinidumpDescriptor descriptor(options.PostMortem);
+        google_breakpad::MinidumpDescriptor descriptor(options.PostMortemPath);
         google_breakpad::ExceptionHandler eh(descriptor, NULL,
             [](const google_breakpad::MinidumpDescriptor&, void*, bool succeeded)
                 { return succeeded; },
