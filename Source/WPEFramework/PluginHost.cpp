@@ -409,6 +409,9 @@ namespace PluginHost {
 
             string traceSettings (options.configFile);
  
+            // Create PostMortem path
+            Core::Directory(_config->PostMortemPath().c_str()).CreatePath();
+
             // Time to open up, the trace buffer for this process and define it for the out-of-proccess systems
             // Define the environment variable for Tracing files, if it is not already set.
             if ( Trace::TraceUnit::Instance().Open(_config->VolatilePath()) != Core::ERROR_NONE){

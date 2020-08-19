@@ -795,7 +795,6 @@ namespace PluginHost {
                 return (_administrator.Configuration().Background());
             }
             string Accessor() const override {
-                ASSERT(false); // Need to check what this should be... Contact Pierre Wielders if this assert fires..
                 return (_administrator.Configuration().URL());
             }
             string ProxyStubPath () const override {
