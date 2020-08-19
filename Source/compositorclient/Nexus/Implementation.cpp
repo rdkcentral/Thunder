@@ -115,7 +115,7 @@ namespace Nexus {
                 // If in the future this leads to issues with other stacks, the suggestion is
                 // to use the Client ID here to determine the zOrder. For now we are not 
                 // expecting any issues form this patch.
-                windowInfo.zOrder = 100;
+                windowInfo.zOrder = 1;
 #endif
                 windowInfo.clientID = display.NexusClientId();
                 _nativeWindow = NXPL_CreateNativeWindowEXT(&windowInfo);
