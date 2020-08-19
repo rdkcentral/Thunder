@@ -562,7 +562,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
     Server::Server(Config& configuration, const bool background)
         : _dispatcher(configuration.StackSize())
-        , _connections(*this, configuration.Accessor(), configuration.IdleTime())
+        , _connections(*this, configuration.Binder(), configuration.IdleTime())
         , _config(configuration)
         , _services(*this, _config, configuration.StackSize())
         , _controller()
