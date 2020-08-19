@@ -262,6 +262,7 @@ namespace Core {
         {
             return (IPV6AddressIterator(_index));
         }
+        NodeId Broadcast() const;
         bool IsUp() const;
         bool IsRunning() const;
         uint32_t Up(const bool enabled);
