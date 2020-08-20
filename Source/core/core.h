@@ -53,6 +53,7 @@
 #include "IPCChannel.h"
 #include "IPCConnector.h"
 #include "ISO639.h"
+#include "IPFrame.h"
 #include "JSON.h"
 #include "JSONRPC.h"
 #include "KeyValue.h"

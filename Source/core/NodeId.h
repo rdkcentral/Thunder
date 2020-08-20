@@ -174,6 +174,12 @@ namespace Core {
             return (ntohs(m_structInfo.IPV4Socket.sin_port));
 #endif
         }
+        inline uint16_t HardwareType() const {
+            return (m_structInfo.RawSocket.sll_hatype);
+        }
+        inline void HardwareType(const uint16_t type) {
+            m_structInfo.RawSocket.sll_hatype = type;
+        }
         inline void PortNumber(const uint16_t portNumber)
         {
             m_structInfo.IPV4Socket.sin_port = ntohs(portNumber);

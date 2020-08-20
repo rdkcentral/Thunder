@@ -169,6 +169,7 @@ namespace Core {
         m_structInfo.RawSocket.sll_family = AF_PACKET;
         m_structInfo.RawSocket.sll_ifindex = interfaceIndex;
         m_structInfo.RawSocket.sll_protocol = htons(protocolFilter);
+        m_structInfo.RawSocket.sll_hatype = 0;
         
         if(hardwareAddressLength > 0){
             ASSERT(hardwareAddressLength == ETH_ALEN);
