@@ -344,7 +344,7 @@ namespace Web {
 
             // Read all Data to calculate the HASH/HMAC
             while (size > 0) {
-                uint16_t chunk = std::min(static_cast<uint32_t>(sizeof(buffer)), (size_t) size);
+                uint16_t chunk = std::min(static_cast<uint16_t>(sizeof(buffer)), static_cast<uint16_t>(size));
                 _fileBody.Serialize(buffer, chunk);
                 hash.Input(buffer, chunk);
                 size -= chunk;
@@ -516,7 +516,7 @@ namespace Web {
 
             // Read all Data to calculate the HASH/HMAC
             while (size > 0) {
-                uint16_t chunk = std::min(sizeof(buffer), (size_t)size);
+                uint16_t chunk = std::min(static_cast<uint16_t>(sizeof(buffer)), static_cast<uint16_t>(size));
                 _fileBody.Serialize(buffer, chunk);
                 hash.Input(buffer, chunk);
                 size -= chunk;

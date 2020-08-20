@@ -101,7 +101,6 @@ elseif (PROCESSCONTAINERS_CRUN)
                 libcrun::libcrun
         )
 elseif (PROCESSCONTAINERS_DOBBY)
-        find_package(jsoncpp REQUIRED)
         find_package(Dobby REQUIRED CONFIG)
 
         # We need libsystemd since we're using their dbus library (sd-bus)
@@ -128,7 +127,6 @@ elseif (PROCESSCONTAINERS_DOBBY)
                 IpcService
                 AppInfraCommon
                 AppInfraLogging
-                JsonCpp::JsonCpp
 
                 ${SYSTEMD_LIBRARIES}
                 )

@@ -18,7 +18,6 @@
  */
 
 #include "DobbyImplementation.h"
-#include "JSON.h"
 #include <thread>
 #include "IpcFactory.h"
 #include "DobbyProxy.h"
