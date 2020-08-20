@@ -271,7 +271,6 @@ namespace RPC {
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
         if (_id != 0) {
             ProcessShutdown::Start<LocalClosingInfo>(_id);
-            _id = 0;
         }
     }
 
