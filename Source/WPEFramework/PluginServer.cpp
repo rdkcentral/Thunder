@@ -421,7 +421,7 @@ ENUM_CONVERSION_BEGIN(Core::ProcessInfo::scheduler)
 
                 // We might require PostMortem analyses if the reason is not really clear. Call the PostMortum installed so it can generate
                 // required logs/OS information before we start to kill it.
-                Server::PostMortem(why, _connection);
+                Server::PostMortem(*this, why, _connection);
 
                 // If we enabled the webserver, we should also disable it.
                 if ((PluginHost::Service::Configuration().WebUI.IsSet()) || (PluginHost::Service::Configuration().WebUI.Value().empty() == false)) {

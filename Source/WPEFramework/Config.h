@@ -317,6 +317,7 @@ namespace PluginHost {
                 , Input()
                 , Configs()
                 , Environments()
+                , ExitReasons()
 #ifdef PROCESSCONTAINERS_ENABLED
                 , ProcessContainers()
 #endif
@@ -345,6 +346,7 @@ namespace PluginHost {
                 Add(_T("plugins"), &Plugins);
                 Add(_T("configs"), &Configs);
                 Add(_T("environments"), &Environments);
+                Add(_T("exitreasons"), &ExitReasons);
 #ifdef PROCESSCONTAINERS_ENABLED
                 Add(_T("processcontainers"), &ProcessContainers);
 #endif
@@ -376,6 +378,7 @@ namespace PluginHost {
             Core::JSON::String Configs;
             Core::JSON::ArrayType<Plugin::Config> Plugins;
             Core::JSON::ArrayType<Environment> Environments;
+            Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>> ExitReasons;
 #ifdef PROCESSCONTAINERS_ENABLED
             ProcessContainerConfig ProcessContainers;
 #endif
@@ -492,6 +495,7 @@ namespace PluginHost {
             , _inputInfo()
             , _processInfo()
             , _plugins()
+            , _reasons()
             , _substituter(*this)
         {
             JSONConfig config;
@@ -531,6 +535,14 @@ namespace PluginHost {
                     _model = config.Model.Value();
                 } else if (Core::SystemInfo::GetEnvironment(_T("MODEL_NAME"), _model) == false) {
                     _model = "UNKNOWN";
+                }
+
+                if ((config.ExitReasons.IsSet() == true) && (config.ExitReasons.Length() > 0)) {
+                    Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::IShell::reason>>::Iterator index(config.ExitReasons.Elements());
+
+                    while (index.Next() == true) {
+                        _reasons.push_back(index.Current().Value());
+                    }
                 }
 
                 UpdateBinder();
@@ -642,6 +654,11 @@ namespace PluginHost {
         {
             return (_postMortemPath);
         }
+        inline const bool PostMortemAllowed(PluginHost::IShell::reason why) const
+        {
+            std::list<PluginHost::IShell::reason>::const_iterator index(std::find(_reasons.begin(), _reasons.end(), why));
+            return ((index != _reasons.end()) ? true: false);
+        }
         inline const string& HashKey() const
         {
             return (_hashKey);
@@ -709,9 +726,13 @@ namespace PluginHost {
 
         inline void UpdateBinder() {
             // Update binding address
-            Core::NodeId binder(_binding.c_str(), _portNumber);
-            _binder = binder;
-
+            if (_interface.empty() == false) {
+                _binder = Plugin::Config::IPV4UnicastNode(_interface);
+            }
+            if (_binder.IsValid() == false) {
+                Core::NodeId binder(_binding.c_str(), _portNumber);
+                _binder = binder;
+            }
             SYSLOG(Logging::Startup, (_T("Binder: [%s:%d]"), _binder.HostAddress().c_str(), _binder.PortNumber()));
         }
         bool UpdateAccessor() {
@@ -804,6 +825,7 @@ namespace PluginHost {
         InputInfo _inputInfo;
         ProcessInfo _processInfo;
         Core::JSON::ArrayType<Plugin::Config> _plugins;
+        std::list<PluginHost::IShell::reason> _reasons;
         Substituter _substituter;
     };
 }

@@ -806,6 +806,10 @@ namespace PluginHost {
             string Substitute(const string& input) const override {
                 return (_administrator.Configuration().Substitute(input, PluginHost::Service::Configuration()));
             }
+            bool PostMortemAllowed(PluginHost::IShell::reason why) const {
+                return (_administrator.Configuration().PostMortemAllowed(why));
+            }
+
             // Use the base framework (webbridge) to start/stop processes and the service in side of the given binary.
             IShell::ICOMLink* COMLink() override {
                 return (this);
@@ -2798,7 +2802,7 @@ namespace PluginHost {
         void Open();
         void Close();
 
-        static void PostMortem(const IShell::reason why, RPC::IRemoteConnection* connection);
+        static void PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection);
 
     private:
         inline Core::ProxyType<Service> Controller()

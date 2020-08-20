@@ -49,9 +49,9 @@ static void LogSystemFiles(const Core::process_t pid)
     }
 }
 
-/* static */ void Server::PostMortem(const IShell::reason why, RPC::IRemoteConnection* connection) {
+/* static */ void Server::PostMortem(Service& service, const IShell::reason why, RPC::IRemoteConnection* connection) {
 
-    if (why == IShell::WATCHDOG_EXPIRED) {
+    if (service.PostMortemAllowed(why) == true) {
         // See if this is an external process on which we could trigger a PostMortem log generation
         if (connection == nullptr) {
             // It is a plugin in the Thunder Process space, the current PostMortem Dump on the process
