@@ -42,6 +42,7 @@
         "unauthenticated",
         "unavailable",
         "timedout",
+        "downloaddirectorynotexist",
         "unkown"
       ],
       "example": "operationotsupported"
