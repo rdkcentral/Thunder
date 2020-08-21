@@ -242,25 +242,19 @@ namespace RPC {
                 index->second.emplace_back(id, reference);
             }
             else {
-                // The interface we are trying to register, has already been handed out over the same channel.
-                // This means, that on the other(receiving) side, should find this interface as well.
-                // At this point, two things are likely to happen:
-                // 
-                //  1) When this call arrives on the other side, the proxy is found and the _remoteReferences is incremented by one.
-                //      *_remoteReferences* in that context, signifies the amount of references the remote side has on the underlying 
-                //      real object.
-                //
-                // 2) Corner case, unlikely to happen. During the return of this reference, the Proxy on the otherside
-                //      reaches the reference count 0. That will, on that side, clear out the proxy. 
-                //      This in turn, causes a release for that proxy on this side, which will not kill the "real" object,
-                //      because we have still a reference on the real object for this interface. 
-                //      When RegisterUnknownInterface returns and this interface reaches the other side, 
-                //      it will simply create a new proxy with an _remoteReferences count of 1.
+                // If this happens, it means that the interface we are trying to register, is already handed out, over the same channel.
+                // This means, that on the otherside (the receiving side) that will create a Proxy for this interface, finds this interface as well.
+                // Now two things can happen:
+                // 1) Everything is stable, when this call arrives on the otherside, the proxy is found, and the externalReferenceCount (the number 
+                //    of AddRefs the RemoteSide has on this Real Object is incremented by one).
+                // 2) Corner case, unlikely top happen, but we need to cater for it. If during the return of this reference, that Proxy on the otherside
+                //    might reach the reference 0. That will, on that side, clear out the proxy. That will send a Release for that proxy to this side and
+                //    that release will not kill the "real" object here becasue we have still a reference on the real object for this interface. When this 
+                //    interface reaches the other side, it will simply create a new proxy with an externalReference COunt of 1.
                 //
                 // However, if the connection dies and scenario 2 took place, and we did *not* reference count this cleanup map, this reference for the newly 
                 // created proxy in step 2, is in case of a crash never released!!! So to avoid this scenario, we should also reference count the cleanup map 
                 // interface entry here, than we are good to go, as long as the "dropReleases" count also ends up here :-)
-
                 TRACE_L1("The Proxy is existing on the otherside, no need ");
                 element->Increment();
             }

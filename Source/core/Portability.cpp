@@ -19,6 +19,7 @@
 
 #include <stdlib.h>
 
+#include "Module.h"
 #include "IPCConnector.h"
 #include "Portability.h"
 #include "Sync.h"
@@ -33,6 +34,8 @@
 using namespace WPEFramework;
 
 MODULE_NAME_DECLARATION(BUILD_REFERENCE)
+
+
 #ifdef __WINDOWS__
 
 #include <ws2tcpip.h>

@@ -27,13 +27,19 @@
             "callsign": "Butler",
             "locator": "libButler.so",
             "classname": "Butler",
+            "autostart": false
+        },
+        {
+            "callsign": "StateController",
+            "locator": "libStateController.so",
+            "classname": "StateController",
             "autostart": true
         },
         {
             "callsign": "IOControl",
             "locator": "libIOControl.so",
             "classname": "IOControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "pins": [
                     {
@@ -55,7 +61,7 @@
             "callsign": "OutOfProcessPlugin",
             "locator": "libOutOfProcessPlugin.so",
             "classname": "OutOfProcessPlugin",
-            "autostart": false,
+            "autostart": true,
             "configuration": {
                 "outofprocess": true,
                 "url": "http://netflix.com/tv",
@@ -71,7 +77,7 @@
             "precondition": [
                 "Platform"
             ],
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "acl": "data.json",
                 "connector": "127.0.0.1:63000"
@@ -81,7 +87,7 @@
             "callsign": "JSONRPCPlugin",
             "locator": "libJSONRPCPlugin.so",
             "classname": "JSONRPCPlugin",
-            "autostart": true
+            "autostart": false
         },
         {
             "callsign": "OpenCDMi",
@@ -234,7 +240,7 @@
             "callsign": "RemoteControl",
             "locator": "libremotecontrol.so",
             "classname": "RemoteControl",
-            "autostart": true,
+            "autostart": false,
             "configuration": {
                 "mapfile": "ir-remote.json"
             }
