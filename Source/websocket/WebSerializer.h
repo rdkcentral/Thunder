@@ -171,7 +171,7 @@ namespace Web {
         inline FileBody& operator=(const File& RHS)
         {
             Core::File::operator=(RHS);
-            _startPosition = Core::File::Position();
+            _startPosition = static_cast<int32_t>(Core::File::Position());
 
             return (*this);
         }
@@ -201,7 +201,7 @@ namespace Web {
         {
             uint16_t write = Core::File::Write(stream, maxLength);
             if (!write) {
-                _startPosition = INVALID_HANDLE_VALUE;
+                _startPosition = Core::NumberType<int32_t>::Max();
             }
 
             return write;
@@ -212,7 +212,7 @@ namespace Web {
                 if (_opened == true) {
                     Core::File::Close();
                 } else {
-                    if (_startPosition == INVALID_HANDLE_VALUE) {
+                    if (_startPosition == Core::NumberType<int32_t>::Max()) {
                         const_cast<FileBody*>(this)->SetSize(0);
                     } else {
                         const_cast<FileBody*>(this)->Position(false, _startPosition);

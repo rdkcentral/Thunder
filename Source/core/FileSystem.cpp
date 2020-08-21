@@ -373,10 +373,10 @@ namespace Core {
         string dirName = _path;
         File path(_path);
         if (path.IsDirectory() != true) {
-            size_t position = str.find_last_of(ch);
-            if (position) {
-                dirName = s.substr(0, position);
-            }
+            // size_t position = str.find_last_of(ch);
+            // if (position) {
+            //    dirName = s.substr(0, position);
+            //}
         }
         if (dirName.empty() != true) {
             // https://docs.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getdiskfreespaceexa

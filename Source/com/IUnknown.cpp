@@ -55,11 +55,24 @@ namespace ProxyStub {
                 RPC::Data::Frame::Writer response(message->Response().Writer());
                 RPC::Data::Frame::Reader reader(message->Parameters().Reader());
 
-                uint32_t result = implementation->Release();
+                // Get the amount of Release we have to do..
+                uint32_t dropReleases(reader.Number<uint32_t>());
+                uint32_t result;
+
+                ASSERT(dropReleases > 0);
 
                 // This is an external referenced interface that we handed out, so it should
                 // be registered. Lets unregister this reference, it is dropped
-                RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId());
+                // Dropping the ReceoverSey, if applicable
+                RPC::Administrator::Instance().UnregisterInterface(channel, implementation, InterfaceId(), dropReleases);
+
+                do {
+                   result = implementation->Release();
+                   dropReleases--;
+                } while ((dropReleases != 0) && (result == Core::ERROR_NONE));
+
+                ASSERT(dropReleases == 0);
+
                 response.Number<uint32_t>(result);
                 break;
             }

@@ -25,3 +25,9 @@
 
 #include "Portability.h"
 
+#if defined(__WINDOWS__) && defined(CORE_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#endif
+
+
