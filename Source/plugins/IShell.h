@@ -67,7 +67,8 @@ namespace PluginHost {
             MEMORY_EXCEEDED,
             STARTUP,
             SHUTDOWN,
-            CONDITIONS
+            CONDITIONS,
+            WATCHDOG_EXPIRED
         };
 
         /* @stubgen:omit */
@@ -179,7 +180,7 @@ namespace PluginHost {
         virtual string ProxyStubPath() const = 0;
 
         //! Substituted Config value
-        virtual string ConfigSubstitution(const string& input) const = 0;
+        virtual string Substitute(const string& input) const = 0;
 
         //! AutoStart: boolean to inidcate wheter we need to start up this plugin at start
         virtual bool AutoStart() const = 0;
