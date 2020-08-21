@@ -27,25 +27,38 @@ namespace RPC {
 
     class ProcessShutdown;
 
-    static constexpr uint32_t DestructionStackSize = 64 * 1024;
     static Core::ProxyPoolType<RPC::AnnounceMessage> AnnounceMessageFactory(2);
-    static Core::TimerType<ProcessShutdown>& _destructor = Core::SingletonType<Core::TimerType<ProcessShutdown>>::Instance(DestructionStackSize, "ProcessDestructor");
-
-    class ClosingInfo {
-    public:
-        ClosingInfo& operator=(const ClosingInfo& RHS) = delete;
-        ClosingInfo(const ClosingInfo& copy) = delete;
-
-        virtual ~ClosingInfo() = default;
-
-    protected:
-        ClosingInfo() = default;
-
-    public:
-        virtual uint32_t AttemptClose(const uint8_t iteration) = 0; //shoud return 0 if no more iterations needed
-    };
 
     class ProcessShutdown {
+    public:
+        static constexpr uint32_t DestructionStackSize = 64 * 1024;
+
+        class IClosingInfo {
+        public:
+            virtual ~IClosingInfo() = default;
+
+            // Should return 0 if no more iterations are needed.
+            virtual uint32_t AttemptClose(const uint8_t iteration) = 0; 
+        };
+
+    public:
+        ProcessShutdown() = delete;
+        ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
+        ProcessShutdown(const ProcessShutdown& copy) = delete;
+
+        ProcessShutdown(ProcessShutdown&& rhs)
+            : _handler(std::move(rhs._handler))
+            , _cycle(rhs._cycle)
+        {
+        }
+
+        explicit ProcessShutdown(std::unique_ptr<IClosingInfo>&& handler)
+            : _handler(std::move(handler))
+            , _cycle(1)
+        {
+        }
+        ~ProcessShutdown() = default;
+
     public:
         template <class IMPLEMENTATION, typename... Args>
         static void Start(Args... args)
@@ -59,26 +72,6 @@ namespace RPC {
                 _destructor.Schedule(Core::Time::Now().Add(nextinterval), ProcessShutdown(std::move(handler)));
             }
         }
-
-    public:
-        ProcessShutdown& operator=(const ProcessShutdown& RHS) = delete;
-        ProcessShutdown(const ProcessShutdown& copy) = delete;
-
-        ProcessShutdown(ProcessShutdown&& rhs)
-            : _handler(std::move(rhs._handler))
-            , _cycle(rhs._cycle)
-        {
-        }
-
-        explicit ProcessShutdown(std::unique_ptr<ClosingInfo>&& handler)
-            : _handler(std::move(handler))
-            , _cycle(1)
-        {
-        }
-
-        ~ProcessShutdown() = default;
-
-    public:
         uint64_t Timed(const uint64_t scheduledTime)
         {
             uint64_t result = 0;
@@ -95,27 +88,26 @@ namespace RPC {
         }
 
     private:
-        std::unique_ptr<ClosingInfo> _handler;
+        std::unique_ptr<IClosingInfo> _handler;
         uint8_t _cycle;
+        static Core::TimerType<ProcessShutdown>& _destructor;
     };
 
-    class LocalClosingInfo : public ClosingInfo {
+    /* static */ Core::TimerType<ProcessShutdown>& ProcessShutdown::_destructor(Core::SingletonType<Core::TimerType<ProcessShutdown>>::Instance(ProcessShutdown::DestructionStackSize, "ProcessDestructor"));
+
+    class LocalClosingInfo : public ProcessShutdown::IClosingInfo {
     public:
-        LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
+        LocalClosingInfo() = delete;
         LocalClosingInfo(const LocalClosingInfo& copy) = delete;
-
-        virtual ~LocalClosingInfo() = default;
-
-    private:
-        friend class ProcessShutdown;
+        LocalClosingInfo& operator=(const LocalClosingInfo& RHS) = delete;
 
         explicit LocalClosingInfo(const uint32_t pid)
-            : ClosingInfo()
-            , _process(pid)
+            : _process(pid)
         {
         }
+        ~LocalClosingInfo() override = default;
 
-    protected:
+    public:
         uint32_t AttemptClose(const uint8_t iteration) override
         {
             uint32_t nextinterval = 0;
@@ -144,28 +136,24 @@ namespace RPC {
 
 #ifdef PROCESSCONTAINERS_ENABLED
 
-    class ContainerClosingInfo : public ClosingInfo {
+    class ContainerClosingInfo : public ProcessShutdown::IClosingInfo {
     public:
-        ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
+        ContainerClosingInfo() = delete;
         ContainerClosingInfo(const ContainerClosingInfo& copy) = delete;
-
-        virtual ~ContainerClosingInfo()
-        {
-            _container->Release();
-        }
-
-    private:
-        friend class ProcessShutdown;
+        ContainerClosingInfo& operator=(const ContainerClosingInfo& RHS) = delete;
 
         explicit ContainerClosingInfo(ProcessContainers::IContainer* container)
-            : ClosingInfo()
-            , _process(static_cast<uint32_t>(container->Pid()))
+            : _process(static_cast<uint32_t>(container->Pid()))
             , _container(container)
         {
             container->AddRef();
         }
+        ~ContainerClosingInfo() override
+        {
+            _container->Release();
+        }
 
-    protected:
+    public:
         uint32_t AttemptClose(const uint8_t iteration) override
         {
             uint32_t nextinterval = 0;
@@ -194,7 +182,7 @@ namespace RPC {
                     nextinterval = 5000;
                     break;
                 default:
-                    // This should not happen. This is a very stubbern process. Can be killed.
+                    // This should not happen. This is a very stubbern process. Can not be killed.
                     ASSERT(false);
                     break;
                 }
@@ -275,7 +263,7 @@ namespace RPC {
         return (_remoteId);
     }
 
-    /* virtual */ void Communicator::LocalRemoteProcess::Terminate()
+    /* virtual */ void Communicator::LocalProcess::Terminate()
     {
         // Do not yet call the close on the connection, the otherside might close down decently and release all opened interfaces..
         // Just submit our selves for destruction !!!!
@@ -283,22 +271,39 @@ namespace RPC {
         // Time to shoot the application, it will trigger a close by definition of the channel, if it is still standing..
         if (_id != 0) {
             ProcessShutdown::Start<LocalClosingInfo>(_id);
-            _id = 0;
         }
     }
 
-    uint32_t Communicator::LocalRemoteProcess::RemoteId() const
+    uint32_t Communicator::LocalProcess::RemoteId() const
     {
         return (_id);
     }
 
+    void Communicator::LocalProcess::PostMortem() /* override */
+    {
+        if (_id != 0) {
+            Core::ProcessInfo process(_id);
+            process.Dump();
+        }
+    }
+
+
 #ifdef PROCESSCONTAINERS_ENABLED
 
-    void Communicator::ContainerRemoteProcess::Terminate()
+    void Communicator::ContainerProcess::Terminate() /* override */
     {
         ASSERT(_container != nullptr);
         if (_container != nullptr) {
             ProcessShutdown::Start<ContainerClosingInfo>(_container);
+        }
+    }
+
+    void Communicator::ContainerProcess::PostMortem() /* override */
+    {
+        Core::process_t = pid;
+        if ( (_container != nullptr) && ((pid = static_cast<Core::process_t>(container->Pid())) != 0) ) {
+            Core::ProcessInfo process(pid);
+            process.Dump();
         }
     }
 

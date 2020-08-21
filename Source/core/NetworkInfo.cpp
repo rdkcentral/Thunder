@@ -36,6 +36,7 @@
 #elif defined(__POSIX__)
 #include <arpa/inet.h>
 #include <ifaddrs.h>
+#include <net/if_arp.h>
 #include <linux/rtnetlink.h>
 #include <list>
 #include <net/if.h>
@@ -622,23 +623,20 @@ namespace Core {
         };
 
         class InterfacesFetchType : public Netlink {
-        private:
+        public:
             InterfacesFetchType() = delete;
             InterfacesFetchType(const InterfacesFetchType&) = delete;
             InterfacesFetchType& operator=(const InterfacesFetchType&) = delete;
 
-        public:
             InterfacesFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
                 : _interfaces(interfaces)
                 , _index(interfaceIndex)
             {
             }
-            virtual ~InterfacesFetchType()
-            {
-            }
+            ~InterfacesFetchType() override = default;
 
         private:
-            virtual uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
             {
                 uint16_t result = sizeof(struct rtgenmsg);
 
@@ -653,10 +651,8 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-                uint16_t result = 0;
-
                 if ((Type() == RTM_NEWLINK) || (Type() == RTM_DELLINK) || (Type() == RTM_GETLINK) || (Type() == RTM_SETLINK)) {
                     const struct ifinfomsg* iface = reinterpret_cast<const struct ifinfomsg*>(stream);
                     std::map<uint32_t, Network>::iterator index(_interfaces.find(iface->ifi_index));
@@ -665,7 +661,6 @@ namespace Core {
                         _interfaces.emplace(std::piecewise_construct,
                             std::forward_as_tuple(iface->ifi_index),
                             std::forward_as_tuple(iface->ifi_index, reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg)));
-                        result = length;
                     } else {
                         index->second.Update(reinterpret_cast<const struct rtattr*>(IFLA_RTA(iface)), length - sizeof(struct ifinfomsg));
                     }
@@ -676,7 +671,7 @@ namespace Core {
                         TRACE_L1("Interfaces fetch request failed with code %d", error->error);
                     } 
                 } 
-                return (result);
+                return (length);
             }
 
         private:
@@ -686,23 +681,20 @@ namespace Core {
 
         template <const bool IPV6>
         class IPAddressFetchType : public Netlink {
-        private:
+        public:
             IPAddressFetchType() = delete;
             IPAddressFetchType(const IPAddressFetchType<IPV6>&) = delete;
             IPAddressFetchType<IPV6>& operator=(const IPAddressFetchType<IPV6>&) = delete;
 
-        public:
             IPAddressFetchType(std::map<uint32_t, Network>& interfaces, const uint32_t interfaceIndex = 0)
                 : _interfaces(interfaces)
                 , _index(interfaceIndex)
             {
             }
-            virtual ~IPAddressFetchType()
-            {
-            }
+            ~IPAddressFetchType() override = default;
 
         private:
-            virtual uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
             {
                 uint16_t result = sizeof(struct ifaddrmsg) + RTA_LENGTH(IPV6 ? 16 : 4);
 
@@ -722,16 +714,14 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-                uint16_t result = 0;
                 if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
                     const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
                     std::map<uint32_t, Network>::iterator index(_interfaces.find(rtmp->ifa_index));
 
                     if (index != _interfaces.end()) {
                         index->second.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
-                        result = length;
                     } else {
                         TRACE_L1("Could not find this interface. Just came up ? [%d]", rtmp->ifa_index);
                     }
@@ -743,7 +733,7 @@ namespace Core {
                     } 
                 }
 
-                return (result);
+                return (length);
             }
 
         private:
@@ -753,23 +743,20 @@ namespace Core {
 
         template <const bool ADD>
         class IPAddressModifyType : public Netlink {
-        private:
+        public:
             IPAddressModifyType() = delete;
             IPAddressModifyType(const IPAddressModifyType<ADD>&) = delete;
             IPAddressModifyType<ADD>& operator=(const IPAddressModifyType<ADD>&) = delete;
 
-        public:
             IPAddressModifyType(Network& targetInterface, const IPNode& address)
                 : _interface(targetInterface)
                 , _node(address)
             {
             }
-            virtual ~IPAddressModifyType()
-            {
-            }
+            ~IPAddressModifyType() override = default;
 
         private:
-            virtual uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
             {
                 uint16_t result = sizeof(struct ifaddrmsg) + 2 * (RTA_LENGTH(_node.Type() == NodeId::TYPE_IPV6 ? 16 : 4));
 
@@ -800,11 +787,8 @@ namespace Core {
 
                 return (result);
             }
-            virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-
-                uint16_t result = 0;
-
                 if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
 
                     const struct ifaddrmsg* rtmp = reinterpret_cast<const struct ifaddrmsg*>(stream);
@@ -813,7 +797,6 @@ namespace Core {
 
                     _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
 
-                    result = length;
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
@@ -822,7 +805,7 @@ namespace Core {
                     } 
                 }
 
-                return (result);
+                return (length);
             }
 
         private:
@@ -832,26 +815,22 @@ namespace Core {
 
         template <const bool ADD>
         class IPRouteModifyType : public Netlink {
-        private:
+        public:
             IPRouteModifyType() = delete;
             IPRouteModifyType(const IPRouteModifyType<ADD>&) = delete;
             IPRouteModifyType<ADD>& operator=(const IPRouteModifyType<ADD>&) = delete;
 
-        public:
             IPRouteModifyType(Network& targetInterface, const IPNode& network, const NodeId& gateway)
                 : _interface(targetInterface)
                 , _network(network)
                 , _gateway(gateway)
             {
             }
-            virtual ~IPRouteModifyType()
-            {
-            }
+            ~IPRouteModifyType() override = default;
 
         private:
-            virtual uint16_t Write(uint8_t stream[], const uint16_t length) const override
+            uint16_t Write(uint8_t stream[], const uint16_t length) const override
             {
-
                 Flags(ADD == true ? NLM_F_REQUEST | NLM_F_CREATE | NLM_F_ACK | NLM_F_REPLACE : NLM_F_REQUEST | NLM_F_ACK);
                 Type(ADD == true ? RTM_NEWROUTE : RTM_DELROUTE);
 
@@ -913,11 +892,8 @@ namespace Core {
 
                 return (parameters.Size());
             }
-            virtual uint16_t Read(const uint8_t stream[], const uint16_t length) override
+            uint16_t Read(const uint8_t stream[], const uint16_t length) override
             {
-
-                uint16_t result = 0;
-
                 TRACE_L1("Feedback: %d", Type());
 
                 if ((Type() == RTM_NEWADDR) || (Type() == RTM_DELADDR) || (Type() == RTM_GETADDR)) {
@@ -928,7 +904,6 @@ namespace Core {
 
                     _interface.Update(reinterpret_cast<const struct rtattr*>(IFA_RTA(rtmp)), length - sizeof(struct ifaddrmsg), static_cast<uint8_t>(rtmp->ifa_prefixlen));
 
-                    result = length;
                 } else if (Type() == NLMSG_ERROR) {
                     const nlmsgerr* error = reinterpret_cast<const nlmsgerr*>(stream);
 
@@ -937,7 +912,7 @@ namespace Core {
                     } 
                 }
 
-                return (result);
+                return (length);
             }
 
         private:
@@ -1414,6 +1389,26 @@ namespace Core {
         ASSERT(network.IsValid());
 
         network.MAC(buffer, length);
+    }
+
+    NodeId AdapterIterator::Broadcast() const
+    {
+        Core::NodeId result;
+
+        struct sockaddr_ll target;
+
+        memset(&target, 0, sizeof(target));
+        target.sll_family   = PF_PACKET;
+        target.sll_protocol = htons(ETH_P_IP);
+        target.sll_ifindex  = _index;
+        target.sll_hatype   = 0;
+        target.sll_pkttype  = PACKET_BROADCAST;
+        target.sll_halen    = ETH_ALEN;
+
+        // Fill with broadcast addr
+        memset(target.sll_addr, 0xff, ETH_ALEN);
+
+        return NodeId(target);
     }
 
     bool AdapterIterator::IsUp() const

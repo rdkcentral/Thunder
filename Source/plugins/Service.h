@@ -47,9 +47,18 @@ namespace PluginHost {
             Config& operator=(const Config&) = delete;
 
         public:
-            Config(const PluginHost::Config& server, const Plugin::Config& plugin)
-                : _baseConfig(server)
+            Config(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             {
+                const string& callSign(plugin.Callsign.Value());
+
+                _webPrefix = webPrefix + '/' + callSign;
+                _persistentPath = plugin.PersistentPath(persistentPath);
+                _dataPath = plugin.DataPath(dataPath);
+                _volatilePath = plugin.VolatilePath(volatilePath);
+
+                // Volatile means that the path could not have been created, create it for now.
+                Core::Directory(_volatilePath.c_str()).CreatePath();
+
                 Update(plugin);
             }
             ~Config()
@@ -69,17 +78,9 @@ namespace PluginHost {
             {
                 _config.AutoStart = value;
             }
-            inline const string& Accessor() const
-            {
-                return (_accessor);
-            }
             inline const Plugin::Config& Configuration() const
             {
                 return (_config);
-            }
-            inline const PluginHost::Config& Information() const
-            {
-                return (_baseConfig);
             }
             // WebPrefix is the Fully qualified name, indicating the endpoint for this plugin.
             inline const string& WebPrefix() const
@@ -110,29 +111,9 @@ namespace PluginHost {
                 return (_dataPath);
             }
 
-            inline const string& ProxyStubPath() const
-            {
-                return (_baseConfig.ProxyStubPath());
-            }
-
             inline void Update(const Plugin::Config& config)
             {
-                const string& callSign(config.Callsign.Value());
-
                 _config = config;
-                _webPrefix = _baseConfig.WebPrefix() + '/' + callSign;
-                _persistentPath = _baseConfig.PersistentPath() + callSign + '/';
-                _dataPath = _baseConfig.DataPath() + callSign + '/';
-                _volatilePath = _baseConfig.VolatilePath() + callSign + '/';
-
-                // Volatile means that the path could not have been created, create it for now.
-                Core::Directory(_volatilePath.c_str()).CreatePath();
-
-                if (_baseConfig.Accessor().PortNumber() == 80) {
-                    _accessor = string(_T("http://")) + _baseConfig.Accessor().HostAddress() + _webPrefix;
-                } else {
-                    _accessor = string(_T("http://")) + _baseConfig.Accessor().HostAddress() + ':' + Core::NumberType<uint16_t>(_baseConfig.Accessor().PortNumber()).Text() + _webPrefix;
-                }
 
                 _versions.clear();
 
@@ -156,7 +137,6 @@ namespace PluginHost {
             }
 
         private:
-            const PluginHost::Config& _baseConfig;
             Plugin::Config _config;
 
             string _webPrefix;
@@ -168,14 +148,14 @@ namespace PluginHost {
         };
 
     public:
-        Service(const PluginHost::Config& server, const Plugin::Config& plugin)
+        Service(const Plugin::Config& plugin, const string& webPrefix, const string& persistentPath, const string& dataPath, const string& volatilePath)
             : _adminLock()
 #ifdef RUNTIME_STATISTICS
             , _processedRequests(0)
             , _processedObjects(0)
 #endif
             , _state(DEACTIVATED)
-            , _config(server, plugin)
+            , _config(plugin, webPrefix, persistentPath, dataPath, volatilePath)
 #ifdef RESTFULL_API
             , _notifiers()
 #endif
@@ -191,21 +171,9 @@ namespace PluginHost {
 #ifdef RESTFULL_API
         void Notification(const string& message);
 #endif
-        virtual string Version() const
-        {
-            return (_config.Information().Version());
-        }
         virtual string Versions() const
         {
             return (_config.Configuration().Versions.Value());
-        }
-        virtual string Model() const
-        {
-            return (_config.Information().Model());
-        }
-        virtual bool Background() const
-        {
-            return (_config.Information().Background());
         }
         virtual string Locator() const
         {
@@ -223,10 +191,6 @@ namespace PluginHost {
         {
             return (_config.WebPrefix());
         }
-        virtual string Accessor() const
-        {
-            return (_config.Accessor());
-        }
         virtual string ConfigLine() const
         {
             return (_config.Configuration().Configuration.Value());
@@ -242,14 +206,6 @@ namespace PluginHost {
         virtual string DataPath() const
         {
             return (_config.DataPath());
-        }
-        virtual string ProxyStubPath() const
-        {
-            return (_config.ProxyStubPath());
-        }
-        virtual string HashKey() const
-        {
-            return (_config.Information().HashKey());
         }
         virtual state State() const
         {
@@ -270,10 +226,6 @@ namespace PluginHost {
         inline const Plugin::Config& Configuration() const
         {
             return (_config.Configuration());
-        }
-        inline const PluginHost::Config& Information() const
-        {
-            return (_config.Information());
         }
         inline bool IsActive() const
         {
