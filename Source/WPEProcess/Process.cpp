@@ -381,7 +381,11 @@ public:
         if (_server.IsValid() == true) {
 
             // We are done, close the channel and unregister all shit we added...
+            #ifdef __DEBUG__
+            _server->Close(RPC::CommunicationTimeOut);
+            #else       
             _server->Close(2 * RPC::CommunicationTimeOut);
+            #endif
 
             _proxyStubs.clear();
 
