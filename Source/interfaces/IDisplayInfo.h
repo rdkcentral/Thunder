@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
@@ -27,16 +26,12 @@ namespace Exchange {
     struct EXTERNAL IGraphicsProperties : virtual public Core::IUnknown {
         enum { ID = ID_GRAPHICS_PROPERTIES };
 
-        virtual ~IGraphicsProperties() {}
-
         virtual uint64_t TotalGpuRam() const = 0;
         virtual uint64_t FreeGpuRam() const = 0;
     };
 
     struct EXTERNAL IConnectionProperties : virtual public Core::IUnknown {
         enum { ID = ID_CONNECTION_PROPERTIES };
-
-        virtual ~IConnectionProperties() { }
 
         enum HDRType : uint8_t {
             HDR_OFF,
@@ -54,8 +49,6 @@ namespace Exchange {
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_CONNECTION_PROPERTIES_NOTIFICATION };
-
-            virtual ~INotification() {}
 
             virtual void Updated() = 0;
         };

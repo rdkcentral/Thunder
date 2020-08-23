@@ -39,9 +39,6 @@
 
 #if defined(PROXYSTUB_BUILDING)
 #include <com/com.h>
-#if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
 #endif
 
 

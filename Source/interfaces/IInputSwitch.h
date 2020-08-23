@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
@@ -26,7 +25,6 @@ namespace Exchange {
 
     // This interface gives direct access to a time synchronize / update
     struct EXTERNAL IInputSwitch : virtual public Core::IUnknown {
-
         enum { ID = ID_INPUT_SWITCH };
 
         enum mode : uint8_t {
@@ -34,8 +32,6 @@ namespace Exchange {
             DISABLED,
             SLAVE
         };
-
-        virtual ~IInputSwitch() {}
 
         virtual RPC::IStringIterator* Consumers() const = 0;
         virtual bool Consumer(const string& name) const = 0;

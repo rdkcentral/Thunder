@@ -17,21 +17,7 @@
  * limitations under the License.
  */
 
-#pragma once
 #include "Module.h"
+#include "IUnknown.h"
 
-namespace WPEFramework {
-namespace Exchange {
-
-    // This interface gives direct access to a WebServer to change
-    // Server specific properties like .....
-    struct EXTERNAL IWebServer : virtual public Core::IUnknown {
-        enum { ID = ID_WEBSERVER };
-
-        virtual void AddProxy(const string& path, const string& subst, const string& address) = 0;
-        virtual void RemoveProxy(const string& path) = 0;
-
-        virtual string Accessor() const = 0;
-    };
-}
-}
+#include "ProxyStubs_Com.cpp"

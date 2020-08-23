@@ -16,8 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -26,12 +26,10 @@ namespace Exchange {
     //@json
     struct EXTERNAL IAVSController : virtual public Core::IUnknown {
         enum { ID = ID_AVSCONTROLLER };
-        virtual ~IAVSController(){}
 
         //@event
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_AVSCONTROLLER_NOTIFICATION };
-            virtual ~INotification(){}
 
             enum dialoguestate : uint8_t {
                 IDLE,
@@ -62,8 +60,6 @@ namespace Exchange {
 
     struct EXTERNAL IAVSClient : virtual public Core::IUnknown {
         enum { ID = ID_AVSCLIENT };
-
-        virtual ~IAVSClient(){};
 
         virtual bool Initialize(PluginHost::IShell* service, const string& configuration) = 0;
         virtual bool Deinitialize() = 0;

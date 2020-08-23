@@ -51,6 +51,10 @@ target_link_libraries(${TargetMarshalling}
           CompileSettingsDebug::CompileSettingsDebug
         )
 
+target_compile_definitions(${TargetMarshalling}
+        PUBLIC
+            PROXYSTUB_BUILDING=1)
+
 target_link_libraries(${TargetDefinitions}
         PUBLIC
           ${NAMESPACE}Core::${NAMESPACE}Core
