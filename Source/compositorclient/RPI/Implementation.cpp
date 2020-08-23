@@ -31,6 +31,7 @@
 #include <algorithm>
 
 #include "../../core/core.h"
+#include "../../com/com.h"
 #include "../../interfaces/IComposition.h"
 #include "../../virtualinput/virtualinput.h"
 #include "../Client.h"

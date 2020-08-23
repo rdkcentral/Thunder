@@ -278,6 +278,8 @@ namespace PluginHost {
 
             return (nullptr);
         }
+
+        /* 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Instantiate(const uint32_t waitTime, const string className, const uint32_t version, uint32_t& connecionId, const string& locator)
         {
@@ -298,6 +300,7 @@ namespace PluginHost {
 
             return (nullptr);
         }
+        */
 
     private:
         void* Root(uint32_t& pid, const uint32_t waitTime, const string className, const uint32_t interface, const uint32_t version = ~0);

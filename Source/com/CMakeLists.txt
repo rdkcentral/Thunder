@@ -17,13 +17,12 @@
 
 set(TARGET ${NAMESPACE}COM)
 
-ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
-ProxyStubGenerator(NAMESPACE "WPEFramework::Trace" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ITracing.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs")
+ProxyStubGenerator(NAMESPACE "WPEFramework::RPC" INPUT "${CMAKE_CURRENT_SOURCE_DIR}/ICOM.h" OUTDIR "${CMAKE_CURRENT_BINARY_DIR}../generated/proxystubs")
 
 add_library(${TARGET} SHARED
         Administrator.cpp
         Communicator.cpp
-        ProxyStubs.cpp"
+        ProxyStubs.cpp
         ITracing.cpp
         IUnknown.cpp
         Module.cpp
