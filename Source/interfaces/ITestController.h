@@ -18,68 +18,63 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
-namespace Exchange {
+    namespace Exchange {
 
-    struct EXTERNAL ITestController : virtual public Core::IUnknown {
+        struct EXTERNAL ITestController : virtual public Core::IUnknown {
+            enum { ID = ID_TESTCONTROLLER };
 
-        enum { ID = ID_TESTCONTROLLER };
+            struct EXTERNAL ITest : virtual public Core::IUnknown {
+                enum { ID = ID_TESTCONTROLLER_TEST };
 
-        struct EXTERNAL ITest : virtual public Core::IUnknown {
+                struct EXTERNAL IIterator : virtual public Core::IUnknown {
+                    enum { ID = ID_TESTCONTROLLER_TEST_ITERATOR };
 
-            enum { ID = ID_TESTCONTROLLER_TEST };
+                    virtual void Reset() = 0;
+                    virtual bool IsValid() const = 0;
+                    virtual bool Next() = 0;
 
-            struct EXTERNAL IIterator : virtual public Core::IUnknown {
+                    virtual ITest* Test() const = 0;
+                };
 
-                enum { ID = ID_TESTCONTROLLER_TEST_ITERATOR };
+                virtual string Execute(const string& params) = 0;
 
-                virtual void Reset() = 0;
-                virtual bool IsValid() const = 0;
-                virtual bool Next() = 0;
-
-                virtual ITest* Test() const = 0;
+                virtual string Description() const = 0;
+                virtual string Name() const = 0;
             };
 
-            virtual string Execute(const string& params) = 0;
+            struct EXTERNAL ICategory : virtual public Core::IUnknown {
+                enum { ID = ID_TESTCONTROLLER_CATEGORY };
 
-            virtual string Description() const = 0;
-            virtual string Name() const = 0;
-        };
+                struct EXTERNAL IIterator : virtual public Core::IUnknown {
+                    enum { ID = ID_TESTCONTROLLER_CATEGORY_ITERATOR };
 
-        struct EXTERNAL ICategory : virtual public Core::IUnknown {
+                    virtual void Reset() = 0;
+                    virtual bool IsValid() const = 0;
+                    virtual bool Next() = 0;
 
-            enum { ID = ID_TESTCONTROLLER_CATEGORY };
+                    virtual ICategory* Category() const = 0;
+                };
 
-            struct EXTERNAL IIterator : virtual public Core::IUnknown {
+                virtual string Name() const = 0;
 
-                enum { ID = ID_TESTCONTROLLER_CATEGORY_ITERATOR };
+                virtual void Setup() = 0;
+                virtual void TearDown() = 0;
 
-                virtual void Reset() = 0;
-                virtual bool IsValid() const = 0;
-                virtual bool Next() = 0;
-
-                virtual ICategory* Category() const = 0;
+                virtual void Register(ITest* test) = 0;
+                virtual void Unregister(ITest* test) = 0;
+                virtual ITest::IIterator* Tests() const = 0;
+                virtual ITest* Test(const string& name) const = 0;
             };
-            virtual string Name() const = 0;
 
             virtual void Setup() = 0;
             virtual void TearDown() = 0;
 
-            virtual void Register(ITest* test) = 0;
-            virtual void Unregister(ITest* test) = 0;
-            virtual ITest::IIterator* Tests() const = 0;
-            virtual ITest* Test(const string& name) const = 0;
+            virtual ICategory::IIterator* Categories() const = 0;
+            virtual ICategory* Category(const string& category) const = 0;
         };
 
-        virtual void Setup() = 0;
-        virtual void TearDown() = 0;
-
-        virtual ICategory::IIterator* Categories() const = 0;
-        virtual ICategory* Category(const string& category) const = 0;
-    };
-
-} // namespace Exchange
+    } // namespace Exchange
 } // namespace WPEFramework

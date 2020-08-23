@@ -23,8 +23,8 @@
 #include "Module.h"
 #include "Ids.h"
 #include "Administrator.h"
-#include "ITracing.h"
 #include "IUnknown.h"
+#include "ICOM.h"
 
 #ifdef PROCESSCONTAINERS_ENABLED
 #include "../processcontainers/ProcessContainer.h"
@@ -377,40 +377,6 @@ namespace RPC {
         int8_t _priority;
     };
 
-    struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {
-        enum { ID = ID_COMCONNECTION };
-
-        virtual ~IRemoteConnection() = default;
-
-        struct INotification : virtual public Core::IUnknown {
-            enum { ID = ID_COMCONNECTION_NOTIFICATION };
-
-            virtual ~INotification() = default;
-            virtual void Activated(IRemoteConnection* connection) = 0;
-            virtual void Deactivated(IRemoteConnection* connection) = 0;
-        };
-
-        virtual uint32_t Id() const = 0;
-        virtual uint32_t RemoteId() const = 0;
-        virtual void* /* @interface:interfaceId */ Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
-        virtual void Terminate() = 0;
-        virtual uint32_t Launch() = 0;
-        virtual void PostMortem() = 0;
-
-        template <typename REQUESTEDINTERFACE>
-        REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
-        {
-            void* baseInterface(Aquire(waitTime, className, REQUESTEDINTERFACE::ID, version));
-
-            if (baseInterface != nullptr) {
-
-                return (reinterpret_cast<REQUESTEDINTERFACE*>(baseInterface));
-            }
-
-            return (nullptr);
-        }
-    };
-
     struct EXTERNAL IMonitorableProcess : public virtual Core::IUnknown {
         enum { ID = ID_MONITORABLE_PROCESS };
 
@@ -418,8 +384,6 @@ namespace RPC {
 
         virtual string Callsign() const = 0;
     };
-
-    /* @stubgen:skip */
 
     class EXTERNAL Communicator {
     protected:

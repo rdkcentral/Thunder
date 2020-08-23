@@ -18,31 +18,14 @@
  */
 
 #pragma once
-
-// ---- Include system wide include files ----
 #include "Module.h"
-
-// ---- Include local include files ----
-
-// ---- Helper types and constants ----
-
-// ---- Helper functions ----
-
-// ---- Referenced classes and types ----
-
-// ---- Class Definition ----
 
 namespace WPEFramework {
 namespace Exchange {
     struct EXTERNAL IExternal : virtual public Core::IUnknown {
-        virtual ~IExternal() {}
-
         enum { ID = ID_EXTERNAL };
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {
-
-            virtual ~INotification() {}
-
             enum { ID = ID_EXTERNAL_NOTIFICATION };
 
             // Push changes. If the Current value changes, the next method is called.
@@ -50,14 +33,9 @@ namespace Exchange {
         };
 
         struct EXTERNAL ICatalog : virtual public Core::IUnknown {
-            ~ICatalog() override = default;
-
             enum { ID = ID_EXTERNAL_CATALOG };
 
             struct EXTERNAL INotification : virtual public Core::IUnknown {
-
-                ~INotification() override = default;
-
                 enum { ID = ID_EXTERNAL_CATALOG_NOTIFICATION };
 
                 virtual void Activated(IExternal* source) = 0;

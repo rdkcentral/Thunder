@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
@@ -43,8 +42,6 @@ namespace Exchange {
     struct EXTERNAL IKeyHandler : virtual public Core::IUnknown {
         enum { ID = ID_KEYHANDLER };
 
-        virtual ~IKeyHandler(){};
-
         virtual uint32_t KeyEvent(const bool pressed, const uint32_t code, const string& table) = 0;
         virtual void ProducerEvent(const string& producerName, const ProducerEvents event) = 0;
 
@@ -54,8 +51,6 @@ namespace Exchange {
     struct EXTERNAL IWheelHandler : virtual public Core::IUnknown {
         enum { ID = ID_WHEELHANDLER };
 
-        virtual ~IWheelHandler(){};
-
         virtual uint32_t AxisEvent(const int16_t x, const int16_t y) = 0;
 
         virtual IWheelProducer* WheelProducer(const string& name) = 0;
@@ -63,8 +58,6 @@ namespace Exchange {
 
     struct EXTERNAL IPointerHandler : virtual public Core::IUnknown {
         enum { ID = ID_POINTERHANDLER };
-
-        virtual ~IPointerHandler(){};
 
         virtual uint32_t PointerMotionEvent(const int16_t x, const int16_t y) = 0;
         virtual uint32_t PointerButtonEvent(const bool pressed, const uint8_t button) = 0;
@@ -74,8 +67,6 @@ namespace Exchange {
 
     struct EXTERNAL ITouchHandler : virtual public Core::IUnknown {
         enum { ID = ID_TOUCHHANDLER };
-
-        virtual ~ITouchHandler(){};
 
         enum class touchstate : uint8_t {
             TOUCH_MOTION,
@@ -91,8 +82,6 @@ namespace Exchange {
     struct EXTERNAL IKeyProducer : virtual public Core::IUnknown {
         enum { ID = ID_KEYPRODUCER };
 
-        virtual ~IKeyProducer(){};
-
         virtual string Name() const = 0;
         virtual uint32_t Callback(IKeyHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
@@ -106,8 +95,6 @@ namespace Exchange {
     struct EXTERNAL IWheelProducer : virtual public Core::IUnknown {
         enum { ID = ID_WHEELPRODUCER };
 
-        virtual ~IWheelProducer(){};
-
         virtual string Name() const = 0;
         virtual uint32_t Callback(IWheelHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
@@ -118,8 +105,6 @@ namespace Exchange {
     struct EXTERNAL IPointerProducer : virtual public Core::IUnknown {
         enum { ID = ID_POINTERPRODUCER };
 
-        virtual ~IPointerProducer(){};
-
         virtual string Name() const = 0;
         virtual uint32_t Callback(IPointerHandler* callback) = 0;
         virtual uint32_t Error() const = 0;
@@ -129,8 +114,6 @@ namespace Exchange {
 
     struct EXTERNAL ITouchProducer : virtual public Core::IUnknown {
         enum { ID = ID_TOUCHPRODUCER };
-
-        virtual ~ITouchProducer(){};
 
         virtual string Name() const = 0;
         virtual uint32_t Callback(ITouchHandler* callback) = 0;

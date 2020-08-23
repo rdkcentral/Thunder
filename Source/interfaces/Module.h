@@ -24,15 +24,21 @@
 #endif
 
 #include <core/core.h>
-#include <com/com.h>
+
+// These are interfaces offered by Thunder and used in the Plugins. Make them
+// available on interfaces taht are exposed cross plugins.
 #include <plugins/IPlugin.h>
+#include <plugins/ISubSystem.h>
 #include <plugins/IShell.h>
 #include <plugins/IStateControl.h>
-#include <plugins/ISubSystem.h>
+
+// All identifiers to identify an interface are allocated in this same directory
+// in the file calls Ids.h, please extend it with your requried interface number
+// if you are creating a new interface.
 #include "Ids.h"
 
-#if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
+#if defined(PROXYSTUB_BUILDING)
+#include <com/com.h>
 #endif
+
 
