@@ -59,7 +59,7 @@ namespace Exchange {
                 enum { ID = ID_BLUETOOTH_SECURITYCALLBACK };
 
                 virtual void PasskeyRequest() = 0;
-                virtual void PasskeyConfirmRequest(const uint32_t passkey);
+                virtual void PasskeyConfirmRequest(const uint32_t passkey) {};
             };
 
             enum type : uint8_t {
@@ -119,7 +119,7 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_BLUETOOTH_NOTIFICATION };
 
-            virtual void Update(IDevice* device);
+            virtual void Update(IDevice* device) = 0;
         };
 
         virtual uint32_t Register(INotification* notification) = 0;
