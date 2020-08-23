@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
-#ifndef _IPNETWORK_H
-#define _IPNETWORK_H
+#pragma once
+#include "Module.h"
 
 // @stubgen:skip
-
-#include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
@@ -32,8 +30,6 @@ namespace Exchange {
 
         struct EXTERNAL IDNSServers : virtual public Core::IUnknown {
             enum { ID = ID_IPNETWORK_DNSSERVER };
-
-            virtual ~IDNSServers() {}
 
             virtual void Reset() = 0;
             virtual bool Next() = 0;
@@ -48,5 +44,3 @@ namespace Exchange {
     };
 }
 }
-
-#endif // _IPNETWORK_H

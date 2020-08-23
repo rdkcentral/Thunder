@@ -18,22 +18,18 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
 
     struct EXTERNAL ITestController : virtual public Core::IUnknown {
-
         enum { ID = ID_TESTCONTROLLER };
 
         struct EXTERNAL ITest : virtual public Core::IUnknown {
-
             enum { ID = ID_TESTCONTROLLER_TEST };
 
             struct EXTERNAL IIterator : virtual public Core::IUnknown {
-
                 enum { ID = ID_TESTCONTROLLER_TEST_ITERATOR };
 
                 virtual void Reset() = 0;
@@ -44,17 +40,14 @@ namespace Exchange {
             };
 
             virtual string Execute(const string& params) = 0;
-
             virtual string Description() const = 0;
             virtual string Name() const = 0;
         };
 
         struct EXTERNAL ICategory : virtual public Core::IUnknown {
-
             enum { ID = ID_TESTCONTROLLER_CATEGORY };
 
             struct EXTERNAL IIterator : virtual public Core::IUnknown {
-
                 enum { ID = ID_TESTCONTROLLER_CATEGORY_ITERATOR };
 
                 virtual void Reset() = 0;
@@ -62,7 +55,8 @@ namespace Exchange {
                 virtual bool Next() = 0;
 
                 virtual ICategory* Category() const = 0;
-            };
+            }
+
             virtual string Name() const = 0;
 
             virtual void Setup() = 0;

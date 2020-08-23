@@ -18,7 +18,6 @@
  */
 
 #pragma once
-
 #include "Module.h"
 
 namespace WPEFramework {
@@ -33,11 +32,8 @@ namespace Exchange {
     struct EXTERNAL IVoiceProducer : virtual public Core::IUnknown {
         enum { ID = ID_VOICEPRODUCER };
 
-        virtual ~IVoiceProducer(){};
-
         struct EXTERNAL IProfile : virtual public Core::IUnknown {
             enum { ID = ID_VOICEPRODUCER_PROFILE };
-            virtual ~IProfile(){};
 
             enum codec : uint8_t {
                 UNDEFINED = 0,
@@ -60,8 +56,6 @@ namespace Exchange {
 
     struct EXTERNAL IVoiceHandler : virtual public Core::IUnknown {
         enum { ID = ID_VOICEHANDLER };
-
-        virtual ~IVoiceHandler(){};
 
         virtual void Start(const IVoiceProducer::IProfile* profile) = 0;
         virtual void Stop() = 0;

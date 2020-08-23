@@ -17,16 +17,13 @@
  * limitations under the License.
  */
 
-#ifndef __IDSGCCCLIENT_H
-#define __IDSGCCCLIENT_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
 
     struct EXTERNAL IDsgccClient : virtual public Core::IUnknown {
-
         enum { ID = ID_DSGCC_CLIENT };
 
         enum state : uint8_t {
@@ -36,12 +33,8 @@ namespace Exchange {
             Error   = 3
         };
 
-        virtual ~IDsgccClient() {}
-
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_DSGCC_CLIENT_NOTIFICATION };
-
-            virtual ~INotification() {}
 
             virtual void StateChange(const state newState) = 0;
         };
@@ -57,4 +50,3 @@ namespace Exchange {
 }
 }
 
-#endif // __IDSGCCCLIENT_H

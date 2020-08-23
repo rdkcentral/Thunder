@@ -31,7 +31,7 @@
 #include <plugins/ISubSystem.h>
 #include "Ids.h"
 
-#if defined(__WINDOWS__) && defined(INTERFACES_EXPORTS)
+#if defined(__WINDOWS__) && defined(DEFINITIONS_EXPORTS)
 #undef EXTERNAL
 #define EXTERNAL EXTERNAL_EXPORT
 #endif

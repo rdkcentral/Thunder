@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __IBROWSER_H
-#define __IBROWSER_H
-
+#pragma once 
 #include "Module.h"
 
 namespace WPEFramework {
@@ -34,16 +32,12 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_BROWSER_NOTIFICATION };
 
-            virtual ~INotification() {}
-
             // Signal changes on the subscribed namespace..
             virtual void LoadFinished(const string& URL) = 0;
             virtual void URLChanged(const string& URL) = 0;
             virtual void Hidden(const bool hidden) = 0;
             virtual void Closure() = 0;
         };
-
-        virtual ~IBrowser() {}
 
         virtual void Register(IBrowser::INotification* sink) = 0;
         virtual void Unregister(IBrowser::INotification* sink) = 0;
@@ -73,13 +67,9 @@ namespace Exchange {
             EXCLUSIVELY_FROM_MAIN_DOCUMENT_DOMAIN = 3
         };
 
-        virtual ~IWebBrowser() { }
-
         /* @event */
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_WEBKITBROWSER_NOTIFICATION };
-
-            virtual ~INotification() {}
 
             // Signal changes on the subscribed namespace..
             virtual void LoadFinished(const string& URL, const int32_t code) = 0;
@@ -132,5 +122,3 @@ namespace Exchange {
 
 }
 }
-
-#endif // __IBROWSER_H

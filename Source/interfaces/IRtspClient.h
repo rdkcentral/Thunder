@@ -17,18 +17,13 @@
  * limitations under the License.
  */
 
-#ifndef __IRTSPCLIENBT_H
-#define __IRTSPCLIENBT_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
 namespace Exchange {
     struct EXTERNAL IRtspClient : virtual public Core::IUnknown {
-
         enum { ID = ID_RTSPCLIENT };
-
-        virtual ~IRtspClient() {}
 
         virtual uint32_t Configure(PluginHost::IShell* service) = 0;
 
@@ -41,5 +36,3 @@ namespace Exchange {
     };
 }
 }
-
-#endif // __IRTSPCLIENBT_H

@@ -31,12 +31,7 @@
 #include "IPower.h"
 
 #if defined(__WINDOWS__) 
-#if defined(DEFINITIONS_EXPORTS)
-#undef EXTERNAL
-#define EXTERNAL EXTERNAL_EXPORT
-#else
 #pragma comment(lib, "definitions.lib")
-#endif
 #endif
 
 namespace WPEFramework {

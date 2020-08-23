@@ -26,28 +26,43 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ProxyStubs_AVNClient.cpp" />
+    <ClCompile Include="ProxyStubs_AVSClient.cpp" />
     <ClCompile Include="ProxyStubs_Browser.cpp" />
     <ClCompile Include="ProxyStubs_Composition.cpp" />
     <ClCompile Include="ProxyStubs_ContentDecryption.cpp" />
+    <ClCompile Include="ProxyStubs_DeviceIdentification.cpp" />
     <ClCompile Include="ProxyStubs_Dictionary.cpp" />
+    <ClCompile Include="ProxyStubs_DisplayInfo.cpp" />
+    <ClCompile Include="ProxyStubs_Dolby.cpp" />
     <ClCompile Include="ProxyStubs_DsgccClient.cpp" />
+    <ClCompile Include="ProxyStubs_External.cpp" />
     <ClCompile Include="ProxyStubs_Guide.cpp" />
+    <ClCompile Include="ProxyStubs_InputPin.cpp" />
+    <ClCompile Include="ProxyStubs_InputSwitch.cpp" />
+    <ClCompile Include="ProxyStubs_KeyHandler.cpp" />
+    <ClCompile Include="ProxyStubs_Math.cpp" />
     <ClCompile Include="ProxyStubs_Netflix.cpp" />
     <ClCompile Include="ProxyStubs_Packager.cpp" />
     <ClCompile Include="ProxyStubs_Performance.cpp" />
+    <ClCompile Include="ProxyStubs_PlayerInfo.cpp" />
     <ClCompile Include="ProxyStubs_PlayGiga.cpp" />
     <ClCompile Include="ProxyStubs_Power.cpp" />
     <ClCompile Include="ProxyStubs_Provisioning.cpp" />
+    <ClCompile Include="ProxyStubs_RemoteControl.cpp" />
+    <ClCompile Include="ProxyStubs_ResourceMonitor.cpp" />
     <ClCompile Include="ProxyStubs_RPCLink.cpp" />
     <ClCompile Include="ProxyStubs_RtspClient.cpp" />
     <ClCompile Include="ProxyStubs_Stream.cpp" />
     <ClCompile Include="ProxyStubs_TestController.cpp" />
     <ClCompile Include="ProxyStubs_TestUtility.cpp" />
+    <ClCompile Include="ProxyStubs_VoiceHandler.cpp" />
+    <ClCompile Include="ProxyStubs_VolumeControl.cpp" />
     <ClCompile Include="ProxyStubs_WebDriver.cpp" />
     <ClCompile Include="ProxyStubs_WebPA.cpp" />
     <ClCompile Include="ProxyStubs_WebServer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="definitions.h" />
     <ClInclude Include="IAVNClient.h" />
     <ClInclude Include="IAVSClient.h" />
     <ClInclude Include="IBluetooth.h" />
@@ -77,7 +92,6 @@
     <ClInclude Include="IRPCLink.h" />
     <ClInclude Include="IRtspClient.h" />
     <ClInclude Include="IStream.h" />
-    <ClInclude Include="IStreaming.h" />
     <ClInclude Include="ISwitchBoard.h" />
     <ClInclude Include="ISystemCommands.h" />
     <ClInclude Include="ITestController.h" />

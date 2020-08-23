@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-#ifndef __INETFLIX_H
-#define __INETFLIX_H
-
+#pragma once
 #include "Module.h"
 
 namespace WPEFramework {
@@ -27,7 +25,6 @@ namespace Exchange {
 
     // This interface gives direct access to a Netflix instance
     struct EXTERNAL INetflix : virtual public Core::IUnknown {
-
         enum { ID = ID_NETFLIX };
 
         enum state : uint16_t {
@@ -39,14 +36,10 @@ namespace Exchange {
         struct EXTERNAL INotification : virtual public Core::IUnknown {
             enum { ID = ID_NETFLIX_NOTIFICATION };
 
-            virtual ~INotification() {}
-
             // Signal changes on the subscribed namespace..
             virtual void StateChange(const INetflix::state state) = 0;
             virtual void Exit(const uint32_t exitCode) = 0;
         };
-
-        virtual ~INetflix() {}
 
         virtual void Register(INetflix::INotification* netflix) = 0;
         virtual void Unregister(INetflix::INotification* netflix) = 0;
@@ -61,4 +54,3 @@ namespace Exchange {
 }
 }
 
-#endif // __INETFLIX_H

@@ -18,20 +18,16 @@
  */
 
 #pragma once
+#include "Module.h"
 
 // @stubgen:skip
-
-#include "Module.h"
 
 namespace WPEFramework {
 
 namespace Exchange {
 
     struct EXTERNAL IBluetooth : virtual public Core::IUnknown {
-
         enum { ID = ID_BLUETOOTH };
-
-        virtual ~IBluetooth() {}
 
         enum pairingcapabilities : uint8_t {
             DISPLAY_ONLY,
@@ -42,14 +38,10 @@ namespace Exchange {
         };
 
         struct EXTERNAL IDevice : virtual public Core::IUnknown {
-
             enum { ID = ID_BLUETOOTH_DEVICE };
 
             struct EXTERNAL IIterator : virtual public Core::IUnknown {
-
                 enum { ID = ID_BLUETOOTH_DEVICE_ITERATOR };
-
-                virtual ~IIterator() {}
 
                 virtual void Reset() = 0;
                 virtual bool IsValid() const = 0;
@@ -58,19 +50,13 @@ namespace Exchange {
             };
 
             struct EXTERNAL ICallback : virtual public Core::IUnknown {
-
                 enum { ID = ID_BLUETOOTH_CALLBACK };
-
-                virtual ~ICallback() {}
 
                 virtual void Updated() = 0;
             };
 
             struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
-
                 enum { ID = ID_BLUETOOTH_SECURITYCALLBACK };
-
-                virtual ~ISecurityCallback() {}
 
                 virtual void PasskeyRequest() = 0;
                 virtual void PasskeyConfirmRequest(const uint32_t passkey);
@@ -80,10 +66,7 @@ namespace Exchange {
                 ADDRESS_BREDR,
                 ADDRESS_LE_PUBLIC,
                 ADDRESS_LE_RANDOM
-
             };
-
-            virtual ~IDevice() {}
 
             virtual type Type() const = 0;
 
@@ -111,14 +94,13 @@ namespace Exchange {
         };
 
         struct EXTERNAL IClassic : virtual public Core::IUnknown {
-
             enum { ID = ID_BLUETOOTH_CLASSIC };
 
             struct EXTERNAL ISecurityCallback : virtual public Core::IUnknown {
 
                 enum { ID = ID_BLUETOOTH_CLASSIC_SECURITYCALLBACK };
 
-                virtual ~ISecurityCallback() {}
+                ~ISecurityCallback() override = default;
 
                 virtual void PINCodeRequest() = 0;
             };
@@ -129,17 +111,13 @@ namespace Exchange {
         };
 
         struct EXTERNAL ILowEnergy : virtual public Core::IUnknown {
-
             enum { ID = ID_BLUETOOTH_LOWENERGY };
 
             virtual bool IsUUIDSupported(const string& uuid) const = 0;
         };
 
         struct EXTERNAL INotification : virtual public Core::IUnknown {
-
             enum { ID = ID_BLUETOOTH_NOTIFICATION };
-
-            virtual ~INotification() {}
 
             virtual void Update(IDevice* device);
         };
@@ -154,5 +132,4 @@ namespace Exchange {
         virtual IDevice::IIterator* Devices() = 0;
     };
 }
-
 }
