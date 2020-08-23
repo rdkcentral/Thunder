@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-#include "ITracing.h"
 #include "Communicator.h"
 #include "IUnknown.h"
 

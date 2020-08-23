@@ -67,6 +67,9 @@
     <CustomBuild Include="json\IOConnector.json">
       <Filter>Contracts</Filter>
     </CustomBuild>
+    <CustomBuild Include="json\Butler.json">
+      <Filter>Contracts</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Contracts">

@@ -23,7 +23,16 @@
 #define MODULE_NAME Definitions
 #endif
 
-#include <core/Enumerate.h>
+#include <core/core.h>
+
+#if defined(__WINDOWS__) 
+#if defined(DEFINITIONS_EXPORTS)
+#undef EXTERNAL
+#define EXTERNAL EXTERNAL_EXPORT
+#else
+#pragma comment(lib, "definitions.lib")
+#endif
+#endif
 
 #include "IComposition.h"
 #include "IStream.h"
