@@ -30,7 +30,10 @@ JsonGenerator(CODE INPUT ${JSON_FILE} OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/genera
 JsonGenerator(CODE INPUT "${CMAKE_CURRENT_SOURCE_DIR}/I*.h" OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/json")
 
 file(GLOB PROXY_STUB_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/proxystubs/ProxyStubs*.cpp")
-add_library(${TargetMarshalling} SHARED ${PROXY_STUB_SOURCES})
+add_library(${TargetMarshalling} SHARED 
+        Module.cpp
+        ${PROXY_STUB_SOURCES}
+        )
 
 target_include_directories(${TargetMarshalling} PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
@@ -39,7 +42,6 @@ file(GLOB JSON_ENUM_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/generated/json/JsonEnum
 file(GLOB JSON_LINK_HEADERS "${CMAKE_CURRENT_BINARY_DIR}/generated/json/J*.h")
 
 add_library(${TargetDefinitions} SHARED
-        Module.cpp
         Definitions.cpp
         ${JSON_ENUM_SOURCES}
         )

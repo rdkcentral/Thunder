@@ -35,6 +35,7 @@ set(SOURCES_COM
         com/Administrator.cpp
         com/Communicator.cpp
         com/ITracing.cpp
+        com/ProxyStubs.cpp
         com/IValueIterator.h
         com/IUnknown.cpp
         com/IStringIterator.h
