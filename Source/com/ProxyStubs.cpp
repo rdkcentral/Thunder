@@ -20,4 +20,4 @@
 #include "Module.h"
 #include "IUnknown.h"
 
-#include "../generated/proxystubs/ProxyStubs_COM.cpp"
+#include "generated/proxystubs/ProxyStubs_COM.cpp"
