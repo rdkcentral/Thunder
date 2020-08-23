@@ -40,5 +40,3 @@ namespace Exchange {
     };
 }
 }
-
-#endif //__ICAPTURE_H__
