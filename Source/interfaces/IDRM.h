@@ -502,7 +502,16 @@ private:
 extern "C" {
 #endif
 
+#ifndef EXTERNAL
+#ifdef _MSVC_LANG
+__declspec(dllexport) CDMi::ISystemFactory* GetSystemFactory();
+#else
+__attribute__ ((visibility ("default"))) CDMi::ISystemFactory* GetSystemFactory();
+#endif
+#else
 EXTERNAL CDMi::ISystemFactory* GetSystemFactory();
+#endif
+
 
 #ifdef __cplusplus
 }
