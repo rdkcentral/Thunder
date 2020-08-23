@@ -507,5 +507,3 @@ EXTERNAL CDMi::ISystemFactory* GetSystemFactory();
 #ifdef __cplusplus
 }
 #endif
-
-#endif // CDMI_H_
