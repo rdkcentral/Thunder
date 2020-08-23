@@ -20,7 +20,7 @@
 #ifndef __ISYSTEMINFO_H
 #define __ISYSTEMINFO_H
 
-#include <com/com.h>
+#include <com/ICOM.h>
 
 namespace WPEFramework {
 namespace PluginHost {
