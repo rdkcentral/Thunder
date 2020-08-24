@@ -112,11 +112,11 @@ namespace Plugin {
             return (basePath + ClassName.Value() + '/');
         }
         string PersistentPath(const string& basePath) const {
-            string postfixPath = (PersistentPathPostfix.IsSet() == true) ? PersistentPathPostfix.Value(): Callsign.Value();
+            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value(): Callsign.Value();
             return (basePath + postfixPath + '/');
         }
         string VolatilePath(const string& basePath) const {
-            string postfixPath = (VolatilePathPostfix.IsSet() == true) ? VolatilePathPostfix.Value(): Callsign.Value();
+            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value(): Callsign.Value();
             return (basePath + postfixPath + '/');
         }
 
