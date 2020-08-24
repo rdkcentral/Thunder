@@ -42,6 +42,8 @@ namespace Plugin {
             , Precondition()
             , Termination()
             , Configuration(false)
+            , PersistentPathPostfix()
+            , VolatilePathPostfix()
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -53,6 +55,8 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
+            Add(_T("persistentpathpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepathpostfix"), &VolatilePathPostfix);
         }
         Config(const Config& copy)
             : Core::JSON::Container()
@@ -66,6 +70,8 @@ namespace Plugin {
             , Precondition(copy.Precondition)
             , Termination(copy.Termination)
             , Configuration(copy.Configuration)
+            , PersistentPathPostfix(copy.PersistentPathPostfix)
+            , VolatilePathPostfix(copy.VolatilePathPostfix)
         {
             Add(_T("callsign"), &Callsign);
             Add(_T("locator"), &Locator);
@@ -77,6 +83,8 @@ namespace Plugin {
             Add(_T("precondition"), &Precondition);
             Add(_T("termination"), &Termination);
             Add(_T("configuration"), &Configuration);
+            Add(_T("persistentpostfix"), &PersistentPathPostfix);
+            Add(_T("volatilepostfix"), &VolatilePathPostfix);
         }
         ~Config()
         {
@@ -94,6 +102,8 @@ namespace Plugin {
             Configuration = RHS.Configuration;
             Precondition = RHS.Precondition;
             Termination = RHS.Termination;
+            PersistentPathPostfix = RHS.PersistentPathPostfix;
+            VolatilePathPostfix = RHS.VolatilePathPostfix;
 
             return (*this);
         }
@@ -102,10 +112,12 @@ namespace Plugin {
             return (basePath + ClassName.Value() + '/');
         }
         string PersistentPath(const string& basePath) const {
-            return (basePath + Callsign.Value() + '/');
+            string postfixPath = ((PersistentPathPostfix.IsSet() == true) && (PersistentPathPostfix.Value().empty() == false)) ? PersistentPathPostfix.Value(): Callsign.Value();
+            return (basePath + postfixPath + '/');
         }
         string VolatilePath(const string& basePath) const {
-            return (basePath + Callsign.Value() + '/');
+            string postfixPath = ((VolatilePathPostfix.IsSet() == true) && (VolatilePathPostfix.Value().empty() == false)) ? VolatilePathPostfix.Value(): Callsign.Value();
+            return (basePath + postfixPath + '/');
         }
 
     public:
@@ -119,6 +131,8 @@ namespace Plugin {
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Precondition;
         Core::JSON::ArrayType<Core::JSON::EnumType<PluginHost::ISubSystem::subsystem>> Termination;
         Core::JSON::String Configuration;
+        Core::JSON::String PersistentPathPostfix;
+        Core::JSON::String VolatilePathPostfix;
 
         static Core::NodeId IPV4UnicastNode(const string& ifname);
 
