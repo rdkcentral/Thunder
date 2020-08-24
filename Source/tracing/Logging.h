@@ -147,6 +147,41 @@ namespace Logging {
         std::string _text;
     };
 
+    class EXTERNAL Crash {
+    public:
+        Crash() = delete;
+        Crash(const Crash& a_Copy) = delete;
+        Crash& operator=(const Crash& a_RHS) = delete;
+
+        Crash(const TCHAR formatter[], ...)
+        {
+            va_list ap;
+            va_start(ap, formatter);
+            Trace::Format(_text, formatter, ap);
+            va_end(ap);
+        }
+        explicit Crash(const string& text)
+            : _text(Core::ToString(text))
+        {
+        }
+        ~Crash()
+        {
+        }
+
+    public:
+        inline const char* Data() const
+        {
+            return (_text.c_str());
+        }
+        inline uint16_t Length() const
+        {
+            return (static_cast<uint16_t>(_text.length()));
+        }
+
+    private:
+        std::string _text;
+    };
+
     class EXTERNAL ParsingError {
     private:
         ParsingError() = delete;

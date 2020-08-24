@@ -84,6 +84,7 @@ set(PUBLIC_HEADERS
         IIterator.h
         IObserver.h
         IPCMessage.h
+        IPFrame.h
         IPCChannel.h
         IPCConnector.h
         ISO639.h

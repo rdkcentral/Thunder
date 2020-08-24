@@ -200,6 +200,7 @@ namespace RPC {
             , _volatile()
             , _application()
             , _proxyStub()
+            , _postMortem()
         {
         }
         Config(
@@ -210,7 +211,8 @@ namespace RPC {
             const string& dataPath,
             const string& volatilePath,
             const string& applicationPath,
-            const string& proxyStubPath)
+            const string& proxyStubPath,
+            const string& postMortem)
             : _connector(connector)
             , _hostApplication(hostApplication)
             , _persistent(persistentPath)
@@ -219,6 +221,7 @@ namespace RPC {
             , _volatile(volatilePath)
             , _application(applicationPath)
             , _proxyStub(proxyStubPath)
+            , _postMortem(postMortem)
         {
         }
         Config(const Config& copy)
@@ -230,6 +233,7 @@ namespace RPC {
             , _volatile(copy._volatile)
             , _application(copy._application)
             , _proxyStub(copy._proxyStub)
+            , _postMortem(copy._postMortem)
         {
         }
         ~Config()
@@ -269,6 +273,11 @@ namespace RPC {
         {
             return (_proxyStub);
         }
+        inline const string& PostMortemPath() const
+        {
+            return (_postMortem);
+        }
+
 
     private:
         string _connector;
@@ -279,6 +288,7 @@ namespace RPC {
         string _volatile;
         string _application;
         string _proxyStub;
+        string _postMortem;
     };
 
     class EXTERNAL Process {
@@ -327,6 +337,9 @@ namespace RPC {
             if (config.ProxyStubPath().empty() == false) {
                 _options.Add(_T("-m")).Add('"' + config.ProxyStubPath() + '"');
             }
+            if (config.PostMortemPath().empty() == false) {
+                _options.Add(_T("-P")).Add('"' + config.PostMortemPath() + '"');
+            }
             if (instance.Threads() > 1) {
                 _options.Add(_T("-t")).Add(Core::NumberType<uint8_t>(instance.Threads()).Text());
             }
@@ -367,12 +380,12 @@ namespace RPC {
     struct EXTERNAL IRemoteConnection : virtual public Core::IUnknown {
         enum { ID = ID_COMCONNECTION };
 
-        virtual ~IRemoteConnection() {}
+        virtual ~IRemoteConnection() = default;
 
         struct INotification : virtual public Core::IUnknown {
             enum { ID = ID_COMCONNECTION_NOTIFICATION };
 
-            virtual ~INotification() {}
+            virtual ~INotification() = default;
             virtual void Activated(IRemoteConnection* connection) = 0;
             virtual void Deactivated(IRemoteConnection* connection) = 0;
         };
@@ -382,6 +395,7 @@ namespace RPC {
         virtual void* /* @interface:interfaceId */ Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) = 0;
         virtual void Terminate() = 0;
         virtual uint32_t Launch() = 0;
+        virtual void PostMortem() = 0;
 
         template <typename REQUESTEDINTERFACE>
         REQUESTEDINTERFACE* Aquire(const uint32_t waitTime, const string& className, const uint32_t version)
@@ -438,11 +452,15 @@ namespace RPC {
             }
 
         public:
-            virtual uint32_t Id() const override;
-            virtual uint32_t RemoteId() const override;
-            virtual void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
-            virtual void Terminate() override;
-            virtual uint32_t Launch() override
+            uint32_t Id() const override;
+            uint32_t RemoteId() const override;
+            void* Aquire(const uint32_t waitTime, const string& className, const uint32_t interfaceId, const uint32_t version) override;
+            void Terminate() override;
+            void PostMortem() override
+            {
+                // This is really something that needs to be done by the specific implementations.
+            }
+            uint32_t Launch() override
             {
                 return (Core::ERROR_NONE);
             }
@@ -486,19 +504,21 @@ namespace RPC {
         };
 
     private:
-        class EXTERNAL LocalRemoteProcess : public RemoteConnection, public IMonitorableProcess {
+        class EXTERNAL LocalProcess : public RemoteConnection, public IMonitorableProcess {
         public:
-            friend class Core::Service<LocalRemoteProcess>;
+            friend class Core::Service<LocalProcess>;
 
-            LocalRemoteProcess(const LocalRemoteProcess&) = delete;
-            LocalRemoteProcess& operator=(const LocalRemoteProcess&) = delete;
-            LocalRemoteProcess(const Config& config, const Object& instance)
+            LocalProcess() = delete;
+            LocalProcess(const LocalProcess&) = delete;
+            LocalProcess& operator=(const LocalProcess&) = delete;
+
+            LocalProcess(const Config& config, const Object& instance)
                 : _callsign(instance.Callsign())
                 , _id(0)
                 , _process(RemoteConnection::Id(), config, instance)
             {
             }
-            ~LocalRemoteProcess() = default;
+            ~LocalProcess() override = default;
 
         public:
             string Callsign() const override
@@ -517,9 +537,10 @@ namespace RPC {
             {
                 return (_process.Options());
             }
+            void PostMortem() override;
 
         private:
-            BEGIN_INTERFACE_MAP(LocalRemoteProcess)
+            BEGIN_INTERFACE_MAP(LocalProcess)
                 INTERFACE_ENTRY(IRemoteConnection)
                 INTERFACE_ENTRY(IMonitorableProcess)
             END_INTERFACE_MAP
@@ -534,7 +555,7 @@ namespace RPC {
         };
 #ifdef PROCESSCONTAINERS_ENABLED
 
-        class EXTERNAL ContainerRemoteProcess  : public RemoteConnection, public IMonitorableProcess {
+        class EXTERNAL ContainerProcess  : public RemoteConnection, public IMonitorableProcess {
         private:
             class ContainerConfig : public Core::JSON::Container {
             public:
@@ -559,12 +580,12 @@ namespace RPC {
             };
 
         public:
-            friend class Core::Service<ContainerRemoteProcess>;
+            friend class Core::Service<ContainerProcess>;
 
-            ContainerRemoteProcess(const ContainerRemoteProcess&) = delete;
-            ContainerRemoteProcess& operator=(const ContainerRemoteProcess&) = delete;
+            ContainerProcess(const ContainerProcess&) = delete;
+            ContainerProcess& operator=(const ContainerProcess&) = delete;
 
-            ContainerRemoteProcess(const Config& baseConfig, const Object& instance)
+            ContainerProcess(const Config& baseConfig, const Object& instance)
                 : _callsign(instance.Callsign())
                 , _id(0)
                 , _process(RemoteConnection::Id(), baseConfig, instance)
@@ -592,7 +613,7 @@ namespace RPC {
                 _container = admin.Container(instance.Callsign(), searchpathsit, volatilecallsignpath, instance.Configuration());
             }
 
-            ~ContainerRemoteProcess()
+            ~ContainerProcess() override
             {
                 if (_container != nullptr) {
                     _container->Release();
@@ -626,9 +647,10 @@ namespace RPC {
 
                 return result;
             }
+            void PostMortem() override;
 
         private:
-            BEGIN_INTERFACE_MAP(ContainerRemoteProcess)
+            BEGIN_INTERFACE_MAP(ContainerProcess)
                 INTERFACE_ENTRY(IRemoteConnection)
                 INTERFACE_ENTRY(IMonitorableProcess)
             END_INTERFACE_MAP
@@ -654,11 +676,11 @@ namespace RPC {
             RemoteConnection* result = nullptr;
 
             if (instance.Type() == Object::HostType::LOCAL) {
-                result = Core::Service<LocalRemoteProcess>::Create<RemoteConnection>(config, instance);
+                result = Core::Service<LocalProcess>::Create<RemoteConnection>(config, instance);
             }
             else if (instance.Type() == Object::HostType::CONTAINER) {
 #ifdef PROCESSCONTAINERS_ENABLED
-                result = Core::Service<ContainerRemoteProcess>::Create<RemoteConnection>(config, instance);
+                result = Core::Service<ContainerProcess>::Create<RemoteConnection>(config, instance);
 #else
                 SYSLOG(Trace::Error, (_T("Cannot create Container process for %s, this version was not build with Container support"), instance.ClassName().c_str()));
 #endif
